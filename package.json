@@ -1,0 +1,23 @@
+{
+  "name": "business-manager",
+  "version": "1.0.0",
+  "description": "Business Management System - Full Stack Application",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000",
+    "start:frontend": "cd frontend && npm run dev",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && pip install -r requirements.txt",
+    "install:frontend": "cd frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "setup": "npm run install:all"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["business", "management", "fastapi", "react", "fullstack"],
+  "author": "Business Manager Team",
+  "license": "MIT"
+}
