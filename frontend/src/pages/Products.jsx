@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { productsAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
+import { useRef } from 'react';
+import { useLayoutEffect } from 'react';
 
 export default function Products() {
   const { 
@@ -29,6 +31,52 @@ export default function Products() {
   const [tempLabel, setTempLabel] = useState('');
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
+
+  // Refs to measure outer header cell widths
+  const nameHdrRef = useRef(null);
+  const priceHdrRef = useRef(null);
+  const qtyHdrRef = useRef(null);
+  const actionsHdrRef = useRef(null);
+  const [innerCols, setInnerCols] = useState('2fr 1fr 1fr 80px');
+  const headerRowRef = useRef(null);
+  const outerCols = '2fr 1fr 1fr 80px';
+  const navHeight = 64; // adjust if your bottom nav height differs
+
+  // Table-style refs for footer cells (column names) to sync widths
+  const tfootNameRef = useRef(null);
+  const tfootPriceRef = useRef(null);
+  const tfootQtyRef = useRef(null);
+  const tfootActionsRef = useRef(null);
+
+  // Measure and sync inner table columns to match outer header/footer
+  useLayoutEffect(() => {
+    const measure = () => {
+      const getW = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+      // Prefer measuring footer cells if present (often fully visible at bottom), fallback to header cells
+      const w1 = getW(tfootNameRef.current) || getW(nameHdrRef.current);
+      const w2 = getW(tfootPriceRef.current) || getW(priceHdrRef.current);
+      const w3 = getW(tfootQtyRef.current) || getW(qtyHdrRef.current);
+      const w4 = getW(tfootActionsRef.current) || getW(actionsHdrRef.current);
+      if (w1 + w2 + w3 + w4 > 0) {
+        setInnerCols(`${Math.round(w1)}px ${Math.round(w2)}px ${Math.round(w3)}px ${Math.round(w4)}px`);
+      }
+    };
+    // Initial and next frame measure to avoid layout thrash
+    measure();
+    const raf = requestAnimationFrame(measure);
+    // Observe header row for size changes
+    let ro;
+    if ('ResizeObserver' in window && headerRowRef.current) {
+      ro = new ResizeObserver(() => measure());
+      ro.observe(headerRowRef.current);
+    }
+    window.addEventListener('resize', measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+      if (ro && headerRowRef.current) ro.disconnect();
+    };
+  }, [products.length]);
 
   useEffect(() => {
     loadProducts();
@@ -145,138 +193,108 @@ export default function Products() {
   const maxSales = Math.max(...salesData.map(d => d.sales));
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {/* No page title; Add action is in fixed bottom bar */}
 
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 py-3 rounded">
           {error}
         </div>
       )}
 
-      {/* Scrollable content area that adapts when accordion expands/collapses */}
-      <div className="flex-1 min-h-0 flex flex-col justify-end">
-        {/* Unified Layout (inverted: totals/averages in header, labels+sort in footer) */}
-        <div className="flex-1 min-h-0 block mt-auto">
-          <div className="h-full overflow-auto relative">
-            {/* Shared grid template for alignment */}
-            <div className="sticky top-0 bg-inherit z-30">
-              <div
-                className="grid px-4 py-3 text-xs"
-                style={{ gridTemplateColumns: '2fr 1fr 1fr 80px' }}
-              >
-                <div className="font-semibold text-gray-700">Total Products: {totalProducts}</div>
-                <div className="font-semibold text-gray-700">Avg Price: ${avgPrice.toFixed(2)}
-                  <div className="text-gray-500 font-normal">Total: ${totalPrice.toFixed(2)}</div>
-                </div>
-                <div></div>
-                <div className="text-right text-gray-500"><span className="sr-only">Actions</span></div>
-              </div>
-            </div>
+      {/* Link to TableFormat demo */}
+      <div className="mb-2">
+        <Link to="/tableformat" className="text-xs text-indigo-500 hover:underline">View TableFormat demo</Link>
+      </div>
 
-            {/* Rows (scroll). Align to bottom when content is short */}
-            <div className="divide-y divide-gray-200 flex flex-col justify-end h-full min-h-[200px] pb-0">
-              {sortedProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="grid items-end"
-                  style={{ gridTemplateColumns: '2fr 1fr 1fr 80px' }}
-                >
-                  <div className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 self-end">{product.name}</div>
-                  <div className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 self-end">${Number(product.price).toFixed(2)}</div>
-                  <div className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 self-end">{product?.inventory?.quantity ?? 0}</div>
-                  <div className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium self-end">
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProduct(product.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              
-            </div>
-
-            {/* Sticky footer bar (separate segment aligned to grid) */}
-            <div className="sticky bottom-[64px] bg-inherit z-50">
-              <div
-                className="grid gap-0 px-4 py-2 text-xs"
-                style={{ gridTemplateColumns: '2fr 1fr 1fr 80px' }}
-              >
-                {['name','price','quantity'].map((key) => (
-                  <div key={key} className="pr-4">
-                    {editingColumn === key ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        value={tempLabel}
-                        onChange={(e) => setTempLabel(e.target.value)}
-                        onBlur={() => {
-                          setColumnLabels(prev => ({ ...prev, [key]: tempLabel || prev[key] }));
-                          setEditingColumn(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            setColumnLabels(prev => ({ ...prev, [key]: tempLabel || prev[key] }));
-                            setEditingColumn(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingColumn(null);
-                          }
-                        }}
-                        className="border border-gray-300 rounded px-2 py-1 text-xs w-28"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => { setEditingColumn(key); setTempLabel(columnLabels[key]); }}
-                        className="text-gray-700 hover:text-gray-900 font-medium"
-                        title="Edit column label"
-                      >
-                        {columnLabels[key]}
-                      </button>
-                    )}
-                    {/* Sort control: single rotating caret */}
-                    <div className="mt-1 inline-flex align-middle">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (sortKey === key) {
-                            setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-                          } else {
-                            setSortKey(key);
-                            setSortDir('asc');
-                          }
-                        }}
-                        aria-label={`Toggle sort for ${key}`}
-                        className={`px-2 py-0.5 text-[10px] border border-gray-300 rounded select-none ${sortKey===key ? 'bg-gray-100' : 'bg-white'}`}
-                        title="Toggle sort"
-                      >
-                        <span className={`inline-block transform transition-transform ${sortKey===key && sortDir==='desc' ? 'rotate-180' : 'rotate-0'}`}>▲</span>
-                      </button>
+      {/* Main area: Outer TABLE with header (totals), single-cell middle (inner table), and footer (column names) */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 h-full">
+          <div className="h-full overflow-auto relative" style={{ paddingBottom: navHeight + 24 }}>
+            <table className="w-full h-full table-fixed">
+              <thead className="sticky top-0 z-30 bg-inherit border-b">
+                <tr ref={headerRowRef} className="text-xs text-gray-600">
+                  <td ref={nameHdrRef} className="px-2 py-2 font-semibold">Total Products: {totalProducts}</td>
+                  <td ref={priceHdrRef} className="px-2 py-2 font-semibold">Avg Price: ${avgPrice.toFixed(2)}</td>
+                  <td ref={qtyHdrRef} className="px-2 py-2">
+                    <span className="font-semibold">Total: ${totalPrice.toFixed(2)}</span>
+                  </td>
+                  <td ref={actionsHdrRef} className="px-2 py-2 text-right text-gray-500">
+                    <span className="sr-only">Actions</span>
+                  </td>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Single row/cell containing the inner table */}
+                <tr>
+                  <td colSpan={4} className="p-0 align-bottom">
+                    <div className="h-full min-h-[200px] flex flex-col justify-end">
+                      <table className="w-full">
+                        {/* Hidden header for structure if needed */}
+                        <thead className="sr-only" aria-hidden="true">
+                          <tr>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        {/* Sync widths to outer cells via colgroup */}
+                        <colgroup>
+                          {/* Using measured pixel widths string innerCols: split into 4 cols */}
+                          {innerCols.split(' ').map((w, idx) => (
+                            <col key={idx} style={{ width: w }} />
+                          ))}
+                        </colgroup>
+                        <tbody className="align-bottom">
+                          {sortedProducts.map((product) => (
+                            <tr key={product.id} className="border-t border-gray-200">
+                              <td className="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
+                              <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${Number(product.price).toFixed(2)}</td>
+                              <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">{product?.inventory?.quantity ?? 0}</td>
+                              <td className="px-2 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                <button
+                                  onClick={() => handleEditProduct(product)}
+                                  className="text-indigo-600 hover:text-indigo-900 mr-4"
+                                >
+                                  <PencilIcon className="h-5 w-5 inline" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {products.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="text-center py-12 text-gray-500">No products found</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-                  </div>
-                ))}
-                <div />
-              </div>
-            </div>
-            {products.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No products found</p>
-              </div>
-            )}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot className="sticky" style={{ bottom: navHeight }}>
+                <tr className="text-xs bg-inherit border-t">
+                  <th ref={tfootNameRef} className="px-2 py-2 text-left font-semibold">{columnLabels.name}</th>
+                  <th ref={tfootPriceRef} className="px-2 py-2 text-left font-semibold">{columnLabels.price}</th>
+                  <th ref={tfootQtyRef} className="px-2 py-2 text-left font-semibold">{columnLabels.quantity}</th>
+                  <th ref={tfootActionsRef} className="px-2 py-2 text-right font-semibold"><span className="sr-only">Actions</span></th>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
       </div>
 
       {/* Fixed bottom action bar (keeps Add Product always visible) */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-center gap-3">
+        <div className="mx-auto max-w-7xl px-1py-3 flex items-center justify-center gap-1">
           <button
             type="button"
             onClick={handleCreateProduct}
@@ -288,7 +306,7 @@ export default function Products() {
           <button
             type="button"
             onClick={() => setIsSalesOpen(true)}
-            className="flex items-center px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm"
+            className="flex items-center px-1py-2 rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm"
           >
             Monthly Sales
           </button>
@@ -322,7 +340,7 @@ export default function Products() {
             </div>
             <div className="space-y-3">
               {salesData.map((data) => (
-                <div key={data.month} className="flex items-center gap-3">
+                <div key={data.month} className="flex items-center gap-1">
                   <div className="w-8 text-sm text-gray-600 font-medium">
                     {data.month}
                   </div>

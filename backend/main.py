@@ -2,6 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
+import os
+# Load .env if available (optional dependency)
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+except Exception:
+    pass
 from database import create_db_and_tables
 from routers import clients, products, inventory, suppliers, services, employees, schedule, assets, attendance, documents
 
@@ -21,7 +28,12 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://*.onrender.com"],
+    allow_origins=[
+        origin.strip() for origin in os.getenv(
+            "ALLOWED_ORIGINS",
+            "http://localhost:5173,https://*.onrender.com"
+        ).split(",") if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,4 +57,5 @@ app.include_router(attendance.router, prefix="/api/v1", tags=["attendance"])
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

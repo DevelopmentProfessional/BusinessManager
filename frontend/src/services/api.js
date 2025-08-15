@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Sanitize base URL: trim whitespace and trailing slashes to avoid `%20` or double-slash issues
+const RAW_API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1');
+const API_BASE_URL = RAW_API_BASE_URL.trim().replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,

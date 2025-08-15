@@ -10,6 +10,7 @@ import Inventory from './pages/Inventory';
 import Assets from './pages/Assets';
 import Attendance from './pages/Attendance';
 import Documents from './pages/Documents';
+import TableFormat from './pages/TableFormat';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/assets" element={<Assets />} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/documents" element={<Documents />} />
+          <Route path="/tableformat" element={<TableFormat />} />
         </Routes>
       </Layout>
     </Router>

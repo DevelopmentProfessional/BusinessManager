@@ -39,7 +39,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile-first layout (used for all widths) */}
-      <div>
+       
         {/* Expanded menu overlay */}
         {expandedMenuOpen && (
           <div className="fixed inset-0 z-50">
@@ -72,12 +72,8 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        {/* Main content */}
-        <main className="pb-6">
-          <div className="px-4 py-6">
-            {children}
-          </div>
-        </main>
+        {/* Main content */}  
+            {children} 
 
         {/* Expand/collapse toggle - Bottom-right */}
         <button
@@ -86,12 +82,12 @@ export default function Layout({ children }) {
             expandedMenuOpen
               ? 'bg-blue-600 text-white'
               : 'bg-white text-gray-600 border border-gray-200',
-            'fixed bottom-24 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl'
+            'fixed bottom-10 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl'
           )}
         >
           <EllipsisHorizontalIcon className="h-6 w-6" />
         </button>
-      </div>
+      
 
       {/* No desktop layout; mobile-only application */}
     </div>

@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    // Allow override via env var VITE_PORT; default to 5173
+    port: Number(process.env.VITE_PORT || 5173),
     host: true
   },
   build: {
