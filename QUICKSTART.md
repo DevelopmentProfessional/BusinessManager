@@ -5,18 +5,21 @@
 You can now run the entire Business Manager application from the main directory using any of these methods:
 
 ### Option 1: Simple Batch File (Recommended for Windows)
+
 ```bash
 # Double-click or run from command line
 start.bat
 ```
 
 ### Option 2: PowerShell Script
+
 ```powershell
 # Run from PowerShell
 .\start.ps1
 ```
 
 ### Option 3: NPM Scripts
+
 ```bash
 # Install concurrently first
 npm install
@@ -47,16 +50,16 @@ npm run dev:frontend   # Frontend only
 
 ## Access Your Application
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
+- **Frontend**: <http://localhost:5173>
+- **Backend API**: <http://localhost:8000>
+- **API Docs**: <http://localhost:8000/docs>
+- **Health Check**: <http://localhost:8000/health>
 
 ## Features Available
 
 ✅ **Dashboard** - Overview with metrics and alerts
 ✅ **Clients** - Full CRUD operations (Create, Read, Update, Delete)
-✅ **Products** - Product catalog management
+✅ **Items** - Item catalog management
 ✅ **Navigation** - All entity pages accessible
 🔄 **Other Entities** - Ready for expansion (Services, Employees, etc.)
 
@@ -72,6 +75,6 @@ If you encounter issues:
 ## Next Steps
 
 1. Run the application using any method above
-2. Open http://localhost:5173 in your browser
-3. Start adding clients and products
-4. Explore the API documentation at http://localhost:8000/docs
+2. Open <http://localhost:5173> in your browser
+3. Start adding clients and items
+4. Explore the API documentation at <http://localhost:8000/docs>

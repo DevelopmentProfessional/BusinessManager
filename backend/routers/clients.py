@@ -3,17 +3,17 @@ from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
 from database import get_session
-from models import Client, ClientCreate, ClientUpdate
+from models import Client, ClientCreate, ClientUpdate, ClientRead
 
 router = APIRouter()
 
-@router.get("/clients", response_model=List[Client])
+@router.get("/clients", response_model=List[ClientRead])
 async def get_clients(session: Session = Depends(get_session)):
     """Get all clients"""
     clients = session.exec(select(Client)).all()
     return clients
 
-@router.get("/clients/{client_id}", response_model=Client)
+@router.get("/clients/{client_id}", response_model=ClientRead)
 async def get_client(client_id: UUID, session: Session = Depends(get_session)):
     """Get a specific client by ID"""
     client = session.get(Client, client_id)
@@ -21,7 +21,7 @@ async def get_client(client_id: UUID, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Client not found")
     return client
 
-@router.post("/clients", response_model=Client)
+@router.post("/clients", response_model=ClientRead)
 async def create_client(client_data: ClientCreate, session: Session = Depends(get_session)):
     """Create a new client"""
     client = Client(**client_data.dict())
@@ -30,7 +30,7 @@ async def create_client(client_data: ClientCreate, session: Session = Depends(ge
     session.refresh(client)
     return client
 
-@router.put("/clients/{client_id}", response_model=Client)
+@router.put("/clients/{client_id}", response_model=ClientRead)
 async def update_client(
     client_id: UUID, 
     client_data: ClientUpdate, 

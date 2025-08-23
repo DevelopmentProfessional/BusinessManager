@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import ServiceForm from '../components/ServiceForm';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Services() {
   const { 
@@ -15,10 +16,23 @@ export default function Services() {
   } = useStore();
 
   const [editingService, setEditingService] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadServices();
   }, []);
+
+  // Auto-open create modal when navigated with ?new=1 and then clean the URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('new') === '1') {
+      setEditingService(null);
+      openModal('service-form');
+      params.delete('new');
+      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+    }
+  }, [location.search]);
 
   const loadServices = async () => {
     setLoading(true);

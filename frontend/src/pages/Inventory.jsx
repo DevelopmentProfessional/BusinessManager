@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ExclamationTriangleIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
-import { inventoryAPI, productsAPI } from '../services/api';
+import { inventoryAPI, itemsAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MobileTable from '../components/MobileTable';
+import BarcodeScanner from '../components/BarcodeScanner';
+import ItemForm from '../components/ItemForm';
 
 function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
   const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
@@ -11,7 +13,7 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(inventoryItem.product_id, { 
+    onSubmit(inventoryItem.item_id, { 
       quantity: parseInt(quantity),
       min_stock_level: parseInt(minStockLevel)
     });
@@ -69,12 +71,13 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
 
 export default function Inventory() {
   const { 
-    inventory, setInventory, products, setProducts,
+    inventory, setInventory, items, setItems,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, modalContent, openModal, closeModal
   } = useStore();
 
   const [editingInventory, setEditingInventory] = useState(null);
+  const [scannedCode, setScannedCode] = useState('');
 
   useEffect(() => {
     loadInventoryData();
@@ -83,13 +86,13 @@ export default function Inventory() {
   const loadInventoryData = async () => {
     setLoading(true);
     try {
-      const [inventoryRes, productsRes] = await Promise.all([
+      const [inventoryRes, itemsRes] = await Promise.all([
         inventoryAPI.getAll(),
-        productsAPI.getAll()
+        itemsAPI.getAll()
       ]);
 
       setInventory(inventoryRes.data);
-      setProducts(productsRes.data);
+      setItems(itemsRes.data);
       clearError();
     } catch (err) {
       setError('Failed to load inventory data');
@@ -104,27 +107,68 @@ export default function Inventory() {
     openModal('inventory-form');
   };
 
-  const handleSubmitUpdate = async (productId, updateData) => {
+  const handleCreateItem = () => {
+    setScannedCode('');
+    openModal('item-form');
+  };
+
+  const handleOpenScanner = () => {
+    setScannedCode('');
+    openModal('barcode-scan');
+  };
+
+  const handleDetectedBarcode = (code) => {
+    const scanned = String(code || '').trim();
+    setScannedCode(scanned);
+    // If item already exists, show notification instead of opening the modal
+    const exists = items.some((p) => (p?.sku || '').trim() === scanned && scanned.length > 0);
+    if (exists) {
+      closeModal();
+      setError(`Item with SKU "${scanned}" already exists in the database.`);
+      return;
+    }
+    // Otherwise open item form prefilled with scanned code
+    clearError();
+    openModal('item-form');
+  };
+
+  const handleSubmitUpdate = async (itemId, updateData) => {
     try {
-      await inventoryAPI.update(productId, updateData.quantity);
+      await inventoryAPI.update(itemId, updateData.quantity, { min_stock_level: updateData.min_stock_level });
       // Reload inventory to get updated data
       loadInventoryData();
       closeModal();
       clearError();
     } catch (err) {
-      setError('Failed to update inventory');
-      console.error(err);
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to update inventory';
+      setError(String(detail));
+      console.error('Inventory update error:', err?.response || err);
     }
   };
 
-  const getProductName = (productId) => {
-    const product = products.find(p => p.id === productId);
-    return product ? product.name : 'Unknown Product';
+  const handleSubmitNewItem = async (itemData, { initialQuantity }) => {
+    try {
+      const resp = await itemsAPI.create(itemData);
+      // Upsert initial inventory quantity
+      await inventoryAPI.update(resp.data.id, Number.isFinite(initialQuantity) ? initialQuantity : 0);
+      await loadInventoryData();
+      closeModal();
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to save item';
+      setError(String(detail));
+      console.error('Item create error:', err?.response || err);
+    }
   };
 
-  const getProductSku = (productId) => {
-    const product = products.find(p => p.id === productId);
-    return product ? product.sku : 'N/A';
+  const getItemName = (itemId) => {
+    const item = items.find(p => p.id === itemId);
+    return item ? item.name : 'Unknown Item';
+  };
+
+  const getItemSku = (itemId) => {
+    const item = items.find(p => p.id === itemId);
+    return item ? item.sku : 'N/A';
   };
 
   const isLowStock = (item) => item.quantity <= item.min_stock_level;
@@ -142,6 +186,24 @@ export default function Inventory() {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+        </div>
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
+          <button
+            type="button"
+            onClick={handleCreateItem}
+            className="btn-primary inline-flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add Item
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenScanner}
+            className="btn-secondary inline-flex items-center"
+          >
+            <CameraIcon className="h-5 w-5 mr-2" />
+            Scan
+          </button>
         </div>
       </div>
 
@@ -168,8 +230,8 @@ export default function Inventory() {
         <MobileTable
           data={inventory}
           columns={[
-            { key: 'product', title: 'Product', render: (_, item) => getProductName(item.product_id) },
-            { key: 'sku', title: 'SKU', render: (_, item) => getProductSku(item.product_id) },
+            { key: 'item', title: 'Item', render: (_, item) => getItemName(item.item_id) },
+            { key: 'sku', title: 'SKU', render: (_, item) => getItemSku(item.item_id) },
             { key: 'quantity', title: 'Stock' },
             { key: 'min_stock_level', title: 'Min' },
             { key: 'status', title: 'Status', render: (_, item) => (isLowStock(item) ? 'Low' : 'OK') },
@@ -190,7 +252,7 @@ export default function Inventory() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Product
+                      Item
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       SKU
@@ -216,10 +278,10 @@ export default function Inventory() {
                   {inventory.map((item) => (
                     <tr key={item.id} className={isLowStock(item) ? 'bg-yellow-50' : ''}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {getProductName(item.product_id)}
+                        {getItemName(item.item_id)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getProductSku(item.product_id)}
+                        {getItemSku(item.item_id)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {item.quantity}
@@ -254,7 +316,7 @@ export default function Inventory() {
               
               {inventory.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">No inventory items found. Add products to start tracking inventory.</p>
+                  <p className="text-gray-500">No inventory items found. Add items to start tracking inventory.</p>
                 </div>
               )}
             </div>
@@ -262,12 +324,35 @@ export default function Inventory() {
         </div>
       </div>
 
-      {/* Modal for Inventory Update Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {isModalOpen && editingInventory && (
+      {/* Modal: Inventory Update */}
+      <Modal isOpen={isModalOpen && modalContent === 'inventory-form'} onClose={closeModal}>
+        {isModalOpen && modalContent === 'inventory-form' && editingInventory && (
           <InventoryUpdateForm
             inventoryItem={editingInventory}
             onSubmit={handleSubmitUpdate}
+            onCancel={closeModal}
+          />
+        )}
+      </Modal>
+
+      {/* Modal: Barcode Scanner */}
+      <Modal isOpen={isModalOpen && modalContent === 'barcode-scan'} onClose={closeModal} title="Scan Barcode">
+        {isModalOpen && modalContent === 'barcode-scan' && (
+          <BarcodeScanner
+            onDetected={(code) => handleDetectedBarcode(code)}
+            onCancel={closeModal}
+          />
+        )}
+      </Modal>
+
+      {/* Modal: Add Item (prefilled with scanned code) */}
+      <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
+        {isModalOpen && modalContent === 'item-form' && (
+          <ItemForm
+            initialSku={scannedCode}
+            showInitialQuantity
+            onSubmitWithExtras={handleSubmitNewItem}
+            onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
             onCancel={closeModal}
           />
         )}

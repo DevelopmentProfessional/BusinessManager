@@ -1,30 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
+import { useNavigate } from 'react-router-dom';
+import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
-  const { clients, services, employees } = useStore();
+  const { clients, services, employees, closeModal } = useStore();
+  const [timeError, setTimeError] = useState('');
+  const navigate = useNavigate();
   
-  const [formData, setFormData] = useState({
-    client_id: '',
-    service_id: '',
-    employee_id: '',
-    appointment_date: '',
-    appointment_time: '',
-    notes: ''
-  });
-
-  useEffect(() => {
-    if (appointment) {
-      const appointmentDate = new Date(appointment.appointment_date);
-      setFormData({
+  // Extract local YYYY-MM-DD and HH:mm from a Date or ISO string reliably (no timezone shifts)
+  const extractLocalParts = (value) => {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return { date: '', time: '' };
+    const pad = (n) => String(n).padStart(2, '0');
+    return {
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    };
+  };
+  
+  const getInitialFormData = () => {
+    if (appointment && appointment.appointment_date) {
+      const { date, time } = extractLocalParts(appointment.appointment_date);
+      return {
         client_id: appointment.client_id || '',
         service_id: appointment.service_id || '',
         employee_id: appointment.employee_id || '',
-        appointment_date: appointmentDate.toISOString().split('T')[0],
-        appointment_time: appointmentDate.toTimeString().slice(0, 5),
+        appointment_date: date,
+        appointment_time: time,
         notes: appointment.notes || ''
-      });
+      };
     }
+    return {
+      client_id: '',
+      service_id: '',
+      employee_id: '',
+      appointment_date: '',
+      appointment_time: '',
+      notes: ''
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
+
+  useEffect(() => {
+    setFormData(getInitialFormData());
   }, [appointment]);
 
   const handleChange = (e) => {
@@ -37,13 +57,31 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const appointmentDateTime = new Date(`${formData.appointment_date}T${formData.appointment_time}`);
-    
+
+    // Use time from input; if empty (user didn't touch), fallback to selected slot's time
+    const timeText = formData.appointment_time || (appointment?.appointment_date ? extractLocalParts(appointment.appointment_date).time : '');
+    const dateText = formData.appointment_date || (appointment?.appointment_date ? extractLocalParts(appointment.appointment_date).date : '');
+
+    if (!dateText || !timeText) {
+      setTimeError('Please select a valid date and time');
+      return;
+    }
+
+    const [hour, minute] = timeText.split(':').map(Number);
+    if (hour < 6 || hour >= 22) {
+      setTimeError('Can only schedule between 6AM and 10PM');
+      return;
+    }
+    setTimeError('');
+
+    // Submit a naive local ISO string (no timezone) to avoid shifts server-side
+    const appointmentDateStr = `${dateText}T${timeText}:00`;
+
     onSubmit({
       client_id: formData.client_id,
       service_id: formData.service_id,
       employee_id: formData.employee_id,
-      appointment_date: appointmentDateTime.toISOString(),
+      appointment_date: appointmentDateStr,
       notes: formData.notes
     });
   };
@@ -56,17 +94,14 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         </h3>
       </div>
 
-      <div>
-        <label htmlFor="client_id" className="block text-sm font-medium text-gray-700">
-          Client *
-        </label>
+      <div className="flex items-center gap-2"> 
         <select
           id="client_id"
           name="client_id"
           required
           value={formData.client_id}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="input-field mt-1 flex-1"
         >
           <option value="">Select a client</option>
           {clients.map((client) => (
@@ -75,19 +110,25 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => { closeModal(); navigate('/clients?new=1'); }}
+          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+          title="Add new client"
+          aria-label="Add new client"
+        >
+          <PlusIcon className="h-5 w-5" />
+        </button>
       </div>
 
-      <div>
-        <label htmlFor="service_id" className="block text-sm font-medium text-gray-700">
-          Service *
-        </label>
+      <div className="flex items-center gap-2"> 
         <select
           id="service_id"
           name="service_id"
           required
           value={formData.service_id}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="input-field mt-1 flex-1"
         >
           <option value="">Select a service</option>
           {services.map((service) => (
@@ -96,19 +137,25 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => { closeModal(); navigate('/services?new=1'); }}
+          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+          title="Add new service"
+          aria-label="Add new service"
+        >
+          <PlusIcon className="h-5 w-5" />
+        </button>
       </div>
 
-      <div>
-        <label htmlFor="employee_id" className="block text-sm font-medium text-gray-700">
-          Employee *
-        </label>
+      <div className="flex items-center gap-2"> 
         <select
           id="employee_id"
           name="employee_id"
           required
           value={formData.employee_id}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="input-field mt-1 flex-1"
         >
           <option value="">Select an employee</option>
           {employees.map((employee) => (
@@ -117,13 +164,19 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => { closeModal(); navigate('/employees?new=1'); }}
+          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+          title="Add new employee"
+          aria-label="Add new employee"
+        >
+          <PlusIcon className="h-5 w-5" />
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700">
-            Date *
-          </label>
+        <div> 
           <input
             type="date"
             id="appointment_date"
@@ -135,10 +188,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           />
         </div>
 
-        <div>
-          <label htmlFor="appointment_time" className="block text-sm font-medium text-gray-700">
-            Time *
-          </label>
+        <div> 
           <input
             type="time"
             id="appointment_time"
@@ -146,15 +196,16 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             required
             value={formData.appointment_time}
             onChange={handleChange}
-            className="input-field mt-1"
+            min="06:00"
+            max="22:00"
+            step="300"
+            className={`input-field mt-1 ${timeError ? 'border-red-500' : ''}`}
           />
+          {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
         </div>
       </div>
 
-      <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-          Notes
-        </label>
+      <div> 
         <textarea
           id="notes"
           name="notes"

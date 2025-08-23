@@ -1,6 +1,33 @@
 import { create } from 'zustand';
 
 const useStore = create((set, get) => ({
+  // Authentication state
+  user: null,
+  token: null,
+  permissions: [],
+  setUser: (user) => set({ user }),
+  setToken: (token) => set({ token }),
+  setPermissions: (permissions) => set({ permissions }),
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('permissions');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('permissions');
+    set({ user: null, token: null, permissions: [] });
+  },
+  isAuthenticated: () => {
+    const state = get();
+    return !!(state.token || localStorage.getItem('token') || sessionStorage.getItem('token'));
+  },
+  hasPermission: (page, permission) => {
+    const state = get();
+    const userPermissions = state.permissions.length > 0 ? state.permissions : 
+      JSON.parse(localStorage.getItem('permissions') || sessionStorage.getItem('permissions') || '[]');
+    return userPermissions.includes(`${page}:${permission}`) || userPermissions.includes(`${page}:admin`);
+  },
+
   // Clients state
   clients: [],
   setClients: (clients) => set({ clients }),
@@ -14,12 +41,12 @@ const useStore = create((set, get) => ({
     clients: state.clients.filter(client => client.id !== id)
   })),
 
-  // Products state
-  products: [],
-  setProducts: (products) => set({ products }),
-  addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
-  removeProduct: (id) => set((state) => ({
-    products: state.products.filter(product => product.id !== id)
+  // Items state
+  items: [],
+  setItems: (items) => set({ items }),
+  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+  removeItem: (id) => set((state) => ({
+    items: state.items.filter(item => item.id !== id)
   })),
 
   // Services state
@@ -63,16 +90,6 @@ const useStore = create((set, get) => ({
   setInventory: (inventory) => set({ inventory }),
   lowStockItems: [],
   setLowStockItems: (items) => set({ lowStockItems: items }),
-
-  // Assets state
-  assets: [],
-  setAssets: (assets) => set({ assets }),
-  addAsset: (asset) => set((state) => ({ assets: [...state.assets, asset] })),
-  updateAsset: (id, updatedAsset) => set((state) => ({
-    assets: state.assets.map(asset => 
-      asset.id === id ? { ...asset, ...updatedAsset } : asset
-    )
-  })),
 
   // Attendance state
   attendanceRecords: [],

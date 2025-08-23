@@ -3,17 +3,17 @@ from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
 from database import get_session
-from models import Service, ServiceCreate
+from models import Service, ServiceCreate, ServiceRead
 
 router = APIRouter()
 
-@router.get("/services", response_model=List[Service])
+@router.get("/services", response_model=List[ServiceRead])
 async def get_services(session: Session = Depends(get_session)):
     """Get all services"""
     services = session.exec(select(Service)).all()
     return services
 
-@router.get("/services/{service_id}", response_model=Service)
+@router.get("/services/{service_id}", response_model=ServiceRead)
 async def get_service(service_id: UUID, session: Session = Depends(get_session)):
     """Get a specific service by ID"""
     service = session.get(Service, service_id)
@@ -21,7 +21,7 @@ async def get_service(service_id: UUID, session: Session = Depends(get_session))
         raise HTTPException(status_code=404, detail="Service not found")
     return service
 
-@router.post("/services", response_model=Service)
+@router.post("/services", response_model=ServiceRead)
 async def create_service(service_data: ServiceCreate, session: Session = Depends(get_session)):
     """Create a new service"""
     service = Service(**service_data.dict())
@@ -30,7 +30,7 @@ async def create_service(service_data: ServiceCreate, session: Session = Depends
     session.refresh(service)
     return service
 
-@router.put("/services/{service_id}", response_model=Service)
+@router.put("/services/{service_id}", response_model=ServiceRead)
 async def update_service(
     service_id: UUID, 
     service_data: ServiceCreate, 

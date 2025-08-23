@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import ClientForm from '../components/ClientForm';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Clients() {
   const { 
@@ -17,10 +18,23 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadClients();
   }, []);
+
+  // Auto-open create modal when navigated with ?new=1 and then clean the URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('new') === '1') {
+      setEditingClient(null);
+      openModal('client-form');
+      params.delete('new');
+      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+    }
+  }, [location.search]);
 
   const loadClients = async () => {
     setLoading(true);
@@ -108,7 +122,7 @@ export default function Clients() {
       // Mock transaction data - replace with actual API call
       setTransactions([
         { id: 1, date: '2024-01-15', description: 'Service Payment', amount: 150, status: 'Completed' },
-        { id: 2, date: '2024-01-10', description: 'Product Purchase', amount: 75, status: 'Pending' },
+        { id: 2, date: '2024-01-10', description: 'Item Purchase', amount: 75, status: 'Pending' },
         { id: 3, date: '2024-01-05', description: 'Consultation Fee', amount: 100, status: 'Completed' },
       ]);
     }

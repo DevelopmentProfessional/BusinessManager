@@ -1,31 +1,31 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   UserGroupIcon,
-  CubeIcon,
   WrenchScrewdriverIcon,
   UsersIcon,
   CalendarDaysIcon,
   ArchiveBoxIcon,
-  ComputerDesktopIcon,
   ClockIcon,
   DocumentIcon,
-  Bars3Icon,
-  XMarkIcon,
   EllipsisHorizontalIcon,
+  UserIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
+import useStore from '../store/useStore';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 const allNavigation = [
-  { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon },
-  { name: 'Inventory', href: '/inventory', icon: ArchiveBoxIcon },
-  { name: 'Products', href: '/products', icon: CubeIcon },
-  { name: 'Clients', href: '/clients', icon: UserGroupIcon },
-  { name: 'Documents', href: '/documents', icon: DocumentIcon },
-  { name: 'Services', href: '/services', icon: WrenchScrewdriverIcon },
-  { name: 'Employees', href: '/employees', icon: UsersIcon },
-  { name: 'Assets', href: '/assets', icon: ComputerDesktopIcon },
-  { name: 'Attendance', href: '/attendance', icon: ClockIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: UserIcon },
+  { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
+  { name: 'Inventory', href: '/inventory', icon: ArchiveBoxIcon, permission: 'inventory:read' },
+  { name: 'Clients', href: '/clients', icon: UserGroupIcon, permission: 'clients:read' },
+  { name: 'Documents', href: '/documents', icon: DocumentIcon, permission: 'documents:read' },
+  { name: 'Services', href: '/services', icon: WrenchScrewdriverIcon, permission: 'services:read' },
+  { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
+  { name: 'Attendance', href: '/attendance', icon: ClockIcon, permission: 'attendance:read' },
+  { name: 'Admin', href: '/admin', icon: Cog6ToothIcon, permission: 'admin:admin' },
 ];
 
 function classNames(...classes) {
@@ -35,9 +35,55 @@ function classNames(...classes) {
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, hasPermission } = useStore();
+
+  const handleLogout = () => {
+    logout();
+    // TEMPORARY: Redirect to dashboard instead of login during development
+    navigate('/dashboard');
+  };
+
+  // Filter navigation items based on user permissions
+  const filteredNavigation = allNavigation.filter(item => {
+    if (!item.permission) return true; // Dashboard and Profile don't need specific permissions
+    return hasPermission(...item.permission.split(':'));
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Development Banner */}
+      <div className="bg-yellow-400 border-b border-yellow-500 px-4 py-2">
+        <div className="flex items-center justify-center text-sm font-medium text-yellow-900">
+          🔓 DEVELOPMENT MODE: Login bypassed - Using fake admin session
+        </div>
+      </div>
+      
+      {/* Header with user info */}
+      <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+        <div className="flex justify-between items-center">
+          <h1 className="text-lg font-semibold text-gray-900">Business Manager</h1>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-600">
+              Welcome, {user?.first_name || 'User'}
+            </div>
+            <Link
+              to="/profile"
+              className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+            >
+              Profile
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="text-red-600 hover:text-red-900 text-sm font-medium flex items-center"
+            >
+              <ArrowRightOnRectangleIcon className="h-4 w-4 mr-1" />
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Mobile-first layout (used for all widths) */}
        
         {/* Expanded menu overlay */}
@@ -51,7 +97,7 @@ export default function Layout({ children }) {
             {/* Expanded menu anchored to bottom-right */}
             <div className="fixed bottom-20 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 min-w-48">
               <div className="space-y-2">
-                {allNavigation.map((item) => (
+                {filteredNavigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}

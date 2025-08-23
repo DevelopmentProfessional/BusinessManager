@@ -3,17 +3,17 @@ from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
 from database import get_session
-from models import Employee, EmployeeCreate
+from models import Employee, EmployeeCreate, EmployeeRead
 
 router = APIRouter()
 
-@router.get("/employees", response_model=List[Employee])
+@router.get("/employees", response_model=List[EmployeeRead])
 async def get_employees(session: Session = Depends(get_session)):
     """Get all employees"""
     employees = session.exec(select(Employee)).all()
     return employees
 
-@router.get("/employees/{employee_id}", response_model=Employee)
+@router.get("/employees/{employee_id}", response_model=EmployeeRead)
 async def get_employee(employee_id: UUID, session: Session = Depends(get_session)):
     """Get a specific employee by ID"""
     employee = session.get(Employee, employee_id)
@@ -21,7 +21,7 @@ async def get_employee(employee_id: UUID, session: Session = Depends(get_session
         raise HTTPException(status_code=404, detail="Employee not found")
     return employee
 
-@router.post("/employees", response_model=Employee)
+@router.post("/employees", response_model=EmployeeRead)
 async def create_employee(employee_data: EmployeeCreate, session: Session = Depends(get_session)):
     """Create a new employee"""
     employee = Employee(**employee_data.dict())
@@ -30,7 +30,7 @@ async def create_employee(employee_data: EmployeeCreate, session: Session = Depe
     session.refresh(employee)
     return employee
 
-@router.put("/employees/{employee_id}", response_model=Employee)
+@router.put("/employees/{employee_id}", response_model=EmployeeRead)
 async def update_employee(
     employee_id: UUID, 
     employee_data: dict, 

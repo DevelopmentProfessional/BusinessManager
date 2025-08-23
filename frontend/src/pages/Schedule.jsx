@@ -1,10 +1,66 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { PlusIcon, PencilIcon, CheckIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import styled from 'styled-components';
+import format from 'date-fns/format';
+import parse from 'date-fns/parse';
+import startOfWeek from 'date-fns/startOfWeek';
+import getDay from 'date-fns/getDay';
+import enUS from 'date-fns/locale/en-US';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
 import useStore from '../store/useStore';
 import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ScheduleForm from '../components/ScheduleForm';
-import MobileAddButton from '../components/MobileAddButton';
+import SixDayWeekView from '../components/SixDayWeekView';
+
+const locales = {
+  'en-US': enUS,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }), // Start week on Monday
+  getDay,
+  locales,
+});
+
+const views = {
+  month: true,
+  week: SixDayWeekView,
+  day: true,
+};
+
+const CustomCalendarWrapper = styled.div`
+  .rbc-month-view {
+    .rbc-row-content {
+      .rbc-row {
+        .rbc-date-cell:last-child {
+          display: none; // Hide Sunday column cells
+        }
+      }
+      // Align event segments to 6 visible columns instead of original 7
+      // We scale the segments container from 7 to 6 columns and clip the overflow.
+      overflow: hidden;
+      .rbc-row {
+        transform: scaleX(1.1666667); /* 7/6 */
+        transform-origin: left;
+      }
+    }
+    .rbc-header:last-child {
+      display: none; // Hide Sunday header
+    }
+    // Also hide Sunday background cells so grid aligns with headers
+    .rbc-row-bg {
+      .rbc-day-bg:last-child {
+        display: none;
+      }
+    }
+  }
+`;
 
 export default function Schedule() {
   const { 
@@ -15,16 +71,8 @@ export default function Schedule() {
   } = useStore();
 
   const [editingAppointment, setEditingAppointment] = useState(null);
-  const [weekStart, setWeekStart] = useState(() => {
-    const d = new Date();
-    // Start week on Monday
-    const day = d.getDay(); // 0 = Sun, 1 = Mon ...
-    const diff = (day === 0 ? -6 : 1) - day; // move to Monday
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diff);
-    monday.setHours(0,0,0,0);
-    return monday;
-  });
+  const [currentView, setCurrentView] = useState('month');
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     loadScheduleData();
@@ -53,13 +101,18 @@ export default function Schedule() {
     }
   };
 
+  const handleSelectSlot = useCallback(({ start, end }) => {
+    setEditingAppointment({ appointment_date: start, end_time: end });
+    openModal('appointment-form');
+  }, [openModal]);
+
   const handleCreateAppointment = () => {
-    setEditingAppointment(null);
+    setEditingAppointment(null); // For the floating action button
     openModal('appointment-form');
   };
 
-  const handleEditAppointment = (appointment) => {
-    setEditingAppointment(appointment);
+  const handleEditAppointment = (event) => {
+    setEditingAppointment(event.resource);
     openModal('appointment-form');
   };
 
@@ -76,7 +129,7 @@ export default function Schedule() {
 
   const handleSubmitAppointment = async (appointmentData) => {
     try {
-      if (editingAppointment) {
+      if (editingAppointment && editingAppointment.id) {
         const response = await scheduleAPI.update(editingAppointment.id, appointmentData);
         updateAppointment(editingAppointment.id, response.data);
       } else {
@@ -101,216 +154,231 @@ export default function Schedule() {
     return service ? service.name : 'Unknown Service';
   };
 
-  const getEmployeeName = (employeeId) => {
-    const employee = employees.find(e => e.id === employeeId);
-    return employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown Employee';
-  };
-
-  const daysOfWeek = useMemo(() => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      days.push(d);
-    }
-    return days;
-  }, [weekStart]);
-
-  const appointmentsByDay = useMemo(() => {
-    const map = new Map();
-    daysOfWeek.forEach(d => map.set(d.toDateString(), []));
-    appointments.forEach(a => {
-      const ad = new Date(a.appointment_date);
-      const key = new Date(ad.getFullYear(), ad.getMonth(), ad.getDate()).toDateString();
-      if (map.has(key)) {
-        map.get(key).push(a);
+  // Robustly parse server values to local Date objects (handles 'YYYY-MM-DDTHH:mm:ss', 'YYYY-MM-DD HH:mm:ss', Date)
+  const parseToLocalDate = (value) => {
+    try {
+      if (value instanceof Date) {
+        return new Date(
+          value.getFullYear(), value.getMonth(), value.getDate(),
+          value.getHours(), value.getMinutes(), value.getSeconds() || 0
+        );
       }
-    });
-    // sort each day's appointments by time
-    for (const key of map.keys()) {
-      map.get(key).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+      if (typeof value === 'string') {
+        const s = value.replace(' ', 'T');
+        const [datePart, timePartRaw] = s.split('T');
+        const [y, m, d] = (datePart || '').split('-').map(Number);
+        const timePart = timePartRaw || '00:00:00';
+        const [hh, mm, ss] = timePart.split(':');
+        return new Date(
+          y || 1970, (m || 1) - 1, d || 1,
+          parseInt(hh || '0', 10), parseInt(mm || '0', 10), parseInt(ss || '0', 10)
+        );
+      }
+      return new Date(value);
+    } catch (e) {
+      console.error('Failed to parse date', value, e);
+      return new Date();
     }
-    return map;
-  }, [appointments, daysOfWeek]);
+  };
 
-  const goPrevWeek = () => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() - 7);
-    setWeekStart(d);
-  };
-  const goNextWeek = () => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + 7);
-    setWeekStart(d);
-  };
-  const goThisWeek = () => {
-    const d = new Date();
-    const day = d.getDay();
-    const diff = (day === 0 ? -6 : 1) - day;
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diff);
-    monday.setHours(0,0,0,0);
-    setWeekStart(monday);
-  };
+  const events = useMemo(() => {
+    return appointments.map(app => {
+      const start = parseToLocalDate(app.appointment_date);
+      // If end_time is not provided, default to one hour after start
+      const end = app.end_time ? parseToLocalDate(app.end_time) : new Date(start.getTime() + 60 * 60 * 1000);
+      
+      return {
+        title: `${getClientName(app.client_id)} - ${getServiceName(app.service_id)}`,
+        start,
+        end,
+        resource: app, // a back-reference to the original appointment object
+      };
+    });
+  }, [appointments, clients, services]);
+
+  // Drag-and-drop and resize handlers to update only time fields and retain other information
+  const DragAndDropCalendar = useMemo(() => withDragAndDrop(Calendar), []);
+
+  const handleEventDrop = useCallback(async ({ event, start, end, isAllDay }) => {
+    const original = event.resource;
+    if (!original || !original.id) return;
+    try {
+      const payload = {
+        // Keep everything else as-is, only update the time fields
+        appointment_date: format(start, 'yyyy-MM-dd HH:mm:ss'),
+        end_time: format(end, 'yyyy-MM-dd HH:mm:ss'),
+      };
+      const response = await scheduleAPI.update(original.id, payload);
+      updateAppointment(original.id, response.data);
+      clearError();
+    } catch (err) {
+      setError('Failed to update appointment time');
+      console.error(err);
+    }
+  }, [updateAppointment, clearError, setError]);
+
+  const handleEventResize = useCallback(async ({ event, start, end }) => {
+    const original = event.resource;
+    if (!original || !original.id) return;
+    try {
+      const payload = {
+        appointment_date: format(start, 'yyyy-MM-dd HH:mm:ss'),
+        end_time: format(end, 'yyyy-MM-dd HH:mm:ss'),
+      };
+      const response = await scheduleAPI.update(original.id, payload);
+      updateAppointment(original.id, response.data);
+      clearError();
+    } catch (err) {
+      setError('Failed to resize appointment');
+      console.error(err);
+    }
+  }, [updateAppointment, clearError, setError]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <CustomCalendarWrapper className="p-4 flex flex-col h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      </CustomCalendarWrapper>
     );
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button 
-            type="button" 
-            onClick={handleCreateAppointment}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Book Appointment
-          </button>
-        </div>
-      </div>
-
+    <CustomCalendarWrapper className="h-[calc(100vh-64px)] flex flex-col">
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 py-3 rounded">
           {error}
         </div>
       )}
 
-      {/* Calendar Header */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <button onClick={goPrevWeek} className="btn-secondary p-2 flex items-center">
-            <ChevronLeftIcon className="h-5 w-5" />
-          </button>
-          <button onClick={goThisWeek} className="btn-secondary px-3 py-2">This week</button>
-          <button onClick={goNextWeek} className="btn-secondary p-2 flex items-center">
-            <ChevronRightIcon className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="text-sm text-gray-600">
-          {daysOfWeek[0].toLocaleDateString()} - {daysOfWeek[6].toLocaleDateString()}
-        </div>
-      </div>
-
-      {/* Weekly calendar grid */}
-      <div className="mt-4">
-        {/* Desktop: 7 columns */}
-        <div className="hidden md:grid grid-cols-7 gap-4">
-          {daysOfWeek.map((day) => (
-            <div key={day.toDateString()} className="bg-white rounded-lg border border-gray-200 p-3 min-h-[280px] flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium text-gray-700">
-                  {day.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                </div>
-              </div>
-              <div className="space-y-2 overflow-auto">
-                {(appointmentsByDay.get(new Date(day.getFullYear(), day.getMonth(), day.getDate()).toDateString()) || []).map((a) => (
-                  <div key={a.id} className="border rounded-lg p-2 hover:shadow-sm">
-                    <div className="text-xs text-gray-500">
-                      {new Date(a.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <div className="text-sm font-medium text-gray-900 truncate">{getClientName(a.client_id)}</div>
-                    <div className="text-xs text-gray-500 truncate">{getServiceName(a.service_id)}</div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className={`px-2 py-0.5 text-[10px] rounded-full ${
-                        a.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : a.status === 'cancelled'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>{a.status}</span>
-                      <div className="space-x-2">
-                        <button onClick={() => handleEditAppointment(a)} className="text-indigo-600 hover:text-indigo-900" title="Edit">
-                          <PencilIcon className="h-4 w-4 inline" />
-                        </button>
-                        {a.status === 'scheduled' && (
-                          <>
-                            <button onClick={() => handleUpdateStatus(a.id, 'completed')} className="text-green-600 hover:text-green-900" title="Complete">
-                              <CheckIcon className="h-4 w-4 inline" />
-                            </button>
-                            <button onClick={() => handleUpdateStatus(a.id, 'cancelled')} className="text-red-600 hover:text-red-900" title="Cancel">
-                              <XMarkIcon className="h-4 w-4 inline" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      <DragAndDropCalendar
+        localizer={localizer}
+        events={events}
+        startAccessor="start"
+        endAccessor="end"
+        style={{ flex: 1 }}
+        views={views}
+        view={currentView}
+        date={currentDate}
+        selectable
+        onSelectEvent={handleEditAppointment}
+        onSelectSlot={handleSelectSlot}
+        onEventDrop={handleEventDrop}
+        onEventResize={handleEventResize}
+        resizable
+        onView={setCurrentView}
+        onNavigate={setCurrentDate}
+        components={{
+          toolbar: ({ label }) => (
+            <div className="text-center text-xl font-semibold mb-4">
+              {label}
             </div>
-          ))}
-        </div>
+          ),
+          month: {
+            header: ({ date, label }) => {
+              const dayOfWeek = date.getDay();
+              if (dayOfWeek === 0) return null; // Hide Sunday
+              return <div className="text-center font-semibold">{format(date, 'EEE')}</div>;
+            },
+            dateHeader: ({ date, label }) => {
+              const dayOfWeek = date.getDay();
+              if (dayOfWeek === 0) return null; // Hide Sunday
+              return <div className="text-center">{label}</div>;
+            },
+          },
+        }}
+        min={new Date(0, 0, 0, 6, 0, 0)} // Start at 6AM
+        max={new Date(0, 0, 0, 22, 0, 0)} // End at 10PM
+      />
 
-        {/* Mobile: horizontal scroll day columns */}
-        <div className="md:hidden overflow-x-auto">
-          <div className="flex space-x-3 min-w-max pr-4">
-            {daysOfWeek.map((day) => (
-              <div key={day.toDateString()} className="w-64 flex-shrink-0 bg-white rounded-lg border border-gray-200 p-3">
-                <div className="text-sm font-medium text-gray-700 mb-2">
-                  {day.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                </div>
-                <div className="space-y-2">
-                  {(appointmentsByDay.get(new Date(day.getFullYear(), day.getMonth(), day.getDate()).toDateString()) || []).map((a) => (
-                    <div key={a.id} className="border rounded-lg p-2">
-                      <div className="text-xs text-gray-500">
-                        {new Date(a.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                      <div className="text-sm font-medium text-gray-900 truncate">{getClientName(a.client_id)}</div>
-                      <div className="text-xs text-gray-500 truncate">{getServiceName(a.service_id)}</div>
-                      <div className="mt-1 flex items-center justify-between">
-                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${
-                          a.status === 'completed' ? 'bg-green-100 text-green-800' : a.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>{a.status}</span>
-                        <div className="space-x-2">
-                          <button onClick={() => handleEditAppointment(a)} className="text-indigo-600" title="Edit">
-                            <PencilIcon className="h-4 w-4 inline" />
-                          </button>
-                          {a.status === 'scheduled' && (
-                            <>
-                              <button onClick={() => handleUpdateStatus(a.id, 'completed')} className="text-green-600" title="Complete">
-                                <CheckIcon className="h-4 w-4 inline" />
-                              </button>
-                              <button onClick={() => handleUpdateStatus(a.id, 'cancelled')} className="text-red-600" title="Cancel">
-                                <XMarkIcon className="h-4 w-4 inline" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Navigation controls underneath the calendar */}
+      <div className="flex justify-between items-center mt-4 px-4 py-2 border-t">
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setCurrentView('month')}
+            className={`px-3 py-1 rounded ${
+              currentView === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+            }`}
+          >
+            Month
+          </button>
+          <button
+            onClick={() => setCurrentView('week')}
+            className={`px-3 py-1 rounded ${
+              currentView === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+            }`}
+          >
+            Week
+          </button>
+          {currentDate.getDay() !== 0 && ( // Hide Day button when current date is Sunday
+            <button
+              onClick={() => setCurrentView('day')}
+              className={`px-3 py-1 rounded ${
+                currentView === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              Day
+            </button>
+          )}
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              const newDate = new Date(currentDate);
+              if (currentView === 'month') {
+                newDate.setMonth(newDate.getMonth() - 1);
+              } else if (currentView === 'week') {
+                newDate.setDate(newDate.getDate() - 7);
+              } else {
+                newDate.setDate(newDate.getDate() - 1);
+              }
+              setCurrentDate(newDate);
+            }}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Prev
+          </button>
+          <button
+            onClick={() => setCurrentDate(new Date())}
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => {
+              const newDate = new Date(currentDate);
+              if (currentView === 'month') {
+                newDate.setMonth(newDate.getMonth() + 1);
+              } else if (currentView === 'week') {
+                newDate.setDate(newDate.getDate() + 7);
+              } else {
+                newDate.setDate(newDate.getDate() + 1);
+              }
+              setCurrentDate(newDate);
+            }}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Next
+          </button>
         </div>
       </div>
 
-      {/* Modal for Appointment Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        style={currentView === 'week' ? { width: '80%', height: '80%' } : { width: '100%', height: '50%' }}
+      >
         {isModalOpen && (
           <ScheduleForm
             appointment={editingAppointment}
+            clients={clients}
+            services={services}
+            employees={employees}
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
           />
         )}
       </Modal>
-
-      {/* Bottom-center add button for mobile */}
-      <div className="md:hidden">
-        <MobileAddButton onClick={handleCreateAppointment} label="Book" />
-      </div>
-    </div>
+    </CustomCalendarWrapper>
   );
 }
