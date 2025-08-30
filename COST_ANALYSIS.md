@@ -3,10 +3,11 @@
 ## 🎯 **Current Setup: SQLite (RECOMMENDED)**
 
 ### **Cost Breakdown:**
-- **Backend API**: $7/month (Free tier available)
-- **Frontend**: $7/month (Free tier available)
+- **Backend API**: $7/month (Starter tier for always-on performance)
+- **Frontend**: $7/month (Starter tier for always-on performance)
 - **Database**: **FREE** (SQLite included with backend)
-- **Total**: **$14/month** (or FREE with free tier)
+- **Custom Domain**: Your existing domain cost
+- **Total**: **$14/month**
 
 ### **Benefits:**
 ✅ **Massive Cost Savings**: No $11/month PostgreSQL database  
@@ -92,6 +93,11 @@
 
 **SQLite setup will cost you $14/month instead of $25/month - that's a 44% savings!**
 
-For a small-medium business management system, SQLite is perfect and will save you **$132 per year** compared to PostgreSQL.
+For your beauty salon business at `lavishbeautyhairandnail.care`, SQLite is perfect and will save you **$132 per year** compared to PostgreSQL.
 
-**Ready to deploy with SQLite?** The `render.yaml` is already configured for maximum cost savings!
+**Your Professional URLs:**
+- **Main Site**: `https://lavishbeautyhairandnail.care`
+- **API**: `https://api.lavishbeautyhairandnail.care`
+- **www**: `https://www.lavishbeautyhairandnail.care`
+
+**Ready to deploy?** The `render.yaml` is configured for your custom domain and starter tier!

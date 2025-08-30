@@ -1,32 +1,32 @@
 services:
   # Backend API Service
   - type: web
-    name: business-manager-api
+    name: lavish-beauty-api
     env: python
-    plan: free
+    plan: starter
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         value: sqlite:///./business_manager.db
       - key: ALLOWED_ORIGINS
-        value: https://business-manager-frontend.onrender.com,http://localhost:5173
+        value: https://lavishbeautyhairandnail.care,https://www.lavishbeautyhairandnail.care,http://localhost:5173
       - key: ENVIRONMENT
-        value: development
+        value: production
     healthCheckPath: /health
 
   # Frontend Service
   - type: web
-    name: business-manager-frontend
+    name: lavish-beauty-app
     env: node
-    plan: free
+    plan: starter
     buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && npm run preview -- --host 0.0.0.0 --port $PORT
     envVars:
       - key: VITE_API_URL
-        value: https://business-manager-api.onrender.com/api/v1
+        value: https://api.lavishbeautyhairandnail.care/api/v1
       - key: VITE_HTTPS
-        value: false
+        value: true
     healthCheckPath: /
 
 # No database section - using SQLite instead

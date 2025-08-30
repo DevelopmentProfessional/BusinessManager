@@ -22,8 +22,8 @@ This project is configured to deploy on Render with a PostgreSQL database, FastA
  #### 2. Automatic Deployment
 
  The `render.yaml` file will automatically create:
- - **Backend API**: `business-manager-api` (with SQLite database) - **FREE TIER**
- - **Frontend**: `business-manager-frontend` - **FREE TIER**
+   - **Backend API**: `lavish-beauty-api` (with SQLite database) - **STARTER TIER**
+  - **Frontend**: `lavish-beauty-app` - **STARTER TIER**
 
 #### 3. Manual Deployment (Alternative)
 
@@ -57,13 +57,13 @@ If you prefer manual setup:
    #### Backend (API Service)
   ```env
   DATABASE_URL=sqlite:///./business_manager.db
-  ALLOWED_ORIGINS=https://business-manager-frontend.onrender.com,http://localhost:5173
+  ALLOWED_ORIGINS=https://lavishbeautyhairandnail.care,https://www.lavishbeautyhairandnail.care,http://localhost:5173
   ENVIRONMENT=development
   ```
 
  #### Frontend
  ```env
- VITE_API_URL=https://business-manager-api.onrender.com/api/v1
+   VITE_API_URL=https://api.lavishbeautyhairandnail.care/api/v1
  VITE_HTTPS=false
  ```
 
@@ -76,8 +76,8 @@ The application will automatically:
 
  ### 🔍 Health Checks
 
- - **Backend**: `https://business-manager-api.onrender.com/health`
- - **Frontend**: `https://business-manager-frontend.onrender.com/`
+   - **Backend**: `https://api.lavishbeautyhairandnail.care/health`
+  - **Frontend**: `https://lavishbeautyhairandnail.care/`
 
    ### 🚨 Important Notes
 

@@ -6,8 +6,8 @@ Your Business Manager is now configured for **FREE** deployment on Render!
 
 ### 📋 **What You Get (FREE):**
 
-- ✅ **Backend API**: `business-manager-api.onrender.com`
-- ✅ **Frontend**: `business-manager-frontend.onrender.com`
+- ✅ **Backend API**: `api.lavishbeautyhairandnail.care`
+- ✅ **Frontend**: `lavishbeautyhairandnail.care`
 - ✅ **SQLite Database**: Included (no extra cost)
 - ✅ **HTTPS**: Automatic SSL certificates
 - ✅ **GitHub Integration**: Auto-deploy on push
@@ -47,8 +47,8 @@ git push origin main
 ## 🧪 **Testing Your Deployment:**
 
 ### **Health Checks:**
-- Backend: `https://business-manager-api.onrender.com/health`
-- Frontend: `https://business-manager-frontend.onrender.com/`
+- Backend: `https://api.lavishbeautyhairandnail.care/health`
+- Frontend: `https://lavishbeautyhairandnail.care/`
 
 ### **Test Login:**
 - Username: `admin`
@@ -105,7 +105,7 @@ git push origin main
 
 ## 🎉 **Ready to Deploy?**
 
-Your `render.yaml` is already configured for free tier deployment. Just connect your GitHub repository to Render and you'll have a fully functional Business Manager running for **FREE**!
+Your `render.yaml` is now configured for your custom domain `lavishbeautyhairandnail.care` with starter tier for always-on performance!
 
 **Next Steps:**
 1. Push your code to GitHub
@@ -113,4 +113,4 @@ Your `render.yaml` is already configured for free tier deployment. Just connect 
 3. Test all features
 4. Upgrade to paid when ready for production
 
-**Total Cost: $0/month for testing!** 🎯
+**Total Cost: $14/month for professional always-on service!** 🎯
