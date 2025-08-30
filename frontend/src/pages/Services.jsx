@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { servicesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ServiceForm from '../components/ServiceForm';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import PermissionGate from '../components/PermissionGate';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Services() {
   const { 
     services, setServices, addService, updateService, removeService,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, openModal, closeModal, hasPermission
   } = useStore();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
 
   const [editingService, setEditingService] = useState(null);
   const location = useLocation();
@@ -49,16 +54,29 @@ export default function Services() {
   };
 
   const handleCreateService = () => {
+    if (!hasPermission('services', 'write')) {
+      setError('You do not have permission to create services');
+      return;
+    }
     setEditingService(null);
     openModal('service-form');
   };
 
   const handleEditService = (service) => {
+    if (!hasPermission('services', 'write')) {
+      setError('You do not have permission to edit services');
+      return;
+    }
     setEditingService(service);
     openModal('service-form');
   };
 
   const handleDeleteService = async (serviceId) => {
+    if (!hasPermission('services', 'delete')) {
+      setError('You do not have permission to delete services');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this service?')) return;
 
     try {
@@ -103,14 +121,16 @@ export default function Services() {
           <h1 className="text-2xl font-bold text-gray-900">Services</h1>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            type="button"
-            onClick={handleCreateService}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Service
-          </button>
+          <PermissionGate page="services" permission="write">
+            <button
+              type="button"
+              onClick={handleCreateService}
+              className="btn-primary flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Service
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -131,9 +151,13 @@ export default function Services() {
           ]}
           onEdit={(item) => handleEditService(item)}
           onDelete={(item) => handleDeleteService(item.id)}
+          editPermission={{ page: 'services', permission: 'write' }}
+          deletePermission={{ page: 'services', permission: 'delete' }}
           emptyMessage="No services found"
         />
-        <MobileAddButton onClick={handleCreateService} label="Add" />
+        <PermissionGate page="services" permission="write">
+          <MobileAddButton onClick={handleCreateService} label="Add" />
+        </PermissionGate>
       </div>
 
       {/* Desktop table */}
@@ -177,20 +201,24 @@ export default function Services() {
                         {service.description || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                        <button
-                          onClick={() => handleDeleteService(service.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleEditService(service)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
+                        <PermissionGate page="services" permission="delete">
+                          <button
+                            onClick={() => handleDeleteService(service.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate page="services" permission="write">
+                          <button
+                            onClick={() => handleEditService(service)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                        </PermissionGate>
                       </td>
                     </tr>
                   ))}

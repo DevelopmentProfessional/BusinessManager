@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { inventoryAPI, itemsAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MobileTable from '../components/MobileTable';
 import BarcodeScanner from '../components/BarcodeScanner';
 import ItemForm from '../components/ItemForm';
+import PermissionGate from '../components/PermissionGate';
 
 function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
   const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
@@ -73,8 +75,11 @@ export default function Inventory() {
   const { 
     inventory, setInventory, items, setItems,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal
+    isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
 
   const [editingInventory, setEditingInventory] = useState(null);
   const [scannedCode, setScannedCode] = useState('');
@@ -103,11 +108,19 @@ export default function Inventory() {
   };
 
   const handleUpdateInventory = (inventoryItem) => {
+    if (!hasPermission('inventory', 'write')) {
+      setError('You do not have permission to update inventory');
+      return;
+    }
     setEditingInventory(inventoryItem);
     openModal('inventory-form');
   };
 
   const handleCreateItem = () => {
+    if (!hasPermission('inventory', 'write')) {
+      setError('You do not have permission to create items');
+      return;
+    }
     setScannedCode('');
     openModal('item-form');
   };
@@ -188,22 +201,26 @@ export default function Inventory() {
           <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
-          <button
-            type="button"
-            onClick={handleCreateItem}
-            className="btn-primary inline-flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Item
-          </button>
-          <button
-            type="button"
-            onClick={handleOpenScanner}
-            className="btn-secondary inline-flex items-center"
-          >
-            <CameraIcon className="h-5 w-5 mr-2" />
-            Scan
-          </button>
+          <PermissionGate page="inventory" permission="write">
+            <button
+              type="button"
+              onClick={handleCreateItem}
+              className="btn-primary inline-flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Item
+            </button>
+          </PermissionGate>
+          <PermissionGate page="inventory" permission="write">
+            <button
+              type="button"
+              onClick={handleOpenScanner}
+              className="btn-secondary inline-flex items-center"
+            >
+              <CameraIcon className="h-5 w-5 mr-2" />
+              Scan
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -238,6 +255,7 @@ export default function Inventory() {
             { key: 'location', title: 'Location', render: (v) => v || '-' },
           ]}
           onEdit={(item) => handleUpdateInventory(item)}
+          editPermission={{ page: 'inventory', permission: 'write' }}
           emptyMessage="No inventory items found"
         />
         {/* No primary add action on Inventory; updates are per-row */}
@@ -302,12 +320,14 @@ export default function Inventory() {
                         {item.location || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleUpdateInventory(item)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
+                        <PermissionGate page="inventory" permission="write">
+                          <button
+                            onClick={() => handleUpdateInventory(item)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                        </PermissionGate>
                       </td>
                     </tr>
                   ))}

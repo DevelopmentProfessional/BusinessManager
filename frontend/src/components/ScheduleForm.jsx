@@ -68,8 +68,8 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
     }
 
     const [hour, minute] = timeText.split(':').map(Number);
-    if (hour < 6 || hour >= 22) {
-      setTimeError('Can only schedule between 6AM and 10PM');
+    if (hour < 6 || hour >= 21) {
+      setTimeError('Can only schedule between 6AM and 9PM');
       return;
     }
     setTimeError('');
@@ -197,7 +197,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             value={formData.appointment_time}
             onChange={handleChange}
             min="06:00"
-            max="22:00"
+            max="21:00"
             step="300"
             className={`input-field mt-1 ${timeError ? 'border-red-500' : ''}`}
           />

@@ -196,6 +196,56 @@ class Employee(BaseModel, table=True):
     is_active: bool = Field(default=True)
     user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     
+    # Permission fields - direct storage in employee table
+    # Clients permissions
+    clients_read: bool = Field(default=False)
+    clients_write: bool = Field(default=False)
+    clients_delete: bool = Field(default=False)
+    clients_admin: bool = Field(default=False)
+    
+    # Inventory permissions
+    inventory_read: bool = Field(default=False)
+    inventory_write: bool = Field(default=False)
+    inventory_delete: bool = Field(default=False)
+    inventory_admin: bool = Field(default=False)
+    
+    # Services permissions
+    services_read: bool = Field(default=False)
+    services_write: bool = Field(default=False)
+    services_delete: bool = Field(default=False)
+    services_admin: bool = Field(default=False)
+    
+    # Employees permissions
+    employees_read: bool = Field(default=False)
+    employees_write: bool = Field(default=False)
+    employees_delete: bool = Field(default=False)
+    employees_admin: bool = Field(default=False)
+    
+    # Schedule permissions
+    schedule_read: bool = Field(default=False)
+    schedule_write: bool = Field(default=False)
+    schedule_delete: bool = Field(default=False)
+    schedule_admin: bool = Field(default=False)
+    schedule_view_all: bool = Field(default=False)  # Permission to view all appointments, not just own
+    
+    # Attendance permissions
+    attendance_read: bool = Field(default=False)
+    attendance_write: bool = Field(default=False)
+    attendance_delete: bool = Field(default=False)
+    attendance_admin: bool = Field(default=False)
+    
+    # Documents permissions
+    documents_read: bool = Field(default=False)
+    documents_write: bool = Field(default=False)
+    documents_delete: bool = Field(default=False)
+    documents_admin: bool = Field(default=False)
+    
+    # Admin permissions
+    admin_read: bool = Field(default=False)
+    admin_write: bool = Field(default=False)
+    admin_delete: bool = Field(default=False)
+    admin_admin: bool = Field(default=False)
+    
     # Relationships
     user: Optional[User] = Relationship(back_populates="employee")
     schedules: List["Schedule"] = Relationship(back_populates="employee")
@@ -214,6 +264,48 @@ class EmployeeRead(SQLModel):
     hire_date: datetime
     is_active: bool
     user_id: Optional[UUID] = None
+    
+    # Permission fields
+    clients_read: bool = False
+    clients_write: bool = False
+    clients_delete: bool = False
+    clients_admin: bool = False
+    
+    inventory_read: bool = False
+    inventory_write: bool = False
+    inventory_delete: bool = False
+    inventory_admin: bool = False
+    
+    services_read: bool = False
+    services_write: bool = False
+    services_delete: bool = False
+    services_admin: bool = False
+    
+    employees_read: bool = False
+    employees_write: bool = False
+    employees_delete: bool = False
+    employees_admin: bool = False
+    
+    schedule_read: bool = False
+    schedule_write: bool = False
+    schedule_delete: bool = False
+    schedule_admin: bool = False
+    schedule_view_all: bool = False
+    
+    attendance_read: bool = False
+    attendance_write: bool = False
+    attendance_delete: bool = False
+    attendance_admin: bool = False
+    
+    documents_read: bool = False
+    documents_write: bool = False
+    documents_delete: bool = False
+    documents_admin: bool = False
+    
+    admin_read: bool = False
+    admin_write: bool = False
+    admin_delete: bool = False
+    admin_admin: bool = False
 
 # Schedule model
 class Schedule(BaseModel, table=True):
@@ -465,6 +557,48 @@ class UserRead(SQLModel):
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    # Employee permission fields (optional, only present if user has linked employee)
+    clients_read: Optional[bool] = None
+    clients_write: Optional[bool] = None
+    clients_delete: Optional[bool] = None
+    clients_admin: Optional[bool] = None
+    
+    inventory_read: Optional[bool] = None
+    inventory_write: Optional[bool] = None
+    inventory_delete: Optional[bool] = None
+    inventory_admin: Optional[bool] = None
+    
+    services_read: Optional[bool] = None
+    services_write: Optional[bool] = None
+    services_delete: Optional[bool] = None
+    services_admin: Optional[bool] = None
+    
+    employees_read: Optional[bool] = None
+    employees_write: Optional[bool] = None
+    employees_delete: Optional[bool] = None
+    employees_admin: Optional[bool] = None
+    
+    schedule_read: Optional[bool] = None
+    schedule_write: Optional[bool] = None
+    schedule_delete: Optional[bool] = None
+    schedule_admin: Optional[bool] = None
+    schedule_view_all: Optional[bool] = None
+    
+    attendance_read: Optional[bool] = None
+    attendance_write: Optional[bool] = None
+    attendance_delete: Optional[bool] = None
+    attendance_admin: Optional[bool] = None
+    
+    documents_read: Optional[bool] = None
+    documents_write: Optional[bool] = None
+    documents_delete: Optional[bool] = None
+    documents_admin: Optional[bool] = None
+    
+    admin_read: Optional[bool] = None
+    admin_write: Optional[bool] = None
+    admin_delete: Optional[bool] = None
+    admin_admin: Optional[bool] = None
 
 class LoginRequest(SQLModel):
     username: str
@@ -479,6 +613,10 @@ class LoginResponse(SQLModel):
 
 class PasswordResetRequest(SQLModel):
     username: str
+    new_password: str
+
+class PasswordChangeRequest(SQLModel):
+    current_password: str
     new_password: str
 
 class UserPermissionCreate(SQLModel):

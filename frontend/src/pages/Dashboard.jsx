@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useStore from '../store/useStore';
-import api from '../services/api';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import { clientsAPI, inventoryAPI, employeesAPI, scheduleAPI, documentsAPI, servicesAPI } from '../services/api';
 import {
   UserGroupIcon,
   ArchiveBoxIcon,
@@ -11,9 +12,14 @@ import {
   DocumentIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
+import PermissionDebug from '../components/PermissionDebug';
 
 const Dashboard = () => {
   const { user, hasPermission } = useStore();
+  
+  // Use the permission refresh hook
+  usePermissionRefresh();
+  
   const [stats, setStats] = useState({
     clients: 0,
     inventory: 0,
@@ -25,7 +31,11 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
+    // Only fetch stats if we haven't loaded them yet
+    if (stats.clients === 0 && stats.inventory === 0 && stats.employees === 0 && 
+        stats.appointments === 0 && stats.documents === 0 && stats.services === 0) {
+      fetchStats();
+    }
   }, []);
 
   const fetchStats = async () => {
@@ -33,27 +43,27 @@ const Dashboard = () => {
       const promises = [];
       
       if (hasPermission('clients', 'read')) {
-        promises.push(api.get('/clients').then(res => ({ clients: res.data.length })));
+        promises.push(clientsAPI.getAll().then(res => ({ clients: res.data.length })));
       }
       
       if (hasPermission('inventory', 'read')) {
-        promises.push(api.get('/inventory').then(res => ({ inventory: res.data.length })));
+        promises.push(inventoryAPI.getAll().then(res => ({ inventory: res.data.length })));
       }
       
       if (hasPermission('employees', 'read')) {
-        promises.push(api.get('/employees').then(res => ({ employees: res.data.length })));
+        promises.push(employeesAPI.getAll().then(res => ({ employees: res.data.length })));
       }
       
       if (hasPermission('schedule', 'read')) {
-        promises.push(api.get('/schedule').then(res => ({ appointments: res.data.length })));
+        promises.push(scheduleAPI.getAll().then(res => ({ appointments: res.data.length })));
       }
       
       if (hasPermission('documents', 'read')) {
-        promises.push(api.get('/documents').then(res => ({ documents: res.data.length })));
+        promises.push(documentsAPI.getAll().then(res => ({ documents: res.data.length })));
       }
       
       if (hasPermission('services', 'read')) {
-        promises.push(api.get('/services').then(res => ({ services: res.data.length })));
+        promises.push(servicesAPI.getAll().then(res => ({ services: res.data.length })));
       }
 
       const results = await Promise.all(promises);
@@ -144,15 +154,9 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user?.first_name}!
-        </h1>
-        <p className="text-gray-600">
-          Here's what's happening with your business today.
-        </p>
-      </div>
+      
+      {/* Debug Component - Remove in production */}
+      <PermissionDebug />
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

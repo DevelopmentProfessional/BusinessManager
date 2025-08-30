@@ -5,20 +5,18 @@ import axios from 'axios';
 const RAW_API_BASE_URL = (import.meta.env.VITE_API_URL || '/api/v1');
 const API_BASE_URL = RAW_API_BASE_URL.trim().replace(/\/+$/, '');
 
+// Simple cache to prevent duplicate API calls
+const apiCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '/api/v1', // Force relative path to ensure Vite proxy is used
 });
 
 // Add authentication interceptor
 api.interceptors.request.use((config) => {
   // Get token from localStorage or sessionStorage
-  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  
-  // TEMPORARY: Use fake token if no token is found (for development)
-  if (!token) {
-    token = 'fake-jwt-token-for-development';
-    console.log('🔓 TOKEN BYPASSED: Using fake token for development');
-  }
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -32,6 +30,11 @@ api.interceptors.request.use((config) => {
     }
   }
   
+  // Debug: Log the actual URL being requested (only in development)
+  if (import.meta.env.DEV) {
+    console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+  }
+  
   return config;
 });
 
@@ -39,90 +42,177 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // TEMPORARY: Bypass 401 errors during development
-      console.log('🔓 AUTH BYPASSED: Ignoring 401 error for development');
-      
-      // Don't clear auth data or redirect during development
-      // TODO: Restore this when login is working properly
-      /*
-      // Clear authentication data and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('permissions');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('permissions');
-      
-      // Redirect to login page
-      window.location.href = '/login';
-      */
-    }
     return Promise.reject(error);
   }
 );
 
+// Helper function to get cached data or make API call
+const getCachedOrFetch = async (key, fetchFunction) => {
+  const cached = apiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  const data = await fetchFunction();
+  apiCache.set(key, { data, timestamp: Date.now() });
+  return data;
+};
+
+// Helper function to clear cache for specific key
+const clearCache = (key) => {
+  if (key) {
+    apiCache.delete(key);
+  } else {
+    apiCache.clear();
+  }
+};
+
+// Expose clearCache globally for logout
+if (typeof window !== 'undefined') {
+  window.clearApiCache = () => apiCache.clear();
+}
+
 // API endpoints for all entities
 export const clientsAPI = {
-  getAll: () => api.get('/clients'),
+  getAll: () => getCachedOrFetch('clients', () => api.get('/clients')),
   getById: (id) => api.get(`/clients/${id}`),
-  create: (data) => api.post('/clients', data),
-  update: (id, data) => api.put(`/clients/${id}`, data),
-  delete: (id) => api.delete(`/clients/${id}`),
+  create: (data) => {
+    clearCache('clients');
+    return api.post('/clients', data);
+  },
+  update: (id, data) => {
+    clearCache('clients');
+    return api.put(`/clients/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('clients');
+    return api.delete(`/clients/${id}`);
+  },
 };
 
 // Items API
 export const itemsAPI = {
-  getAll: () => api.get('/items'),
+  getAll: () => getCachedOrFetch('items', () => api.get('/items')),
   getById: (id) => api.get(`/items/${id}`),
-  create: (data) => api.post('/items', data),
-  update: (id, data) => api.put(`/items/${id}`, data),
-  delete: (id) => api.delete(`/items/${id}`),
+  create: (data) => {
+    clearCache('items');
+    return api.post('/items', data);
+  },
+  update: (id, data) => {
+    clearCache('items');
+    return api.put(`/items/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('items');
+    return api.delete(`/items/${id}`);
+  },
 };
 
 export const inventoryAPI = {
-  getAll: () => api.get('/inventory'),
-  getLowStock: () => api.get('/inventory/low-stock'),
+  getAll: () => getCachedOrFetch('inventory', () => api.get('/inventory')),
+  getLowStock: () => getCachedOrFetch('inventory-low-stock', () => api.get('/inventory/low-stock')),
   update: (itemId, quantity, { min_stock_level, location } = {}) => {
     const body = { item_id: itemId, quantity };
     if (min_stock_level != null) body.min_stock_level = min_stock_level;
     if (location != null) body.location = location;
+    clearCache('inventory');
     return api.post('/inventory', body);
   },
 };
 
 export const servicesAPI = {
-  getAll: () => api.get('/services'),
+  getAll: () => getCachedOrFetch('services', () => api.get('/services')),
   getById: (id) => api.get(`/services/${id}`),
-  create: (data) => api.post('/services', data),
-  update: (id, data) => api.put(`/services/${id}`, data),
-  delete: (id) => api.delete(`/services/${id}`),
+  create: (data) => {
+    clearCache('services');
+    return api.post('/services', data);
+  },
+  update: (id, data) => {
+    clearCache('services');
+    return api.put(`/services/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('services');
+    return api.delete(`/services/${id}`);
+  },
+};
+
+export const suppliersAPI = {
+  getAll: () => getCachedOrFetch('suppliers', () => api.get('/suppliers')),
+  getById: (id) => api.get(`/suppliers/${id}`),
+  create: (data) => {
+    clearCache('suppliers');
+    return api.post('/suppliers', data);
+  },
+  update: (id, data) => {
+    clearCache('suppliers');
+    return api.put(`/suppliers/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('suppliers');
+    return api.delete(`/suppliers/${id}`);
+  },
 };
 
 export const employeesAPI = {
-  getAll: () => api.get('/employees'),
+  getAll: () => getCachedOrFetch('employees', () => api.get('/employees')),
   getById: (id) => api.get(`/employees/${id}`),
-  create: (data) => api.post('/employees', data),
-  update: (id, data) => api.put(`/employees/${id}`, data),
-  delete: (id) => api.delete(`/employees/${id}`),
+  create: (data) => {
+    clearCache('employees');
+    return api.post('/employees', data);
+  },
+  update: (id, data) => {
+    clearCache('employees');
+    return api.put(`/employees/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('employees');
+    return api.delete(`/employees/${id}`);
+  },
+  getUserData: (userId) => api.get(`/auth/users/${userId}`),
+  getUserPermissions: (userId) => api.get(`/auth/users/${userId}/permissions`),
+  updateUser: (userId, data) => api.put(`/auth/users/${userId}`, data),
+  createUserPermission: (userId, data) => api.post(`/auth/users/${userId}/permissions`, data),
+  updateUserPermission: (userId, permissionId, data) => api.put(`/auth/users/${userId}/permissions/${permissionId}`, data),
+  deleteUserPermission: (userId, permissionId) => api.delete(`/auth/users/${userId}/permissions/${permissionId}`),
+  updateUserAccount: (employeeId, data) => api.put(`/employees/${employeeId}/user-account`, data),
+  createUserAccount: (employeeId, data) => api.post(`/employees/${employeeId}/user-account`, data),
 };
 
 export const scheduleAPI = {
-  getAll: () => api.get('/schedule'),
+  getAll: () => getCachedOrFetch('schedule', () => api.get('/schedule')),
   getByEmployee: (employeeId) => api.get(`/schedule/employee/${employeeId}`),
-  create: (data) => api.post('/schedule', data),
-  update: (id, data) => api.put(`/schedule/${id}`, data),
+  getAvailableEmployees: () => api.get('/schedule/employees'),
+  create: (data) => {
+    clearCache('schedule');
+    return api.post('/schedule', data);
+  },
+  update: (id, data) => {
+    clearCache('schedule');
+    return api.put(`/schedule/${id}`, data);
+  },
 };
 
 export const attendanceAPI = {
-  getAll: () => api.get('/attendance'),
+  getAll: () => getCachedOrFetch('attendance', () => api.get('/attendance')),
   getByEmployee: (employeeId) => api.get(`/attendance/employee/${employeeId}`),
-  create: (data) => api.post('/attendance', data),
-  update: (id, data) => api.put(`/attendance/${id}`, data),
+  getByEmployeeAndDate: (employeeId, date) => api.get(`/attendance/employee/${employeeId}/date/${date}`),
+  me: () => api.get('/attendance/me'),
+  checkEmployee: () => api.get('/attendance/check-employee'),
+  clockIn: () => api.post('/attendance/clock-in', {}),
+  clockOut: () => api.post('/attendance/clock-out', {}),
+  create: (data) => {
+    clearCache('attendance');
+    return api.post('/attendance', data);
+  },
+  update: (id, data) => {
+    clearCache('attendance');
+    return api.put(`/attendance/${id}`, data);
+  },
 };
 
 export const documentsAPI = {
-  getAll: () => api.get('/documents'),
+  getAll: () => getCachedOrFetch('documents', () => api.get('/documents')),
   getByEntity: (entityType, entityId) => api.get(`/documents/by-entity/${entityType}/${entityId}`),
   upload: (file, description) => {
     const formData = new FormData();
@@ -142,12 +232,18 @@ export const documentsAPI = {
     if (entity_id) formData.append('entity_id', entity_id);
     return api.post('/documents/bulk', formData);
   },
-  delete: (id) => api.delete(`/documents/${id}`),
-  update: (id, data) => api.put(`/documents/${id}`, data),
+  delete: (id) => {
+    clearCache('documents');
+    return api.delete(`/documents/${id}`);
+  },
+  update: (id, data) => {
+    clearCache('documents');
+    return api.put(`/documents/${id}`, data);
+  },
   sign: (id, signerName) => api.post(`/documents/${id}/sign`, { signed_by: signerName }),
-  fileUrl: (id) => `${API_BASE_URL}/documents/${id}/download`,
+  fileUrl: (id) => `/api/v1/documents/${id}/download`,
   historyFileUrl: (historyId, { download = true } = {}) =>
-    `${API_BASE_URL}/documents/history/${historyId}/download${download ? '?download=true' : ''}`,
+    `/api/v1/documents/history/${historyId}/download${download ? '?download=true' : ''}`,
   history: (id) => api.get(`/documents/${id}/history`),
   replaceContent: (id, file, note) => {
     const formData = new FormData();
@@ -162,10 +258,19 @@ export const documentsAPI = {
 };
 
 export const documentCategoriesAPI = {
-  list: () => api.get('/document-categories'),
-  create: (data) => api.post('/document-categories', data), // { name, description? }
-  update: (id, data) => api.put(`/document-categories/${id}`, data),
-  delete: (id) => api.delete(`/document-categories/${id}`),
+  list: () => getCachedOrFetch('document-categories', () => api.get('/document-categories')),
+  create: (data) => {
+    clearCache('document-categories');
+    return api.post('/document-categories', data);
+  }, // { name, description? }
+  update: (id, data) => {
+    clearCache('document-categories');
+    return api.put(`/document-categories/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('document-categories');
+    return api.delete(`/document-categories/${id}`);
+  },
 };
 
 export default api;

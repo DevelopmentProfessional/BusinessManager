@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { ClockIcon, PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { attendanceAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import ClockInOut from '../components/ClockInOut';
+import PermissionGate from '../components/PermissionGate';
 
 function AttendanceForm({ onSubmit, onCancel }) {
   const { employees } = useStore();
@@ -140,6 +143,9 @@ export default function Attendance() {
     isModalOpen, openModal, closeModal
   } = useStore();
 
+  // Use the permission refresh hook
+  usePermissionRefresh();
+
   useEffect(() => {
     loadAttendanceData();
   }, []);
@@ -207,15 +213,22 @@ export default function Attendance() {
           <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button 
-            type="button" 
-            onClick={handleCreateRecord}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Record
-          </button>
+          <PermissionGate page="attendance" permission="write">
+            <button 
+              type="button" 
+              onClick={handleCreateRecord}
+              className="btn-primary flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Record
+            </button>
+          </PermissionGate>
         </div>
+      </div>
+
+      {/* Clock In/Out Section */}
+      <div className="mt-6 mb-6">
+        <ClockInOut />
       </div>
 
       {error && (
@@ -238,7 +251,9 @@ export default function Attendance() {
           ]}
           emptyMessage="No attendance records found"
         />
-        <MobileAddButton onClick={handleCreateRecord} label="Add" />
+        <PermissionGate page="attendance" permission="write">
+          <MobileAddButton onClick={handleCreateRecord} label="Add" />
+        </PermissionGate>
       </div>
 
       {/* Desktop table */}
@@ -306,8 +321,8 @@ export default function Attendance() {
       </div>
 
       {/* Modal for Attendance Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {isModalOpen && (
+      <Modal isOpen={isModalOpen === 'attendance-form'} onClose={closeModal}>
+        {isModalOpen === 'attendance-form' && (
           <AttendanceForm
             onSubmit={handleSubmitRecord}
             onCancel={closeModal}

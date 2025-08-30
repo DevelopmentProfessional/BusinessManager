@@ -5,8 +5,8 @@ import api from '../services/api';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    username: 'admin',
-    password: 'admin',
+    username: '',
+    password: '',
     remember_me: false
   });
   const [loading, setLoading] = useState(false);

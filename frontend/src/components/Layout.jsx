@@ -12,17 +12,21 @@ import {
   UserIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
+  UserCircleIcon,
+  TruckIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 const allNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: UserIcon },
+  { name: 'Profile', href: '/profile', icon: UserCircleIcon },
   { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
   { name: 'Inventory', href: '/inventory', icon: ArchiveBoxIcon, permission: 'inventory:read' },
   { name: 'Clients', href: '/clients', icon: UserGroupIcon, permission: 'clients:read' },
   { name: 'Documents', href: '/documents', icon: DocumentIcon, permission: 'documents:read' },
   { name: 'Services', href: '/services', icon: WrenchScrewdriverIcon, permission: 'services:read' },
+  { name: 'Suppliers', href: '/suppliers', icon: TruckIcon, permission: 'suppliers:read' },
   { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
   { name: 'Attendance', href: '/attendance', icon: ClockIcon, permission: 'attendance:read' },
   { name: 'Admin', href: '/admin', icon: Cog6ToothIcon, permission: 'admin:admin' },
@@ -40,47 +44,37 @@ export default function Layout({ children }) {
 
   const handleLogout = () => {
     logout();
-    // TEMPORARY: Redirect to dashboard instead of login during development
-    navigate('/dashboard');
+      // Redirect to login
+  navigate('/login');
   };
 
-  // Filter navigation items based on user permissions
+  // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
     if (!item.permission) return true; // Dashboard and Profile don't need specific permissions
-    return hasPermission(...item.permission.split(':'));
+    
+    const [page, permission] = item.permission.split(':');
+    
+    // Check if user has any permission for this page (read, write, delete, or admin)
+    return hasPermission(page, 'read') || 
+           hasPermission(page, 'write') || 
+           hasPermission(page, 'delete') || 
+           hasPermission(page, 'admin');
   });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Development Banner */}
-      <div className="bg-yellow-400 border-b border-yellow-500 px-4 py-2">
-        <div className="flex items-center justify-center text-sm font-medium text-yellow-900">
-          🔓 DEVELOPMENT MODE: Login bypassed - Using fake admin session
-        </div>
-      </div>
+
       
       {/* Header with user info */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+      <div className="bg-white shadow-sm border-b border-gray-200 px-3 py-1">
         <div className="flex justify-between items-center">
-          <h1 className="text-lg font-semibold text-gray-900">Business Manager</h1>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-600">
-              Welcome, {user?.first_name || 'User'}
-            </div>
-            <Link
-              to="/profile"
-              className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+          <h1 className="text-lg font-semibold text-gray-900">{user?.first_name || 'User'}</h1>
+         
+            <button onClick={handleLogout} className="text-red-600 hover:text-red-900 text-sm font-medium flex items-center"
             >
-              Profile
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="text-red-600 hover:text-red-900 text-sm font-medium flex items-center"
-            >
-              <ArrowRightOnRectangleIcon className="h-4 w-4 mr-1" />
-              Logout
-            </button>
-          </div>
+              <ArrowRightOnRectangleIcon className="h-5 w-5 mr-1" />
+               
+            </button> 
         </div>
       </div>
 
@@ -95,7 +89,7 @@ export default function Layout({ children }) {
             />
             
             {/* Expanded menu anchored to bottom-right */}
-            <div className="fixed bottom-20 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 min-w-48">
+            <div className="fixed bottom-10 right-4 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 min-w-48">
               <div className="space-y-2">
                 {filteredNavigation.map((item) => (
                   <Link
@@ -126,9 +120,9 @@ export default function Layout({ children }) {
           onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
           className={classNames(
             expandedMenuOpen
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-600 border border-gray-200',
-            'fixed bottom-10 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl'
+              ? 'bg-blue-600 text-white border-2 border-red-500'
+              : 'bg-white text-gray-600 border-2 border-red-500',
+            'fixed bottom-20 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl'
           )}
         >
           <EllipsisHorizontalIcon className="h-6 w-6" />
@@ -136,6 +130,8 @@ export default function Layout({ children }) {
       
 
       {/* No desktop layout; mobile-only application */}
+      
+
     </div>
   );
 }

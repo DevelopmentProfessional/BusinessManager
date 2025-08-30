@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from database import get_session
-from models import Attendance, AttendanceCreate, AttendanceRead
+from models import Attendance, AttendanceCreate, AttendanceRead, Employee
 from routers.auth import get_current_user
+from models import UserRole
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ async def get_attendance(
     session: Session = Depends(get_session)
 ):
     """Get all attendance records (admin only)"""
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     attendance_records = session.exec(select(Attendance)).all()
@@ -28,27 +29,119 @@ async def get_employee_attendance(
     session: Session = Depends(get_session)
 ):
     """Get attendance records for a specific employee"""
-    # Users can only view their own attendance or admins can view all
-    if current_user.role != "admin" and str(current_user.id) != str(employee_id):
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Validate employee exists
+    employee = session.get(Employee, employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    # Users can only view attendance for employees linked to their user, or admins can view all
+    if current_user.role != UserRole.ADMIN:
+        if employee.user_id is None or str(employee.user_id) != str(current_user.id):
+            raise HTTPException(status_code=403, detail="Access denied")
     
     statement = select(Attendance).where(Attendance.employee_id == employee_id)
     attendance_records = session.exec(statement).all()
     return attendance_records
 
+@router.get("/attendance/employee/{employee_id}/date/{date}", response_model=List[AttendanceRead])
+async def get_employee_attendance_by_date(
+    employee_id: UUID,
+    date: str,
+    current_user = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get attendance records for a specific employee on a specific date"""
+    # Validate employee exists
+    employee = session.get(Employee, employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    # Users can only view attendance for employees linked to their user, or admins can view all
+    if current_user.role != UserRole.ADMIN:
+        if employee.user_id is None or str(employee.user_id) != str(current_user.id):
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Parse the date string
+    try:
+        target_date = datetime.strptime(date, '%Y-%m-%d').date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Get attendance records for the specific date
+    statement = select(Attendance).where(
+        (Attendance.employee_id == employee_id) &
+        (Attendance.date >= target_date) &
+        (Attendance.date < target_date + timedelta(days=1))
+    )
+    attendance_records = session.exec(statement).all()
+    return attendance_records
+
+@router.get("/attendance/me", response_model=List[AttendanceRead])
+async def get_my_attendance(
+    current_user = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get attendance records for the current user (by linked employee)."""
+    try:
+        # Find employee linked to current user
+        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
+        
+        if not employee:
+            # No employee profile linked; return empty list for convenience
+            print(f"No employee profile found for user {current_user.id}")
+            return []
+        
+        # Get attendance records for the employee
+        records = session.exec(select(Attendance).where(Attendance.employee_id == employee.id)).all()
+        print(f"Found {len(records)} attendance records for employee {employee.id}")
+        return records
+        
+    except Exception as e:
+        print(f"Error in get_my_attendance: {str(e)}")
+        # Return empty list instead of raising error
+        return []
+
+@router.get("/attendance/check-employee")
+async def check_employee_profile(
+    current_user = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Check if current user has an employee profile linked."""
+    try:
+        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
+        return {
+            "has_employee_profile": employee is not None,
+            "employee_id": str(employee.id) if employee else None
+        }
+    except Exception as e:
+        print(f"Error checking employee profile: {str(e)}")
+        return {
+            "has_employee_profile": False,
+            "employee_id": None
+        }
+
 @router.post("/attendance/clock-in", response_model=AttendanceRead)
 async def clock_in(
-    attendance_data: dict,
+    attendance_data: Optional[dict] = None,
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Clock in for the current user"""
     today = date.today()
     
+    # Determine employee_id: use provided one if present, otherwise resolve from current user
+    if attendance_data and attendance_data.get('employee_id'):
+        employee_id = attendance_data.get('employee_id')
+    else:
+        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
+        if not employee:
+            raise HTTPException(status_code=400, detail="No employee profile linked to current user")
+        employee_id = employee.id
+    
     # Check if already clocked in today
     existing_record = session.exec(
         select(Attendance).where(
-            (Attendance.employee_id == attendance_data.get('employee_id')) &
+            (Attendance.employee_id == employee_id) &
             (Attendance.date >= today)
         )
     ).first()
@@ -66,7 +159,7 @@ async def clock_in(
     else:
         # Create new record
         attendance = Attendance(
-            employee_id=attendance_data.get('employee_id'),
+            employee_id=employee_id,
             user_id=current_user.id,
             date=datetime.utcnow(),
             clock_in=datetime.utcnow()
@@ -78,17 +171,26 @@ async def clock_in(
 
 @router.post("/attendance/clock-out", response_model=AttendanceRead)
 async def clock_out(
-    attendance_data: dict,
+    attendance_data: Optional[dict] = None,
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Clock out for the current user"""
     today = date.today()
     
+    # Determine employee_id: use provided one if present, otherwise resolve from current user
+    if attendance_data and attendance_data.get('employee_id'):
+        employee_id = attendance_data.get('employee_id')
+    else:
+        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
+        if not employee:
+            raise HTTPException(status_code=400, detail="No clock-in record found for today")
+        employee_id = employee.id
+    
     # Find today's attendance record
     attendance_record = session.exec(
         select(Attendance).where(
-            (Attendance.employee_id == attendance_data.get('employee_id')) &
+            (Attendance.employee_id == employee_id) &
             (Attendance.date >= today)
         )
     ).first()
@@ -134,7 +236,7 @@ async def update_attendance(
     session: Session = Depends(get_session)
 ):
     """Update attendance record (admin only)"""
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     attendance = session.get(Attendance, attendance_id)

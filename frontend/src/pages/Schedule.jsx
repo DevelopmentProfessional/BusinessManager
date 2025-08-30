@@ -8,13 +8,16 @@ import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ScheduleForm from '../components/ScheduleForm';
 import SixDayWeekView from '../components/SixDayWeekView';
+import PermissionGate from '../components/PermissionGate';
 
 const locales = {
   'en-US': enUS,
@@ -35,30 +38,140 @@ const views = {
 };
 
 const CustomCalendarWrapper = styled.div`
+  /* Simplified red color scheme for the calendar */
+  .rbc-calendar {
+    background-color: #fef2f2;
+  }
+
+  .rbc-header {
+    background-color: #dc2626;
+    color: white;
+    font-weight: bold;
+    padding: 8px;
+    border: 1px solid #b91c1c;
+  }
+
   .rbc-month-view {
-    .rbc-row-content {
-      .rbc-row {
-        .rbc-date-cell:last-child {
-          display: none; // Hide Sunday column cells
-        }
-      }
-      // Align event segments to 6 visible columns instead of original 7
-      // We scale the segments container from 7 to 6 columns and clip the overflow.
-      overflow: hidden;
-      .rbc-row {
-        transform: scaleX(1.1666667); /* 7/6 */
-        transform-origin: left;
-      }
-    }
-    .rbc-header:last-child {
-      display: none; // Hide Sunday header
-    }
-    // Also hide Sunday background cells so grid aligns with headers
-    .rbc-row-bg {
-      .rbc-day-bg:last-child {
-        display: none;
-      }
-    }
+    border: 2px solid #dc2626;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .rbc-date-cell {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 4px;
+  }
+
+  .rbc-date-cell.rbc-off-range {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+
+  .rbc-date-cell.rbc-today {
+    background-color: #fecaca;
+    font-weight: bold;
+    color: #dc2626;
+  }
+
+  .rbc-event {
+    background-color: #dc2626 !important;
+    border-color: #b91c1c !important;
+    color: white !important;
+    border-radius: 4px;
+    margin: 1px;
+    padding: 2px 4px;
+    font-size: 12px;
+  }
+
+  .rbc-event:hover {
+    background-color: #b91c1c !important;
+  }
+
+  .rbc-event.rbc-selected {
+    background-color: #991b1b !important;
+  }
+
+  .rbc-toolbar {
+    background-color: #dc2626;
+    color: white;
+    padding: 12px;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .rbc-toolbar button {
+    background-color: #b91c1c;
+    border: 1px solid #991b1b;
+    color: white;
+  }
+
+  .rbc-toolbar button:hover {
+    background-color: #991b1b;
+  }
+
+  .rbc-toolbar button.rbc-active {
+    background-color: #7f1d1d;
+    border-color: #dc2626;
+  }
+
+  .rbc-time-view {
+    border: 2px solid #dc2626;
+    border-radius: 8px;
+  }
+
+  .rbc-time-header {
+    background-color: #dc2626;
+    color: white;
+  }
+
+  .rbc-time-content {
+    background-color: #fef2f2;
+  }
+
+  .rbc-timeslot-group {
+    border-bottom: 1px solid #fecaca;
+  }
+
+  .rbc-time-slot {
+    border-bottom: 1px solid #fee2e2;
+  }
+
+  .rbc-current-time-indicator {
+    background-color: #dc2626;
+    height: 3px !important;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+  }
+
+  .rbc-day-slot .rbc-time-slot {
+    border-top: 1px solid #fecaca;
+  }
+
+  .rbc-day-slot .rbc-event {
+    background-color: #dc2626 !important;
+    border-color: #b91c1c !important;
+  }
+
+  .rbc-day-slot .rbc-event:hover {
+    background-color: #b91c1c !important;
+  }
+
+  /* Fix for doubling effect - ensure clean rendering */
+  * {
+    box-sizing: border-box;
+  }
+
+  .rbc-month-view,
+  .rbc-time-view {
+    transform: none !important;
+    backface-visibility: hidden;
+  }
+
+  .rbc-row,
+  .rbc-date-cell,
+  .rbc-event {
+    transform: none !important;
+    backface-visibility: hidden;
   }
 `;
 
@@ -67,12 +180,27 @@ export default function Schedule() {
     appointments, setAppointments, addAppointment, updateAppointment,
     clients, setClients, services, setServices, employees, setEmployees,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, openModal, closeModal, user,
+    setFilter, getFilter
   } = useStore();
 
+  // Use the permission refresh hook
+  usePermissionRefresh();
+
   const [editingAppointment, setEditingAppointment] = useState(null);
-  const [currentView, setCurrentView] = useState('month');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState(() => getFilter('schedule', 'view', 'month'));
+  const [currentDate, setCurrentDate] = useState(() => {
+    const savedDate = getFilter('schedule', 'date');
+    return savedDate ? new Date(savedDate) : new Date();
+  });
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState(() => getFilter('schedule', 'employeeFilter', 'all'));
+  const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [hasViewAllPermission, setHasViewAllPermission] = useState(false);
+  const [showEmployeeFilter, setShowEmployeeFilter] = useState(() => getFilter('schedule', 'showFilter', false));
+  const [selectedEmployees, setSelectedEmployees] = useState(() => {
+    const savedEmployees = getFilter('schedule', 'selectedEmployees', []);
+    return new Set(savedEmployees);
+  });
 
   useEffect(() => {
     loadScheduleData();
@@ -81,6 +209,10 @@ export default function Schedule() {
   const loadScheduleData = async () => {
     setLoading(true);
     try {
+      // Check if user has view_all permission
+      const hasViewAll = user?.role === 'admin' || user?.schedule_view_all === true;
+      setHasViewAllPermission(hasViewAll);
+
       const [appointmentsRes, clientsRes, servicesRes, employeesRes] = await Promise.all([
         scheduleAPI.getAll(),
         clientsAPI.getAll(),
@@ -92,6 +224,17 @@ export default function Schedule() {
       setClients(clientsRes.data);
       setServices(servicesRes.data);
       setEmployees(employeesRes.data);
+
+      // Load available employees for filter if user has view_all permission
+      if (hasViewAll) {
+        try {
+          const availableEmployeesRes = await scheduleAPI.getAvailableEmployees();
+          setAvailableEmployees(availableEmployeesRes.data);
+        } catch (err) {
+          console.error('Failed to load available employees:', err);
+        }
+      }
+
       clearError();
     } catch (err) {
       setError('Failed to load schedule data');
@@ -158,21 +301,16 @@ export default function Schedule() {
   const parseToLocalDate = (value) => {
     try {
       if (value instanceof Date) {
-        return new Date(
-          value.getFullYear(), value.getMonth(), value.getDate(),
-          value.getHours(), value.getMinutes(), value.getSeconds() || 0
-        );
+        return new Date(value);
       }
       if (typeof value === 'string') {
+        // Handle ISO string format
+        if (value.includes('T') || value.includes('Z')) {
+          return new Date(value);
+        }
+        // Handle 'YYYY-MM-DD HH:mm:ss' format
         const s = value.replace(' ', 'T');
-        const [datePart, timePartRaw] = s.split('T');
-        const [y, m, d] = (datePart || '').split('-').map(Number);
-        const timePart = timePartRaw || '00:00:00';
-        const [hh, mm, ss] = timePart.split(':');
-        return new Date(
-          y || 1970, (m || 1) - 1, d || 1,
-          parseInt(hh || '0', 10), parseInt(mm || '0', 10), parseInt(ss || '0', 10)
-        );
+        return new Date(s);
       }
       return new Date(value);
     } catch (e) {
@@ -181,8 +319,77 @@ export default function Schedule() {
     }
   };
 
+  const handleEmployeeFilterChange = (employeeId) => {
+    setSelectedEmployeeFilter(employeeId);
+    setFilter('schedule', 'employeeFilter', employeeId);
+  };
+
+  const handleEmployeeToggle = (employeeId) => {
+    setSelectedEmployees(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(employeeId)) {
+        newSet.delete(employeeId);
+      } else {
+        newSet.add(employeeId);
+      }
+      // Save the updated set to persistent storage
+      setFilter('schedule', 'selectedEmployees', Array.from(newSet));
+      return newSet;
+    });
+  };
+
+  const getFilteredEmployees = () => {
+    if (currentView === 'month') {
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      return availableEmployees.filter(emp => {
+        const hasAppointments = appointments.some(apt => 
+          apt.employee_id === emp.id && 
+          new Date(apt.appointment_date) >= startOfMonth && 
+          new Date(apt.appointment_date) <= endOfMonth
+        );
+        return hasAppointments;
+      });
+    } else if (currentView === 'week') {
+      const startOfWeek = new Date(currentDate);
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      return availableEmployees.filter(emp => {
+        const hasAppointments = appointments.some(apt => 
+          apt.employee_id === emp.id && 
+          new Date(apt.appointment_date) >= startOfWeek && 
+          new Date(apt.appointment_date) <= endOfWeek
+        );
+        return hasAppointments;
+      });
+    } else { // day view
+      const startOfDay = new Date(currentDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(currentDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      return availableEmployees.filter(emp => {
+        const hasAppointments = appointments.some(apt => 
+          apt.employee_id === emp.id && 
+          new Date(apt.appointment_date) >= startOfDay && 
+          new Date(apt.appointment_date) <= endOfDay
+        );
+        return hasAppointments;
+      });
+    }
+  };
+
   const events = useMemo(() => {
-    return appointments.map(app => {
+    let filteredAppointments = appointments;
+    
+    // Filter by selected employees if user has view_all permission
+    if (hasViewAllPermission && selectedEmployees.size > 0) {
+      filteredAppointments = appointments.filter(app => selectedEmployees.has(app.employee_id));
+    } else if (hasViewAllPermission && selectedEmployeeFilter !== 'all') {
+      filteredAppointments = appointments.filter(app => app.employee_id === selectedEmployeeFilter);
+    }
+    
+    return filteredAppointments.map(app => {
       const start = parseToLocalDate(app.appointment_date);
       // If end_time is not provided, default to one hour after start
       const end = app.end_time ? parseToLocalDate(app.end_time) : new Date(start.getTime() + 60 * 60 * 1000);
@@ -194,7 +401,7 @@ export default function Schedule() {
         resource: app, // a back-reference to the original appointment object
       };
     });
-  }, [appointments, clients, services]);
+  }, [appointments, clients, services, selectedEmployeeFilter, selectedEmployees, hasViewAllPermission]);
 
   // Drag-and-drop and resize handlers to update only time fields and retain other information
   const DragAndDropCalendar = useMemo(() => withDragAndDrop(Calendar), []);
@@ -250,6 +457,79 @@ export default function Schedule() {
         </div>
       )}
 
+      {/* Employee Filter - Only show if user has view_all permission */}
+      <PermissionGate page="schedule" permission="read">
+        {hasViewAllPermission && availableEmployees.length > 0 && (
+          <div className="mb-4 px-4 py-2 bg-gray-50 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">Filter by Employee:</label>
+                <select
+                  value={selectedEmployeeFilter}
+                  onChange={(e) => handleEmployeeFilterChange(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                >
+                  <option value="all">All Employees</option>
+                  {availableEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Multi-select Filter Button */}
+              <button
+                onClick={() => {
+                  const newShowFilter = !showEmployeeFilter;
+                  setShowEmployeeFilter(newShowFilter);
+                  setFilter('schedule', 'showFilter', newShowFilter);
+                }}
+                className="flex items-center space-x-2 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                <FunnelIcon className="h-4 w-4" />
+                <span className="text-sm">Filter</span>
+              </button>
+            </div>
+            
+            {/* Multi-select Employee Filter Panel */}
+            {showEmployeeFilter && (
+              <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">
+                  Filter by Employees ({getFilteredEmployees().length} available)
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {getFilteredEmployees().map((emp) => (
+                    <label key={emp.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployees.has(emp.id)}
+                        onChange={() => handleEmployeeToggle(emp.id)}
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-gray-700">{emp.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedEmployees.size > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        setSelectedEmployees(new Set());
+                        setFilter('schedule', 'selectedEmployees', []);
+                      }}
+                      className="text-sm text-red-600 hover:text-red-800"
+                    >
+                      Clear All Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </PermissionGate>
+
       <DragAndDropCalendar
         localizer={localizer}
         events={events}
@@ -265,8 +545,14 @@ export default function Schedule() {
         onEventDrop={handleEventDrop}
         onEventResize={handleEventResize}
         resizable
-        onView={setCurrentView}
-        onNavigate={setCurrentDate}
+        onView={(view) => {
+          setCurrentView(view);
+          setFilter('schedule', 'view', view);
+        }}
+        onNavigate={(date) => {
+          setCurrentDate(date);
+          setFilter('schedule', 'date', date.toISOString());
+        }}
         components={{
           toolbar: ({ label }) => (
             <div className="text-center text-xl font-semibold mb-4">
@@ -287,33 +573,42 @@ export default function Schedule() {
           },
         }}
         min={new Date(0, 0, 0, 6, 0, 0)} // Start at 6AM
-        max={new Date(0, 0, 0, 22, 0, 0)} // End at 10PM
+        max={new Date(0, 0, 0, 21, 0, 0)} // End at 9PM
       />
 
       {/* Navigation controls underneath the calendar */}
       <div className="flex justify-between items-center mt-4 px-4 py-2 border-t">
         <div className="flex space-x-2">
           <button
-            onClick={() => setCurrentView('month')}
+            onClick={() => {
+              setCurrentView('month');
+              setFilter('schedule', 'view', 'month');
+            }}
             className={`px-3 py-1 rounded ${
-              currentView === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              currentView === 'month' ? 'bg-red-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
             }`}
           >
             Month
           </button>
           <button
-            onClick={() => setCurrentView('week')}
+            onClick={() => {
+              setCurrentView('week');
+              setFilter('schedule', 'view', 'week');
+            }}
             className={`px-3 py-1 rounded ${
-              currentView === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              currentView === 'week' ? 'bg-red-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
             }`}
           >
             Week
           </button>
           {currentDate.getDay() !== 0 && ( // Hide Day button when current date is Sunday
             <button
-              onClick={() => setCurrentView('day')}
+              onClick={() => {
+                setCurrentView('day');
+                setFilter('schedule', 'view', 'day');
+              }}
               className={`px-3 py-1 rounded ${
-                currentView === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                currentView === 'day' ? 'bg-red-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
               Day
@@ -333,14 +628,19 @@ export default function Schedule() {
                 newDate.setDate(newDate.getDate() - 1);
               }
               setCurrentDate(newDate);
+              setFilter('schedule', 'date', newDate.toISOString());
             }}
             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
           >
             Prev
           </button>
           <button
-            onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => {
+              const today = new Date();
+              setCurrentDate(today);
+              setFilter('schedule', 'date', today.toISOString());
+            }}
+            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Today
           </button>
@@ -355,6 +655,7 @@ export default function Schedule() {
                 newDate.setDate(newDate.getDate() + 1);
               }
               setCurrentDate(newDate);
+              setFilter('schedule', 'date', newDate.toISOString());
             }}
             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
           >

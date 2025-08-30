@@ -9,7 +9,7 @@ from database import get_session
 from models import (
     User, UserCreate, UserUpdate, UserRead, UserPermission, UserPermissionCreate,
     UserPermissionUpdate, UserPermissionRead, LoginRequest, LoginResponse,
-    PasswordResetRequest, UserRole, PermissionType
+    PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType
 )
 
 router = APIRouter()
@@ -96,6 +96,16 @@ def get_current_user(
 
 def get_user_permissions(user: User, session: Session) -> List[str]:
     """Get user permissions as list of strings"""
+    # Admin users have access to everything
+    if user.role == UserRole.ADMIN:
+        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
+        all_permissions = ['read', 'write', 'delete', 'admin']
+        admin_permissions = []
+        for page in all_pages:
+            for permission in all_permissions:
+                admin_permissions.append(f"{page}:{permission}")
+        return admin_permissions
+    
     permissions = session.exec(
         select(UserPermission).where(UserPermission.user_id == user.id)
     ).all()
@@ -110,6 +120,16 @@ def get_user_permissions(user: User, session: Session) -> List[str]:
 
 def get_user_permissions_list(user: User, session: Session) -> List[str]:
     """Get user permissions as list of strings"""
+    # Admin users have access to everything
+    if user.role == UserRole.ADMIN:
+        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
+        all_permissions = ['read', 'write', 'delete', 'admin']
+        admin_permissions = []
+        for page in all_pages:
+            for permission in all_permissions:
+                admin_permissions.append(f"{page}:{permission}")
+        return admin_permissions
+    
     permissions = session.exec(
         select(UserPermission).where(UserPermission.user_id == user.id)
     ).all()
@@ -188,9 +208,35 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     # Get user permissions
     permissions = get_user_permissions_list(user, session)
     
+    # Get employee permissions if user has a linked employee account
+    employee_permissions = {}
+    if user.employee:
+        employee = user.employee
+        # Convert employee permission fields to the format expected by frontend
+        permission_fields = [
+            'clients_read', 'clients_write', 'clients_delete', 'clients_admin',
+            'inventory_read', 'inventory_write', 'inventory_delete', 'inventory_admin',
+            'services_read', 'services_write', 'services_delete', 'services_admin',
+            'employees_read', 'employees_write', 'employees_delete', 'employees_admin',
+            'schedule_read', 'schedule_write', 'schedule_delete', 'schedule_admin', 'schedule_view_all',
+            'attendance_read', 'attendance_write', 'attendance_delete', 'attendance_admin',
+            'documents_read', 'documents_write', 'documents_delete', 'documents_admin',
+            'admin_read', 'admin_write', 'admin_delete', 'admin_admin'
+        ]
+        
+        for field in permission_fields:
+            employee_permissions[field] = getattr(employee, field, False)
+    
+    # Create user data with employee permissions
+    user_data = UserRead.from_orm(user)
+    if employee_permissions:
+        # Update the user_data object with employee permissions
+        for field, value in employee_permissions.items():
+            setattr(user_data, field, value)
+    
     return LoginResponse(
         access_token=access_token,
-        user=UserRead.from_orm(user),
+        user=user_data,
         permissions=permissions
     )
 
@@ -228,10 +274,60 @@ def reset_password(reset_data: PasswordResetRequest, session: Session = Depends(
     
     return {"message": "Password reset successfully"}
 
+@router.post("/change-password")
+def change_password(
+    password_data: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Change user password with current password verification"""
+    # Verify current password
+    if not current_user.verify_password(password_data.current_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    
+    # Update password
+    current_user.password_hash = User.hash_password(password_data.new_password)
+    current_user.updated_at = datetime.utcnow()
+    session.commit()
+    
+    return {"message": "Password changed successfully"}
+
 @router.get("/me", response_model=UserRead)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
+def get_current_user_info(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Get current user information"""
-    return UserRead.from_orm(current_user)
+    # Get employee permissions if user has a linked employee account
+    employee_permissions = {}
+    if current_user.employee:
+        employee = current_user.employee
+        # Convert employee permission fields to the format expected by frontend
+        permission_fields = [
+            'clients_read', 'clients_write', 'clients_delete', 'clients_admin',
+            'inventory_read', 'inventory_write', 'inventory_delete', 'inventory_admin',
+            'services_read', 'services_write', 'services_delete', 'services_admin',
+            'employees_read', 'employees_write', 'employees_delete', 'employees_admin',
+            'schedule_read', 'schedule_write', 'schedule_delete', 'schedule_admin', 'schedule_view_all',
+            'attendance_read', 'attendance_write', 'attendance_delete', 'attendance_admin',
+            'documents_read', 'documents_write', 'documents_delete', 'documents_admin',
+            'admin_read', 'admin_write', 'admin_delete', 'admin_admin'
+        ]
+        
+        for field in permission_fields:
+            employee_permissions[field] = getattr(employee, field, False)
+    
+    # Create user data with employee permissions
+    user_data = UserRead.from_orm(current_user)
+    if employee_permissions:
+        # Update the user_data object with employee permissions
+        for field, value in employee_permissions.items():
+            setattr(user_data, field, value)
+    
+    return user_data
 
 @router.get("/me/permissions")
 def get_current_user_permissions(

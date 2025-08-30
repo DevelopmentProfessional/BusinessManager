@@ -1,23 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { clientsAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ClientForm from '../components/ClientForm';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import PermissionGate from '../components/PermissionGate';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Clients() {
   const { 
     clients, setClients, addClient, updateClient, removeClient,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, openModal, closeModal, hasPermission,
+    setFilter, getFilter
   } = useStore();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
 
   const [editingClient, setEditingClient] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(() => getFilter('clients', 'searchTerm', ''));
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -51,16 +58,29 @@ export default function Clients() {
   };
 
   const handleCreateClient = () => {
+    if (!hasPermission('clients', 'write')) {
+      setError('You do not have permission to create clients');
+      return;
+    }
     setEditingClient(null);
     openModal('client-form');
   };
 
   const handleEditClient = (client) => {
+    if (!hasPermission('clients', 'write')) {
+      setError('You do not have permission to edit clients');
+      return;
+    }
     setEditingClient(client);
     openModal('client-form');
   };
 
   const handleDeleteClient = async (clientId) => {
+    if (!hasPermission('clients', 'delete')) {
+      setError('You do not have permission to delete clients');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this client?')) return;
 
     try {
@@ -89,6 +109,20 @@ export default function Clients() {
       console.error(err);
     }
   };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setFilter('clients', 'searchTerm', value);
+  };
+
+  // Filter clients based on search term
+  const filteredClients = clients.filter(client =>
+    client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.address?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -133,16 +167,33 @@ export default function Clients() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-        {/* Desktop Add Button */}
-        <div className="hidden md:block mt-4">
-          <button
-            type="button"
-            onClick={handleCreateClient}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Client
-          </button>
+        
+        {/* Search and Add Button Row */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-4">
+          {/* Search Input */}
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search clients by name, email, phone, or address..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            />
+          </div>
+          
+          {/* Desktop Add Button */}
+          <PermissionGate page="clients" permission="write">
+            <div className="hidden md:block">
+              <button
+                type="button"
+                onClick={handleCreateClient}
+                className="btn-primary flex items-center"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Add Client
+              </button>
+            </div>
+          </PermissionGate>
         </div>
       </div>
 
@@ -157,9 +208,9 @@ export default function Clients() {
         {/* Client List Area */}
         <div className={`flex-1 transition-all duration-300 ${selectedClient ? 'flex-shrink-0' : ''}`}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full">
-            {clients.length > 0 ? (
+            {filteredClients.length > 0 ? (
               <div className="divide-y divide-gray-200">
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <div 
                     key={client.id}
                     onClick={() => handleClientSelect(client)}
@@ -179,24 +230,28 @@ export default function Clients() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClient(client.id);
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClient(client);
-                          }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
+                        <PermissionGate page="clients" permission="delete">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClient(client.id);
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate page="clients" permission="write">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClient(client);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                        </PermissionGate>
                       </div>
                     </div>
                   </div>
@@ -204,7 +259,9 @@ export default function Clients() {
               </div>
             ) : (
               <div className="flex items-center justify-center h-32">
-                <p className="text-gray-500">No clients found</p>
+                <p className="text-gray-500">
+                  {searchTerm ? `No clients found matching "${searchTerm}"` : 'No clients found'}
+                </p>
               </div>
             )}
           </div>
@@ -259,7 +316,7 @@ export default function Clients() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {clients.map((client) => (
+              {filteredClients.map((client) => (
                 <tr key={client.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {client.name}
@@ -274,18 +331,22 @@ export default function Clients() {
                     {client.address || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEditClient(client)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClient(client.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
+                    <PermissionGate page="clients" permission="write">
+                      <button
+                        onClick={() => handleEditClient(client)}
+                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                    </PermissionGate>
+                    <PermissionGate page="clients" permission="delete">
+                      <button
+                        onClick={() => handleDeleteClient(client.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </PermissionGate>
                   </td>
                 </tr>
               ))}
@@ -301,14 +362,16 @@ export default function Clients() {
       </div>
 
       {/* Mobile Add Button */}
-      <MobileAddButton 
-        onClick={handleCreateClient}
-        label="Add Client"
-      />
+      <PermissionGate page="clients" permission="write">
+        <MobileAddButton 
+          onClick={handleCreateClient}
+          label="Add Client"
+        />
+      </PermissionGate>
 
       {/* Modal for Client Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {isModalOpen && (
+      <Modal isOpen={isModalOpen === 'client-form'} onClose={closeModal}>
+        {isModalOpen === 'client-form' && (
           <ClientForm
             client={editingClient}
             onSubmit={handleSubmitClient}

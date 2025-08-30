@@ -1,7 +1,19 @@
+import os
+import logging
+
+# Completely disable ALL SQLAlchemy logging BEFORE any imports
+logging.getLogger("sqlalchemy").disabled = True
+logging.getLogger("sqlalchemy.engine").disabled = True
+logging.getLogger("sqlalchemy.pool").disabled = True
+logging.getLogger("sqlalchemy.dialects").disabled = True
+logging.getLogger("sqlalchemy.orm").disabled = True
+logging.getLogger("sqlalchemy.engine.base.Engine").disabled = True
+logging.getLogger("sqlalchemy.dialects.sqlite").disabled = True
+logging.getLogger("sqlalchemy.pool.impl.QueuePool").disabled = True
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import os
 from database import create_db_and_tables
 from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth
 
@@ -33,6 +45,12 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "Business Management API is running"}
+
+@app.on_event("startup")
+async def startup_event():
+    print("Business Management API is starting...")
+    print("Database tables initialized")
+    print("All routers loaded successfully")
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])

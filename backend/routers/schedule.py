@@ -3,22 +3,74 @@ from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
 from database import get_session
-from models import Schedule, ScheduleCreate, ScheduleRead
+from models import Schedule, ScheduleCreate, ScheduleRead, User
+from routers.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("/schedule", response_model=List[ScheduleRead])
-async def get_schedule(session: Session = Depends(get_session)):
-    """Get all appointments"""
-    appointments = session.exec(select(Schedule)).all()
-    return appointments
+async def get_schedule(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Get appointments based on user permissions"""
+    # Admin users can see all appointments
+    if current_user.role == "admin":
+        appointments = session.exec(select(Schedule)).all()
+        return appointments
+    
+    # Check if user has linked employee and view_all permission
+    if current_user.employee and current_user.employee.schedule_view_all:
+        appointments = session.exec(select(Schedule)).all()
+        return appointments
+    
+    # Check if user has linked employee and basic schedule_read permission
+    if current_user.employee and current_user.employee.schedule_read:
+        # Only show appointments for the current employee
+        appointments = session.exec(
+            select(Schedule).where(Schedule.employee_id == current_user.employee.id)
+        ).all()
+        return appointments
+    
+    # No permissions - return empty list
+    return []
 
 @router.get("/schedule/employee/{employee_id}", response_model=List[ScheduleRead])
-async def get_employee_schedule(employee_id: UUID, session: Session = Depends(get_session)):
-    """Get schedule for a specific employee"""
+async def get_employee_schedule(
+    employee_id: UUID, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Get schedule for a specific employee (requires view_all permission)"""
+    # Check permissions
+    if current_user.role != "admin" and not (current_user.employee and current_user.employee.schedule_view_all):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
     statement = select(Schedule).where(Schedule.employee_id == employee_id)
     appointments = session.exec(statement).all()
     return appointments
+
+@router.get("/schedule/employees", response_model=List[dict])
+async def get_available_employees(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of employees for filtering (requires view_all permission)"""
+    from models import Employee
+    
+    # Check permissions
+    if current_user.role != "admin" and not (current_user.employee and current_user.employee.schedule_view_all):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    employees = session.exec(select(Employee)).all()
+    return [
+        {
+            "id": str(emp.id),
+            "name": f"{emp.first_name} {emp.last_name}",
+            "is_active": emp.is_active
+        }
+        for emp in employees if emp.is_active
+    ]
 
 @router.post("/schedule", response_model=ScheduleRead)
 async def create_appointment(appointment_data: ScheduleCreate, session: Session = Depends(get_session)):

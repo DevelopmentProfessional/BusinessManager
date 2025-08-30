@@ -16,6 +16,11 @@ const useStore = create((set, get) => ({
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('permissions');
     set({ user: null, token: null, permissions: [] });
+    
+    // Clear API cache on logout
+    if (typeof window !== 'undefined' && window.clearApiCache) {
+      window.clearApiCache();
+    }
   },
   isAuthenticated: () => {
     const state = get();
@@ -23,9 +28,173 @@ const useStore = create((set, get) => ({
   },
   hasPermission: (page, permission) => {
     const state = get();
+    const user = state.user || JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+    
+    // Admin users have access to everything
+    if (user && user.role === 'admin') {
+      return true;
+    }
+    
+    // Check user permissions first (from UserPermission table)
     const userPermissions = state.permissions.length > 0 ? state.permissions : 
       JSON.parse(localStorage.getItem('permissions') || sessionStorage.getItem('permissions') || '[]');
-    return userPermissions.includes(`${page}:${permission}`) || userPermissions.includes(`${page}:admin`);
+    
+    if (userPermissions.includes(`${page}:${permission}`) || userPermissions.includes(`${page}:admin`)) {
+      return true;
+    }
+    
+    // If no user permissions found, check employee permissions (from employee table)
+    // Convert employee permission fields to the expected format
+    const employeePermissionField = `${page}_${permission}`;
+    const employeeAdminField = `${page}_admin`;
+    
+    // Check if the user has the specific permission or admin access for this page
+    if (user && user[employeePermissionField] === true) {
+      return true;
+    }
+    
+    if (user && user[employeeAdminField] === true) {
+      return true;
+    }
+    
+    return false;
+  },
+
+  // Function to refresh user permissions from server
+  refreshUserPermissions: async () => {
+    try {
+      const token = get().token || localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/v1/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        set({ user: userData });
+        
+        // Update localStorage/sessionStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('user', JSON.stringify(userData));
+      }
+    } catch (error) {
+      console.error('Failed to refresh user permissions:', error);
+    }
+  },
+
+  // Function to update employee permissions in real-time
+  updateEmployeePermissions: (employeeId, updatedEmployee) => {
+    const state = get();
+    
+    // Update the employee in the employees list
+    const updatedEmployees = state.employees.map(employee => 
+      employee.id === employeeId ? { ...employee, ...updatedEmployee } : employee
+    );
+    set({ employees: updatedEmployees });
+    
+    // If the updated employee is the current user, also update the current user's permissions
+    const currentUser = state.user || JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+    if (currentUser && currentUser.employee && currentUser.employee.id === employeeId) {
+      const updatedUser = { ...currentUser, ...updatedEmployee };
+      set({ user: updatedUser });
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Trigger a permission refresh to ensure all components are updated
+      setTimeout(() => {
+        get().refreshUserPermissions();
+      }, 100);
+    }
+  },
+
+  // Function to handle permission changes for any employee
+  handlePermissionChange: async (employeeId, permissionField, value) => {
+    const state = get();
+    
+    try {
+      // Update the employee in the store immediately for responsive UI
+      const updatedEmployees = state.employees.map(employee => 
+        employee.id === employeeId ? { ...employee, [permissionField]: value } : employee
+      );
+      set({ employees: updatedEmployees });
+      
+      // If this is the current user, update their permissions as well
+      const currentUser = state.user || JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+      if (currentUser && currentUser.employee && currentUser.employee.id === employeeId) {
+        const updatedUser = { ...currentUser, [permissionField]: value };
+        set({ user: updatedUser });
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // Dispatch a custom event to notify all components of permission changes
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('permissionsChanged', {
+            detail: { employeeId, permissionField, value, updatedUser }
+          }));
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      return false;
+    }
+  },
+
+  // Persistent filter state management
+  filters: {},
+  setFilter: (page, filterKey, value) => {
+    const state = get();
+    const currentFilters = state.filters[page] || {};
+    const updatedFilters = {
+      ...state.filters,
+      [page]: {
+        ...currentFilters,
+        [filterKey]: value
+      }
+    };
+    
+    set({ filters: updatedFilters });
+    
+    // Save to localStorage for persistence across sessions
+    localStorage.setItem('userFilters', JSON.stringify(updatedFilters));
+  },
+  
+  getFilter: (page, filterKey, defaultValue = null) => {
+    const state = get();
+    return state.filters[page]?.[filterKey] ?? defaultValue;
+  },
+  
+  clearFilters: (page = null) => {
+    const state = get();
+    if (page) {
+      // Clear filters for specific page
+      const updatedFilters = { ...state.filters };
+      delete updatedFilters[page];
+      set({ filters: updatedFilters });
+      localStorage.setItem('userFilters', JSON.stringify(updatedFilters));
+    } else {
+      // Clear all filters
+      set({ filters: {} });
+      localStorage.removeItem('userFilters');
+    }
+  },
+  
+  // Load filters from localStorage on app initialization
+  loadPersistedFilters: () => {
+    try {
+      const savedFilters = localStorage.getItem('userFilters');
+      if (savedFilters) {
+        const filters = JSON.parse(savedFilters);
+        set({ filters });
+      }
+    } catch (error) {
+      console.error('Error loading persisted filters:', error);
+    }
   },
 
   // Clients state

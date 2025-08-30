@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import EmployeeForm from '../components/EmployeeForm';
@@ -12,8 +13,12 @@ export default function Employees() {
   const { 
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, openModal, closeModal,
+    user: currentUser, updateEmployeePermissions
   } = useStore();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
 
   const [editingEmployee, setEditingEmployee] = useState(null);
   const location = useLocation();
@@ -75,23 +80,67 @@ export default function Employees() {
     try {
       if (editingEmployee) {
         const response = await employeesAPI.update(editingEmployee.id, employeeData);
-        updateEmployee(editingEmployee.id, response.data);
+        const updatedEmployee = response.data;
+        updateEmployee(editingEmployee.id, updatedEmployee);
+        
+        // Update permissions in real-time across all components
+        updateEmployeePermissions(editingEmployee.id, updatedEmployee);
       } else {
         const response = await employeesAPI.create(employeeData);
-        addEmployee(response.data);
+        const newEmployee = response.data;
+        addEmployee(newEmployee);
+        
+        // Update permissions in real-time for new employee
+        updateEmployeePermissions(newEmployee.id, newEmployee);
       }
       closeModal();
       clearError();
     } catch (err) {
-      setError('Failed to save employee');
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save employee';
+      setError(errorMessage);
+      console.error('Employee save error:', err);
+    }
+  };
+
+  const handleUserAccountAction = async (action, employeeId, userData) => {
+    try {
+      if (action === 'create') {
+        await employeesAPI.createUserAccount(employeeId, userData);
+      } else if (action === 'update') {
+        await employeesAPI.updateUserAccount(employeeId, userData);
+      }
+      clearError();
+    } catch (err) {
+      setError(`Failed to ${action} user account`);
       console.error(err);
     }
   };
+
+  // Check if user has admin access
+  const isAdmin = currentUser?.role === 'admin';
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 text-red-400">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Access Denied</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Only administrators can manage employee profiles and permissions.
+          </p>
+        </div>
       </div>
     );
   }
@@ -129,6 +178,7 @@ export default function Employees() {
             { key: 'email', title: 'Email' },
             { key: 'role', title: 'Role' },
             { key: 'is_active', title: 'Status', render: (v) => (v ? 'Active' : 'Inactive') },
+            { key: 'user_id', title: 'User Account', render: (v) => (v ? 'Linked' : 'No Account') },
           ]}
           onEdit={(item) => handleEditEmployee(item)}
           onDelete={(item) => handleDeleteEmployee(item.id)}
@@ -160,6 +210,9 @@ export default function Employees() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User Account
+                    </th>
                     <th className="relative px-6 py-3">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -187,6 +240,15 @@ export default function Employees() {
                             : 'bg-red-100 text-red-800'
                         }`}>
                           {employee.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          employee.user_id 
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {employee.user_id ? 'Linked' : 'No Account'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
@@ -221,7 +283,7 @@ export default function Employees() {
       </div>
 
       {/* Modal for Employee Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <Modal isOpen={isModalOpen} onClose={closeModal} fullScreen={true}>
         {isModalOpen && (
           <EmployeeForm
             employee={editingEmployee}

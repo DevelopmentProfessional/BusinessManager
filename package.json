@@ -4,12 +4,12 @@
   "description": "Business Management System - Full Stack Application",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0",
+    "dev:backend": "cd backend && ..\\.venv\\Scripts\\python.exe start_server.py",
     "dev:frontend": "cd frontend && npm run dev",
-    "start:backend": "cd backend && python -m uvicorn main:app --host 0.0.0.0",
+    "start:backend": "cd backend && ..\\.venv\\Scripts\\python.exe start_server.py",
     "start:frontend": "cd frontend && npm run dev",
     "install:all": "npm run install:backend && npm run install:frontend",
-    "install:backend": "cd backend && pip install -r requirements.txt",
+    "install:backend": "cd backend && ..\\.venv\\Scripts\\pip.exe install -r requirements.txt",
     "install:frontend": "cd frontend && npm install",
     "build": "cd frontend && npm run build",
     "setup": "npm run install:all"

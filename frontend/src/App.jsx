@@ -6,33 +6,32 @@ import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import Inventory from './pages/Inventory';
 import Services from './pages/Services';
+import Suppliers from './pages/Suppliers';
 import Employees from './pages/Employees';
 import Schedule from './pages/Schedule';
 import Attendance from './pages/Attendance';
 import Documents from './pages/Documents';
 import DocumentEditor from './pages/DocumentEditor';
 import Admin from './pages/Admin';
+import Profile from './pages/Profile';
 import useStore from './store/useStore';
+
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredPermission = null }) => {
   const { isAuthenticated, hasPermission, user } = useStore();
   
-  // TEMPORARY: Always allow access during development
-  // TODO: Remove this bypass when login is working properly
-  
   // Check if user is authenticated
   if (!isAuthenticated()) {
-    console.log('🔓 LOGIN BYPASSED: Redirecting to dashboard instead of login');
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   // Check if user has required permission
   if (requiredPermission) {
     const [page, permission] = requiredPermission.split(':');
     if (!hasPermission(page, permission)) {
-      console.log(`🔓 PERMISSION BYPASSED: Accessing ${page}:${permission} without permission`);
-      // Allow access anyway during development
+      return <Navigate to="/dashboard" replace />;
     }
   }
   
@@ -40,44 +39,36 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 };
 
 function App() {
-  const { setUser, setToken, setPermissions } = useStore();
+  const { setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
 
+  // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {
-    // TEMPORARY: Bypass login for development - Create fake admin session
-    const fakeToken = 'fake-jwt-token-for-development';
-    const fakeUser = {
-      id: 'fake-admin-id',
-      username: 'admin',
-      email: 'admin@businessmanager.com',
-      first_name: 'Admin',
-      last_name: 'User',
-      role: 'admin',
-      is_active: true
+    const initializeUserData = () => {
+      try {
+        // Try to get token and user data from storage
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
+        const permissionsData = localStorage.getItem('permissions') || sessionStorage.getItem('permissions');
+        
+        if (token && userData) {
+          const user = JSON.parse(userData);
+          const permissions = permissionsData ? JSON.parse(permissionsData) : [];
+          
+          // Set the data in the store
+          setToken(token);
+          setUser(user);
+          setPermissions(permissions);
+        }
+        
+        // Load persisted filters
+        loadPersistedFilters();
+      } catch (error) {
+        console.error('Error initializing user data:', error);
+      }
     };
-    const fakePermissions = [
-      'clients:read', 'clients:write', 'clients:delete', 'clients:admin',
-      'inventory:read', 'inventory:write', 'inventory:delete', 'inventory:admin',
-      'suppliers:read', 'suppliers:write', 'suppliers:delete', 'suppliers:admin',
-      'services:read', 'services:write', 'services:delete', 'services:admin',
-      'employees:read', 'employees:write', 'employees:delete', 'employees:admin',
-      'schedule:read', 'schedule:write', 'schedule:delete', 'schedule:admin',
-      'attendance:read', 'attendance:write', 'attendance:delete', 'attendance:admin',
-      'documents:read', 'documents:write', 'documents:delete', 'documents:admin',
-      'admin:read', 'admin:write', 'admin:delete', 'admin:admin'
-    ];
     
-    // Set fake authentication data
-    setToken(fakeToken);
-    setUser(fakeUser);
-    setPermissions(fakePermissions);
-    
-    // Store in localStorage for persistence
-    localStorage.setItem('token', fakeToken);
-    localStorage.setItem('user', JSON.stringify(fakeUser));
-    localStorage.setItem('permissions', JSON.stringify(fakePermissions));
-    
-    console.log('🔓 LOGIN BYPASSED: Using fake admin session for development');
-  }, [setUser, setToken, setPermissions]);
+    initializeUserData();
+  }, [setUser, setToken, setPermissions, loadPersistedFilters]);
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -108,6 +99,13 @@ function App() {
           <ProtectedRoute requiredPermission="services:read">
             <Layout>
               <Services />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/suppliers" element={
+          <ProtectedRoute requiredPermission="suppliers:read">
+            <Layout>
+              <Suppliers />
             </Layout>
           </ProtectedRoute>
         } />
@@ -155,6 +153,13 @@ function App() {
           <ProtectedRoute requiredPermission="admin:admin">
             <Layout>
               <Admin />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
             </Layout>
           </ProtectedRoute>
         } />

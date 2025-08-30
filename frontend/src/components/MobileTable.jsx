@@ -6,6 +6,7 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
+import PermissionGate from './PermissionGate';
 
 export default function MobileTable({ 
   data = [], 
@@ -15,6 +16,8 @@ export default function MobileTable({
   loading = false,
   emptyMessage = "No data available",
   rightActions, // optional: (item) => ReactNode, renders after Edit button on right
+  editPermission, // optional: { page, permission } for edit button
+  deletePermission, // optional: { page, permission } for delete button
 }) {
   const [searchTerms, setSearchTerms] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -88,13 +91,19 @@ export default function MobileTable({
               >
                 {/* Delete button - leftmost (optional) */}
                 {onDelete && (
-                  <button
-                    onClick={() => onDelete(item)}
-                    className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete"
+                  <PermissionGate 
+                    page={deletePermission?.page} 
+                    permission={deletePermission?.permission}
+                    hide={!deletePermission}
                   >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
+                    <button
+                      onClick={() => onDelete(item)}
+                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </PermissionGate>
                 )}
 
                 {/* Content area - flexible */}
@@ -110,13 +119,19 @@ export default function MobileTable({
 
                 {/* Right actions: Edit (optional) + custom */}
                 {onEdit && (
-                  <button
-                    onClick={() => onEdit(item)}
-                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Edit"
+                  <PermissionGate 
+                    page={editPermission?.page} 
+                    permission={editPermission?.permission}
+                    hide={!editPermission}
                   >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
+                    <button
+                      onClick={() => onEdit(item)}
+                      className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+                  </PermissionGate>
                 )}
                 {typeof rightActions === 'function' ? rightActions(item) : null}
               </div>
