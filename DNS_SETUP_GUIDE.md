@@ -1,32 +1,42 @@
-# 🌐 DNS Setup Guide for lavishbeautyhairandnail.care
+<div style="background-color: #1a1a1a; color: #e0e0e0; padding: 20px; border-radius: 8px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
 
-## 📋 **Required DNS Records**
+# 🌐 <span style="color: #4fc3f7;">DNS Setup Guide for lavishbeautyhairandnail.care</span>
 
-You need to add these DNS records in your domain provider's control panel (where you registered `lavishbeautyhairandnail.care`):
+## 📋 <span style="color: #81c784;">**Required DNS Records**</span>
 
-### **1. Main Website (Frontend)**
-```
+<div style="background-color: #2d2d2d; padding: 15px; border-radius: 6px; margin: 10px 0;">
+You need to add these DNS records in your domain provider's control panel (where you registered <code style="background-color: #424242; color: #ffb74d; padding: 2px 6px; border-radius: 4px;">lavishbeautyhairandnail.care</code>):
+</div>
+
+### **1. <span style="color: #f48fb1;">Main Website (Frontend)</span>**
+<div style="background-color: #263238; padding: 10px; border-radius: 4px; border-left: 4px solid #4fc3f7;">
+<pre style="color: #e0e0e0; margin: 0;">
 Type: CNAME
 Name: @ (or leave blank for root domain)
 Value: lavish-beauty-app.onrender.com
 TTL: 300 (5 minutes)
-```
+</pre>
+</div>
 
-### **2. www Subdomain**
-```
+### **2. <span style="color: #f48fb1;">www Subdomain</span>**
+<div style="background-color: #263238; padding: 10px; border-radius: 4px; border-left: 4px solid #81c784;">
+<pre style="color: #e0e0e0; margin: 0;">
 Type: CNAME
 Name: www
 Value: lavish-beauty-app.onrender.com
 TTL: 300 (5 minutes)
-```
+</pre>
+</div>
 
-### **3. API Subdomain**
-```
+### **3. <span style="color: #f48fb1;">API Subdomain</span>**
+<div style="background-color: #263238; padding: 10px; border-radius: 4px; border-left: 4px solid #ffb74d;">
+<pre style="color: #e0e0e0; margin: 0;">
 Type: CNAME
 Name: api
 Value: lavish-beauty-api.onrender.com
 TTL: 300 (5 minutes)
-```
+</pre>
+</div>
 
 ---
 

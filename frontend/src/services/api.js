@@ -10,7 +10,7 @@ const apiCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const api = axios.create({
-  baseURL: '/api/v1', // Force relative path to ensure Vite proxy is used
+  baseURL: API_BASE_URL, // Use environment variable for production, fallback to relative path for development
 });
 
 // Add authentication interceptor

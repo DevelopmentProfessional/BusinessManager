@@ -11,7 +11,7 @@ export default defineConfig({
     // Allow override via env var VITE_PORT; default to 5173
     port: Number(process.env.VITE_PORT || 5173),
     host: true,
-    // Proxy API calls to the backend to avoid mixed content and CORS
+    // Proxy API calls to the backend to avoid mixed content and CORS (development only)
     proxy: {
       '/api': {
         target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
@@ -22,5 +22,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist'
+  },
+  preview: {
+    port: process.env.PORT || 4173,
+    host: '0.0.0.0'
   }
 })
