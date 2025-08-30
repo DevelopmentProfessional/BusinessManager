@@ -21,7 +21,7 @@ services:
     env: node
     plan: starter
     buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npx serve dist -l $PORT
+    startCommand: cd frontend && npx serve dist -l $PORT -s
     envVars:
       - key: VITE_API_URL
         value: https://api.lavishbeautyhairandnail.care/api/v1
