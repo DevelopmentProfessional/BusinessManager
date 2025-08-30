@@ -3,23 +3,23 @@ services:
   - type: web
     name: business-manager-api
     env: python
+    plan: free
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: business-manager-db
-          property: connectionString
+        value: sqlite:///./business_manager.db
       - key: ALLOWED_ORIGINS
         value: https://business-manager-frontend.onrender.com,http://localhost:5173
       - key: ENVIRONMENT
-        value: production
+        value: development
     healthCheckPath: /health
 
   # Frontend Service
   - type: web
     name: business-manager-frontend
     env: node
+    plan: free
     buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && npm run preview -- --host 0.0.0.0 --port $PORT
     envVars:
@@ -29,8 +29,4 @@ services:
         value: false
     healthCheckPath: /
 
-# Database
-databases:
-  - name: business-manager-db
-    databaseName: businessmanager
-    user: businessmanager
+# No database section - using SQLite instead

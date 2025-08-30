@@ -19,30 +19,29 @@ This project is configured to deploy on Render with a PostgreSQL database, FastA
 3. Connect your GitHub repository
 4. Select the repository containing this project
 
-#### 2. Automatic Deployment
+ #### 2. Automatic Deployment
 
-The `render.yaml` file will automatically create:
-- **PostgreSQL Database**: `business-manager-db`
-- **Backend API**: `business-manager-api`
-- **Frontend**: `business-manager-frontend`
+ The `render.yaml` file will automatically create:
+ - **Backend API**: `business-manager-api` (with SQLite database) - **FREE TIER**
+ - **Frontend**: `business-manager-frontend` - **FREE TIER**
 
 #### 3. Manual Deployment (Alternative)
 
 If you prefer manual setup:
 
-##### Database Setup
-1. Create a new **PostgreSQL** database
-2. Note the connection string
+ ##### Database Setup
+ 1. No external database needed - uses SQLite (included with backend)
+ 2. Database file is created automatically
 
 ##### Backend API Setup
 1. Create a new **Web Service**
 2. **Environment**: Python
 3. **Build Command**: `pip install -r backend/requirements.txt`
 4. **Start Command**: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. **Environment Variables**:
-   - `DATABASE_URL`: Your PostgreSQL connection string
-   - `ALLOWED_ORIGINS`: `https://your-frontend-url.onrender.com,http://localhost:5173`
-   - `ENVIRONMENT`: `production`
+   5. **Environment Variables**:
+     - `DATABASE_URL`: `sqlite:///./business_manager.db` (SQLite database)
+     - `ALLOWED_ORIGINS`: `https://your-frontend-url.onrender.com,http://localhost:5173`
+     - `ENVIRONMENT`: `development`
 
 ##### Frontend Setup
 1. Create a new **Web Service**
@@ -55,18 +54,18 @@ If you prefer manual setup:
 
 ### 🔐 Environment Variables
 
-#### Backend (API Service)
-```env
-DATABASE_URL=postgresql://user:password@host:port/database
-ALLOWED_ORIGINS=https://your-frontend-url.onrender.com,http://localhost:5173
-ENVIRONMENT=production
-```
+   #### Backend (API Service)
+  ```env
+  DATABASE_URL=sqlite:///./business_manager.db
+  ALLOWED_ORIGINS=https://business-manager-frontend.onrender.com,http://localhost:5173
+  ENVIRONMENT=development
+  ```
 
-#### Frontend
-```env
-VITE_API_URL=https://your-backend-url.onrender.com/api/v1
-VITE_HTTPS=false
-```
+ #### Frontend
+ ```env
+ VITE_API_URL=https://business-manager-api.onrender.com/api/v1
+ VITE_HTTPS=false
+ ```
 
 ### 📊 Database Migration
 
@@ -75,18 +74,18 @@ The application will automatically:
 2. Handle schema migrations
 3. Initialize with default data if needed
 
-### 🔍 Health Checks
+ ### 🔍 Health Checks
 
-- **Backend**: `https://your-api-url.onrender.com/health`
-- **Frontend**: `https://your-frontend-url.onrender.com/`
+ - **Backend**: `https://business-manager-api.onrender.com/health`
+ - **Frontend**: `https://business-manager-frontend.onrender.com/`
 
-### 🚨 Important Notes
+   ### 🚨 Important Notes
 
-1. **Database**: Uses PostgreSQL in production (SQLite for local development)
-2. **CORS**: Configured for Render domains
-3. **HTTPS**: Disabled for frontend on Render (handled by Render's proxy)
-4. **File Uploads**: Consider using cloud storage (AWS S3, etc.) for production
-5. **Environment**: Set to production mode
+  1. **Database**: Uses SQLite (no external database costs!)
+  2. **CORS**: Configured for Render domains
+  3. **HTTPS**: Disabled for frontend on Render (handled by Render's proxy)
+  4. **File Uploads**: Consider using cloud storage (AWS S3, etc.) for production
+  5. **Environment**: Set to development mode (free tier)
 
 ### 🔧 Troubleshooting
 
@@ -96,9 +95,9 @@ The application will automatically:
    - Check Node.js version compatibility
    - Verify all dependencies in requirements.txt and package.json
 
-2. **Database Connection**:
-   - Ensure DATABASE_URL is correctly set
-   - Check PostgreSQL service is running
+ 2. **Database Connection**:
+    - Ensure DATABASE_URL is correctly set
+    - SQLite database file is created automatically
 
 3. **CORS Errors**:
    - Verify ALLOWED_ORIGINS includes your frontend URL
@@ -114,11 +113,23 @@ The application will automatically:
 - Backend logs show database connection and API requests
 - Frontend logs show build and runtime errors
 
-### 📈 Scaling
+ ### 📈 Scaling
 
-- **Free Tier**: Limited resources, good for testing
-- **Paid Plans**: Better performance and reliability
-- **Auto-scaling**: Available on paid plans
+ - **Free Tier**: Limited resources, good for testing
+ - **Paid Plans**: Better performance and reliability
+ - **Auto-scaling**: Available on paid plans
+
+ ### 🔄 Upgrading to Production
+
+ When you're ready to go live:
+
+ 1. **In Render Dashboard**: Go to each service settings
+ 2. **Change Plan**: Select "Starter" ($7/month) for each service
+ 3. **Update Environment**: Change `ENVIRONMENT` from `development` to `production`
+ 4. **Test**: Verify everything works with paid resources
+ 5. **Go Live**: Your app is now production-ready!
+
+ **Cost for Production**: $14/month total (Backend + Frontend)
 
 ### 🔄 Updates
 
