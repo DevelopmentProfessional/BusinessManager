@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 import jwt
 import os
+import bcrypt
 from database import get_session
 from models import (
     User, UserCreate, UserUpdate, UserRead, UserPermission, UserPermissionCreate,
@@ -141,6 +142,37 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
             permission_strings.append(f"{perm.page}:{perm.permission}")
     
     return permission_strings
+
+@router.post("/initialize")
+def initialize_admin(session: Session = Depends(get_session)):
+    """Initialize admin user if none exists"""
+    # Check if any admin user exists
+    admin_user = session.exec(select(User).where(User.role == UserRole.ADMIN)).first()
+    
+    if admin_user:
+        return {"message": "Admin user already exists", "username": admin_user.username}
+    
+    # Create admin user
+    password = "admin123"
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    
+    admin_user = User(
+        username="admin",
+        email="admin@lavishbeautyhairandnail.care",
+        hashed_password=hashed_password.decode('utf-8'),
+        role=UserRole.ADMIN,
+        is_active=True
+    )
+    
+    session.add(admin_user)
+    session.commit()
+    
+    return {
+        "message": "Admin user created successfully",
+        "username": "admin",
+        "password": "admin123",
+        "note": "Please change this password after first login"
+    }
 
 @router.post("/login", response_model=LoginResponse)
 def login(login_data: LoginRequest, session: Session = Depends(get_session)):
