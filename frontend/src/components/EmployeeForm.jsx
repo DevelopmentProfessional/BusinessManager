@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
-import { UserIcon, KeyIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { UserIcon, KeyIcon, ShieldCheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
 import useStore from '../store/useStore';
 
@@ -489,9 +489,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
           onClick={onCancel}
           className="text-gray-400 hover:text-gray-600"
         >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XMarkIcon className="h-6 w-6" />
         </button>
       </div>
 
