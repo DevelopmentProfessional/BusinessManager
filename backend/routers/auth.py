@@ -143,6 +143,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     
     return permission_strings
 
+@router.get("/initialize")
 @router.post("/initialize")
 def initialize_admin(session: Session = Depends(get_session)):
     """Initialize admin user if none exists"""
