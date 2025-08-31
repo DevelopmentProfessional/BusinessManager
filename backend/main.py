@@ -44,7 +44,27 @@ app.add_middleware(
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "message": "Business Management API is running"}
+    try:
+        from database import get_session
+        from models import User
+        
+        # Test database connection
+        session = next(get_session())
+        user_count = session.query(User).count()
+        session.close()
+        
+        return {
+            "status": "healthy", 
+            "message": "Business Management API is running",
+            "database": "connected",
+            "users_count": user_count
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "message": "Database connection failed",
+            "error": str(e)
+        }
 
 @app.on_event("startup")
 async def startup_event():
