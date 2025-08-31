@@ -38,104 +38,115 @@ const views = {
 };
 
 const CustomCalendarWrapper = styled.div`
-  /* Simplified red color scheme for the calendar */
+  /* Subtle red accent for buttons and events only */
   .rbc-calendar {
-    background-color: #fef2f2;
+    background-color: white;
   }
 
   .rbc-header {
-    background-color: #dc2626;
-    color: white;
-    font-weight: bold;
+    background-color: #f8f9fa;
+    color: #374151;
+    font-weight: 600;
     padding: 8px;
-    border: 1px solid #b91c1c;
+    border: 1px solid #e5e7eb;
   }
 
   .rbc-month-view {
-    border: 2px solid #dc2626;
+    border: 1px solid #e5e7eb;
     border-radius: 8px;
     overflow: hidden;
   }
 
   .rbc-date-cell {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
+    background-color: white;
+    border: 1px solid #e5e7eb;
     padding: 4px;
   }
 
   .rbc-date-cell.rbc-off-range {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background-color: #f9fafb;
+    color: #9ca3af;
   }
 
   .rbc-date-cell.rbc-today {
-    background-color: #fecaca;
+    background-color: #fef2f2;
     font-weight: bold;
     color: #dc2626;
+    border: 2px solid #dc2626;
   }
 
+  /* Events with red styling */
   .rbc-event {
     background-color: #dc2626 !important;
     border-color: #b91c1c !important;
     color: white !important;
-    border-radius: 4px;
+    border-radius: 6px;
     margin: 1px;
-    padding: 2px 4px;
+    padding: 3px 6px;
     font-size: 12px;
+    font-weight: 500;
   }
 
   .rbc-event:hover {
     background-color: #b91c1c !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 
   .rbc-event.rbc-selected {
     background-color: #991b1b !important;
+    box-shadow: 0 0 0 2px #dc2626;
   }
 
+  /* Keep toolbar neutral */
   .rbc-toolbar {
-    background-color: #dc2626;
-    color: white;
+    background-color: #f8f9fa;
+    color: #374151;
     padding: 12px;
     border-radius: 8px 8px 0 0;
+    border: 1px solid #e5e7eb;
   }
 
   .rbc-toolbar button {
-    background-color: #b91c1c;
-    border: 1px solid #991b1b;
-    color: white;
+    background-color: #white;
+    border: 1px solid #d1d5db;
+    color: #374151;
   }
 
   .rbc-toolbar button:hover {
-    background-color: #991b1b;
+    background-color: #f3f4f6;
   }
 
   .rbc-toolbar button.rbc-active {
-    background-color: #7f1d1d;
-    border-color: #dc2626;
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: white !important;
   }
 
   .rbc-time-view {
-    border: 2px solid #dc2626;
+    border: 1px solid #e5e7eb;
     border-radius: 8px;
   }
 
   .rbc-time-header {
-    background-color: #dc2626;
-    color: white;
+    background-color: #f8f9fa;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
   }
 
   .rbc-time-content {
-    background-color: #fef2f2;
+    background-color: white;
   }
 
   .rbc-timeslot-group {
-    border-bottom: 1px solid #fecaca;
+    border-bottom: 1px solid #f3f4f6;
   }
 
   .rbc-time-slot {
-    border-bottom: 1px solid #fee2e2;
+    border-bottom: 1px solid #f9fafb;
   }
 
+  /* Keep the current time indicator red - it's functional */
   .rbc-current-time-indicator {
     background-color: #dc2626;
     height: 3px !important;
@@ -144,7 +155,7 @@ const CustomCalendarWrapper = styled.div`
   }
 
   .rbc-day-slot .rbc-time-slot {
-    border-top: 1px solid #fecaca;
+    border-top: 1px solid #f3f4f6;
   }
 
   .rbc-day-slot .rbc-event {
