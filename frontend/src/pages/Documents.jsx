@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, DocumentIcon, TrashIcon, PencilIcon, CheckIcon, ClockIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { documentsAPI, documentCategoriesAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import PermissionGate from '../components/PermissionGate';
 import { renderAsync } from 'docx-preview';
 import OnlyOfficeEditor from '../components/OnlyOfficeEditor';
 
@@ -94,8 +96,11 @@ export default function Documents() {
   const navigate = useNavigate();
   const { 
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, openModal, closeModal, hasPermission
   } = useStore();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
 
   const [documents, setDocuments] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -419,6 +424,10 @@ export default function Documents() {
   };
 
   const handleUploadDocument = () => {
+    if (!hasPermission('documents', 'write')) {
+      setError('You do not have permission to upload documents');
+      return;
+    }
     openModal('document-form');
   };
 
@@ -438,6 +447,11 @@ export default function Documents() {
   };
 
   const handleDeleteDocument = async (documentId) => {
+    if (!hasPermission('documents', 'delete')) {
+      setError('You do not have permission to delete documents');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this document?')) return;
 
     try {
@@ -473,22 +487,26 @@ export default function Documents() {
           <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button 
-            type="button" 
-            onClick={handleUploadDocument}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Upload Document
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsCategoriesOpen((v) => !v)}
-            className="ml-2 btn-secondary"
-            title="Manage Categories"
-          >
-            {isCategoriesOpen ? 'Hide Categories' : 'Manage Categories'}
-          </button>
+          <PermissionGate page="documents" permission="write">
+            <button 
+              type="button" 
+              onClick={handleUploadDocument}
+              className="btn-primary flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Upload Document
+            </button>
+          </PermissionGate>
+          <PermissionGate page="documents" permission="write">
+            <button
+              type="button"
+              onClick={() => setIsCategoriesOpen((v) => !v)}
+              className="ml-2 btn-secondary"
+              title="Manage Categories"
+            >
+              {isCategoriesOpen ? 'Hide Categories' : 'Manage Categories'}
+            </button>
+          </PermissionGate>
         </div>
       </div>
 

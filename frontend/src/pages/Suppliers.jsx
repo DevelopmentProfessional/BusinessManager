@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { suppliersAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import PermissionGate from '../components/PermissionGate';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Suppliers() {
   const { 
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, openModal, closeModal, hasPermission
   } = useStore();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
 
   const [suppliers, setSuppliers] = useState([]);
   const [editingSupplier, setEditingSupplier] = useState(null);
@@ -48,16 +53,29 @@ export default function Suppliers() {
   };
 
   const handleCreateSupplier = () => {
+    if (!hasPermission('suppliers', 'write')) {
+      setError('You do not have permission to create suppliers');
+      return;
+    }
     setEditingSupplier(null);
     openModal('supplier-form');
   };
 
   const handleEditSupplier = (supplier) => {
+    if (!hasPermission('suppliers', 'write')) {
+      setError('You do not have permission to edit suppliers');
+      return;
+    }
     setEditingSupplier(supplier);
     openModal('supplier-form');
   };
 
   const handleDeleteSupplier = async (supplierId) => {
+    if (!hasPermission('suppliers', 'delete')) {
+      setError('You do not have permission to delete suppliers');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this supplier?')) return;
 
     try {
@@ -102,14 +120,16 @@ export default function Suppliers() {
           <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            type="button"
-            onClick={handleCreateSupplier}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Supplier
-          </button>
+          <PermissionGate page="suppliers" permission="write">
+            <button
+              type="button"
+              onClick={handleCreateSupplier}
+              className="btn-primary flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Supplier
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -130,9 +150,13 @@ export default function Suppliers() {
           ]}
           onEdit={(item) => handleEditSupplier(item)}
           onDelete={(item) => handleDeleteSupplier(item.id)}
+          editPermission={{ page: 'suppliers', permission: 'write' }}
+          deletePermission={{ page: 'suppliers', permission: 'delete' }}
           emptyMessage="No suppliers found"
         />
-        <MobileAddButton onClick={handleCreateSupplier} label="Add" />
+        <PermissionGate page="suppliers" permission="write">
+          <MobileAddButton onClick={handleCreateSupplier} label="Add" />
+        </PermissionGate>
       </div>
 
       {/* Desktop table */}
@@ -176,20 +200,24 @@ export default function Suppliers() {
                         {supplier.address || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                        <button
-                          onClick={() => handleDeleteSupplier(supplier.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleEditSupplier(supplier)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
+                        <PermissionGate page="suppliers" permission="delete">
+                          <button
+                            onClick={() => handleDeleteSupplier(supplier.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate page="suppliers" permission="write">
+                          <button
+                            onClick={() => handleEditSupplier(supplier)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                        </PermissionGate>
                       </td>
                     </tr>
                   ))}

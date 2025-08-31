@@ -54,16 +54,29 @@ export default function Employees() {
   };
 
   const handleCreateEmployee = () => {
+    if (!hasPermission('employees', 'write')) {
+      setError('You do not have permission to create employees');
+      return;
+    }
     setEditingEmployee(null);
     openModal('employee-form');
   };
 
   const handleEditEmployee = (employee) => {
+    if (!hasPermission('employees', 'write')) {
+      setError('You do not have permission to edit employees');
+      return;
+    }
     setEditingEmployee(employee);
     openModal('employee-form');
   };
 
   const handleDeleteEmployee = async (employeeId) => {
+    if (!hasPermission('employees', 'delete')) {
+      setError('You do not have permission to delete employees');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to deactivate this employee?')) return;
 
     try {
