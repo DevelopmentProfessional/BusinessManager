@@ -66,7 +66,8 @@ const useStore = create((set, get) => ({
       const token = get().token || localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch('/api/v1/auth/me', {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
