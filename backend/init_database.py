@@ -14,7 +14,7 @@ sys.path.insert(0, str(backend_dir))
 
 from database import engine, get_session
 from models import SQLModel, User, UserRole
-from routers.auth import get_password_hash
+import bcrypt
 from datetime import datetime
 
 def init_database():
@@ -36,10 +36,13 @@ def init_database():
             print("👤 Creating admin user...")
             
             # Create admin user
+            password = "admin123"
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            
             admin_user = User(
                 username="admin",
                 email="admin@lavishbeautyhairandnail.care",
-                password_hash=get_password_hash("admin123"),
+                password_hash=hashed_password.decode('utf-8'),
                 first_name="Admin",
                 last_name="User",
                 role=UserRole.ADMIN,
