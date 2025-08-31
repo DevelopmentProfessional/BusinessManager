@@ -140,7 +140,7 @@ export default function Attendance() {
     attendanceRecords, setAttendanceRecords, addAttendanceRecord,
     employees, setEmployees,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal
+    isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
   // Use the permission refresh hook
@@ -170,6 +170,10 @@ export default function Attendance() {
   };
 
   const handleCreateRecord = () => {
+    if (!hasPermission('attendance', 'write')) {
+      setError('You do not have permission to create attendance records');
+      return;
+    }
     openModal('attendance-form');
   };
 

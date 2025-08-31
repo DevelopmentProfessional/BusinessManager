@@ -192,7 +192,7 @@ export default function Schedule() {
     clients, setClients, services, setServices, employees, setEmployees,
     loading, setLoading, error, setError, clearError,
     isModalOpen, openModal, closeModal, user,
-    setFilter, getFilter
+    setFilter, getFilter, hasPermission
   } = useStore();
 
   // Use the permission refresh hook
@@ -261,11 +261,19 @@ export default function Schedule() {
   }, [openModal]);
 
   const handleCreateAppointment = () => {
+    if (!hasPermission('schedule', 'write')) {
+      setError('You do not have permission to create appointments');
+      return;
+    }
     setEditingAppointment(null); // For the floating action button
     openModal('appointment-form');
   };
 
   const handleEditAppointment = (event) => {
+    if (!hasPermission('schedule', 'write')) {
+      setError('You do not have permission to edit appointments');
+      return;
+    }
     setEditingAppointment(event.resource);
     openModal('appointment-form');
   };
