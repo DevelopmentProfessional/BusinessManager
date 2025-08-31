@@ -14,7 +14,7 @@ export default function Employees() {
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
     isModalOpen, openModal, closeModal,
-    user: currentUser, updateEmployeePermissions
+    user: currentUser, updateEmployeePermissions, hasPermission
   } = useStore();
 
   // Use the permission refresh hook
