@@ -565,7 +565,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                     value={formData.first_name}
                     onChange={handleChange}
                     className="input-field mt-1"
-                    placeholder="Enter first name"
+placeholder="First name"
                   />
                 </div>
 
@@ -581,7 +581,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                     value={formData.last_name}
                     onChange={handleChange}
                     className="input-field mt-1"
-                    placeholder="Enter last name"
+placeholder="Last name"
                   />
                 </div>
               </div>
@@ -598,7 +598,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                   value={formData.email}
                   onChange={handleChange}
                   className="input-field mt-1"
-                  placeholder="Enter email address"
+placeholder="Email"
                 />
               </div>
 
@@ -613,7 +613,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                   value={formData.phone}
                   onChange={handleChange}
                   className="input-field mt-1"
-                  placeholder="Enter phone number"
+placeholder="Phone"
                 />
               </div>
 
@@ -696,7 +696,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                     value={userCredentials.username}
                     onChange={handleUserCredentialsChange}
                     className="input-field mt-1"
-                    placeholder="Enter username"
+placeholder="Username"
                   />
                 </div>
 
@@ -712,7 +712,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                     value={userCredentials.email}
                     onChange={handleUserCredentialsChange}
                     className="input-field mt-1"
-                    placeholder="Enter user email"
+placeholder="User email"
                   />
                 </div>
               </div>
@@ -730,7 +730,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                     value={userCredentials.password}
                     onChange={handleUserCredentialsChange}
                     className="input-field mt-1"
-                    placeholder="Enter password"
+placeholder="Password"
                   />
                 </div>
 
@@ -786,18 +786,7 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
 
               {/* User Account Action Buttons */}
               <div className="pt-4 border-t border-gray-200">
-                {linkedUser ? (
-                  <div className="flex space-x-3">
-                    <button
-                      type="button"
-                      onClick={handleUserAccountUpdate}
-                      disabled={loading}
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200"
-                    >
-                      {loading ? 'Updating...' : 'Update User Account'}
-                    </button>
-                  </div>
-                ) : (
+                {!linkedUser && (
                   <div className="flex space-x-3">
                     <button
                       type="button"
@@ -809,12 +798,6 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                     </button>
                   </div>
                 )}
-                <p className="mt-2 text-xs text-gray-500">
-                  {linkedUser 
-                    ? 'Update the user account credentials and permissions for this employee. This is separate from the employee information above.'
-                    : 'Create a new user account for this employee with the specified credentials and permissions. This is separate from the employee information above.'
-                  }
-                </p>
               </div>
             </div>
           </Tab.Panel>
@@ -831,7 +814,6 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                   <div key={page.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="mb-3">
                       <h4 className="text-sm font-medium text-gray-900">{page.name}</h4>
-                      <p className="text-xs text-gray-500">{page.description}</p>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -857,7 +839,6 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                                 <span className="ml-1 text-green-600">✓</span>
                               )}
                             </div>
-                            <div className="text-gray-500">{permission.description}</div>
                           </label>
                         </div>
                       ))}
@@ -870,7 +851,6 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                   <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
                     <div className="mb-3">
                       <h4 className="text-sm font-medium text-blue-900">Special Permissions</h4>
-                      <p className="text-xs text-blue-700">Additional permissions for specific functionality</p>
                     </div>
                     
                     <div className="grid grid-cols-1 gap-3">
@@ -896,7 +876,6 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
                                 <span className="ml-1 text-green-600">✓</span>
                               )}
                             </div>
-                            <div className="text-blue-700">{permission.description}</div>
                           </label>
                         </div>
                       ))}

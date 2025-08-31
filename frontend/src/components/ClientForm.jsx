@@ -54,7 +54,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           value={formData.name}
           onChange={handleChange}
           className="input-field mt-1"
-          placeholder="Enter client name"
+placeholder="Name"
         />
       </div>
 
@@ -69,7 +69,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           value={formData.email}
           onChange={handleChange}
           className="input-field mt-1"
-          placeholder="Enter email address"
+placeholder="Email"
         />
       </div>
 
@@ -84,7 +84,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           value={formData.phone}
           onChange={handleChange}
           className="input-field mt-1"
-          placeholder="Enter phone number"
+placeholder="Phone"
         />
       </div>
 
@@ -99,7 +99,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           value={formData.address}
           onChange={handleChange}
           className="input-field mt-1"
-          placeholder="Enter address"
+placeholder="Address"
         />
       </div>
 
@@ -114,7 +114,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           value={formData.notes}
           onChange={handleChange}
           className="input-field mt-1"
-          placeholder="Additional notes about the client"
+placeholder="Notes"
         />
       </div>
 
