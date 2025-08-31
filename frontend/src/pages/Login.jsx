@@ -25,7 +25,7 @@ const Login = () => {
     // Check if user is already logged in
     const token = localStorage.getItem('token');
     if (token) {
-      navigate('/dashboard');
+      navigate('/profile');
     }
   }, [navigate]);
 
@@ -70,8 +70,8 @@ const Login = () => {
       setUser(user);
       setPermissions(permissions);
       
-      // Redirect to dashboard or intended page
-      navigate('/dashboard');
+      // Redirect to profile or intended page
+      navigate('/profile');
       
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.');
