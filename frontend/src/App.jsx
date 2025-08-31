@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import Inventory from './pages/Inventory';
 import Services from './pages/Services';
@@ -31,7 +30,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
   if (requiredPermission) {
     const [page, permission] = requiredPermission.split(':');
     if (!hasPermission(page, permission)) {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/profile" replace />;
     }
   }
   
@@ -77,14 +76,7 @@ function App() {
         <Route path="/" element={
           <ProtectedRoute>
             <Layout>
-              <Navigate to="/dashboard" replace />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
+              <Navigate to="/profile" replace />
             </Layout>
           </ProtectedRoute>
         } />

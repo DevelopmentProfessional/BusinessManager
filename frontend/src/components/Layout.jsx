@@ -9,7 +9,6 @@ import {
   ClockIcon,
   DocumentIcon,
   EllipsisHorizontalIcon,
-  UserIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
@@ -19,7 +18,6 @@ import useStore from '../store/useStore';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 const allNavigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: UserIcon },
   { name: 'Profile', href: '/profile', icon: UserCircleIcon },
   { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
   { name: 'Inventory', href: '/inventory', icon: ArchiveBoxIcon, permission: 'inventory:read' },
