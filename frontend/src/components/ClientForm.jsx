@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function ClientForm({ client, onSubmit, onCancel }) {
+export default function ClientForm({ client, onSubmit, onCancel, error = null }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -8,6 +8,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
     address: '',
     notes: ''
   });
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (client) {
@@ -31,8 +32,20 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setFieldErrors({});
     onSubmit(formData);
   };
+
+  // Parse error message to highlight specific fields
+  useEffect(() => {
+    if (error) {
+      const newFieldErrors = {};
+      if (error.includes("name") && error.includes("already exists")) {
+        newFieldErrors.name = "This client name already exists";
+      }
+      setFieldErrors(newFieldErrors);
+    }
+  }, [error]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -53,9 +66,12 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           required
           value={formData.name}
           onChange={handleChange}
-          className="input-field mt-1"
-placeholder="Name"
+          className={`input-field mt-1 ${fieldErrors.name ? 'border-red-500' : ''}`}
+          placeholder="Name"
         />
+        {fieldErrors.name && (
+          <p className="text-red-500 text-sm mt-1">{fieldErrors.name}</p>
+        )}
       </div>
 
       <div>

@@ -14,7 +14,7 @@ export default function Clients() {
   const { 
     clients, setClients, addClient, updateClient, removeClient,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal, hasPermission,
+    isModalOpen, modalContent, openModal, closeModal, hasPermission,
     setFilter, getFilter
   } = useStore();
 
@@ -370,12 +370,13 @@ export default function Clients() {
       </PermissionGate>
 
       {/* Modal for Client Form */}
-      <Modal isOpen={isModalOpen === 'client-form'} onClose={closeModal}>
-        {isModalOpen === 'client-form' && (
+      <Modal isOpen={isModalOpen && modalContent === 'client-form'} onClose={closeModal}>
+        {isModalOpen && modalContent === 'client-form' && (
           <ClientForm
             client={editingClient}
             onSubmit={handleSubmitClient}
             onCancel={closeModal}
+            error={error}
           />
         )}
       </Modal>

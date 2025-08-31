@@ -96,7 +96,7 @@ export default function Documents() {
   const navigate = useNavigate();
   const { 
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal, hasPermission
+    isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
   // Use the permission refresh hook
@@ -774,8 +774,8 @@ export default function Documents() {
       </div>
 
       {/* Modal for Document Upload Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {isModalOpen && (
+      <Modal isOpen={isModalOpen && modalContent === 'document-form'} onClose={closeModal}>
+        {isModalOpen && modalContent === 'document-form' && (
           <DocumentUploadForm
             onSubmit={handleSubmitDocument}
             onCancel={closeModal}

@@ -88,6 +88,14 @@ export const clientsAPI = {
     clearCache('clients');
     return api.delete(`/clients/${id}`);
   },
+  uploadCSV: (formData) => {
+    clearCache('clients');
+    return api.post('/clients/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // Items API
@@ -135,6 +143,14 @@ export const servicesAPI = {
     clearCache('services');
     return api.delete(`/services/${id}`);
   },
+  uploadCSV: (formData) => {
+    clearCache('services');
+    return api.post('/services/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 export const suppliersAPI = {
@@ -177,6 +193,14 @@ export const employeesAPI = {
   deleteUserPermission: (userId, permissionId) => api.delete(`/auth/users/${userId}/permissions/${permissionId}`),
   updateUserAccount: (employeeId, data) => api.put(`/employees/${employeeId}/user-account`, data),
   createUserAccount: (employeeId, data) => api.post(`/employees/${employeeId}/user-account`, data),
+  uploadCSV: (formData) => {
+    clearCache('employees');
+    return api.post('/employees/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 export const scheduleAPI = {

@@ -261,6 +261,32 @@ const useStore = create((set, get) => ({
   lowStockItems: [],
   setLowStockItems: (items) => set({ lowStockItems: items }),
 
+  // Suppliers state
+  suppliers: [],
+  setSuppliers: (suppliers) => set({ suppliers }),
+  addSupplier: (supplier) => set((state) => ({ suppliers: [...state.suppliers, supplier] })),
+  updateSupplier: (id, updatedSupplier) => set((state) => ({
+    suppliers: state.suppliers.map(supplier => 
+      supplier.id === id ? { ...supplier, ...updatedSupplier } : supplier
+    )
+  })),
+  removeSupplier: (id) => set((state) => ({
+    suppliers: state.suppliers.filter(supplier => supplier.id !== id)
+  })),
+
+  // Documents state
+  documents: [],
+  setDocuments: (documents) => set({ documents }),
+  addDocument: (document) => set((state) => ({ documents: [...state.documents, document] })),
+  updateDocument: (id, updatedDocument) => set((state) => ({
+    documents: state.documents.map(document => 
+      document.id === id ? { ...document, ...updatedDocument } : document
+    )
+  })),
+  removeDocument: (id) => set((state) => ({
+    documents: state.documents.filter(document => document.id !== id)
+  })),
+
   // Attendance state
   attendanceRecords: [],
   setAttendanceRecords: (records) => set({ attendanceRecords: records }),

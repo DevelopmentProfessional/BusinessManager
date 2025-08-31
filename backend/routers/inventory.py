@@ -94,6 +94,28 @@ async def get_item(item_id: UUID, session: Session = Depends(get_session)):
 @router.post("/items", response_model=ItemRead)
 async def create_item(item_data: ItemCreate, session: Session = Depends(get_session)):
     """Create a new item"""
+    # Check for duplicate item name
+    existing_item_by_name = session.exec(
+        select(Item).where(Item.name == item_data.name)
+    ).first()
+    
+    if existing_item_by_name:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"An item with the name '{item_data.name}' already exists"
+        )
+    
+    # Check for duplicate SKU
+    existing_item_by_sku = session.exec(
+        select(Item).where(Item.sku == item_data.sku)
+    ).first()
+    
+    if existing_item_by_sku:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"An item with the SKU '{item_data.sku}' already exists"
+        )
+    
     # Normalize type before creating
     data = item_data.dict()
     coerced = _coerce_item_type(data.get("type"))
@@ -128,7 +150,39 @@ async def update_item(item_id: UUID, item_data: ItemUpdate, session: Session = D
     item = session.get(Item, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    
     data = item_data.dict(exclude_unset=True)
+    
+    # Check for duplicate item name if name is being updated
+    if 'name' in data:
+        existing_item_by_name = session.exec(
+            select(Item).where(
+                Item.name == data['name'],
+                Item.id != item_id
+            )
+        ).first()
+        
+        if existing_item_by_name:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"An item with the name '{data['name']}' already exists"
+            )
+    
+    # Check for duplicate SKU if SKU is being updated
+    if 'sku' in data:
+        existing_item_by_sku = session.exec(
+            select(Item).where(
+                Item.sku == data['sku'],
+                Item.id != item_id
+            )
+        ).first()
+        
+        if existing_item_by_sku:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"An item with the SKU '{data['sku']}' already exists"
+            )
+    
     for field, value in data.items():
         if field == "type":
             setattr(item, field, _coerce_item_type(value).value)

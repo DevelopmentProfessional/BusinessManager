@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 export default function Suppliers() {
   const { 
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal, hasPermission
+    isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
   // Use the permission refresh hook
@@ -235,8 +235,8 @@ export default function Suppliers() {
       </div>
 
       {/* Modal for Supplier Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {isModalOpen && (
+      <Modal isOpen={isModalOpen && modalContent === 'supplier-form'} onClose={closeModal}>
+        {isModalOpen && modalContent === 'supplier-form' && (
           <SupplierForm
             supplier={editingSupplier}
             onSubmit={handleSubmitSupplier}

@@ -24,6 +24,17 @@ async def get_service(service_id: UUID, session: Session = Depends(get_session))
 @router.post("/services", response_model=ServiceRead)
 async def create_service(service_data: ServiceCreate, session: Session = Depends(get_session)):
     """Create a new service"""
+    # Check for duplicate service name
+    existing_service = session.exec(
+        select(Service).where(Service.name == service_data.name)
+    ).first()
+    
+    if existing_service:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"A service with the name '{service_data.name}' already exists"
+        )
+    
     service = Service(**service_data.dict())
     session.add(service)
     session.commit()
@@ -42,6 +53,22 @@ async def update_service(
         raise HTTPException(status_code=404, detail="Service not found")
     
     service_dict = service_data.dict(exclude_unset=True)
+    
+    # Check for duplicate service name if name is being updated
+    if 'name' in service_dict:
+        existing_service = session.exec(
+            select(Service).where(
+                Service.name == service_dict['name'],
+                Service.id != service_id
+            )
+        ).first()
+        
+        if existing_service:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"A service with the name '{service_dict['name']}' already exists"
+            )
+    
     for key, value in service_dict.items():
         setattr(service, key, value)
     

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import PermissionGate from './PermissionGate';
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
-  const { clients, services, employees, closeModal } = useStore();
+  const { clients, services, employees, closeModal, hasPermission } = useStore();
   const [timeError, setTimeError] = useState('');
   const navigate = useNavigate();
   
@@ -22,12 +23,14 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   const getInitialFormData = () => {
     if (appointment && appointment.appointment_date) {
       const { date, time } = extractLocalParts(appointment.appointment_date);
+      const [hour, minute] = time.split(':');
       return {
         client_id: appointment.client_id || '',
         service_id: appointment.service_id || '',
         employee_id: appointment.employee_id || '',
         appointment_date: date,
-        appointment_time: time,
+        appointment_hour: hour,
+        appointment_minute: minute,
         notes: appointment.notes || ''
       };
     }
@@ -36,7 +39,8 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       service_id: '',
       employee_id: '',
       appointment_date: '',
-      appointment_time: '',
+      appointment_hour: '',
+      appointment_minute: '',
       notes: ''
     };
   };
@@ -58,23 +62,26 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Use time from input; if empty (user didn't touch), fallback to selected slot's time
-    const timeText = formData.appointment_time || (appointment?.appointment_date ? extractLocalParts(appointment.appointment_date).time : '');
-    const dateText = formData.appointment_date || (appointment?.appointment_date ? extractLocalParts(appointment.appointment_date).date : '');
+    const dateText = formData.appointment_date;
+    const hourText = formData.appointment_hour;
+    const minuteText = formData.appointment_minute;
 
-    if (!dateText || !timeText) {
-      setTimeError('Please select a valid date and time');
+    if (!dateText || !hourText || !minuteText) {
+      setTimeError('Please select a valid date, hour, and minute');
       return;
     }
 
-    const [hour, minute] = timeText.split(':').map(Number);
-    if (hour < 6 || hour >= 21) {
-      setTimeError('Can only schedule between 6AM and 9PM');
+    const hour = parseInt(hourText, 10);
+    const minute = parseInt(minuteText, 10);
+    
+    if (hour < 6 || hour > 21) {
+      setTimeError('Can only schedule between 6:00 and 21:00');
       return;
     }
     setTimeError('');
 
     // Submit a naive local ISO string (no timezone) to avoid shifts server-side
+    const timeText = `${hourText}:${minuteText}`;
     const appointmentDateStr = `${dateText}T${timeText}:00`;
 
     onSubmit({
@@ -110,15 +117,17 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={() => { closeModal(); navigate('/clients?new=1'); }}
-          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
-          title="Add new client"
-          aria-label="Add new client"
-        >
-          <PlusIcon className="h-5 w-5" />
-        </button>
+        <PermissionGate page="clients" permission="write">
+          <button
+            type="button"
+            onClick={() => { closeModal(); navigate('/clients?new=1'); }}
+            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+            title="Add new client"
+            aria-label="Add new client"
+          >
+            <PlusIcon className="h-5 w-5" />
+          </button>
+        </PermissionGate>
       </div>
 
       <div className="flex items-center gap-2"> 
@@ -137,15 +146,17 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={() => { closeModal(); navigate('/services?new=1'); }}
-          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
-          title="Add new service"
-          aria-label="Add new service"
-        >
-          <PlusIcon className="h-5 w-5" />
-        </button>
+        <PermissionGate page="services" permission="write">
+          <button
+            type="button"
+            onClick={() => { closeModal(); navigate('/services?new=1'); }}
+            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+            title="Add new service"
+            aria-label="Add new service"
+          >
+            <PlusIcon className="h-5 w-5" />
+          </button>
+        </PermissionGate>
       </div>
 
       <div className="flex items-center gap-2"> 
@@ -164,19 +175,24 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={() => { closeModal(); navigate('/employees?new=1'); }}
-          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
-          title="Add new employee"
-          aria-label="Add new employee"
-        >
-          <PlusIcon className="h-5 w-5" />
-        </button>
+        <PermissionGate page="employees" permission="write">
+          <button
+            type="button"
+            onClick={() => { closeModal(); navigate('/employees?new=1'); }}
+            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+            title="Add new employee"
+            aria-label="Add new employee"
+          >
+            <PlusIcon className="h-5 w-5" />
+          </button>
+        </PermissionGate>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div> 
+          <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700">
+            Date
+          </label>
           <input
             type="date"
             id="appointment_date"
@@ -189,21 +205,48 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         </div>
 
         <div> 
-          <input
-            type="time"
-            id="appointment_time"
-            name="appointment_time"
+          <label htmlFor="appointment_hour" className="block text-sm font-medium text-gray-700">
+            Hour
+          </label>
+          <select
+            id="appointment_hour"
+            name="appointment_hour"
             required
-            value={formData.appointment_time}
+            value={formData.appointment_hour || ''}
             onChange={handleChange}
-            min="06:00"
-            max="21:00"
-            step="300"
             className={`input-field mt-1 ${timeError ? 'border-red-500' : ''}`}
-          />
-          {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
+          >
+             
+            {[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => (
+              <option key={hour} value={hour.toString().padStart(2, '0')}>
+                {hour.toString().padStart(2, '0')}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div> 
+          <label htmlFor="appointment_minute" className="block text-sm font-medium text-gray-700">
+            Minute
+          </label>
+          <select
+            id="appointment_minute"
+            name="appointment_minute"
+            required
+            value={formData.appointment_minute || ''}
+            onChange={handleChange}
+            className={`input-field mt-1 ${timeError ? 'border-red-500' : ''}`}
+          >
+            
+            {[0, 15, 30, 45].map(minute => (
+              <option key={minute} value={minute.toString().padStart(2, '0')}>
+                {minute.toString().padStart(2, '0')}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
+      {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
 
       <div> 
         <textarea

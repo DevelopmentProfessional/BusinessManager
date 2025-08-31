@@ -140,7 +140,7 @@ export default function Attendance() {
     attendanceRecords, setAttendanceRecords, addAttendanceRecord,
     employees, setEmployees,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal
+    isModalOpen, modalContent, openModal, closeModal
   } = useStore();
 
   // Use the permission refresh hook
@@ -321,8 +321,8 @@ export default function Attendance() {
       </div>
 
       {/* Modal for Attendance Form */}
-      <Modal isOpen={isModalOpen === 'attendance-form'} onClose={closeModal}>
-        {isModalOpen === 'attendance-form' && (
+      <Modal isOpen={isModalOpen && modalContent === 'attendance-form'} onClose={closeModal}>
+        {isModalOpen && modalContent === 'attendance-form' && (
           <AttendanceForm
             onSubmit={handleSubmitRecord}
             onCancel={closeModal}

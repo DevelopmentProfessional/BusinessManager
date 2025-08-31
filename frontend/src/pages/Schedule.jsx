@@ -71,14 +71,14 @@ const CustomCalendarWrapper = styled.div`
   .rbc-date-cell.rbc-today {
     background-color: #fef2f2;
     font-weight: bold;
-    color: #dc2626;
-    border: 2px solid #dc2626;
+    color: #b91c1c;
+    border: 2px solid #b91c1c;
   }
 
-  /* Events with red styling */
+  /* Events with matte red styling */
   .rbc-event {
-    background-color: #dc2626 !important;
-    border-color: #b91c1c !important;
+    background-color: #b91c1c !important;
+    border-color: #991b1b !important;
     color: white !important;
     border-radius: 6px;
     margin: 1px;
@@ -88,14 +88,14 @@ const CustomCalendarWrapper = styled.div`
   }
 
   .rbc-event:hover {
-    background-color: #b91c1c !important;
+    background-color: #991b1b !important;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 
   .rbc-event.rbc-selected {
-    background-color: #991b1b !important;
-    box-shadow: 0 0 0 2px #dc2626;
+    background-color: #7f1d1d !important;
+    box-shadow: 0 0 0 2px #b91c1c;
   }
 
   /* Keep toolbar neutral */
@@ -118,8 +118,8 @@ const CustomCalendarWrapper = styled.div`
   }
 
   .rbc-toolbar button.rbc-active {
-    background-color: #dc2626 !important;
-    border-color: #dc2626 !important;
+    background-color: #b91c1c !important;
+    border-color: #b91c1c !important;
     color: white !important;
   }
 
@@ -146,12 +146,12 @@ const CustomCalendarWrapper = styled.div`
     border-bottom: 1px solid #f9fafb;
   }
 
-  /* Keep the current time indicator red - it's functional */
+  /* Keep the current time indicator matte red - it's functional */
   .rbc-current-time-indicator {
-    background-color: #dc2626;
+    background-color: #b91c1c;
     height: 3px !important;
     border-radius: 2px;
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+    box-shadow: 0 2px 4px rgba(185, 28, 28, 0.3);
   }
 
   .rbc-day-slot .rbc-time-slot {
@@ -159,12 +159,12 @@ const CustomCalendarWrapper = styled.div`
   }
 
   .rbc-day-slot .rbc-event {
-    background-color: #dc2626 !important;
-    border-color: #b91c1c !important;
+    background-color: #b91c1c !important;
+    border-color: #991b1b !important;
   }
 
   .rbc-day-slot .rbc-event:hover {
-    background-color: #b91c1c !important;
+    background-color: #991b1b !important;
   }
 
   /* Fix for doubling effect - ensure clean rendering */

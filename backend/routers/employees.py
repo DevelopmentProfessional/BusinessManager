@@ -78,6 +78,17 @@ async def create_employee(
         # Set default hire_date to current date if not provided
         employee_fields['hire_date'] = datetime.utcnow()
     
+    # Check for duplicate employee email
+    existing_employee = session.exec(
+        select(Employee).where(Employee.email == employee_fields['email'])
+    ).first()
+    
+    if existing_employee:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"An employee with the email '{employee_fields['email']}' already exists"
+        )
+    
     # Create employee
     employee = Employee(**employee_fields)
     session.add(employee)
@@ -98,6 +109,28 @@ async def create_employee(
                 'role': user_credentials.get('role', 'employee'),
                 'is_active': user_credentials.get('is_active', True)
             }
+            
+            # Check for duplicate username
+            existing_user_by_username = session.exec(
+                select(User).where(User.username == user_fields['username'])
+            ).first()
+            
+            if existing_user_by_username:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"A user with the username '{user_fields['username']}' already exists"
+                )
+            
+            # Check for duplicate user email
+            existing_user_by_email = session.exec(
+                select(User).where(User.email == user_fields['email'])
+            ).first()
+            
+            if existing_user_by_email:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"A user with the email '{user_fields['email']}' already exists"
+                )
             
             user = User(**user_fields)
             session.add(user)

@@ -81,7 +81,7 @@ class UserPermission(BaseModel, table=True):
 
 # Client model
 class Client(BaseModel, table=True):
-    name: str = Field(index=True)
+    name: str = Field(unique=True, index=True)  # Client names must be unique
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
@@ -102,7 +102,7 @@ class ClientRead(SQLModel):
 
 # Item model
 class Item(BaseModel, table=True):
-    name: str = Field(index=True)
+    name: str = Field(unique=True, index=True)  # Item names must be unique
     sku: str = Field(unique=True, index=True)
     price: float = Field(ge=0)
     description: Optional[str] = Field(default=None)
@@ -168,7 +168,7 @@ class SupplierRead(SQLModel):
 
 # Service model
 class Service(BaseModel, table=True):
-    name: str = Field(index=True)
+    name: str = Field(unique=True, index=True)  # Service names must be unique
     description: Optional[str] = Field(default=None)
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
