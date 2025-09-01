@@ -14,11 +14,10 @@ logging.getLogger("sqlalchemy.pool.impl.QueuePool").disabled = True
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from database import create_db_and_tables
+
 from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin
 
-# Create database tables (safe to run multiple times)
-create_db_and_tables()
+
 
 app = FastAPI(
     title="Business Management API",
@@ -69,7 +68,6 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
-    print("Database tables initialized")
     print("All routers loaded successfully")
 
 # Include routers
