@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
+import useDarkMode from '../store/useDarkMode';
 import api, { attendanceAPI } from '../services/api';
 import { 
   UserIcon, 
@@ -18,8 +19,10 @@ import {
   ArrowRightIcon,
   LockClosedIcon,
   EyeIcon,
-  EyeSlashIcon
+  EyeSlashIcon,
+  SunIcon
 } from '@heroicons/react/24/outline';
+import DarkModeToggle from '../components/DarkModeToggle';
 
 const Profile = () => {
   const { user, setUser } = useStore();
@@ -194,21 +197,20 @@ const Profile = () => {
     return new Date(dateString).toLocaleTimeString();
   };
 
-
-
   if (!userData) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Loading Profile...</h2>
-            <p className="text-sm text-gray-500">Please wait while we load your profile information.</p>
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-700 mb-3">
+      <div className="container-fluid py-4">
+        <div className="card">
+          <div className="card-body text-center">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <h2 className="h5 mb-2">Loading Profile...</h2>
+            <p className="text-muted">Please wait while we load your profile information.</p>
+            <div className="alert alert-warning mt-3">
+              <p className="mb-0 small">
                 <strong>Debug Info:</strong> User data not loaded. This might be due to authentication issues.
               </p>
-
             </div>
           </div>
         </div>
@@ -217,309 +219,362 @@ const Profile = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="bg-white shadow rounded-lg">
+    <div className="container-fluid py-4">
+      <div className="card">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+        <div className="card-header">
+          <h1 className="h3 mb-0">My Profile</h1>
         </div>
 
-        <div className="p-6 space-y-8">
-          {/* User Information */}
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h2>
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <UserIcon className="w-5 h-5 text-indigo-600" />
+        <div className="card-body">
+          <div className="row g-4">
+            {/* User Information */}
+            <div className="col-12">
+              <h2 className="h5 mb-3">Personal Information</h2>
+              <div className="card">
+                <div className="card-body">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                            <UserIcon className="h-5 w-5 text-primary" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label small text-muted mb-1">Full Name</label>
+                          <p className="mb-0 fw-medium">{userData.first_name} {userData.last_name}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                            <UserIcon className="h-5 w-5 text-success" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label small text-muted mb-1">Username</label>
+                          <p className="mb-0 fw-medium">{userData.username}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                            <EnvelopeIcon className="h-5 w-5 text-info" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label small text-muted mb-1">Email Address</label>
+                          <p className="mb-0 fw-medium">{userData.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                            <ShieldCheckIcon className="h-5 w-5 text-warning" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label small text-muted mb-1">Role</label>
+                          <p className="mb-0 fw-medium text-capitalize">{userData.role}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                    <p className="mt-1 text-sm text-gray-900 font-medium">{userData.first_name} {userData.last_name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <UserIcon className="w-5 h-5 text-green-600" />
+                  <div className="border-top pt-3 mt-3">
+                    <div className="col-12">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                            <CalendarIcon className="h-5 w-5 text-secondary" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label small text-muted mb-1">Account Created</label>
+                          <p className="mb-0 fw-medium">
+                            {userData.created_at ? new Date(userData.created_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            }) : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Username</label>
-                    <p className="mt-1 text-sm text-gray-900 font-medium">{userData.username}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <EnvelopeIcon className="w-5 h-5 text-blue-600" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                    <p className="mt-1 text-sm text-gray-900 font-medium">{userData.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <ShieldCheckIcon className="w-5 h-5 text-purple-600" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Role</label>
-                    <p className="mt-1 text-sm text-gray-900 font-medium capitalize">{userData.role}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <CalendarIcon className="w-5 h-5 text-gray-600" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Account Created</label>
-                    <p className="mt-1 text-sm text-gray-900 font-medium">
-                      {userData.created_at ? new Date(userData.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      }) : 'N/A'}
-                    </p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Password Change */}
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Security</h2>
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-600 mb-4">
-                Keep your account secure by regularly updating your password. 
-                Your new password must be at least 6 characters long.
-              </p>
-              {!showPasswordChange ? (
-                <button
-                  onClick={() => setShowPasswordChange(true)}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200"
-                >
-                  <KeyIcon className="w-4 h-4 inline mr-2" />
-                  Change Password
-                </button>
-              ) : (
-                <form onSubmit={handlePasswordUpdate} className="space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Current Password</label>
-                    <input
-                      type="password"
-                      name="current_password"
-                      value={passwordData.current_password}
-                      onChange={handlePasswordChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="Enter your current password"
-                      required
-                    />
+            {/* Dark Mode Preference */}
+            <div className="col-12">
+              <h2 className="h5 mb-3">Appearance Settings</h2>
+              <div className="card">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                          <SunIcon className="h-5 w-5 text-warning" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label small text-muted mb-1">Dark Mode</label>
+                        <p className="mb-0 small">Toggle between light and dark theme</p>
+                      </div>
+                    </div>
+                    <DarkModeToggle />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">New Password</label>
-                    <input
-                      type="password"
-                      name="new_password"
-                      value={passwordData.new_password}
-                      onChange={handlePasswordChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="Enter your new password"
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                    <input
-                      type="password"
-                      name="confirm_password"
-                      value={passwordData.confirm_password}
-                      onChange={handlePasswordChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="Confirm your new password"
-                      required
-                    />
-                  </div>
-                  <div className="flex space-x-3">
+                </div>
+              </div>
+            </div>
+
+            {/* Password Change */}
+            <div className="col-12">
+              <h2 className="h5 mb-3">Security</h2>
+              <div className="card">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                          <KeyIcon className="h-5 w-5 text-danger" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="h6 mb-1">Password</h3>
+                        <p className="mb-0 small text-muted">Update your password to keep your account secure</p>
+                      </div>
+                    </div>
                     <button
-                      type="submit"
-                      disabled={loading}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200"
+                      onClick={() => setShowPasswordChange(!showPasswordChange)}
+                      className="btn btn-primary"
                     >
-                      {loading ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Updating...
-                        </>
-                      ) : (
-                        'Update Password'
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordChange(false)}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
-                    >
-                      Cancel
+                      Change Password
                     </button>
                   </div>
-                </form>
-              )}
-            </div>
-          </div>
 
-          {/* Attendance */}
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Attendance</h2>
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                <button
-                  onClick={clockIn}
-                  disabled={!hasEmployeeProfile}
-                  className={`flex items-center justify-center px-6 py-3 rounded-md transition-colors duration-200 ${
-                    hasEmployeeProfile 
-                      ? 'bg-green-600 text-white hover:bg-green-700' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <ClockIcon className="w-5 h-5 mr-2" />
-                  Clock In
-                </button>
-                <button
-                  onClick={clockOut}
-                  disabled={!hasEmployeeProfile}
-                  className={`flex items-center justify-center px-6 py-3 rounded-md transition-colors duration-200 ${
-                    hasEmployeeProfile 
-                      ? 'bg-red-600 text-white hover:bg-red-700' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <ClockIcon className="w-5 h-5 mr-2" />
-                  Clock Out
-                </button>
+                  {showPasswordChange && (
+                    <div className="border-top pt-3">
+                      <form onSubmit={handlePasswordUpdate}>
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label">Current Password</label>
+                            <input
+                              type="password"
+                              name="current_password"
+                              value={passwordData.current_password}
+                              onChange={handlePasswordChange}
+                              className="form-control"
+                              placeholder="Enter your current password"
+                              required
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">New Password</label>
+                            <input
+                              type="password"
+                              name="new_password"
+                              value={passwordData.new_password}
+                              onChange={handlePasswordChange}
+                              className="form-control"
+                              placeholder="Enter your new password"
+                              required
+                            />
+                            <div className="form-text">Minimum 6 characters</div>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">Confirm New Password</label>
+                            <input
+                              type="password"
+                              name="confirm_password"
+                              value={passwordData.confirm_password}
+                              onChange={handlePasswordChange}
+                              className="form-control"
+                              placeholder="Confirm your new password"
+                              required
+                            />
+                          </div>
+                          <div className="col-12">
+                            <div className="d-flex gap-2">
+                              <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn btn-primary"
+                              >
+                                {loading ? (
+                                  <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Updating...
+                                  </>
+                                ) : (
+                                  'Update Password'
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowPasswordChange(false);
+                                  setPasswordData({
+                                    current_password: '',
+                                    new_password: '',
+                                    confirm_password: ''
+                                  });
+                                }}
+                                className="btn btn-outline-secondary"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </div>
               </div>
-              {!hasEmployeeProfile ? (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex items-center">
-                    <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 mr-2" />
-                    <p className="text-sm text-yellow-700">
-                      <strong>No Employee Profile:</strong> Your user account is not linked to an employee profile. 
-                      Attendance tracking is not available. Please contact your administrator to set up an employee profile.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center">
-                    <InformationCircleIcon className="w-5 h-5 text-blue-600 mr-2" />
-                    <p className="text-sm text-blue-700">
-                      <strong>Note:</strong> Attendance tracking requires an employee profile to be linked to your user account. 
-                      If you don't see any attendance records, please contact your administrator.
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock In</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock Out</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Hours</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {attendanceRecords.length === 0 ? (
-                      <tr>
-                        <td colSpan="4" className="px-6 py-8 text-center text-sm text-gray-500">
-                          <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                          <p className="mt-2">No attendance records found</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      attendanceRecords.map((record) => (
-                        <tr key={record.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                            {formatDate(record.date)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.clock_in ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {formatTime(record.clock_in)}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.clock_out ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                {formatTime(record.clock_out)}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {record.total_hours ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {record.total_hours}h
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
+
+            {/* Attendance */}
+            <div className="col-12">
+              <h2 className="h5 mb-3">Attendance</h2>
+              <div className="card">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
+                          <ClockIcon className="h-5 w-5 text-info" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="h6 mb-1">Time Tracking</h3>
+                        <p className="mb-0 small text-muted">Clock in and out of your shifts</p>
+                      </div>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button
+                        onClick={clockIn}
+                        disabled={!hasEmployeeProfile}
+                        className="btn btn-success btn-sm"
+                      >
+                        <ClockIcon className="h-4 w-4 me-1" />
+                        Clock In
+                      </button>
+                      <button
+                        onClick={clockOut}
+                        disabled={!hasEmployeeProfile}
+                        className="btn btn-danger btn-sm"
+                      >
+                        <ClockIcon className="h-4 w-4 me-1" />
+                        Clock Out
+                      </button>
+                    </div>
+                  </div>
+
+                  {!hasEmployeeProfile ? (
+                    <div className="alert alert-warning">
+                      <div className="d-flex align-items-center">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-warning me-2" />
+                        <div>
+                          <strong>No Employee Profile:</strong> Your user account is not linked to an employee profile. 
+                          Attendance tracking is not available. Please contact your administrator to set up an employee profile.
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="alert alert-info">
+                      <div className="d-flex align-items-center">
+                        <InformationCircleIcon className="h-5 w-5 text-info me-2" />
+                        <div>
+                          <strong>Note:</strong> Attendance tracking requires an employee profile to be linked to your user account. 
+                          If you don't see any attendance records, please contact your administrator.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="table-responsive">
+                    <table className="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Clock In</th>
+                          <th>Clock Out</th>
+                          <th>Total Hours</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {attendanceRecords.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" className="text-center py-4">
+                              <DocumentTextIcon className="h-12 w-12 text-muted mx-auto mb-2" />
+                              <p className="text-muted">No attendance records found</p>
+                            </td>
+                          </tr>
+                        ) : (
+                          attendanceRecords.map((record) => (
+                            <tr key={record.id}>
+                              <td className="fw-medium">{formatDate(record.date)}</td>
+                              <td>
+                                {record.clock_in ? (
+                                  <span className="badge bg-success">
+                                    {formatTime(record.clock_in)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted">-</span>
+                                )}
+                              </td>
+                              <td>
+                                {record.clock_out ? (
+                                  <span className="badge bg-danger">
+                                    {formatTime(record.clock_out)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted">-</span>
+                                )}
+                              </td>
+                              <td>
+                                {record.total_hours ? (
+                                  <span className="badge bg-primary">
+                                    {record.total_hours}h
+                                  </span>
+                                ) : (
+                                  <span className="text-muted">-</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Messages */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
+            <div className="alert alert-danger mt-3">
+              <div className="d-flex align-items-center">
+                <ExclamationTriangleIcon className="h-5 w-5 text-danger me-2" />
+                <div>{error}</div>
               </div>
             </div>
           )}
           
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <CheckCircleIcon className="h-5 w-5 text-green-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-green-700">{success}</p>
-                </div>
+            <div className="alert alert-success mt-3">
+              <div className="d-flex align-items-center">
+                <CheckCircleIcon className="h-5 w-5 text-success me-2" />
+                <div>{success}</div>
               </div>
             </div>
           )}

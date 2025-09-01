@@ -17,6 +17,7 @@ import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/
 import Modal from '../components/Modal';
 import ScheduleForm from '../components/ScheduleForm';
 import SixDayWeekView from '../components/SixDayWeekView';
+
 import PermissionGate from '../components/PermissionGate';
 
 const locales = {
@@ -55,6 +56,41 @@ const CustomCalendarWrapper = styled.div`
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     overflow: hidden;
+  }
+
+  /* Custom styling for 6-day month view - hide Sundays */
+  .rbc-month-view .rbc-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .rbc-month-view .rbc-header {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  /* Hide Sunday columns */
+  .rbc-month-view .rbc-row > div:nth-child(7n+1),
+  .rbc-month-view .rbc-header > div:nth-child(7n+1) {
+    display: none;
+  }
+
+  /* Adjust grid to 6 columns */
+  .rbc-month-view .rbc-row {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .rbc-month-view .rbc-header {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .rbc-month-view .rbc-header > div {
+    text-align: center;
+    padding: 8px;
+    font-weight: 600;
+    color: #374151;
+    background-color: #f8f9fa;
+    border: 1px solid #e5e7eb;
   }
 
   .rbc-date-cell {
@@ -184,6 +220,29 @@ const CustomCalendarWrapper = styled.div`
     transform: none !important;
     backface-visibility: hidden;
   }
+
+  /* Mobile-specific styling for 6-day calendar */
+  @media (max-width: 768px) {
+    .rbc-month-view .rbc-row {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1px;
+    }
+
+    .rbc-month-view .rbc-header {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1px;
+    }
+
+    .rbc-date-cell {
+      min-height: 60px;
+      font-size: 14px;
+    }
+
+    .rbc-event {
+      font-size: 11px;
+      padding: 2px 4px;
+    }
+  }
 `;
 
 export default function Schedule() {
@@ -267,6 +326,10 @@ export default function Schedule() {
     }
     setEditingAppointment(null); // For the floating action button
     openModal('appointment-form');
+  };
+
+  const handleRefresh = () => {
+    loadScheduleData();
   };
 
   const handleEditAppointment = (event) => {
@@ -578,18 +641,6 @@ export default function Schedule() {
               {label}
             </div>
           ),
-          month: {
-            header: ({ date, label }) => {
-              const dayOfWeek = date.getDay();
-              if (dayOfWeek === 0) return null; // Hide Sunday
-              return <div className="text-center font-semibold">{format(date, 'EEE')}</div>;
-            },
-            dateHeader: ({ date, label }) => {
-              const dayOfWeek = date.getDay();
-              if (dayOfWeek === 0) return null; // Hide Sunday
-              return <div className="text-center">{label}</div>;
-            },
-          },
         }}
         min={new Date(0, 0, 0, 6, 0, 0)} // Start at 6AM
         max={new Date(0, 0, 0, 21, 0, 0)} // End at 9PM
@@ -636,6 +687,15 @@ export default function Schedule() {
         </div>
         
         <div className="flex space-x-2">
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
+          >
+            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
           <button
             onClick={() => {
               const newDate = new Date(currentDate);

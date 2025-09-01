@@ -3,6 +3,7 @@ import useStore from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
+import CustomDropdown from './CustomDropdown';
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   const { clients, services, employees, closeModal, hasPermission } = useStore();
@@ -102,22 +103,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       </div>
 
       <div className="flex items-center gap-2"> 
-        <select
-          id="client_id"
-          name="client_id"
-          required
-          value={formData.client_id}
-          onChange={handleChange}
-          className="input-field mt-1 flex-1"
-        >
-          <option value="">Select a client</option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.name}
-            </option>
-          ))}
-        </select>
-        <PermissionGate page="clients" permission="write">
+      <PermissionGate page="clients" permission="write">
           <button
             type="button"
             onClick={() => { closeModal(); navigate('/clients?new=1'); }}
@@ -127,26 +113,24 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           >
             <PlusIcon className="h-5 w-5" />
           </button>
-        </PermissionGate>
+        </PermissionGate>s
+        <CustomDropdown
+          name="client_id"
+          value={formData.client_id}
+          onChange={handleChange}
+          options={clients.map((client) => ({
+            value: client.id,
+            label: client.name
+          }))}
+          placeholder="Select a client"
+          required
+          className="flex-1"
+        />
+    
       </div>
 
       <div className="flex items-center gap-2"> 
-        <select
-          id="service_id"
-          name="service_id"
-          required
-          value={formData.service_id}
-          onChange={handleChange}
-          className="input-field mt-1 flex-1"
-        >
-          <option value="">Select a service</option>
-          {services.map((service) => (
-            <option key={service.id} value={service.id}>
-              {service.name} - ${service.price}
-            </option>
-          ))}
-        </select>
-        <PermissionGate page="services" permission="write">
+      <PermissionGate page="services" permission="write">
           <button
             type="button"
             onClick={() => { closeModal(); navigate('/services?new=1'); }}
@@ -157,25 +141,23 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             <PlusIcon className="h-5 w-5" />
           </button>
         </PermissionGate>
+        <CustomDropdown
+          name="service_id"
+          value={formData.service_id}
+          onChange={handleChange}
+          options={services.map((service) => ({
+            value: service.id,
+            label: `${service.name} - $${service.price}`
+          }))}
+          placeholder="Select a service"
+          required
+          className="flex-1"
+        />
+      
       </div>
 
       <div className="flex items-center gap-2"> 
-        <select
-          id="employee_id"
-          name="employee_id"
-          required
-          value={formData.employee_id}
-          onChange={handleChange}
-          className="input-field mt-1 flex-1"
-        >
-          <option value="">Select an employee</option>
-          {employees.map((employee) => (
-            <option key={employee.id} value={employee.id}>
-              {employee.first_name} {employee.last_name} - {employee.role}
-            </option>
-          ))}
-        </select>
-        <PermissionGate page="employees" permission="write">
+      <PermissionGate page="employees" permission="write">
           <button
             type="button"
             onClick={() => { closeModal(); navigate('/employees?new=1'); }}
@@ -186,6 +168,19 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             <PlusIcon className="h-5 w-5" />
           </button>
         </PermissionGate>
+        <CustomDropdown
+          name="employee_id"
+          value={formData.employee_id}
+          onChange={handleChange}
+          options={employees.map((employee) => ({
+            value: employee.id,
+            label: `${employee.first_name} ${employee.last_name} - ${employee.role}`
+          }))}
+          placeholder="Select an employee"
+          required
+          className="flex-1"
+        />
+      
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -208,42 +203,36 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           <label htmlFor="appointment_hour" className="block text-sm font-medium text-gray-700">
             Hour
           </label>
-          <select
-            id="appointment_hour"
+          <CustomDropdown
             name="appointment_hour"
-            required
             value={formData.appointment_hour || ''}
             onChange={handleChange}
-            className={`input-field mt-1 ${timeError ? 'border-red-500' : ''}`}
-          >
-             
-            {[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => (
-              <option key={hour} value={hour.toString().padStart(2, '0')}>
-                {hour.toString().padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+            options={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => ({
+              value: hour.toString().padStart(2, '0'),
+              label: hour.toString().padStart(2, '0')
+            }))}
+            placeholder="Hour"
+            required
+            className={timeError ? 'border-red-500' : ''}
+          />
         </div>
 
         <div> 
           <label htmlFor="appointment_minute" className="block text-sm font-medium text-gray-700">
             Minute
           </label>
-          <select
-            id="appointment_minute"
+          <CustomDropdown
             name="appointment_minute"
-            required
             value={formData.appointment_minute || ''}
             onChange={handleChange}
-            className={`input-field mt-1 ${timeError ? 'border-red-500' : ''}`}
-          >
-            
-            {[0, 15, 30, 45].map(minute => (
-              <option key={minute} value={minute.toString().padStart(2, '0')}>
-                {minute.toString().padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+            options={[0, 15, 30, 45].map(minute => ({
+              value: minute.toString().padStart(2, '0'),
+              label: minute.toString().padStart(2, '0')
+            }))}
+            placeholder="Minute"
+            required
+            className={timeError ? 'border-red-500' : ''}
+          />
         </div>
       </div>
       {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}

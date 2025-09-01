@@ -12,8 +12,10 @@
   "dependencies": {
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.0.18",
+    "@popperjs/core": "^2.11.8",
     "@zxing/browser": "^0.1.5",
     "axios": "^1.6.2",
+    "bootstrap": "^5.3.8",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
     "docx-preview": "^0.3.6",

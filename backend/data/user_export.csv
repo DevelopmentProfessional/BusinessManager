@@ -1,0 +1,2 @@
+id,created_at,updated_at,username,email,password_hash,first_name,last_name,role,is_active,is_locked,force_password_reset,last_login,failed_login_attempts,locked_until,dark_mode
+993ad1c3a7424f18b32307ea1592fa3a,2025-09-01 00:28:36.880149,,admin,admin@lavishbeautyhairandnail.care,$2b$12$yIOSN9kbi3Ykw1XCWhdpmuNOK8WfxHD3QM789Ow0q8mS1u03Wx0au,Admin,User,ADMIN,1,0,0,,0,,0

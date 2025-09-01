@@ -3,6 +3,7 @@ import { Tab } from '@headlessui/react';
 import { UserIcon, KeyIcon, ShieldCheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
 import useStore from '../store/useStore';
+import CustomDropdown from './CustomDropdown';
 
 // Available pages and their permissions
 const AVAILABLE_PAGES = [
@@ -619,22 +620,21 @@ placeholder="Phone"
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700">
                   Role *
                 </label>
-                <select
-                  id="role"
+                <CustomDropdown
                   name="role"
-                  required
                   value={formData.role}
                   onChange={handleChange}
-                  className="input-field mt-1"
-                >
-                  <option value="">Select a role</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Technician">Technician</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Support">Support</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Other">Other</option>
-                </select>
+                  options={[
+                    { value: 'Manager', label: 'Manager' },
+                    { value: 'Technician', label: 'Technician' },
+                    { value: 'Sales', label: 'Sales' },
+                    { value: 'Support', label: 'Support' },
+                    { value: 'Admin', label: 'Admin' },
+                    { value: 'Other', label: 'Other' }
+                  ]}
+                  placeholder="Select a role"
+                  required
+                />
               </div>
 
               <div>

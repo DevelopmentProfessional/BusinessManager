@@ -297,4 +297,19 @@ export const documentCategoriesAPI = {
   },
 };
 
+export const adminAPI = {
+  importData: (formData) => {
+    clearCache('clients');
+    clearCache('services');
+    clearCache('schedule');
+    return api.post('/admin/import-data', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  getSystemInfo: () => api.get('/admin/system-info'),
+  testAppointments: () => api.get('/admin/test-appointments'),
+};
+
 export default api;

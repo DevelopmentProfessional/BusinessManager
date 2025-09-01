@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
-import api from '../services/api';
+import api, { adminAPI } from '../services/api';
+import CustomDropdown from '../components/CustomDropdown';
+import DataImportModal from '../components/DataImportModal';
 
 const Admin = () => {
   const { user } = useStore();
@@ -12,6 +14,8 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPermissions, setShowPermissions] = useState(false);
   const [userPermissions, setUserPermissions] = useState([]);
+  const [showDataImport, setShowDataImport] = useState(false);
+  const [systemInfo, setSystemInfo] = useState(null);
   
   const [newUser, setNewUser] = useState({
     username: '',
@@ -152,6 +156,16 @@ const Admin = () => {
     }
   };
 
+  const handleTestAppointments = async () => {
+    try {
+      const response = await adminAPI.testAppointments();
+      setSystemInfo(response.data);
+      setSuccess('Appointment test completed successfully!');
+    } catch (err) {
+      setError('Failed to test appointments: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
   if (user?.role !== 'admin') {
     return (
       <div className="p-6">
@@ -168,13 +182,27 @@ const Admin = () => {
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-            <button
-              onClick={() => setShowCreateUser(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-            >
-              Create User
-            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowDataImport(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+              >
+                Import Data
+              </button>
+              <button
+                onClick={handleTestAppointments}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Test Appointments
+              </button>
+              <button
+                onClick={() => setShowCreateUser(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+              >
+                Create User
+              </button>
+            </div>
           </div>
         </div>
 
@@ -429,30 +457,29 @@ const Admin = () => {
                     <form onSubmit={handleCreatePermission} className="flex space-x-4 items-end">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Page</label>
-                        <select
+                        <CustomDropdown
                           value={newPermission.page}
                           onChange={(e) => setNewPermission({...newPermission, page: e.target.value})}
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          options={pages.map(page => ({
+                            value: page,
+                            label: page
+                          }))}
+                          placeholder="Select Page"
                           required
-                        >
-                          <option value="">Select Page</option>
-                          {pages.map(page => (
-                            <option key={page} value={page}>{page}</option>
-                          ))}
-                        </select>
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Permission</label>
-                        <select
+                        <CustomDropdown
                           value={newPermission.permission}
                           onChange={(e) => setNewPermission({...newPermission, permission: e.target.value})}
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          options={permissions.map(perm => ({
+                            value: perm,
+                            label: perm
+                          }))}
+                          placeholder="Select Permission"
                           required
-                        >
-                          {permissions.map(perm => (
-                            <option key={perm} value={perm}>{perm}</option>
-                          ))}
-                        </select>
+                        />
                       </div>
                       <div className="flex items-center">
                         <input
@@ -489,8 +516,59 @@ const Admin = () => {
               <div className="text-sm text-green-700">{success}</div>
             </div>
           )}
+
+          {/* System Info Display */}
+          {systemInfo && (
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+              <h3 className="text-lg font-medium text-blue-900 mb-3">System Information</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{systemInfo.total_clients}</div>
+                  <div className="text-sm text-blue-700">Clients</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{systemInfo.total_services}</div>
+                  <div className="text-sm text-blue-700">Services</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{systemInfo.total_employees}</div>
+                  <div className="text-sm text-blue-700">Employees</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{systemInfo.total_appointments}</div>
+                  <div className="text-sm text-blue-700">Appointments</div>
+                </div>
+              </div>
+              
+              {systemInfo.sample_appointments && systemInfo.sample_appointments.length > 0 && (
+                <div>
+                  <h4 className="text-md font-medium text-blue-900 mb-2">Sample Appointments:</h4>
+                  <div className="space-y-2">
+                    {systemInfo.sample_appointments.map((apt, index) => (
+                      <div key={index} className="bg-white p-3 rounded border">
+                        <div className="font-medium">{apt.client_name} - {apt.service_name}</div>
+                        <div className="text-sm text-gray-600">
+                          {apt.employee_name} • {new Date(apt.appointment_date).toLocaleString()} • {apt.status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Data Import Modal */}
+      <DataImportModal
+        isOpen={showDataImport}
+        onClose={() => setShowDataImport(false)}
+        onImportComplete={() => {
+          // Refresh data if needed
+          console.log('Data import completed');
+        }}
+      />
     </div>
   );
 };

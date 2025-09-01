@@ -53,6 +53,7 @@ class User(BaseModel, table=True):
     last_login: Optional[datetime] = Field(default=None)
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
+    dark_mode: bool = Field(default=False)  # User's dark mode preference
     
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
@@ -437,6 +438,12 @@ class ServiceCreate(SQLModel):
     description: Optional[str] = None
     price: float
     duration_minutes: int = 60
+
+class ServiceUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    duration_minutes: Optional[int] = None
 
 class EmployeeCreate(SQLModel):
     first_name: str

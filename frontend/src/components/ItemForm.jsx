@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import CustomDropdown from './CustomDropdown';
 
 export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null }) {
   const [formData, setFormData] = useState({
@@ -153,17 +154,17 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         <label htmlFor="type" className="block text-sm font-medium text-gray-700">
           Item Type *
         </label>
-        <select
-          id="type"
+        <CustomDropdown
           name="type"
-          className="input-field mt-1"
           value={formData.type}
           onChange={handleChange}
+          options={[
+            { value: 'CONSUMABLE', label: 'Consumable' },
+            { value: 'ITEM', label: 'Stock item' }
+          ]}
+          placeholder="Select item type"
           required
-        >
-          <option value="CONSUMABLE">Consumable</option>
-          <option value="ITEM">Stock item</option>
-        </select>
+        />
       </div>
 
       <div>

@@ -15,9 +15,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from database import create_db_and_tables
-from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth
+from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin
 
-# Create database tables
+# Create database tables (safe to run multiple times)
 create_db_and_tables()
 
 app = FastAPI(
@@ -82,6 +82,7 @@ app.include_router(employees.router, prefix="/api/v1", tags=["employees"])
 app.include_router(schedule.router, prefix="/api/v1", tags=["schedule"])
 app.include_router(attendance.router, prefix="/api/v1", tags=["attendance"])
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))

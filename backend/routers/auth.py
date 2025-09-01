@@ -699,3 +699,16 @@ def delete_user_permission(
     session.commit()
     
     return {"message": "Permission deleted"}
+
+@router.put("/me/dark-mode")
+def update_dark_mode_preference(
+    dark_mode: bool,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Update current user's dark mode preference"""
+    current_user.dark_mode = dark_mode
+    session.commit()
+    session.refresh(current_user)
+    
+    return {"message": "Dark mode preference updated", "dark_mode": dark_mode}

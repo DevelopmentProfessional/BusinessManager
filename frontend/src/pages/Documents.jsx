@@ -10,6 +10,7 @@ import MobileAddButton from '../components/MobileAddButton';
 import PermissionGate from '../components/PermissionGate';
 import { renderAsync } from 'docx-preview';
 import OnlyOfficeEditor from '../components/OnlyOfficeEditor';
+import CustomDropdown from '../components/CustomDropdown';
 
 function DocumentUploadForm({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -804,31 +805,33 @@ export default function Documents() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">Owner</label>
-                <select
-                  className="input-field mt-1"
+                <CustomDropdown
                   value={editOwnerId || ''}
                   onChange={(e) => setEditOwnerId(e.target.value)}
-                >
-                  <option value="">Unassigned</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Unassigned' },
+                    ...employees.map((emp) => ({
+                      value: emp.id,
+                      label: emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id
+                    }))
+                  ]}
+                  placeholder="Select owner"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">Category</label>
-                <select
-                  className="input-field mt-1"
+                <CustomDropdown
                   value={editCategoryId || ''}
                   onChange={(e) => setEditCategoryId(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'None' },
+                    ...categories.map((cat) => ({
+                      value: cat.id,
+                      label: cat.name
+                    }))
+                  ]}
+                  placeholder="Select category"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600">Review Date</label>
@@ -902,18 +905,18 @@ export default function Documents() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Owner</label>
-                <select
-                  className="input-field mt-1"
+                <CustomDropdown
                   value={editOwnerId || ''}
                   onChange={(e) => setEditOwnerId(e.target.value)}
-                >
-                  <option value="">Unassigned</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Unassigned' },
+                    ...employees.map((emp) => ({
+                      value: emp.id,
+                      label: emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id
+                    }))
+                  ]}
+                  placeholder="Select owner"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Review Date</label>
@@ -926,16 +929,18 @@ export default function Documents() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Category</label>
-                <select
-                  className="input-field mt-1"
+                <CustomDropdown
                   value={editCategoryId || ''}
                   onChange={(e) => setEditCategoryId(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'None' },
+                    ...categories.map((cat) => ({
+                      value: cat.id,
+                      label: cat.name
+                    }))
+                  ]}
+                  placeholder="Select category"
+                />
               </div>
             </div>
 
@@ -957,18 +962,16 @@ export default function Documents() {
                 })}
               </div>
               <div className="flex gap-2">
-                <select
-                  className="input-field"
+                <CustomDropdown
                   value={assignEmployeeId}
                   onChange={(e) => setAssignEmployeeId(e.target.value)}
-                >
-                  <option value="">Select employee…</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id}
-                    </option>
-                  ))}
-                </select>
+                  options={employees.map((emp) => ({
+                    value: emp.id,
+                    label: emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id
+                  }))}
+                  placeholder="Select employee"
+                  className="flex-1"
+                />
                 <button type="button" onClick={handleAddAssignment} className="btn-secondary">Add</button>
               </div>
             </div>

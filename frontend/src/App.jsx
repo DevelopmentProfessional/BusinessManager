@@ -14,6 +14,7 @@ import DocumentEditor from './pages/DocumentEditor';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import useStore from './store/useStore';
+import useDarkMode from './store/useDarkMode';
 
 
 
@@ -39,6 +40,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 
 function App() {
   const { setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
+  const { initializeDarkMode } = useDarkMode();
 
   // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {
@@ -68,6 +70,11 @@ function App() {
     
     initializeUserData();
   }, [setUser, setToken, setPermissions, loadPersistedFilters]);
+
+  // Initialize dark mode on app startup
+  useEffect(() => {
+    initializeDarkMode();
+  }, [initializeDarkMode]);
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

@@ -6,6 +6,7 @@ import { attendanceAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MobileTable from '../components/MobileTable';
 import MobileAddButton from '../components/MobileAddButton';
+import CustomDropdown from '../components/CustomDropdown';
 import ClockInOut from '../components/ClockInOut';
 import PermissionGate from '../components/PermissionGate';
 
@@ -46,21 +47,17 @@ function AttendanceForm({ onSubmit, onCancel }) {
         <label htmlFor="employee_id" className="block text-sm font-medium text-gray-700">
           Employee *
         </label>
-        <select
-          id="employee_id"
+        <CustomDropdown
           name="employee_id"
-          required
           value={formData.employee_id}
           onChange={handleChange}
-          className="input-field mt-1"
-        >
-          <option value="">Select an employee</option>
-          {employees.map((employee) => (
-            <option key={employee.id} value={employee.id}>
-              {employee.first_name} {employee.last_name}
-            </option>
-          ))}
-        </select>
+          options={employees.map((employee) => ({
+            value: employee.id,
+            label: `${employee.first_name} ${employee.last_name}`
+          }))}
+          placeholder="Select an employee"
+          required
+        />
       </div>
 
       <div>

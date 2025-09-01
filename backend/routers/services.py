@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
 from database import get_session
-from models import Service, ServiceCreate, ServiceRead
+from models import Service, ServiceCreate, ServiceUpdate, ServiceRead
 
 router = APIRouter()
 
@@ -44,7 +44,7 @@ async def create_service(service_data: ServiceCreate, session: Session = Depends
 @router.put("/services/{service_id}", response_model=ServiceRead)
 async def update_service(
     service_id: UUID, 
-    service_data: ServiceCreate, 
+    service_data: ServiceUpdate, 
     session: Session = Depends(get_session)
 ):
     """Update a service"""

@@ -12,7 +12,7 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-from database import engine, get_session
+from database import engine, get_session, create_db_and_tables
 from models import SQLModel, User, UserRole
 import bcrypt
 from datetime import datetime
@@ -21,9 +21,9 @@ def init_database():
     """Initialize the database with required tables and initial data."""
     print("🔄 Initializing database...")
     
-    # Create all tables
-    SQLModel.metadata.create_all(engine)
-    print("✅ Database tables created")
+    # Create all tables (this is safe to run multiple times)
+    create_db_and_tables()
+    print("✅ Database tables created/verified")
     
     # Get a session
     session = next(get_session())

@@ -2,16 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bootstrap overrides and custom styles */
 @layer base {
   * {
     @apply border-gray-200;
   }
-  body {
-    @apply bg-gray-50 text-gray-900;
+  
+  /* Ensure Bootstrap dark mode works properly */
+  [data-bs-theme="dark"] {
+    color-scheme: dark;
+  }
+  
+  [data-bs-theme="light"] {
+    color-scheme: light;
   }
 }
 
 @layer components {
+  /* Custom utility classes that work with both Tailwind and Bootstrap */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
@@ -26,5 +34,14 @@
   
   .card {
     @apply bg-white rounded-lg shadow-md p-6;
+  }
+  
+  /* Dark mode specific overrides */
+  [data-bs-theme="dark"] .card {
+    @apply bg-gray-800 border-gray-700;
+  }
+  
+  [data-bs-theme="dark"] .input-field {
+    @apply bg-gray-800 border-gray-600 text-gray-100;
   }
 }
