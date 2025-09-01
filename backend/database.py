@@ -10,7 +10,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./business_manager.db")
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 else:
-    # PostgreSQL settings
+    # PostgreSQL settings - use psycopg driver instead of psycopg2
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://")
     engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 
 def _migrate_documents_table_if_needed():
