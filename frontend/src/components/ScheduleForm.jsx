@@ -113,7 +113,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           >
             <PlusIcon className="h-5 w-5" />
           </button>
-        </PermissionGate>s
+        </PermissionGate>
         <CustomDropdown
           name="client_id"
           value={formData.client_id}

@@ -39,22 +39,23 @@ const views = {
 };
 
 const CustomCalendarWrapper = styled.div`
-  /* Subtle red accent for buttons and events only */
+  /* Bootstrap dark mode compatible calendar styling */
   .rbc-calendar {
-    background-color: white;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
   }
 
   .rbc-header {
-    background-color: #f8f9fa;
-    color: #374151;
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
     font-weight: 600;
-    padding: 8px;
-    border: 1px solid #e5e7eb;
+    padding: 0.25rem;
+    border: 1px solid var(--bs-border-color);
   }
 
   .rbc-month-view {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
     overflow: hidden;
   }
 
@@ -86,29 +87,30 @@ const CustomCalendarWrapper = styled.div`
 
   .rbc-month-view .rbc-header > div {
     text-align: center;
-    padding: 8px;
+    padding: 0.25rem;
     font-weight: 600;
-    color: #374151;
-    background-color: #f8f9fa;
-    border: 1px solid #e5e7eb;
+    color: var(--bs-body-color);
+    background-color: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
   }
 
   .rbc-date-cell {
-    background-color: white;
-    border: 1px solid #e5e7eb;
-    padding: 4px;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    padding: 0.25rem;
+    min-height: 60px;
   }
 
   .rbc-date-cell.rbc-off-range {
-    background-color: #f9fafb;
-    color: #9ca3af;
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
   }
 
   .rbc-date-cell.rbc-today {
-    background-color: #fef2f2;
+    background-color: var(--bs-primary-bg-subtle);
     font-weight: bold;
-    color: #b91c1c;
-    border: 2px solid #b91c1c;
+    color: var(--bs-primary);
+    border: 2px solid var(--bs-primary);
   }
 
   /* Events with matte red styling */
@@ -116,10 +118,10 @@ const CustomCalendarWrapper = styled.div`
     background-color: #b91c1c !important;
     border-color: #991b1b !important;
     color: white !important;
-    border-radius: 6px;
-    margin: 1px;
-    padding: 3px 6px;
-    font-size: 12px;
+    border-radius: 0.375rem;
+    margin: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
     font-weight: 500;
   }
 
@@ -136,21 +138,23 @@ const CustomCalendarWrapper = styled.div`
 
   /* Keep toolbar neutral */
   .rbc-toolbar {
-    background-color: #f8f9fa;
-    color: #374151;
-    padding: 12px;
-    border-radius: 8px 8px 0 0;
-    border: 1px solid #e5e7eb;
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    padding: 0.25rem;
+    border-radius: 0.375rem 0.375rem 0 0;
+    border: 1px solid var(--bs-border-color);
   }
 
   .rbc-toolbar button {
-    background-color: #white;
-    border: 1px solid #d1d5db;
-    color: #374151;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+    padding: 0.25rem 0.5rem;
+    margin: 0.25rem;
   }
 
   .rbc-toolbar button:hover {
-    background-color: #f3f4f6;
+    background-color: var(--bs-tertiary-bg);
   }
 
   .rbc-toolbar button.rbc-active {
@@ -160,18 +164,18 @@ const CustomCalendarWrapper = styled.div`
   }
 
   .rbc-time-view {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
   }
 
   .rbc-time-header {
-    background-color: #f8f9fa;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border-bottom: 1px solid var(--bs-border-color);
   }
 
   .rbc-time-content {
-    background-color: white;
+    background-color: var(--bs-body-bg);
   }
 
   .rbc-timeslot-group {
@@ -225,16 +229,17 @@ const CustomCalendarWrapper = styled.div`
   @media (max-width: 768px) {
     .rbc-month-view .rbc-row {
       grid-template-columns: repeat(6, 1fr);
-      gap: 1px;
+      gap: 0.25rem;
     }
 
     .rbc-month-view .rbc-header {
       grid-template-columns: repeat(6, 1fr);
-      gap: 1px;
+      gap: 0.25rem;
     }
 
     .rbc-date-cell {
-      min-height: 60px;
+      min-height: 50px;
+      padding: 0.25rem;
       font-size: 14px;
     }
 

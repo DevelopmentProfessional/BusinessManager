@@ -65,11 +65,11 @@ export default function Layout({ children }) {
 
       
       {/* Header with user info */}
-      <div className="bg-body-tertiary border-bottom px-3 py-2">
+      <div className="bg-body-tertiary border-bottom p-1">
         <div className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-1">
             <DarkModeToggle />
-            <h1 className="h5 mb-0 text-body-emphasis">{user?.first_name || 'User'}</h1>
+            <h1 className="h6 mb-0 text-body-emphasis">{user?.first_name || 'User'}</h1>
           </div>
          
             <button onClick={handleLogout} className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
@@ -91,7 +91,7 @@ export default function Layout({ children }) {
             />
             
             {/* Expanded menu anchored to bottom-right */}
-            <div className="position-fixed bottom-0 end-0 m-3 bg-body rounded-3 shadow-lg border p-3" style={{ minWidth: '12rem', zIndex: 1051 }}>
+            <div className="position-fixed bottom-0 end-0 m-1 bg-body rounded-3 shadow-lg border p-1" style={{ minWidth: '12rem', zIndex: 1051 }}>
               <div className="d-flex flex-column gap-1">
                 {filteredNavigation.map((item) => (
                   <Link
@@ -124,9 +124,9 @@ export default function Layout({ children }) {
             expandedMenuOpen
               ? 'btn btn-primary'
               : 'btn btn-outline-secondary',
-            'position-fixed bottom-0 end-0 m-4 rounded-circle shadow-lg d-flex align-items-center justify-content-center'
+            'position-fixed end-0 rounded-circle shadow-lg d-flex align-items-center justify-content-center'
           )}
-          style={{ width: '3rem', height: '3rem', zIndex: 1040 }}
+          style={{ width: '3rem', height: '3rem', zIndex: 1040, bottom: '4px', right: '16px' }}
         >
           <EllipsisHorizontalIcon className="h-5 w-5" />
         </button>
