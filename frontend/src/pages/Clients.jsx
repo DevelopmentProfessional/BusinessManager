@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { clientsAPI } from '../services/api';
@@ -25,6 +25,7 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState(() => getFilter('clients', 'searchTerm', ''));
+  const [isImporting, setIsImporting] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -83,14 +84,25 @@ export default function Clients() {
     
     if (!window.confirm('Are you sure you want to delete this client?')) return;
 
-    try {
-      await clientsAPI.delete(clientId);
-      removeClient(clientId);
-      clearError();
-    } catch (err) {
-      setError('Failed to delete client');
-      console.error(err);
+    await clientsAPI.delete(clientId);
+    removeClient(clientId);
+  };
+
+  const handleImportCSV = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await clientsAPI.uploadCSV(formData);
+    if (response?.data) {
+      loadClients();
     }
+    
+    setIsImporting(false);
+    event.target.value = '';
   };
 
   const handleSubmitClient = async (clientData) => {
@@ -173,41 +185,41 @@ export default function Clients() {
         <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
         
         {/* Search and Add Button Row */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-4">
-          {/* Search Input */}
-          <div className="flex-1">
+        <div className="mt-4">
+          <div className="input-group">
             <input
               type="text"
               placeholder="Search clients by name, email, phone, or address..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="form-control"
             />
+            <PermissionGate page="clients" permission="write">
+              <div className="input-group-append d-flex">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="btn btn-outline-secondary"
+                >
+                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </button>
+                <label className="btn btn-outline-primary cursor-pointer">
+                  <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
+                  {isImporting ? 'Importing...' : 'Import CSV'}
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                    disabled={isImporting}
+                  />
+                </label>
+              </div>
+            </PermissionGate>
           </div>
-          
-          {/* Desktop Add Button */}
-          <PermissionGate page="clients" permission="write">
-            <div className="hidden md:block flex space-x-2">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center"
-              >
-                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateClient}
-                className="btn-primary flex items-center"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Add Client
-              </button>
-            </div>
-          </PermissionGate>
         </div>
       </div>
 

@@ -125,6 +125,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           placeholder="Select a client"
           required
           className="flex-1"
+          searchable={true}
         />
     
       </div>
@@ -152,6 +153,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           placeholder="Select a service"
           required
           className="flex-1"
+          searchable={true}
         />
       
       </div>
@@ -179,6 +181,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           placeholder="Select an employee"
           required
           className="flex-1"
+          searchable={true}
         />
       
       </div>

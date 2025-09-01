@@ -171,6 +171,7 @@ class SupplierRead(SQLModel):
 class Service(BaseModel, table=True):
     name: str = Field(unique=True, index=True)  # Service names must be unique
     description: Optional[str] = Field(default=None)
+    category: Optional[str] = Field(default=None)
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
     
@@ -183,6 +184,7 @@ class ServiceRead(SQLModel):
     updated_at: Optional[datetime] = None
     name: str
     description: Optional[str] = None
+    category: Optional[str] = None
     price: float
     duration_minutes: int
 
@@ -436,12 +438,14 @@ class ItemUpdate(SQLModel):
 class ServiceCreate(SQLModel):
     name: str
     description: Optional[str] = None
+    category: Optional[str] = None
     price: float
     duration_minutes: int = 60
 
 class ServiceUpdate(SQLModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    category: Optional[str] = None
     price: Optional[float] = None
     duration_minutes: Optional[int] = None
 

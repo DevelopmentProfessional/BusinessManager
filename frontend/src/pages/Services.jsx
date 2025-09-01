@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { servicesAPI } from '../services/api';
@@ -21,6 +21,7 @@ export default function Services() {
   usePermissionRefresh();
 
   const [editingService, setEditingService] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -79,14 +80,25 @@ export default function Services() {
     
     if (!window.confirm('Are you sure you want to delete this service?')) return;
 
-    try {
-      await servicesAPI.delete(serviceId);
-      removeService(serviceId);
-      clearError();
-    } catch (err) {
-      setError('Failed to delete service');
-      console.error(err);
+    await servicesAPI.delete(serviceId);
+    removeService(serviceId);
+  };
+
+  const handleImportCSV = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await servicesAPI.uploadCSV(formData);
+    if (response?.data) {
+      loadServices();
     }
+    
+    setIsImporting(false);
+    event.target.value = '';
   };
 
   const handleSubmitService = async (serviceData) => {
@@ -120,33 +132,43 @@ export default function Services() {
 
   return (
     <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Services</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <PermissionGate page="services" permission="write">
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center"
-              >
-                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateService}
-                className="btn-primary flex items-center"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Add Service
-              </button>
-            </div>
-          </PermissionGate>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Services</h1>
+        
+        {/* Search and Add Button Row */}
+        <div className="mt-4">
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="Search services by name or category..."
+              className="form-control"
+            />
+            <PermissionGate page="services" permission="write">
+              <div className="input-group-append d-flex">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="btn btn-outline-secondary"
+                >
+                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </button>
+                <label className="btn btn-outline-primary cursor-pointer">
+                  <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
+                  {isImporting ? 'Importing...' : 'Import CSV'}
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                    disabled={isImporting}
+                  />
+                </label>
+              </div>
+            </PermissionGate>
+          </div>
         </div>
       </div>
 
