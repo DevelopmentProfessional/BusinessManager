@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
+import useDarkMode from '../store/useDarkMode';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
@@ -7,6 +8,7 @@ import CustomDropdown from './CustomDropdown';
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   const { clients, services, employees, closeModal, hasPermission } = useStore();
+  const { isDarkMode } = useDarkMode();
   const [timeError, setTimeError] = useState('');
   const navigate = useNavigate();
   
@@ -188,7 +190,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
 
       <div className="grid grid-cols-3 gap-4">
         <div> 
-          <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="appointment_date" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             Date
           </label>
           <input
@@ -198,12 +200,12 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             required
             value={formData.appointment_date}
             onChange={handleChange}
-            className="input-field mt-1"
+            className={`input-field mt-1 ${isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
           />
         </div>
 
         <div> 
-          <label htmlFor="appointment_hour" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="appointment_hour" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             Hour
           </label>
           <CustomDropdown
@@ -221,7 +223,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         </div>
 
         <div> 
-          <label htmlFor="appointment_minute" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="appointment_minute" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             Minute
           </label>
           <CustomDropdown
@@ -247,7 +249,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           rows={3}
           value={formData.notes}
           onChange={handleChange}
-          className="input-field mt-1"
+          className={`input-field mt-1 ${isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
           placeholder="Additional notes for the appointment"
         />
       </div>
