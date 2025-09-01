@@ -48,12 +48,13 @@ const useStore = create((set, get) => ({
     const employeePermissionField = `${page}_${permission}`;
     const employeeAdminField = `${page}_admin`;
     
-    // Check if the user has the specific permission or admin access for this page
-    if (user && user[employeePermissionField] === true) {
+    // Check if the user has admin access for this page (admin permission grants all access)
+    if (user && user[employeeAdminField] === true) {
       return true;
     }
     
-    if (user && user[employeeAdminField] === true) {
+    // Check if the user has the specific permission
+    if (user && user[employeePermissionField] === true) {
       return true;
     }
     

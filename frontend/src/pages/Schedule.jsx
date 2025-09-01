@@ -1,160 +1,529 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
-import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
-import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import enUS from 'date-fns/locale/en-US';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-
 import useStore from '../store/useStore';
 import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ScheduleForm from '../components/ScheduleForm';
 import PermissionGate from '../components/PermissionGate';
-import '../utils/calendarDebug';
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
-  getDay,
-  locales: { 'en-US': enUS },
-});
-
-const DragAndDropCalendar = withDragAndDrop(Calendar);
+import useDarkMode from '../store/useDarkMode';
 
 export default function Schedule() {
-  const { appointments, clients, services, employees, loading, error, setError, clearError, updateAppointment } = useStore();
+  const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments } = useStore();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   
-  const [currentView, setCurrentView] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [draggedAppointment, setDraggedAppointment] = useState(null);
+  const [dragOverCell, setDragOverCell] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        clearError();
-        await clientsAPI.getAll();
-        await servicesAPI.getAll();
-        await employeesAPI.getAll();
-        await scheduleAPI.getAll();
-      } catch (err) {
-        console.error('Failed to load schedule data:', err);
-        setError('Failed to load schedule data');
+      const clientsResponse = await clientsAPI.getAll();
+      if (clientsResponse?.data) {
+        setClients(clientsResponse.data);
+      }
+      
+      const servicesResponse = await servicesAPI.getAll();
+      if (servicesResponse?.data) {
+        setServices(servicesResponse.data);
+      }
+      
+      const employeesResponse = await employeesAPI.getAll();
+      if (employeesResponse?.data) {
+        setEmployees(employeesResponse.data);
+      }
+      
+      const scheduleResponse = await scheduleAPI.getAll();
+      if (scheduleResponse?.data) {
+        setAppointments(scheduleResponse.data);
       }
     };
 
     loadData();
-  }, [setError, clearError]);
+  }, [setClients, setServices, setEmployees]);
 
-  const events = appointments.map(appointment => ({
-    id: appointment.id,
-    title: appointment.title || 'Appointment',
-    start: new Date(appointment.appointment_date),
-    end: new Date(appointment.end_time || appointment.appointment_date),
-    resource: appointment,
-  }));
+  // Get calendar data based on current view
+  const getCalendarDays = () => {
+    if (currentView === 'day') {
+      return [new Date(currentDate)];
+    } else if (currentView === 'week') {
+      const startOfWeek = new Date(currentDate);
+      // Start week on Sunday (standard calendar)
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+      
+      const days = [];
+      for (let i = 0; i < 7; i++) { // 7 days (Sun-Sat)
+        const day = new Date(startOfWeek);
+        day.setDate(startOfWeek.getDate() + i);
+        days.push(day);
+      }
+      return days;
+    } else {
+      // Month view
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDate = new Date(firstDay);
+      
+      // Start on Sunday (standard calendar)
+      startDate.setDate(startDate.getDate() - firstDay.getDay());
+      
+      const days = [];
+      const currentDateObj = new Date(startDate);
+      
+      // Generate 6 weeks * 7 days = 42 days (Sun-Sat)
+      while (days.length < 42) {
+        days.push(new Date(currentDateObj));
+        currentDateObj.setDate(currentDateObj.getDate() + 1);
+      }
+      
+      return days;
+    }
+  };
 
-  const handleEditAppointment = useCallback((event) => {
-    setEditingAppointment(event.resource);
-    setIsModalOpen(true);
-  }, []);
+  // Get time slots for week and day views (full 24 hours)
+  const getTimeSlots = () => {
+    const timeSlots = [];
+    for (let hour = 0; hour <= 23; hour++) {
+      timeSlots.push(hour);
+    }
+    return timeSlots;
+  };
 
-  const handleSelectSlot = useCallback((slotInfo) => {
+  const days = getCalendarDays();
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const handleDateClick = useCallback((date) => {
     setEditingAppointment({
-      appointment_date: slotInfo.start,
-      end_time: slotInfo.end || slotInfo.start
+      appointment_date: date
     });
     setIsModalOpen(true);
   }, []);
 
   const handleSubmitAppointment = useCallback(async (appointmentData) => {
-    try {
-      if (editingAppointment && editingAppointment.id) {
-        await scheduleAPI.update(editingAppointment.id, appointmentData);
-      } else {
-        await scheduleAPI.create(appointmentData);
-      }
-      setIsModalOpen(false);
-      setEditingAppointment(null);
-      clearError();
-    } catch (err) {
-      setError('Failed to save appointment');
+    if (editingAppointment && editingAppointment.id) {
+      await scheduleAPI.update(editingAppointment.id, appointmentData);
+    } else {
+      await scheduleAPI.create(appointmentData);
     }
-  }, [editingAppointment, clearError, setError]);
+    
+    const scheduleResponse = await scheduleAPI.getAll();
+    if (scheduleResponse?.data) {
+      setAppointments(scheduleResponse.data);
+    }
+    
+    setIsModalOpen(false);
+    setEditingAppointment(null);
+  }, [editingAppointment, setAppointments]);
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((e, appointment) => {
+    setDraggedAppointment(appointment);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', appointment.id);
+    
+    // Add visual feedback
+    e.target.style.opacity = '0.5';
+  }, []);
+
+  const handleDragEnd = useCallback((e) => {
+    e.target.style.opacity = '1';
+    setDraggedAppointment(null);
+    setDragOverCell(null);
+  }, []);
+
+  const handleDragOver = useCallback((e, targetDate, targetHour = null) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCell({ date: targetDate, hour: targetHour });
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    // Only clear if we're leaving the calendar area entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverCell(null);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e, targetDate, targetHour = null) => {
+    e.preventDefault();
+    
+    if (!draggedAppointment) return;
+    
+    const newDate = new Date(targetDate);
+    if (targetHour !== null) {
+      newDate.setUTCHours(targetHour, 0, 0, 0);
+    } else {
+      const originalTime = new Date(draggedAppointment.appointment_date);
+      newDate.setUTCHours(originalTime.getUTCHours(), originalTime.getUTCMinutes(), 0, 0);
+    }
+    
+    const updatedAppointment = {
+      client_id: draggedAppointment.client_id,
+      service_id: draggedAppointment.service_id,
+      employee_id: draggedAppointment.employee_id,
+      appointment_date: newDate.toISOString(),
+      status: draggedAppointment.status || 'scheduled',
+      notes: draggedAppointment.notes || null
+    };
+    
+    const response = await scheduleAPI.update(draggedAppointment.id, updatedAppointment);
+    if (response?.data) {
+      const scheduleResponse = await scheduleAPI.getAll();
+      if (scheduleResponse?.data) {
+        setAppointments(scheduleResponse.data);
+      }
+    }
+    
+    setDraggedAppointment(null);
+    setDragOverCell(null);
+  }, [draggedAppointment, setAppointments]);
 
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingAppointment(null);
   }, []);
 
+  const isCurrentMonth = (date) => {
+    return date.getMonth() === currentDate.getMonth();
+  };
+
+  const getAppointmentsForDate = (date) => {
+    console.log(`Looking for appointments on ${date.toDateString()}`);
+    console.log('All appointments:', appointments);
+    
+    const appointmentsForDate = appointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.appointment_date);
+      const matches = appointmentDate.toDateString() === date.toDateString();
+      if (matches) {
+        console.log(`Match found: ${appointmentDate.toDateString()} === ${date.toDateString()}`);
+      }
+      return matches;
+    });
+    
+    // Debug logging
+    if (appointmentsForDate.length > 0) {
+      console.log(`Found ${appointmentsForDate.length} appointments for ${date.toDateString()}:`, appointmentsForDate);
+    } else {
+      console.log(`No appointments found for ${date.toDateString()}`);
+    }
+    
+    return appointmentsForDate;
+  };
+ 
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
   return (
     <div className="h-100 d-flex flex-column">
-      {error && <div className="alert alert-danger mb-3">{error}</div>}
-
       <PermissionGate page="schedule" permission="read">
-        <div className="text-center mb-3">
-          <h4>{currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
-        </div>
+        <h4 className="text-center mb-3">
+          {currentView === 'day'
+            ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+            : currentView === 'week'
+            ? `Week of ${new Date(currentDate.getTime() - currentDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+            : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          }
+        </h4>
 
-        <DragAndDropCalendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}
-          view={currentView}
-          date={currentDate}
-          selectable
-          onSelectEvent={handleEditAppointment}
-          onSelectSlot={handleSelectSlot}
-          onView={setCurrentView}
-          onNavigate={setCurrentDate}
-          min={new Date(0, 0, 0, 6, 0, 0)}
-          max={new Date(0, 0, 0, 21, 0, 0)}
-          views={{
-            month: Views.MONTH,
-            week: Views.WEEK,
-          }}
-        />
+        <div className="calendar-container">
+          {/* Week day headers */}
+          <div className="calendar-header">
+            {currentView === 'day' ? (
+              <>
+                <div className="calendar-header-cell">Time</div>
+                <div className="calendar-header-cell">Appointments</div>
+              </>
+            ) : currentView === 'week' ? (
+              <>
+                <div className="calendar-header-cell">Time</div>
+                {weekDays.map(day => (
+                  <div key={day} className="calendar-header-cell">
+                    {day}
+                  </div>
+                ))}
+              </>
+            ) : (
+              weekDays.map(day => (
+                <div key={day} className="calendar-header-cell">
+                  {day}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Calendar grid */}
+          <div className={`calendar-grid ${currentView === 'week' ? 'week-view' : currentView === 'day' ? 'day-view' : ''}`}>
+            {currentView === 'week' ? (
+              // Week view with time slots
+              getTimeSlots().map(hour => (
+                <React.Fragment key={hour}>
+                  <div className="time-slot-cell">
+                    {hour.toString().padStart(2, '0')}:00
+                  </div>
+                  {days.map((date, dayIndex) => {
+                    const appointmentsForTimeSlot = getAppointmentsForDate(date).filter(appointment => {
+                      const appointmentTime = new Date(appointment.appointment_date);
+                      return appointmentTime.getHours() === hour;
+                    });
+                    
+                    return (
+                      <div
+                        key={`${hour}-${dayIndex}`}
+                        className={`calendar-cell time-slot border ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                        onClick={() => {
+                          const slotDate = new Date(date);
+                          slotDate.setHours(hour, 0, 0, 0);
+                          handleDateClick(slotDate);
+                        }}
+                        onDragOver={(e) => handleDragOver(e, date, hour)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, date, hour)}
+                      >
+                        {appointmentsForTimeSlot.map(appointment => {
+                          const client = clients.find(c => c.id === appointment.client_id);
+                          const clientName = client ? client.name : 'Unknown Client';
+                          const service = services.find(s => s.id === appointment.service_id);
+                          const serviceName = service ? service.name : 'Unknown Service';
+                          const appointmentTime = new Date(appointment.appointment_date);
+                          const timeString = appointmentTime.toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                          });
+                          
+                          return (
+                            <div 
+                              key={appointment.id} 
+                              className="appointment-dot" 
+                              title={`${clientName} - ${serviceName} at ${timeString}`}
+                              draggable={true}
+                              onDragStart={(e) => handleDragStart(e, appointment)}
+                              onDragEnd={handleDragEnd}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingAppointment(appointment);
+                                setIsModalOpen(true);
+                              }}
+                            >
+                              <div className="appointment-time">{timeString}</div>
+                              <div className="appointment-client">{clientName}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))
+            ) : currentView === 'day' ? (
+              // Day view with time slots
+              getTimeSlots().map(hour => {
+                const appointmentsForTimeSlot = getAppointmentsForDate(days[0]).filter(appointment => {
+                  const appointmentTime = new Date(appointment.appointment_date);
+                  return appointmentTime.getHours() === hour;
+                });
+                
+                return (
+                  <React.Fragment key={hour}>
+                    <div className="time-slot-cell">
+                      {hour.toString().padStart(2, '0')}:00
+                    </div>
+                    <div
+                      className={`calendar-cell time-slot border ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                      onClick={() => {
+                        const slotDate = new Date(days[0]);
+                        slotDate.setHours(hour, 0, 0, 0);
+                        handleDateClick(slotDate);
+                      }}
+                      onDragOver={(e) => handleDragOver(e, days[0], hour)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, days[0], hour)}
+                    >
+                      {appointmentsForTimeSlot.map(appointment => {
+                        const client = clients.find(c => c.id === appointment.client_id);
+                        const clientName = client ? client.name : 'Unknown Client';
+                        const service = services.find(s => s.id === appointment.service_id);
+                        const serviceName = service ? service.name : 'Unknown Service';
+                        const appointmentTime = new Date(appointment.appointment_date);
+                        const timeString = appointmentTime.toLocaleTimeString('en-US', { 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          hour12: false 
+                        });
+                        
+                        return (
+                          <div 
+                            key={appointment.id} 
+                            className="appointment-dot" 
+                            title={`${clientName} - ${serviceName} at ${timeString}`}
+                            draggable={true}
+                            onDragStart={(e) => handleDragStart(e, appointment)}
+                            onDragEnd={handleDragEnd}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingAppointment(appointment);
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            <div className="appointment-time">{timeString}</div>
+                            <div className="appointment-client">{clientName}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </React.Fragment>
+                );
+              })
+            ) : (
+              // Month view
+              days.map((date, index) => {
+                const appointmentsForDate = getAppointmentsForDate(date);
+                const isToday = date.toDateString() === new Date().toDateString();
+                
+                return (
+                  <div
+                    key={index}
+                    className={`calendar-cell border ${!isCurrentMonth(date) ? 'other-month' : ''} ${isToday ? 'today' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() ? 'drag-over' : ''}`}
+                    onClick={() => handleDateClick(date)}
+                    onDragOver={(e) => handleDragOver(e, date)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, date)}
+                  >
+                    <div className="date-number">{date.getDate()}</div>
+                    {appointmentsForDate.length > 0 && (
+                      <div className="appointments">
+                        {appointmentsForDate.slice(0, 2).map(appointment => {
+                          // Get client name
+                          const client = clients.find(c => c.id === appointment.client_id);
+                          const clientName = client ? client.name : 'Unknown Client';
+                          
+                          // Get service name
+                          const service = services.find(s => s.id === appointment.service_id);
+                          const serviceName = service ? service.name : 'Unknown Service';
+                          
+                          // Get time
+                          const appointmentTime = new Date(appointment.appointment_date);
+                          const timeString = appointmentTime.toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                          });
+                          
+                          return (
+                            <div 
+                              key={appointment.id} 
+                              className="appointment-dot" 
+                              title={`${clientName} - ${serviceName} at ${timeString}`}
+                              draggable={true}
+                              onDragStart={(e) => handleDragStart(e, appointment)}
+                              onDragEnd={handleDragEnd}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent date click
+                                setEditingAppointment(appointment);
+                                setIsModalOpen(true);
+                              }}
+                            >
+                              <div className="appointment-time">{timeString}</div>
+                              <div className="appointment-client">{clientName}</div>
+                            </div>
+                          );
+                        })}
+                        {appointmentsForDate.length > 2 && (
+                          <div className="more-appointments">+{appointmentsForDate.length - 2}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
 
         <div className="d-flex justify-content-between align-items-center mt-3 p-2 border-top">
           <div className="d-flex gap-1">
             <button
               type="button"
               onClick={() => setCurrentView('month')}
-              className={`btn btn-sm ${currentView === 'month' ? 'btn-danger' : 'btn-outline-secondary'}`}
+              className={`btn btn-sm ${currentView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`}
             >
               Month
             </button>
             <button
               type="button"
               onClick={() => setCurrentView('week')}
-              className={`btn btn-sm ${currentView === 'week' ? 'btn-danger' : 'btn-outline-secondary'}`}
+              className={`btn btn-sm ${currentView === 'week' ? 'btn-primary' : 'btn-outline-secondary'}`}
             >
               Week
             </button>
+            <button
+              type="button"
+              onClick={() => setCurrentView('day')}
+              className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            >
+              Day
+            </button>
           </div>
           
-          <div className="d-flex gap-1">
-            <button
+           <div className="d-flex gap-1 navigation-buttons">
+             
+                         <button
               type="button"
               onClick={() => {
                 const newDate = new Date(currentDate);
-                newDate.setMonth(newDate.getMonth() - 1);
+                if (currentView === 'day') {
+                  newDate.setDate(newDate.getDate() - 1);
+                } else if (currentView === 'week') {
+                  newDate.setDate(newDate.getDate() - 7);
+                } else {
+                  newDate.setMonth(newDate.getMonth() - 1);
+                }
                 setCurrentDate(newDate);
               }}
               className="btn btn-outline-secondary btn-sm"
             >
-              Prev
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentDate(new Date())}
+              className="btn btn-outline-secondary btn-sm"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const scheduleResponse = await scheduleAPI.getAll();
+                if (scheduleResponse?.data) {
+                  setAppointments(scheduleResponse.data);
+                }
+              }}
+              className="btn btn-outline-secondary btn-sm"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const newDate = new Date(currentDate);
+                if (currentView === 'day') {
+                  newDate.setDate(newDate.getDate() + 1);
+                } else if (currentView === 'week') {
+                  newDate.setDate(newDate.getDate() + 7);
+                } else {
+                  newDate.setMonth(newDate.getMonth() + 1);
+                }
+                setCurrentDate(newDate);
+              }}
+              className="btn btn-outline-secondary btn-sm"
+            >
+              Next
             </button>
           </div>
         </div>
@@ -170,6 +539,149 @@ export default function Schedule() {
           />
         </Modal>
       </PermissionGate>
+
+      <style>{`
+        .calendar-container {
+          background: ${isDarkMode ? '#2d3748' : 'white'};
+          width: 100%;
+          height: calc(100vh - 200px);
+          display: flex;
+          flex-direction: column;
+          overflow: auto;
+        }
+        
+        .calendar-header {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
+        }
+        
+        .calendar-header-cell {
+          text-align: center;
+          font-weight: 600;
+          color: ${isDarkMode ? '#e2e8f0' : '#495057'};
+        }
+        
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          flex: 1;
+          overflow: auto;
+        }
+        
+        .calendar-grid.week-view {
+          grid-template-columns: 60px repeat(7, 1fr);
+          flex: 1;
+          overflow: auto;
+        }
+        
+        .calendar-grid.week-view .time-slot-cell {
+          grid-column: 1;
+        }
+        
+        .calendar-grid.week-view .calendar-cell {
+          grid-column: auto;
+        }
+        
+        .calendar-grid.day-view {
+          grid-template-columns: 60px 1fr;
+          flex: 1;
+          overflow: auto;
+        }
+        
+        .time-slot-cell {
+          background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
+          color: ${isDarkMode ? '#e2e8f0' : '#495057'};
+          font-size: 12px;
+          font-weight: 600;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
+        }
+        
+        .time-slot {
+          min-height: 60px;
+        }
+        
+        .calendar-cell {
+          min-height: 100px;
+          cursor: pointer;
+          position: relative;
+          background: ${isDarkMode ? '#2d3748' : 'white'};
+          color: ${isDarkMode ? '#e2e8f0' : 'inherit'};
+        }
+        
+        .calendar-cell:hover {
+          background-color: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
+        }
+        
+
+        
+        .other-month {
+          background-color: ${isDarkMode ? '#1a202c' : '#f8f9fa'};
+          color: ${isDarkMode ? '#718096' : '#6c757d'};
+        }
+        
+        .today {
+          background-color: #e3f2fd;
+          font-weight: bold;
+        }
+        
+        .date-number {
+          font-size: 14px;
+          font-weight: 500;
+          margin-bottom: 4px;
+        }
+        
+        .appointments {
+          margin-top: 4px;
+        }
+        
+        .appointment-dot {
+          background: #007bff;
+          color: white;
+          padding: 4px 6px;
+          border-radius: 8px;
+          font-size: 10px;
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .appointment-dot:hover {
+          background: #0056b3;
+        }
+        
+        .drag-over {
+          background-color: ${isDarkMode ? '#4a5568' : '#e3f2fd'} !important;
+          border: 2px dashed ${isDarkMode ? '#90cdf4' : '#2196f3'} !important;
+        }
+        
+        .appointment-time {
+          font-weight: bold;
+          font-size: 9px;
+        }
+        
+        .appointment-client {
+          font-size: 9px;
+          opacity: 0.9;
+        }
+        
+                 .more-appointments {
+           color: #6c757d;
+           font-size: 11px;
+           text-align: center;
+         }
+         
+         .navigation-buttons {
+           margin-bottom: 50px;
+         }
+       `}</style>
     </div>
   );
 }

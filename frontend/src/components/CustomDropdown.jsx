@@ -57,7 +57,10 @@ export default function CustomDropdown({
         <span className={`${!selectedOption ? 'text-gray-500' : ''}`}>
           {displayValue}
         </span>
-        <ChevronDownIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDownIcon 
+          className="h-4 w-4 transition-transform" 
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
       </button>
 
       {isOpen && (
