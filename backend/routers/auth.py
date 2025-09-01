@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
@@ -702,11 +702,12 @@ def delete_user_permission(
 
 @router.put("/me/dark-mode")
 def update_dark_mode_preference(
-    dark_mode: bool,
+    dark_mode_data: dict = Body(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Update current user's dark mode preference"""
+    dark_mode = dark_mode_data.get("dark_mode", False)
     current_user.dark_mode = dark_mode
     session.commit()
     session.refresh(current_user)

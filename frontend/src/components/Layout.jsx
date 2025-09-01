@@ -61,79 +61,86 @@ export default function Layout({ children }) {
   });
 
   return (
-    <div className="min-vh-100 bg-body">
-
+    <div className="min-vh-100 bg-body d-flex flex-column">
       
       {/* Header with user info */}
-      <div className="bg-body-tertiary border-bottom p-1">
-        <div className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-1">
+      <header className="border-bottom p-1">
+        <div className="d-flex justify-content-between align-items-center w-100">
+          <div className="d-flex align-items-center gap-2">
             <DarkModeToggle />
             <h1 className="h6 mb-0 text-body-emphasis">{user?.first_name || 'User'}</h1>
           </div>
-         
-            <button onClick={handleLogout} className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
-            >
-              <ArrowRightOnRectangleIcon className="h-4 w-4" />
-              <span className="d-none d-sm-inline">Logout</span>
-            </button> 
+          <button onClick={handleLogout} className="btn btn-outline-danger btn-sm">
+            <ArrowRightOnRectangleIcon className="h-4 w-4" />
+          </button> 
         </div>
-      </div>
+      </header>
 
-      {/* Mobile-first layout (used for all widths) */}
-       
-        {/* Expanded menu overlay */}
-        {expandedMenuOpen && (
-          <div className="position-fixed top-0 start-0 w-100 h-100" style={{ zIndex: 1050 }}>
-            <div 
-              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-25" 
-              onClick={() => setExpandedMenuOpen(false)}
-            />
-            
-            {/* Expanded menu anchored to bottom-right */}
-            <div className="position-fixed bottom-0 end-0 m-1 bg-body rounded-3 shadow-lg border p-1" style={{ minWidth: '12rem', zIndex: 1051 }}>
-              <div className="d-flex flex-column gap-1">
-                {filteredNavigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setExpandedMenuOpen(false)}
-                    className={classNames(
-                      location.pathname === item.href
-                        ? 'btn btn-primary btn-sm'
-                        : 'btn btn-outline-secondary btn-sm',
-                      'd-flex align-items-center gap-2 text-decoration-none'
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
+      {/* Main content */}
+      <main className="flex-grow-1 d-flex flex-column">
+        {children}
+      </main>
+
+      {/* Navigation menu overlay */}
+      {expandedMenuOpen && (
+        <div className="position-fixed top-0 start-0 w-100 h-100" style={{ zIndex: 1050 }}>
+          {/* Backdrop */}
+          <div 
+            className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-25" 
+            onClick={() => setExpandedMenuOpen(false)}
+          />
+          
+          {/* Menu positioned bottom-right */}
+          <div 
+            className="position-fixed bg-body rounded-3 shadow-lg border p-2" 
+            style={{ 
+              minWidth: '12rem', 
+              zIndex: 1051, 
+              bottom: '5rem', 
+              right: '1rem' 
+            }}
+          >
+            <div className="d-flex flex-column gap-1">
+              {filteredNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setExpandedMenuOpen(false)}
+                  className={classNames(
+                    location.pathname === item.href
+                      ? 'btn btn-primary btn-sm'
+                      : 'btn btn-outline-secondary btn-sm',
+                    'd-flex align-items-center gap-2 text-decoration-none'
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Navigation toggle button - Bottom-right circle */}
+      <button
+        onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
+        className={classNames(
+          expandedMenuOpen
+            ? 'btn btn-primary'
+            : 'btn btn-outline-secondary',
+          'position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center'
         )}
-
-        {/* Main content */}  
-            {children} 
-
-        {/* Expand/collapse toggle - Bottom-right */}
-        <button
-          onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
-          className={classNames(
-            expandedMenuOpen
-              ? 'btn btn-primary'
-              : 'btn btn-outline-secondary',
-            'position-fixed end-0 rounded-circle shadow-lg d-flex align-items-center justify-content-center'
-          )}
-          style={{ width: '3rem', height: '3rem', zIndex: 1040, bottom: '4px', right: '16px' }}
-        >
-          <EllipsisHorizontalIcon className="h-5 w-5" />
-        </button>
-      
-
-      {/* No desktop layout; mobile-only application */}
-      
+        style={{ 
+          width: '3.5rem', 
+          height: '3.5rem', 
+          zIndex: 1040, 
+          bottom: '1rem', 
+          right: '1rem' 
+        }}
+      >
+        <EllipsisHorizontalIcon className="h-5 w-5" />
+      </button>
 
     </div>
   );

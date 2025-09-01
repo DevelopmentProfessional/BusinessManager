@@ -45,3 +45,5 @@
     @apply bg-gray-800 border-gray-600 text-gray-100;
   }
 }
+
+/* Calendar styles are now in local-bootstrap.css for consistency */
