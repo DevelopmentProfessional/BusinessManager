@@ -21,13 +21,37 @@ const Login = () => {
   const navigate = useNavigate();
   const { setUser, setToken, setPermissions } = useStore();
 
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  };
+
   useEffect(() => {
+    // Check cookies for saved parameters
+    const savedRememberMe = getCookie('rememberMe') === 'true';
+    const savedUsername = getCookie('savedUsername');
+    const savedPassword = getCookie('savedPassword');
+    
+    console.log('Saved data found in cookies:', { savedRememberMe, savedUsername, savedPassword });
+    console.log('All cookies:', document.cookie);
+    
+    // If remember me is true, set the form values
+    if (savedRememberMe) {
+      setFormData({
+        username: savedUsername || '',
+        password: savedPassword || '',
+        remember_me: true
+      });
+    }
+
     // Check if user is already logged in
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       navigate('/profile');
     }
-  }, [navigate]);
+  }, []); // Empty dependency array - runs only once on mount
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -35,6 +59,28 @@ const Login = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const saveUserCredentials = (username, password, rememberMe) => {
+    try {
+      if (rememberMe) {
+        console.log('Saving user credentials:', { username, rememberMe });
+        // Set cookies that expire in 30 days
+        document.cookie = `rememberMe=true; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
+        document.cookie = `savedUsername=${username}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
+        document.cookie = `savedPassword=${password}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
+        console.log('Data saved to cookies');
+      } else {
+        console.log('Clearing saved credentials');
+        document.cookie = 'rememberMe=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'savedUsername=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'savedPassword=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to save credentials:', error);
+      return false;
+    }
   };
 
   const handleResetInputChange = (e) => {
@@ -49,6 +95,9 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Save user credentials first (non-blocking)
+    saveUserCredentials(formData.username, formData.password, formData.remember_me);
 
     try {
       const response = await api.post('/auth/login', formData);
