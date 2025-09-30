@@ -62,17 +62,7 @@ export default function Employees() {
       
       
       if (response.data && Array.isArray(response.data)) {
-        response.data.forEach((employee, index) => {
-            id: employee.id,
-            username: employee.username,
-            first_name: employee.first_name,
-            last_name: employee.last_name,
-            email: employee.email,
-            role: employee.role,
-            is_active: employee.is_active,
-            is_locked: employee.is_locked
-          });
-        });
+        // Process employee data if needed
       }
       
       setEmployees(response.data);
@@ -153,14 +143,7 @@ export default function Employees() {
       
       
       if (response.data && Array.isArray(response.data)) {
-        response.data.forEach((permission, index) => {
-            id: permission.id,
-            page: permission.page,
-            permission: permission.permission,
-            granted: permission.granted,
-            user_id: permission.user_id
-          });
-        });
+        // Process permissions data if needed
       }
       
       setUserPermissions(response.data);
