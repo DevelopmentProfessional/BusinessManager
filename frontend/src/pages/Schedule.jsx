@@ -15,9 +15,11 @@ export default function Schedule() {
   // Use the permission refresh hook
   usePermissionRefresh();
 
-  // Check permissions at page level
+  // Check permissions at page level (including new permission types)
   if (!hasPermission('schedule', 'read') && 
+      !hasPermission('schedule', 'read_all') &&
       !hasPermission('schedule', 'write') && 
+      !hasPermission('schedule', 'view_all') &&
       !hasPermission('schedule', 'delete') && 
       !hasPermission('schedule', 'admin')) {
     return <Navigate to="/profile" replace />;

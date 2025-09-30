@@ -54,8 +54,8 @@ async def get_schedule(
                 ) for apt in appointments
             ]
         
-        # Check if user has basic schedule_read permission
-        if any(perm.startswith("schedule:read") for perm in permissions):
+        # Check if user has basic schedule read permission (read or read_all)
+        if any(perm.startswith("schedule:read") for perm in permissions) or any(perm.startswith("schedule:read_all") for perm in permissions):
             # Only show appointments for the current user
             appointments = session.exec(
                 select(Schedule).where(Schedule.employee_id == current_user.id)

@@ -29,11 +29,12 @@ class UserRole(str, Enum):
 
 class PermissionType(str, Enum):
     READ = "read"
+    READ_ALL = "read_all"  # New: Read all records permission
     WRITE = "write"
-    WRITE_ALL = "write_all"
+    WRITE_ALL = "write_all"  # Keeping for compatibility, but schedule will use VIEW_ALL
     DELETE = "delete"
     ADMIN = "admin"
-    VIEW_ALL = "view_all"
+    VIEW_ALL = "view_all"  # Schedule page uses this instead of WRITE_ALL
 
 # Base model with common fields
 class BaseModel(SQLModel):
