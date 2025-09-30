@@ -322,7 +322,8 @@ def get_current_user_permissions(
     session: Session = Depends(get_session)
 ):
     """Get current user permissions"""
-    permissions = get_user_permissions(current_user, session)
+    # Use list-producing helper for current user
+    permissions = get_user_permissions_list(current_user, session)
     return {"permissions": permissions}
 
 # Admin endpoints for user management

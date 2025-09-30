@@ -92,8 +92,10 @@ async def check_user_profile(
     session: Session = Depends(get_session)
 ):
     """Check current user profile."""
+    # Provide both keys for backward/forward compatibility
     return {
         "has_user_profile": True,
+        "has_employee_profile": True,
         "user_id": str(current_user.id)
     }
 

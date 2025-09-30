@@ -11,8 +11,11 @@ if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 else:
     # PostgreSQL settings - use psycopg driver instead of psycopg2
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://")
+    # Normalize both 'postgres://' and 'postgresql://' to psycopg driver URL
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
     engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 
 def _migrate_documents_table_if_needed():
