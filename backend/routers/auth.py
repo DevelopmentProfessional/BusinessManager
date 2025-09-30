@@ -533,17 +533,30 @@ def create_user_permission(
     print(f"🔥 PERMISSION CREATE DEBUG - permission type: {permission_data.permission}")
     print(f"🔥 PERMISSION CREATE DEBUG - valid permission types: {list(PermissionType)}")
     
-    # Validate permission type before proceeding
+    # EMERGENCY: Validate permission type with auto-conversion
+    valid_permissions = [p.value for p in PermissionType]
+    original_permission = permission_data.permission
+    
+    # Auto-convert old permission types to new ones
+    if permission_data.permission == "write_all":
+        permission_data.permission = "view_all"
+        print(f"🚨 EMERGENCY AUTO-CONVERT: write_all → view_all")
+    elif permission_data.permission == "read" and "read_all" in valid_permissions:
+        permission_data.permission = "read_all"
+        print(f"🚨 EMERGENCY AUTO-CONVERT: read → read_all")
+    
     try:
-        # Test if permission type is valid
+        # Test if permission type is valid (after conversion)
         perm_type = PermissionType(permission_data.permission)
         print(f"🔥 PERMISSION CREATE DEBUG - Permission type validation passed: {perm_type}")
+        if original_permission != permission_data.permission:
+            print(f"🚨 CONVERTED {original_permission} → {permission_data.permission}")
     except ValueError as e:
         print(f"🔥 PERMISSION CREATE DEBUG - Invalid permission type: {permission_data.permission}")
-        print(f"🔥 PERMISSION CREATE DEBUG - Available types: {[p.value for p in PermissionType]}")
+        print(f"🔥 PERMISSION CREATE DEBUG - Available types: {valid_permissions}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid permission type: {permission_data.permission}. Valid types: {[p.value for p in PermissionType]}"
+            detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
         )
     
     if current_user.role != UserRole.ADMIN:

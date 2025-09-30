@@ -22,18 +22,31 @@ from routers import clients, inventory, suppliers, services, employees, schedule
 
 class AggressiveCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        # Handle preflight requests
+        # Handle preflight requests FIRST
         if request.method == "OPTIONS":
-            response = Response(status_code=200)
-        else:
-            response = await call_next(request)
+            response = Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Max-Age": "86400"
+                }
+            )
+            return response
         
-        # Force CORS headers on ALL responses
-        response.headers["Access-Control-Allow-Origin"] = "https://lavishbeautyhairandnail.care"
+        # Process the request
+        response = await call_next(request)
+        
+        # Force CORS headers on ALL responses - VERY AGGRESSIVE
+        origin = request.headers.get("Origin", "*")
+        response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Expose-Headers"] = "*"
+        response.headers["Vary"] = "Origin"
         
         return response
 
