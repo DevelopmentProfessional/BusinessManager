@@ -52,76 +52,25 @@ async def get_schedule(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get appointments based on user permissions"""
+    """Get all appointments. Page-level permissions control visibility in the UI."""
     try:
-        # Get user permissions
-        permissions = get_user_permissions_list(current_user, session)
-        
-        # Admin users can see all appointments
-        if current_user.role == UserRole.ADMIN or any(perm.startswith("schedule:admin") for perm in permissions):
-            appointments = session.exec(select(Schedule)).all()
-            # Convert to ScheduleRead objects to avoid relationship serialization issues
-            return [
-                ScheduleRead(
-                    id=apt.id,
-                    created_at=apt.created_at,
-                    updated_at=apt.updated_at,
-                    client_id=apt.client_id,
-                    service_id=apt.service_id,
-                    employee_id=apt.employee_id,
-                    appointment_date=apt.appointment_date,
-                    status=apt.status,
-                    notes=apt.notes
-                ) for apt in appointments
-            ]
-        
-        # Check if user has view_all permission
-        if any(perm.startswith("schedule:view_all") for perm in permissions):
-            appointments = session.exec(select(Schedule)).all()
-            # Convert to ScheduleRead objects to avoid relationship serialization issues
-            return [
-                ScheduleRead(
-                    id=apt.id,
-                    created_at=apt.created_at,
-                    updated_at=apt.updated_at,
-                    client_id=apt.client_id,
-                    service_id=apt.service_id,
-                    employee_id=apt.employee_id,
-                    appointment_date=apt.appointment_date,
-                    status=apt.status,
-                    notes=apt.notes
-                ) for apt in appointments
-            ]
-        
-        # Check if user has basic schedule read permission (read or read_all)
-        if any(perm.startswith("schedule:read") for perm in permissions) or any(perm.startswith("schedule:read_all") for perm in permissions):
-            # Only show appointments for the current user
-            appointments = session.exec(
-                select(Schedule).where(Schedule.employee_id == current_user.id)
-            ).all()
-            # Convert to ScheduleRead objects to avoid relationship serialization issues
-            return [
-                ScheduleRead(
-                    id=apt.id,
-                    created_at=apt.created_at,
-                    updated_at=apt.updated_at,
-                    client_id=apt.client_id,
-                    service_id=apt.service_id,
-                    employee_id=apt.employee_id,
-                    appointment_date=apt.appointment_date,
-                    status=apt.status,
-                    notes=apt.notes
-                ) for apt in appointments
-            ]
-        
-        # No permissions - return empty list
-        return []
-        
+        appointments = session.exec(select(Schedule)).all()
+        return [
+            ScheduleRead(
+                id=apt.id,
+                created_at=apt.created_at,
+                updated_at=apt.updated_at,
+                client_id=apt.client_id,
+                service_id=apt.service_id,
+                employee_id=apt.employee_id,
+                appointment_date=apt.appointment_date,
+                status=apt.status,
+                notes=apt.notes
+            ) for apt in appointments
+        ]
     except Exception as e:
         print(f"Schedule endpoint error: {e}")
-        import traceback
         traceback.print_exc()
-        # Return empty list on error to prevent 500
         return []
 
 @router.get("/schedule/employee/{employee_id}", response_model=List[ScheduleRead])
@@ -130,13 +79,7 @@ async def get_employee_schedule(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get schedule for a specific employee (requires view_all permission)"""
-    # Get user permissions
-    permissions = get_user_permissions_list(current_user, session)
-    
-    # Check permissions
-    if current_user.role != UserRole.ADMIN and not any(perm.startswith("schedule:view_all") for perm in permissions):
-        raise HTTPException(status_code=403, detail="Permission denied")
+    """Get schedule for a specific employee. Page-level permissions control access."""
     
     statement = select(Schedule).where(Schedule.employee_id == employee_id)
     appointments = session.exec(statement).all()
@@ -153,17 +96,8 @@ async def get_available_employees(
     - If FK -> user.id, "id" is user.id
     - If FK -> employee.id, "id" is employee.id (with name from joined user)
     """
-    # Get user permissions
-    permissions = get_user_permissions_list(current_user, session)
-
     # Determine FK target for schedule.employee_id
     fk_target = _detect_schedule_employee_fk_target(session)
-
-    # Check permissions for employee dropdown access
-    has_write_all = any(perm == "schedule:write_all" for perm in permissions)  # Legacy support
-    has_view_all = any(perm == "schedule:view_all" for perm in permissions)    # New permission
-    has_admin = any(perm == "schedule:admin" for perm in permissions)
-    is_admin = current_user.role == UserRole.ADMIN
 
     # Helper to list all employees according to FK target
     def list_all():
@@ -195,29 +129,8 @@ async def get_available_employees(
             for user in users if user.is_active
         ]
 
-    if is_admin or has_write_all or has_view_all or has_admin:
-        return list_all()
-    else:
-        # Users with only basic write permission can only see themselves
-        if fk_target == "employee":
-            try:
-                row = session.exec(text(
-                    'SELECT e.id FROM employee e WHERE e.user_id = :uid LIMIT 1'
-                ), {"uid": str(current_user.id)}).first()
-                if row and row[0]:
-                    return [{
-                        "id": str(row[0]),
-                        "name": f"{current_user.first_name} {current_user.last_name}",
-                        "is_active": current_user.is_active
-                    }]
-            except Exception as e:
-                print(f"[Schedule] Self list legacy mapping failed: {e}")
-        # Fallback: return user id
-        return [{
-            "id": str(current_user.id),
-            "name": f"{current_user.first_name} {current_user.last_name}",
-            "is_active": current_user.is_active
-        }]
+    # Page-level permissions decide what to show; API returns full list
+    return list_all()
 
 @router.post("/schedule", response_model=ScheduleRead)
 async def create_appointment(
@@ -367,10 +280,7 @@ async def update_appointment(
         if not appointment:
             raise HTTPException(status_code=404, detail="Appointment not found")
         
-        # If user only has write permission (not write_all/view_all), restrict to their own appointments
-        if has_write and not has_write_all and not has_view_all and not has_admin and not is_admin:
-            if appointment.employee_id != current_user.id:
-                raise HTTPException(status_code=403, detail="Can only edit your own appointments")
+        # No function-level permission restrictions; UI enforces at page-level
         
         # Handle type conversion and legacy FK bridge for known fields
         for key, value in appointment_data.items():
@@ -395,24 +305,45 @@ async def update_appointment(
                     if value != current_user.id:
                         raise HTTPException(status_code=403, detail="Cannot schedule appointments for other employees")
 
-                # Bridge user_id -> employee.id if DB expects employee
+                # Bridge employee_id based on FK target, preserving already-correct IDs
                 if key == "employee_id":
                     fk_target = _detect_schedule_employee_fk_target(session)
-                    if fk_target == "employee":
-                        try:
-                            row = session.exec(text(
-                                'SELECT id FROM employee WHERE user_id = :uid LIMIT 1'
+                    try:
+                        if fk_target == "employee":
+                            # If value is already an employee.id, keep it
+                            exists = session.exec(text(
+                                'SELECT 1 FROM employee WHERE id = :eid LIMIT 1'
+                            ), {"eid": str(value)}).first()
+                            if not exists:
+                                # Try mapping user_id -> employee.id
+                                row = session.exec(text(
+                                    'SELECT id FROM employee WHERE user_id = :uid LIMIT 1'
+                                ), {"uid": str(value)}).first()
+                                if row and row[0]:
+                                    from uuid import UUID as _UUID
+                                    value = _UUID(row[0]) if isinstance(row[0], str) else row[0]
+                                else:
+                                    raise HTTPException(status_code=422, detail="Invalid employee_id: no matching legacy mapping found")
+                        else:  # fk -> user
+                            # If value is already a user.id, keep it
+                            exists = session.exec(text(
+                                'SELECT 1 FROM "user" WHERE id = :uid LIMIT 1'
                             ), {"uid": str(value)}).first()
-                            if row and row[0]:
-                                from uuid import UUID as _UUID
-                                value = _UUID(row[0]) if isinstance(row[0], str) else row[0]
-                            else:
-                                raise HTTPException(status_code=422, detail="Invalid employee_id: no matching legacy mapping found")
-                        except HTTPException:
-                            raise
-                        except Exception as e:
-                            print(f"[Schedule] Update bridge user->employee failed: {e}")
-                            raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
+                            if not exists:
+                                # Try mapping employee.id -> user_id
+                                row = session.exec(text(
+                                    'SELECT user_id FROM employee WHERE id = :eid LIMIT 1'
+                                ), {"eid": str(value)}).first()
+                                if row and row[0]:
+                                    from uuid import UUID as _UUID
+                                    value = _UUID(row[0]) if isinstance(row[0], str) else row[0]
+                                else:
+                                    raise HTTPException(status_code=422, detail="Invalid employee_id: no matching legacy mapping found")
+                    except HTTPException:
+                        raise
+                    except Exception as e:
+                        print(f"[Schedule] Update bridge failed: {e}")
+                        raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
                 
                 setattr(appointment, key, value)
         
