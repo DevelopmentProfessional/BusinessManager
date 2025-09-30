@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+import traceback
 from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
@@ -148,67 +149,76 @@ async def create_appointment(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new appointment. Permission gating is handled in the UI before opening the modal."""
-    # Normalize and validate payload
-    payload = appointment_data.dict()
-
-    # Basic presence validation
-    required_fields = ["client_id", "service_id", "employee_id", "appointment_date"]
-    missing = [f for f in required_fields if payload.get(f) in (None, "", [])]
-    if missing:
-        raise HTTPException(status_code=422, detail=f"Missing required fields: {', '.join(missing)}")
-
-    # Normalize UUID-like fields that may arrive as strings
-    from uuid import UUID as _UUID
-    for key in ("client_id", "service_id", "employee_id"):
-        val = payload.get(key)
-        if isinstance(val, str):
-            try:
-                payload[key] = _UUID(val)
-            except Exception:
-                raise HTTPException(status_code=422, detail=f"Invalid {key}")
-
-    # Normalize datetime
-    from datetime import datetime
-    dt_val = payload.get("appointment_date")
-    if isinstance(dt_val, str):
-        try:
-            payload["appointment_date"] = datetime.fromisoformat(dt_val.replace('Z', '+00:00'))
-        except ValueError:
-            try:
-                payload["appointment_date"] = datetime.fromisoformat(dt_val)
-            except Exception:
-                raise HTTPException(status_code=422, detail="Invalid appointment_date")
-
-    appointment = Schedule(**payload)
-    session.add(appointment)
     try:
-        session.commit()
-    except IntegrityError as ie:
-        session.rollback()
-        # Attempt legacy employee->user mapping if FK on employee_id fails
-        err_msg = str(ie.orig) if getattr(ie, 'orig', None) else str(ie)
-        if 'employee_id' in err_msg and 'foreign key' in err_msg.lower():
+        # Normalize and validate payload
+        payload = appointment_data.dict()
+
+        # Basic presence validation
+        required_fields = ["client_id", "service_id", "employee_id", "appointment_date"]
+        missing = [f for f in required_fields if payload.get(f) in (None, "", [])]
+        if missing:
+            raise HTTPException(status_code=422, detail=f"Missing required fields: {', '.join(missing)}")
+
+        # Normalize UUID-like fields that may arrive as strings
+        from uuid import UUID as _UUID
+        for key in ("client_id", "service_id", "employee_id"):
+            val = payload.get(key)
+            if isinstance(val, str):
+                try:
+                    payload[key] = _UUID(val)
+                except Exception:
+                    raise HTTPException(status_code=422, detail=f"Invalid {key}")
+
+        # Normalize datetime
+        from datetime import datetime
+        dt_val = payload.get("appointment_date")
+        if isinstance(dt_val, str):
             try:
-                # Look for legacy employee table mapping to user_id
-                result = session.exec(text("SELECT user_id FROM employee WHERE id = :eid LIMIT 1"), {"eid": str(appointment.employee_id)}).first()
-                if result and result[0]:
-                    # Update to mapped user_id and retry
-                    from uuid import UUID as _UUID
-                    mapped_user_id = _UUID(result[0]) if isinstance(result[0], str) else result[0]
-                    appointment.employee_id = mapped_user_id
-                    session.add(appointment)
-                    session.commit()
-                else:
-                    raise HTTPException(status_code=422, detail="Invalid employee_id: no matching user found")
-            except HTTPException:
-                raise
-            except Exception:
-                raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
-        else:
-            # Bubble a helpful message instead of opaque 500
-            raise HTTPException(status_code=400, detail="Failed to create appointment. Check client/service/employee IDs.")
-    session.refresh(appointment)
-    return appointment
+                payload["appointment_date"] = datetime.fromisoformat(dt_val.replace('Z', '+00:00'))
+            except ValueError:
+                try:
+                    payload["appointment_date"] = datetime.fromisoformat(dt_val)
+                except Exception:
+                    raise HTTPException(status_code=422, detail="Invalid appointment_date")
+
+        appointment = Schedule(**payload)
+        session.add(appointment)
+        try:
+            session.commit()
+        except IntegrityError as ie:
+            session.rollback()
+            # Attempt legacy employee->user mapping if FK on employee_id fails
+            err_msg = str(ie.orig) if getattr(ie, 'orig', None) else str(ie)
+            if 'employee_id' in err_msg and 'foreign key' in err_msg.lower():
+                try:
+                    # Look for legacy employee table mapping to user_id
+                    result = session.exec(text("SELECT user_id FROM employee WHERE id = :eid LIMIT 1"), {"eid": str(appointment.employee_id)}).first()
+                    if result and result[0]:
+                        # Update to mapped user_id and retry
+                        from uuid import UUID as _UUID
+                        mapped_user_id = _UUID(result[0]) if isinstance(result[0], str) else result[0]
+                        appointment.employee_id = mapped_user_id
+                        session.add(appointment)
+                        session.commit()
+                    else:
+                        raise HTTPException(status_code=422, detail="Invalid employee_id: no matching user found")
+                except HTTPException:
+                    raise
+                except Exception:
+                    raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
+            else:
+                # Bubble a helpful message instead of opaque 500
+                raise HTTPException(status_code=400, detail="Failed to create appointment. Check client/service/employee IDs.")
+        session.refresh(appointment)
+        return appointment
+    except HTTPException as he:
+        print(f"[Schedule] Create appointment HTTP error: {he.status_code} - {he.detail}")
+        traceback.print_exc()
+        raise
+    except Exception as e:
+        print(f"[Schedule] Create appointment unexpected error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal error creating appointment")
 
 @router.put("/schedule/{appointment_id}", response_model=ScheduleRead)
 async def update_appointment(
