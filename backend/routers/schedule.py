@@ -181,7 +181,32 @@ async def create_appointment(
                 except Exception:
                     raise HTTPException(status_code=422, detail="Invalid appointment_date")
 
-        appointment = Schedule(**payload)
+        # Try to bridge legacy schema differences for employee_id
+        bridged_payload = dict(payload)
+        legacy_employee_table_exists = False
+        try:
+            # If legacy employee table exists, try to map employee IDs accordingly
+            session.exec(text("SELECT 1 FROM employee LIMIT 1")).first()
+            legacy_employee_table_exists = True
+        except Exception:
+            legacy_employee_table_exists = False
+
+        if legacy_employee_table_exists:
+            # Case A: payload has a USER id but schedule table expects EMPLOYEE id
+            try:
+                found = session.exec(
+                    text("SELECT id FROM employee WHERE user_id = :uid LIMIT 1"),
+                    {"uid": str(bridged_payload["employee_id"])},
+                ).first()
+                if found and found[0]:
+                    print(f"[Schedule] Bridging user_id -> employee.id for employee_id: {bridged_payload['employee_id']} -> {found[0]}")
+                    from uuid import UUID as _UUID
+                    bridged_payload["employee_id"] = _UUID(found[0]) if isinstance(found[0], str) else found[0]
+            except Exception:
+                # Ignore and proceed; fallback will handle
+                pass
+
+        appointment = Schedule(**bridged_payload)
         session.add(appointment)
         try:
             session.commit()
@@ -191,20 +216,38 @@ async def create_appointment(
             err_msg = str(ie.orig) if getattr(ie, 'orig', None) else str(ie)
             if 'employee_id' in err_msg and 'foreign key' in err_msg.lower():
                 try:
-                    # Look for legacy employee table mapping to user_id
-                    result = session.exec(text("SELECT user_id FROM employee WHERE id = :eid LIMIT 1"), {"eid": str(appointment.employee_id)}).first()
-                    if result and result[0]:
-                        # Update to mapped user_id and retry
+                    # First, attempt employee.id -> user_id mapping (schedule expects user.id)
+                    result_user = session.exec(
+                        text("SELECT user_id FROM employee WHERE id = :eid LIMIT 1"),
+                        {"eid": str(appointment.employee_id)},
+                    ).first()
+                    if result_user and result_user[0]:
                         from uuid import UUID as _UUID
-                        mapped_user_id = _UUID(result[0]) if isinstance(result[0], str) else result[0]
+                        mapped_user_id = _UUID(result_user[0]) if isinstance(result_user[0], str) else result_user[0]
+                        print(f"[Schedule] FK failed; trying employee.id -> user_id mapping: {appointment.employee_id} -> {mapped_user_id}")
                         appointment.employee_id = mapped_user_id
                         session.add(appointment)
                         session.commit()
                     else:
-                        raise HTTPException(status_code=422, detail="Invalid employee_id: no matching user found")
+                        # Next, attempt user_id -> employee.id mapping (schedule expects employee.id)
+                        result_emp = session.exec(
+                            text("SELECT id FROM employee WHERE user_id = :uid LIMIT 1"),
+                            {"uid": str(bridged_payload.get("employee_id"))},
+                        ).first()
+                        if result_emp and result_emp[0]:
+                            from uuid import UUID as _UUID
+                            mapped_emp_id = _UUID(result_emp[0]) if isinstance(result_emp[0], str) else result_emp[0]
+                            print(f"[Schedule] FK failed; trying user_id -> employee.id mapping: {bridged_payload.get('employee_id')} -> {mapped_emp_id}")
+                            appointment.employee_id = mapped_emp_id
+                            session.add(appointment)
+                            session.commit()
+                        else:
+                            raise HTTPException(status_code=422, detail="Invalid employee_id: no matching legacy mapping found")
                 except HTTPException:
                     raise
-                except Exception:
+                except Exception as map_exc:
+                    print(f"[Schedule] Legacy mapping attempts failed: {map_exc}")
+                    traceback.print_exc()
                     raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
             else:
                 # Bubble a helpful message instead of opaque 500
