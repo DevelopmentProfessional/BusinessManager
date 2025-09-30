@@ -145,12 +145,33 @@ const Login = () => {
     setSuccess('');
     setValidationErrors({});
     
+    // 🚨 MAXIMUM DEBUG LOGGING - START 🚨
+    console.log('🔍 LOGIN DEBUG - Function started');
+    console.log('🔍 LOGIN DEBUG - Current window.location:', {
+      href: window.location.href,
+      hostname: window.location.hostname,
+      protocol: window.location.protocol,
+      port: window.location.port,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash
+    });
+    console.log('🔍 LOGIN DEBUG - Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      VITE_API_URL: import.meta.env.VITE_API_URL,
+      MODE: import.meta.env.MODE,
+      DEV: import.meta.env.DEV,
+      PROD: import.meta.env.PROD
+    });
+    
     // Validate form before submission
     if (!validateForm()) {
+      console.log('🔍 LOGIN DEBUG - Form validation failed');
       setError('Please fix the validation errors below.');
       return;
     }
     
+    console.log('🔍 LOGIN DEBUG - Form validation passed');
     setLoading(true);
     const selectedStorage = formData.remember_me ? localStorage : sessionStorage;
     
@@ -159,12 +180,39 @@ const Login = () => {
       password: formData.password,
     };
     
-    console.log('Login attempt with:', {
+    console.log('🔍 LOGIN DEBUG - Login data prepared:', {
       username: loginData.username,
+      password: '[REDACTED]',
       remember_me: formData.remember_me,
+      selectedStorage: formData.remember_me ? 'localStorage' : 'sessionStorage'
+    });
+
+    // 🚨 CONSTRUCT FULL URL AND LOG EVERYTHING 🚨
+    const baseUrl = '/api/v1/auth/login';
+    const fullUrl = new URL(baseUrl, window.location.origin);
+    
+    console.log('🔍 LOGIN DEBUG - URL Construction:', {
+      baseUrl: baseUrl,
+      windowLocationOrigin: window.location.origin,
+      fullUrl: fullUrl.toString(),
+      fullUrlHref: fullUrl.href,
+      fullUrlHostname: fullUrl.hostname,
+      fullUrlProtocol: fullUrl.protocol,
+      fullUrlPort: fullUrl.port,
+      fullUrlPathname: fullUrl.pathname
     });
 
     try {
+      console.log('🔍 LOGIN DEBUG - Starting fetch request...');
+      console.log('🔍 LOGIN DEBUG - Fetch options:', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(loginData)
+      });
+      
       const response = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: {
@@ -174,19 +222,38 @@ const Login = () => {
         body: JSON.stringify(loginData),
       });
       
-      console.log('Response status:', response.status);
+      console.log('🔍 LOGIN DEBUG - Response received!');
+      console.log('🔍 LOGIN DEBUG - Response details:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        redirected: response.redirected,
+        type: response.type,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      // 🚨 CRITICAL: Log raw response before any processing 🚨
+      const responseClone = response.clone();
+      const rawResponseText = await responseClone.text();
+      console.log('🔍 LOGIN DEBUG - Raw response text (first 500 chars):', rawResponseText.substring(0, 500));
+      console.log('🔍 LOGIN DEBUG - Raw response text length:', rawResponseText.length);
+      console.log('🔍 LOGIN DEBUG - Response starts with HTML?:', rawResponseText.trim().toLowerCase().startsWith('<!doctype') || rawResponseText.trim().toLowerCase().startsWith('<html'));
       
       if (!response.ok) {
+        console.log('🔍 LOGIN DEBUG - Response not OK, processing error...');
         const errorText = await response.text();
-        console.error('HTTP Error:', response.status, errorText);
+        console.log('🔍 LOGIN DEBUG - Error response text:', errorText);
         
         let errorMessage = 'Login failed. Please check your credentials.';
         
         try {
           const errorData = JSON.parse(errorText);
+          console.log('🔍 LOGIN DEBUG - Parsed error data:', errorData);
           errorMessage = errorData.detail || errorMessage;
         } catch (parseError) {
-          console.error('Error parsing response:', parseError);
+          console.log('🔍 LOGIN DEBUG - Failed to parse error response as JSON:', parseError);
+          console.log('🔍 LOGIN DEBUG - Raw error text:', errorText);
           if (response.status === 401) {
             errorMessage = 'Invalid username or password.';
           } else if (response.status >= 500) {
@@ -194,51 +261,84 @@ const Login = () => {
           }
         }
         
+        console.log('🔍 LOGIN DEBUG - Setting error message:', errorMessage);
         setError(errorMessage);
         return;
       }
       
-      const data = await response.json();
-      console.log('Login successful:', data);
+      console.log('🔍 LOGIN DEBUG - Response OK, attempting to parse JSON...');
+      
+      try {
+        const data = await response.json();
+        console.log('🔍 LOGIN DEBUG - Successfully parsed JSON response:', data);
+        console.log('🔍 LOGIN DEBUG - Response has access_token?:', !!data.access_token);
+        console.log('🔍 LOGIN DEBUG - Response has user?:', !!data.user);
+        console.log('🔍 LOGIN DEBUG - Response has permissions?:', !!data.permissions);
 
-      if (data.access_token && data.user) {
-        // Store authentication data
-        selectedStorage.setItem('token', data.access_token);
-        selectedStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Update Zustand store
-        setToken(data.access_token);
-        setUser(data.user);
-        if (data.permissions) {
-          selectedStorage.setItem('permissions', JSON.stringify(data.permissions));
-          setPermissions(data.permissions);
+        if (data.access_token && data.user) {
+          console.log('🔍 LOGIN DEBUG - Valid login response, storing data...');
+          
+          // Store authentication data
+          selectedStorage.setItem('token', data.access_token);
+          selectedStorage.setItem('user', JSON.stringify(data.user));
+          console.log('🔍 LOGIN DEBUG - Stored token and user in', formData.remember_me ? 'localStorage' : 'sessionStorage');
+          
+          // Update Zustand store
+          setToken(data.access_token);
+          setUser(data.user);
+          console.log('🔍 LOGIN DEBUG - Updated Zustand store with token and user');
+          
+          if (data.permissions) {
+            selectedStorage.setItem('permissions', JSON.stringify(data.permissions));
+            setPermissions(data.permissions);
+            console.log('🔍 LOGIN DEBUG - Stored permissions:', data.permissions);
+          }
+          
+          // Save credentials if remember me is checked
+          const credentialsSaved = saveUserCredentials(formData.username.trim(), formData.password, formData.remember_me);
+          console.log('🔍 LOGIN DEBUG - Credentials saved?:', credentialsSaved);
+          
+          // Show success message briefly
+          setSuccess('Login successful! Redirecting...');
+          console.log('🔍 LOGIN DEBUG - Success message set, preparing to navigate');
+          
+          // Navigate to profile after a brief delay
+          setTimeout(() => {
+            console.log('🔍 LOGIN DEBUG - Navigating to profile...');
+            navigate('/profile');
+          }, 1000);
+        } else {
+          console.log('🔍 LOGIN DEBUG - Invalid response format - missing access_token or user');
+          throw new Error('Invalid response format - missing access_token or user');
         }
-        
-        // Save credentials if remember me is checked
-        saveUserCredentials(formData.username.trim(), formData.password, formData.remember_me);
-        
-        // Show success message briefly
-        setSuccess('Login successful! Redirecting...');
-        
-        // Navigate to profile after a brief delay
-        setTimeout(() => {
-          console.log('Navigating to profile...');
-          navigate('/profile');
-        }, 1000);
-      } else {
-        throw new Error('Invalid response format');
+      } catch (jsonError) {
+        console.log('🔍 LOGIN DEBUG - CRITICAL ERROR: Failed to parse response as JSON!');
+        console.log('🔍 LOGIN DEBUG - JSON Parse Error:', jsonError);
+        console.log('🔍 LOGIN DEBUG - This means we got HTML instead of JSON!');
+        console.log('🔍 LOGIN DEBUG - Raw response that failed JSON parsing:', rawResponseText);
+        throw new Error(`JSON Parse Error: ${jsonError.message}. Raw response: ${rawResponseText.substring(0, 200)}...`);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.log('🔍 LOGIN DEBUG - Catch block executed');
+      console.log('🔍 LOGIN DEBUG - Error name:', error.name);
+      console.log('🔍 LOGIN DEBUG - Error message:', error.message);
+      console.log('🔍 LOGIN DEBUG - Error stack:', error.stack);
+      console.log('🔍 LOGIN DEBUG - Full error object:', error);
       
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.log('🔍 LOGIN DEBUG - Network/fetch error detected');
         setError('Cannot connect to server. Please check if the server is running.');
       } else {
+        console.log('🔍 LOGIN DEBUG - Other error type detected');
         setError(error.message || 'An unexpected error occurred. Please try again.');
       }
     } finally {
+      console.log('🔍 LOGIN DEBUG - Finally block executed, setting loading to false');
       setLoading(false);
     }
+    
+    console.log('🔍 LOGIN DEBUG - Function completed');
+    // 🚨 MAXIMUM DEBUG LOGGING - END 🚨
   };
 
   const handlePasswordReset = async (e) => {

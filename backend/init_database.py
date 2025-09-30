@@ -14,6 +14,7 @@ sys.path.insert(0, str(backend_dir))
 
 from database import engine, get_session, create_db_and_tables
 from models import SQLModel, User, UserRole, UserPermission, PermissionType
+from sqlmodel import select
 import bcrypt
 from datetime import datetime
 from uuid import uuid4
@@ -61,15 +62,17 @@ def add_write_all_permissions_for_admins(session):
         print("👥 Adding WRITE_ALL permissions for admin users...")
         
         # Get all admin users
-        admin_users = session.query(User).filter(User.role == UserRole.ADMIN).all()
+        statement = select(User).where(User.role == UserRole.ADMIN)
+        admin_users = session.exec(statement).all()
         
         for admin_user in admin_users:
             # Check if they already have WRITE_ALL permission for schedule
-            existing_permission = session.query(UserPermission).filter(
+            statement = select(UserPermission).where(
                 UserPermission.user_id == admin_user.id,
                 UserPermission.page == "schedule", 
                 UserPermission.permission == PermissionType.WRITE_ALL
-            ).first()
+            )
+            existing_permission = session.exec(statement).first()
             
             if not existing_permission:
                 # Add WRITE_ALL permission (disabled by default for safety)
@@ -110,7 +113,9 @@ def init_database():
     
     try:
         # Check if admin user already exists
-        admin_user = session.query(User).filter(User.username == "admin").first()
+        from sqlmodel import select
+        statement = select(User).where(User.username == "admin")
+        admin_user = session.exec(statement).first()
         
         if not admin_user:
             print("👤 Creating admin user...")
@@ -144,7 +149,8 @@ def init_database():
         add_write_all_permissions_for_admins(session)
         
         # Check total users
-        total_users = session.query(User).count()
+        statement = select(User)
+        total_users = len(session.exec(statement).all())
         print(f"📊 Total users in database: {total_users}")
         
         session.close()
