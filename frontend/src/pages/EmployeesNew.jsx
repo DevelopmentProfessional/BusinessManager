@@ -130,6 +130,11 @@ export default function Employees() {
   };
 
   const handleDeletePermission = async (permissionId) => {
+    // Add confirmation dialog
+    if (!window.confirm('Are you sure you want to delete this permission? This action cannot be undone.')) {
+      return;
+    }
+
     setError('');
     setSuccess('');
     
@@ -140,6 +145,7 @@ export default function Employees() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete permission');
+      console.error('Delete permission error:', err);
     }
   };
 
@@ -439,8 +445,9 @@ export default function Employees() {
                           </button>
                           <button
                             onClick={() => handleDeletePermission(permission.id)}
-                            className="btn btn-sm btn-outline-danger"
+                            className="btn btn-sm btn-outline-danger hover:bg-red-50"
                             title="Delete Permission"
+                            type="button"
                           >
                             <i className="bi bi-trash"></i>
                           </button>
