@@ -19,6 +19,18 @@ import uvicorn
 
 from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
 
+# Suppress noisy health check access logs while keeping other access logs
+class _SuppressHealthFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            msg = record.getMessage()
+            # Filter typical uvicorn access log patterns for /health
+            return "/health" not in msg
+        except Exception:
+            return True
+
+logging.getLogger("uvicorn.access").addFilter(_SuppressHealthFilter())
+
 
 class AggressiveCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
