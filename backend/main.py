@@ -17,6 +17,11 @@ import uvicorn
 
 from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
 
+# Temporary import for migration endpoint - REMOVE AFTER MIGRATION
+import os
+if os.getenv("ALLOW_MIGRATION_ENDPOINT", "false").lower() == "true":
+    from temp_migration_endpoint import migration_router
+
 
 
 app = FastAPI(
@@ -82,6 +87,11 @@ app.include_router(attendance.router, prefix="/api/v1", tags=["attendance"])
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(csv_import.router, prefix="/api/v1", tags=["csv-import"])
+
+# Temporary migration endpoint - REMOVE AFTER MIGRATION
+if os.getenv("ALLOW_MIGRATION_ENDPOINT", "false").lower() == "true":
+    app.include_router(migration_router, prefix="/api/v1", tags=["temporary-migration"])
+    print("⚠️  TEMPORARY MIGRATION ENDPOINT ENABLED - DISABLE AFTER USE")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
