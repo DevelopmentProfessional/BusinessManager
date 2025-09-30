@@ -27,16 +27,18 @@ def get_production_database_url():
         logger.error("Set it to your Render PostgreSQL connection string")
         sys.exit(1)
     
-    # Handle PostgreSQL URL format
-    if database_url.startswith("postgresql://"):
-        database_url = database_url.replace("postgresql://", "postgresql+psycopg://")
-    
     return database_url
 
 def create_production_engine():
     """Create engine for production PostgreSQL database."""
     database_url = get_production_database_url()
     logger.info(f"🔗 Connecting to production database: {database_url[:50]}...")
+    
+    # Use psycopg2 instead of psycopg for better compatibility
+    if database_url.startswith("postgresql+psycopg://"):
+        database_url = database_url.replace("postgresql+psycopg://", "postgresql+psycopg2://")
+    elif database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg2://")
     
     return create_engine(
         database_url, 
@@ -98,17 +100,14 @@ def add_missing_user_columns(engine):
                 except Exception as e:
                     logger.warning(f"   ⚠️  Could not add user.{column_name}: {e}")
         
-        # Ensure existing users have proper default values
+        # Ensure existing users have proper default values (separate statements for PostgreSQL)
         try:
-            conn.execute(text("""
-                UPDATE "user" SET 
-                    hire_date = created_at WHERE hire_date IS NULL,
-                    is_active = TRUE WHERE is_active IS NULL,
-                    is_locked = FALSE WHERE is_locked IS NULL,
-                    force_password_reset = FALSE WHERE force_password_reset IS NULL,
-                    failed_login_attempts = 0 WHERE failed_login_attempts IS NULL,
-                    dark_mode = FALSE WHERE dark_mode IS NULL
-            """))
+            conn.execute(text('UPDATE "user" SET hire_date = created_at WHERE hire_date IS NULL'))
+            conn.execute(text('UPDATE "user" SET is_active = TRUE WHERE is_active IS NULL'))
+            conn.execute(text('UPDATE "user" SET is_locked = FALSE WHERE is_locked IS NULL'))
+            conn.execute(text('UPDATE "user" SET force_password_reset = FALSE WHERE force_password_reset IS NULL'))
+            conn.execute(text('UPDATE "user" SET failed_login_attempts = 0 WHERE failed_login_attempts IS NULL'))
+            conn.execute(text('UPDATE "user" SET dark_mode = FALSE WHERE dark_mode IS NULL'))
             logger.info("   ✅ Updated existing user records with default values")
         except Exception as e:
             logger.warning(f"   ⚠️  Could not update user defaults: {e}")
