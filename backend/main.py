@@ -1,5 +1,12 @@
 import os
+import sys
 import logging
+
+# Ensure the project root is on sys.path so 'backend' package is importable
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_this_dir)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 # Completely disable ALL SQLAlchemy logging BEFORE any imports
 logging.getLogger("sqlalchemy").disabled = True
@@ -17,7 +24,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import uvicorn
 
-from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
+try:
+    from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
+except Exception:
+    # Fallback if executed with CWD=backend and package not resolved
+    from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import  # type: ignore
 
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):
