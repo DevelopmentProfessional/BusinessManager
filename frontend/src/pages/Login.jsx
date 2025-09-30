@@ -213,7 +213,13 @@ const Login = () => {
         body: JSON.stringify(loginData)
       });
       
-      const response = await fetch('/api/v1/auth/login', {
+      console.log('🔍 LOGIN DEBUG - Constructing correct backend URL');
+      console.log('🔍 LOGIN DEBUG - API base URL from api.js:', api.defaults.baseURL);
+      
+      const backendUrl = `${api.defaults.baseURL}/auth/login`;
+      console.log('🔍 LOGIN DEBUG - Full backend URL:', backendUrl);
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
