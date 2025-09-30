@@ -522,26 +522,34 @@ def force_password_reset(
 # Permission management endpoints
 @router.post("/users/{user_id}/permissions", response_model=UserPermissionRead)
 def create_user_permission(
-    user_id: str,
+    user_id: UUID,  # 🔥 FIXED: Changed from str to UUID to match database type
     permission_data: UserPermissionCreate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Create user permission (admin only)"""
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - user_id: {user_id} (type: {type(user_id)})")
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - permission_data: {permission_data}")
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - current_user: {current_user.username}")
+    
     if current_user.role != UserRole.ADMIN:
+        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Access denied: {current_user.role} != ADMIN")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
     
     user = session.get(User, user_id)
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Found user: {user}")
     if not user:
+        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - User {user_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
     
     # Check if permission already exists
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Checking for existing permission...")
     existing_permission = session.exec(
         select(UserPermission).where(
             (UserPermission.user_id == user_id) &
@@ -550,12 +558,16 @@ def create_user_permission(
         )
     ).first()
     
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Existing permission: {existing_permission}")
+    
     if existing_permission:
+        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission already exists!")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Permission already exists"
         )
     
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Creating new permission...")
     permission = UserPermission(
         user_id=user_id,
         page=permission_data.page,
@@ -563,11 +575,17 @@ def create_user_permission(
         granted=permission_data.granted
     )
     
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission object created: {permission}")
     session.add(permission)
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission added to session")
     session.commit()
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Session committed")
     session.refresh(permission)
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission refreshed: {permission}")
     
-    return UserPermissionRead.from_orm(permission)
+    result = UserPermissionRead.from_orm(permission)
+    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Returning result: {result}")
+    return result
 
 @router.get("/users/{user_id}/permissions", response_model=List[UserPermissionRead])
 def get_user_permissions(

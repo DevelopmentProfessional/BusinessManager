@@ -31,7 +31,7 @@ app.add_middleware(
     allow_origins=[
         origin.strip() for origin in os.getenv(
             "ALLOWED_ORIGINS",
-            "http://localhost:5173,http://127.0.0.1:5173,https://localhost:5173,http://localhost:5174,http://127.0.0.1:5174,https://localhost:5174,https://*.onrender.com"
+            "http://localhost:5173,http://127.0.0.1:5173,https://localhost:5173,http://localhost:5174,http://127.0.0.1:5174,https://localhost:5174,https://*.onrender.com,https://lavishbeautyhairandnail.care"
         ).split(",") if origin.strip()
     ],
     allow_origin_regex=os.getenv("ALLOWED_ORIGIN_REGEX") or None,
