@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 from sqlalchemy import text
 from datetime import datetime, timedelta
 from typing import List, Optional
+from uuid import UUID
 import jwt
 import os
 import bcrypt
@@ -597,7 +598,7 @@ def get_user_permissions(
 @router.put("/users/{user_id}/permissions/{permission_id}", response_model=UserPermissionRead)
 def update_user_permission(
     user_id: str,
-    permission_id: str,
+    permission_id: UUID,
     permission_data: UserPermissionUpdate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -628,7 +629,7 @@ def update_user_permission(
 @router.delete("/users/{user_id}/permissions/{permission_id}")
 def delete_user_permission(
     user_id: str,
-    permission_id: str,
+    permission_id: UUID,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
