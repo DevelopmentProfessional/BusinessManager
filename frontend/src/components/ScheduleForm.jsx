@@ -55,14 +55,20 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   }, [appointment]);
 
   // Auto-select current user if they can only schedule for themselves
+  const isWriteAll = hasPermission('schedule', 'write_all') || hasPermission('schedule', 'admin');
+  const isWriteOnly = hasPermission('schedule', 'write') && !isWriteAll;
+
   useEffect(() => {
-    if (employees.length === 1 && !formData.employee_id && user) {
-      setFormData(prev => ({
-        ...prev,
-        employee_id: employees[0].id
-      }));
+    if (user && isWriteOnly) {
+      // Lock employee_id to current user when write-only
+      const self = employees.find(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase());
+      if (self && formData.employee_id !== self.id) {
+        setFormData(prev => ({ ...prev, employee_id: self.id }));
+      }
+    } else if (!formData.employee_id && employees.length === 1) {
+      setFormData(prev => ({ ...prev, employee_id: employees[0].id }));
     }
-  }, [employees, formData.employee_id, user]);
+  }, [employees, formData.employee_id, isWriteOnly, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -187,15 +193,19 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             name="employee_id"
             value={formData.employee_id}
             onChange={handleChange}
-            options={employees.map((employee) => ({
+            options={(isWriteOnly && user)
+              ? employees.filter(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase())
+              : employees
+            .map((employee) => ({
               value: employee.id,
               label: `${employee.first_name} ${employee.last_name} - ${employee.role}`
             }))}
             placeholder="Select an employee"
             required
             searchable={true}
+            disabled={isWriteOnly}
           />
-          {employees.length === 1 && (
+          {(isWriteOnly || employees.length === 1) && (
             <p className="text-xs text-gray-500 mt-1">
               You can only schedule appointments for yourself
             </p>

@@ -9,7 +9,7 @@ import PermissionGate from '../components/PermissionGate';
 import useDarkMode from '../store/useDarkMode';
 
 export default function Schedule() {
-  const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments, hasPermission, isAuthenticated } = useStore();
+  const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments, hasPermission, isAuthenticated, user } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Use the permission refresh hook
@@ -141,6 +141,23 @@ export default function Schedule() {
       hasPermission('schedule', 'admin')
     );
   }, [hasPermission]);
+
+  const canEditAppointment = useCallback((appointment) => {
+    if (!appointment) return false;
+    if (hasPermission('schedule', 'admin') || hasPermission('schedule', 'write_all')) return true;
+    if (!hasPermission('schedule', 'write')) return false;
+    // Try direct match (DB FK to user.id)
+    if (user && appointment.employee_id === user.id) return true;
+    // Heuristic: if FK is employee.id, try to match by name from employees list
+    if (user && employees && employees.length) {
+      const fullName = `${user.first_name} ${user.last_name}`.trim().toLowerCase();
+      const selfIds = employees
+        .filter(e => `${e.first_name} ${e.last_name}`.trim().toLowerCase() === fullName || e.name?.trim().toLowerCase() === fullName)
+        .map(e => e.id);
+      if (selfIds.includes(appointment.employee_id)) return true;
+    }
+    return false;
+  }, [employees, hasPermission, user]);
 
   const handleDateClick = useCallback((date) => {
     // UI pre-gate: do not open the create modal without proper permission
@@ -343,11 +360,8 @@ export default function Schedule() {
                               onDragEnd={handleDragEnd}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Optional: gate editing as well; if only create should be gated, keep this block permissive
-                                if (!canCreateSchedule()) {
-                                  console.warn('Insufficient permission to edit an appointment. Modal will not open.');
-                                  return;
-                                }
+                                // Page-level permission gating for editing
+                                if (!canEditAppointment(appointment)) return;
                                 setEditingAppointment(appointment);
                                 setIsModalOpen(true);
                               }}
@@ -408,10 +422,7 @@ export default function Schedule() {
                             onDragEnd={handleDragEnd}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (!canCreateSchedule()) {
-                                console.warn('Insufficient permission to edit an appointment. Modal will not open.');
-                                return;
-                              }
+                              if (!canEditAppointment(appointment)) return;
                               setEditingAppointment(appointment);
                               setIsModalOpen(true);
                             }}
@@ -470,10 +481,7 @@ export default function Schedule() {
                               onDragEnd={handleDragEnd}
                               onClick={(e) => {
                                 e.stopPropagation(); // Prevent date click
-                                if (!canCreateSchedule()) {
-                                  console.warn('Insufficient permission to edit an appointment. Modal will not open.');
-                                  return;
-                                }
+                                if (!canEditAppointment(appointment)) return;
                                 setEditingAppointment(appointment);
                                 setIsModalOpen(true);
                               }}
