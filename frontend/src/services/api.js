@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // Sanitize base URL: trim whitespace and trailing slashes to avoid `%20` or double-slash issues
-// Default to relative path so Vite proxy (see vite.config.js) handles HTTPS -> HTTP backend
-const RAW_API_BASE_URL = (import.meta.env.VITE_API_URL || '/api/v1');
+// Default to relative path for dev (Vite proxy), direct backend URL for production
+const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' ? '/api/v1' : 'https://lavish-beauty-api.onrender.com/api/v1');
 const API_BASE_URL = RAW_API_BASE_URL.trim().replace(/\/+$/, '');
 
 // Simple cache to prevent duplicate API calls

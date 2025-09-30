@@ -22,7 +22,7 @@ services:
     name: lavish-beauty-app
     env: node
     plan: starter
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && VITE_API_URL=https://lavish-beauty-api.onrender.com/api/v1 npm install && npm run build
     startCommand: cd frontend && npx serve dist -l $PORT -s
     envVars:
       - key: VITE_API_URL
