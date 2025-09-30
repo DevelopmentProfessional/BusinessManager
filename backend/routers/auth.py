@@ -528,12 +528,26 @@ def create_user_permission(
     session: Session = Depends(get_session)
 ):
     """Create user permission (admin only)"""
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - user_id: {user_id} (type: {type(user_id)})")
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - permission_data: {permission_data}")
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - current_user: {current_user.username}")
+    print(f"🔥 PERMISSION CREATE DEBUG - user_id: {user_id}")
+    print(f"🔥 PERMISSION CREATE DEBUG - permission_data: {permission_data}")
+    print(f"🔥 PERMISSION CREATE DEBUG - permission type: {permission_data.permission}")
+    print(f"🔥 PERMISSION CREATE DEBUG - valid permission types: {list(PermissionType)}")
+    
+    # Validate permission type before proceeding
+    try:
+        # Test if permission type is valid
+        perm_type = PermissionType(permission_data.permission)
+        print(f"🔥 PERMISSION CREATE DEBUG - Permission type validation passed: {perm_type}")
+    except ValueError as e:
+        print(f"🔥 PERMISSION CREATE DEBUG - Invalid permission type: {permission_data.permission}")
+        print(f"🔥 PERMISSION CREATE DEBUG - Available types: {[p.value for p in PermissionType]}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid permission type: {permission_data.permission}. Valid types: {[p.value for p in PermissionType]}"
+        )
     
     if current_user.role != UserRole.ADMIN:
-        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Access denied: {current_user.role} != ADMIN")
+        print(f"🔥 PERMISSION CREATE DEBUG - Access denied: {current_user.role} != ADMIN")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
