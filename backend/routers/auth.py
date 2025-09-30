@@ -628,12 +628,15 @@ def update_user_permission(
 
 @router.delete("/users/{user_id}/permissions/{permission_id}")
 def delete_user_permission(
-    user_id: str,
+    user_id: UUID,  # 🔥 FIXED: Changed from str to UUID to match database type
     permission_id: UUID,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Delete user permission (admin only)"""
+    print(f"🔥 DELETE PERMISSION DEBUG - user_id: {user_id} (type: {type(user_id)})")
+    print(f"🔥 DELETE PERMISSION DEBUG - permission_id: {permission_id} (type: {type(permission_id)})")
+    
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -641,14 +644,30 @@ def delete_user_permission(
         )
     
     permission = session.get(UserPermission, permission_id)
-    if not permission or permission.user_id != user_id:
+    print(f"🔥 DELETE PERMISSION DEBUG - Found permission: {permission}")
+    
+    if not permission:
+        print(f"🔥 DELETE PERMISSION DEBUG - Permission {permission_id} not found in database")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
     
+    print(f"🔥 DELETE PERMISSION DEBUG - permission.user_id: {permission.user_id} (type: {type(permission.user_id)})")
+    print(f"🔥 DELETE PERMISSION DEBUG - Comparing {permission.user_id} != {user_id}")
+    print(f"🔥 DELETE PERMISSION DEBUG - Comparison result: {permission.user_id != user_id}")
+    
+    if permission.user_id != user_id:
+        print(f"🔥 DELETE PERMISSION DEBUG - User ID mismatch! Permission belongs to {permission.user_id}, not {user_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permission not found"
+        )
+    
+    print(f"🔥 DELETE PERMISSION DEBUG - Deleting permission {permission_id} for user {user_id}")
     session.delete(permission)
     session.commit()
+    print(f"🔥 DELETE PERMISSION DEBUG - Permission deleted successfully")
     
     return {"message": "Permission deleted"}
 
