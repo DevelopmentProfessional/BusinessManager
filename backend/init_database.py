@@ -13,9 +13,86 @@ backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 from database import engine, get_session, create_db_and_tables
-from models import SQLModel, User, UserRole
+from models import SQLModel, User, UserRole, UserPermission, PermissionType
 import bcrypt
 from datetime import datetime
+from uuid import uuid4
+from sqlalchemy import text
+
+def ensure_write_all_permission_support():
+    """Ensure the database supports WRITE_ALL permission type safely."""
+    print("🔧 Ensuring WRITE_ALL permission support...")
+    
+    with engine.begin() as conn:
+        # For PostgreSQL, we might need to add the enum value
+        database_url = str(engine.url)
+        if not database_url.startswith('sqlite'):
+            try:
+                # Check if we're using PostgreSQL and need to add enum value
+                conn.execute(text("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'write_all' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'permissiontype')) THEN
+                            ALTER TYPE permissiontype ADD VALUE 'write_all';
+                        END IF;
+                    END $$;
+                """))
+                print("✅ Added WRITE_ALL to PermissionType enum (PostgreSQL)")
+            except Exception as e:
+                print(f"ℹ️  Enum update not needed or already exists: {e}")
+        
+        # Ensure UserPermission table exists with proper structure  
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS userpermission (
+                id VARCHAR PRIMARY KEY,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP,
+                user_id VARCHAR NOT NULL,
+                page VARCHAR NOT NULL,
+                permission VARCHAR NOT NULL,
+                granted BOOLEAN NOT NULL DEFAULT TRUE
+            )
+        """))
+        print("✅ UserPermission table structure verified")
+
+def add_write_all_permissions_for_admins(session):
+    """Add WRITE_ALL schedule permissions for admin users (disabled by default)."""
+    try:
+        print("👥 Adding WRITE_ALL permissions for admin users...")
+        
+        # Get all admin users
+        admin_users = session.query(User).filter(User.role == UserRole.ADMIN).all()
+        
+        for admin_user in admin_users:
+            # Check if they already have WRITE_ALL permission for schedule
+            existing_permission = session.query(UserPermission).filter(
+                UserPermission.user_id == admin_user.id,
+                UserPermission.page == "schedule", 
+                UserPermission.permission == PermissionType.WRITE_ALL
+            ).first()
+            
+            if not existing_permission:
+                # Add WRITE_ALL permission (disabled by default for safety)
+                write_all_permission = UserPermission(
+                    id=uuid4(),
+                    user_id=admin_user.id,
+                    page="schedule",
+                    permission=PermissionType.WRITE_ALL,
+                    granted=False,  # Disabled by default
+                    created_at=datetime.utcnow()
+                )
+                session.add(write_all_permission)
+                print(f"✅ Added WRITE_ALL permission (disabled) for admin: {admin_user.username}")
+            else:
+                print(f"ℹ️  Admin {admin_user.username} already has WRITE_ALL permission")
+        
+        session.commit()
+        print("✅ Admin WRITE_ALL permissions processed successfully")
+        
+    except Exception as e:
+        print(f"⚠️  Error adding admin permissions: {e}")
+        session.rollback()
+        # Don't fail the entire initialization for this
 
 def init_database():
     """Initialize the database with required tables and initial data."""
@@ -24,6 +101,9 @@ def init_database():
     # Create all tables (this is safe to run multiple times)
     create_db_and_tables()
     print("✅ Database tables created/verified")
+    
+    # Ensure WRITE_ALL permission support
+    ensure_write_all_permission_support()
     
     # Get a session
     session = next(get_session())
@@ -59,6 +139,9 @@ def init_database():
             print(f"   Email: admin@lavishbeautyhairandnail.care")
         else:
             print("✅ Admin user already exists")
+        
+        # Add WRITE_ALL permissions for admin users (safe for existing databases)
+        add_write_all_permissions_for_admins(session)
         
         # Check total users
         total_users = session.query(User).count()
