@@ -105,8 +105,12 @@ def init_database():
     create_db_and_tables()
     print("✅ Database tables created/verified")
     
-    # Ensure WRITE_ALL permission support
-    ensure_write_all_permission_support()
+    # Optional extras (enum tweaks, admin perms) are disabled by default.
+    # Enable by setting DB_INIT_EXTRAS=1 when calling this script explicitly.
+    run_extras = os.getenv("DB_INIT_EXTRAS", "0") == "1"
+    if run_extras:
+        # Ensure WRITE_ALL permission support (legacy compatibility)
+        ensure_write_all_permission_support()
     
     # Get a session
     session = next(get_session())
@@ -145,8 +149,11 @@ def init_database():
         else:
             print("✅ Admin user already exists")
         
-        # Add WRITE_ALL permissions for admin users (safe for existing databases)
-        add_write_all_permissions_for_admins(session)
+        if run_extras:
+            # Add WRITE_ALL permissions for admin users (optional)
+            add_write_all_permissions_for_admins(session)
+        else:
+            print("ℹ️  Skipping optional admin WRITE_ALL permission setup (DB_INIT_EXTRAS=0)")
         
         # Check total users
         statement = select(User)
