@@ -421,9 +421,57 @@ async def update_appointment(
         appointment.updated_at = datetime.utcnow()
         
         session.add(appointment)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError as ie:
+            session.rollback()
+            err_msg = str(ie.orig) if getattr(ie, 'orig', None) else str(ie)
+            if 'employee_id' in err_msg and 'foreign key' in err_msg.lower():
+                try:
+                    # First attempt: employee.id -> user_id (schedule expects user.id)
+                    result_user = session.exec(
+                        text("SELECT user_id FROM employee WHERE id = :eid LIMIT 1"),
+                        {"eid": str(appointment.employee_id)},
+                    ).first()
+                    if result_user and result_user[0]:
+                        from uuid import UUID as _UUID
+                        mapped_user_id = _UUID(result_user[0]) if isinstance(result_user[0], str) else result_user[0]
+                        print(f"[Schedule] UPDATE FK failed; trying employee.id -> user_id mapping: {appointment.employee_id} -> {mapped_user_id}")
+                        appointment.employee_id = mapped_user_id
+                        session.add(appointment)
+                        session.commit()
+                    else:
+                        # Second attempt: user_id -> employee.id (schedule expects employee.id)
+                        result_emp = session.exec(
+                            text("SELECT id FROM employee WHERE user_id = :uid LIMIT 1"),
+                            {"uid": str(appointment.employee_id)},
+                        ).first()
+                        if result_emp and result_emp[0]:
+                            from uuid import UUID as _UUID
+                            mapped_emp_id = _UUID(result_emp[0]) if isinstance(result_emp[0], str) else result_emp[0]
+                            print(f"[Schedule] UPDATE FK failed; trying user_id -> employee.id mapping: {appointment.employee_id} -> {mapped_emp_id}")
+                            appointment.employee_id = mapped_emp_id
+                            session.add(appointment)
+                            session.commit()
+                        else:
+                            raise HTTPException(status_code=422, detail="Invalid employee_id: no matching legacy mapping found")
+                except HTTPException:
+                    raise
+                except Exception as map_exc:
+                    print(f"[Schedule] UPDATE legacy mapping attempts failed: {map_exc}")
+                    traceback.print_exc()
+                    raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
+            else:
+                raise HTTPException(status_code=400, detail="Failed to update appointment. Check client/service/employee IDs.")
+
         session.refresh(appointment)
         return appointment
-        
+
+    except HTTPException as he:
+        print(f"[Schedule] Update appointment HTTP error: {he.status_code} - {he.detail}")
+        traceback.print_exc()
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        print(f"[Schedule] Update appointment unexpected error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error while updating appointment")
