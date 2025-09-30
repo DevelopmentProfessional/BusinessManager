@@ -53,15 +53,52 @@ export default function Employees() {
   }
 
   const loadEmployees = async () => {
+    // 🚨 MAXIMUM DEBUG LOGGING FOR LOAD EMPLOYEES 🚨
+    console.log('🔥 LOAD EMPLOYEES DEBUG - loadEmployees called');
+    
     setLoading(true);
     try {
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Calling employeesAPI.getAll()');
+      console.log('🔥 LOAD EMPLOYEES DEBUG - API base URL:', api.defaults.baseURL);
+      
       const response = await employeesAPI.getAll();
+      
+      console.log('🔥 LOAD EMPLOYEES DEBUG - API response:', response);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Response status:', response.status);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Response data:', response.data);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Number of employees loaded:', response.data?.length);
+      
+      if (response.data && Array.isArray(response.data)) {
+        response.data.forEach((employee, index) => {
+          console.log(`🔥 LOAD EMPLOYEES DEBUG - Employee ${index}:`, {
+            id: employee.id,
+            username: employee.username,
+            first_name: employee.first_name,
+            last_name: employee.last_name,
+            email: employee.email,
+            role: employee.role,
+            is_active: employee.is_active,
+            is_locked: employee.is_locked
+          });
+        });
+      }
+      
       setEmployees(response.data);
       clearError();
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Employees loaded successfully');
     } catch (err) {
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Load employees error occurred!');
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Error object:', err);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Error message:', err.message);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Error response:', err.response);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Error response status:', err.response?.status);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Error response data:', err.response?.data);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Error config:', err.config);
+      
       setError('Failed to load employees');
     } finally {
       setLoading(false);
+      console.log('🔥 LOAD EMPLOYEES DEBUG - Loading state set to false');
     }
   };
 
@@ -76,15 +113,43 @@ export default function Employees() {
   };
 
   const handleDelete = async (employeeId) => {
+    // 🚨 MAXIMUM DEBUG LOGGING FOR EMPLOYEE DELETE 🚨
+    console.log('🔥 EMPLOYEE DEBUG - handleDelete called');
+    console.log('🔥 EMPLOYEE DEBUG - employeeId:', employeeId);
+    console.log('🔥 EMPLOYEE DEBUG - typeof employeeId:', typeof employeeId);
+    console.log('🔥 EMPLOYEE DEBUG - currentUser:', currentUser);
+    console.log('🔥 EMPLOYEE DEBUG - hasPermission employees:delete:', hasPermission('employees', 'delete'));
+    
     if (!window.confirm('Are you sure you want to delete this employee?')) {
+      console.log('🔥 EMPLOYEE DEBUG - User cancelled delete confirmation');
       return;
     }
 
+    console.log('🔥 EMPLOYEE DEBUG - User confirmed delete, proceeding...');
+
     try {
-      await employeesAPI.delete(employeeId);
+      console.log('🔥 EMPLOYEE DEBUG - Calling employeesAPI.delete with ID:', employeeId);
+      console.log('🔥 EMPLOYEE DEBUG - API base URL:', employeesAPI.delete.toString());
+      
+      const response = await employeesAPI.delete(employeeId);
+      
+      console.log('🔥 EMPLOYEE DEBUG - Delete API response:', response);
+      console.log('🔥 EMPLOYEE DEBUG - Response status:', response.status);
+      console.log('🔥 EMPLOYEE DEBUG - Response data:', response.data);
+      
       removeEmployee(employeeId);
       clearError();
+      
+      console.log('🔥 EMPLOYEE DEBUG - Employee deleted successfully from store');
     } catch (err) {
+      console.log('🔥 EMPLOYEE DEBUG - Delete error occurred!');
+      console.log('🔥 EMPLOYEE DEBUG - Error object:', err);
+      console.log('🔥 EMPLOYEE DEBUG - Error message:', err.message);
+      console.log('🔥 EMPLOYEE DEBUG - Error response:', err.response);
+      console.log('🔥 EMPLOYEE DEBUG - Error response status:', err.response?.status);
+      console.log('🔥 EMPLOYEE DEBUG - Error response data:', err.response?.data);
+      console.log('🔥 EMPLOYEE DEBUG - Error config:', err.config);
+      
       setError('Failed to delete employee');
     }
   };
@@ -107,56 +172,174 @@ export default function Employees() {
 
   // Permissions Management
   const handleManagePermissions = async (user) => {
+    // 🚨 MAXIMUM DEBUG LOGGING FOR MANAGE PERMISSIONS 🚨
+    console.log('🔥 PERMISSIONS DEBUG - handleManagePermissions called');
+    console.log('🔥 PERMISSIONS DEBUG - User object:', user);
+    console.log('🔥 PERMISSIONS DEBUG - User ID:', user?.id);
+    console.log('🔥 PERMISSIONS DEBUG - User name:', user?.first_name, user?.last_name);
+    console.log('🔥 PERMISSIONS DEBUG - User username:', user?.username);
+    
     setSelectedUser(user);
     setPermissionsModalOpen(true);
+    
+    console.log('🔥 PERMISSIONS DEBUG - Modal opened, fetching permissions...');
     await fetchUserPermissions(user.id);
   };
 
   const fetchUserPermissions = async (userId) => {
+    // 🚨 MAXIMUM DEBUG LOGGING FOR FETCH PERMISSIONS 🚨
+    console.log('🔥 FETCH PERMISSIONS DEBUG - fetchUserPermissions called');
+    console.log('🔥 FETCH PERMISSIONS DEBUG - userId:', userId);
+    console.log('🔥 FETCH PERMISSIONS DEBUG - typeof userId:', typeof userId);
+    
     try {
-      const response = await api.get(`/auth/users/${userId}/permissions`);
+      const permissionsUrl = `/auth/users/${userId}/permissions`;
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Permissions URL:', permissionsUrl);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Full API URL:', `${api.defaults.baseURL}${permissionsUrl}`);
+      
+      const response = await api.get(permissionsUrl);
+      
+      console.log('🔥 FETCH PERMISSIONS DEBUG - API response:', response);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Response status:', response.status);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Response data:', response.data);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Response data length:', response.data?.length);
+      
+      if (response.data && Array.isArray(response.data)) {
+        response.data.forEach((permission, index) => {
+          console.log(`🔥 FETCH PERMISSIONS DEBUG - Permission ${index}:`, {
+            id: permission.id,
+            page: permission.page,
+            permission: permission.permission,
+            granted: permission.granted,
+            user_id: permission.user_id
+          });
+        });
+      }
+      
       setUserPermissions(response.data);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Permissions set in state successfully');
     } catch (err) {
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Fetch permissions error occurred!');
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Error object:', err);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Error message:', err.message);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Error response:', err.response);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Error response status:', err.response?.status);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Error response data:', err.response?.data);
+      console.log('🔥 FETCH PERMISSIONS DEBUG - Error config:', err.config);
+      
       setError('Failed to fetch user permissions');
     }
   };
 
   const handleCreatePermission = async (e) => {
     e.preventDefault();
+    
+    // 🚨 MAXIMUM DEBUG LOGGING FOR CREATE PERMISSION 🚨
+    console.log('🔥 CREATE PERMISSION DEBUG - handleCreatePermission called');
+    console.log('🔥 CREATE PERMISSION DEBUG - selectedUser:', selectedUser);
+    console.log('🔥 CREATE PERMISSION DEBUG - selectedUser.id:', selectedUser?.id);
+    console.log('🔥 CREATE PERMISSION DEBUG - newPermission:', newPermission);
+    
     setError('');
     setSuccess('');
 
     try {
-      await api.post(`/auth/users/${selectedUser.id}/permissions`, {
+      const createUrl = `/auth/users/${selectedUser.id}/permissions`;
+      const permissionData = {
         page: newPermission.page,
         permission: newPermission.permission,
         granted: true
-      });
+      };
+      
+      console.log('🔥 CREATE PERMISSION DEBUG - Create URL:', createUrl);
+      console.log('🔥 CREATE PERMISSION DEBUG - Permission data:', permissionData);
+      console.log('🔥 CREATE PERMISSION DEBUG - Full API URL:', `${api.defaults.baseURL}${createUrl}`);
+      
+      const response = await api.post(createUrl, permissionData);
+      
+      console.log('🔥 CREATE PERMISSION DEBUG - Create permission API response:', response);
+      console.log('🔥 CREATE PERMISSION DEBUG - Response status:', response.status);
+      console.log('🔥 CREATE PERMISSION DEBUG - Response data:', response.data);
 
       setSuccess('Permission added successfully!');
       setNewPermission({ page: '', permission: '' });
+      
+      console.log('🔥 CREATE PERMISSION DEBUG - Fetching updated permissions...');
       fetchUserPermissions(selectedUser.id);
+      
       setTimeout(() => setSuccess(''), 3000);
+      console.log('🔥 CREATE PERMISSION DEBUG - Permission created successfully');
     } catch (err) {
+      console.log('🔥 CREATE PERMISSION DEBUG - Create permission error occurred!');
+      console.log('🔥 CREATE PERMISSION DEBUG - Error object:', err);
+      console.log('🔥 CREATE PERMISSION DEBUG - Error message:', err.message);
+      console.log('🔥 CREATE PERMISSION DEBUG - Error response:', err.response);
+      console.log('🔥 CREATE PERMISSION DEBUG - Error response status:', err.response?.status);
+      console.log('🔥 CREATE PERMISSION DEBUG - Error response data:', err.response?.data);
+      console.log('🔥 CREATE PERMISSION DEBUG - Error config:', err.config);
+      
       setError(err.response?.data?.detail || 'Failed to create permission');
     }
   };
 
   const handleDeletePermission = async (permissionId) => {
+    // 🚨 MAXIMUM DEBUG LOGGING FOR PERMISSION DELETE 🚨
+    console.log('🔥 PERMISSION DEBUG - handleDeletePermission called');
+    console.log('🔥 PERMISSION DEBUG - permissionId:', permissionId);
+    console.log('🔥 PERMISSION DEBUG - typeof permissionId:', typeof permissionId);
+    console.log('🔥 PERMISSION DEBUG - selectedUser:', selectedUser);
+    console.log('🔥 PERMISSION DEBUG - selectedUser.id:', selectedUser?.id);
+    console.log('🔥 PERMISSION DEBUG - typeof selectedUser.id:', typeof selectedUser?.id);
+    console.log('🔥 PERMISSION DEBUG - userPermissions array:', userPermissions);
+    
+    // Find the specific permission being deleted
+    const permissionToDelete = userPermissions.find(p => p.id === permissionId);
+    console.log('🔥 PERMISSION DEBUG - Permission to delete:', permissionToDelete);
+    
     // Add confirmation dialog
     if (!window.confirm('Are you sure you want to delete this permission? This action cannot be undone.')) {
+      console.log('🔥 PERMISSION DEBUG - User cancelled permission delete confirmation');
       return;
     }
 
+    console.log('🔥 PERMISSION DEBUG - User confirmed delete, proceeding...');
     setError('');
     setSuccess('');
     
     try {
-      await api.delete(`/auth/users/${selectedUser.id}/permissions/${permissionId}`);
+      const deleteUrl = `/auth/users/${selectedUser.id}/permissions/${permissionId}`;
+      console.log('🔥 PERMISSION DEBUG - Delete URL:', deleteUrl);
+      console.log('🔥 PERMISSION DEBUG - Full API URL:', `${api.defaults.baseURL}${deleteUrl}`);
+      
+      const response = await api.delete(deleteUrl);
+      
+      console.log('🔥 PERMISSION DEBUG - Delete permission API response:', response);
+      console.log('🔥 PERMISSION DEBUG - Response status:', response.status);
+      console.log('🔥 PERMISSION DEBUG - Response data:', response.data);
+      
       setSuccess('Permission deleted successfully!');
+      
+      console.log('🔥 PERMISSION DEBUG - Fetching updated permissions...');
       fetchUserPermissions(selectedUser.id);
+      
       setTimeout(() => setSuccess(''), 3000);
+      console.log('🔥 PERMISSION DEBUG - Permission delete completed successfully');
     } catch (err) {
+      console.log('🔥 PERMISSION DEBUG - Delete permission error occurred!');
+      console.log('🔥 PERMISSION DEBUG - Error object:', err);
+      console.log('🔥 PERMISSION DEBUG - Error message:', err.message);
+      console.log('🔥 PERMISSION DEBUG - Error name:', err.name);
+      console.log('🔥 PERMISSION DEBUG - Error stack:', err.stack);
+      console.log('🔥 PERMISSION DEBUG - Error response:', err.response);
+      console.log('🔥 PERMISSION DEBUG - Error response status:', err.response?.status);
+      console.log('🔥 PERMISSION DEBUG - Error response statusText:', err.response?.statusText);
+      console.log('🔥 PERMISSION DEBUG - Error response data:', err.response?.data);
+      console.log('🔥 PERMISSION DEBUG - Error response headers:', err.response?.headers);
+      console.log('🔥 PERMISSION DEBUG - Error config:', err.config);
+      console.log('🔥 PERMISSION DEBUG - Error config url:', err.config?.url);
+      console.log('🔥 PERMISSION DEBUG - Error config method:', err.config?.method);
+      console.log('🔥 PERMISSION DEBUG - Error config baseURL:', err.config?.baseURL);
+      
       setError(err.response?.data?.detail || 'Failed to delete permission');
       console.error('Delete permission error:', err);
     }
@@ -416,7 +599,12 @@ export default function Employees() {
                         {hasPermission('employees', 'admin') && (
                           <>
                             <button
-                              onClick={() => handleManagePermissions(employee)}
+                              onClick={() => {
+                                console.log('🔥 BUTTON DEBUG - MANAGE PERMISSIONS button clicked');
+                                console.log('🔥 BUTTON DEBUG - Employee object:', employee);
+                                console.log('🔥 BUTTON DEBUG - Employee ID:', employee.id);
+                                handleManagePermissions(employee);
+                              }}
                               className="text-indigo-600 hover:text-indigo-900"
                               title="Manage Permissions"
                             >
@@ -448,7 +636,12 @@ export default function Employees() {
                         
                         {hasPermission('employees', 'delete') && (
                           <button
-                            onClick={() => handleDelete(employee.id)}
+                            onClick={() => {
+                              console.log('🔥 BUTTON DEBUG - Employee DELETE button clicked');
+                              console.log('🔥 BUTTON DEBUG - Employee ID:', employee.id);
+                              console.log('🔥 BUTTON DEBUG - Employee object:', employee);
+                              handleDelete(employee.id);
+                            }}
                             className="text-red-600 hover:text-red-900"
                             title="Delete Employee"
                           >
@@ -684,7 +877,13 @@ export default function Employees() {
                             <i className={`bi ${permission.granted ? 'bi-x-circle' : 'bi-check-circle'}`}></i>
                           </button>
                           <button
-                            onClick={() => handleDeletePermission(permission.id)}
+                            onClick={() => {
+                              console.log('🔥 BUTTON DEBUG - Permission DELETE button clicked');
+                              console.log('🔥 BUTTON DEBUG - Permission ID:', permission.id);
+                              console.log('🔥 BUTTON DEBUG - Permission object:', permission);
+                              console.log('🔥 BUTTON DEBUG - Selected user:', selectedUser);
+                              handleDeletePermission(permission.id);
+                            }}
                             className="btn btn-sm btn-outline-danger hover:bg-red-50"
                             title="Delete Permission"
                             type="button"

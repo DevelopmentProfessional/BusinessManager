@@ -1,120 +1,42 @@
 import axios from 'axios';
 
-// 🚨 MAXIMUM DEBUG LOGGING FOR API CONFIGURATION 🚨
-console.log('🔍 API DEBUG - Loading api.js module');
-console.log('🔍 API DEBUG - Current window location:', {
-  href: window.location.href,
-  hostname: window.location.hostname,
-  protocol: window.location.protocol,
-  port: window.location.port,
-  origin: window.location.origin
-});
-console.log('🔍 API DEBUG - Environment variables:', {
-  NODE_ENV: process.env.NODE_ENV,
-  VITE_API_URL: import.meta?.env?.VITE_API_URL,
-  MODE: import.meta?.env?.MODE,
-  DEV: import.meta?.env?.DEV,
-  PROD: import.meta?.env?.PROD
-});
-
-// EMERGENCY FIX: Force direct backend URL to bypass all routing issues
+// API Configuration - Fixed backend URL for production
 const API_BASE_URL = window.location.hostname === 'localhost' 
   ? '/api/v1'  // Local development uses Vite proxy
-  : 'https://lavish-beauty-api.onrender.com/api/v1';  // Production ALWAYS uses direct backend
-
-console.log('🚨 EMERGENCY FIX - API_BASE_URL forced to:', API_BASE_URL);
-console.log('🔍 API DEBUG - Hostname check result:', window.location.hostname === 'localhost' ? 'LOCALHOST DETECTED' : 'PRODUCTION DETECTED');
-console.log('🔍 API DEBUG - Final API_BASE_URL selected:', API_BASE_URL);
+  : 'https://lavish-beauty-api.onrender.com/api/v1';  // Production uses direct backend
 
 // Simple cache to prevent duplicate API calls
 const apiCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const api = axios.create({
-  baseURL: API_BASE_URL, // Use environment variable for production, fallback to relative path for development
+  baseURL: API_BASE_URL,
 });
-
-console.log('🔍 API DEBUG - Axios instance created with baseURL:', api.defaults.baseURL);
 
 // Add authentication interceptor
 api.interceptors.request.use((config) => {
-  // 🚨 MAXIMUM DEBUG LOGGING FOR REQUESTS 🚨
-  console.log('🔍 API DEBUG - Request interceptor triggered');
-  console.log('🔍 API DEBUG - Request config before processing:', {
-    url: config.url,
-    method: config.method,
-    baseURL: config.baseURL,
-    fullURL: `${config.baseURL}${config.url}`,
-    headers: config.headers,
-    data: config.data ? (typeof config.data === 'string' ? config.data.substring(0, 200) + '...' : '[NON-STRING DATA]') : '[NO DATA]'
-  });
-  
   // Get token from localStorage or sessionStorage
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  console.log('🔍 API DEBUG - Token found?:', !!token);
-  console.log('🔍 API DEBUG - Token source:', localStorage.getItem('token') ? 'localStorage' : sessionStorage.getItem('token') ? 'sessionStorage' : 'none');
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('🔍 API DEBUG - Authorization header added');
-  } else {
-    console.log('🔍 API DEBUG - No token found, no Authorization header added');
   }
   
   // Ensure FormData requests are sent as multipart/form-data (let the browser set the boundary)
   const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
   if (isFormData) {
-    console.log('🔍 API DEBUG - FormData detected, removing Content-Type header');
     if (config.headers && 'Content-Type' in config.headers) {
       delete config.headers['Content-Type'];
     }
   }
-  
-  console.log('🔍 API DEBUG - Final request config:', {
-    url: config.url,
-    method: config.method,
-    baseURL: config.baseURL,
-    fullURL: `${config.baseURL}${config.url}`,
-    headers: config.headers
-  });
   
   return config;
 });
 
 // Add response interceptor to handle authentication errors
 api.interceptors.response.use(
-  (response) => {
-    // 🚨 MAXIMUM DEBUG LOGGING FOR RESPONSES 🚨
-    console.log('🔍 API DEBUG - Response interceptor - SUCCESS');
-    console.log('🔍 API DEBUG - Response details:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      config: {
-        url: response.config.url,
-        method: response.config.method,
-        baseURL: response.config.baseURL
-      },
-      data: typeof response.data === 'string' && response.data.length > 200 ? 
-        response.data.substring(0, 200) + '...' : response.data
-    });
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // 🚨 MAXIMUM DEBUG LOGGING FOR ERRORS 🚨
-    console.log('🔍 API DEBUG - Response interceptor - ERROR');
-    console.log('🔍 API DEBUG - Error details:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      config: error.config ? {
-        url: error.config.url,
-        method: error.config.method,
-        baseURL: error.config.baseURL
-      } : 'no config',
-      stack: error.stack
-    });
     return Promise.reject(error);
   }
 );
