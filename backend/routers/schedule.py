@@ -5,6 +5,8 @@ from uuid import UUID
 from database import get_session
 from models import Schedule, ScheduleCreate, ScheduleRead, User, UserRole, UserPermission
 from routers.auth import get_current_user, get_user_permissions_list
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter()
 
@@ -178,7 +180,32 @@ async def create_appointment(
     
     appointment = Schedule(**appointment_dict)
     session.add(appointment)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as ie:
+        session.rollback()
+        # Attempt legacy employee->user mapping if FK on employee_id fails
+        err_msg = str(ie.orig) if getattr(ie, 'orig', None) else str(ie)
+        if 'employee_id' in err_msg and 'foreign key' in err_msg.lower():
+            try:
+                # Look for legacy employee table mapping to user_id
+                result = session.exec(text("SELECT user_id FROM employee WHERE id = :eid LIMIT 1"), {"eid": str(appointment.employee_id)}).first()
+                if result and result[0]:
+                    # Update to mapped user_id and retry
+                    from uuid import UUID as _UUID
+                    mapped_user_id = _UUID(result[0]) if isinstance(result[0], str) else result[0]
+                    appointment.employee_id = mapped_user_id
+                    session.add(appointment)
+                    session.commit()
+                else:
+                    raise HTTPException(status_code=422, detail="Invalid employee_id: no matching user found")
+            except HTTPException:
+                raise
+            except Exception:
+                raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
+        else:
+            # Bubble a helpful message instead of opaque 500
+            raise HTTPException(status_code=400, detail="Failed to create appointment. Check client/service/employee IDs.")
     session.refresh(appointment)
     return appointment
 
