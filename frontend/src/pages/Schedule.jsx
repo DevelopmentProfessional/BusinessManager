@@ -134,12 +134,25 @@ export default function Schedule() {
   const days = getCalendarDays();
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  const canCreateSchedule = useCallback(() => {
+    return (
+      hasPermission('schedule', 'write') ||
+      hasPermission('schedule', 'write_all') ||
+      hasPermission('schedule', 'admin')
+    );
+  }, [hasPermission]);
+
   const handleDateClick = useCallback((date) => {
+    // UI pre-gate: do not open the create modal without proper permission
+    if (!canCreateSchedule()) {
+      console.warn('Insufficient permission to create an appointment. Modal will not open.');
+      return;
+    }
     setEditingAppointment({
       appointment_date: date
     });
     setIsModalOpen(true);
-  }, []);
+  }, [canCreateSchedule]);
 
   const handleSubmitAppointment = useCallback(async (appointmentData) => {
     if (editingAppointment && editingAppointment.id) {
@@ -330,6 +343,11 @@ export default function Schedule() {
                               onDragEnd={handleDragEnd}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                // Optional: gate editing as well; if only create should be gated, keep this block permissive
+                                if (!canCreateSchedule()) {
+                                  console.warn('Insufficient permission to edit an appointment. Modal will not open.');
+                                  return;
+                                }
                                 setEditingAppointment(appointment);
                                 setIsModalOpen(true);
                               }}
@@ -390,6 +408,10 @@ export default function Schedule() {
                             onDragEnd={handleDragEnd}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (!canCreateSchedule()) {
+                                console.warn('Insufficient permission to edit an appointment. Modal will not open.');
+                                return;
+                              }
                               setEditingAppointment(appointment);
                               setIsModalOpen(true);
                             }}
@@ -448,6 +470,10 @@ export default function Schedule() {
                               onDragEnd={handleDragEnd}
                               onClick={(e) => {
                                 e.stopPropagation(); // Prevent date click
+                                if (!canCreateSchedule()) {
+                                  console.warn('Insufficient permission to edit an appointment. Modal will not open.');
+                                  return;
+                                }
                                 setEditingAppointment(appointment);
                                 setIsModalOpen(true);
                               }}
