@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlmodel import Session, select
-from database import get_session
-from models import Client, Service, ClientCreate, ServiceCreate
+from backend.database import get_session
+from backend.models import Client, Service, ClientCreate, ServiceCreate
 import pandas as pd
 import io
 from typing import List

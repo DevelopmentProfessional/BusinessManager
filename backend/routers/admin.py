@@ -5,9 +5,9 @@ import os
 import tempfile
 from pathlib import Path
 
-from database import get_session
-from models import User, UserRole
-from .auth import get_current_user
+from backend.database import get_session
+from backend.models import User, UserRole, Client, Service, Schedule
+from backend.routers.auth import get_current_user
 
 router = APIRouter()
 
@@ -65,13 +65,8 @@ async def import_data_from_csv(
         else:
             appointments_file_path = None
         
-        # Import the data
-        from import_data import import_data_from_csv_files
-        import_data_from_csv_files(
-            clients_file=clients_file_path,
-            services_file=services_file_path,
-            appointments_file=appointments_file_path
-        )
+        # Import the data (disabled - import tool removed)
+        raise HTTPException(status_code=501, detail="CSV import disabled in this build")
         
         # Clean up temporary files
         for tmp_file in temp_files:
@@ -99,14 +94,12 @@ async def get_system_info(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        from models import Client, Service, Schedule, User
-        
         # Get counts
         client_count = len(session.exec(select(Client)).all())
         service_count = len(session.exec(select(Service)).all())
         schedule_count = len(session.exec(select(Schedule)).all())
         employee_count = len(session.exec(select(User).where(User.role != UserRole.ADMIN)).all())
-        
+
         return {
             "clients": client_count,
             "services": service_count,
@@ -114,7 +107,6 @@ async def get_system_info(
             "employees": employee_count,
             "total_records": client_count + service_count + schedule_count + employee_count
         }
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get system info: {str(e)}")
 
@@ -130,21 +122,19 @@ async def test_appointments(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        from models import Client, Service, Schedule, User
-        
         # Get sample data
         clients = session.exec(select(Client)).all()
         services = session.exec(select(Service)).all()
         appointments = session.exec(select(Schedule)).all()
         employees = session.exec(select(User).where(User.role != UserRole.ADMIN)).all()
-        
+
         # Create a sample response with appointment details
         sample_appointments = []
         for apt in appointments[:5]:  # Show first 5 appointments
             client = next((c for c in clients if c.id == apt.client_id), None)
             service = next((s for s in services if s.id == apt.service_id), None)
             employee = next((e for e in employees if e.id == apt.employee_id), None)
-            
+
             sample_appointments.append({
                 "id": str(apt.id),
                 "appointment_date": apt.appointment_date.isoformat() if apt.appointment_date else None,
@@ -154,7 +144,7 @@ async def test_appointments(
                 "employee_name": f"{employee.first_name} {employee.last_name}" if employee else "Unknown",
                 "notes": apt.notes
             })
-        
+
         return {
             "total_appointments": len(appointments),
             "total_clients": len(clients),
@@ -162,6 +152,5 @@ async def test_appointments(
             "total_employees": len(employees),
             "sample_appointments": sample_appointments
         }
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to test appointments: {str(e)}")

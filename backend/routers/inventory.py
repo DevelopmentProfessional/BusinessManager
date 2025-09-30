@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
-from database import get_session
-from models import Inventory, Item, Supplier, ItemRead, ItemType, ItemCreate, ItemUpdate, InventoryRead
+from backend.database import get_session
+from backend.models import Inventory, Item, Supplier, ItemRead, ItemType, ItemCreate, ItemUpdate, InventoryRead
 from sqlalchemy.exc import IntegrityError
 
 router = APIRouter()

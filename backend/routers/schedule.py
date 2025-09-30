@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
-from database import get_session
-from models import Schedule, ScheduleCreate, ScheduleRead, User, UserRole, UserPermission
-from routers.auth import get_current_user, get_user_permissions_list
+from backend.database import get_session
+from backend.models import Schedule, ScheduleCreate, ScheduleRead, User, UserRole, UserPermission
+from backend.routers.auth import get_current_user, get_user_permissions_list
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
@@ -147,26 +147,8 @@ async def create_appointment(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new appointment"""
-    # Get user permissions
-    permissions = get_user_permissions_list(current_user, session)
-    
-    # Check permissions
-    has_write_all = any(perm == "schedule:write_all" for perm in permissions)  # Legacy support
-    has_view_all = any(perm == "schedule:view_all" for perm in permissions)    # New permission
-    has_write = any(perm == "schedule:write" for perm in permissions)
-    has_admin = any(perm == "schedule:admin" for perm in permissions)
-    is_admin = current_user.role == UserRole.ADMIN
-    
-    # Allow write_all (legacy), view_all (new), write, admin, or admin role
-    if not (has_write_all or has_view_all or has_write or has_admin or is_admin):
-        raise HTTPException(status_code=403, detail="Permission denied")
-    
+    """Create a new appointment. Permission gating is handled in the UI before opening the modal."""
     appointment_dict = appointment_data.dict()
-    
-    # If user only has write permission (not write_all/view_all), restrict to their own employee_id
-    if has_write and not has_write_all and not has_view_all and not has_admin and not is_admin:
-        appointment_dict["employee_id"] = current_user.id
     
     # Handle datetime conversion for appointment_date if it's a string
     if isinstance(appointment_dict.get("appointment_date"), str):

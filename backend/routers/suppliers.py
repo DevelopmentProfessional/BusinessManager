@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
-from database import get_session
-from models import Supplier, SupplierRead
+from backend.database import get_session
+from backend.models import Supplier, SupplierRead
 
 router = APIRouter()
 

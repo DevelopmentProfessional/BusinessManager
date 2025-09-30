@@ -8,8 +8,8 @@ from uuid import UUID
 import jwt
 import os
 import bcrypt
-from database import get_session
-from models import (
+from backend.database import get_session
+from backend.models import (
     User, UserCreate, UserUpdate, UserRead, UserPermission, UserPermissionCreate,
     UserPermissionUpdate, UserPermissionRead, LoginRequest, LoginResponse,
     PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType

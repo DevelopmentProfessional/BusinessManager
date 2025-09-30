@@ -17,7 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import uvicorn
 
-from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
+from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
 
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):

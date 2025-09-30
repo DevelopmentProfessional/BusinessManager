@@ -3,8 +3,8 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select, SQLModel
 from typing import List, Optional
 from uuid import UUID
-from database import get_session
-from models import (
+from backend.database import get_session
+from backend.models import (
     Document,
     EntityType,
     DocumentUpdate,
@@ -24,6 +24,8 @@ import shutil
 from datetime import datetime
 from sqlalchemy import text
 import urllib.request
+
+# models already imported above
 
 router = APIRouter()
 

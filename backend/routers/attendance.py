@@ -3,10 +3,10 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, date, timedelta
-from database import get_session
-from models import Attendance, AttendanceCreate, AttendanceRead, User
-from routers.auth import get_current_user
-from models import UserRole
+from backend.database import get_session
+from backend.models import Attendance, AttendanceCreate, AttendanceRead, User
+from backend.routers.auth import get_current_user
+from backend.models import UserRole
 
 router = APIRouter()
 
