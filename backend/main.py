@@ -13,10 +13,29 @@ logging.getLogger("sqlalchemy.pool.impl.QueuePool").disabled = True
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 import uvicorn
 
 from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
 
+
+class AggressiveCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Handle preflight requests
+        if request.method == "OPTIONS":
+            response = Response(status_code=200)
+        else:
+            response = await call_next(request)
+        
+        # Force CORS headers on ALL responses
+        response.headers["Access-Control-Allow-Origin"] = "https://lavishbeautyhairandnail.care"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
 
 
 app = FastAPI(
@@ -47,12 +66,15 @@ if env_origins:
 
 print(f"🔧 CORS ALLOWED ORIGINS: {allowed_origins}")
 
+# Add aggressive CORS middleware first
+app.add_middleware(AggressiveCORSMiddleware)
+
+# Add standard CORS middleware as backup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_origins=["*"],  # Allow all origins as fallback
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
