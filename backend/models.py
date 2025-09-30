@@ -335,10 +335,12 @@ class ServiceUpdate(SQLModel):
 # EmployeeCreate removed - now using UserCreate
 
 class ScheduleCreate(SQLModel):
-    client_id: UUID
-    service_id: UUID
-    employee_id: UUID
-    appointment_date: datetime
+    # Accept strings or UUIDs; router will normalize
+    client_id: Union[UUID, str]
+    service_id: Union[UUID, str]
+    employee_id: Union[UUID, str]
+    # Accept strings or datetime; router will normalize
+    appointment_date: Union[datetime, str]
     notes: Optional[str] = None
 
 class AttendanceCreate(SQLModel):

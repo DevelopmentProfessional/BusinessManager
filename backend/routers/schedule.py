@@ -148,19 +148,38 @@ async def create_appointment(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new appointment. Permission gating is handled in the UI before opening the modal."""
-    appointment_dict = appointment_data.dict()
-    
-    # Handle datetime conversion for appointment_date if it's a string
-    if isinstance(appointment_dict.get("appointment_date"), str):
-        from datetime import datetime
+    # Normalize and validate payload
+    payload = appointment_data.dict()
+
+    # Basic presence validation
+    required_fields = ["client_id", "service_id", "employee_id", "appointment_date"]
+    missing = [f for f in required_fields if payload.get(f) in (None, "", [])]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"Missing required fields: {', '.join(missing)}")
+
+    # Normalize UUID-like fields that may arrive as strings
+    from uuid import UUID as _UUID
+    for key in ("client_id", "service_id", "employee_id"):
+        val = payload.get(key)
+        if isinstance(val, str):
+            try:
+                payload[key] = _UUID(val)
+            except Exception:
+                raise HTTPException(status_code=422, detail=f"Invalid {key}")
+
+    # Normalize datetime
+    from datetime import datetime
+    dt_val = payload.get("appointment_date")
+    if isinstance(dt_val, str):
         try:
-            appointment_dict["appointment_date"] = datetime.fromisoformat(
-                appointment_dict["appointment_date"].replace('Z', '+00:00')
-            )
+            payload["appointment_date"] = datetime.fromisoformat(dt_val.replace('Z', '+00:00'))
         except ValueError:
-            appointment_dict["appointment_date"] = datetime.fromisoformat(appointment_dict["appointment_date"])
-    
-    appointment = Schedule(**appointment_dict)
+            try:
+                payload["appointment_date"] = datetime.fromisoformat(dt_val)
+            except Exception:
+                raise HTTPException(status_code=422, detail="Invalid appointment_date")
+
+    appointment = Schedule(**payload)
     session.add(appointment)
     try:
         session.commit()
