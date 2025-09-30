@@ -68,7 +68,7 @@ const Profile = () => {
 
   const checkEmployeeProfile = async () => {
     try {
-      const response = await attendanceAPI.checkEmployee();
+      const response = await attendanceAPI.checkUser();
       const hasProfile = response.data.has_employee_profile;
       setHasEmployeeProfile(hasProfile);
       return hasProfile;

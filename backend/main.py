@@ -17,11 +17,6 @@ import uvicorn
 
 from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
 
-# Temporary import for migration endpoint - REMOVE AFTER MIGRATION
-import os
-if os.getenv("ALLOW_MIGRATION_ENDPOINT", "false").lower() == "true":
-    from temp_migration_endpoint import migration_router
-
 
 
 app = FastAPI(
@@ -30,19 +25,36 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
+# Configure CORS with explicit production domains
+allowed_origins = [
+    # Local development
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://localhost:5173",
+    "http://localhost:5174", 
+    "http://127.0.0.1:5174",
+    "https://localhost:5174",
+    # Production domains - EXPLICIT
+    "https://lavishbeautyhairandnail.care",
+    "https://www.lavishbeautyhairandnail.care",
+]
+
+# Add any additional origins from environment variable
+env_origins = os.getenv("ALLOWED_ORIGINS", "")
+if env_origins:
+    additional_origins = [origin.strip() for origin in env_origins.split(",") if origin.strip()]
+    allowed_origins.extend(additional_origins)
+
+print(f"🔧 CORS ALLOWED ORIGINS: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        origin.strip() for origin in os.getenv(
-            "ALLOWED_ORIGINS",
-            "http://localhost:5173,http://127.0.0.1:5173,https://localhost:5173,http://localhost:5174,http://127.0.0.1:5174,https://localhost:5174,https://*.onrender.com,https://lavishbeautyhairandnail.care"
-        ).split(",") if origin.strip()
-    ],
-    allow_origin_regex=os.getenv("ALLOWED_ORIGIN_REGEX") or None,
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Health check endpoint
@@ -88,10 +100,7 @@ app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(csv_import.router, prefix="/api/v1", tags=["csv-import"])
 
-# Temporary migration endpoint - REMOVE AFTER MIGRATION
-if os.getenv("ALLOW_MIGRATION_ENDPOINT", "false").lower() == "true":
-    app.include_router(migration_router, prefix="/api/v1", tags=["temporary-migration"])
-    print("⚠️  TEMPORARY MIGRATION ENDPOINT ENABLED - DISABLE AFTER USE")
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
