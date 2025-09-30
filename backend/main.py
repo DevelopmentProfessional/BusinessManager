@@ -119,8 +119,8 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     try:
-        from database import get_session
-        from models import User
+        from backend.database import get_session
+        from backend.models import User
         
         # Test database connection
         session = next(get_session())
