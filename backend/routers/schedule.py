@@ -11,6 +11,42 @@ from sqlalchemy.exc import IntegrityError
 
 router = APIRouter()
 
+# Cache for detected FK target to avoid repeated information_schema queries
+_SCHEDULE_EMPLOYEE_FK_TARGET = None  # 'user' or 'employee' or None if undetected
+
+def _detect_schedule_employee_fk_target(session: Session) -> str:
+    global _SCHEDULE_EMPLOYEE_FK_TARGET
+    if _SCHEDULE_EMPLOYEE_FK_TARGET:
+        return _SCHEDULE_EMPLOYEE_FK_TARGET
+    try:
+        # Query information_schema to determine what 'schedule.employee_id' references
+        sql = text(
+            """
+            SELECT ccu.table_name AS foreign_table_name
+            FROM information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+             AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+             AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND tc.table_name = 'schedule'
+              AND kcu.column_name = 'employee_id'
+            LIMIT 1
+            """
+        )
+        result = session.exec(sql).first()
+        if result and result[0] in ("user", "employee"):
+            _SCHEDULE_EMPLOYEE_FK_TARGET = result[0]
+            print(f"[Schedule] Detected FK target for schedule.employee_id -> {_SCHEDULE_EMPLOYEE_FK_TARGET}")
+            return _SCHEDULE_EMPLOYEE_FK_TARGET
+    except Exception as e:
+        print(f"[Schedule] FK target detection failed: {e}")
+    # Default to 'user' if unknown (matches current models)
+    _SCHEDULE_EMPLOYEE_FK_TARGET = "user"
+    return _SCHEDULE_EMPLOYEE_FK_TARGET
+
 @router.get("/schedule", response_model=List[ScheduleRead])
 async def get_schedule(
     session: Session = Depends(get_session),
@@ -181,30 +217,30 @@ async def create_appointment(
                 except Exception:
                     raise HTTPException(status_code=422, detail="Invalid appointment_date")
 
-        # Try to bridge legacy schema differences for employee_id
+        # Try to bridge legacy schema differences for employee_id by inspecting FK target
         bridged_payload = dict(payload)
-        legacy_employee_table_exists = False
+        fk_target = _detect_schedule_employee_fk_target(session)
         try:
-            # If legacy employee table exists, try to map employee IDs accordingly
             session.exec(text("SELECT 1 FROM employee LIMIT 1")).first()
             legacy_employee_table_exists = True
         except Exception:
             legacy_employee_table_exists = False
 
-        if legacy_employee_table_exists:
-            # Case A: payload has a USER id but schedule table expects EMPLOYEE id
+        if legacy_employee_table_exists and fk_target == "employee":
+            # DB expects employee.id; convert user_id -> employee.id if possible
             try:
                 found = session.exec(
                     text("SELECT id FROM employee WHERE user_id = :uid LIMIT 1"),
                     {"uid": str(bridged_payload["employee_id"])},
                 ).first()
                 if found and found[0]:
-                    print(f"[Schedule] Bridging user_id -> employee.id for employee_id: {bridged_payload['employee_id']} -> {found[0]}")
+                    print(f"[Schedule] FK expects employee; mapping user -> employee: {bridged_payload['employee_id']} -> {found[0]}")
                     from uuid import UUID as _UUID
                     bridged_payload["employee_id"] = _UUID(found[0]) if isinstance(found[0], str) else found[0]
-            except Exception:
-                # Ignore and proceed; fallback will handle
-                pass
+                else:
+                    print("[Schedule] No employee found for provided user_id; proceeding without pre-bridge.")
+            except Exception as pre_e:
+                print(f"[Schedule] Pre-bridge user->employee failed: {pre_e}")
 
         appointment = Schedule(**bridged_payload)
         session.add(appointment)
