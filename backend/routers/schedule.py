@@ -113,8 +113,8 @@ async def get_available_employees(
     permissions = get_user_permissions_list(current_user, session)
     
     # Check permissions for employee dropdown access
-    has_write_all = any(perm == "schedule:write_all" for perm in permissions)
-    has_view_all = any(perm == "schedule:view_all" for perm in permissions) 
+    has_write_all = any(perm == "schedule:write_all" for perm in permissions)  # Legacy support
+    has_view_all = any(perm == "schedule:view_all" for perm in permissions)    # New permission
     has_admin = any(perm == "schedule:admin" for perm in permissions)
     is_admin = current_user.role == UserRole.ADMIN
     
@@ -150,18 +150,20 @@ async def create_appointment(
     permissions = get_user_permissions_list(current_user, session)
     
     # Check permissions
-    has_write_all = any(perm == "schedule:write_all" for perm in permissions)
+    has_write_all = any(perm == "schedule:write_all" for perm in permissions)  # Legacy support
+    has_view_all = any(perm == "schedule:view_all" for perm in permissions)    # New permission
     has_write = any(perm == "schedule:write" for perm in permissions)
     has_admin = any(perm == "schedule:admin" for perm in permissions)
     is_admin = current_user.role == UserRole.ADMIN
     
-    if not (has_write_all or has_write or has_admin or is_admin):
+    # Allow write_all (legacy), view_all (new), write, admin, or admin role
+    if not (has_write_all or has_view_all or has_write or has_admin or is_admin):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     appointment_dict = appointment_data.dict()
     
-    # If user only has write permission (not write_all), restrict to their own employee_id
-    if has_write and not has_write_all and not has_admin and not is_admin:
+    # If user only has write permission (not write_all/view_all), restrict to their own employee_id
+    if has_write and not has_write_all and not has_view_all and not has_admin and not is_admin:
         appointment_dict["employee_id"] = current_user.id
     
     # Handle datetime conversion for appointment_date if it's a string
@@ -193,20 +195,22 @@ async def update_appointment(
         permissions = get_user_permissions_list(current_user, session)
         
         # Check permissions
-        has_write_all = any(perm == "schedule:write_all" for perm in permissions)
+        has_write_all = any(perm == "schedule:write_all" for perm in permissions)  # Legacy support
+        has_view_all = any(perm == "schedule:view_all" for perm in permissions)    # New permission
         has_write = any(perm == "schedule:write" for perm in permissions)
         has_admin = any(perm == "schedule:admin" for perm in permissions)
         is_admin = current_user.role == UserRole.ADMIN
         
-        if not (has_write_all or has_write or has_admin or is_admin):
+        # Allow write_all (legacy), view_all (new), write, admin, or admin role
+        if not (has_write_all or has_view_all or has_write or has_admin or is_admin):
             raise HTTPException(status_code=403, detail="Permission denied")
         
         appointment = session.get(Schedule, appointment_id)
         if not appointment:
             raise HTTPException(status_code=404, detail="Appointment not found")
         
-        # If user only has write permission (not write_all), restrict to their own appointments
-        if has_write and not has_write_all and not has_admin and not is_admin:
+        # If user only has write permission (not write_all/view_all), restrict to their own appointments
+        if has_write and not has_write_all and not has_view_all and not has_admin and not is_admin:
             if appointment.employee_id != current_user.id:
                 raise HTTPException(status_code=403, detail="Can only edit your own appointments")
         
@@ -229,7 +233,7 @@ async def update_appointment(
                         raise HTTPException(status_code=422, detail=f"Invalid {key}")
                 
                 # If user only has write permission, prevent changing employee_id to someone else
-                if key == "employee_id" and has_write and not has_write_all and not has_admin and not is_admin:
+                if key == "employee_id" and has_write and not has_write_all and not has_view_all and not has_admin and not is_admin:
                     if value != current_user.id:
                         raise HTTPException(status_code=403, detail="Cannot schedule appointments for other employees")
                 
