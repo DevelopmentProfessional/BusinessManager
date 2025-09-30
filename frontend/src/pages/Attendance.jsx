@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { ClockIcon, PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
@@ -142,6 +143,14 @@ export default function Attendance() {
 
   // Use the permission refresh hook
   usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('attendance', 'read') && 
+      !hasPermission('attendance', 'write') && 
+      !hasPermission('attendance', 'delete') && 
+      !hasPermission('attendance', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   useEffect(() => {
     loadAttendanceData();

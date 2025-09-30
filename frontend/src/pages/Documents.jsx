@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { PlusIcon, DocumentIcon, TrashIcon, PencilIcon, CheckIcon, ClockIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
@@ -102,6 +102,14 @@ export default function Documents() {
 
   // Use the permission refresh hook
   usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('documents', 'read') && 
+      !hasPermission('documents', 'write') && 
+      !hasPermission('documents', 'delete') && 
+      !hasPermission('documents', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const [documents, setDocuments] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);

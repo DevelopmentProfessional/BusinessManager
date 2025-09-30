@@ -11,7 +11,6 @@ import Schedule from './pages/Schedule';
 import Attendance from './pages/Attendance';
 import Documents from './pages/Documents';
 import DocumentEditor from './pages/DocumentEditor';
-import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import useStore from './store/useStore';
 import useDarkMode from './store/useDarkMode';
@@ -146,13 +145,6 @@ function App() {
         <Route path="/documents/:documentId/edit" element={
           <ProtectedRoute requiredPermission="documents:write">
             <DocumentEditor />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin" element={
-          <ProtectedRoute requiredPermission="admin:admin">
-            <Layout>
-              <Admin />
-            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/profile" element={

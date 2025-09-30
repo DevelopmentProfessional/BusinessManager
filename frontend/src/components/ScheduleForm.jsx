@@ -7,7 +7,7 @@ import PermissionGate from './PermissionGate';
 import CustomDropdown from './CustomDropdown';
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
-  const { clients, services, employees, closeModal, hasPermission } = useStore();
+  const { clients, services, employees, closeModal, hasPermission, user } = useStore();
   const { isDarkMode } = useDarkMode();
   const [timeError, setTimeError] = useState('');
   const navigate = useNavigate();
@@ -53,6 +53,16 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   useEffect(() => {
     setFormData(getInitialFormData());
   }, [appointment]);
+
+  // Auto-select current user if they can only schedule for themselves
+  useEffect(() => {
+    if (employees.length === 1 && !formData.employee_id && user) {
+      setFormData(prev => ({
+        ...prev,
+        employee_id: employees[0].id
+      }));
+    }
+  }, [employees, formData.employee_id, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -172,20 +182,25 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             <PlusIcon className="h-5 w-5" />
           </button>
         </PermissionGate>
-        <CustomDropdown
-          name="employee_id"
-          value={formData.employee_id}
-          onChange={handleChange}
-          options={employees.map((employee) => ({
-            value: employee.id,
-            label: `${employee.first_name} ${employee.last_name} - ${employee.role}`
-          }))}
-          placeholder="Select an employee"
-          required
-          className="flex-1"
-          searchable={true}
-        />
-      
+        <div className="flex-1">
+          <CustomDropdown
+            name="employee_id"
+            value={formData.employee_id}
+            onChange={handleChange}
+            options={employees.map((employee) => ({
+              value: employee.id,
+              label: `${employee.first_name} ${employee.last_name} - ${employee.role}`
+            }))}
+            placeholder="Select an employee"
+            required
+            searchable={true}
+          />
+          {employees.length === 1 && (
+            <p className="text-xs text-gray-500 mt-1">
+              You can only schedule appointments for yourself
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">

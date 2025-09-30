@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
@@ -19,6 +20,14 @@ export default function Services() {
 
   // Use the permission refresh hook
   usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('services', 'read') && 
+      !hasPermission('services', 'write') && 
+      !hasPermission('services', 'delete') && 
+      !hasPermission('services', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const [editingService, setEditingService] = useState(null);
   const [isImporting, setIsImporting] = useState(false);

@@ -1,0 +1,2 @@
+This serves as a prompt from the User.
+Read all the files in Documentation and keep answers short, direct, and only include what’s needed to solve the problem. No explanations, no lists, no fluff.

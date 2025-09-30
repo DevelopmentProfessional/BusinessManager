@@ -99,13 +99,13 @@ async def get_system_info(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        from models import Client, Service, Schedule, Employee
+        from models import Client, Service, Schedule, User
         
         # Get counts
         client_count = len(session.exec(select(Client)).all())
         service_count = len(session.exec(select(Service)).all())
         schedule_count = len(session.exec(select(Schedule)).all())
-        employee_count = len(session.exec(select(Employee)).all())
+        employee_count = len(session.exec(select(User).where(User.role != UserRole.ADMIN)).all())
         
         return {
             "clients": client_count,
@@ -130,13 +130,13 @@ async def test_appointments(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        from models import Client, Service, Schedule, Employee
+        from models import Client, Service, Schedule, User
         
         # Get sample data
         clients = session.exec(select(Client)).all()
         services = session.exec(select(Service)).all()
         appointments = session.exec(select(Schedule)).all()
-        employees = session.exec(select(Employee)).all()
+        employees = session.exec(select(User).where(User.role != UserRole.ADMIN)).all()
         
         # Create a sample response with appointment details
         sample_appointments = []

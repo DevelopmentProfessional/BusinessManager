@@ -30,10 +30,7 @@ api.interceptors.request.use((config) => {
     }
   }
   
-  // Debug: Log the actual URL being requested (only in development)
-  if (import.meta.env.DEV) {
-    console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
-  }
+  // Debug logging removed per coding standards
   
   return config;
 });
@@ -191,8 +188,6 @@ export const employeesAPI = {
   createUserPermission: (userId, data) => api.post(`/auth/users/${userId}/permissions`, data),
   updateUserPermission: (userId, permissionId, data) => api.put(`/auth/users/${userId}/permissions/${permissionId}`, data),
   deleteUserPermission: (userId, permissionId) => api.delete(`/auth/users/${userId}/permissions/${permissionId}`),
-  updateUserAccount: (employeeId, data) => api.put(`/employees/${employeeId}/user-account`, data),
-  createUserAccount: (employeeId, data) => api.post(`/employees/${employeeId}/user-account`, data),
   uploadCSV: (formData) => {
     clearCache('employees');
     return api.post('/employees/upload-csv', formData, {
@@ -205,7 +200,7 @@ export const employeesAPI = {
 
 export const scheduleAPI = {
   getAll: () => getCachedOrFetch('schedule', () => api.get('/schedule')),
-  getByEmployee: (employeeId) => api.get(`/schedule/employee/${employeeId}`),
+  getByEmployee: (userId) => api.get(`/schedule/employee/${userId}`),
   getAvailableEmployees: () => api.get('/schedule/employees'),
   create: (data) => {
     clearCache('schedule');
@@ -219,10 +214,10 @@ export const scheduleAPI = {
 
 export const attendanceAPI = {
   getAll: () => getCachedOrFetch('attendance', () => api.get('/attendance')),
-  getByEmployee: (employeeId) => api.get(`/attendance/employee/${employeeId}`),
-  getByEmployeeAndDate: (employeeId, date) => api.get(`/attendance/employee/${employeeId}/date/${date}`),
+  getByUser: (userId) => api.get(`/attendance/user/${userId}`),
+  getByUserAndDate: (userId, date) => api.get(`/attendance/user/${userId}/date/${date}`),
   me: () => api.get('/attendance/me'),
-  checkEmployee: () => api.get('/attendance/check-employee'),
+  checkUser: () => api.get('/attendance/check-user'),
   clockIn: () => api.post('/attendance/clock-in', {}),
   clockOut: () => api.post('/attendance/clock-out', {}),
   create: (data) => {
@@ -276,8 +271,8 @@ export const documentsAPI = {
     return api.put(`/documents/${id}/content`, formData);
   },
   listAssignments: (id) => api.get(`/documents/${id}/assignments`),
-  addAssignment: (id, employee_id) => api.post(`/documents/${id}/assignments`, { employee_id }),
-  removeAssignment: (id, employee_id) => api.delete(`/documents/${id}/assignments/${employee_id}`),
+  addAssignment: (id, user_id) => api.post(`/documents/${id}/assignments`, { user_id }),
+  removeAssignment: (id, user_id) => api.delete(`/documents/${id}/assignments/${user_id}`),
   onlyofficeConfig: (id) => api.get(`/documents/${id}/onlyoffice-config`),
 };
 

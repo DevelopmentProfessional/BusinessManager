@@ -43,20 +43,7 @@ const useStore = create((set, get) => ({
       return true;
     }
     
-    // If no user permissions found, check employee permissions (from employee table)
-    // Convert employee permission fields to the expected format
-    const employeePermissionField = `${page}_${permission}`;
-    const employeeAdminField = `${page}_admin`;
-    
-    // Check if the user has admin access for this page (admin permission grants all access)
-    if (user && user[employeeAdminField] === true) {
-      return true;
-    }
-    
-    // Check if the user has the specific permission
-    if (user && user[employeePermissionField] === true) {
-      return true;
-    }
+    // No additional permission checks needed - all permissions are now handled via UserPermission table
     
     return false;
   },
@@ -84,27 +71,27 @@ const useStore = create((set, get) => ({
         sessionStorage.setItem('user', JSON.stringify(userData));
       }
     } catch (error) {
-      console.error('Failed to refresh user permissions:', error);
+      // Error handling - permissions refresh failed
     }
   },
 
-  // Function to update employee permissions in real-time
-  updateEmployeePermissions: (employeeId, updatedEmployee) => {
+  // Function to update user permissions in real-time
+  updateUserPermissions: (userId, updatedUser) => {
     const state = get();
     
-    // Update the employee in the employees list
+    // Update the user in the employees list (employees are now users)
     const updatedEmployees = state.employees.map(employee => 
-      employee.id === employeeId ? { ...employee, ...updatedEmployee } : employee
+      employee.id === userId ? { ...employee, ...updatedUser } : employee
     );
     set({ employees: updatedEmployees });
     
-    // If the updated employee is the current user, also update the current user's permissions
+    // If the updated user is the current user, also update the current user's data
     const currentUser = state.user || JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
-    if (currentUser && currentUser.employee && currentUser.employee.id === employeeId) {
-      const updatedUser = { ...currentUser, ...updatedEmployee };
-      set({ user: updatedUser });
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrentUser = { ...currentUser, ...updatedUser };
+      set({ user: updatedCurrentUser });
+      localStorage.setItem('user', JSON.stringify(updatedCurrentUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedCurrentUser));
       
       // Trigger a permission refresh to ensure all components are updated
       setTimeout(() => {
@@ -113,20 +100,23 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // Function to handle permission changes for any employee
-  handlePermissionChange: async (employeeId, permissionField, value) => {
+  // Backward compatibility alias
+  updateEmployeePermissions: (userId, updatedUser) => get().updateUserPermissions(userId, updatedUser),
+
+  // Function to handle permission changes for any user
+  handlePermissionChange: async (userId, permissionField, value) => {
     const state = get();
     
     try {
-      // Update the employee in the store immediately for responsive UI
+      // Update the user in the store immediately for responsive UI
       const updatedEmployees = state.employees.map(employee => 
-        employee.id === employeeId ? { ...employee, [permissionField]: value } : employee
+        employee.id === userId ? { ...employee, [permissionField]: value } : employee
       );
       set({ employees: updatedEmployees });
       
       // If this is the current user, update their permissions as well
       const currentUser = state.user || JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
-      if (currentUser && currentUser.employee && currentUser.employee.id === employeeId) {
+      if (currentUser && currentUser.id === userId) {
         const updatedUser = { ...currentUser, [permissionField]: value };
         set({ user: updatedUser });
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -135,14 +125,14 @@ const useStore = create((set, get) => ({
         // Dispatch a custom event to notify all components of permission changes
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('permissionsChanged', {
-            detail: { employeeId, permissionField, value, updatedUser }
+            detail: { userId, permissionField, value, updatedUser }
           }));
         }
       }
       
       return true;
     } catch (error) {
-      console.error('Error updating permission:', error);
+      // Error handling - permission update failed
       return false;
     }
   },
@@ -195,7 +185,7 @@ const useStore = create((set, get) => ({
         set({ filters });
       }
     } catch (error) {
-      console.error('Error loading persisted filters:', error);
+      // Error handling - failed to load persisted filters
     }
   },
 
@@ -233,7 +223,7 @@ const useStore = create((set, get) => ({
     services: state.services.filter(service => service.id !== id)
   })),
 
-  // Employees state
+  // Employees state (employees are now users)
   employees: [],
   setEmployees: (employees) => set({ employees }),
   addEmployee: (employee) => set((state) => ({ employees: [...state.employees, employee] })),

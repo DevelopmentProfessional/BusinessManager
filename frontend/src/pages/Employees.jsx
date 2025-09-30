@@ -1,43 +1,56 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { Navigate } from 'react-router-dom';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
-import { employeesAPI } from '../services/api';
+import api, { employeesAPI, adminAPI } from '../services/api';
 import Modal from '../components/Modal';
-import EmployeeForm from '../components/EmployeeForm';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import { useLocation, useNavigate } from 'react-router-dom';
+import EmployeeFormTabs from '../components/EmployeeFormTabs';
+import CustomDropdown from '../components/CustomDropdown';
+import DataImportModal from '../components/DataImportModal';
+import useDarkMode from '../store/useDarkMode';
 
 export default function Employees() {
   const { 
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
     isModalOpen, openModal, closeModal,
-    user: currentUser, updateEmployeePermissions, hasPermission
+    user: currentUser, hasPermission
   } = useStore();
 
+  const { isDarkMode } = useDarkMode();
+  
   // Use the permission refresh hook
   usePermissionRefresh();
 
   const [editingEmployee, setEditingEmployee] = useState(null);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [newPermission, setNewPermission] = useState({ page: '', permission: '', granted: true });
+  const [success, setSuccess] = useState('');
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showDataImport, setShowDataImport] = useState(false);
+  const [systemInfo, setSystemInfo] = useState(null);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    role: 'employee'
+  });
 
   useEffect(() => {
     loadEmployees();
   }, []);
 
-  // Auto-open create modal when navigated with ?new=1 and then clean the URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('new') === '1') {
-      setEditingEmployee(null);
-      openModal('employee-form');
-      params.delete('new');
-      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
-    }
-  }, [location.search]);
+  // Check permissions at page level
+  if (!hasPermission('employees', 'read') && 
+      !hasPermission('employees', 'write') && 
+      !hasPermission('employees', 'delete') && 
+      !hasPermission('employees', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -47,262 +60,702 @@ export default function Employees() {
       clearError();
     } catch (err) {
       setError('Failed to load employees');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateEmployee = () => {
-    if (!hasPermission('employees', 'write')) {
-      setError('You do not have permission to create employees');
-      return;
-    }
+  const handleCreate = () => {
     setEditingEmployee(null);
     openModal('employee-form');
   };
 
-  const handleEditEmployee = (employee) => {
-    if (!hasPermission('employees', 'write')) {
-      setError('You do not have permission to edit employees');
-      return;
-    }
+  const handleEdit = (employee) => {
     setEditingEmployee(employee);
     openModal('employee-form');
   };
 
-  const handleDeleteEmployee = async (employeeId) => {
-    if (!hasPermission('employees', 'delete')) {
-      setError('You do not have permission to delete employees');
+  const handleDelete = async (employeeId) => {
+    if (!window.confirm('Are you sure you want to delete this employee?')) {
       return;
     }
-    
-    if (!window.confirm('Are you sure you want to deactivate this employee?')) return;
 
     try {
       await employeesAPI.delete(employeeId);
       removeEmployee(employeeId);
       clearError();
     } catch (err) {
-      setError('Failed to deactivate employee');
-      console.error(err);
+      setError('Failed to delete employee');
     }
   };
 
-  const handleSubmitEmployee = async (employeeData) => {
+  const handleSubmit = async (employeeData) => {
     try {
       if (editingEmployee) {
         const response = await employeesAPI.update(editingEmployee.id, employeeData);
-        const updatedEmployee = response.data;
-        updateEmployee(editingEmployee.id, updatedEmployee);
-        
-        // Update permissions in real-time across all components
-        updateEmployeePermissions(editingEmployee.id, updatedEmployee);
+        updateEmployee(response.data);
       } else {
         const response = await employeesAPI.create(employeeData);
-        const newEmployee = response.data;
-        addEmployee(newEmployee);
-        
-        // Update permissions in real-time for new employee
-        updateEmployeePermissions(newEmployee.id, newEmployee);
+        addEmployee(response.data);
       }
       closeModal();
       clearError();
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save employee';
-      setError(errorMessage);
-      console.error('Employee save error:', err);
+      setError(editingEmployee ? 'Failed to update employee' : 'Failed to create employee');
     }
   };
 
-  const handleUserAccountAction = async (action, employeeId, userData) => {
+  // Permissions Management
+  const handleManagePermissions = async (user) => {
+    setSelectedUser(user);
+    setPermissionsModalOpen(true);
+    await fetchUserPermissions(user.id);
+  };
+
+  const fetchUserPermissions = async (userId) => {
     try {
-      if (action === 'create') {
-        await employeesAPI.createUserAccount(employeeId, userData);
-      } else if (action === 'update') {
-        await employeesAPI.updateUserAccount(employeeId, userData);
-      }
-      clearError();
+      const response = await api.get(`/auth/users/${userId}/permissions`);
+      setUserPermissions(response.data);
     } catch (err) {
-      setError(`Failed to ${action} user account`);
-      console.error(err);
+      setError('Failed to fetch user permissions');
     }
   };
 
-  // Check if user has admin access
-  const isAdmin = currentUser?.role === 'admin';
+  const handleCreatePermission = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    try {
+      await api.post(`/auth/users/${selectedUser.id}/permissions`, {
+        page: newPermission.page,
+        permission: newPermission.permission,
+        granted: true
+      });
+
+      setSuccess('Permission added successfully!');
+      setNewPermission({ page: '', permission: '' });
+      fetchUserPermissions(selectedUser.id);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create permission');
+    }
+  };
+
+  const handleDeletePermission = async (permissionId) => {
+    setError('');
+    setSuccess('');
+    
+    try {
+      await api.delete(`/auth/users/${selectedUser.id}/permissions/${permissionId}`);
+      setSuccess('Permission deleted successfully!');
+      fetchUserPermissions(selectedUser.id);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete permission');
+    }
+  };
+
+  const handleUpdatePermission = async (permissionId, granted) => {
+    setError('');
+    setSuccess('');
+    
+    try {
+      await api.put(`/auth/users/${selectedUser.id}/permissions/${permissionId}`, { granted });
+      setSuccess(granted ? 'Permission granted!' : 'Permission denied!');
+      fetchUserPermissions(selectedUser.id);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update permission');
+    }
+  };
+
+  const handleScheduleViewAllToggle = async (granted) => {
+    setError('');
+    setSuccess('');
+    
+    try {
+      const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'view_all');
+      
+      if (existingPermission) {
+        await api.put(`/auth/users/${selectedUser.id}/permissions/${existingPermission.id}`, { granted });
+        setSuccess(granted ? 'Schedule view all permission granted!' : 'Schedule view all permission revoked!');
+      } else {
+        await api.post(`/auth/users/${selectedUser.id}/permissions`, {
+          page: 'schedule',
+          permission: 'view_all',
+          granted
+        });
+        setSuccess(granted ? 'Schedule view all permission granted!' : 'Schedule view all permission revoked!');
+      }
+      
+      fetchUserPermissions(selectedUser.id);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update schedule view all permission');
+    }
+  };
+
+  const handleScheduleWriteAllToggle = async (granted) => {
+    try {
+      const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'write_all');
+      
+      if (existingPermission) {
+        await employeesAPI.updateUserPermission(selectedUser.id, existingPermission.id, { granted });
+        setSuccess(granted ? 'Schedule write all permission granted!' : 'Schedule write all permission revoked!');
+      } else {
+        const response = await employeesAPI.createUserPermission(selectedUser.id, {
+          page: 'schedule',
+          permission: 'write_all',
+          granted
+        });
+        setSuccess(granted ? 'Schedule write all permission granted!' : 'Schedule write all permission revoked!');
+      }
+      
+      await fetchUserPermissions(selectedUser.id);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update schedule write all permission');
+    }
+  };
+
+  // Admin Functions
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await api.post('/auth/users', newUser);
+      setSuccess('User created successfully!');
+      setShowCreateUser(false);
+      setNewUser({
+        username: '',
+        email: '',
+        password: '',
+        first_name: '',
+        last_name: '',
+        role: 'employee'
+      });
+      loadEmployees();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLockUser = async (userId) => {
+    try {
+      await api.post(`/auth/users/${userId}/lock`);
+      setSuccess('User locked successfully!');
+      loadEmployees();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to lock user');
+    }
+  };
+
+  const handleUnlockUser = async (userId) => {
+    try {
+      await api.post(`/auth/users/${userId}/unlock`);
+      setSuccess('User unlocked successfully!');
+      loadEmployees();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to unlock user');
+    }
+  };
+
+  const handleForcePasswordReset = async (userId) => {
+    try {
+      await api.post(`/auth/users/${userId}/force-password-reset`);
+      setSuccess('User will be required to reset password on next login!');
+      loadEmployees();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to force password reset');
+    }
+  };
+
+  const handleTestAppointments = async () => {
+    try {
+      const response = await adminAPI.testAppointments();
+      setSystemInfo(response.data);
+      setSuccess('Appointment test completed successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to test appointments: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
+  const permissions = ['read', 'write', 'write_all', 'delete', 'admin', 'view_all'];
+  const roles = ['admin', 'manager', 'employee', 'viewer'];
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="p-6">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 text-red-400">
-            <ExclamationTriangleIcon className="h-12 w-12" />
-          </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Access Denied</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Only administrators can manage employee profiles and permissions.
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="p-4">Loading...</div>;
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-900">Employee & User Management</h1>
+            <div className="flex space-x-2">
+              {hasPermission('employees', 'admin') && (
+                <>
+                  <button
+                    onClick={() => setShowDataImport(true)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                  >
+                    Import Data
+                  </button>
+                  <button
+                    onClick={handleTestAppointments}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    Test System
+                  </button>
+                  <button
+                    onClick={() => setShowCreateUser(true)}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                  >
+                    Create User
+                  </button>
+                </>
+              )}
+              {hasPermission('employees', 'write') && !hasPermission('employees', 'admin') && (
+                <button onClick={handleCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                  Add Employee
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button 
-            type="button" 
-            onClick={handleCreateEmployee}
-            className="btn-primary flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Employee
-          </button>
-        </div>
-      </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+        <div className="p-6 space-y-8">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="text-sm text-red-700">{error}</div>
+            </div>
+          )}
 
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
-        <MobileTable
-          data={employees}
-          columns={[
-            { key: 'first_name', title: 'Name', render: (_, item) => `${item.first_name} ${item.last_name}` },
-            { key: 'email', title: 'Email' },
-            { key: 'role', title: 'Role' },
-            { key: 'is_active', title: 'Status', render: (v) => (v ? 'Active' : 'Inactive') },
-            { key: 'user_id', title: 'User Account', render: (v) => (v ? 'Linked' : 'No Account') },
-          ]}
-          onEdit={(item) => handleEditEmployee(item)}
-          onDelete={(item) => handleDeleteEmployee(item.id)}
-          emptyMessage="No employees found"
-        />
-        <MobileAddButton onClick={handleCreateEmployee} label="Add" />
-      </div>
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="text-sm text-green-700">{success}</div>
+            </div>
+          )}
 
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
+          <div>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              {hasPermission('employees', 'admin') ? 'Users & Employees' : 'Employees'}
+            </h2>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hire Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User Account
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {employees.map((employee) => (
                     <tr key={employee.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {employee.first_name} {employee.last_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.username}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {employee.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                         {employee.role}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(employee.hire_date).toLocaleDateString()}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          employee.is_active 
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          employee.is_locked 
+                            ? 'bg-red-100 text-red-800' 
+                            : employee.is_active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {employee.is_active ? 'Active' : 'Inactive'}
+                          {employee.is_locked ? 'Locked' : employee.is_active ? 'Active' : 'Inactive'}
                         </span>
+                        {employee.force_password_reset && (
+                          <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Reset Required
+                          </span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          employee.user_id 
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {employee.user_id ? 'Linked' : 'No Account'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                        <button
-                          onClick={() => handleDeleteEmployee(employee.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleEditEmployee(employee)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        {hasPermission('employees', 'write') && (
+                          <button
+                            onClick={() => handleEdit(employee)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Edit Employee"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        
+                        {hasPermission('employees', 'admin') && (
+                          <>
+                            <button
+                              onClick={() => handleManagePermissions(employee)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                              title="Manage Permissions"
+                            >
+                              Permissions
+                            </button>
+                            {employee.is_locked ? (
+                              <button
+                                onClick={() => handleUnlockUser(employee.id)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                Unlock
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleLockUser(employee.id)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                Lock
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleForcePasswordReset(employee.id)}
+                              className="text-yellow-600 hover:text-yellow-900"
+                            >
+                              Force Reset
+                            </button>
+                          </>
+                        )}
+                        
+                        {hasPermission('employees', 'delete') && (
+                          <button
+                            onClick={() => handleDelete(employee.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete Employee"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              
-              {employees.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No employees found. Add your first employee to get started.</p>
-                </div>
-              )}
             </div>
-          </div>
         </div>
       </div>
 
-      {/* Modal for Employee Form */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} fullScreen={true}>
-        {isModalOpen && (
-          <EmployeeForm
-            employee={editingEmployee}
-            onSubmit={handleSubmitEmployee}
-            onCancel={closeModal}
-          />
-        )}
+      {/* Employee Form Modal */}
+      <Modal isOpen={isModalOpen && openModal === 'employee-form'} onClose={closeModal}>
+        <EmployeeFormTabs
+          employee={editingEmployee}
+          onSubmit={handleSubmit}
+          onCancel={closeModal}
+        />
       </Modal>
+
+      {/* Create User Modal */}
+      {showCreateUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New User</h3>
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Username</label>
+                  <input
+                    type="text"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">First Name</label>
+                  <input
+                    type="text"
+                    value={newUser.first_name}
+                    onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                  <input
+                    type="text"
+                    value={newUser.last_name}
+                    onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Role</label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    {roles.map(role => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Creating...' : 'Create User'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateUser(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permissions Management Modal */}
+      <Modal isOpen={permissionsModalOpen} onClose={() => setPermissionsModalOpen(false)}>
+        <div className={`p-4 ${isDarkMode ? 'bg-dark' : 'bg-white'}`}>
+          <h3 className={`mb-4 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+            Manage Permissions - {selectedUser?.first_name} {selectedUser?.last_name}
+          </h3>
+
+          {/* Add New Permission Form */}
+          <form onSubmit={handleCreatePermission} className="mb-4 p-3 border rounded">
+            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Add New Permission</h5>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <select
+                  value={newPermission.page}
+                  onChange={(e) => setNewPermission({...newPermission, page: e.target.value})}
+                  className="form-select"
+                  required
+                >
+                  <option value="">Select Page</option>
+                  {pages.map(page => (
+                    <option key={page} value={page}>{page}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-6">
+                <select
+                  value={newPermission.permission}
+                  onChange={(e) => setNewPermission({...newPermission, permission: e.target.value})}
+                  className="form-select"
+                  required
+                >
+                  <option value="">Select Permission</option>
+                  {permissions.map(permission => (
+                    <option key={permission} value={permission}>{permission}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary mt-3">
+              <i className="bi bi-plus-circle me-2"></i>
+              Add Permission
+            </button>
+          </form>
+
+          {/* Schedule Special Permissions */}
+          {newPermission.page === 'schedule' && (
+            <div className="mt-4 p-3 border rounded-lg bg-light">
+              <h5 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Schedule Special Permissions</h5>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="viewAllSchedules"
+                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'view_all' && p.granted)}
+                      onChange={(e) => handleScheduleViewAllToggle(e.target.checked)}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="viewAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                      View All Employee Schedules
+                    </label>
+                  </div>
+                  <div className="text-xs text-muted">
+                    Allows viewing schedules of all employees, not just their own
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="writeAllSchedules"
+                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'write_all' && p.granted)}
+                      onChange={(e) => handleScheduleWriteAllToggle(e.target.checked)}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="writeAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                      Write All Employee Schedules
+                    </label>
+                  </div>
+                  <div className="text-xs text-muted">
+                    Allows creating/editing appointments for any employee, not just themselves
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Permissions Table */}
+          <div className="mt-4">
+            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Current Permissions</h5>
+            <div className="table-responsive">
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Page</th>
+                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Permission</th>
+                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Status</th>
+                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userPermissions.map((permission) => (
+                    <tr key={permission.id}>
+                      <td className={isDarkMode ? 'text-light' : 'text-dark'}>{permission.page}</td>
+                      <td className={isDarkMode ? 'text-light' : 'text-dark'}>{permission.permission}</td>
+                      <td>
+                        <span className={`badge ${permission.granted ? 'bg-success' : 'bg-danger'}`}>
+                          {permission.granted ? 'Granted' : 'Denied'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="btn-group btn-group-sm">
+                          <button
+                            onClick={() => handleUpdatePermission(permission.id, !permission.granted)}
+                            className={`btn btn-sm ${permission.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
+                            title={permission.granted ? 'Deny Permission' : 'Grant Permission'}
+                          >
+                            <i className={`bi ${permission.granted ? 'bi-x-circle' : 'bi-check-circle'}`}></i>
+                          </button>
+                          <button
+                            onClick={() => handleDeletePermission(permission.id)}
+                            className="btn btn-sm btn-outline-danger"
+                            title="Delete Permission"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="d-flex justify-content-end mt-4">
+            <button
+              onClick={() => setPermissionsModalOpen(false)}
+              className="btn btn-secondary"
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* System Info Display */}
+      {systemInfo && (
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+          <h3 className="text-lg font-medium text-blue-900 mb-3">System Information</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_clients}</div>
+              <div className="text-sm text-blue-700">Clients</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_services}</div>
+              <div className="text-sm text-blue-700">Services</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_employees}</div>
+              <div className="text-sm text-blue-700">Employees</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_appointments}</div>
+              <div className="text-sm text-blue-700">Appointments</div>
+            </div>
+          </div>
+          
+          {systemInfo.sample_appointments && systemInfo.sample_appointments.length > 0 && (
+            <div>
+              <h4 className="text-md font-medium text-blue-900 mb-2">Sample Appointments:</h4>
+              <div className="space-y-2">
+                {systemInfo.sample_appointments.map((apt, index) => (
+                  <div key={index} className="bg-white p-3 rounded border">
+                    <div className="font-medium">{apt.client_name} - {apt.service_name}</div>
+                    <div className="text-sm text-gray-600">
+                      {apt.employee_name} • {new Date(apt.appointment_date).toLocaleString()} • {apt.status}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Data Import Modal */}
+      <DataImportModal
+        isOpen={showDataImport}
+        onClose={() => setShowDataImport(false)}
+        onImportComplete={() => {
+          console.log('Data import completed');
+          loadEmployees();
+        }}
+      />
+      </div>
     </div>
   );
 }

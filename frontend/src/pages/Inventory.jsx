@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
@@ -80,6 +81,14 @@ export default function Inventory() {
 
   // Use the permission refresh hook
   usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('inventory', 'read') && 
+      !hasPermission('inventory', 'write') && 
+      !hasPermission('inventory', 'delete') && 
+      !hasPermission('inventory', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const [editingInventory, setEditingInventory] = useState(null);
   const [scannedCode, setScannedCode] = useState('');

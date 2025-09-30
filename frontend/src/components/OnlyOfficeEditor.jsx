@@ -30,6 +30,7 @@ export default function OnlyOfficeEditor({ documentId }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [docType, setDocType] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const ONLYOFFICE_URL = (import.meta.env.VITE_ONLYOFFICE_URL || '').trim();
 
@@ -165,6 +166,20 @@ export default function OnlyOfficeEditor({ documentId }) {
     }
   };
 
+  const handleSave = async () => {
+    if (!hasConnector || saving) return;
+    setSaving(true);
+    try {
+      // Trigger OnlyOffice to save; backend callback will persist the file
+      connectorRef.current?.executeMethod?.('Save');
+      // Provide brief visual feedback even though save is async via callback
+      setTimeout(() => setSaving(false), 1200);
+    } catch (e) {
+      console.warn('Save not supported:', e);
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col">
       {error ? (
@@ -219,9 +234,10 @@ export default function OnlyOfficeEditor({ documentId }) {
           type="button"
           className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-green-700"
           title="Save"
-          disabled
+          disabled={buttonsDisabled || saving}
+          onClick={handleSave}
         >
-          Save
+          {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
       <div id={containerId} className="flex-1" style={{ width: '100%', height: '100%', minHeight: 0 }} />

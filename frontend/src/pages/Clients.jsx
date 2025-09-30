@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
@@ -20,6 +21,14 @@ export default function Clients() {
 
   // Use the permission refresh hook
   usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('clients', 'read') && 
+      !hasPermission('clients', 'write') && 
+      !hasPermission('clients', 'delete') && 
+      !hasPermission('clients', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const [editingClient, setEditingClient] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);

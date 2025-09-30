@@ -52,3 +52,18 @@ coverage.xml
 
 # Misc local
 *.local
+
+# Documentation and Test files (local development only)
+Documentation/
+TestSection/
+AI Session Logs.txt
+ToDoFunctions.txt
+*test_*.py
+*debug_*.py
+*check_*.py
+migrate_user_table.py
+simple_migration.py
+
+# Root-level test folders (ensure not deployed nor committed by default)
+/test/
+/tests/

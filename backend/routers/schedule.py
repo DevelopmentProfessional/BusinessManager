@@ -3,8 +3,8 @@ from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
 from database import get_session
-from models import Schedule, ScheduleCreate, ScheduleRead, User
-from routers.auth import get_current_user
+from models import Schedule, ScheduleCreate, ScheduleRead, User, UserRole, UserPermission
+from routers.auth import get_current_user, get_user_permissions_list
 
 router = APIRouter()
 
@@ -14,26 +14,76 @@ async def get_schedule(
     current_user: User = Depends(get_current_user)
 ):
     """Get appointments based on user permissions"""
-    # Admin users can see all appointments
-    if current_user.role == "admin":
-        appointments = session.exec(select(Schedule)).all()
-        return appointments
-    
-    # Check if user has linked employee and view_all permission
-    if current_user.employee and current_user.employee.schedule_view_all:
-        appointments = session.exec(select(Schedule)).all()
-        return appointments
-    
-    # Check if user has linked employee and basic schedule_read permission
-    if current_user.employee and current_user.employee.schedule_read:
-        # Only show appointments for the current employee
-        appointments = session.exec(
-            select(Schedule).where(Schedule.employee_id == current_user.employee.id)
-        ).all()
-        return appointments
-    
-    # No permissions - return empty list
-    return []
+    try:
+        # Get user permissions
+        permissions = get_user_permissions_list(current_user, session)
+        
+        # Admin users can see all appointments
+        if current_user.role == UserRole.ADMIN or any(perm.startswith("schedule:admin") for perm in permissions):
+            appointments = session.exec(select(Schedule)).all()
+            # Convert to ScheduleRead objects to avoid relationship serialization issues
+            return [
+                ScheduleRead(
+                    id=apt.id,
+                    created_at=apt.created_at,
+                    updated_at=apt.updated_at,
+                    client_id=apt.client_id,
+                    service_id=apt.service_id,
+                    employee_id=apt.employee_id,
+                    appointment_date=apt.appointment_date,
+                    status=apt.status,
+                    notes=apt.notes
+                ) for apt in appointments
+            ]
+        
+        # Check if user has view_all permission
+        if any(perm.startswith("schedule:view_all") for perm in permissions):
+            appointments = session.exec(select(Schedule)).all()
+            # Convert to ScheduleRead objects to avoid relationship serialization issues
+            return [
+                ScheduleRead(
+                    id=apt.id,
+                    created_at=apt.created_at,
+                    updated_at=apt.updated_at,
+                    client_id=apt.client_id,
+                    service_id=apt.service_id,
+                    employee_id=apt.employee_id,
+                    appointment_date=apt.appointment_date,
+                    status=apt.status,
+                    notes=apt.notes
+                ) for apt in appointments
+            ]
+        
+        # Check if user has basic schedule_read permission
+        if any(perm.startswith("schedule:read") for perm in permissions):
+            # Only show appointments for the current user
+            appointments = session.exec(
+                select(Schedule).where(Schedule.employee_id == current_user.id)
+            ).all()
+            # Convert to ScheduleRead objects to avoid relationship serialization issues
+            return [
+                ScheduleRead(
+                    id=apt.id,
+                    created_at=apt.created_at,
+                    updated_at=apt.updated_at,
+                    client_id=apt.client_id,
+                    service_id=apt.service_id,
+                    employee_id=apt.employee_id,
+                    appointment_date=apt.appointment_date,
+                    status=apt.status,
+                    notes=apt.notes
+                ) for apt in appointments
+            ]
+        
+        # No permissions - return empty list
+        return []
+        
+    except Exception as e:
+        print(f"Schedule endpoint error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return empty list on error to prevent 500
+        return []
 
 @router.get("/schedule/employee/{employee_id}", response_model=List[ScheduleRead])
 async def get_employee_schedule(
@@ -42,8 +92,11 @@ async def get_employee_schedule(
     current_user: User = Depends(get_current_user)
 ):
     """Get schedule for a specific employee (requires view_all permission)"""
+    # Get user permissions
+    permissions = get_user_permissions_list(current_user, session)
+    
     # Check permissions
-    if current_user.role != "admin" and not (current_user.employee and current_user.employee.schedule_view_all):
+    if current_user.role != UserRole.ADMIN and not any(perm.startswith("schedule:view_all") for perm in permissions):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     statement = select(Schedule).where(Schedule.employee_id == employee_id)
@@ -55,27 +108,61 @@ async def get_available_employees(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get list of employees for filtering (requires view_all permission)"""
-    from models import Employee
+    """Get list of employees available for scheduling based on user permissions"""
+    # Get user permissions
+    permissions = get_user_permissions_list(current_user, session)
     
-    # Check permissions
-    if current_user.role != "admin" and not (current_user.employee and current_user.employee.schedule_view_all):
-        raise HTTPException(status_code=403, detail="Permission denied")
+    # Check permissions for employee dropdown access
+    has_write_all = any(perm == "schedule:write_all" for perm in permissions)
+    has_view_all = any(perm == "schedule:view_all" for perm in permissions) 
+    has_admin = any(perm == "schedule:admin" for perm in permissions)
+    is_admin = current_user.role == UserRole.ADMIN
     
-    employees = session.exec(select(Employee)).all()
-    return [
-        {
-            "id": str(emp.id),
-            "name": f"{emp.first_name} {emp.last_name}",
-            "is_active": emp.is_active
-        }
-        for emp in employees if emp.is_active
-    ]
+    # Admin or users with write_all/view_all/admin permissions can see all employees
+    if is_admin or has_write_all or has_view_all or has_admin:
+        users = session.exec(select(User)).all()
+        return [
+            {
+                "id": str(user.id),
+                "name": f"{user.first_name} {user.last_name}",
+                "is_active": user.is_active
+            }
+            for user in users if user.is_active
+        ]
+    else:
+        # Users with only basic write permission can only see themselves
+        return [
+            {
+                "id": str(current_user.id),
+                "name": f"{current_user.first_name} {current_user.last_name}",
+                "is_active": current_user.is_active
+            }
+        ]
 
 @router.post("/schedule", response_model=ScheduleRead)
-async def create_appointment(appointment_data: ScheduleCreate, session: Session = Depends(get_session)):
+async def create_appointment(
+    appointment_data: ScheduleCreate, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
     """Create a new appointment"""
+    # Get user permissions
+    permissions = get_user_permissions_list(current_user, session)
+    
+    # Check permissions
+    has_write_all = any(perm == "schedule:write_all" for perm in permissions)
+    has_write = any(perm == "schedule:write" for perm in permissions)
+    has_admin = any(perm == "schedule:admin" for perm in permissions)
+    is_admin = current_user.role == UserRole.ADMIN
+    
+    if not (has_write_all or has_write or has_admin or is_admin):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
     appointment_dict = appointment_data.dict()
+    
+    # If user only has write permission (not write_all), restrict to their own employee_id
+    if has_write and not has_write_all and not has_admin and not is_admin:
+        appointment_dict["employee_id"] = current_user.id
     
     # Handle datetime conversion for appointment_date if it's a string
     if isinstance(appointment_dict.get("appointment_date"), str):
@@ -97,37 +184,55 @@ async def create_appointment(appointment_data: ScheduleCreate, session: Session 
 async def update_appointment(
     appointment_id: UUID, 
     appointment_data: dict, 
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
 ):
     """Update an appointment"""
     try:
-        print(f"Updating appointment {appointment_id} with data: {appointment_data}")
+        # Get user permissions
+        permissions = get_user_permissions_list(current_user, session)
+        
+        # Check permissions
+        has_write_all = any(perm == "schedule:write_all" for perm in permissions)
+        has_write = any(perm == "schedule:write" for perm in permissions)
+        has_admin = any(perm == "schedule:admin" for perm in permissions)
+        is_admin = current_user.role == UserRole.ADMIN
+        
+        if not (has_write_all or has_write or has_admin or is_admin):
+            raise HTTPException(status_code=403, detail="Permission denied")
         
         appointment = session.get(Schedule, appointment_id)
         if not appointment:
             raise HTTPException(status_code=404, detail="Appointment not found")
         
+        # If user only has write permission (not write_all), restrict to their own appointments
+        if has_write and not has_write_all and not has_admin and not is_admin:
+            if appointment.employee_id != current_user.id:
+                raise HTTPException(status_code=403, detail="Can only edit your own appointments")
+        
         # Handle type conversion for known fields
         for key, value in appointment_data.items():
             if hasattr(appointment, key):
-                print(f"Setting {key} = {value} (type: {type(value)})")
                 # Convert datetime string -> datetime
                 if key == "appointment_date" and isinstance(value, str):
                     from datetime import datetime
                     try:
                         value = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                        print(f"Converted datetime: {value}")
-                    except ValueError as e:
-                        print(f"Datetime conversion error: {e}")
+                    except ValueError:
                         value = datetime.fromisoformat(value)
                 # Convert UUID strings -> UUID objects
                 if key in {"client_id", "service_id", "employee_id"} and isinstance(value, str):
                     try:
                         from uuid import UUID as _UUID
                         value = _UUID(value)
-                    except Exception as e:
-                        print(f"UUID conversion error for {key}: {e}")
+                    except Exception:
                         raise HTTPException(status_code=422, detail=f"Invalid {key}")
+                
+                # If user only has write permission, prevent changing employee_id to someone else
+                if key == "employee_id" and has_write and not has_write_all and not has_admin and not is_admin:
+                    if value != current_user.id:
+                        raise HTTPException(status_code=403, detail="Cannot schedule appointments for other employees")
+                
                 setattr(appointment, key, value)
         
         # Update the updated_at timestamp
@@ -137,11 +242,7 @@ async def update_appointment(
         session.add(appointment)
         session.commit()
         session.refresh(appointment)
-        print(f"Successfully updated appointment: {appointment}")
         return appointment
         
     except Exception as e:
-        print(f"Error updating appointment: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

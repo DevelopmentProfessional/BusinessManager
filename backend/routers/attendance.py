@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, date, timedelta
 from database import get_session
-from models import Attendance, AttendanceCreate, AttendanceRead, Employee
+from models import Attendance, AttendanceCreate, AttendanceRead, User
 from routers.auth import get_current_user
 from models import UserRole
 
@@ -22,43 +22,43 @@ async def get_attendance(
     attendance_records = session.exec(select(Attendance)).all()
     return attendance_records
 
-@router.get("/attendance/employee/{employee_id}", response_model=List[AttendanceRead])
-async def get_employee_attendance(
-    employee_id: UUID, 
+@router.get("/attendance/user/{user_id}", response_model=List[AttendanceRead])
+async def get_user_attendance(
+    user_id: UUID, 
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get attendance records for a specific employee"""
-    # Validate employee exists
-    employee = session.get(Employee, employee_id)
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+    """Get attendance records for a specific user"""
+    # Validate user exists
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    # Users can only view attendance for employees linked to their user, or admins can view all
+    # Users can only view their own attendance, or admins can view all
     if current_user.role != UserRole.ADMIN:
-        if employee.user_id is None or str(employee.user_id) != str(current_user.id):
+        if str(user_id) != str(current_user.id):
             raise HTTPException(status_code=403, detail="Access denied")
     
-    statement = select(Attendance).where(Attendance.employee_id == employee_id)
+    statement = select(Attendance).where(Attendance.user_id == user_id)
     attendance_records = session.exec(statement).all()
     return attendance_records
 
-@router.get("/attendance/employee/{employee_id}/date/{date}", response_model=List[AttendanceRead])
-async def get_employee_attendance_by_date(
-    employee_id: UUID,
+@router.get("/attendance/user/{user_id}/date/{date}", response_model=List[AttendanceRead])
+async def get_user_attendance_by_date(
+    user_id: UUID,
     date: str,
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get attendance records for a specific employee on a specific date"""
-    # Validate employee exists
-    employee = session.get(Employee, employee_id)
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+    """Get attendance records for a specific user on a specific date"""
+    # Validate user exists
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    # Users can only view attendance for employees linked to their user, or admins can view all
+    # Users can only view their own attendance, or admins can view all
     if current_user.role != UserRole.ADMIN:
-        if employee.user_id is None or str(employee.user_id) != str(current_user.id):
+        if str(user_id) != str(current_user.id):
             raise HTTPException(status_code=403, detail="Access denied")
     
     # Parse the date string
@@ -69,56 +69,33 @@ async def get_employee_attendance_by_date(
     
     # Get attendance records for the specific date
     statement = select(Attendance).where(
-        (Attendance.employee_id == employee_id) &
+        (Attendance.user_id == user_id) &
         (Attendance.date >= target_date) &
         (Attendance.date < target_date + timedelta(days=1))
     )
     attendance_records = session.exec(statement).all()
     return attendance_records
 
-@router.get("/attendance/me", response_model=List[AttendanceRead])
+@router.get("/attendance/my")
 async def get_my_attendance(
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get attendance records for the current user (by linked employee)."""
-    try:
-        # Find employee linked to current user
-        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
-        
-        if not employee:
-            # No employee profile linked; return empty list for convenience
-            print(f"No employee profile found for user {current_user.id}")
-            return []
-        
-        # Get attendance records for the employee
-        records = session.exec(select(Attendance).where(Attendance.employee_id == employee.id)).all()
-        print(f"Found {len(records)} attendance records for employee {employee.id}")
-        return records
-        
-    except Exception as e:
-        print(f"Error in get_my_attendance: {str(e)}")
-        # Return empty list instead of raising error
-        return []
+    """Get attendance records for the current user."""
+    # Get attendance records for the current user
+    records = session.exec(select(Attendance).where(Attendance.user_id == current_user.id)).all()
+    return records
 
-@router.get("/attendance/check-employee")
-async def check_employee_profile(
+@router.get("/attendance/check-user")
+async def check_user_profile(
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Check if current user has an employee profile linked."""
-    try:
-        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
-        return {
-            "has_employee_profile": employee is not None,
-            "employee_id": str(employee.id) if employee else None
-        }
-    except Exception as e:
-        print(f"Error checking employee profile: {str(e)}")
-        return {
-            "has_employee_profile": False,
-            "employee_id": None
-        }
+    """Check current user profile."""
+    return {
+        "has_user_profile": True,
+        "user_id": str(current_user.id)
+    }
 
 @router.post("/attendance/clock-in", response_model=AttendanceRead)
 async def clock_in(
@@ -127,47 +104,37 @@ async def clock_in(
     session: Session = Depends(get_session)
 ):
     """Clock in for the current user"""
-    today = date.today()
     
-    # Determine employee_id: use provided one if present, otherwise resolve from current user
-    if attendance_data and attendance_data.get('employee_id'):
-        employee_id = attendance_data.get('employee_id')
-    else:
-        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
-        if not employee:
-            raise HTTPException(status_code=400, detail="No employee profile linked to current user")
-        employee_id = employee.id
+    # Use current user ID
+    user_id = current_user.id
     
-    # Check if already clocked in today
+    # Check if there's already an active attendance record (no clock-out) for today
+    today = datetime.now().date()
     existing_record = session.exec(
         select(Attendance).where(
-            (Attendance.employee_id == employee_id) &
-            (Attendance.date >= today)
+            (Attendance.user_id == user_id) &
+            (Attendance.date >= today) &
+            (Attendance.date < today + timedelta(days=1)) &
+            (Attendance.clock_out.is_(None))
         )
     ).first()
     
-    if existing_record and existing_record.clock_in:
-        raise HTTPException(status_code=400, detail="Already clocked in today")
-    
     if existing_record:
-        # Update existing record
-        existing_record.clock_in = datetime.utcnow()
-        session.add(existing_record)
-        session.commit()
-        session.refresh(existing_record)
-        return existing_record
-    else:
-        # Create new record
-        attendance = Attendance(
-            employee_id=employee_id,
-            user_id=current_user.id,
-            date=datetime.utcnow(),
-            clock_in=datetime.utcnow()
-        )
-        session.add(attendance)
-        session.commit()
-        session.refresh(attendance)
-        return attendance
+        raise HTTPException(status_code=400, detail="Already clocked in. Please clock out first.")
+    
+    # Create new attendance record
+    new_attendance = Attendance(
+        user_id=user_id,
+        date=datetime.now(),
+        clock_in=datetime.now(),
+        notes=attendance_data.get('notes') if attendance_data else None
+    )
+    
+    session.add(new_attendance)
+    session.commit()
+    session.refresh(new_attendance)
+    
+    return new_attendance
 
 @router.post("/attendance/clock-out", response_model=AttendanceRead)
 async def clock_out(
@@ -176,53 +143,54 @@ async def clock_out(
     session: Session = Depends(get_session)
 ):
     """Clock out for the current user"""
-    today = date.today()
     
-    # Determine employee_id: use provided one if present, otherwise resolve from current user
-    if attendance_data and attendance_data.get('employee_id'):
-        employee_id = attendance_data.get('employee_id')
-    else:
-        employee = session.exec(select(Employee).where(Employee.user_id == current_user.id)).first()
-        if not employee:
-            raise HTTPException(status_code=400, detail="No clock-in record found for today")
-        employee_id = employee.id
+    # Use current user ID
+    user_id = current_user.id
     
-    # Find today's attendance record
-    attendance_record = session.exec(
+    # Find the active attendance record (no clock-out) for today
+    today = datetime.now().date()
+    active_record = session.exec(
         select(Attendance).where(
-            (Attendance.employee_id == employee_id) &
-            (Attendance.date >= today)
+            (Attendance.user_id == user_id) &
+            (Attendance.date >= today) &
+            (Attendance.date < today + timedelta(days=1)) &
+            (Attendance.clock_out.is_(None))
         )
     ).first()
     
-    if not attendance_record:
-        raise HTTPException(status_code=400, detail="No clock-in record found for today")
+    if not active_record:
+        raise HTTPException(status_code=400, detail="No active clock-in record found for today.")
     
-    if attendance_record.clock_out:
-        raise HTTPException(status_code=400, detail="Already clocked out today")
-    
-    attendance_record.clock_out = datetime.utcnow()
+    # Update the record with clock-out time
+    clock_out_time = datetime.now()
+    active_record.clock_out = clock_out_time
     
     # Calculate total hours
-    if attendance_record.clock_in:
-        time_diff = attendance_record.clock_out - attendance_record.clock_in
-        attendance_record.total_hours = time_diff.total_seconds() / 3600
+    if active_record.clock_in:
+        time_diff = clock_out_time - active_record.clock_in
+        active_record.total_hours = round(time_diff.total_seconds() / 3600, 2)
     
-    session.add(attendance_record)
+    # Update notes if provided
+    if attendance_data and attendance_data.get('notes'):
+        active_record.notes = attendance_data.get('notes')
+    
+    session.add(active_record)
     session.commit()
-    session.refresh(attendance_record)
-    return attendance_record
+    session.refresh(active_record)
+    
+    return active_record
 
 @router.post("/attendance", response_model=AttendanceRead)
-async def clock_in_out(attendance_data: AttendanceCreate, session: Session = Depends(get_session)):
-    """Clock in or out for an employee (legacy endpoint)"""
+async def create_attendance(
+    attendance_data: AttendanceCreate,
+    current_user = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Create a new attendance record"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     attendance = Attendance(**attendance_data.dict())
-    
-    # Calculate total hours if both clock_in and clock_out are provided
-    if attendance.clock_in and attendance.clock_out:
-        time_diff = attendance.clock_out - attendance.clock_in
-        attendance.total_hours = time_diff.total_seconds() / 3600
-    
     session.add(attendance)
     session.commit()
     session.refresh(attendance)
@@ -235,7 +203,7 @@ async def update_attendance(
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Update attendance record (admin only)"""
+    """Update an attendance record"""
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
@@ -243,16 +211,32 @@ async def update_attendance(
     if not attendance:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     
+    # Update fields
     for key, value in attendance_data.items():
         if hasattr(attendance, key):
             setattr(attendance, key, value)
     
-    # Recalculate total hours if times are updated
-    if attendance.clock_in and attendance.clock_out:
-        time_diff = attendance.clock_out - attendance.clock_in
-        attendance.total_hours = time_diff.total_seconds() / 3600
-    
+    attendance.updated_at = datetime.utcnow()
     session.add(attendance)
     session.commit()
     session.refresh(attendance)
     return attendance
+
+@router.delete("/attendance/{attendance_id}")
+async def delete_attendance(
+    attendance_id: UUID,
+    current_user = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Delete an attendance record"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    attendance = session.get(Attendance, attendance_id)
+    if not attendance:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    
+    session.delete(attendance)
+    session.commit()
+    
+    return {"message": "Attendance record deleted successfully"}

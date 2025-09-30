@@ -91,7 +91,7 @@ def _to_assignment_read_model(a: DocumentAssignment) -> DocumentAssignmentRead:
         id=a.id,
         created_at=a.created_at,
         document_id=a.document_id,
-        employee_id=a.employee_id,
+        user_id=a.user_id,
     )
 
 
@@ -353,24 +353,24 @@ async def add_document_assignment(document_id: UUID, payload: DocumentAssignment
     # prevent duplicates
     existing = session.exec(select(DocumentAssignment).where(
         DocumentAssignment.document_id == document_id,
-        DocumentAssignment.employee_id == payload.employee_id,
+        DocumentAssignment.user_id == payload.user_id,
     )).first()
     if existing:
         return _to_assignment_read_model(existing)
-    a = DocumentAssignment(document_id=document_id, employee_id=payload.employee_id)
+    a = DocumentAssignment(document_id=document_id, user_id=payload.user_id)
     session.add(a)
     session.commit()
     session.refresh(a)
     return _to_assignment_read_model(a)
 
 
-@router.delete("/documents/{document_id}/assignments/{employee_id}")
-async def remove_document_assignment(document_id: UUID, employee_id: UUID, session: Session = Depends(get_session)):
+@router.delete("/documents/{document_id}/assignments/{user_id}")
+async def remove_document_assignment(document_id: UUID, user_id: UUID, session: Session = Depends(get_session)):
     if not session.get(Document, document_id):
         raise HTTPException(status_code=404, detail="Document not found")
     a = session.exec(select(DocumentAssignment).where(
         DocumentAssignment.document_id == document_id,
-        DocumentAssignment.employee_id == employee_id,
+        DocumentAssignment.user_id == user_id,
     )).first()
     if not a:
         raise HTTPException(status_code=404, detail="Assignment not found")

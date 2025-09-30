@@ -30,8 +30,10 @@ class UserRole(str, Enum):
 class PermissionType(str, Enum):
     READ = "read"
     WRITE = "write"
+    WRITE_ALL = "write_all"
     DELETE = "delete"
     ADMIN = "admin"
+    VIEW_ALL = "view_all"
 
 # Base model with common fields
 class BaseModel(SQLModel):
@@ -39,14 +41,16 @@ class BaseModel(SQLModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default=None)
 
-# User model for authentication
+# User model for authentication (consolidated user/employee)
 class User(BaseModel, table=True):
     username: str = Field(unique=True, index=True)
-    email: str = Field(unique=True, index=True)
+    email: Optional[str] = Field(default=None, unique=True, index=True)  # Made optional
     password_hash: str
     first_name: str
     last_name: str
-    role: UserRole = Field(default=UserRole.EMPLOYEE)
+    phone: Optional[str] = Field(default=None)
+    role: UserRole = Field(default=UserRole.EMPLOYEE)  # Default to EMPLOYEE
+    hire_date: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = Field(default=True)
     is_locked: bool = Field(default=False)
     force_password_reset: bool = Field(default=False)
@@ -57,8 +61,8 @@ class User(BaseModel, table=True):
     
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
-    employee: Optional["Employee"] = Relationship(back_populates="user")
     attendance_records: List["Attendance"] = Relationship(back_populates="user")
+    schedules: List["Schedule"] = Relationship(back_populates="employee")
     
     @classmethod
     def hash_password(cls, password: str) -> str:
@@ -189,132 +193,13 @@ class ServiceRead(SQLModel):
     duration_minutes: int
 
 # Employee model
-class Employee(BaseModel, table=True):
-    first_name: str
-    last_name: str
-    email: str = Field(unique=True, index=True)
-    phone: Optional[str] = Field(default=None)
-    role: str
-    hire_date: datetime
-    is_active: bool = Field(default=True)
-    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
-    
-    # Permission fields - direct storage in employee table
-    # Clients permissions
-    clients_read: bool = Field(default=False)
-    clients_write: bool = Field(default=False)
-    clients_delete: bool = Field(default=False)
-    clients_admin: bool = Field(default=False)
-    
-    # Inventory permissions
-    inventory_read: bool = Field(default=False)
-    inventory_write: bool = Field(default=False)
-    inventory_delete: bool = Field(default=False)
-    inventory_admin: bool = Field(default=False)
-    
-    # Services permissions
-    services_read: bool = Field(default=False)
-    services_write: bool = Field(default=False)
-    services_delete: bool = Field(default=False)
-    services_admin: bool = Field(default=False)
-    
-    # Employees permissions
-    employees_read: bool = Field(default=False)
-    employees_write: bool = Field(default=False)
-    employees_delete: bool = Field(default=False)
-    employees_admin: bool = Field(default=False)
-    
-    # Schedule permissions
-    schedule_read: bool = Field(default=False)
-    schedule_write: bool = Field(default=False)
-    schedule_delete: bool = Field(default=False)
-    schedule_admin: bool = Field(default=False)
-    schedule_view_all: bool = Field(default=False)  # Permission to view all appointments, not just own
-    
-    # Attendance permissions
-    attendance_read: bool = Field(default=False)
-    attendance_write: bool = Field(default=False)
-    attendance_delete: bool = Field(default=False)
-    attendance_admin: bool = Field(default=False)
-    
-    # Documents permissions
-    documents_read: bool = Field(default=False)
-    documents_write: bool = Field(default=False)
-    documents_delete: bool = Field(default=False)
-    documents_admin: bool = Field(default=False)
-    
-    # Admin permissions
-    admin_read: bool = Field(default=False)
-    admin_write: bool = Field(default=False)
-    admin_delete: bool = Field(default=False)
-    admin_admin: bool = Field(default=False)
-    
-    # Relationships
-    user: Optional[User] = Relationship(back_populates="employee")
-    schedules: List["Schedule"] = Relationship(back_populates="employee")
-    attendance_records: List["Attendance"] = Relationship(back_populates="employee")
-
-# Employee read model (exclude relationships for API responses)
-class EmployeeRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    first_name: str
-    last_name: str
-    email: str
-    phone: Optional[str] = None
-    role: str
-    hire_date: datetime
-    is_active: bool
-    user_id: Optional[UUID] = None
-    
-    # Permission fields
-    clients_read: bool = False
-    clients_write: bool = False
-    clients_delete: bool = False
-    clients_admin: bool = False
-    
-    inventory_read: bool = False
-    inventory_write: bool = False
-    inventory_delete: bool = False
-    inventory_admin: bool = False
-    
-    services_read: bool = False
-    services_write: bool = False
-    services_delete: bool = False
-    services_admin: bool = False
-    
-    employees_read: bool = False
-    employees_write: bool = False
-    employees_delete: bool = False
-    employees_admin: bool = False
-    
-    schedule_read: bool = False
-    schedule_write: bool = False
-    schedule_delete: bool = False
-    schedule_admin: bool = False
-    schedule_view_all: bool = False
-    
-    attendance_read: bool = False
-    attendance_write: bool = False
-    attendance_delete: bool = False
-    attendance_admin: bool = False
-    
-    documents_read: bool = False
-    documents_write: bool = False
-    documents_delete: bool = False
-    documents_admin: bool = False
-    
-    admin_read: bool = False
-    admin_write: bool = False
-    admin_delete: bool = False
-    admin_admin: bool = False
+# Employee model removed - now using User model directly
 
 # Schedule model
 class Schedule(BaseModel, table=True):
     client_id: UUID = Field(foreign_key="client.id")
     service_id: UUID = Field(foreign_key="service.id")
-    employee_id: UUID = Field(foreign_key="employee.id")
+    employee_id: UUID = Field(foreign_key="user.id")  # Now references user directly
     appointment_date: datetime
     status: str = Field(default="scheduled")  # scheduled, completed, cancelled
     notes: Optional[str] = Field(default=None)
@@ -322,7 +207,7 @@ class Schedule(BaseModel, table=True):
     # Relationships
     client: Client = Relationship(back_populates="schedules")
     service: Service = Relationship(back_populates="schedules")
-    employee: Employee = Relationship(back_populates="schedules")
+    employee: "User" = Relationship(back_populates="schedules")
 
 class ScheduleRead(SQLModel):
     id: UUID
@@ -340,8 +225,7 @@ class ScheduleRead(SQLModel):
 
 # Attendance model
 class Attendance(BaseModel, table=True):
-    employee_id: UUID = Field(foreign_key="employee.id")
-    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    user_id: UUID = Field(foreign_key="user.id")  # Now references user directly
     date: datetime = Field(index=True)
     clock_in: Optional[datetime] = Field(default=None)
     clock_out: Optional[datetime] = Field(default=None)
@@ -349,15 +233,13 @@ class Attendance(BaseModel, table=True):
     notes: Optional[str] = Field(default=None)
     
     # Relationships
-    employee: Employee = Relationship(back_populates="attendance_records")
-    user: Optional[User] = Relationship(back_populates="attendance_records")
+    user: User = Relationship(back_populates="attendance_records")
 
 class AttendanceRead(SQLModel):
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
-    employee_id: UUID
-    user_id: Optional[UUID] = None
+    user_id: UUID  # Now only references user
     date: datetime
     clock_in: Optional[datetime] = None
     clock_out: Optional[datetime] = None
@@ -379,7 +261,7 @@ class Document(BaseModel, table=True):
     signed_by: Optional[str] = Field(default=None)
     signed_at: Optional[datetime] = Field(default=None)
     # ownership / review / category
-    owner_id: Optional[UUID] = Field(foreign_key="employee.id", default=None)
+    owner_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     review_date: Optional[datetime] = Field(default=None)
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
 
@@ -449,13 +331,7 @@ class ServiceUpdate(SQLModel):
     price: Optional[float] = None
     duration_minutes: Optional[int] = None
 
-class EmployeeCreate(SQLModel):
-    first_name: str
-    last_name: str
-    email: str
-    phone: Optional[str] = None
-    role: str
-    hire_date: datetime
+# EmployeeCreate removed - now using UserCreate
 
 class ScheduleCreate(SQLModel):
     client_id: UUID
@@ -465,7 +341,7 @@ class ScheduleCreate(SQLModel):
     notes: Optional[str] = None
 
 class AttendanceCreate(SQLModel):
-    employee_id: UUID
+    user_id: UUID  # Now references user directly
     date: datetime
     clock_in: Optional[datetime] = None
     clock_out: Optional[datetime] = None
@@ -484,11 +360,11 @@ class DocumentCategory(BaseModel, table=True):
     description: Optional[str] = Field(default=None)
 
 
-# Document Assignment model (many-to-many: document -> employee)
+# Document Assignment model (many-to-many: document -> user)
 class DocumentAssignment(BaseModel, table=True):
     __tablename__ = "document_assignment"
     document_id: UUID = Field(foreign_key="document.id")
-    employee_id: UUID = Field(foreign_key="employee.id")
+    user_id: UUID = Field(foreign_key="user.id")
 
 
 # Document History model (versioned files)
@@ -505,10 +381,10 @@ class DocumentAssignmentRead(SQLModel):
     id: UUID
     created_at: datetime
     document_id: UUID
-    employee_id: UUID
+    user_id: UUID
 
 class DocumentAssignmentCreate(SQLModel):
-    employee_id: UUID
+    user_id: UUID
 
 # Read schemas
 class DocumentHistoryRead(SQLModel):
@@ -538,10 +414,11 @@ class DocumentCategoryUpdate(SQLModel):
 # Authentication models
 class UserCreate(SQLModel):
     username: str
-    email: str
+    email: Optional[str] = None  # Made optional
     password: str
     first_name: str
     last_name: str
+    phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
 
 class UserUpdate(SQLModel):
@@ -550,7 +427,9 @@ class UserUpdate(SQLModel):
     password: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    phone: Optional[str] = None
     role: Optional[UserRole] = None
+    hire_date: Optional[datetime] = None
     is_active: Optional[bool] = None
     is_locked: Optional[bool] = None
     force_password_reset: Optional[bool] = None
@@ -558,10 +437,12 @@ class UserUpdate(SQLModel):
 class UserRead(SQLModel):
     id: UUID
     username: str
-    email: str
+    email: Optional[str] = None  # Made optional
     first_name: str
     last_name: str
+    phone: Optional[str] = None
     role: UserRole
+    hire_date: Optional[datetime] = None  # Made optional to handle admin user
     is_active: bool
     is_locked: bool
     force_password_reset: bool

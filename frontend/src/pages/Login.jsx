@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  EyeIcon, 
+  EyeSlashIcon, 
+  UserIcon, 
+  LockClosedIcon, 
+  ExclamationTriangleIcon, 
+  CheckCircleIcon,
+  ArrowPathIcon 
+} from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import api from '../services/api';
 
@@ -11,6 +20,9 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [resetData, setResetData] = useState({
     username: '',
@@ -35,7 +47,6 @@ const Login = () => {
     const savedPassword = getCookie('savedPassword');
     
     console.log('Saved data found in cookies:', { savedRememberMe, savedUsername, savedPassword });
-    console.log('All cookies:', document.cookie);
     
     // If remember me is true, set the form values
     if (savedRememberMe) {
@@ -51,7 +62,26 @@ const Login = () => {
     if (token) {
       navigate('/profile');
     }
-  }, []); // Empty dependency array - runs only once on mount
+  }, [navigate]);
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.username.trim()) {
+      errors.username = 'Username is required';
+    } else if (formData.username.length < 2) {
+      errors.username = 'Username must be at least 2 characters';
+    }
+    
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 3) {
+      errors.password = 'Password must be at least 3 characters';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -59,16 +89,32 @@ const Login = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Clear validation errors when user types
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+    
+    // Clear general error when user makes changes
+    if (error) setError('');
+    if (success) setSuccess('');
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const saveUserCredentials = (username, password, rememberMe) => {
     try {
       if (rememberMe) {
         console.log('Saving user credentials:', { username, rememberMe });
-        // Set cookies that expire in 30 days
-        document.cookie = `rememberMe=true; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
-        document.cookie = `savedUsername=${username}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
-        document.cookie = `savedPassword=${password}; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}; path=/`;
+        const expireDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = `rememberMe=true; expires=${expireDate}; path=/; secure; samesite=strict`;
+        document.cookie = `savedUsername=${encodeURIComponent(username)}; expires=${expireDate}; path=/; secure; samesite=strict`;
+        document.cookie = `savedPassword=${encodeURIComponent(password)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         console.log('Data saved to cookies');
       } else {
         console.log('Clearing saved credentials');
@@ -93,37 +139,103 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Clear previous states
     setError('');
-
-    // Save user credentials first (non-blocking)
-    saveUserCredentials(formData.username, formData.password, formData.remember_me);
+    setSuccess('');
+    setValidationErrors({});
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      setError('Please fix the validation errors below.');
+      return;
+    }
+    
+    setLoading(true);
+    const selectedStorage = formData.remember_me ? localStorage : sessionStorage;
+    
+    const loginData = {
+      username: formData.username.trim(),
+      password: formData.password,
+    };
+    
+    console.log('Login attempt with:', {
+      username: loginData.username,
+      remember_me: formData.remember_me,
+    });
 
     try {
-      const response = await api.post('/auth/login', formData);
+      const response = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+      });
       
-      // Store token and user data
-      const { access_token, user, permissions } = response.data;
+      console.log('Response status:', response.status);
       
-      if (formData.remember_me) {
-        localStorage.setItem('token', access_token);
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('permissions', JSON.stringify(permissions));
-      } else {
-        sessionStorage.setItem('token', access_token);
-        sessionStorage.setItem('user', JSON.stringify(user));
-        sessionStorage.setItem('permissions', JSON.stringify(permissions));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('HTTP Error:', response.status, errorText);
+        
+        let errorMessage = 'Login failed. Please check your credentials.';
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorMessage;
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+          if (response.status === 401) {
+            errorMessage = 'Invalid username or password.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        }
+        
+        setError(errorMessage);
+        return;
       }
       
-      setToken(access_token);
-      setUser(user);
-      setPermissions(permissions);
+      const data = await response.json();
+      console.log('Login successful:', data);
+
+      if (data.access_token && data.user) {
+        // Store authentication data
+        selectedStorage.setItem('token', data.access_token);
+        selectedStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Update Zustand store
+        setToken(data.access_token);
+        setUser(data.user);
+        if (data.permissions) {
+          selectedStorage.setItem('permissions', JSON.stringify(data.permissions));
+          setPermissions(data.permissions);
+        }
+        
+        // Save credentials if remember me is checked
+        saveUserCredentials(formData.username.trim(), formData.password, formData.remember_me);
+        
+        // Show success message briefly
+        setSuccess('Login successful! Redirecting...');
+        
+        // Navigate to profile after a brief delay
+        setTimeout(() => {
+          console.log('Navigating to profile...');
+          navigate('/profile');
+        }, 1000);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       
-      // Redirect to profile or intended page
-      navigate('/profile');
-      
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed. Please try again.');
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setError('Cannot connect to server. Please check if the server is running.');
+      } else {
+        setError(error.message || 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -164,52 +276,108 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-100 mb-4">
+            <svg className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m2.25-18h15.75m-18 0l19.5 0m-19.5 0v18m0 0h2.25m15.75-18v18m0 0h2.25" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Business Manager
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+          <p className="text-sm text-gray-600">
+            Sign in to your account to get started
           </p>
         </div>
         
         {!showPasswordReset ? (
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-            <div className="rounded-md shadow-sm -space-y-px">
+            {/* Success Message */}
+            {success && (
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+                <div className="flex">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <p className="ml-3 text-sm font-medium text-green-800">{success}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                <div className="flex">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <p className="ml-3 text-sm font-medium text-red-800">{error}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Username Field */}
               <div>
-                <label htmlFor="username" className="sr-only">
-                  Username or Email
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                  Username
                 </label>
                 <input
                   id="username"
                   name="username"
                   type="text"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Username or Email"
+                  className={`w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                    validationErrors.username ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your username"
                   value={formData.username}
                   onChange={handleInputChange}
                 />
+                {validationErrors.username && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.username}</p>
+                )}
               </div>
+
+              {/* Password Field */}
               <div>
-                <label htmlFor="password" className="sr-only">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    className={`w-full px-4 py-3 pr-12 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                      validationErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                {validationErrors.password && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+                )}
               </div>
             </div>
 
+            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -220,111 +388,145 @@ const Login = () => {
                   checked={formData.remember_me}
                   onChange={handleInputChange}
                 />
-                <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
+                <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-700">
+                  Remember me for 30 days
                 </label>
               </div>
 
-              <div className="text-sm">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordReset(true)}
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  Forgot your password?
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700">{error}</div>
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="reset-username" className="sr-only">
-                  Username
-                </label>
-                <input
-                  id="reset-username"
-                  name="username"
-                  type="text"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Username"
-                  value={resetData.username}
-                  onChange={handleResetInputChange}
-                />
-              </div>
-              <div>
-                <label htmlFor="new-password" className="sr-only">
-                  New Password
-                </label>
-                <input
-                  id="new-password"
-                  name="new_password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="New Password"
-                  value={resetData.new_password}
-                  onChange={handleResetInputChange}
-                />
-              </div>
-              <div>
-                <label htmlFor="confirm-password" className="sr-only">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirm-password"
-                  name="confirm_password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Confirm Password"
-                  value={resetData.confirm_password}
-                  onChange={handleResetInputChange}
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700">{error}</div>
-              </div>
-            )}
-
-            <div className="flex space-x-3">
               <button
                 type="button"
-                onClick={() => setShowPasswordReset(false)}
-                className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setShowPasswordReset(true)}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
               >
-                Back to Login
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Resetting...' : 'Reset Password'}
+                Forgot password?
               </button>
             </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              {loading ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </div>
+              ) : (
+                'Sign in to Business Manager'
+              )}
+            </button>
           </form>
+        ) : (
+          <div className="mt-8">
+            <div className="mb-6 text-center">
+              <h3 className="text-lg font-medium text-gray-900">Reset Password</h3>
+              <p className="mt-1 text-sm text-gray-600">Enter your username and new password</p>
+            </div>
+            
+            <form className="space-y-6" onSubmit={handlePasswordReset}>
+              {/* Error Message */}
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                  <div className="flex">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <p className="ml-3 text-sm font-medium text-red-800">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Username Field */}
+                <div>
+                  <label htmlFor="reset-username" className="block text-sm font-medium text-gray-700 mb-2">
+                    Username
+                  </label>
+                  <input
+                    id="reset-username"
+                    name="username"
+                    type="text"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    placeholder="Enter your username"
+                    value={resetData.username}
+                    onChange={handleResetInputChange}
+                  />
+                </div>
+
+                {/* New Password Field */}
+                <div>
+                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password
+                  </label>
+                  <input
+                    id="new-password"
+                    name="new_password"
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    placeholder="Enter new password (min 6 characters)"
+                    value={resetData.new_password}
+                    onChange={handleResetInputChange}
+                  />
+                </div>
+
+                {/* Confirm Password Field */}
+                <div>
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    name="confirm_password"
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    placeholder="Confirm new password"
+                    value={resetData.confirm_password}
+                    onChange={handleResetInputChange}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPasswordReset(false);
+                    setError('');
+                    setResetData({ username: '', new_password: '', confirm_password: '' });
+                  }}
+                  className="flex-1 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                >
+                  Back to Login
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Resetting...
+                    </div>
+                  ) : (
+                    'Reset Password'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </div>
     </div>

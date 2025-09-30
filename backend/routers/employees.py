@@ -4,441 +4,189 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 from database import get_session
-from models import Employee, EmployeeCreate, EmployeeRead, User, UserCreate, UserPermission, UserPermissionCreate
+from models import User, UserCreate, UserRead, UserUpdate, UserPermission, UserPermissionCreate
 from routers.auth import get_current_user
 from models import UserRole
 
 router = APIRouter()
 
-@router.get("/employees", response_model=List[EmployeeRead])
-async def get_employees(session: Session = Depends(get_session)):
-    """Get all employees"""
-    employees = session.exec(select(Employee)).all()
-    return employees
+@router.get("/employees", response_model=List[UserRead])
+async def get_employees(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all employees (users)"""
+    # Get all users (employees and admins)
+    users = session.exec(select(User)).all()
+    return users
 
-@router.get("/employees/{employee_id}", response_model=EmployeeRead)
-async def get_employee(employee_id: UUID, session: Session = Depends(get_session)):
+@router.get("/employees/{employee_id}", response_model=UserRead)
+async def get_employee(
+    employee_id: UUID, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
     """Get a specific employee by ID"""
-    employee = session.get(Employee, employee_id)
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    return employee
+    user = session.get(User, employee_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
-@router.post("/employees", response_model=EmployeeRead)
+@router.post("/employees", response_model=UserRead)
 async def create_employee(
     employee_data: dict, 
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Create a new employee with optional user account"""
-    # Check if current user is admin
+    """Create a new employee (user account)"""
+    # Check if current user has permission
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Extract employee data
-    employee_fields = {
+    # Extract user data
+    user_fields = {
+        'username': employee_data.get('username'),
         'first_name': employee_data.get('first_name'),
         'last_name': employee_data.get('last_name'),
-        'email': employee_data.get('email'),
+        'email': employee_data.get('email'),  # Optional
         'phone': employee_data.get('phone'),
-        'role': employee_data.get('role'),
+        'role': UserRole.EMPLOYEE,  # Default to EMPLOYEE
         'is_active': employee_data.get('is_active', True)
     }
     
-    # Add permission fields if provided
-    permission_fields = [
-        'clients_read', 'clients_write', 'clients_delete', 'clients_admin',
-        'inventory_read', 'inventory_write', 'inventory_delete', 'inventory_admin',
-        'services_read', 'services_write', 'services_delete', 'services_admin',
-        'employees_read', 'employees_write', 'employees_delete', 'employees_admin',
-        'schedule_read', 'schedule_write', 'schedule_delete', 'schedule_admin',
-        'attendance_read', 'attendance_write', 'attendance_delete', 'attendance_admin',
-        'documents_read', 'documents_write', 'documents_delete', 'documents_admin',
-        'admin_read', 'admin_write', 'admin_delete', 'admin_admin'
-    ]
+    # Validate required fields
+    username = employee_data.get('username')
+    password = employee_data.get('password')
     
-    for field in permission_fields:
-        if field in employee_data:
-            employee_fields[field] = employee_data[field]
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username and password are required")
     
-    # Handle hire_date separately to avoid parsing issues
-    hire_date = employee_data.get('hire_date')
-    if hire_date:
+    if not user_fields['first_name'] or not user_fields['last_name']:
+        raise HTTPException(status_code=400, detail="First name and last name are required")
+    
+    # Parse hire_date if provided
+    if 'hire_date' in employee_data:
         try:
-            if isinstance(hire_date, str):
-                # Remove 'Z' and parse ISO format
-                hire_date = hire_date.replace('Z', '+00:00')
-                employee_fields['hire_date'] = datetime.fromisoformat(hire_date)
-            elif isinstance(hire_date, datetime):
-                employee_fields['hire_date'] = hire_date
-        except Exception as e:
-            print(f"Error parsing hire_date: {hire_date}, error: {str(e)}")
-            raise HTTPException(status_code=400, detail=f"Invalid hire_date format: {str(e)}")
+            if isinstance(employee_data['hire_date'], str):
+                user_fields['hire_date'] = datetime.fromisoformat(employee_data['hire_date'].replace('Z', '+00:00'))
+            else:
+                user_fields['hire_date'] = employee_data['hire_date']
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid hire_date format")
     else:
-        # Set default hire_date to current date if not provided
-        employee_fields['hire_date'] = datetime.utcnow()
+        user_fields['hire_date'] = datetime.utcnow()
     
-    # Check for duplicate employee email
-    existing_employee = session.exec(
-        select(Employee).where(Employee.email == employee_fields['email'])
-    ).first()
+    # Check for duplicate username
+    existing_user = session.exec(select(User).where(User.username == username)).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail=f"Username '{username}' already exists")
     
-    if existing_employee:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"An employee with the email '{employee_fields['email']}' already exists"
-        )
+    # Check for duplicate email if provided
+    if user_fields.get('email'):
+        existing_email = session.exec(select(User).where(User.email == user_fields['email'])).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail=f"Email '{user_fields['email']}' already exists")
     
-    # Create employee
-    employee = Employee(**employee_fields)
-    session.add(employee)
+    # Hash password
+    user_fields['password_hash'] = User.hash_password(password)
+    
+    # Create the user
+    user = User(**user_fields)
+    session.add(user)
     session.commit()
-    session.refresh(employee)
+    session.refresh(user)
     
-    # Handle user creation if credentials provided
-    user_credentials = employee_data.get('user_credentials')
-    if user_credentials:
-        try:
-            # Create user account
-            user_fields = {
-                'username': user_credentials.get('username'),
-                'email': user_credentials.get('email'),
-                'password_hash': User.hash_password(user_credentials.get('password')),
-                'first_name': employee_fields['first_name'],
-                'last_name': employee_fields['last_name'],
-                'role': user_credentials.get('role', 'employee'),
-                'is_active': user_credentials.get('is_active', True)
-            }
-            
-            # Check for duplicate username
-            existing_user_by_username = session.exec(
-                select(User).where(User.username == user_fields['username'])
-            ).first()
-            
-            if existing_user_by_username:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"A user with the username '{user_fields['username']}' already exists"
-                )
-            
-            # Check for duplicate user email
-            existing_user_by_email = session.exec(
-                select(User).where(User.email == user_fields['email'])
-            ).first()
-            
-            if existing_user_by_email:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"A user with the email '{user_fields['email']}' already exists"
-                )
-            
-            user = User(**user_fields)
-            session.add(user)
-            session.commit()
-            session.refresh(user)
-            
-            # Link employee to user
-            employee.user_id = user.id
-            session.add(employee)
-            
-            # Create permissions if provided
-            permissions = user_credentials.get('permissions', [])
-            for perm_data in permissions:
-                permission = UserPermission(
-                    user_id=user.id,
-                    page=perm_data['page'],
-                    permission=perm_data['permission'],
-                    granted=perm_data.get('granted', True)
-                )
-                session.add(permission)
-            
-            session.commit()
-            session.refresh(employee)
-            
-        except Exception as e:
-            # Rollback employee creation if user creation fails
-            session.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create user account: {str(e)}")
-    
-    return employee
+    return user
 
-@router.put("/employees/{employee_id}", response_model=EmployeeRead)
+@router.put("/employees/{employee_id}", response_model=UserRead)
 async def update_employee(
     employee_id: UUID, 
-    employee_data: dict, 
+    employee_data: dict,
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Update employee information"""
-    try:
-        print(f"=== UPDATE EMPLOYEE REQUEST ===")
-        print(f"Employee ID: {employee_id}")
-        print(f"Current User: {current_user.username} (role: {current_user.role})")
-        print(f"Employee Data: {employee_data}")
-        
-        # Check if current user is admin
-        if current_user.role != "admin":
-            print(f"Access denied: User {current_user.username} is not admin")
-            raise HTTPException(status_code=403, detail="Admin access required")
-        
-        employee = session.get(Employee, employee_id)
-        if not employee:
-            print(f"Employee {employee_id} not found")
-            raise HTTPException(status_code=404, detail="Employee not found")
-        
-        print(f"Found employee: {employee.first_name} {employee.last_name}")
-        
-        # Check if this is a permission-only update
-        permission_fields = [
-            'clients_read', 'clients_write', 'clients_delete', 'clients_admin',
-            'inventory_read', 'inventory_write', 'inventory_delete', 'inventory_admin',
-            'services_read', 'services_write', 'services_delete', 'services_admin',
-            'employees_read', 'employees_write', 'employees_delete', 'employees_admin',
-            'schedule_read', 'schedule_write', 'schedule_delete', 'schedule_admin', 'schedule_view_all',
-            'attendance_read', 'attendance_write', 'attendance_delete', 'attendance_admin',
-            'documents_read', 'documents_write', 'documents_delete', 'documents_admin',
-            'admin_read', 'admin_write', 'admin_delete', 'admin_admin'
-        ]
-        
-        # Check if this is a permission-only update
-        is_permission_only = all(key in permission_fields for key in employee_data.keys())
-        
-        if is_permission_only:
-            print("Permission-only update detected")
-            # For permission-only updates, don't require basic fields
-        else:
-            # For full updates, validate required fields
-            if not employee_data.get('first_name') or not employee_data.get('last_name') or not employee_data.get('email'):
-                print(f"Missing required fields: first_name={employee_data.get('first_name')}, last_name={employee_data.get('last_name')}, email={employee_data.get('email')}")
-                raise HTTPException(status_code=400, detail="First name, last name, and email are required")
-            
-            # Update employee fields
-            print(f"Updating employee fields...")
-            employee.first_name = employee_data.get('first_name')
-            employee.last_name = employee_data.get('last_name')
-            employee.email = employee_data.get('email')
-            employee.phone = employee_data.get('phone', employee.phone)
-            employee.role = employee_data.get('role', employee.role)
-            employee.is_active = employee_data.get('is_active', employee.is_active)
-        
-        # Update permission fields if provided
-        for field in permission_fields:
-            if field in employee_data:
-                setattr(employee, field, employee_data[field])
-                print(f"Updated {field} to: {employee_data[field]}")
-        
-        # Handle hire_date
-        hire_date = employee_data.get('hire_date')
-        if hire_date:
-            try:
-                if isinstance(hire_date, str):
-                    # Remove 'Z' and parse ISO format
-                    hire_date = hire_date.replace('Z', '+00:00')
-                    employee.hire_date = datetime.fromisoformat(hire_date)
-                    print(f"Updated hire_date to: {employee.hire_date}")
-                elif isinstance(hire_date, datetime):
-                    employee.hire_date = hire_date
-                    print(f"Updated hire_date to: {employee.hire_date}")
-            except Exception as e:
-                print(f"Error parsing hire_date: {hire_date}, error: {str(e)}")
-                # Keep existing hire_date if parsing fails
-                pass
-        
-        # Update the updated_at timestamp
-        employee.updated_at = datetime.utcnow()
-        
-        print(f"About to commit changes...")
-        session.add(employee)
-        session.commit()
-        session.refresh(employee)
-        
-        print(f"Successfully updated employee {employee_id}")
-        print(f"Updated employee: {employee.first_name} {employee.last_name} ({employee.email})")
-        return employee
-        
-    except HTTPException as http_ex:
-        print(f"HTTP Exception: {http_ex.status_code} - {http_ex.detail}")
-        raise
-    except Exception as e:
-        session.rollback()
-        print(f"Unexpected error updating employee {employee_id}: {str(e)}")
-        print(f"Error type: {type(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Failed to update employee: {str(e)}")
+    """Update an employee"""
+    # Check if current user has permission
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get the user
+    user = session.get(User, employee_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update fields
+    if 'first_name' in employee_data:
+        user.first_name = employee_data['first_name']
+    if 'last_name' in employee_data:
+        user.last_name = employee_data['last_name']
+    if 'email' in employee_data:
+        # Check for duplicate email if changing
+        if employee_data['email'] and employee_data['email'] != user.email:
+            existing_email = session.exec(select(User).where(User.email == employee_data['email'])).first()
+            if existing_email:
+                raise HTTPException(status_code=400, detail=f"Email '{employee_data['email']}' already exists")
+        user.email = employee_data['email']
+    if 'phone' in employee_data:
+        user.phone = employee_data['phone']
+    if 'role' in employee_data:
+        user.role = UserRole(employee_data['role'])
+    if 'is_active' in employee_data:
+        user.is_active = employee_data['is_active']
+    if 'hire_date' in employee_data:
+        try:
+            if isinstance(employee_data['hire_date'], str):
+                user.hire_date = datetime.fromisoformat(employee_data['hire_date'].replace('Z', '+00:00'))
+            else:
+                user.hire_date = employee_data['hire_date']
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid hire_date format")
+    
+    # Update password if provided
+    if 'password' in employee_data and employee_data['password']:
+        user.password_hash = User.hash_password(employee_data['password'])
+    
+    # Update username if provided
+    if 'username' in employee_data and employee_data['username'] != user.username:
+        existing_user = session.exec(select(User).where(User.username == employee_data['username'])).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail=f"Username '{employee_data['username']}' already exists")
+        user.username = employee_data['username']
+    
+    user.updated_at = datetime.utcnow()
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    return user
 
 @router.delete("/employees/{employee_id}")
 async def delete_employee(
-    employee_id: UUID, 
+    employee_id: UUID,
     current_user = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Delete an employee (admin only)"""
-    # Check if current user is admin
+    """Delete an employee"""
+    # Check if current user has permission
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    employee = session.get(Employee, employee_id)
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+    # Prevent self-deletion
+    if employee_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
     
-    employee.is_active = False  # Soft delete
-    session.add(employee)
+    # Get the user
+    user = session.get(User, employee_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete associated permissions first
+    permissions = session.exec(select(UserPermission).where(UserPermission.user_id == employee_id)).all()
+    for permission in permissions:
+        session.delete(permission)
+    
+    # Delete the user
+    session.delete(user)
     session.commit()
-    return {"message": "Employee deactivated successfully"}
-
-@router.put("/employees/{employee_id}/user-account")
-async def update_employee_user_account(
-    employee_id: UUID,
-    user_data: dict,
-    current_user = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Update user account for an employee (admin only)"""
-    try:
-        # Check if current user is admin
-        if current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Admin access required")
-        
-        employee = session.get(Employee, employee_id)
-        if not employee:
-            raise HTTPException(status_code=404, detail="Employee not found")
-        
-        # Check if employee has a linked user
-        if not employee.user_id:
-            raise HTTPException(status_code=404, detail="Employee has no linked user account")
-        
-        user = session.get(User, employee.user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="Linked user account not found")
-        
-        print(f"Updating user account for employee {employee_id}")
-        
-        # Validate required fields
-        if not user_data.get('username') or not user_data.get('email'):
-            raise HTTPException(status_code=400, detail="Username and email are required")
-        
-        # Update user fields
-        user.username = user_data['username']
-        user.email = user_data['email']
-        user.role = user_data.get('role', user.role)
-        user.is_active = user_data.get('is_active', user.is_active)
-        
-        # Update password if provided
-        if user_data.get('password'):
-            user.password_hash = User.hash_password(user_data['password'])
-        
-        user.updated_at = datetime.utcnow()
-        session.add(user)
-        
-        # Update permissions if provided
-        if user_data.get('permissions'):
-            # Remove existing permissions
-            existing_permissions = session.exec(
-                select(UserPermission).where(UserPermission.user_id == user.id)
-            ).all()
-            for perm in existing_permissions:
-                session.delete(perm)
-            
-            # Add new permissions
-            for perm_data in user_data['permissions']:
-                permission = UserPermission(
-                    user_id=user.id,
-                    page=perm_data['page'],
-                    permission=perm_data['permission'],
-                    granted=perm_data.get('granted', True)
-                )
-                session.add(permission)
-        
-        session.commit()
-        session.refresh(user)
-        
-        print(f"Successfully updated user account for employee {employee_id}")
-        
-        return {
-            "message": "User account updated successfully",
-            "user": {
-                "id": str(user.id),
-                "username": user.username,
-                "email": user.email,
-                "role": user.role,
-                "is_active": user.is_active
-            }
-        }
-        
-    except HTTPException:
-        # Re-raise HTTP exceptions as-is
-        raise
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating user account for employee {employee_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to update user account: {str(e)}")
-
-@router.post("/employees/{employee_id}/user-account")
-async def create_employee_user_account(
-    employee_id: UUID,
-    user_data: dict,
-    current_user = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Create user account for an employee (admin only)"""
-    # Check if current user is admin
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
     
-    employee = session.get(Employee, employee_id)
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    
-    if employee.user_id:
-        raise HTTPException(status_code=400, detail="Employee already has a linked user account")
-    
-    try:
-        # Create user account
-        user_fields = {
-            'username': user_data.get('username'),
-            'email': user_data.get('email'),
-            'password_hash': User.hash_password(user_data.get('password')),
-            'first_name': employee.first_name,
-            'last_name': employee.last_name,
-            'role': user_data.get('role', 'employee'),
-            'is_active': user_data.get('is_active', True)
-        }
-        
-        user = User(**user_fields)
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-        
-        # Link employee to user
-        employee.user_id = user.id
-        session.add(employee)
-        
-        # Create permissions if provided
-        permissions = user_data.get('permissions', [])
-        for perm_data in permissions:
-            permission = UserPermission(
-                user_id=user.id,
-                page=perm_data['page'],
-                permission=perm_data['permission'],
-                granted=perm_data.get('granted', True)
-            )
-            session.add(permission)
-        
-        session.commit()
-        session.refresh(employee)
-        
-        return {
-            "message": "User account created successfully",
-            "user": {
-                "id": str(user.id),
-                "username": user.username,
-                "email": user.email,
-                "role": user.role,
-                "is_active": user.is_active
-            }
-        }
-        
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Failed to create user account: {str(e)}")
+    return {"message": "User deleted successfully"}

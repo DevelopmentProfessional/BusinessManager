@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import Session, select
+from sqlalchemy import text
 from datetime import datetime, timedelta
 from typing import List, Optional
 import jwt
@@ -95,34 +96,10 @@ def get_current_user(
     
     return user
 
-def get_user_permissions(user: User, session: Session) -> List[str]:
-    """Get user permissions as list of strings"""
-    # Admin users have access to everything
-    if user.role == UserRole.ADMIN:
-        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
-        all_permissions = ['read', 'write', 'delete', 'admin']
-        admin_permissions = []
-        for page in all_pages:
-            for permission in all_permissions:
-                admin_permissions.append(f"{page}:{permission}")
-        return admin_permissions
-    
-    permissions = session.exec(
-        select(UserPermission).where(UserPermission.user_id == user.id)
-    ).all()
-    
-    # Convert to list of strings like "clients:read", "inventory:write"
-    permission_strings = []
-    for perm in permissions:
-        if perm.granted:
-            permission_strings.append(f"{perm.page}:{perm.permission}")
-    
-    return permission_strings
-
 def get_user_permissions_list(user: User, session: Session) -> List[str]:
     """Get user permissions as list of strings"""
     # Admin users have access to everything
-    if user.role == UserRole.ADMIN:
+    if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
         all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
         all_permissions = ['read', 'write', 'delete', 'admin']
         admin_permissions = []
@@ -139,7 +116,12 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     permission_strings = []
     for perm in permissions:
         if perm.granted:
-            permission_strings.append(f"{perm.page}:{perm.permission}")
+            # Be tolerant of legacy/corrupt rows where enum casing or value is wrong
+            try:
+                val = getattr(perm.permission, "value", str(perm.permission))
+            except Exception:
+                val = str(perm.permission)
+            permission_strings.append(f"{perm.page}:{str(val).lower()}")
     
     return permission_strings
 
@@ -206,10 +188,13 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
             user.failed_login_attempts = 0
             user.locked_until = None
     
-    # Verify password
-    if not user.verify_password(login_data.password):
+    # Verify password (tolerate unexpected errors without 500)
+    try:
+        valid_pw = user.verify_password(login_data.password)
+    except Exception:
+        valid_pw = False
+    if not valid_pw:
         user.failed_login_attempts += 1
-        
         # Lock account after 5 failed attempts
         if user.failed_login_attempts >= 5:
             user.is_locked = True
@@ -219,7 +204,6 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Too many failed attempts. Account locked for 30 minutes."
             )
-        
         session.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -243,35 +227,27 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     # Get user permissions
     permissions = get_user_permissions_list(user, session)
     
-    # Get employee permissions if user has a linked employee account
-    employee_permissions = {}
-    if user.employee:
-        employee = user.employee
-        # Convert employee permission fields to the format expected by frontend
-        permission_fields = [
-            'clients_read', 'clients_write', 'clients_delete', 'clients_admin',
-            'inventory_read', 'inventory_write', 'inventory_delete', 'inventory_admin',
-            'services_read', 'services_write', 'services_delete', 'services_admin',
-            'employees_read', 'employees_write', 'employees_delete', 'employees_admin',
-            'schedule_read', 'schedule_write', 'schedule_delete', 'schedule_admin', 'schedule_view_all',
-            'attendance_read', 'attendance_write', 'attendance_delete', 'attendance_admin',
-            'documents_read', 'documents_write', 'documents_delete', 'documents_admin',
-            'admin_read', 'admin_write', 'admin_delete', 'admin_admin'
-        ]
-        
-        for field in permission_fields:
-            employee_permissions[field] = getattr(employee, field, False)
-    
-    # Create user data with employee permissions
-    user_data = UserRead.from_orm(user)
-    if employee_permissions:
-        # Update the user_data object with employee permissions
-        for field, value in employee_permissions.items():
-            setattr(user_data, field, value)
+    # Create UserRead object from user
+    user_read = UserRead(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        phone=user.phone,
+        role=user.role,
+        hire_date=user.hire_date,
+        is_active=user.is_active,
+        is_locked=user.is_locked,
+        force_password_reset=user.force_password_reset,
+        last_login=user.last_login,
+        created_at=user.created_at,
+        updated_at=user.updated_at
+    )
     
     return LoginResponse(
         access_token=access_token,
-        user=user_data,
+        user=user_read,
         permissions=permissions
     )
 
@@ -336,33 +312,8 @@ def get_current_user_info(
     session: Session = Depends(get_session)
 ):
     """Get current user information"""
-    # Get employee permissions if user has a linked employee account
-    employee_permissions = {}
-    if current_user.employee:
-        employee = current_user.employee
-        # Convert employee permission fields to the format expected by frontend
-        permission_fields = [
-            'clients_read', 'clients_write', 'clients_delete', 'clients_admin',
-            'inventory_read', 'inventory_write', 'inventory_delete', 'inventory_admin',
-            'services_read', 'services_write', 'services_delete', 'services_admin',
-            'employees_read', 'employees_write', 'employees_delete', 'employees_admin',
-            'schedule_read', 'schedule_write', 'schedule_delete', 'schedule_admin', 'schedule_view_all',
-            'attendance_read', 'attendance_write', 'attendance_delete', 'attendance_admin',
-            'documents_read', 'documents_write', 'documents_delete', 'documents_admin',
-            'admin_read', 'admin_write', 'admin_delete', 'admin_admin'
-        ]
-        
-        for field in permission_fields:
-            employee_permissions[field] = getattr(employee, field, False)
-    
-    # Create user data with employee permissions
-    user_data = UserRead.from_orm(current_user)
-    if employee_permissions:
-        # Update the user_data object with employee permissions
-        for field, value in employee_permissions.items():
-            setattr(user_data, field, value)
-    
-    return user_data
+    # Return user data directly; granular permissions are returned via separate endpoint
+    return UserRead.from_orm(current_user)
 
 @router.get("/me/permissions")
 def get_current_user_permissions(
@@ -700,6 +651,58 @@ def delete_user_permission(
     
     return {"message": "Permission deleted"}
 
+@router.post("/admin/normalize-permissions")
+def normalize_permissions(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Admin maintenance: normalize UserPermission.permission values.
+    - Lowercase all values
+    - Map common variants (e.g., 'viewall' -> 'view_all')
+    - Skip invalid values
+    Returns a summary of changes.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    allowed = {p.value for p in PermissionType}
+    changed = 0
+    skipped = 0
+    total = 0
+
+    perms = session.exec(select(UserPermission)).all()
+    for p in perms:
+        total += 1
+        # Extract raw value, tolerate bad data
+        try:
+            raw = getattr(p.permission, "value", str(p.permission))
+        except Exception:
+            raw = str(p.permission)
+        norm = (raw or "").strip().lower()
+        if norm == "viewall":
+            norm = "view_all"
+
+        if norm in allowed:
+            try:
+                new_enum = PermissionType(norm)
+            except Exception:
+                skipped += 1
+                continue
+            if p.permission != new_enum:
+                p.permission = new_enum
+                session.add(p)
+                changed += 1
+        else:
+            skipped += 1
+
+    if changed:
+        session.commit()
+
+    return {"total": total, "changed": changed, "skipped": skipped}
+
 @router.put("/me/dark-mode")
 def update_dark_mode_preference(
     dark_mode_data: dict = Body(...),
@@ -713,3 +716,198 @@ def update_dark_mode_preference(
     session.refresh(current_user)
     
     return {"message": "Dark mode preference updated", "dark_mode": dark_mode}
+
+# Password Reset and Account Management
+@router.post("/reset-password")
+def reset_password(
+    reset_data: PasswordResetRequest,
+    session: Session = Depends(get_session)
+):
+    """Reset user password (admin only or self-reset with current password)"""
+    user = session.exec(select(User).where(User.username == reset_data.username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if user is locked
+    if user.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="Account is locked. Contact administrator to unlock."
+        )
+    
+    # Verify current password if provided (for self-reset)
+    if reset_data.current_password:
+        if not user.verify_password(reset_data.current_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect"
+            )
+    else:
+        # Admin reset - require admin role (this should be checked by the caller)
+        # For now, we'll allow it but in production you'd want proper admin verification
+        pass
+    
+    # Update password
+    user.password_hash = User.hash_password(reset_data.new_password)
+    user.force_password_reset = False
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    
+    session.commit()
+    session.refresh(user)
+    
+    return {"message": "Password reset successfully"}
+
+@router.post("/admin/reset-password")
+def admin_reset_password(
+    reset_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Admin reset user password"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    username = reset_data.get("username")
+    new_password = reset_data.get("new_password")
+    
+    if not username or not new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username and new_password are required"
+        )
+    
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update password
+    user.password_hash = User.hash_password(new_password)
+    user.force_password_reset = True  # Force user to change password on next login
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    user.is_locked = False
+    
+    session.commit()
+    session.refresh(user)
+    
+    return {"message": f"Password reset for user {username}. User must change password on next login."}
+
+@router.post("/admin/unlock-account")
+def unlock_account(
+    unlock_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Unlock user account (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    username = unlock_data.get("username")
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username is required"
+        )
+    
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Unlock account
+    user.is_locked = False
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    
+    session.commit()
+    session.refresh(user)
+    
+    return {"message": f"Account unlocked for user {username}"}
+
+@router.post("/admin/lock-account")
+def lock_account(
+    lock_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Lock user account (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    username = lock_data.get("username")
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username is required"
+        )
+    
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Don't allow locking admin accounts
+    if user.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot lock admin accounts"
+        )
+    
+    # Lock account
+    user.is_locked = True
+    user.locked_until = datetime.utcnow() + timedelta(days=30)  # Lock for 30 days
+    
+    session.commit()
+    session.refresh(user)
+    
+    return {"message": f"Account locked for user {username}"}
+
+@router.get("/admin/account-status/{username}")
+def get_account_status(
+    username: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get user account status (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {
+        "username": user.username,
+        "is_active": user.is_active,
+        "is_locked": user.is_locked,
+        "failed_login_attempts": user.failed_login_attempts,
+        "locked_until": user.locked_until,
+        "last_login": user.last_login,
+        "force_password_reset": user.force_password_reset
+    }

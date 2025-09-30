@@ -16,7 +16,7 @@ backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 from database import engine, get_session
-from models import SQLModel, Client, Service, Schedule, Employee, User, UserRole
+from models import SQLModel, Client, Service, Schedule, User, UserRole
 import bcrypt
 
 def clean_string(value):
@@ -355,18 +355,18 @@ def import_appointments_from_csv(file_path, session):
                 
                 # First try to find by username in the User table
                 user = session.query(User).filter(User.username == 'tpin').first()
-                if user and user.employee:
-                    employee = user.employee
+                if user:
+                    employee = user
                     print(f"✅ Found Tameshia Pinto (tpin) - {employee.first_name} {employee.last_name}")
                 else:
                     # Fallback: try to find by name
-                    employee = session.query(Employee).filter(
-                        (Employee.first_name == 'Tameshia') & (Employee.last_name == 'Pinto')
-                    ).first()
+                    employee = session.exec(select(User).where(
+                        (User.first_name == 'Tameshia') & (User.last_name == 'Pinto')
+                    )).first()
                     
                     if not employee:
                         # Last resort: use first available employee
-                        employee = session.query(Employee).first()
+                        employee = session.exec(select(User).where(User.role != UserRole.ADMIN)).first()
                         if not employee:
                             print(f"⚠️  No employees found, skipping appointment...")
                             continue
@@ -451,60 +451,41 @@ def import_appointments_from_csv(file_path, session):
         return 0
 
 def ensure_tameshia_pinto_exists(session):
-    """Ensure Tameshia Pinto exists as an employee and user"""
+    """Ensure Tameshia Pinto exists as a User (no separate Employee model)."""
     print("🔍 Checking for Tameshia Pinto...")
-    
-    # Check if user exists
+
+    # Prefer username 'tpin' if present; otherwise create a standard user record
     user = session.query(User).filter(User.username == 'tpin').first()
     if user:
-        print(f"✅ User 'tpin' already exists")
-        if user.employee:
-            print(f"✅ Tameshia Pinto employee record already exists")
-            return user.employee
-        else:
-            print("⚠️  User exists but no employee record, creating employee record...")
-    else:
-        print("⚠️  User 'tpin' not found, creating user and employee records...")
-    
-    # Create employee record
+        print("✅ User 'tpin' already exists")
+        return user
+
+    # Fallback: try by name
+    existing_by_name = session.exec(select(User).where(
+        (User.first_name == 'Tameshia') & (User.last_name == 'Pinto')
+    )).first()
+    if existing_by_name:
+        print("✅ Found existing user by name: Tameshia Pinto")
+        return existing_by_name
+
     from datetime import datetime
-    employee = Employee(
+    new_user = User(
+        username="tpin",
+        email="tameshia@example.com",
+        password_hash=User.hash_password("password123"),
         first_name="Tameshia",
         last_name="Pinto",
-        email="tameshia@example.com",  # You can update this
         phone=None,
-        role="stylist",
+        role=UserRole.EMPLOYEE,
         hire_date=datetime.now(),
         is_active=True
     )
-    session.add(employee)
+    session.add(new_user)
     session.commit()
-    session.refresh(employee)
-    
-    # Create user record if it doesn't exist
-    if not user:
-        import bcrypt
-        password_hash = User.hash_password("password123")  # You can change this default password
-        user = User(
-            username="tpin",
-            email="tameshia@example.com",  # You can update this
-            password_hash=password_hash,
-            first_name="Tameshia",
-            last_name="Pinto",
-            role=UserRole.EMPLOYEE
-        )
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-    
-    # Link user to employee
-    employee.user_id = user.id
-    session.add(employee)
-    session.commit()
-    session.refresh(employee)
-    
-    print(f"✅ Created Tameshia Pinto - User ID: {user.id}, Employee ID: {employee.id}")
-    return employee
+    session.refresh(new_user)
+
+    print(f"✅ Created Tameshia Pinto - User ID: {new_user.id}")
+    return new_user
 
 def import_data_from_csv_files(clients_file="clients.csv", services_file="services.csv", appointments_file="appointments.csv"):
     """Main function to import all data from separate CSV files"""

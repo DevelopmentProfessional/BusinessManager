@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import useStore from '../store/useStore';
+import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
 import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
 import Modal from '../components/Modal';
 import ScheduleForm from '../components/ScheduleForm';
@@ -7,8 +9,19 @@ import PermissionGate from '../components/PermissionGate';
 import useDarkMode from '../store/useDarkMode';
 
 export default function Schedule() {
-  const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments } = useStore();
+  const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments, hasPermission, isAuthenticated } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+
+  // Use the permission refresh hook
+  usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('schedule', 'read') && 
+      !hasPermission('schedule', 'write') && 
+      !hasPermission('schedule', 'delete') && 
+      !hasPermission('schedule', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('month');
@@ -19,29 +32,52 @@ export default function Schedule() {
 
   useEffect(() => {
     const loadData = async () => {
-      const clientsResponse = await clientsAPI.getAll();
-      if (clientsResponse?.data) {
-        setClients(clientsResponse.data);
+      // Check if user is authenticated before making API calls
+      if (!isAuthenticated()) {
+        console.error('User not authenticated - skipping data load');
+        return;
       }
       
-      const servicesResponse = await servicesAPI.getAll();
-      if (servicesResponse?.data) {
-        setServices(servicesResponse.data);
-      }
-      
-      const employeesResponse = await employeesAPI.getAll();
-      if (employeesResponse?.data) {
-        setEmployees(employeesResponse.data);
-      }
-      
-      const scheduleResponse = await scheduleAPI.getAll();
-      if (scheduleResponse?.data) {
-        setAppointments(scheduleResponse.data);
+      try {
+        const clientsResponse = await clientsAPI.getAll();
+        if (clientsResponse?.data) {
+          setClients(clientsResponse.data);
+        }
+        
+        const servicesResponse = await servicesAPI.getAll();
+        if (servicesResponse?.data) {
+          setServices(servicesResponse.data);
+        }
+        
+        // Load employees from schedule endpoint to get permission-filtered list
+        const employeesResponse = await scheduleAPI.getAvailableEmployees();
+        if (employeesResponse?.data) {
+          // Transform the data to match the expected format
+          const transformedEmployees = employeesResponse.data.map(emp => ({
+            id: emp.id,
+            first_name: emp.name.split(' ')[0] || '',
+            last_name: emp.name.split(' ').slice(1).join(' ') || '',
+            role: emp.role || 'employee'
+          }));
+          setEmployees(transformedEmployees);
+        }
+        
+        const scheduleResponse = await scheduleAPI.getAll();
+        if (scheduleResponse?.data) {
+          setAppointments(scheduleResponse.data);
+        }
+      } catch (error) {
+        console.error('Error loading schedule data:', error);
+        // If it's an authentication error, the user needs to log in
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.error('Authentication required - redirecting to login');
+          // The PermissionGate will handle the redirect
+        }
       }
     };
 
     loadData();
-  }, [setClients, setServices, setEmployees]);
+  }, [setClients, setServices, setEmployees, isAuthenticated]);
 
   // Get calendar data based on current view
   const getCalendarDays = () => {
@@ -192,24 +228,10 @@ export default function Schedule() {
   };
 
   const getAppointmentsForDate = (date) => {
-    console.log(`Looking for appointments on ${date.toDateString()}`);
-    console.log('All appointments:', appointments);
-    
     const appointmentsForDate = appointments.filter(appointment => {
       const appointmentDate = new Date(appointment.appointment_date);
-      const matches = appointmentDate.toDateString() === date.toDateString();
-      if (matches) {
-        console.log(`Match found: ${appointmentDate.toDateString()} === ${date.toDateString()}`);
-      }
-      return matches;
+      return appointmentDate.toDateString() === date.toDateString();
     });
-    
-    // Debug logging
-    if (appointmentsForDate.length > 0) {
-      console.log(`Found ${appointmentsForDate.length} appointments for ${date.toDateString()}:`, appointmentsForDate);
-    } else {
-      console.log(`No appointments found for ${date.toDateString()}`);
-    }
     
     return appointmentsForDate;
   };
@@ -468,11 +490,14 @@ export default function Schedule() {
             >
               Day
             </button>
-          </div>
-          
-           <div className="d-flex gap-1 navigation-buttons">
-             
-                         <button
+<button
+              type="button"
+              onClick={() => setCurrentDate(new Date())}
+              className="btn btn-outline-secondary btn-sm"
+            >
+              Today
+            </button>
+               <button
               type="button"
               onClick={() => {
                 const newDate = new Date(currentDate);
@@ -487,15 +512,9 @@ export default function Schedule() {
               }}
               className="btn btn-outline-secondary btn-sm"
             >
-              Previous
+             ◀️
             </button>
-            <button
-              type="button"
-              onClick={() => setCurrentDate(new Date())}
-              className="btn btn-outline-secondary btn-sm"
-            >
-              Today
-            </button>
+            
             <button
               type="button"
               onClick={async () => {
@@ -506,8 +525,7 @@ export default function Schedule() {
               }}
               className="btn btn-outline-secondary btn-sm"
             >
-              Refresh
-            </button>
+🔄            </button>
             <button
               type="button"
               onClick={() => {
@@ -523,9 +541,13 @@ export default function Schedule() {
               }}
               className="btn btn-outline-secondary btn-sm"
             >
-              Next
+             ▶️
             </button>
+
+
+
           </div>
+           
         </div>
 
         <Modal isOpen={isModalOpen} onClose={closeModal}>

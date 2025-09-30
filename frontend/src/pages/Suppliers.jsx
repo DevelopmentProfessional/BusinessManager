@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../store/useStore';
 import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
@@ -17,6 +18,14 @@ export default function Suppliers() {
 
   // Use the permission refresh hook
   usePermissionRefresh();
+
+  // Check permissions at page level
+  if (!hasPermission('suppliers', 'read') && 
+      !hasPermission('suppliers', 'write') && 
+      !hasPermission('suppliers', 'delete') && 
+      !hasPermission('suppliers', 'admin')) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const [suppliers, setSuppliers] = useState([]);
   const [editingSupplier, setEditingSupplier] = useState(null);

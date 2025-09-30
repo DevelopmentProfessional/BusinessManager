@@ -28,7 +28,6 @@ const allNavigation = [
   { name: 'Suppliers', href: '/suppliers', icon: TruckIcon, permission: 'suppliers:read' },
   { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
   { name: 'Attendance', href: '/attendance', icon: ClockIcon, permission: 'attendance:read' },
-  { name: 'Admin', href: '/admin', icon: Cog6ToothIcon, permission: 'admin:admin' },
 ];
 
 function classNames(...classes) {
