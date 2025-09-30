@@ -147,18 +147,44 @@ async def get_available_employees(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get list of employees available for scheduling based on user permissions"""
+    """Get list of employees available for scheduling based on user permissions.
+
+    Dynamically returns the correct identifier based on schedule.employee_id FK target:
+    - If FK -> user.id, "id" is user.id
+    - If FK -> employee.id, "id" is employee.id (with name from joined user)
+    """
     # Get user permissions
     permissions = get_user_permissions_list(current_user, session)
-    
+
+    # Determine FK target for schedule.employee_id
+    fk_target = _detect_schedule_employee_fk_target(session)
+
     # Check permissions for employee dropdown access
     has_write_all = any(perm == "schedule:write_all" for perm in permissions)  # Legacy support
     has_view_all = any(perm == "schedule:view_all" for perm in permissions)    # New permission
     has_admin = any(perm == "schedule:admin" for perm in permissions)
     is_admin = current_user.role == UserRole.ADMIN
-    
-    # Admin or users with write_all/view_all/admin permissions can see all employees
-    if is_admin or has_write_all or has_view_all or has_admin:
+
+    # Helper to list all employees according to FK target
+    def list_all():
+        if fk_target == "employee":
+            try:
+                rows = session.exec(text(
+                    'SELECT e.id, u.first_name, u.last_name, u.is_active '\
+                    'FROM employee e JOIN "user" u ON u.id = e.user_id'
+                )).all()
+                return [
+                    {
+                        "id": str(row[0]),
+                        "name": f"{row[1]} {row[2]}",
+                        "is_active": bool(row[3])
+                    }
+                    for row in rows if row[3]
+                ]
+            except Exception as e:
+                print(f"[Schedule] Failed to list employees from legacy table: {e}")
+                # Fallback to users list
+        # Default: fk -> user
         users = session.exec(select(User)).all()
         return [
             {
@@ -168,15 +194,30 @@ async def get_available_employees(
             }
             for user in users if user.is_active
         ]
+
+    if is_admin or has_write_all or has_view_all or has_admin:
+        return list_all()
     else:
         # Users with only basic write permission can only see themselves
-        return [
-            {
-                "id": str(current_user.id),
-                "name": f"{current_user.first_name} {current_user.last_name}",
-                "is_active": current_user.is_active
-            }
-        ]
+        if fk_target == "employee":
+            try:
+                row = session.exec(text(
+                    'SELECT e.id FROM employee e WHERE e.user_id = :uid LIMIT 1'
+                ), {"uid": str(current_user.id)}).first()
+                if row and row[0]:
+                    return [{
+                        "id": str(row[0]),
+                        "name": f"{current_user.first_name} {current_user.last_name}",
+                        "is_active": current_user.is_active
+                    }]
+            except Exception as e:
+                print(f"[Schedule] Self list legacy mapping failed: {e}")
+        # Fallback: return user id
+        return [{
+            "id": str(current_user.id),
+            "name": f"{current_user.first_name} {current_user.last_name}",
+            "is_active": current_user.is_active
+        }]
 
 @router.post("/schedule", response_model=ScheduleRead)
 async def create_appointment(
@@ -331,7 +372,7 @@ async def update_appointment(
             if appointment.employee_id != current_user.id:
                 raise HTTPException(status_code=403, detail="Can only edit your own appointments")
         
-        # Handle type conversion for known fields
+        # Handle type conversion and legacy FK bridge for known fields
         for key, value in appointment_data.items():
             if hasattr(appointment, key):
                 # Convert datetime string -> datetime
@@ -353,6 +394,25 @@ async def update_appointment(
                 if key == "employee_id" and has_write and not has_write_all and not has_view_all and not has_admin and not is_admin:
                     if value != current_user.id:
                         raise HTTPException(status_code=403, detail="Cannot schedule appointments for other employees")
+
+                # Bridge user_id -> employee.id if DB expects employee
+                if key == "employee_id":
+                    fk_target = _detect_schedule_employee_fk_target(session)
+                    if fk_target == "employee":
+                        try:
+                            row = session.exec(text(
+                                'SELECT id FROM employee WHERE user_id = :uid LIMIT 1'
+                            ), {"uid": str(value)}).first()
+                            if row and row[0]:
+                                from uuid import UUID as _UUID
+                                value = _UUID(row[0]) if isinstance(row[0], str) else row[0]
+                            else:
+                                raise HTTPException(status_code=422, detail="Invalid employee_id: no matching legacy mapping found")
+                        except HTTPException:
+                            raise
+                        except Exception as e:
+                            print(f"[Schedule] Update bridge user->employee failed: {e}")
+                            raise HTTPException(status_code=422, detail="Invalid employee_id or legacy mapping missing")
                 
                 setattr(appointment, key, value)
         
