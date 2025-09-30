@@ -615,6 +615,77 @@ def create_user_permission(
     print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Returning result: {result}")
     return result
 
+# Convenience endpoint: allow creating a permission with user_id in the body instead of the URL
+@router.post("/permissions", response_model=UserPermissionRead)
+def create_user_permission_with_body(
+    permission_data: UserPermissionCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Create user permission (admin only) with user_id provided in the body.
+    This complements POST /auth/users/{user_id}/permissions for clients that send payload-only data.
+    """
+    # Validate/normalize user_id
+    if not getattr(permission_data, "user_id", None):
+        raise HTTPException(status_code=400, detail="user_id is required in body for this endpoint")
+    try:
+        body_user_id = UUID(str(permission_data.user_id))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid user_id format; must be a UUID")
+
+    # Reuse the same logic as the path-based endpoint by inlining the checks
+    # EMERGENCY: Validate permission type with auto-conversion
+    valid_permissions = [p.value for p in PermissionType]
+    original_permission = permission_data.permission
+
+    if permission_data.permission == "write_all":
+        permission_data.permission = "view_all"
+        print(f"🚨 EMERGENCY AUTO-CONVERT: write_all → view_all")
+    elif permission_data.permission == "read" and "read_all" in valid_permissions:
+        permission_data.permission = "read_all"
+        print(f"🚨 EMERGENCY AUTO-CONVERT: read → read_all")
+
+    try:
+        perm_type = PermissionType(permission_data.permission)
+        if original_permission != permission_data.permission:
+            print(f"🚨 CONVERTED {original_permission} → {permission_data.permission}")
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
+        )
+
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    user = session.get(User, body_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing_permission = session.exec(
+        select(UserPermission).where(
+            (UserPermission.user_id == body_user_id) &
+            (UserPermission.page == permission_data.page) &
+            (UserPermission.permission == permission_data.permission)
+        )
+    ).first()
+    if existing_permission:
+        raise HTTPException(status_code=400, detail="Permission already exists")
+
+    permission = UserPermission(
+        user_id=body_user_id,
+        page=permission_data.page,
+        permission=permission_data.permission,
+        granted=permission_data.granted
+    )
+    session.add(permission)
+    session.commit()
+    session.refresh(permission)
+    return UserPermissionRead.from_orm(permission)
+
 @router.get("/users/{user_id}/permissions", response_model=List[UserPermissionRead])
 def get_user_permissions(
     user_id: str,

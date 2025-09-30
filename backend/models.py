@@ -515,6 +515,8 @@ class PasswordChangeRequest(SQLModel):
     new_password: str
 
 class UserPermissionCreate(SQLModel):
+    # Optional: allow specifying the target user in the request body as well as in the URL
+    user_id: Optional[Union[UUID, str]] = None
     page: str
     permission: PermissionType
     granted: bool = True
