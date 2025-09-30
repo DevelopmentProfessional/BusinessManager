@@ -1,10 +1,18 @@
 import axios from 'axios';
 
+// Debug: Log configuration for troubleshooting
+console.log('API Configuration Debug:');
+console.log('  VITE_API_URL from env:', import.meta.env.VITE_API_URL);
+console.log('  Window hostname:', window.location.hostname);
+console.log('  Is localhost:', window.location.hostname === 'localhost');
+
 // Sanitize base URL: trim whitespace and trailing slashes to avoid `%20` or double-slash issues
 // Default to relative path for dev (Vite proxy), direct backend URL for production
 const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.hostname === 'localhost' ? '/api/v1' : 'https://lavish-beauty-api.onrender.com/api/v1');
 const API_BASE_URL = RAW_API_BASE_URL.trim().replace(/\/+$/, '');
+
+console.log('  Final API_BASE_URL:', API_BASE_URL);
 
 // Simple cache to prevent duplicate API calls
 const apiCache = new Map();
