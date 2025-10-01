@@ -275,19 +275,19 @@ export default function Employees() {
     }
     
     try {
-      const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'view_all');
+      const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'write');
       
       if (existingPermission) {
         await api.put(`/auth/users/${selectedUser.id}/permissions/${existingPermission.id}`, { granted });
-        setSuccess(granted ? 'Schedule view all permission granted!' : 'Schedule view all permission revoked!');
+        setSuccess(granted ? 'Schedule write permission granted!' : 'Schedule write permission revoked!');
       } else {
         await api.post(`/auth/users/${selectedUser.id}/permissions`, {
           user_id: selectedUser.id, // Add user_id to payload as backup
           page: 'schedule',
-          permission: 'view_all',
+          permission: 'write',
           granted
         });
-        setSuccess(granted ? 'Schedule view all permission granted!' : 'Schedule view all permission revoked!');
+        setSuccess(granted ? 'Schedule write permission granted!' : 'Schedule write permission revoked!');
       }
       
       fetchUserPermissions(selectedUser.id);
@@ -306,19 +306,19 @@ export default function Employees() {
     }
     
     try {
-      const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'view_all');
+      const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'write');
       
       if (existingPermission) {
         await employeesAPI.updateUserPermission(selectedUser.id, existingPermission.id, { granted });
-        setSuccess(granted ? 'Schedule write all permission granted!' : 'Schedule write all permission revoked!');
+        setSuccess(granted ? 'Schedule write permission granted!' : 'Schedule write permission revoked!');
       } else {
         const response = await employeesAPI.createUserPermission(selectedUser.id, {
           user_id: selectedUser.id, // Add user_id to payload as backup
           page: 'schedule',
-          permission: 'view_all',
+          permission: 'write',
           granted
         });
-        setSuccess(granted ? 'Schedule write all permission granted!' : 'Schedule write all permission revoked!');
+        setSuccess(granted ? 'Schedule write permission granted!' : 'Schedule write permission revoked!');
       }
       
       await fetchUserPermissions(selectedUser.id);
@@ -399,7 +399,7 @@ export default function Employees() {
   };
 
   const pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
-  const permissions = ['read', 'read_all', 'write', 'view_all', 'delete', 'admin'];
+  const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
 
   if (loading) {
@@ -725,7 +725,7 @@ export default function Employees() {
                     <input
                       type="checkbox"
                       id="viewAllSchedules"
-                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'view_all' && p.granted)}
+                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'write' && p.granted)}
                       onChange={(e) => handleScheduleViewAllToggle(e.target.checked)}
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
@@ -742,7 +742,7 @@ export default function Employees() {
                     <input
                       type="checkbox"
                       id="writeAllSchedules"
-                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'view_all' && p.granted)}
+                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'write' && p.granted)}
                       onChange={(e) => handleScheduleWriteAllToggle(e.target.checked)}
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
