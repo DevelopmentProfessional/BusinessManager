@@ -125,10 +125,15 @@ export default function Employees() {
 
   // Permissions Management
   const handleManagePermissions = async (user) => {
-
+    console.log('🔥 MANAGE PERMISSIONS - Opening modal for user:', user);
     
     setSelectedUser(user);
     setPermissionsModalOpen(true);
+    
+    // Add a small delay to ensure state is set
+    setTimeout(() => {
+      console.log('🔥 MANAGE PERMISSIONS - selectedUser after setState:', selectedUser);
+    }, 100);
     
     await fetchUserPermissions(user.id);
   };
@@ -156,22 +161,33 @@ export default function Employees() {
   const handleCreatePermission = async (e) => {
     e.preventDefault();
     
-
+    console.log('🔥 PERMISSION CREATE - selectedUser:', selectedUser);
+    console.log('🔥 PERMISSION CREATE - newPermission:', newPermission);
     
     setError('');
     setSuccess('');
 
+    // Validate selectedUser exists
+    if (!selectedUser || !selectedUser.id) {
+      setError('No user selected for permission creation. Please close and reopen the permissions modal.');
+      return;
+    }
+
     try {
       const createUrl = `/auth/users/${selectedUser.id}/permissions`;
       const permissionData = {
+        user_id: selectedUser.id, // Add user_id to payload as backup
         page: newPermission.page,
         permission: newPermission.permission,
         granted: true
       };
       
+      console.log('🔥 PERMISSION CREATE - URL:', createUrl);
+      console.log('🔥 PERMISSION CREATE - Payload:', permissionData);
+      
       
       const response = await api.post(createUrl, permissionData);
-      
+      console.log('🔥 PERMISSION CREATE - Response:', response.data);
 
       setSuccess('Permission added successfully!');
       setNewPermission({ page: '', permission: '' });
@@ -180,13 +196,15 @@ export default function Employees() {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      
+      console.error('🔥 PERMISSION CREATE ERROR:', err);
+      console.error('🔥 PERMISSION CREATE ERROR Response:', err.response?.data);
       setError(err.response?.data?.detail || 'Failed to create permission');
     }
   };
 
   const handleDeletePermission = async (permissionId) => {
-
+    console.log('🔥 DELETE PERMISSION - selectedUser:', selectedUser);
+    console.log('🔥 DELETE PERMISSION - permissionId:', permissionId);
     
     // Find the specific permission being deleted
     const permissionToDelete = userPermissions.find(p => p.id === permissionId);
@@ -196,11 +214,17 @@ export default function Employees() {
       return;
     }
 
+    if (!selectedUser || !selectedUser.id) {
+      setError('No user selected. Please close and reopen the permissions modal.');
+      return;
+    }
+
     setError('');
     setSuccess('');
     
     try {
       const deleteUrl = `/auth/users/${selectedUser.id}/permissions/${permissionId}`;
+      console.log('🔥 DELETE PERMISSION - URL:', deleteUrl);
       
       const response = await api.delete(deleteUrl);
       
@@ -221,6 +245,14 @@ export default function Employees() {
     setError('');
     setSuccess('');
     
+    console.log('🔥 UPDATE PERMISSION - selectedUser:', selectedUser);
+    console.log('🔥 UPDATE PERMISSION - permissionId:', permissionId, 'granted:', granted);
+    
+    if (!selectedUser || !selectedUser.id) {
+      setError('No user selected. Please close and reopen the permissions modal.');
+      return;
+    }
+    
     try {
       await api.put(`/auth/users/${selectedUser.id}/permissions/${permissionId}`, { granted });
       setSuccess(granted ? 'Permission granted!' : 'Permission denied!');
@@ -235,6 +267,13 @@ export default function Employees() {
     setError('');
     setSuccess('');
     
+    console.log('🔥 SCHEDULE VIEW ALL - selectedUser:', selectedUser);
+    
+    if (!selectedUser || !selectedUser.id) {
+      setError('No user selected. Please close and reopen the permissions modal.');
+      return;
+    }
+    
     try {
       const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'view_all');
       
@@ -243,6 +282,7 @@ export default function Employees() {
         setSuccess(granted ? 'Schedule view all permission granted!' : 'Schedule view all permission revoked!');
       } else {
         await api.post(`/auth/users/${selectedUser.id}/permissions`, {
+          user_id: selectedUser.id, // Add user_id to payload as backup
           page: 'schedule',
           permission: 'view_all',
           granted
@@ -258,6 +298,13 @@ export default function Employees() {
   };
 
   const handleScheduleWriteAllToggle = async (granted) => {
+    console.log('🔥 SCHEDULE WRITE ALL - selectedUser:', selectedUser);
+    
+    if (!selectedUser || !selectedUser.id) {
+      setError('No user selected. Please close and reopen the permissions modal.');
+      return;
+    }
+    
     try {
       const existingPermission = userPermissions.find(p => p.page === 'schedule' && p.permission === 'view_all');
       
@@ -266,6 +313,7 @@ export default function Employees() {
         setSuccess(granted ? 'Schedule write all permission granted!' : 'Schedule write all permission revoked!');
       } else {
         const response = await employeesAPI.createUserPermission(selectedUser.id, {
+          user_id: selectedUser.id, // Add user_id to payload as backup
           page: 'schedule',
           permission: 'view_all',
           granted

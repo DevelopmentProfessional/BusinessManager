@@ -545,24 +545,14 @@ def create_user_permission(
     print(f"🔥 PERMISSION CREATE DEBUG - permission type: {permission_data.permission}")
     print(f"🔥 PERMISSION CREATE DEBUG - valid permission types: {list(PermissionType)}")
     
-    # EMERGENCY: Validate permission type with auto-conversion
+    # Validate permission type (no auto-conversion to avoid enum issues)
     valid_permissions = [p.value for p in PermissionType]
     original_permission = permission_data.permission
     
-    # Auto-convert old permission types to new ones
-    if permission_data.permission == "write_all":
-        permission_data.permission = "view_all"
-        print(f"🚨 EMERGENCY AUTO-CONVERT: write_all → view_all")
-    elif permission_data.permission == "read" and "read_all" in valid_permissions:
-        permission_data.permission = "read_all"
-        print(f"🚨 EMERGENCY AUTO-CONVERT: read → read_all")
-    
     try:
-        # Test if permission type is valid (after conversion)
+        # Test if permission type is valid
         perm_type = PermissionType(permission_data.permission)
         print(f"🔥 PERMISSION CREATE DEBUG - Permission type validation passed: {perm_type}")
-        if original_permission != permission_data.permission:
-            print(f"🚨 CONVERTED {original_permission} → {permission_data.permission}")
     except ValueError as e:
         print(f"🔥 PERMISSION CREATE DEBUG - Invalid permission type: {permission_data.permission}")
         print(f"🔥 PERMISSION CREATE DEBUG - Available types: {valid_permissions}")
@@ -645,21 +635,12 @@ def create_user_permission_with_body(
         raise HTTPException(status_code=400, detail="Invalid user_id format; must be a UUID")
 
     # Reuse the same logic as the path-based endpoint by inlining the checks
-    # EMERGENCY: Validate permission type with auto-conversion
+    # Validate permission type (no auto-conversion to avoid enum issues)
     valid_permissions = [p.value for p in PermissionType]
     original_permission = permission_data.permission
 
-    if permission_data.permission == "write_all":
-        permission_data.permission = "view_all"
-        print(f"🚨 EMERGENCY AUTO-CONVERT: write_all → view_all")
-    elif permission_data.permission == "read" and "read_all" in valid_permissions:
-        permission_data.permission = "read_all"
-        print(f"🚨 EMERGENCY AUTO-CONVERT: read → read_all")
-
     try:
         perm_type = PermissionType(permission_data.permission)
-        if original_permission != permission_data.permission:
-            print(f"🚨 CONVERTED {original_permission} → {permission_data.permission}")
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
