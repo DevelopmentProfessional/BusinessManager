@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { PlusIcon, DocumentIcon, TrashIcon, PencilIcon, CheckIcon, ClockIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { documentsAPI, documentCategoriesAPI, employeesAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
+import Modal from './components/Modal';
+import MobileTable from './components/MobileTable';
+import MobileAddButton from './components/MobileAddButton';
+import PermissionGate from './components/PermissionGate';
 import { renderAsync } from 'docx-preview';
-import OnlyOfficeEditor from '../components/OnlyOfficeEditor';
-import CustomDropdown from '../components/CustomDropdown';
+import OnlyOfficeEditor from './components/OnlyOfficeEditor';
+import CustomDropdown from './components/CustomDropdown';
 
 function DocumentUploadForm({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -101,7 +100,6 @@ export default function Documents() {
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('documents', 'read') && 

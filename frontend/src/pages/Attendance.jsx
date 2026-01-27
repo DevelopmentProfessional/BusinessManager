@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ClockIcon, PlusIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { attendanceAPI, employeesAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import CustomDropdown from '../components/CustomDropdown';
-import ClockInOut from '../components/ClockInOut';
-import PermissionGate from '../components/PermissionGate';
+import Modal from './components/Modal';
+import MobileTable from './components/MobileTable';
+import MobileAddButton from './components/MobileAddButton';
+import CustomDropdown from './components/CustomDropdown';
+import ClockInOut from './components/ClockInOut';
+import PermissionGate from './components/PermissionGate';
 
 function AttendanceForm({ onSubmit, onCancel }) {
   const { employees } = useStore();
@@ -142,7 +141,6 @@ export default function Attendance() {
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('attendance', 'read') && 

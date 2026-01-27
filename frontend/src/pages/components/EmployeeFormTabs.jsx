@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import useDarkMode from '../store/useDarkMode';
+import useDarkMode from '../services/useDarkMode';
 
 export default function EmployeeFormTabs({ employee, onSubmit, onCancel }) {
   const { isDarkMode } = useDarkMode();

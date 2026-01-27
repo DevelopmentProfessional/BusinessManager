@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import useStore from '../store/useStore';
-import useDarkMode from '../store/useDarkMode';
+import useStore from '../services/useStore';
+import useDarkMode from '../services/useDarkMode';
 import api, { attendanceAPI } from '../services/api';
 import { 
   UserIcon, 
@@ -22,7 +22,7 @@ import {
   EyeSlashIcon,
   SunIcon
 } from '@heroicons/react/24/outline';
-import DarkModeToggle from '../components/DarkModeToggle';
+import DarkModeToggle from './components/DarkModeToggle';
 
 const Profile = () => {
   const { user, setUser } = useStore();

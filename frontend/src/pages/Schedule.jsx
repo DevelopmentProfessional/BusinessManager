@@ -1,19 +1,17 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
-import Modal from '../components/Modal';
-import ScheduleForm from '../components/ScheduleForm';
-import PermissionGate from '../components/PermissionGate';
-import useDarkMode from '../store/useDarkMode';
+import Modal from './components/Modal';
+import ScheduleForm from './components/ScheduleForm';
+import PermissionGate from './components/PermissionGate';
+import useDarkMode from '../services/useDarkMode';
 
 export default function Schedule() {
   const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments, hasPermission, isAuthenticated, user } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level (including new permission types)
   if (!hasPermission('schedule', 'read') && 

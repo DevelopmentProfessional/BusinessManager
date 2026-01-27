@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import useStore from '../store/useStore';
+import useStore from '../services/useStore';
 
 /**
  * PermissionGate component for conditional rendering based on permissions

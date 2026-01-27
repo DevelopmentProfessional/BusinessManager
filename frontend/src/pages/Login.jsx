@@ -9,7 +9,7 @@ import {
   CheckCircleIcon,
   ArrowPathIcon 
 } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
+import useStore from '../services/useStore';
 import api from '../services/api';
 
 const Login = () => {

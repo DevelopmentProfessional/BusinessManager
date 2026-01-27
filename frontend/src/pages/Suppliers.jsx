@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { suppliersAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
+import Modal from './components/Modal';
+import MobileTable from './components/MobileTable';
+import MobileAddButton from './components/MobileAddButton';
+import PermissionGate from './components/PermissionGate';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Suppliers() {
@@ -17,7 +16,6 @@ export default function Suppliers() {
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('suppliers', 'read') && 

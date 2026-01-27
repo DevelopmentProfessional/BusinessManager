@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { inventoryAPI, itemsAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import BarcodeScanner from '../components/BarcodeScanner';
-import ItemForm from '../components/ItemForm';
-import PermissionGate from '../components/PermissionGate';
+import Modal from './components/Modal';
+import MobileTable from './components/MobileTable';
+import BarcodeScanner from './components/BarcodeScanner';
+import ItemForm from './components/ItemForm';
+import PermissionGate from './components/PermissionGate';
 
 function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
   const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
@@ -80,7 +79,6 @@ export default function Inventory() {
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('inventory', 'read') && 

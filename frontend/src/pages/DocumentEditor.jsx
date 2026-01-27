@@ -9,8 +9,8 @@ import {
   DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../services/api';
-import OnlyOfficeEditor from '../components/OnlyOfficeEditor';
-import useStore from '../store/useStore';
+import OnlyOfficeEditor from './components/OnlyOfficeEditor';
+import useStore from '../services/useStore';
 
 export default function DocumentEditor() {
   const { documentId } = useParams();

@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI } from '../services/api';
-import Modal from '../components/Modal';
-import EmployeeFormTabs from '../components/EmployeeFormTabs';
-import CustomDropdown from '../components/CustomDropdown';
-import DataImportModal from '../components/DataImportModal';
-import useDarkMode from '../store/useDarkMode';
+import Modal from './components/Modal';
+import EmployeeFormTabs from './components/EmployeeFormTabs';
+import CustomDropdown from './components/CustomDropdown';
+import DataImportModal from './components/DataImportModal';
+import useDarkMode from '../services/useDarkMode';
 
 export default function Employees() {
   const { 
@@ -20,7 +19,6 @@ export default function Employees() {
   const { isDarkMode } = useDarkMode();
   
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);

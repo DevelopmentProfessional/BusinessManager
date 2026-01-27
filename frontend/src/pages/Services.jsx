@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { servicesAPI } from '../services/api';
-import Modal from '../components/Modal';
-import ServiceForm from '../components/ServiceForm';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
+import Modal from './components/Modal';
+import ServiceForm from './components/ServiceForm';
+import MobileTable from './components/MobileTable';
+import MobileAddButton from './components/MobileAddButton';
+import PermissionGate from './components/PermissionGate';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Services() {
@@ -19,7 +18,6 @@ export default function Services() {
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('services', 'read') && 

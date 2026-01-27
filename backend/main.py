@@ -9,14 +9,18 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 # Completely disable ALL SQLAlchemy logging BEFORE any imports
-logging.getLogger("sqlalchemy").disabled = True
-logging.getLogger("sqlalchemy.engine").disabled = True
-logging.getLogger("sqlalchemy.pool").disabled = True
-logging.getLogger("sqlalchemy.dialects").disabled = True
-logging.getLogger("sqlalchemy.orm").disabled = True
-logging.getLogger("sqlalchemy.engine.base.Engine").disabled = True
-logging.getLogger("sqlalchemy.dialects.sqlite").disabled = True
-logging.getLogger("sqlalchemy.pool.impl.QueuePool").disabled = True
+_SQLALCHEMY_LOGGERS_TO_DISABLE = (
+    "sqlalchemy",
+    "sqlalchemy.engine",
+    "sqlalchemy.pool",
+    "sqlalchemy.dialects",
+    "sqlalchemy.orm",
+    "sqlalchemy.engine.base.Engine",
+    "sqlalchemy.dialects.sqlite",
+    "sqlalchemy.pool.impl.QueuePool",
+)
+for _logger_name in _SQLALCHEMY_LOGGERS_TO_DISABLE:
+    logging.getLogger(_logger_name).disabled = True
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,10 +29,10 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
+    from backend.routers import auth, isud
 except Exception:
     # Fallback if executed with CWD=backend and package not resolved
-    from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import  # type: ignore
+    from routers import auth, isud  # type: ignore
 
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):
@@ -85,6 +89,16 @@ class AggressiveCORSMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def _extend_allowed_origins_from_env(allowed_origins: list[str]) -> list[str]:
+    env_origins = os.getenv("ALLOWED_ORIGINS", "")
+    if not env_origins:
+        return allowed_origins
+
+    additional_origins = [origin.strip() for origin in env_origins.split(",") if origin.strip()]
+    allowed_origins.extend(additional_origins)
+    return allowed_origins
+
+
 app = FastAPI(
     title="Business Management API",
     description="A comprehensive business management system API",
@@ -94,22 +108,11 @@ app = FastAPI(
 # Configure CORS with explicit production domains
 allowed_origins = [
     # Local development
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://localhost:5173",
-    "http://localhost:5174", 
-    "http://127.0.0.1:5174",
-    "https://localhost:5174",
-    # Production domains - EXPLICIT
-    "https://lavishbeautyhairandnail.care",
-    "https://www.lavishbeautyhairandnail.care",
+    "http://localhost:5173"
 ]
 
 # Add any additional origins from environment variable
-env_origins = os.getenv("ALLOWED_ORIGINS", "")
-if env_origins:
-    additional_origins = [origin.strip() for origin in env_origins.split(",") if origin.strip()]
-    allowed_origins.extend(additional_origins)
+allowed_origins = _extend_allowed_origins_from_env(allowed_origins)
 
 print(f"🔧 CORS ALLOWED ORIGINS: {allowed_origins}")
 
@@ -158,16 +161,7 @@ async def startup_event():
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
-app.include_router(clients.router, prefix="/api/v1", tags=["clients"])
-app.include_router(inventory.router, prefix="/api/v1", tags=["inventory"])
-app.include_router(suppliers.router, prefix="/api/v1", tags=["suppliers"])
-app.include_router(services.router, prefix="/api/v1", tags=["services"])
-app.include_router(employees.router, prefix="/api/v1", tags=["employees"])
-app.include_router(schedule.router, prefix="/api/v1", tags=["schedule"])
-app.include_router(attendance.router, prefix="/api/v1", tags=["attendance"])
-app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
-app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
-app.include_router(csv_import.router, prefix="/api/v1", tags=["csv-import"])
+app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
 
 
 

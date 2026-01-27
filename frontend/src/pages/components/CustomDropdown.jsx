@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
-import useDarkMode from '../store/useDarkMode';
+import useDarkMode from '../services/useDarkMode';
 
 export default function CustomDropdown({
   value,

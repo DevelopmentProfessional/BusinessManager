@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import useStore from '../store/useStore';
-import useDarkMode from '../store/useDarkMode';
+import useStore from '../services/useStore';
+import useDarkMode from '../services/useDarkMode';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';

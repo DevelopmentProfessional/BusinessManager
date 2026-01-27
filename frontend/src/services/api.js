@@ -305,4 +305,30 @@ export const adminAPI = {
   testAppointments: () => api.get('/admin/test-appointments'),
 };
 
+export const reportsAPI = {
+  getAppointmentsReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/appointments?${queryParams}`);
+  },
+  getRevenueReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/revenue?${queryParams}`);
+  },
+  getServicesReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/services?${queryParams}`);
+  },
+  getClientsReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/clients?${queryParams}`);
+  },
+  getInventoryReport: () => {
+    return api.get('/reports/inventory');
+  },
+  getEmployeesReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/employees?${queryParams}`);
+  },
+};
+
 export default api;

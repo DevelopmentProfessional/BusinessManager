@@ -101,7 +101,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     """Get user permissions as list of strings"""
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
-        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
+        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin']
         all_permissions = ['read', 'write', 'delete', 'admin']
         admin_permissions = []
         for page in all_pages:
