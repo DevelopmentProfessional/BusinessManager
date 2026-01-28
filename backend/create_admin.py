@@ -44,7 +44,7 @@ def create_admin_user():
         # Create admin user with hashed password
         admin_user = User(
             username="admin",
-            email="admin@lavishbeautyhairandnail.care",
+            email="admin@businessmanager.com",
             password_hash=User.hash_password("admin123"),
             first_name="Admin",
             last_name="User",
@@ -61,7 +61,7 @@ def create_admin_user():
         print("SUCCESS: Admin user created successfully!")
         print(f"   Username: admin")
         print(f"   Password: admin123")
-        print(f"   Email: admin@lavishbeautyhairandnail.care")
+        print(f"   Email: admin@businessmanager.com")
         print(f"   Role: {admin_user.role}")
         print(f"   ID: {admin_user.id}")
         

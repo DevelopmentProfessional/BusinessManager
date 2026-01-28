@@ -164,7 +164,7 @@ def init_database():
             
             admin_user = User(
                 username="admin",
-                email="admin@lavishbeautyhairandnail.care",
+                email="admin@businessmanager.com",
                 password_hash=hashed_password.decode('utf-8'),
                 first_name="Admin",
                 last_name="User",
@@ -179,7 +179,7 @@ def init_database():
             print("✅ Admin user created successfully")
             print(f"   Username: admin")
             print(f"   Password: admin123")
-            print(f"   Email: admin@lavishbeautyhairandnail.care")
+            print(f"   Email: admin@businessmanager.com")
         else:
             print("✅ Admin user already exists")
         

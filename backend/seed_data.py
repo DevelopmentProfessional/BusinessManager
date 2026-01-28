@@ -42,7 +42,7 @@ def seed_users():
     users_data = [
         {
             "username": "admin",
-            "email": "admin@lavishscents.com",
+            "email": "admin@businessmanager.com",
             "password": "admin123",
             "first_name": "Sarah",
             "last_name": "Johnson",
@@ -51,7 +51,7 @@ def seed_users():
         },
         {
             "username": "manager1",
-            "email": "manager@lavishscents.com",
+            "email": "manager@businessmanager.com",
             "password": "manager123",
             "first_name": "Michael",
             "last_name": "Chen",
@@ -60,7 +60,7 @@ def seed_users():
         },
         {
             "username": "emily.davis",
-            "email": "emily.davis@lavishscents.com",
+            "email": "emily.davis@businessmanager.com",
             "password": "employee123",
             "first_name": "Emily",
             "last_name": "Davis",
@@ -69,7 +69,7 @@ def seed_users():
         },
         {
             "username": "james.wilson",
-            "email": "james.wilson@lavishscents.com",
+            "email": "james.wilson@businessmanager.com",
             "password": "employee123",
             "first_name": "James",
             "last_name": "Wilson",
@@ -78,7 +78,7 @@ def seed_users():
         },
         {
             "username": "maria.garcia",
-            "email": "maria.garcia@lavishscents.com",
+            "email": "maria.garcia@businessmanager.com",
             "password": "employee123",
             "first_name": "Maria",
             "last_name": "Garcia",
@@ -378,7 +378,7 @@ def seed_attendance(employees):
 
 def main():
     """Main seeding function"""
-    print("🌱 Starting database seeding for Lavish Scents business...")
+    print("🌱 Starting database seeding for Business Manager...")
     
     # Ensure database tables exist
     create_db_and_tables()

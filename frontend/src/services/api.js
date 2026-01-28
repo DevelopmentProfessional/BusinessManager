@@ -18,7 +18,7 @@ const getApiBaseUrl = () => {
   }
   
   // Production uses direct backend URL
-  return 'https://lavish-beauty-api.onrender.com/api/v1';
+  return 'https://businessmanager-reference-api.onrender.com/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
