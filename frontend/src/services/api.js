@@ -1,9 +1,37 @@
 import axios from 'axios';
 
-// API Configuration - Fixed backend URL for production
-const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? '/api/v1'  // Local development uses Vite proxy
-  : 'https://lavish-beauty-api.onrender.com/api/v1';  // Production uses direct backend
+// API Configuration - Determine backend URL based on environment
+const getApiBaseUrl = () => {
+  // Check for explicit environment variable first
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Check if we're in development (localhost or 127.0.0.1)
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname === '';
+  
+  if (isLocalhost) {
+    // Local development uses Vite proxy
+    return '/api/v1';
+  }
+  
+  // Production uses direct backend URL
+  return 'https://lavish-beauty-api.onrender.com/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Log API configuration for debugging (only in development)
+if (import.meta.env.DEV) {
+  console.log('API Configuration:', {
+    hostname: window.location.hostname,
+    protocol: window.location.protocol,
+    API_BASE_URL,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+  });
+}
 
 // Simple cache to prevent duplicate API calls
 const apiCache = new Map();
@@ -11,6 +39,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 second timeout
 });
 
 // Add authentication interceptor
@@ -33,10 +62,50 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Add response interceptor to handle authentication errors
+// Add response interceptor to handle authentication errors and logging
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log successful responses in development
+    if (import.meta.env.DEV) {
+      console.log(`API Success [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
+        status: response.status,
+        dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+      });
+    }
+    return response;
+  },
   (error) => {
+    // Enhanced error logging
+    if (error.response) {
+      // Server responded with error status
+      console.error(`API Error [${error.config?.method?.toUpperCase()}] ${error.config?.url}`, {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        baseURL: error.config?.baseURL,
+      });
+      
+      // Handle 401/403 authentication errors
+      if (error.response.status === 401 || error.response.status === 403) {
+        // Clear auth data and redirect to login
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('API Network Error - No response received:', {
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        message: error.message,
+      });
+    } else {
+      // Something else happened
+      console.error('API Error:', error.message);
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -45,12 +114,19 @@ api.interceptors.response.use(
 const getCachedOrFetch = async (key, fetchFunction) => {
   const cached = apiCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    // Return cached response (should be axios response object with .data property)
     return cached.data;
   }
   
-  const data = await fetchFunction();
-  apiCache.set(key, { data, timestamp: Date.now() });
-  return data;
+  try {
+    const response = await fetchFunction();
+    // Store the full axios response object in cache
+    apiCache.set(key, { data: response, timestamp: Date.now() });
+    return response;
+  } catch (error) {
+    // If there's an error, don't cache it and re-throw
+    throw error;
+  }
 };
 
 // Helper function to clear cache for specific key
@@ -69,19 +145,19 @@ if (typeof window !== 'undefined') {
 
 // API endpoints for all entities
 export const clientsAPI = {
-  getAll: () => getCachedOrFetch('clients', () => api.get('/clients')),
-  getById: (id) => api.get(`/clients/${id}`),
+  getAll: () => getCachedOrFetch('clients', () => api.get('/isud/clients')),
+  getById: (id) => api.get(`/isud/clients/${id}`),
   create: (data) => {
     clearCache('clients');
-    return api.post('/clients', data);
+    return api.post('/isud/clients', data);
   },
   update: (id, data) => {
     clearCache('clients');
-    return api.put(`/clients/${id}`, data);
+    return api.put(`/isud/clients/${id}`, data);
   },
   delete: (id) => {
     clearCache('clients');
-    return api.delete(`/clients/${id}`);
+    return api.delete(`/isud/clients/${id}`);
   },
   uploadCSV: (formData) => {
     clearCache('clients');
@@ -95,48 +171,48 @@ export const clientsAPI = {
 
 // Items API
 export const itemsAPI = {
-  getAll: () => getCachedOrFetch('items', () => api.get('/items')),
-  getById: (id) => api.get(`/items/${id}`),
+  getAll: () => getCachedOrFetch('items', () => api.get('/isud/items')),
+  getById: (id) => api.get(`/isud/items/${id}`),
   create: (data) => {
     clearCache('items');
-    return api.post('/items', data);
+    return api.post('/isud/items', data);
   },
   update: (id, data) => {
     clearCache('items');
-    return api.put(`/items/${id}`, data);
+    return api.put(`/isud/items/${id}`, data);
   },
   delete: (id) => {
     clearCache('items');
-    return api.delete(`/items/${id}`);
+    return api.delete(`/isud/items/${id}`);
   },
 };
 
 export const inventoryAPI = {
-  getAll: () => getCachedOrFetch('inventory', () => api.get('/inventory')),
-  getLowStock: () => getCachedOrFetch('inventory-low-stock', () => api.get('/inventory/low-stock')),
+  getAll: () => getCachedOrFetch('inventory', () => api.get('/isud/inventory')),
+  getLowStock: () => getCachedOrFetch('inventory-low-stock', () => api.get('/isud/inventory/low-stock')),
   update: (itemId, quantity, { min_stock_level, location } = {}) => {
     const body = { item_id: itemId, quantity };
     if (min_stock_level != null) body.min_stock_level = min_stock_level;
     if (location != null) body.location = location;
     clearCache('inventory');
-    return api.post('/inventory', body);
+    return api.post('/isud/inventory', body);
   },
 };
 
 export const servicesAPI = {
-  getAll: () => getCachedOrFetch('services', () => api.get('/services')),
-  getById: (id) => api.get(`/services/${id}`),
+  getAll: () => getCachedOrFetch('services', () => api.get('/isud/services')),
+  getById: (id) => api.get(`/isud/services/${id}`),
   create: (data) => {
     clearCache('services');
-    return api.post('/services', data);
+    return api.post('/isud/services', data);
   },
   update: (id, data) => {
     clearCache('services');
-    return api.put(`/services/${id}`, data);
+    return api.put(`/isud/services/${id}`, data);
   },
   delete: (id) => {
     clearCache('services');
-    return api.delete(`/services/${id}`);
+    return api.delete(`/isud/services/${id}`);
   },
   uploadCSV: (formData) => {
     clearCache('services');
@@ -149,36 +225,36 @@ export const servicesAPI = {
 };
 
 export const suppliersAPI = {
-  getAll: () => getCachedOrFetch('suppliers', () => api.get('/suppliers')),
-  getById: (id) => api.get(`/suppliers/${id}`),
+  getAll: () => getCachedOrFetch('suppliers', () => api.get('/isud/suppliers')),
+  getById: (id) => api.get(`/isud/suppliers/${id}`),
   create: (data) => {
     clearCache('suppliers');
-    return api.post('/suppliers', data);
+    return api.post('/isud/suppliers', data);
   },
   update: (id, data) => {
     clearCache('suppliers');
-    return api.put(`/suppliers/${id}`, data);
+    return api.put(`/isud/suppliers/${id}`, data);
   },
   delete: (id) => {
     clearCache('suppliers');
-    return api.delete(`/suppliers/${id}`);
+    return api.delete(`/isud/suppliers/${id}`);
   },
 };
 
 export const employeesAPI = {
-  getAll: () => getCachedOrFetch('employees', () => api.get('/employees')),
-  getById: (id) => api.get(`/employees/${id}`),
+  getAll: () => getCachedOrFetch('employees', () => api.get('/isud/users')),
+  getById: (id) => api.get(`/isud/users/${id}`),
   create: (data) => {
     clearCache('employees');
-    return api.post('/employees', data);
+    return api.post('/isud/users', data);
   },
   update: (id, data) => {
     clearCache('employees');
-    return api.put(`/employees/${id}`, data);
+    return api.put(`/isud/users/${id}`, data);
   },
   delete: (id) => {
     clearCache('employees');
-    return api.delete(`/employees/${id}`);
+    return api.delete(`/isud/users/${id}`);
   },
   getUserData: (userId) => api.get(`/auth/users/${userId}`),
   getUserPermissions: (userId) => api.get(`/auth/users/${userId}/permissions`),
@@ -197,34 +273,34 @@ export const employeesAPI = {
 };
 
 export const scheduleAPI = {
-  getAll: () => getCachedOrFetch('schedule', () => api.get('/schedule')),
-  getByEmployee: (userId) => api.get(`/schedule/employee/${userId}`),
-  getAvailableEmployees: () => api.get('/schedule/employees'),
+  getAll: () => getCachedOrFetch('schedule', () => api.get('/isud/schedules')),
+  getByEmployee: (userId) => api.get(`/isud/schedules?employee_id=${userId}`),
+  getAvailableEmployees: () => api.get('/isud/users'),
   create: (data) => {
     clearCache('schedule');
-    return api.post('/schedule', data);
+    return api.post('/isud/schedules', data);
   },
   update: (id, data) => {
     clearCache('schedule');
-    return api.put(`/schedule/${id}`, data);
+    return api.put(`/isud/schedules/${id}`, data);
   },
 };
 
 export const attendanceAPI = {
-  getAll: () => getCachedOrFetch('attendance', () => api.get('/attendance')),
-  getByUser: (userId) => api.get(`/attendance/user/${userId}`),
-  getByUserAndDate: (userId, date) => api.get(`/attendance/user/${userId}/date/${date}`),
-  me: () => api.get('/attendance/me'),
-  checkUser: () => api.get('/attendance/check-user'),
-  clockIn: () => api.post('/attendance/clock-in', {}),
-  clockOut: () => api.post('/attendance/clock-out', {}),
+  getAll: () => getCachedOrFetch('attendance', () => api.get('/isud/attendance')),
+  getByUser: (userId) => api.get(`/isud/attendance?employee_id=${userId}`),
+  getByUserAndDate: (userId, date) => api.get(`/isud/attendance?employee_id=${userId}&date=${date}`),
+  me: () => api.get('/auth/attendance/me'),
+  checkUser: () => api.get('/auth/attendance/check-user'),
+  clockIn: () => api.post('/auth/attendance/clock-in', {}),
+  clockOut: () => api.post('/auth/attendance/clock-out', {}),
   create: (data) => {
     clearCache('attendance');
-    return api.post('/attendance', data);
+    return api.post('/isud/attendance', data);
   },
   update: (id, data) => {
     clearCache('attendance');
-    return api.put(`/attendance/${id}`, data);
+    return api.put(`/isud/attendance/${id}`, data);
   },
 };
 

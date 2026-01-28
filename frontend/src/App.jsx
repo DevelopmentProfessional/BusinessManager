@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import Layout from './pages/components/Layout';
 import Login from './pages/Login';
 import Clients from './pages/Clients';
 import Inventory from './pages/Inventory';
@@ -13,6 +13,8 @@ import Documents from './pages/Documents';
 import DocumentEditor from './pages/DocumentEditor';
 import Profile from './pages/Profile';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
 import useDarkMode from './services/useDarkMode';
 
@@ -162,6 +164,15 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Layout>
+              <Settings />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        {/* Catch-all route for any unmatched paths */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

@@ -49,11 +49,20 @@ export default function Suppliers() {
     setLoading(true);
     try {
       const response = await suppliersAPI.getAll();
-      setSuppliers(response.data);
-      clearError();
+      // Handle both direct data and response.data formats
+      const suppliersData = response?.data ?? response;
+      if (Array.isArray(suppliersData)) {
+        setSuppliers(suppliersData);
+        clearError();
+      } else {
+        console.error('Invalid suppliers data format:', suppliersData);
+        setError('Invalid data format received from server');
+        setSuppliers([]);
+      }
     } catch (err) {
       setError('Failed to load suppliers');
-      console.error(err);
+      console.error('Error loading suppliers:', err);
+      setSuppliers([]);
     } finally {
       setLoading(false);
     }

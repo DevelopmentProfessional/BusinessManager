@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import useStore from '../services/useStore';
+import useStore from '../../services/useStore';
 
 /**
  * Debug component to show current user permissions

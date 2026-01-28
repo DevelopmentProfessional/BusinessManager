@@ -55,11 +55,20 @@ export default function Clients() {
     setLoading(true);
     try {
       const response = await clientsAPI.getAll();
-      setClients(response.data);
-      clearError();
+      // Handle both direct data and response.data formats
+      const clientsData = response?.data ?? response;
+      if (Array.isArray(clientsData)) {
+        setClients(clientsData);
+        clearError();
+      } else {
+        console.error('Invalid clients data format:', clientsData);
+        setError('Invalid data format received from server');
+        setClients([]);
+      }
     } catch (err) {
       setError('Failed to load clients');
-      console.error(err);
+      console.error('Error loading clients:', err);
+      setClients([]);
     } finally {
       setLoading(false);
     }

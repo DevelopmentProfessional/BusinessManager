@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { documentsAPI } from '../services/api';
+import { documentsAPI } from '../../services/api';
 
 // Simple utility to load the OnlyOffice script once
 function loadOnlyOfficeScript(onlyofficeUrl) {

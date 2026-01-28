@@ -51,11 +51,20 @@ export default function Services() {
     setLoading(true);
     try {
       const response = await servicesAPI.getAll();
-      setServices(response.data);
-      clearError();
+      // Handle both direct data and response.data formats
+      const servicesData = response?.data ?? response;
+      if (Array.isArray(servicesData)) {
+        setServices(servicesData);
+        clearError();
+      } else {
+        console.error('Invalid services data format:', servicesData);
+        setError('Invalid data format received from server');
+        setServices([]);
+      }
     } catch (err) {
       setError('Failed to load services');
-      console.error(err);
+      console.error('Error loading services:', err);
+      setServices([]);
     } finally {
       setLoading(false);
     }

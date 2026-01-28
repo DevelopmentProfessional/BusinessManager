@@ -12,6 +12,11 @@ class EntityType(str, Enum):
     ASSET = "asset"
 
 
+class ItemType(str, Enum):
+    ITEM = "item"
+    ASSET = "asset"
+
+
 class AttendanceStatus(str, Enum):
     CLOCK_IN = "clock_in"
     CLOCK_OUT = "clock_out"
@@ -193,6 +198,12 @@ class Document(BaseModel, table=True):
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
 
 
+class DocumentCategory(BaseModel, table=True):
+    __tablename__ = "document_category"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+
+
 # Request/Response models for API
 class ClientCreate(SQLModel):
     name: str
@@ -218,27 +229,90 @@ class ItemCreate(SQLModel):
 
 
 
-# EmployeeCreate removed - now using UserCreate
-    appointment_date: Union[datetime, str]
-    clock_out: Optional[datetime] = None
-    category_id: Optional[UUID] = None
-# Document Category model
-    __tablename__ = "document_assignment"
-class DocumentHistory(BaseModel, table=True):
-    note: Optional[str] = Field(default=None)
-    user_id: UUID
-    user_id: UUID
-    note: Optional[str] = None
-    description: Optional[str] = None
-    description: Optional[str] = None
-    description: Optional[str] = None
+class UserCreate(SQLModel):
+    username: str
+    email: Optional[str] = None
+    password: str
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
+
+
+class UserUpdate(SQLModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[UserRole] = None
+    is_active: Optional[bool] = None
+    is_locked: Optional[bool] = None
     force_password_reset: Optional[bool] = None
-    admin_admin: Optional[bool] = None
-    remember_me: bool = False
-    permissions: List[str]
-    new_password: str
-    new_password: str
-    granted: bool = True
-    granted: Optional[bool] = None
+
+
+class UserRead(SQLModel):
+    id: UUID
+    username: str
+    email: Optional[str] = None
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    role: UserRole
+    hire_date: datetime
+    is_active: bool
+    is_locked: bool
+    force_password_reset: bool
+    last_login: Optional[datetime] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class UserPermissionCreate(SQLModel):
+    user_id: Optional[UUID] = None
+    page: str
+    permission: str
+    granted: bool = True
+
+
+class UserPermissionUpdate(SQLModel):
+    page: Optional[str] = None
+    permission: Optional[str] = None
+    granted: Optional[bool] = None
+
+
+class UserPermissionRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    page: str
+    permission: PermissionType
+    granted: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LoginRequest(SQLModel):
+    username: str
+    password: str
+    remember_me: bool = False
+
+
+class LoginResponse(SQLModel):
+    access_token: str
+    user: UserRead
+    permissions: List[str]
+
+
+class PasswordResetRequest(SQLModel):
+    username: str
+    new_password: str
+
+
+class PasswordChangeRequest(SQLModel):
+    current_password: str
+    new_password: str

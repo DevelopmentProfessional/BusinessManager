@@ -103,12 +103,30 @@ export default function Inventory() {
         itemsAPI.getAll()
       ]);
 
-      setInventory(inventoryRes.data);
-      setItems(itemsRes.data);
+      // Handle both direct data and response.data formats
+      const inventoryData = inventoryRes?.data ?? inventoryRes;
+      const itemsData = itemsRes?.data ?? itemsRes;
+
+      if (Array.isArray(inventoryData)) {
+        setInventory(inventoryData);
+      } else {
+        console.error('Invalid inventory data format:', inventoryData);
+        setInventory([]);
+      }
+
+      if (Array.isArray(itemsData)) {
+        setItems(itemsData);
+      } else {
+        console.error('Invalid items data format:', itemsData);
+        setItems([]);
+      }
+
       clearError();
     } catch (err) {
       setError('Failed to load inventory data');
-      console.error(err);
+      console.error('Error loading inventory:', err);
+      setInventory([]);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -202,33 +220,9 @@ export default function Inventory() {
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
-          <PermissionGate page="inventory" permission="write">
-            <button
-              type="button"
-              onClick={handleCreateItem}
-              className="btn-primary inline-flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Item
-            </button>
-          </PermissionGate>
-          <PermissionGate page="inventory" permission="write">
-            <button
-              type="button"
-              onClick={handleOpenScanner}
-              className="btn-secondary inline-flex items-center"
-            >
-              <CameraIcon className="h-5 w-5 mr-2" />
-              Scan
-            </button>
-          </PermissionGate>
-        </div>
+    <div className="h-full flex flex-col">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
       </div>
 
       {error && (
@@ -250,7 +244,7 @@ export default function Inventory() {
       )}
 
       {/* Mobile view */}
-      <div className="mt-6 md:hidden">
+      <div className="mt-6 md:hidden flex-1">
         <MobileTable
           data={inventory}
           columns={[
@@ -265,11 +259,10 @@ export default function Inventory() {
           editPermission={{ page: 'inventory', permission: 'write' }}
           emptyMessage="No inventory items found"
         />
-        {/* No primary add action on Inventory; updates are per-row */}
       </div>
 
       {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
+      <div className="mt-8 flow-root hidden md:block flex-1">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
@@ -350,6 +343,50 @@ export default function Inventory() {
           </div>
         </div>
       </div>
+
+      {/* Action Buttons - Bottom Center (Mobile) */}
+      <PermissionGate page="inventory" permission="write">
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30 flex gap-2 md:hidden">
+          <button
+            type="button"
+            onClick={handleCreateItem}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 transition-all font-medium text-sm"
+          >
+            <PlusIcon className="h-5 w-5" />
+            Add Item
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenScanner}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 transition-all font-medium text-sm"
+          >
+            <CameraIcon className="h-5 w-5" />
+            Scan
+          </button>
+        </div>
+      </PermissionGate>
+
+      {/* Action Buttons - Desktop (Top Right) */}
+      <PermissionGate page="inventory" permission="write">
+        <div className="hidden md:block fixed top-20 right-4 z-30 flex gap-2">
+          <button
+            type="button"
+            onClick={handleCreateItem}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-xl flex items-center gap-2 transition-all font-medium text-sm"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Add Item
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenScanner}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-xl flex items-center gap-2 transition-all font-medium text-sm"
+          >
+            <CameraIcon className="h-4 w-4" />
+            Scan
+          </button>
+        </div>
+      </PermissionGate>
 
       {/* Modal: Inventory Update */}
       <Modal isOpen={isModalOpen && modalContent === 'inventory-form'} onClose={closeModal}>

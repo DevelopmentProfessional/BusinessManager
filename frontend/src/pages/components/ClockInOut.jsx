@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
-import useStore from '../services/useStore';
-import { attendanceAPI } from '../services/api';
+import useStore from '../../services/useStore';
+import { attendanceAPI } from '../../services/api';
 
 export default function ClockInOut() {
   const { user, setError, clearError } = useStore();

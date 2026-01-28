@@ -15,7 +15,7 @@ import {
   TruckIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import useStore from '../services/useStore';
+import useStore from '../../services/useStore';
 import DarkModeToggle from './DarkModeToggle';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
@@ -30,6 +30,7 @@ const allNavigation = [
   { name: 'Suppliers', href: '/suppliers', icon: TruckIcon, permission: 'suppliers:read' },
   { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
   { name: 'Attendance', href: '/attendance', icon: ClockIcon, permission: 'attendance:read' },
+  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 function classNames(...classes) {

@@ -55,19 +55,22 @@ export default function Employees() {
     
     setLoading(true);
     try {
-      
       const response = await employeesAPI.getAll();
       
-      
-      if (response.data && Array.isArray(response.data)) {
-        // Process employee data if needed
+      // Handle both direct data and response.data formats
+      const employeesData = response?.data ?? response;
+      if (Array.isArray(employeesData)) {
+        setEmployees(employeesData);
+        clearError();
+      } else {
+        console.error('Invalid employees data format:', employeesData);
+        setError('Invalid data format received from server');
+        setEmployees([]);
       }
-      
-      setEmployees(response.data);
-      clearError();
     } catch (err) {
-      
       setError('Failed to load employees');
+      console.error('Error loading employees:', err);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }

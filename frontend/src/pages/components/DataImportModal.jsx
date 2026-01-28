@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { adminAPI } from '../services/api';
+import { adminAPI } from '../../services/api';
 
 export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
   const [files, setFiles] = useState({

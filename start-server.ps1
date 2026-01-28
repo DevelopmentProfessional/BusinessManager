@@ -3,20 +3,29 @@
 
 
 
-# Kill existing Node.js processes (ignore errors if none running)
-try {
-	Get-Process -Name "node" -ErrorAction Stop | Stop-Process -Force
-} catch {}
+$ErrorActionPreference = "Stop"
 
-# Navigate to frontend directory (relative to script location)
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-Set-Location "$scriptDir/frontend"
+Set-Location "$scriptDir"
 
-# Start the development server
-Start-Process powershell -ArgumentList "-NoProfile -Command npm run dev" -NoNewWindow
+$pythonExe = $null
+$pythonArgs = @()
 
-# Wait a moment for server to start
-Start-Sleep -Seconds 3
+if (Test-Path ".\\.venv\\Scripts\\python.exe") {
+	$pythonExe = ".\\.venv\\Scripts\\python.exe"
+} elseif (Get-Command "python" -ErrorAction SilentlyContinue) {
+	$pythonExe = "python"
+} elseif (Get-Command "py" -ErrorAction SilentlyContinue) {
+	$pythonExe = "py"
+	$pythonArgs = @("-3")
+} else {
+	throw "Python not found. Install Python 3 and ensure 'python' (or 'py') is available in PATH."
+}
 
-# Open browser
-Start-Process "http://localhost:5173"
+$port = 8000
+if ($env:PORT) { $port = [int]$env:PORT }
+
+$bindHost = "0.0.0.0"
+if ($env:HOST) { $bindHost = $env:HOST }
+
+& $pythonExe @pythonArgs -m uvicorn backend.main:app --reload --host $bindHost --port $port

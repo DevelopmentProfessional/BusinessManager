@@ -30,9 +30,13 @@ import uvicorn
 
 try:
     from backend.routers import auth, isud
-except Exception:
-    # Fallback if executed with CWD=backend and package not resolved
-    from routers import auth, isud  # type: ignore
+except ModuleNotFoundError as e:
+    # Fallback if executed with CWD=backend and package not resolved.
+    # Only do this when the missing module is the routers package itself.
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud"}:
+        from routers import auth, isud  # type: ignore
+    else:
+        raise
 
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):

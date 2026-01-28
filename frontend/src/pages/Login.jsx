@@ -10,6 +10,7 @@ import {
   ArrowPathIcon 
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
+import useDarkMode from '../services/useDarkMode';
 import api from '../services/api';
 
 const Login = () => {
@@ -32,6 +33,12 @@ const Login = () => {
   
   const navigate = useNavigate();
   const { setUser, setToken, setPermissions } = useStore();
+  const { setDarkMode } = useDarkMode();
+
+  // Set dark mode by default on login page
+  useEffect(() => {
+    setDarkMode(true);
+  }, [setDarkMode]);
 
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
@@ -264,18 +271,18 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-gray-800 dark:bg-gray-800 border border-gray-700 p-8 rounded-2xl shadow-xl">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-100 mb-4">
-            <svg className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-900/50 mb-4">
+            <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m2.25-18h15.75m-18 0l19.5 0m-19.5 0v18m0 0h2.25m15.75-18v18m0 0h2.25" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-3xl font-bold text-white dark:text-white mb-2">
             Business Manager
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-300 dark:text-gray-300">
             Sign in to your account to get started
           </p>
         </div>
@@ -284,24 +291,24 @@ const Login = () => {
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             {/* Success Message */}
             {success && (
-              <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+              <div className="rounded-lg bg-green-900/30 border border-green-700 p-4">
                 <div className="flex">
                   <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <p className="ml-3 text-sm font-medium text-green-800">{success}</p>
+                  <p className="ml-3 text-sm font-medium text-green-300">{success}</p>
                 </div>
               </div>
             )}
 
             {/* Error Message */}
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+              <div className="rounded-lg bg-red-900/30 border border-red-700 p-4">
                 <div className="flex">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
-                  <p className="ml-3 text-sm font-medium text-red-800">{error}</p>
+                  <p className="ml-3 text-sm font-medium text-red-300">{error}</p>
                 </div>
               </div>
             )}
@@ -309,7 +316,7 @@ const Login = () => {
             <div className="space-y-4">
               {/* Username Field */}
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
                   Username
                 </label>
                 <input
@@ -317,21 +324,21 @@ const Login = () => {
                   name="username"
                   type="text"
                   required
-                  className={`w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                    validationErrors.username ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-500 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                    validationErrors.username ? 'border-red-500 bg-red-900/20' : 'border-gray-600'
                   }`}
                   placeholder="Enter your username"
                   value={formData.username}
                   onChange={handleInputChange}
                 />
                 {validationErrors.username && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.username}</p>
+                  <p className="mt-1 text-sm text-red-400">{validationErrors.username}</p>
                 )}
               </div>
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -340,8 +347,8 @@ const Login = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className={`w-full px-4 py-3 pr-12 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                      validationErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    className={`w-full px-4 py-3 pr-12 border rounded-lg shadow-sm placeholder-gray-500 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                      validationErrors.password ? 'border-red-500 bg-red-900/20' : 'border-gray-600'
                     }`}
                     placeholder="Enter your password"
                     value={formData.password}
@@ -350,7 +357,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={togglePasswordVisibility}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300 transition-colors"
                   >
                     {showPassword ? (
                       <EyeSlashIcon className="h-5 w-5" />
@@ -360,7 +367,7 @@ const Login = () => {
                   </button>
                 </div>
                 {validationErrors.password && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+                  <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>
                 )}
               </div>
             </div>
@@ -372,11 +379,11 @@ const Login = () => {
                   id="remember_me"
                   name="remember_me"
                   type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-500 bg-gray-700 rounded"
                   checked={formData.remember_me}
                   onChange={handleInputChange}
                 />
-                <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-200 dark:text-gray-200">
                   Remember me for 30 days
                 </label>
               </div>
@@ -384,7 +391,7 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setShowPasswordReset(true)}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 Forgot password?
               </button>
@@ -412,19 +419,19 @@ const Login = () => {
         ) : (
           <div className="mt-8">
             <div className="mb-6 text-center">
-              <h3 className="text-lg font-medium text-gray-900">Reset Password</h3>
-              <p className="mt-1 text-sm text-gray-600">Enter your username and new password</p>
+              <h3 className="text-lg font-medium text-white dark:text-white">Reset Password</h3>
+              <p className="mt-1 text-sm text-gray-300 dark:text-gray-300">Enter your username and new password</p>
             </div>
             
             <form className="space-y-6" onSubmit={handlePasswordReset}>
               {/* Error Message */}
               {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                <div className="rounded-lg bg-red-900/30 border border-red-700 p-4">
                   <div className="flex">
                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
-                    <p className="ml-3 text-sm font-medium text-red-800">{error}</p>
+                    <p className="ml-3 text-sm font-medium text-red-300">{error}</p>
                   </div>
                 </div>
               )}
@@ -432,7 +439,7 @@ const Login = () => {
               <div className="space-y-4">
                 {/* Username Field */}
                 <div>
-                  <label htmlFor="reset-username" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="reset-username" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
                     Username
                   </label>
                   <input
@@ -440,7 +447,7 @@ const Login = () => {
                     name="username"
                     type="text"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     placeholder="Enter your username"
                     value={resetData.username}
                     onChange={handleResetInputChange}
@@ -449,7 +456,7 @@ const Login = () => {
 
                 {/* New Password Field */}
                 <div>
-                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
                     New Password
                   </label>
                   <input
@@ -457,7 +464,7 @@ const Login = () => {
                     name="new_password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     placeholder="Enter new password (min 6 characters)"
                     value={resetData.new_password}
                     onChange={handleResetInputChange}
@@ -466,7 +473,7 @@ const Login = () => {
 
                 {/* Confirm Password Field */}
                 <div>
-                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
                     Confirm Password
                   </label>
                   <input
@@ -474,7 +481,7 @@ const Login = () => {
                     name="confirm_password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     placeholder="Confirm new password"
                     value={resetData.confirm_password}
                     onChange={handleResetInputChange}
@@ -491,7 +498,7 @@ const Login = () => {
                     setError('');
                     setResetData({ username: '', new_password: '', confirm_password: '' });
                   }}
-                  className="flex-1 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="flex-1 py-3 px-4 border border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                 >
                   Back to Login
                 </button>

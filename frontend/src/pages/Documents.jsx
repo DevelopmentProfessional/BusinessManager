@@ -192,11 +192,20 @@ export default function Documents() {
     setLoading(true);
     try {
       const response = await documentsAPI.getAll();
-      setDocuments(response.data);
-      clearError();
+      // Handle both direct data and response.data formats
+      const documentsData = response?.data ?? response;
+      if (Array.isArray(documentsData)) {
+        setDocuments(documentsData);
+        clearError();
+      } else {
+        console.error('Invalid documents data format:', documentsData);
+        setError('Invalid data format received from server');
+        setDocuments([]);
+      }
     } catch (err) {
       setError('Failed to load documents');
-      console.error(err);
+      console.error('Error loading documents:', err);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }

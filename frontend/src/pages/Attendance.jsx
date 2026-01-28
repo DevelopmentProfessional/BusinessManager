@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ClockIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { attendanceAPI, employeesAPI } from '../services/api';
 import Modal from './components/Modal';
 import MobileTable from './components/MobileTable';
-import MobileAddButton from './components/MobileAddButton';
 import CustomDropdown from './components/CustomDropdown';
-import ClockInOut from './components/ClockInOut';
 import PermissionGate from './components/PermissionGate';
 
 function AttendanceForm({ onSubmit, onCancel }) {
@@ -137,10 +135,13 @@ export default function Attendance() {
     attendanceRecords, setAttendanceRecords, addAttendanceRecord,
     employees, setEmployees,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
+    isModalOpen, modalContent, openModal, closeModal, hasPermission,
+    user
   } = useStore();
 
-  // Use the permission refresh hook
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(null);
+  const [clockActionLoading, setClockActionLoading] = useState(false);
 
   // Check permissions at page level
   if (!hasPermission('attendance', 'read') && 
@@ -152,7 +153,13 @@ export default function Attendance() {
 
   useEffect(() => {
     loadAttendanceData();
+    checkClockStatus();
   }, []);
+
+  // Check clock status whenever attendance records change
+  useEffect(() => {
+    checkClockStatus();
+  }, [attendanceRecords, user]);
 
   const loadAttendanceData = async () => {
     setLoading(true);
@@ -162,14 +169,134 @@ export default function Attendance() {
         employeesAPI.getAll()
       ]);
 
-      setAttendanceRecords(attendanceRes.data);
-      setEmployees(employeesRes.data);
+      // Handle both direct data and response.data formats
+      const attendanceData = attendanceRes?.data ?? attendanceRes;
+      const employeesData = employeesRes?.data ?? employeesRes;
+
+      if (Array.isArray(attendanceData)) {
+        setAttendanceRecords(attendanceData);
+      } else {
+        console.error('Invalid attendance data format:', attendanceData);
+        setAttendanceRecords([]);
+      }
+
+      if (Array.isArray(employeesData)) {
+        setEmployees(employeesData);
+      } else {
+        console.error('Invalid employees data format:', employeesData);
+        setEmployees([]);
+      }
+
       clearError();
     } catch (err) {
       setError('Failed to load attendance data');
-      console.error(err);
+      console.error('Error loading attendance:', err);
+      setAttendanceRecords([]);
+      setEmployees([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkClockStatus = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Check if user has an open attendance record for today
+      const response = await attendanceAPI.checkUser();
+      
+      if (response?.data) {
+        // The checkUser endpoint should return current clock status
+        const isCurrentlyClockedIn = response.data.is_clocked_in || false;
+        setIsClockedIn(isCurrentlyClockedIn);
+        
+        if (isCurrentlyClockedIn && response.data.current_record) {
+          setCurrentRecord(response.data.current_record);
+        } else {
+          setCurrentRecord(null);
+        }
+      } else {
+        // Fallback: check attendance records for today
+        const today = new Date().toISOString().split('T')[0];
+        const meResponse = await attendanceAPI.me();
+        
+        if (meResponse?.data && Array.isArray(meResponse.data)) {
+          const todayRecord = meResponse.data.find(record => {
+            const recordDate = new Date(record.date).toISOString().split('T')[0];
+            return recordDate === today && record.clock_in && !record.clock_out;
+          });
+          
+          if (todayRecord) {
+            setIsClockedIn(true);
+            setCurrentRecord(todayRecord);
+          } else {
+            setIsClockedIn(false);
+            setCurrentRecord(null);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking clock status:', error);
+      // Fallback: try me() endpoint
+      try {
+        const meResponse = await attendanceAPI.me();
+        if (meResponse?.data && Array.isArray(meResponse.data)) {
+          const today = new Date().toISOString().split('T')[0];
+          const todayRecord = meResponse.data.find(record => {
+            const recordDate = new Date(record.date).toISOString().split('T')[0];
+            return recordDate === today && record.clock_in && !record.clock_out;
+          });
+          setIsClockedIn(!!todayRecord);
+          setCurrentRecord(todayRecord || null);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback clock status check failed:', fallbackError);
+        setIsClockedIn(false);
+        setCurrentRecord(null);
+      }
+    }
+  };
+
+  const handleCheckInOut = async () => {
+    if (!user?.id) {
+      setError('You must be logged in to clock in/out');
+      return;
+    }
+
+    if (!hasPermission('attendance', 'write')) {
+      setError('You do not have permission to clock in/out');
+      return;
+    }
+
+    setClockActionLoading(true);
+    clearError();
+
+    try {
+      if (isClockedIn) {
+        // Clock out
+        const clockOutResponse = await attendanceAPI.clockOut();
+        setIsClockedIn(false);
+        setCurrentRecord(null);
+        // Reload attendance data to show updated record
+        await loadAttendanceData();
+        // Refresh clock status
+        await checkClockStatus();
+      } else {
+        // Clock in
+        const clockInResponse = await attendanceAPI.clockIn();
+        setIsClockedIn(true);
+        // Reload attendance data to get the new record
+        await loadAttendanceData();
+        // Refresh clock status to get the new record
+        await checkClockStatus();
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || 
+                          (isClockedIn ? 'Failed to clock out' : 'Failed to clock in');
+      setError(errorMessage);
+      console.error('Clock in/out error:', err);
+    } finally {
+      setClockActionLoading(false);
     }
   };
 
@@ -194,6 +321,7 @@ export default function Attendance() {
   };
 
   const getEmployeeName = (employeeId) => {
+    if (!employeeId) return 'Unknown Employee';
     const employee = employees.find(e => e.id === employeeId);
     return employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown Employee';
   };
@@ -215,28 +343,9 @@ export default function Attendance() {
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <PermissionGate page="attendance" permission="write">
-            <button 
-              type="button" 
-              onClick={handleCreateRecord}
-              className="btn-primary flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Record
-            </button>
-          </PermissionGate>
-        </div>
-      </div>
-
-      {/* Clock In/Out Section */}
-      <div className="mt-6 mb-6">
-        <ClockInOut />
+    <div className="h-full flex flex-col">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Attendance</h1>
       </div>
 
       {error && (
@@ -246,11 +355,11 @@ export default function Attendance() {
       )}
 
       {/* Mobile view */}
-      <div className="mt-6 md:hidden">
+      <div className="mt-6 md:hidden flex-1">
         <MobileTable
           data={attendanceRecords}
           columns={[
-            { key: 'employee', title: 'Employee', render: (_, r) => getEmployeeName(r.employee_id) },
+            { key: 'employee', title: 'Employee', render: (_, r) => getEmployeeName(r.user_id || r.employee_id) },
             { key: 'date', title: 'Date', render: (v, r) => new Date(r.date).toLocaleDateString() },
             { key: 'clock_in', title: 'In', render: (v) => (v ? new Date(v).toLocaleTimeString() : '-') },
             { key: 'clock_out', title: 'Out', render: (v) => (v ? new Date(v).toLocaleTimeString() : '-') },
@@ -259,13 +368,10 @@ export default function Attendance() {
           ]}
           emptyMessage="No attendance records found"
         />
-        <PermissionGate page="attendance" permission="write">
-          <MobileAddButton onClick={handleCreateRecord} label="Add" />
-        </PermissionGate>
       </div>
 
       {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
+      <div className="mt-8 flow-root hidden md:block flex-1">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
@@ -296,7 +402,7 @@ export default function Attendance() {
                   {attendanceRecords.map((record) => (
                     <tr key={record.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {getEmployeeName(record.employee_id)}
+                        {getEmployeeName(record.user_id || record.employee_id)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(record.date).toLocaleDateString()}
@@ -327,6 +433,82 @@ export default function Attendance() {
           </div>
         </div>
       </div>
+
+      {/* Check In/Out Button - Bottom Center (Mobile) */}
+      <PermissionGate page="attendance" permission="write">
+        <button
+          onClick={handleCheckInOut}
+          disabled={clockActionLoading || !user?.id}
+          className={`
+            fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30
+            ${isClockedIn 
+              ? 'bg-red-600 hover:bg-red-700' 
+              : 'bg-green-600 hover:bg-green-700'
+            }
+            text-white
+            px-6 py-3 rounded-full shadow-lg hover:shadow-xl
+            flex items-center gap-2 transition-all
+            font-medium text-sm
+            disabled:opacity-50 disabled:cursor-not-allowed
+            md:hidden
+          `}
+        >
+          {clockActionLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <span>Processing...</span>
+            </>
+          ) : isClockedIn ? (
+            <>
+              <StopIcon className="h-5 w-5" />
+              <span>Check Out</span>
+            </>
+          ) : (
+            <>
+              <PlayIcon className="h-5 w-5" />
+              <span>Check In</span>
+            </>
+          )}
+        </button>
+      </PermissionGate>
+
+      {/* Check In/Out Button - Desktop (Top Right) */}
+      <PermissionGate page="attendance" permission="write">
+        <div className="hidden md:block fixed top-20 right-4 z-30">
+          <button
+            onClick={handleCheckInOut}
+            disabled={clockActionLoading || !user?.id}
+            className={`
+              ${isClockedIn 
+                ? 'bg-red-600 hover:bg-red-700' 
+                : 'bg-green-600 hover:bg-green-700'
+              }
+              text-white
+              px-4 py-2 rounded-lg shadow-lg hover:shadow-xl
+              flex items-center gap-2 transition-all
+              font-medium text-sm
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `}
+          >
+            {clockActionLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Processing...</span>
+              </>
+            ) : isClockedIn ? (
+              <>
+                <StopIcon className="h-4 w-4" />
+                <span>Check Out</span>
+              </>
+            ) : (
+              <>
+                <PlayIcon className="h-4 w-4" />
+                <span>Check In</span>
+              </>
+            )}
+          </button>
+        </div>
+      </PermissionGate>
 
       {/* Modal for Attendance Form */}
       <Modal isOpen={isModalOpen && modalContent === 'attendance-form'} onClose={closeModal}>

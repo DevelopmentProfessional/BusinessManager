@@ -40,31 +40,43 @@ export default function Schedule() {
       
       try {
         const clientsResponse = await clientsAPI.getAll();
-        if (clientsResponse?.data) {
-          setClients(clientsResponse.data);
+        const clientsData = clientsResponse?.data ?? clientsResponse;
+        if (Array.isArray(clientsData)) {
+          setClients(clientsData);
+        } else {
+          console.error('Invalid clients data format:', clientsData);
         }
         
         const servicesResponse = await servicesAPI.getAll();
-        if (servicesResponse?.data) {
-          setServices(servicesResponse.data);
+        const servicesData = servicesResponse?.data ?? servicesResponse;
+        if (Array.isArray(servicesData)) {
+          setServices(servicesData);
+        } else {
+          console.error('Invalid services data format:', servicesData);
         }
         
         // Load employees from schedule endpoint to get permission-filtered list
         const employeesResponse = await scheduleAPI.getAvailableEmployees();
-        if (employeesResponse?.data) {
+        const employeesData = employeesResponse?.data ?? employeesResponse;
+        if (Array.isArray(employeesData)) {
           // Transform the data to match the expected format
-          const transformedEmployees = employeesResponse.data.map(emp => ({
+          const transformedEmployees = employeesData.map(emp => ({
             id: emp.id,
-            first_name: emp.name.split(' ')[0] || '',
-            last_name: emp.name.split(' ').slice(1).join(' ') || '',
+            first_name: emp.name?.split(' ')[0] || '',
+            last_name: emp.name?.split(' ').slice(1).join(' ') || '',
             role: emp.role || 'employee'
           }));
           setEmployees(transformedEmployees);
+        } else {
+          console.error('Invalid employees data format:', employeesData);
         }
         
         const scheduleResponse = await scheduleAPI.getAll();
-        if (scheduleResponse?.data) {
-          setAppointments(scheduleResponse.data);
+        const scheduleData = scheduleResponse?.data ?? scheduleResponse;
+        if (Array.isArray(scheduleData)) {
+          setAppointments(scheduleData);
+        } else {
+          console.error('Invalid schedule data format:', scheduleData);
         }
       } catch (error) {
         console.error('Error loading schedule data:', error);
