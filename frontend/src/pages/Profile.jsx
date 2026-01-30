@@ -180,7 +180,7 @@ const Profile = () => {
               <div className="row g-1">
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
-                    <UserIcon className="h-4 w-4" /> <div className="fw-medium">{user.first_name} {user.last_name}</div>
+                    <UserIcon className="h-4 w-4" /> <div className="fw-medium p-1">{user.first_name} {user.last_name}</div>
                   </div>
                 </div>
                 <div className="col-sm-6">
@@ -192,22 +192,22 @@ const Profile = () => {
                </div>
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
-                    <EnvelopeIcon className="h-4 w-4" /><div className="fw-medium">{user.email || 'Not set'}</div>
+                    <EnvelopeIcon className="h-4 w-4" /><div className="fw-medium p-1">{user.email || 'Not set'}</div>
                   </div>
                 </div>
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
-                    <PhoneIcon className="h-4 w-4" /><div className="fw-medium">{user.phone || 'Not set'}</div>
+                    <PhoneIcon className="h-4 w-4" /><div className="fw-medium p-1">{user.phone || 'Not set'}</div>
                   </div>
                 </div>
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
-                    <CalendarDaysIcon className="h-4 w-4" /><div className="fw-medium">{formatDate(user.hire_date)}</div>
+                    <CalendarDaysIcon className="h-4 w-4" /><div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
                   </div>
                 </div>
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
-                    <ClockIcon className="h-4 w-4" /><div className="fw-medium">{formatDate(user.last_login)}</div>
+                    <ClockIcon className="h-4 w-4" /><div className="fw-medium p-1">{formatDate(user.last_login)}</div>
                   </div>
                 </div>
               </div>
@@ -227,8 +227,8 @@ const Profile = () => {
               <div className="row g-1">
                 <div className="col-6">
                   <div className="card bg-primary bg-opacity-10 border-0">
-                    <div className="card-body text-center py-4">
-                      <CalendarIcon className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <div className="card-body text-center py-1">
+                      <CalendarIcon className="h-8 w-8 text-primary mx-auto mb-1" />
                       <div className="h3 mb-0 text-primary">
                         {loading ? '...' : todayStats.appointments}
                       </div>
