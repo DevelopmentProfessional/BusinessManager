@@ -166,72 +166,49 @@ const Profile = () => {
   return (
     <div className="container-fluid py-1">
       {/* Welcome Section */}
-      <div className="card mb-1">
-        <div className="card-body">w
-          <div className="d-flex align-items-center gap-1">
-            <div className="flex-shrink-0">
-              <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2rem', height: '2rem' }}>
-                <UserIcon className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-            <div className="flex-grow-1">
-              <h1 className="h3 mb-1">{greeting}, {user.first_name}!</h1>
-             </div>
-           
-          </div>
-        </div>
-      </div>
-
+      <div className="card mb-1">  
+            <UserIcon className="h-8 w-8 text-primary" />
+            <h1 className="h3 mb-1">{greeting}, {user.first_name}!</h1>
+      </div> 
+    
       {/* Employee Info & Quick Stats Row */}
       <div className="row g-1 mb-1">
         {/* Employee Information */}
         <div className="col-lg-6">
           <div className="card h-100">        
             <div className="card-body">
-              <div className="row g-3">
+              <div className="row g-1">
                 <div className="col-sm-6">
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-1">
-                    <UserIcon className="h-4 w-4" />
-                    Full Name
+                  <div className="flex wrap mb-1">
+                    <UserIcon className="h-4 w-4" /> <div className="fw-medium">{user.first_name} {user.last_name}</div>
                   </div>
-                  <div className="fw-medium">{user.first_name} {user.last_name}</div>
                 </div>
                 <div className="col-sm-6">
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-1">
-                    <BriefcaseIcon className="h-4 w-4" />
-                    Role
-                  </div>
-                  <span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>
+                  <div className="flex wrap mb-1">
+                    <BriefcaseIcon className="h-4 w-4" /><span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>
                     {user.role || 'Employee'}
                   </span>
+                  </div>
+               </div>
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <EnvelopeIcon className="h-4 w-4" /><div className="fw-medium">{user.email || 'Not set'}</div>
+                  </div>
                 </div>
                 <div className="col-sm-6">
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-1">
-                    <EnvelopeIcon className="h-4 w-4" />
-                    Email
+                  <div className="flex wrap mb-1">
+                    <PhoneIcon className="h-4 w-4" /><div className="fw-medium">{user.phone || 'Not set'}</div>
                   </div>
-                  <div className="fw-medium">{user.email || 'Not set'}</div>
                 </div>
                 <div className="col-sm-6">
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-1">
-                    <PhoneIcon className="h-4 w-4" />
-                    Phone
+                  <div className="flex wrap mb-1">
+                    <CalendarDaysIcon className="h-4 w-4" /><div className="fw-medium">{formatDate(user.hire_date)}</div>
                   </div>
-                  <div className="fw-medium">{user.phone || 'Not set'}</div>
                 </div>
                 <div className="col-sm-6">
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-1">
-                    <CalendarDaysIcon className="h-4 w-4" />
-                    Hire Date
+                  <div className="flex wrap mb-1">
+                    <ClockIcon className="h-4 w-4" /><div className="fw-medium">{formatDate(user.last_login)}</div>
                   </div>
-                  <div className="fw-medium">{formatDate(user.hire_date)}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="d-flex align-items-center gap-2 text-muted small mb-1">
-                    <ClockIcon className="h-4 w-4" />
-                    Last Login
-                  </div>
-                  <div className="fw-medium">{formatDate(user.last_login)}</div>
                 </div>
               </div>
             </div>
@@ -242,9 +219,8 @@ const Profile = () => {
         <div className="col-lg-6">
           <div className="card h-100">
             <div className="card-header bg-transparent">
-              <h2 className="h5 mb-0">
-                <ChartBarIcon className="h-5 w-5 me-2" />
-                Today's Overview
+              <h2 className="flex wraph5 mb-1 gap-1">
+                <ChartBarIcon className="h-5 w-5 me-2" /> Today
               </h2>
             </div>
             <div className="card-body">
@@ -280,47 +256,34 @@ const Profile = () => {
       {/* Personal Settings */}
       <div className="card mb-1">
         <div className="card-header bg-transparent">
-          <h2 className="h5 mb-0">
-            <CogIcon className="h-5 w-5 me-2" />
-            Personal Settings
+          <h2 className="flex wrap h5 mb-1">
+            <CogIcon className="h-5 w-5 me-2" /> Settings
           </h2>
         </div>
-        <div className="card-body">
-          <div className="row g-1">
-            <div className="col-md-1">
-              <div className="d-flex align-items-center justify-content-between p-1 border rounded">
-                <div className="d-flex align-items-center gap-3">
-                  {isDarkMode ? (
-                    <MoonIcon className="h-6 w-6 text-primary" />
-                  ) : (
-                    <SunIcon className="h-6 w-6 text-warning" />
-                  )}                  
-                    <div className="form-check form-switch">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="darkModeSwitch"
-                    checked={isDarkMode}
-                    onChange={toggleDarkMode}
-                    style={{ width: '3rem', height: '1.5rem' }}
-                  />
-                </div>
-                </div>
-               
-              </div>
+        <div className="card-body"> 
+            <div className="d-flex align-items-center gap-1">
+              {isDarkMode 
+              ? (<MoonIcon className="h-6 w-6 text-primary" />) 
+              : (<SunIcon className="h-6 w-6 text-warning" />)}                  
+              <div className="form-check form-switch">                      
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="darkModeSwitch"
+                  checked={isDarkMode}
+                  onChange={toggleDarkMode}
+                  style={{ width: '3rem', height: '1.5rem' }}/>
+              </div> 
             </div>
-           
-          </div>
         </div>
       </div>
 
       {/* Database Environment Switcher */}
       <div className="card mb-4">
         <div className="card-header bg-transparent">
-          <h2 className="h5 mb-0">
-            <CircleStackIcon className="h-5 w-5 me-2" />
-            Database Environment
+          <h2 className="flex wrap h5 mb-1 gap-1">
+            <CircleStackIcon className="h-5 w-5 me-2" /> Database
           </h2>
         </div>
         <div className="card-body">
@@ -339,7 +302,7 @@ const Profile = () => {
             </div>
           )}
 
-          <div className="row g-3">
+          <div className="row g-1">
             {Object.entries(dbEnvironments).map(([key, env]) => (
               <div key={key} className="col-md-4">
                 <div 
