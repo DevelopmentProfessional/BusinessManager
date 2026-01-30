@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI, rolesAPI } from '../services/api';
 import Modal from './components/Modal';
 import EmployeeFormTabs from './components/EmployeeFormTabs';
 import CustomDropdown from './components/CustomDropdown';
 import DataImportModal from './components/DataImportModal';
+import CSVImportButton from './components/CSVImportButton';
+import PermissionGate from './components/PermissionGate';
 import useDarkMode from '../services/useDarkMode';
 
 export default function Employees() {
@@ -159,6 +162,34 @@ export default function Employees() {
   const handleCreate = () => {
     setEditingEmployee(null);
     openModal('employee-form');
+  };
+
+  const handleCSVImportEmployees = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const employeeData = {
+          username: record.username || record.email?.split('@')[0] || `user_${Date.now()}`,
+          email: record.email || '',
+          password: record.password || 'TempPass123!',
+          first_name: record.first_name || record.firstname || '',
+          last_name: record.last_name || record.lastname || '',
+          role: record.role || 'employee',
+        };
+        
+        await employeesAPI.create(employeeData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.first_name || record.email || 'Unknown'} - ${detail}`);
+      }
+    }
+
+    return { success, failed, errors };
   };
 
   const handleEdit = (employee) => {
@@ -495,9 +526,9 @@ export default function Employees() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
+    <div className="h-full flex flex-col min-h-0 overflow-hidden p-6 max-w-7xl mx-auto">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white shadow rounded-lg">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Employee & User Management</h1>
             <div className="flex space-x-2">
@@ -538,7 +569,7 @@ export default function Employees() {
           </div>
         </div>
 
-        <div className="p-6 space-y-8">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-6 space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4">
               <div className="text-sm text-red-700">{error}</div>
@@ -551,14 +582,43 @@ export default function Employees() {
             </div>
           )}
 
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">
-              {hasPermission('employees', 'admin') ? 'Users & Employees' : 'Employees'}
-            </h2>
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900">
+                {hasPermission('employees', 'admin') ? 'Users & Employees' : 'Employees'}
+              </h2>
+              <PermissionGate page="employees" permission="write">
+                <div className="flex items-center gap-2">
+                  <CSVImportButton
+                    entityName="Employees"
+                    onImport={handleCSVImportEmployees}
+                    onComplete={loadEmployees}
+                    requiredFields={['email']}
+                    fieldMapping={{
+                      'first name': 'first_name',
+                      'firstname': 'first_name',
+                      'last name': 'last_name',
+                      'lastname': 'last_name',
+                      'user name': 'username',
+                      'user': 'username',
+                      'email address': 'email',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreate}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add Employee
+                  </button>
+                </div>
+              </PermissionGate>
+            </div>
 
-            <div className="overflow-x-auto">
+            <div className="flex-1 min-h-0 overflow-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>

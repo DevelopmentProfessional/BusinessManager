@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
+import IconButton from './IconButton';
 
 export default function MobileTable({ 
   data = [], 
@@ -79,9 +80,9 @@ export default function MobileTable({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Table content area */}
-      <div className="flex-1 overflow-x-auto">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Table content area - scrolls internally, does not make page scrollable */}
+      <div className="flex-1 min-h-0 overflow-auto">
         {processedData.length > 0 ? (
           <div className="min-w-full">
             {processedData.map((item, index) => (
@@ -96,13 +97,13 @@ export default function MobileTable({
                     permission={deletePermission?.permission}
                     hide={!deletePermission}
                   >
-                    <button
+                    <IconButton
+                      icon={TrashIcon}
+                      label="Delete"
                       onClick={() => onDelete(item)}
-                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
+                      variant="danger"
+                      className="flex-shrink-0 !p-2"
+                    />
                   </PermissionGate>
                 )}
 
@@ -124,13 +125,13 @@ export default function MobileTable({
                     permission={editPermission?.permission}
                     hide={!editPermission}
                   >
-                    <button
+                    <IconButton
+                      icon={PencilIcon}
+                      label="Edit"
                       onClick={() => onEdit(item)}
-                      className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Edit"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
+                      variant="ghost"
+                      className="flex-shrink-0 !p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                    />
                   </PermissionGate>
                 )}
                 {typeof rightActions === 'function' ? rightActions(item) : null}
@@ -140,8 +141,8 @@ export default function MobileTable({
         ) : null}
       </div>
 
-      {/* Table footer controls - Fixed at bottom */}
-      <div className="bg-white border-t border-gray-200 p-4 space-y-3">
+      {/* Table footer controls - fixed at bottom, does not scroll */}
+      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
           {columns.map((column) => (
             <div key={column.key} className="min-w-0">

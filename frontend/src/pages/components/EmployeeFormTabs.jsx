@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import useDarkMode from '../../services/useDarkMode';
-import { rolesAPI } from '../../services/api';
+import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { rolesAPI, isudAPI } from '../../services/api';
+import IconButton from './IconButton';
+import ActionFooter from './ActionFooter';
 
-export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employees = [] }) {
-  const { isDarkMode } = useDarkMode();
+export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employees: employeesProp = [] }) {
   const [activeTab, setActiveTab] = useState('employee');
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [employeesList, setEmployeesList] = useState(employeesProp);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -21,7 +23,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
     role_id: ''
   });
 
-  // Load available roles
+  // Load available roles (independent of page)
   useEffect(() => {
     const loadRoles = async () => {
       setRolesLoading(true);
@@ -39,6 +41,26 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
     };
     loadRoles();
   }, []);
+
+  // Own link to isud DB: use employees prop if provided, otherwise fetch so component works on any page
+  useEffect(() => {
+    if (employeesProp.length > 0) {
+      setEmployeesList(employeesProp);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await isudAPI.employees.getAll();
+        const data = response?.data ?? response;
+        if (!cancelled && Array.isArray(data)) setEmployeesList(data);
+      } catch (err) {
+        if (!cancelled) console.error('EmployeeFormTabs failed to load employees', err);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [employeesProp.length]);
 
   useEffect(() => {
     if (employee) {
@@ -59,7 +81,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
   }, [employee]);
 
   // Filter out current employee from manager options (can't report to self)
-  const managerOptions = employees.filter(e => e.id !== employee?.id);
+  const managerOptions = employeesList.filter(e => e.id !== employee?.id);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -115,8 +137,8 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
   };
 
   return (
-    <div className={`p-4 ${isDarkMode ? 'bg-dark' : 'bg-white'}`}>
-      <h3 className={`mb-4 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
+      <h3 className="mb-4 text-gray-900 dark:text-gray-100">
         {employee ? 'Edit Employee' : 'Add New Employee'}
       </h3>
 
@@ -149,7 +171,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
           <div className="tab-pane">
             <div className="row g-3">
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Username <span className="text-danger">*</span>
                 </label>
                 <input
@@ -164,7 +186,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Password {!employee && <span className="text-danger">*</span>}
                 </label>
                 <input
@@ -179,7 +201,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   First Name <span className="text-danger">*</span>
                 </label>
                 <input
@@ -194,7 +216,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Last Name <span className="text-danger">*</span>
                 </label>
                 <input
@@ -209,7 +231,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Email
                 </label>
                 <input
@@ -223,7 +245,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Phone
                 </label>
                 <input
@@ -237,7 +259,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Role
                 </label>
                 <select
@@ -254,7 +276,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Hire Date
                 </label>
                 <input
@@ -267,7 +289,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
 
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Reports To
                 </label>
                 <select
@@ -286,7 +308,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
 
               <div className="col-md-6">
-                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                <label className={`form-label text-gray-900 dark:text-gray-100`}>
                   Assigned Role
                   <span className="ms-1 text-muted" style={{ fontSize: '0.75rem' }}>(inherits permissions)</span>
                 </label>
@@ -328,7 +350,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
                     className="form-check-input"
                     id="is_active"
                   />
-                  <label className={`form-check-label ${isDarkMode ? 'text-light' : 'text-dark'}`} htmlFor="is_active">
+                  <label className={`form-check-label text-gray-900 dark:text-gray-100`} htmlFor="is_active">
                     Active Employee
                   </label>
                 </div>
@@ -340,7 +362,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
         {/* Permissions Tab */}
         {activeTab === 'permissions' && (
           <div className="tab-pane">
-            <div className={`text-center p-4 ${isDarkMode ? 'text-light' : 'text-muted'}`}>
+            <div className={`text-center p-4 text-gray-600 dark:text-gray-400`}>
               <i className="bi bi-info-circle fs-1 mb-3"></i>
               <p>Permissions are managed after the employee is created.</p>
               <p>Use the "Manage Permissions" button in the employee list to set up permissions.</p>
@@ -348,27 +370,13 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
           </div>
         )}
 
-        {/* Form Actions */}
-        <div className="d-flex justify-content-between mt-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn btn-secondary"
-          >
-            <i className="bi bi-x-circle me-2"></i>
-            Cancel
-          </button>
-          
+        {/* Form Actions - footer, icon only with tooltips */}
+        <ActionFooter className="d-flex justify-content-end gap-2 mt-4">
+          <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
           {activeTab === 'employee' && (
-            <button
-              type="submit"
-              className="btn btn-primary"
-            >
-              <i className="bi bi-check-circle me-2"></i>
-              {employee ? 'Update Employee' : 'Create Employee'}
-            </button>
+            <IconButton icon={CheckIcon} label={employee ? 'Update Employee' : 'Create Employee'} type="submit" variant="primary" />
           )}
-        </div>
+        </ActionFooter>
       </form>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { clientsAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -8,6 +8,9 @@ import ClientForm from './components/ClientForm';
 import MobileTable from './components/MobileTable';
 import MobileAddButton from './components/MobileAddButton';
 import PermissionGate from './components/PermissionGate';
+import IconButton from './components/IconButton';
+import ActionFooter from './components/ActionFooter';
+import CSVImportButton from './components/CSVImportButton';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Clients() {
@@ -144,6 +147,34 @@ export default function Clients() {
     setFilter('clients', 'searchTerm', value);
   };
 
+  const handleCSVImportClients = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const clientData = {
+          name: record.name,
+          email: record.email || '',
+          phone: record.phone || '',
+          address: record.address || '',
+          notes: record.notes || '',
+          membership_tier: record.membership_tier || 'none',
+        };
+        
+        await clientsAPI.create(clientData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
+      }
+    }
+
+    return { success, failed, errors };
+  };
+
   const handleRefresh = () => {
     loadClients();
   };
@@ -195,47 +226,20 @@ export default function Clients() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
+    <div className="h-full flex flex-col min-h-0 overflow-hidden">
+      {/* Header - does not scroll */}
+      <div className="flex-shrink-0 mb-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Clients</h1>
         
-        {/* Search and Add Button Row */}
+        {/* Search */}
         <div className="mt-4">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Search clients by name, email, phone, or address..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="form-control"
-            />
-            <PermissionGate page="clients" permission="write">
-              <div className="input-group-append d-flex">
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="btn btn-outline-secondary"
-                >
-                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh
-                </button>
-                <label className="btn btn-outline-primary cursor-pointer">
-                  <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
-                  {isImporting ? 'Importing...' : 'Import CSV'}
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                    disabled={isImporting}
-                  />
-                </label>
-              </div>
-            </PermissionGate>
-          </div>
+          <input
+            type="text"
+            placeholder="Search clients by name, email, phone, or address..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="form-control"
+          />
         </div>
       </div>
 
@@ -245,13 +249,13 @@ export default function Clients() {
         </div>
       )}
 
-      {/* Mobile Layout */}
-      <div className="md:hidden flex-1 flex flex-col">
-        {/* Client List Area */}
-        <div className={`flex-1 transition-all duration-300 ${selectedClient ? 'flex-shrink-0' : ''}`}>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full">
+      {/* Mobile Layout - fills remaining space, list scrolls inside */}
+      <div className="md:hidden flex-1 flex flex-col min-h-0">
+        {/* Client List Area - scrollable container */}
+        <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ${selectedClient ? 'flex-shrink-0' : ''}`}>
+          <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             {filteredClients.length > 0 ? (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredClients.map((client) => (
                   <div 
                     key={client.id}
@@ -264,7 +268,7 @@ export default function Clients() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 truncate">
                           {client.name}
                         </h3>
                         <p className="text-sm text-gray-500 truncate">
@@ -278,7 +282,9 @@ export default function Clients() {
                               e.stopPropagation();
                               handleDeleteClient(client.id);
                             }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                            aria-label="Delete"
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </button>
@@ -289,7 +295,9 @@ export default function Clients() {
                               e.stopPropagation();
                               handleEditClient(client);
                             }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit"
+                            aria-label="Edit"
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                           >
                             <PencilIcon className="h-4 w-4" />
                           </button>
@@ -311,10 +319,10 @@ export default function Clients() {
 
         {/* Transaction History Panel */}
         {selectedClient && (
-          <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             {/* Selected Client Header */}
             <div className="p-4 border-b border-gray-200 bg-blue-50">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 {selectedClient.name}
               </h3>
               <p className="text-sm text-gray-600">Transaction History</p>
@@ -334,11 +342,48 @@ export default function Clients() {
         )}
       </div>
 
-      {/* Desktop Layout */}
-      <div className="hidden md:block">
-        <div className="bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-          <table className="min-w-full divide-y divide-gray-300">
-            <thead className="bg-gray-50">
+      {/* Desktop Layout - table scrolls inside, page does not */}
+      <div className="hidden md:flex flex-1 flex-col min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 shadow ring-1 ring-black ring-opacity-5 dark:ring-gray-700 md:rounded-lg border border-gray-200 dark:border-gray-700">
+          {/* Desktop Toolbar */}
+          <div className="bg-gray-50 dark:bg-gray-700 px-6 py-3 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-20">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {filteredClients.length} of {clients.length} clients
+              </span>
+              <PermissionGate page="clients" permission="write">
+                <div className="flex items-center gap-2">
+                  <CSVImportButton
+                    entityName="Clients"
+                    onImport={handleCSVImportClients}
+                    onComplete={loadClients}
+                    requiredFields={['name']}
+                    fieldMapping={{
+                      'client name': 'name',
+                      'full name': 'name',
+                      'customer': 'name',
+                      'customer name': 'name',
+                      'email address': 'email',
+                      'phone number': 'phone',
+                      'telephone': 'phone',
+                      'mobile': 'phone',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateClient}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add Client
+                  </button>
+                </div>
+              </PermissionGate>
+            </div>
+          </div>
+
+          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-12 z-10">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Name
@@ -357,10 +402,10 @@ export default function Clients() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredClients.map((client) => (
                 <tr key={client.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {client.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -403,12 +448,23 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* Mobile Add Button */}
+      {/* Page footer: icon-only actions with tooltips - does not scroll */}
+      <ActionFooter className="flex-shrink-0 mt-auto border-0 pt-2">
+        <PermissionGate page="clients" permission="write">
+          <IconButton icon={ArrowPathIcon} label="Refresh" onClick={handleRefresh} variant="secondary" />
+          <label className="cursor-pointer" title={isImporting ? 'Importing...' : 'Import CSV'} aria-label={isImporting ? 'Importing...' : 'Import CSV'}>
+            <span className="inline-flex items-center justify-center rounded-lg p-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50">
+              <ArrowUpTrayIcon className="h-5 w-5" />
+            </span>
+            <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" disabled={isImporting} />
+          </label>
+          <IconButton icon={PlusIcon} label="Add Client" onClick={handleCreateClient} variant="primary" />
+        </PermissionGate>
+      </ActionFooter>
+
+      {/* Mobile Add Button - icon only with tooltip */}
       <PermissionGate page="clients" permission="write">
-        <MobileAddButton 
-          onClick={handleCreateClient}
-          label="Add Client"
-        />
+        <MobileAddButton onClick={handleCreateClient} label="Add Client" />
       </PermissionGate>
 
       {/* Modal for Client Form */}

@@ -297,6 +297,12 @@ const useStore = create((set, get) => ({
   modalContent: null,
   openModal: (content) => set({ isModalOpen: true, modalContent: content }),
   closeModal: () => set({ isModalOpen: false, modalContent: null }),
+
+  // Global Add Client Modal state (can be opened from anywhere in the app)
+  isAddClientModalOpen: false,
+  addClientCallback: null,
+  openAddClientModal: (callback = null) => set({ isAddClientModalOpen: true, addClientCallback: callback }),
+  closeAddClientModal: () => set({ isAddClientModalOpen: false, addClientCallback: null }),
 }));
 
 export default useStore;

@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import IconButton from './IconButton';
+import ActionFooter from './ActionFooter';
 
 const MEMBERSHIP_TIERS = [
   { value: 'none', label: 'None' },
@@ -78,13 +81,13 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {client ? 'Edit Client' : 'Add New Client'}
         </h3>
       </div>
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
           Name *
         </label>
         <input
@@ -103,7 +106,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Email
         </label>
         <input
@@ -118,7 +121,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
       </div>
 
       <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Phone
         </label>
         <input
@@ -133,7 +136,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
       </div>
 
       <div>
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Address
         </label>
         <textarea
@@ -148,7 +151,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
       </div>
 
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Notes
         </label>
         <textarea
@@ -164,11 +167,11 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
 
       {/* Membership Section */}
       <div className="border-t pt-4 mt-4">
-        <h4 className="text-md font-medium text-gray-900 mb-3">Membership</h4>
+        <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Membership</h4>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="membership_tier" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="membership_tier" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Membership Tier
             </label>
             <select
@@ -187,7 +190,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
           </div>
 
           <div>
-            <label htmlFor="membership_points" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="membership_points" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Membership Points
             </label>
             <input
@@ -203,7 +206,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
           </div>
 
           <div>
-            <label htmlFor="membership_since" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="membership_since" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Member Since
             </label>
             <input
@@ -217,7 +220,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
           </div>
 
           <div>
-            <label htmlFor="membership_expires" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="membership_expires" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Membership Expires
             </label>
             <input
@@ -232,21 +235,10 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn-primary"
-        >
-          {client ? 'Update Client' : 'Create Client'}
-        </button>
-      </div>
+      <ActionFooter>
+        <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
+        <IconButton icon={CheckIcon} label={client ? 'Update Client' : 'Create Client'} type="submit" variant="primary" />
+      </ActionFooter>
     </form>
   );
 }

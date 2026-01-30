@@ -2,15 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon, ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { servicesAPI, clientsAPI } from '../services/api';
+import { servicesAPI, clientsAPI, itemsAPI } from '../services/api';
 import Modal from './components/Modal';
 import ServiceForm from './components/ServiceForm';
 import MobileTable from './components/MobileTable';
 import MobileAddButton from './components/MobileAddButton';
 import PermissionGate from './components/PermissionGate';
+import CSVImportButton from './components/CSVImportButton';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export default function Services() {
+export default function Sales() {
   const { 
     services, setServices, addService, updateService, removeService,
     loading, setLoading, error, setError, clearError,
@@ -33,17 +34,19 @@ export default function Services() {
   const navigate = useNavigate();
   
   // POS State
-  const [activeTab, setActiveTab] = useState('services'); // 'services' or 'pos'
+  const [activeTab, setActiveTab] = useState('pos'); // 'pos' or 'services'
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clients, setClientsLocal] = useState([]);
   const [clientSearch, setClientSearch] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [showCheckout, setShowCheckout] = useState(false);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     loadServices();
     loadClients();
+    loadProducts();
   }, []);
 
   const loadClients = async () => {
@@ -56,28 +59,46 @@ export default function Services() {
     }
   };
 
-  // POS Functions
-  const addToCart = (service) => {
-    const existing = cart.find(item => item.id === service.id);
-    if (existing) {
-      setCart(cart.map(item => 
-        item.id === service.id ? { ...item, quantity: item.quantity + 1 } : item
-      ));
-    } else {
-      setCart([...cart, { ...service, quantity: 1 }]);
+  const loadProducts = async () => {
+    try {
+      const response = await itemsAPI.getAll();
+      const data = response?.data ?? response;
+      if (Array.isArray(data)) {
+        // Filter to only include items marked as PRODUCT type
+        const productItems = data.filter(item => 
+          (item.type || '').toUpperCase() === 'PRODUCT'
+        );
+        setProducts(productItems);
+      }
+    } catch (err) {
+      console.error('Failed to load products for POS:', err);
     }
   };
 
-  const removeFromCart = (serviceId) => {
-    setCart(cart.filter(item => item.id !== serviceId));
+  // POS Functions
+  // Use cartKey to distinguish services from products (avoids ID collisions)
+  const addToCart = (item, itemType = 'service') => {
+    const cartKey = `${itemType}-${item.id}`;
+    const existing = cart.find(c => c.cartKey === cartKey);
+    if (existing) {
+      setCart(cart.map(c => 
+        c.cartKey === cartKey ? { ...c, quantity: c.quantity + 1 } : c
+      ));
+    } else {
+      setCart([...cart, { ...item, cartKey, itemType, quantity: 1 }]);
+    }
   };
 
-  const updateCartQuantity = (serviceId, quantity) => {
+  const removeFromCart = (cartKey) => {
+    setCart(cart.filter(item => item.cartKey !== cartKey));
+  };
+
+  const updateCartQuantity = (cartKey, quantity) => {
     if (quantity <= 0) {
-      removeFromCart(serviceId);
+      removeFromCart(cartKey);
     } else {
       setCart(cart.map(item => 
-        item.id === serviceId ? { ...item, quantity } : item
+        item.cartKey === cartKey ? { ...item, quantity } : item
       ));
     }
   };
@@ -188,6 +209,33 @@ export default function Services() {
     event.target.value = '';
   };
 
+  const handleCSVImportServices = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const serviceData = {
+          name: record.name,
+          description: record.description || '',
+          price: parseFloat(record.price) || 0,
+          duration: parseInt(record.duration) || 60,
+          category: record.category || '',
+        };
+        
+        await servicesAPI.create(serviceData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
+      }
+    }
+
+    return { success, failed, errors };
+  };
+
   const handleSubmitService = async (serviceData) => {
     try {
       if (editingService) {
@@ -218,10 +266,10 @@ export default function Services() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-shrink-0 mb-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Services</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
           {/* Tab Switcher */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
@@ -294,14 +342,15 @@ export default function Services() {
       {activeTab === 'pos' && (
         <div className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Services Grid */}
+            {/* Services & Products Grid */}
             <div className="lg:col-span-2">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Services</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {/* Services Section */}
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Services</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                 {services.map(service => (
                   <button
-                    key={service.id}
-                    onClick={() => addToCart(service)}
+                    key={`service-${service.id}`}
+                    onClick={() => addToCart(service, 'service')}
                     className="p-4 bg-white border border-gray-200 rounded-lg hover:border-primary-500 hover:shadow-md transition-all text-left"
                   >
                     <div className="font-medium text-gray-900">{service.name}</div>
@@ -310,6 +359,26 @@ export default function Services() {
                   </button>
                 ))}
               </div>
+
+              {/* Products Section */}
+              {products.length > 0 && (
+                <>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Products</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {products.map(product => (
+                      <button
+                        key={`product-${product.id}`}
+                        onClick={() => addToCart(product, 'product')}
+                        className="p-4 bg-green-50 border border-green-200 rounded-lg hover:border-green-500 hover:shadow-md transition-all text-left"
+                      >
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        <div className="text-green-600 font-bold">${product.price?.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500">{product.sku}</div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Cart */}
@@ -325,16 +394,16 @@ export default function Services() {
                 <>
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {cart.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div key={item.cartKey} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <div className="flex-1">
                           <div className="font-medium text-sm">{item.name}</div>
                           <div className="text-xs text-gray-500">${item.price?.toFixed(2)} each</div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="w-6 h-6 bg-gray-200 rounded text-sm">-</button>
+                          <button onClick={() => updateCartQuantity(item.cartKey, item.quantity - 1)} className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300">-</button>
                           <span className="w-6 text-center text-sm">{item.quantity}</span>
-                          <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="w-6 h-6 bg-gray-200 rounded text-sm">+</button>
-                          <button onClick={() => removeFromCart(item.id)} className="text-red-500 ml-2"><XMarkIcon className="h-4 w-4" /></button>
+                          <button onClick={() => updateCartQuantity(item.cartKey, item.quantity + 1)} className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300">+</button>
+                          <button onClick={() => removeFromCart(item.cartKey)} className="text-red-500 ml-2"><XMarkIcon className="h-4 w-4" /></button>
                         </div>
                       </div>
                     ))}
@@ -419,8 +488,8 @@ export default function Services() {
       {/* Services Tab Content */}
       {activeTab === 'services' && (
         <>
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
+      {/* Mobile view - table scrolls inside */}
+      <div className="mt-4 md:hidden flex-1 min-h-0 flex flex-col">
         <MobileTable
           data={services}
           columns={[
@@ -439,11 +508,46 @@ export default function Services() {
         </PermissionGate>
       </div>
 
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      {/* Desktop table - scrolls inside */}
+      <div className="mt-4 hidden md:flex flex-1 flex-col min-h-0 overflow-auto">
+        <div className="-mx-4 -my-2 sm:-mx-6 lg:-mx-8 flex-1 min-h-0">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+              {/* Desktop Toolbar */}
+              <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    {services.length} services
+                  </span>
+                  <PermissionGate page="services" permission="write">
+                    <div className="flex items-center gap-2">
+                      <CSVImportButton
+                        entityName="Services"
+                        onImport={handleCSVImportServices}
+                        onComplete={loadServices}
+                        requiredFields={['name']}
+                        fieldMapping={{
+                          'service name': 'name',
+                          'service': 'name',
+                          'cost': 'price',
+                          'rate': 'price',
+                          'time': 'duration',
+                          'minutes': 'duration',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateService}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        Add Service
+                      </button>
+                    </div>
+                  </PermissionGate>
+                </div>
+              </div>
+
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>

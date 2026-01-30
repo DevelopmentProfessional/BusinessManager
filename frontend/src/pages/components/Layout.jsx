@@ -25,7 +25,7 @@ const allNavigation = [
   { name: 'Clients', href: '/clients', icon: UserGroupIcon, permission: 'clients:read' },
   { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
   { name: 'Documents', href: '/documents', icon: DocumentIcon, permission: 'documents:read' },
-  { name: 'Services', href: '/services', icon: WrenchScrewdriverIcon, permission: 'services:read' },
+  { name: 'Sales', href: '/sales', icon: WrenchScrewdriverIcon, permission: 'services:read' },
   { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
@@ -69,14 +69,14 @@ export default function Layout({ children }) {
             <DarkModeToggle />
             <h1 className="h6 mb-0 text-body-emphasis">{user?.first_name || 'User'}</h1>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline-danger btn-sm">
+          <button onClick={handleLogout} className="btn btn-outline-danger btn-sm" title="Log out" aria-label="Log out">
             <ArrowRightOnRectangleIcon className="h-4 w-4" />
           </button> 
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-grow-1 d-flex flex-column">
+      {/* Main content - min-h-0 so children can use overflow without making page scroll */}
+      <main className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
         {children}
       </main>
 
@@ -124,6 +124,8 @@ export default function Layout({ children }) {
       {/* Navigation toggle button - Bottom-right circle */}
       <button
         onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
+        title={expandedMenuOpen ? 'Close menu' : 'Open menu'}
+        aria-label={expandedMenuOpen ? 'Close menu' : 'Open menu'}
         className={classNames(
           expandedMenuOpen
             ? 'btn btn-primary'

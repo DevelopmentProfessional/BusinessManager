@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
-import useDarkMode from '../../services/useDarkMode';
+import { isudAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, UserGroupIcon, CalendarDaysIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CalendarDaysIcon, ClockIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
 import CustomDropdown from './CustomDropdown';
+import IconButton from './IconButton';
+import ActionFooter from './ActionFooter';
 
 const APPOINTMENT_TYPES = [
   { value: 'one_time', label: 'One-Time Appointment' },
@@ -21,10 +23,45 @@ const RECURRENCE_OPTIONS = [
 ];
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
-  const { clients, services, employees, closeModal, hasPermission, user } = useStore();
-  const { isDarkMode } = useDarkMode();
+  const { closeModal, hasPermission, user, openAddClientModal } = useStore();
+  const [clients, setClients] = useState([]);
+  const [services, setServices] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [timeError, setTimeError] = useState('');
   const navigate = useNavigate();
+
+  // Own link to isud DB: fetch data so component works on any page
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [clientsRes, servicesRes, employeesRes] = await Promise.all([
+          isudAPI.clients.getAll(),
+          isudAPI.services.getAll(),
+          isudAPI.schedule.getAvailableEmployees(),
+        ]);
+        if (cancelled) return;
+        const clientsData = clientsRes?.data ?? clientsRes;
+        const servicesData = servicesRes?.data ?? servicesRes;
+        const employeesRaw = employeesRes?.data ?? employeesRes;
+        if (Array.isArray(clientsData)) setClients(clientsData);
+        if (Array.isArray(servicesData)) setServices(servicesData);
+        if (Array.isArray(employeesRaw)) {
+          const transformed = employeesRaw.map(emp => ({
+            id: emp.id,
+            first_name: emp.first_name ?? emp.firstName ?? '',
+            last_name: emp.last_name ?? emp.lastName ?? '',
+            role: emp.role ?? '',
+          }));
+          setEmployees(transformed);
+        }
+      } catch (err) {
+        if (!cancelled) console.error('ScheduleForm failed to load isud data', err);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
   
   // Extract local YYYY-MM-DD and HH:mm from a Date or ISO string reliably (no timezone shifts)
   const extractLocalParts = (value) => {
@@ -140,7 +177,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {appointment ? 'Edit Appointment' : 'Book New Appointment'}
         </h3>
       </div>
@@ -149,8 +186,13 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       <PermissionGate page="clients" permission="write">
           <button
             type="button"
-            onClick={() => { closeModal(); navigate('/clients?new=1'); }}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+            onClick={() => openAddClientModal((newClient) => {
+              // Auto-select the newly created client
+              setFormData(prev => ({ ...prev, client_id: newClient.id }));
+              // Refresh local clients list
+              setClients(prev => [...prev, newClient]);
+            })}
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
             title="Add new client"
             aria-label="Add new client"
           >
@@ -177,8 +219,8 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       <PermissionGate page="services" permission="write">
           <button
             type="button"
-            onClick={() => { closeModal(); navigate('/services?new=1'); }}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+            onClick={() => { closeModal(); navigate('/sales?new=1'); }}
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
             title="Add new service"
             aria-label="Add new service"
           >
@@ -206,7 +248,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           <button
             type="button"
             onClick={() => { closeModal(); navigate('/employees?new=1'); }}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-blue-600"
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
             title="Add new employee"
             aria-label="Add new employee"
           >
@@ -241,7 +283,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       {/* Appointment Type & Duration */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
             <CalendarDaysIcon className="h-4 w-4 inline mr-1" />
             Appointment Type
           </label>
@@ -254,7 +296,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           />
         </div>
         <div>
-          <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
             <ClockIcon className="h-4 w-4 inline mr-1" />
             Duration (minutes)
           </label>
@@ -271,7 +313,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       {/* Recurrence (only for series) */}
       {formData.appointment_type === 'series' && (
         <div>
-          <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
             Recurrence Frequency
           </label>
           <CustomDropdown
@@ -287,7 +329,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
 
       <div className="grid grid-cols-3 gap-4">
         <div> 
-          <label htmlFor="appointment_date" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Date
           </label>
           <input
@@ -297,12 +339,12 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
             required
             value={formData.appointment_date}
             onChange={handleChange}
-            className={`input-field mt-1 ${isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+            className="input-field mt-1"
           />
         </div>
 
-        <div> 
-          <label htmlFor="appointment_hour" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+        <div>
+          <label htmlFor="appointment_hour" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Hour
           </label>
           <CustomDropdown
@@ -320,7 +362,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         </div>
 
         <div> 
-          <label htmlFor="appointment_minute" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <label htmlFor="appointment_minute" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Minute
           </label>
           <CustomDropdown
@@ -346,26 +388,15 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           rows={3}
           value={formData.notes}
           onChange={handleChange}
-          className={`input-field mt-1 ${isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+          className="input-field mt-1"
           placeholder="Additional notes for the appointment"
         />
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn-primary"
-        >
-          {appointment ? 'Update Appointment' : 'Book Appointment'}
-        </button>
-      </div>
+      <ActionFooter>
+        <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
+        <IconButton icon={CheckIcon} label={appointment ? 'Update Appointment' : 'Book Appointment'} type="submit" variant="primary" />
+      </ActionFooter>
     </form>
   );
 }

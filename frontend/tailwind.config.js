@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: ['selector', '[data-bs-theme="dark"]'],
   theme: {
     extend: {
       colors: {

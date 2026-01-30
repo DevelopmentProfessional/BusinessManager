@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import IconButton from './IconButton';
+import ActionFooter from './ActionFooter';
 
 export default function ServiceForm({ service, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -39,13 +42,13 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {service ? 'Edit Service' : 'Add New Service'}
         </h3>
       </div>
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Service Name *
         </label>
         <input
@@ -61,7 +64,7 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Description
         </label>
         <textarea
@@ -76,7 +79,7 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
       </div>
 
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Price *
         </label>
         <input
@@ -94,7 +97,7 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
       </div>
 
       <div>
-        <label htmlFor="duration_minutes" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="duration_minutes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Duration (minutes) *
         </label>
         <input
@@ -110,21 +113,10 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
         />
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn-primary"
-        >
-          {service ? 'Update Service' : 'Create Service'}
-        </button>
-      </div>
+      <ActionFooter>
+        <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
+        <IconButton icon={CheckIcon} label={service ? 'Update Service' : 'Create Service'} type="submit" variant="primary" />
+      </ActionFooter>
     </form>
   );
 }

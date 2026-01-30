@@ -10,7 +10,6 @@ import {
   ArrowPathIcon 
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import useDarkMode from '../services/useDarkMode';
 import api from '../services/api';
 
 const Login = () => {
@@ -33,12 +32,7 @@ const Login = () => {
   
   const navigate = useNavigate();
   const { setUser, setToken, setPermissions } = useStore();
-  const { setDarkMode } = useDarkMode();
-
-  // Set dark mode by default on login page
-  useEffect(() => {
-    setDarkMode(true);
-  }, [setDarkMode]);
+  // Login page respects the active theme (light or dark) from store
 
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
@@ -271,18 +265,18 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-gray-800 dark:bg-gray-800 border border-gray-700 p-8 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 rounded-2xl shadow-xl">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-900/50 mb-4">
             <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m2.25-18h15.75m-18 0l19.5 0m-19.5 0v18m0 0h2.25m15.75-18v18m0 0h2.25" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-white dark:text-white mb-2">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Business Manager
           </h2>
-          <p className="text-sm text-gray-300 dark:text-gray-300">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             Sign in to your account to get started
           </p>
         </div>
@@ -324,8 +318,8 @@ const Login = () => {
                   name="username"
                   type="text"
                   required
-                  className={`w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-500 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                    validationErrors.username ? 'border-red-500 bg-red-900/20' : 'border-gray-600'
+                  className={`w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                    validationErrors.username ? 'border-red-500 dark:bg-red-900/20' : ''
                   }`}
                   placeholder="Enter your username"
                   value={formData.username}
@@ -347,8 +341,8 @@ const Login = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className={`w-full px-4 py-3 pr-12 border rounded-lg shadow-sm placeholder-gray-500 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                      validationErrors.password ? 'border-red-500 bg-red-900/20' : 'border-gray-600'
+                    className={`w-full px-4 py-3 pr-12 border rounded-lg shadow-sm placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                      validationErrors.password ? 'border-red-500 dark:bg-red-900/20' : ''
                     }`}
                     placeholder="Enter your password"
                     value={formData.password}
@@ -379,7 +373,7 @@ const Login = () => {
                   id="remember_me"
                   name="remember_me"
                   type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-500 bg-gray-700 rounded"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded"
                   checked={formData.remember_me}
                   onChange={handleInputChange}
                 />
@@ -419,8 +413,8 @@ const Login = () => {
         ) : (
           <div className="mt-8">
             <div className="mb-6 text-center">
-              <h3 className="text-lg font-medium text-white dark:text-white">Reset Password</h3>
-              <p className="mt-1 text-sm text-gray-300 dark:text-gray-300">Enter your username and new password</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reset Password</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Enter your username and new password</p>
             </div>
             
             <form className="space-y-6" onSubmit={handlePasswordReset}>
@@ -447,7 +441,7 @@ const Login = () => {
                     name="username"
                     type="text"
                     required
-                    className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     placeholder="Enter your username"
                     value={resetData.username}
                     onChange={handleResetInputChange}
@@ -464,7 +458,7 @@ const Login = () => {
                     name="new_password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     placeholder="Enter new password (min 6 characters)"
                     value={resetData.new_password}
                     onChange={handleResetInputChange}
@@ -481,7 +475,7 @@ const Login = () => {
                     name="confirm_password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     placeholder="Confirm new password"
                     value={resetData.confirm_password}
                     onChange={handleResetInputChange}
@@ -498,7 +492,7 @@ const Login = () => {
                     setError('');
                     setResetData({ username: '', new_password: '', confirm_password: '' });
                   }}
-                  className="flex-1 py-3 px-4 border border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                 >
                   Back to Login
                 </button>

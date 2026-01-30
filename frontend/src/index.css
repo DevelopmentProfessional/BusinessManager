@@ -2,47 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Bootstrap overrides and custom styles */
+/* Bootstrap overrides and theme-aware base styles */
 @layer base {
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-gray-600;
   }
-  
-  /* Ensure Bootstrap dark mode works properly */
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+
   [data-bs-theme="dark"] {
     color-scheme: dark;
   }
-  
+
+  [data-bs-theme="dark"] body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
   [data-bs-theme="light"] {
     color-scheme: light;
   }
 }
 
 @layer components {
-  /* Custom utility classes that work with both Tailwind and Bootstrap */
+  /* Theme-aware utility classes */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
-  
+
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors;
   }
-  
+
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
-  
+
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700;
   }
-  
-  /* Dark mode specific overrides */
-  [data-bs-theme="dark"] .card {
-    @apply bg-gray-800 border-gray-700;
+
+  /* Theme-aware text */
+  .text-body-emphasis {
+    @apply text-gray-900 dark:text-gray-100;
   }
-  
-  [data-bs-theme="dark"] .input-field {
-    @apply bg-gray-800 border-gray-600 text-gray-100;
+
+.text-muted {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+  /* Theme-aware table styles (for Tailwind tables) */
+  [data-bs-theme="dark"] .divide-gray-200 > * + * {
+    border-color: theme('colors.gray.700');
+  }
+
+  /*
+   * Scrollable container: use on the element that should scroll instead of the page.
+   * Parent must be flex with a defined height (or flex-1 min-h-0).
+   * Use on table wrappers, list wrappers, etc. so the component scrolls internally.
+   */
+  .overflow-scroll-container {
+    @apply min-h-0 flex-1 overflow-auto;
+  }
+
+  /* Same but for flex column children that should take remaining space and scroll */
+  .overflow-scroll-container-y {
+    @apply min-h-0 flex-1 overflow-y-auto overflow-x-auto;
   }
 }
 

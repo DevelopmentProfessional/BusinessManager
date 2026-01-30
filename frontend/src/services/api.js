@@ -438,4 +438,20 @@ export const reportsAPI = {
   },
 };
 
+/**
+ * Single API namespace for the isud DB backend.
+ * Components that need isud data should import isudAPI and call it directly
+ * so they work independently on any page (no dependency on parent/page loading store).
+ */
+export const isudAPI = {
+  clients: clientsAPI,
+  items: itemsAPI,
+  inventory: inventoryAPI,
+  services: servicesAPI,
+  suppliers: suppliersAPI,
+  employees: employeesAPI,
+  schedule: scheduleAPI,
+  attendance: attendanceAPI,
+};
+
 export default api;

@@ -130,8 +130,8 @@ export default function Suppliers() {
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
+    <div className="h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-shrink-0 sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
         </div>
@@ -155,8 +155,8 @@ export default function Suppliers() {
         </div>
       )}
 
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
+      {/* Mobile view - fills space, table scrolls inside */}
+      <div className="mt-4 md:hidden flex-1 min-h-0 flex flex-col">
         <MobileTable
           data={suppliers}
           columns={[
@@ -175,9 +175,9 @@ export default function Suppliers() {
         </PermissionGate>
       </div>
 
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      {/* Desktop table - scrolls inside, page does not */}
+      <div className="mt-4 hidden md:flex flex-1 flex-col min-h-0 overflow-auto">
+        <div className="-mx-4 -my-2 sm:-mx-6 lg:-mx-8 flex-1 min-h-0">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">

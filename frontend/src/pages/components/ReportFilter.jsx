@@ -43,23 +43,23 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
   };
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-2 mb-4">
-        <FunnelIcon className="h-5 w-5 text-gray-600" />
-        <h3 className="text-sm font-medium text-gray-900">Report Filters</h3>
+        <FunnelIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Report Filters</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Date Range */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             <CalendarIcon className="h-3 w-3 inline mr-1" />
             Date Range
           </label>
           <select
             value={filters.dateRange}
             onChange={handleDateRangeChange}
-            className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {DATE_RANGE_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>
@@ -73,25 +73,25 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
         {filters.dateRange === 'custom' && (
           <>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Start Date
               </label>
               <input
                 type="date"
                 value={filters.startDate || ''}
                 onChange={(e) => handleFilterUpdate('startDate', e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 End Date
               </label>
               <input
                 type="date"
                 value={filters.endDate || ''}
                 onChange={(e) => handleFilterUpdate('endDate', e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </>
@@ -99,13 +99,13 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
 
         {/* Group By */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             Group By
           </label>
           <select
             value={filters.groupBy}
             onChange={(e) => handleFilterUpdate('groupBy', e.target.value)}
-            className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {GROUP_BY_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>
@@ -117,7 +117,7 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
 
         {/* Chart Type */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             <ChartBarIcon className="h-3 w-3 inline mr-1" />
             Chart Type
           </label>
@@ -129,7 +129,7 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
                 className={`flex-1 text-xs px-2 py-2 rounded-md border transition-colors ${
                   filters.chartType === chartType
                     ? 'bg-blue-500 text-white border-blue-500'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                 }`}
                 title={chartType.charAt(0).toUpperCase() + chartType.slice(1)}
               >
@@ -146,17 +146,17 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
       </div>
 
       {/* Additional Filters Row */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Status Filter (for appointment reports) */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Status Filter
             </label>
             <select
               value={filters.status || 'all'}
               onChange={(e) => handleFilterUpdate('status', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
               <option value="scheduled">Scheduled</option>
@@ -167,13 +167,13 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
 
           {/* Service Category Filter */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Service Category
             </label>
             <select
               value={filters.category || 'all'}
               onChange={(e) => handleFilterUpdate('category', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Categories</option>
               <option value="hair">Hair Services</option>
@@ -185,13 +185,13 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
 
           {/* Employee Filter */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Employee
             </label>
             <select
               value={filters.employeeId || 'all'}
               onChange={(e) => handleFilterUpdate('employeeId', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Employees</option>
               {/* These would be populated from actual employee data */}

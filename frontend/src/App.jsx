@@ -4,7 +4,7 @@ import Layout from './pages/components/Layout';
 import Login from './pages/Login';
 import Clients from './pages/Clients';
 import Inventory from './pages/Inventory';
-import Services from './pages/Services';
+import Sales from './pages/Sales';
 import Suppliers from './pages/Suppliers';
 import Employees from './pages/Employees';
 import Schedule from './pages/Schedule';
@@ -16,6 +16,7 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
 import useDarkMode from './services/useDarkMode';
+import GlobalClientModal from './pages/components/GlobalClientModal';
 
 
 
@@ -95,10 +96,10 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
-        <Route path="/services" element={
+        <Route path="/sales" element={
           <ProtectedRoute requiredPermission="services:read">
             <Layout>
-              <Services />
+              <Sales />
             </Layout>
           </ProtectedRoute>
         } />
@@ -166,6 +167,7 @@ function App() {
         {/* Catch-all route for any unmatched paths */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <GlobalClientModal />
     </Router>
   );
 }

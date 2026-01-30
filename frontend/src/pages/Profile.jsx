@@ -121,7 +121,7 @@ const Profile = () => {
     { name: 'Schedule', href: '/schedule', icon: CalendarIcon, color: 'primary', description: 'View and manage appointments' },
     { name: 'Clients', href: '/clients', icon: UserGroupIcon, color: 'success', description: 'Manage client information' },
     { name: 'Inventory', href: '/inventory', icon: ArchiveBoxIcon, color: 'warning', description: 'Track products and stock' },
-    { name: 'Services', href: '/services', icon: WrenchScrewdriverIcon, color: 'info', description: 'Manage service offerings' },
+    { name: 'Sales', href: '/sales', icon: WrenchScrewdriverIcon, color: 'info', description: 'Point of sale and services' },
     { name: 'Reports', href: '/reports', icon: ChartBarIcon, color: 'danger', description: 'View business analytics' },
     { name: 'Documents', href: '/documents', icon: DocumentTextIcon, color: 'secondary', description: 'Access documents' },
   ];
