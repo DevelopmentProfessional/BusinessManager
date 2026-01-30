@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon, TrashIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { inventoryAPI, itemsAPI } from '../services/api';
 import Modal from './components/Modal';
-import MobileTable from './components/MobileTable';
 import BarcodeScanner from './components/BarcodeScanner';
 import ItemForm from './components/ItemForm';
 import PermissionGate from './components/PermissionGate';
 import CSVImportButton from './components/CSVImportButton';
+import IconButton from './components/IconButton';
 
 function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
   const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
@@ -82,9 +82,9 @@ export default function Inventory() {
   // Use the permission refresh hook
 
   // Check permissions at page level
-  if (!hasPermission('inventory', 'read') && 
-      !hasPermission('inventory', 'write') && 
-      !hasPermission('inventory', 'delete') && 
+  if (!hasPermission('inventory', 'read') &&
+      !hasPermission('inventory', 'write') &&
+      !hasPermission('inventory', 'delete') &&
       !hasPermission('inventory', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
@@ -94,6 +94,7 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     loadInventoryData();
@@ -313,6 +314,13 @@ export default function Inventory() {
     });
   }, [inventory, items, searchTerm, typeFilter, stockFilter]);
 
+  // Scroll to bottom when data loads (to show newest items near footer)
+  useEffect(() => {
+    if (scrollRef.current && filteredInventory.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filteredInventory.length]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -323,19 +331,20 @@ export default function Inventory() {
 
   return (
     <div className="h-full flex flex-col min-h-0 overflow-hidden">
+      {/* Header */}
       <div className="flex-shrink-0 mb-1">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
       </div>
 
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="flex-shrink-0 mt-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
       {/* Low Stock Alert */}
       {inventory.filter(isLowStock).length > 0 && (
-        <div className="flex-shrink-0 mt-2 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 rounded">
+        <div className="flex-shrink-0 mt-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 px-4 py-2 rounded">
           <div className="flex items-center">
             <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
             <span className="font-medium text-sm">
@@ -345,115 +354,201 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* Table view - scrolls internally, page doesn't scroll */}
-      <div className="mt-2 flex-1 min-h-0 overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-        <MobileTable
-          data={filteredInventory}
-          columns={[
-            { key: 'item', title: 'Item', render: (_, item) => getItemName(item.item_id) },
-            { key: 'sku', title: 'SKU', render: (_, item) => getItemSku(item.item_id) },
-            { key: 'type', title: 'Type', render: (_, item) => (
-              <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(getItemType(item.item_id))}`}>
-                {getItemTypeLabel(getItemType(item.item_id))}
-              </span>
-            )},
-            { key: 'quantity', title: 'Stock' },
-            { key: 'min_stock_level', title: 'Min' },
-            { key: 'status', title: 'Status', render: (_, item) => (isLowStock(item) ? 'Low' : 'OK') },
-            { key: 'location', title: 'Location', render: (v) => v || '-' },
-          ]}
-          onEdit={(item) => handleUpdateInventory(item)}
-          onDelete={(item) => handleDeleteItem(item.item_id)}
-          editPermission={{ page: 'inventory', permission: 'write' }}
-          deletePermission={{ page: 'inventory', permission: 'delete' }}
-          emptyMessage="No inventory items found"
-        />
-      </div>
+      {/* Upside-down table container - rows start at bottom, grow upwards */}
+      <div className="mt-2 flex-1 min-h-0 flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
 
-      {/* Footer: Search, Filters, and Action Buttons */}
-      <div className="flex-shrink-0 mt-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name or SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-            />
-          </div>
-
-          {/* Type Filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-          >
-            <option value="all">All Types</option>
-            <option value="PRODUCT">Products</option>
-            <option value="RESOURCE">Resources</option>
-            <option value="ASSET">Assets</option>
-          </select>
-
-          {/* Stock Filter */}
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-          >
-            <option value="all">All Stock</option>
-            <option value="low">Low Stock</option>
-            <option value="ok">In Stock</option>
-          </select>
-
-          {/* Results count */}
-          <span className="text-sm text-gray-500">
-            {filteredInventory.length}/{inventory.length}
-          </span>
-
-          {/* Action Buttons */}
-          <PermissionGate page="inventory" permission="write">
-            <div className="flex items-center gap-2 ml-auto">
-              <CSVImportButton
-                entityName="Items"
-                onImport={handleCSVImport}
-                onComplete={loadInventoryData}
-                requiredFields={['name']}
-                fieldMapping={{
-                  'item name': 'name',
-                  'product name': 'name',
-                  'item': 'name',
-                  'product': 'name',
-                  'stock': 'quantity',
-                  'qty': 'quantity',
-                  'min stock': 'min_stock_level',
-                  'minimum stock': 'min_stock_level',
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleCreateItem}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 transition-all font-medium text-sm"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenScanner}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 transition-all font-medium text-sm"
-              >
-                <CameraIcon className="h-4 w-4" />
-                Scan
-              </button>
+        {/* Scrollable table body - flex-direction: column-reverse makes rows grow upward */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto flex flex-col-reverse bg-white dark:bg-gray-900"
+        >
+          {filteredInventory.length > 0 ? (
+            <table className="w-full border-collapse table-fixed mt-auto">
+              <tbody>
+                {filteredInventory.map((inv, index) => (
+                  <tr
+                    key={inv.item_id || index}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    style={{ height: '56px' }}
+                  >
+                    {/* Delete button */}
+                    <td className="w-12 px-2 text-center">
+                      <PermissionGate page="inventory" permission="delete">
+                        <IconButton
+                          icon={TrashIcon}
+                          label="Delete"
+                          onClick={() => handleDeleteItem(inv.item_id)}
+                          variant="danger"
+                          className="!p-1.5"
+                        />
+                      </PermissionGate>
+                    </td>
+                    {/* Item name */}
+                    <td className="px-3 py-2">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {getItemName(inv.item_id)}
+                      </div>
+                    </td>
+                    {/* SKU */}
+                    <td className="px-3 py-2 hidden sm:table-cell">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                        {getItemSku(inv.item_id)}
+                      </div>
+                    </td>
+                    {/* Type */}
+                    <td className="px-3 py-2 hidden md:table-cell">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(getItemType(inv.item_id))}`}>
+                        {getItemTypeLabel(getItemType(inv.item_id))}
+                      </span>
+                    </td>
+                    {/* Stock quantity */}
+                    <td className="px-3 py-2 text-center">
+                      <span className={`text-sm font-medium ${isLowStock(inv) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                        {inv.quantity}
+                      </span>
+                    </td>
+                    {/* Min stock level */}
+                    <td className="px-3 py-2 text-center hidden sm:table-cell">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {inv.min_stock_level}
+                      </span>
+                    </td>
+                    {/* Status */}
+                    <td className="px-3 py-2 text-center">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        isLowStock(inv)
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                          : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                      }`}>
+                        {isLowStock(inv) ? 'Low' : 'OK'}
+                      </span>
+                    </td>
+                    {/* Edit button */}
+                    <td className="w-12 px-2 text-center">
+                      <PermissionGate page="inventory" permission="write">
+                        <IconButton
+                          icon={PencilIcon}
+                          label="Edit"
+                          onClick={() => handleUpdateInventory(inv)}
+                          variant="ghost"
+                          className="!p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        />
+                      </PermissionGate>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 mt-auto">
+              No inventory items found
             </div>
-          </PermissionGate>
+          )}
+        </div>
+
+        {/* Sticky footer with headers and controls */}
+        <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          {/* Column Headers */}
+          <table className="w-full border-collapse table-fixed">
+            <tfoot>
+              <tr className="bg-gray-100 dark:bg-gray-700">
+                <th className="w-12 px-2 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center"></th>
+                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-left">Item</th>
+                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-left hidden sm:table-cell">SKU</th>
+                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-left hidden md:table-cell">Type</th>
+                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center">Stock</th>
+                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center hidden sm:table-cell">Min</th>
+                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center">Status</th>
+                <th className="w-12 px-2 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center"></th>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Controls Row */}
+          <div className="p-3 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search Input */}
+              <div className="relative flex-1 min-w-[180px]">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or SKU..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+
+              {/* Type Filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="all">All Types</option>
+                <option value="PRODUCT">Products</option>
+                <option value="RESOURCE">Resources</option>
+                <option value="ASSET">Assets</option>
+              </select>
+
+              {/* Stock Filter */}
+              <select
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="all">All Stock</option>
+                <option value="low">Low Stock</option>
+                <option value="ok">In Stock</option>
+              </select>
+
+              {/* Results count */}
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {filteredInventory.length}/{inventory.length}
+              </span>
+
+              {/* Action Buttons */}
+              <PermissionGate page="inventory" permission="write">
+                <div className="flex items-center gap-2 ml-auto">
+                  <CSVImportButton
+                    entityName="Items"
+                    onImport={handleCSVImport}
+                    onComplete={loadInventoryData}
+                    requiredFields={['name']}
+                    fieldMapping={{
+                      'item name': 'name',
+                      'product name': 'name',
+                      'item': 'name',
+                      'product': 'name',
+                      'stock': 'quantity',
+                      'qty': 'quantity',
+                      'min stock': 'min_stock_level',
+                      'minimum stock': 'min_stock_level',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateItem}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 transition-all font-medium text-sm"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenScanner}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 transition-all font-medium text-sm"
+                  >
+                    <CameraIcon className="h-4 w-4" />
+                    Scan
+                  </button>
+                </div>
+              </PermissionGate>
+            </div>
+          </div>
         </div>
       </div>
 
-      
       {/* Modal: Inventory Update */}
       <Modal isOpen={isModalOpen && modalContent === 'inventory-form'} onClose={closeModal}>
         {isModalOpen && modalContent === 'inventory-form' && editingInventory && (
