@@ -9,6 +9,12 @@ import inspect
 from ..database import get_session
 from ..models import *
 
+# Mapping of table names to their safe Read schemas (to avoid relationship serialization issues)
+READ_SCHEMA_MAP = {
+    'client': ClientRead,
+    'clients': ClientRead,
+}
+
 # In-memory cache for model mapping (populated once on first access)
 _MODEL_MAPPING_CACHE: Optional[Dict[str, Type[SQLModel]]] = None
 
@@ -158,9 +164,18 @@ async def select(
         record = session.exec(stmt).first()
         if not record:
             raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
+        # Use safe read schema if available
+        read_schema = READ_SCHEMA_MAP.get(table_name.lower())
+        if read_schema and hasattr(read_schema, 'from_orm_safe'):
+            return read_schema.from_orm_safe(record)
         return record
 
-    return session.exec(stmt).all()
+    records = session.exec(stmt).all()
+    # Use safe read schema if available to avoid relationship serialization issues
+    read_schema = READ_SCHEMA_MAP.get(table_name.lower())
+    if read_schema and hasattr(read_schema, 'from_orm_safe'):
+        return [read_schema.from_orm_safe(r) for r in records]
+    return records
 
 @router.get("/{table_name}/{record_id}")
 async def select_by_id(

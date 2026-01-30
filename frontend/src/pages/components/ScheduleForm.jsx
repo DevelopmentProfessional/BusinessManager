@@ -2,9 +2,23 @@ import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
 import useDarkMode from '../../services/useDarkMode';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UserGroupIcon, CalendarDaysIcon, ClockIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
 import CustomDropdown from './CustomDropdown';
+
+const APPOINTMENT_TYPES = [
+  { value: 'one_time', label: 'One-Time Appointment' },
+  { value: 'series', label: 'Recurring Series' },
+  { value: 'meeting', label: 'Meeting' },
+  { value: 'task', label: 'Task' }
+];
+
+const RECURRENCE_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Bi-Weekly' },
+  { value: 'monthly', label: 'Monthly' }
+];
 
 export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   const { clients, services, employees, closeModal, hasPermission, user } = useStore();
@@ -34,7 +48,11 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         appointment_date: date,
         appointment_hour: hour,
         appointment_minute: minute,
-        notes: appointment.notes || ''
+        notes: appointment.notes || '',
+        appointment_type: appointment.appointment_type || 'one_time',
+        recurrence_frequency: appointment.recurrence_frequency || '',
+        duration_minutes: appointment.duration_minutes || 60,
+        attendees: appointment.attendees || []
       };
     }
     return {
@@ -44,7 +62,11 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       appointment_date: '',
       appointment_hour: '',
       appointment_minute: '',
-      notes: ''
+      notes: '',
+      appointment_type: 'one_time',
+      recurrence_frequency: '',
+      duration_minutes: 60,
+      attendees: []
     };
   };
 
@@ -108,7 +130,10 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       service_id: formData.service_id,
       employee_id: formData.employee_id,
       appointment_date: appointmentDateStr,
-      notes: formData.notes
+      notes: formData.notes,
+      appointment_type: formData.appointment_type,
+      recurrence_frequency: formData.appointment_type === 'series' ? formData.recurrence_frequency : null,
+      duration_minutes: parseInt(formData.duration_minutes) || 60
     });
   };
 
@@ -212,6 +237,53 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           )}
         </div>
       </div>
+
+      {/* Appointment Type & Duration */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            <CalendarDaysIcon className="h-4 w-4 inline mr-1" />
+            Appointment Type
+          </label>
+          <CustomDropdown
+            name="appointment_type"
+            value={formData.appointment_type}
+            onChange={handleChange}
+            options={APPOINTMENT_TYPES}
+            placeholder="Select type"
+          />
+        </div>
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            <ClockIcon className="h-4 w-4 inline mr-1" />
+            Duration (minutes)
+          </label>
+          <CustomDropdown
+            name="duration_minutes"
+            value={formData.duration_minutes?.toString() || '60'}
+            onChange={handleChange}
+            options={[15, 30, 45, 60, 90, 120, 180].map(m => ({ value: m.toString(), label: `${m} min` }))}
+            placeholder="Duration"
+          />
+        </div>
+      </div>
+
+      {/* Recurrence (only for series) */}
+      {formData.appointment_type === 'series' && (
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            Recurrence Frequency
+          </label>
+          <CustomDropdown
+            name="recurrence_frequency"
+            value={formData.recurrence_frequency}
+            onChange={handleChange}
+            options={RECURRENCE_OPTIONS}
+            placeholder="Select frequency"
+            required
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <div> 

@@ -13,13 +13,44 @@ class EntityType(str, Enum):
 
 
 class ItemType(str, Enum):
-    ITEM = "item"
+    PRODUCT = "product"
+    RESOURCE = "resource"
     ASSET = "asset"
 
 
 class AttendanceStatus(str, Enum):
     CLOCK_IN = "clock_in"
     CLOCK_OUT = "clock_out"
+
+
+class MembershipTier(str, Enum):
+    NONE = "none"
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    PLATINUM = "platinum"
+
+
+class AppointmentType(str, Enum):
+    ONE_TIME = "one_time"
+    SERIES = "series"
+    MEETING = "meeting"
+    TASK = "task"
+
+
+class RecurrenceFrequency(str, Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+
+
+class TaskPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
 
 # User roles and permissions
 class UserRole(str, Enum):
@@ -60,7 +91,13 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
-    
+
+    # Hierarchy - who this user reports to
+    reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
+
+    # Role assignment - links to Role model for inherited permissions
+    role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
+
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
     attendance_records: List["Attendance"] = Relationship(back_populates="user")
@@ -82,9 +119,31 @@ class UserPermission(BaseModel, table=True):
     page: str  # e.g., "clients", "inventory", "employees"
     permission: PermissionType
     granted: bool = Field(default=True)
-    
+
     # Relationships
     user: User = Relationship(back_populates="permissions")
+
+
+# Role model - defines a role with attached permissions
+class Role(BaseModel, table=True):
+    name: str = Field(unique=True, index=True)  # e.g., "Manager", "Receptionist"
+    description: Optional[str] = Field(default=None)
+    is_system: bool = Field(default=False)  # System roles cannot be deleted
+
+    # Relationships
+    role_permissions: List["RolePermission"] = Relationship(back_populates="role")
+
+
+# RolePermission model - permissions attached to a role
+class RolePermission(BaseModel, table=True):
+    __tablename__ = "role_permission"
+    role_id: UUID = Field(foreign_key="role.id")
+    page: str  # e.g., "clients", "inventory", "employees"
+    permission: PermissionType
+
+    # Relationships
+    role: Role = Relationship(back_populates="role_permissions")
+
 
 # Client model
 class Client(BaseModel, table=True):
@@ -93,7 +152,13 @@ class Client(BaseModel, table=True):
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
-    
+
+    # Membership fields
+    membership_tier: MembershipTier = Field(default=MembershipTier.NONE)
+    membership_since: Optional[datetime] = Field(default=None)
+    membership_expires: Optional[datetime] = Field(default=None)
+    membership_points: int = Field(default=0)
+
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="client")
 
@@ -104,6 +169,7 @@ class Item(BaseModel, table=True):
     sku: str = Field(unique=True, index=True)
     price: float = Field(ge=0)
     description: Optional[str] = Field(default=None)
+    type: ItemType = Field(default=ItemType.PRODUCT)
     inventory: Optional["Inventory"] = Relationship(back_populates="item")
 
 
@@ -149,17 +215,64 @@ class Service(BaseModel, table=True):
 
 # Schedule model
 class Schedule(BaseModel, table=True):
-    client_id: UUID = Field(foreign_key="client.id")
-    service_id: UUID = Field(foreign_key="service.id")
-    employee_id: UUID = Field(foreign_key="user.id")  # Now references user directly
+    # Core fields (client/service optional for meetings/tasks)
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
+    employee_id: UUID = Field(foreign_key="user.id")  # Primary assignee
     appointment_date: datetime
     status: str = Field(default="scheduled")  # scheduled, completed, cancelled
     notes: Optional[str] = Field(default=None)
-    
+
+    # Appointment type and title
+    appointment_type: AppointmentType = Field(default=AppointmentType.ONE_TIME)
+    title: Optional[str] = Field(default=None)  # For meetings/tasks
+
+    # Series/Recurring fields
+    series_id: Optional[UUID] = Field(default=None)  # Groups recurring appointments
+    frequency: Optional[RecurrenceFrequency] = Field(default=None)
+    recurrence_end_date: Optional[datetime] = Field(default=None)
+
+    # Duration fields
+    duration_minutes: int = Field(default=60)
+    end_time: Optional[datetime] = Field(default=None)
+
+    # Task-specific fields
+    deadline: Optional[datetime] = Field(default=None)
+    is_completed: bool = Field(default=False)
+    priority: TaskPriority = Field(default=TaskPriority.NORMAL)
+
+    # Meeting fields
+    is_all_day: bool = Field(default=False)
+    location: Optional[str] = Field(default=None)
+
     # Relationships
-    client: Client = Relationship(back_populates="schedules")
-    service: Service = Relationship(back_populates="schedules")
+    client: Optional[Client] = Relationship(back_populates="schedules")
+    service: Optional[Service] = Relationship(back_populates="schedules")
     employee: "User" = Relationship(back_populates="schedules")
+    attendees: List["ScheduleAttendee"] = Relationship(back_populates="schedule")
+    linked_documents: List["ScheduleDocument"] = Relationship(back_populates="schedule")
+
+
+# Schedule Attendee model (for meetings with multiple participants)
+class ScheduleAttendee(BaseModel, table=True):
+    __tablename__ = "schedule_attendee"
+    schedule_id: UUID = Field(foreign_key="schedule.id")
+    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    attendance_status: str = Field(default="pending")  # pending, confirmed, declined
+
+    # Relationships
+    schedule: Schedule = Relationship(back_populates="attendees")
+
+
+# Schedule Document link model
+class ScheduleDocument(BaseModel, table=True):
+    __tablename__ = "schedule_document"
+    schedule_id: UUID = Field(foreign_key="schedule.id")
+    document_id: UUID = Field(foreign_key="document.id")
+
+    # Relationships
+    schedule: Schedule = Relationship(back_populates="linked_documents")
 
 
 # Asset model
@@ -211,6 +324,11 @@ class ClientCreate(SQLModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[MembershipTier] = MembershipTier.NONE
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: Optional[int] = 0
+
 
 class ClientUpdate(SQLModel):
     name: Optional[str] = None
@@ -218,6 +336,43 @@ class ClientUpdate(SQLModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[MembershipTier] = None
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: Optional[int] = None
+
+
+class ClientRead(SQLModel):
+    id: UUID
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    membership_tier: Optional[str] = None
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: int = 0
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @classmethod
+    def from_orm_safe(cls, obj):
+        return cls(
+            id=obj.id,
+            name=obj.name,
+            email=obj.email,
+            phone=obj.phone,
+            address=obj.address,
+            notes=obj.notes,
+            membership_tier=obj.membership_tier.value if obj.membership_tier else None,
+            membership_since=obj.membership_since,
+            membership_expires=obj.membership_expires,
+            membership_points=obj.membership_points or 0,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
+        )
+
 
 class ItemCreate(SQLModel):
     name: str
@@ -225,7 +380,7 @@ class ItemCreate(SQLModel):
     price: float
     description: Optional[str] = None
     # Accept either enum value/name as string or ItemType; router will normalize
-    type: Optional[Union[ItemType, str]] = "item"
+    type: Optional[Union[ItemType, str]] = "product"
 
 
 
@@ -237,6 +392,8 @@ class UserCreate(SQLModel):
     last_name: str
     phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
 
 
 class UserUpdate(SQLModel):
@@ -250,6 +407,8 @@ class UserUpdate(SQLModel):
     is_active: Optional[bool] = None
     is_locked: Optional[bool] = None
     force_password_reset: Optional[bool] = None
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
 
 
 class UserRead(SQLModel):
@@ -265,6 +424,8 @@ class UserRead(SQLModel):
     is_locked: bool
     force_password_reset: bool
     last_login: Optional[datetime] = None
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -294,6 +455,95 @@ class UserPermissionRead(SQLModel):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# Role request/response models
+class RoleCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+
+
+class RoleUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class RolePermissionCreate(SQLModel):
+    page: str
+    permission: str
+
+
+class RolePermissionRead(SQLModel):
+    id: UUID
+    role_id: UUID
+    page: str
+    permission: PermissionType
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RoleRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    is_system: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    role_permissions: List[RolePermissionRead] = []
+
+    model_config = {"from_attributes": True}
+
+
+# Schedule request/response models
+class ScheduleCreate(SQLModel):
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: UUID
+    appointment_date: datetime
+    status: str = "scheduled"
+    notes: Optional[str] = None
+    appointment_type: Optional[str] = "one_time"
+    title: Optional[str] = None
+    series_id: Optional[UUID] = None
+    frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    duration_minutes: int = 60
+    end_time: Optional[datetime] = None
+    deadline: Optional[datetime] = None
+    priority: Optional[str] = "normal"
+    is_all_day: bool = False
+    location: Optional[str] = None
+
+
+class ScheduleUpdate(SQLModel):
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    appointment_date: Optional[datetime] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    appointment_type: Optional[str] = None
+    title: Optional[str] = None
+    frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    duration_minutes: Optional[int] = None
+    end_time: Optional[datetime] = None
+    deadline: Optional[datetime] = None
+    is_completed: Optional[bool] = None
+    priority: Optional[str] = None
+    is_all_day: Optional[bool] = None
+    location: Optional[str] = None
+
+
+class ScheduleAttendeeCreate(SQLModel):
+    user_id: Optional[UUID] = None
+    client_id: Optional[UUID] = None
+    attendance_status: str = "pending"
+
+
+class ScheduleDocumentLink(SQLModel):
+    document_id: UUID
 
 
 class LoginRequest(SQLModel):

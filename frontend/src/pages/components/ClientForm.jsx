@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
 
+const MEMBERSHIP_TIERS = [
+  { value: 'none', label: 'None' },
+  { value: 'bronze', label: 'Bronze' },
+  { value: 'silver', label: 'Silver' },
+  { value: 'gold', label: 'Gold' },
+  { value: 'platinum', label: 'Platinum' }
+];
+
 export default function ClientForm({ client, onSubmit, onCancel, error = null }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
-    notes: ''
+    notes: '',
+    membership_tier: 'none',
+    membership_since: '',
+    membership_expires: '',
+    membership_points: 0
   });
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -17,23 +29,39 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
-        notes: client.notes || ''
+        notes: client.notes || '',
+        membership_tier: client.membership_tier || 'none',
+        membership_since: client.membership_since ? client.membership_since.split('T')[0] : '',
+        membership_expires: client.membership_expires ? client.membership_expires.split('T')[0] : '',
+        membership_points: client.membership_points || 0
       });
     }
   }, [client]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'number' ? parseInt(value, 10) || 0 : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setFieldErrors({});
-    onSubmit(formData);
+
+    // Prepare data for submission
+    const submitData = { ...formData };
+
+    // Convert empty dates to null
+    if (!submitData.membership_since) {
+      submitData.membership_since = null;
+    }
+    if (!submitData.membership_expires) {
+      submitData.membership_expires = null;
+    }
+
+    onSubmit(submitData);
   };
 
   // Parse error message to highlight specific fields
@@ -85,7 +113,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
           value={formData.email}
           onChange={handleChange}
           className="input-field mt-1"
-placeholder="Email"
+          placeholder="Email"
         />
       </div>
 
@@ -100,7 +128,7 @@ placeholder="Email"
           value={formData.phone}
           onChange={handleChange}
           className="input-field mt-1"
-placeholder="Phone"
+          placeholder="Phone"
         />
       </div>
 
@@ -111,11 +139,11 @@ placeholder="Phone"
         <textarea
           id="address"
           name="address"
-          rows={3}
+          rows={2}
           value={formData.address}
           onChange={handleChange}
           className="input-field mt-1"
-placeholder="Address"
+          placeholder="Address"
         />
       </div>
 
@@ -126,12 +154,82 @@ placeholder="Address"
         <textarea
           id="notes"
           name="notes"
-          rows={3}
+          rows={2}
           value={formData.notes}
           onChange={handleChange}
           className="input-field mt-1"
-placeholder="Notes"
+          placeholder="Notes"
         />
+      </div>
+
+      {/* Membership Section */}
+      <div className="border-t pt-4 mt-4">
+        <h4 className="text-md font-medium text-gray-900 mb-3">Membership</h4>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="membership_tier" className="block text-sm font-medium text-gray-700">
+              Membership Tier
+            </label>
+            <select
+              id="membership_tier"
+              name="membership_tier"
+              value={formData.membership_tier}
+              onChange={handleChange}
+              className="input-field mt-1"
+            >
+              {MEMBERSHIP_TIERS.map(tier => (
+                <option key={tier.value} value={tier.value}>
+                  {tier.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="membership_points" className="block text-sm font-medium text-gray-700">
+              Membership Points
+            </label>
+            <input
+              type="number"
+              id="membership_points"
+              name="membership_points"
+              min="0"
+              value={formData.membership_points}
+              onChange={handleChange}
+              className="input-field mt-1"
+              placeholder="0"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="membership_since" className="block text-sm font-medium text-gray-700">
+              Member Since
+            </label>
+            <input
+              type="date"
+              id="membership_since"
+              name="membership_since"
+              value={formData.membership_since}
+              onChange={handleChange}
+              className="input-field mt-1"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="membership_expires" className="block text-sm font-medium text-gray-700">
+              Membership Expires
+            </label>
+            <input
+              type="date"
+              id="membership_expires"
+              name="membership_expires"
+              value={formData.membership_expires}
+              onChange={handleChange}
+              className="input-field mt-1"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">

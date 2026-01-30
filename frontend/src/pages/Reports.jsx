@@ -12,7 +12,12 @@ import {
   ClockIcon,
   EyeIcon,
   FunnelIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  TableCellsIcon,
+  LinkIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { reportsAPI } from '../services/api';

@@ -118,7 +118,7 @@ allowed_origins = [
 # Add any additional origins from environment variable
 allowed_origins = _extend_allowed_origins_from_env(allowed_origins)
 
-print(f"🔧 CORS ALLOWED ORIGINS: {allowed_origins}")
+print(f"CORS ALLOWED ORIGINS: {allowed_origins}")
 
 # Add aggressive CORS middleware first
 app.add_middleware(AggressiveCORSMiddleware)

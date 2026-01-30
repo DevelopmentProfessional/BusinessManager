@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon, TrashIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { inventoryAPI, itemsAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -90,6 +90,9 @@ export default function Inventory() {
 
   const [editingInventory, setEditingInventory] = useState(null);
   const [scannedCode, setScannedCode] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
+  const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
 
   useEffect(() => {
     loadInventoryData();
@@ -209,7 +212,68 @@ export default function Inventory() {
     return item ? item.sku : 'N/A';
   };
 
+  const getItemType = (itemId) => {
+    const item = items.find(p => p.id === itemId);
+    return item?.type || 'PRODUCT';
+  };
+
+  const getItemTypeLabel = (type) => {
+    const labels = { PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', product: 'Product', resource: 'Resource', asset: 'Asset' };
+    return labels[type] || type || 'Product';
+  };
+
+  const getItemTypeColor = (type) => {
+    const upperType = (type || '').toUpperCase();
+    if (upperType === 'RESOURCE') return 'bg-blue-100 text-blue-800';
+    if (upperType === 'ASSET') return 'bg-purple-100 text-purple-800';
+    return 'bg-gray-100 text-gray-800'; // PRODUCT
+  };
+
   const isLowStock = (item) => item.quantity <= item.min_stock_level;
+
+  const handleDeleteItem = async (itemId) => {
+    if (!hasPermission('inventory', 'delete')) {
+      setError('You do not have permission to delete items');
+      return;
+    }
+    if (!window.confirm('Are you sure you want to delete this item? This will also remove its inventory record.')) return;
+    try {
+      await itemsAPI.delete(itemId);
+      await loadInventoryData();
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to delete item';
+      setError(String(detail));
+    }
+  };
+
+  // Filtered inventory based on search, type, and stock filters
+  const filteredInventory = useMemo(() => {
+    return inventory.filter((inv) => {
+      const item = items.find(p => p.id === inv.item_id);
+      if (!item) return false;
+
+      // Search filter (name or SKU)
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesName = (item.name || '').toLowerCase().includes(term);
+        const matchesSku = (item.sku || '').toLowerCase().includes(term);
+        if (!matchesName && !matchesSku) return false;
+      }
+
+      // Type filter
+      if (typeFilter !== 'all') {
+        const itemType = (item.type || 'PRODUCT').toUpperCase();
+        if (itemType !== typeFilter) return false;
+      }
+
+      // Stock filter
+      if (stockFilter === 'low' && !isLowStock(inv)) return false;
+      if (stockFilter === 'ok' && isLowStock(inv)) return false;
+
+      return true;
+    });
+  }, [inventory, items, searchTerm, typeFilter, stockFilter]);
 
   if (loading) {
     return (
@@ -243,20 +307,73 @@ export default function Inventory() {
         </div>
       )}
 
+      {/* Search and Filter Bar */}
+      <div className="mt-4 flex flex-col sm:flex-row gap-3">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+
+        {/* Type Filter */}
+        <div className="flex items-center gap-2">
+          <FunnelIcon className="h-5 w-5 text-gray-400" />
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="all">All Types</option>
+            <option value="PRODUCT">Products</option>
+            <option value="RESOURCE">Resources</option>
+            <option value="ASSET">Assets</option>
+          </select>
+        </div>
+
+        {/* Stock Filter */}
+        <select
+          value={stockFilter}
+          onChange={(e) => setStockFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        >
+          <option value="all">All Stock</option>
+          <option value="low">Low Stock</option>
+          <option value="ok">In Stock</option>
+        </select>
+      </div>
+
+      {/* Results count */}
+      <div className="mt-2 text-sm text-gray-500">
+        Showing {filteredInventory.length} of {inventory.length} items
+      </div>
+
       {/* Mobile view */}
       <div className="mt-6 md:hidden flex-1">
         <MobileTable
-          data={inventory}
+          data={filteredInventory}
           columns={[
             { key: 'item', title: 'Item', render: (_, item) => getItemName(item.item_id) },
             { key: 'sku', title: 'SKU', render: (_, item) => getItemSku(item.item_id) },
+            { key: 'type', title: 'Type', render: (_, item) => (
+              <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(getItemType(item.item_id))}`}>
+                {getItemTypeLabel(getItemType(item.item_id))}
+              </span>
+            )},
             { key: 'quantity', title: 'Stock' },
             { key: 'min_stock_level', title: 'Min' },
             { key: 'status', title: 'Status', render: (_, item) => (isLowStock(item) ? 'Low' : 'OK') },
             { key: 'location', title: 'Location', render: (v) => v || '-' },
           ]}
           onEdit={(item) => handleUpdateInventory(item)}
+          onDelete={(item) => handleDeleteItem(item.item_id)}
           editPermission={{ page: 'inventory', permission: 'write' }}
+          deletePermission={{ page: 'inventory', permission: 'delete' }}
           emptyMessage="No inventory items found"
         />
       </div>
@@ -276,6 +393,9 @@ export default function Inventory() {
                       SKU
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Current Stock
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -293,13 +413,18 @@ export default function Inventory() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {inventory.map((item) => (
+                  {filteredInventory.map((item) => (
                     <tr key={item.id} className={isLowStock(item) ? 'bg-yellow-50' : ''}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {getItemName(item.item_id)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {getItemSku(item.item_id)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(getItemType(item.item_id))}`}>
+                          {getItemTypeLabel(getItemType(item.item_id))}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {item.quantity}
@@ -320,23 +445,39 @@ export default function Inventory() {
                         {item.location || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <PermissionGate page="inventory" permission="write">
-                          <button
-                            onClick={() => handleUpdateInventory(item)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
+                        <div className="flex items-center justify-end gap-2">
+                          <PermissionGate page="inventory" permission="write">
+                            <button
+                              onClick={() => handleUpdateInventory(item)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                              title="Edit inventory"
+                            >
+                              <PencilIcon className="h-5 w-5" />
+                            </button>
+                          </PermissionGate>
+                          <PermissionGate page="inventory" permission="delete">
+                            <button
+                              onClick={() => handleDeleteItem(item.item_id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete item"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </PermissionGate>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               
-              {inventory.length === 0 && (
+              {filteredInventory.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">No inventory items found. Add items to start tracking inventory.</p>
+                  <p className="text-gray-500">
+                    {inventory.length === 0 
+                      ? 'No inventory items found. Add items to start tracking inventory.'
+                      : 'No items match your current filters.'}
+                  </p>
                 </div>
               )}
             </div>

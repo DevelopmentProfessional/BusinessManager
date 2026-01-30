@@ -6,30 +6,27 @@ import {
   UsersIcon,
   CalendarDaysIcon,
   ArchiveBoxIcon,
-  ClockIcon,
   DocumentIcon,
   EllipsisHorizontalIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
-  TruckIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import DarkModeToggle from './DarkModeToggle';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
+// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Schedule, Settings
 const allNavigation = [
   { name: 'Profile', href: '/profile', icon: UserCircleIcon },
-  { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
-  { name: 'Reports', href: '/reports', icon: ChartBarIcon, permission: 'schedule:read' },
+  { name: 'Reports', href: '/reports', icon: ChartBarIcon, permission: 'reports:read' },
   { name: 'Inventory', href: '/inventory', icon: ArchiveBoxIcon, permission: 'inventory:read' },
   { name: 'Clients', href: '/clients', icon: UserGroupIcon, permission: 'clients:read' },
+  { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
   { name: 'Documents', href: '/documents', icon: DocumentIcon, permission: 'documents:read' },
   { name: 'Services', href: '/services', icon: WrenchScrewdriverIcon, permission: 'services:read' },
-  { name: 'Suppliers', href: '/suppliers', icon: TruckIcon, permission: 'suppliers:read' },
-  { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
-  { name: 'Attendance', href: '/attendance', icon: ClockIcon, permission: 'attendance:read' },
+  { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 

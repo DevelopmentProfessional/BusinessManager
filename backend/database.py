@@ -3,8 +3,14 @@ from sqlalchemy import text
 import os
 from typing import Generator
 
-# Database URL from environment variable - defaults to SQLite for easy local development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./business_manager.db")
+# Import database configuration
+try:
+    from backend.db_config import get_database_url
+except ImportError:
+    from db_config import get_database_url
+
+# Database URL from db_config (supports environment switching)
+DATABASE_URL = get_database_url()
 
 # Create engine with appropriate settings for SQLite (local) or PostgreSQL (production)
 if DATABASE_URL.startswith("sqlite"):

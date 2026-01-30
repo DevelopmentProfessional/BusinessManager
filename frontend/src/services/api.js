@@ -272,6 +272,31 @@ export const employeesAPI = {
   },
 };
 
+export const rolesAPI = {
+  getAll: () => getCachedOrFetch('roles', () => api.get('/auth/roles')),
+  getById: (id) => api.get(`/auth/roles/${id}`),
+  create: (data) => {
+    clearCache('roles');
+    return api.post('/auth/roles', data);
+  },
+  update: (id, data) => {
+    clearCache('roles');
+    return api.put(`/auth/roles/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('roles');
+    return api.delete(`/auth/roles/${id}`);
+  },
+  addPermission: (roleId, data) => {
+    clearCache('roles');
+    return api.post(`/auth/roles/${roleId}/permissions`, data);
+  },
+  removePermission: (roleId, permissionId) => {
+    clearCache('roles');
+    return api.delete(`/auth/roles/${roleId}/permissions/${permissionId}`);
+  },
+};
+
 export const scheduleAPI = {
   getAll: () => getCachedOrFetch('schedule', () => api.get('/isud/schedules')),
   getByEmployee: (userId) => api.get(`/isud/schedules?employee_id=${userId}`),
@@ -306,6 +331,7 @@ export const attendanceAPI = {
 
 export const documentsAPI = {
   getAll: () => getCachedOrFetch('documents', () => api.get('/documents')),
+  getById: (id) => api.get(`/documents/${id}`),
   getByEntity: (entityType, entityId) => api.get(`/documents/by-entity/${entityType}/${entityId}`),
   upload: (file, description) => {
     const formData = new FormData();
@@ -379,6 +405,11 @@ export const adminAPI = {
   },
   getSystemInfo: () => api.get('/admin/system-info'),
   testAppointments: () => api.get('/admin/test-appointments'),
+};
+
+export const dbEnvironmentAPI = {
+  getCurrent: () => api.get('/auth/db-environment'),
+  switch: (environment) => api.post('/auth/db-environment', { environment }),
 };
 
 export const reportsAPI = {

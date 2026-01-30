@@ -31,7 +31,7 @@ export default function DocumentEditor() {
     setLocalLoading(true);
     setLocalError('');
     try {
-      const response = await documentsAPI.get(documentId);
+      const response = await documentsAPI.getById(documentId);
       setDocument(response.data);
       clearError();
     } catch (err) {

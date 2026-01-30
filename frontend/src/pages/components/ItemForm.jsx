@@ -7,8 +7,8 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     sku: initialSku || '',
     price: '',
     description: '',
-    // Use enum names expected by backend/DB enum (CONSUMABLE, ITEM)
-    type: 'ITEM',
+    // Use enum names expected by backend/DB enum (PRODUCT, RESOURCE, ASSET)
+    type: 'PRODUCT',
   });
   const [initialQuantity, setInitialQuantity] = useState('0');
 
@@ -21,10 +21,10 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         description: item.description || '',
         // Accept either value or name from API; normalize to enum NAME for submission
         type: (typeof item.type === 'string'
-          ? (['CONSUMABLE','ITEM'].includes(item.type.toUpperCase())
+          ? (['PRODUCT','RESOURCE','ASSET'].includes(item.type.toUpperCase())
               ? item.type.toUpperCase()
-              : 'ITEM')
-          : 'ITEM'),
+              : 'PRODUCT')
+          : 'PRODUCT'),
       });
     } else if (initialSku) {
       setFormData(prev => ({ ...prev, sku: initialSku }));
@@ -56,7 +56,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     }
     const type = typeof formData.type === 'string'
       ? formData.type.toUpperCase()
-      : 'ITEM';
+      : 'PRODUCT';
     const payload = {
       name,
       sku,
@@ -159,8 +159,9 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
           value={formData.type}
           onChange={handleChange}
           options={[
-            { value: 'CONSUMABLE', label: 'Consumable' },
-            { value: 'ITEM', label: 'Stock item' }
+            { value: 'PRODUCT', label: 'Product' },
+            { value: 'RESOURCE', label: 'Resource' },
+            { value: 'ASSET', label: 'Asset' }
           ]}
           placeholder="Select item type"
           required

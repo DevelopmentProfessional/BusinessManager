@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import api, { employeesAPI, adminAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI } from '../services/api';
 import Modal from './components/Modal';
 import EmployeeFormTabs from './components/EmployeeFormTabs';
 import CustomDropdown from './components/CustomDropdown';
@@ -29,6 +29,11 @@ export default function Employees() {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [showDataImport, setShowDataImport] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [newRole, setNewRole] = useState({ name: '', description: '' });
+  const [newRolePermission, setNewRolePermission] = useState({ page: '', permission: '' });
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -40,7 +45,82 @@ export default function Employees() {
 
   useEffect(() => {
     loadEmployees();
+    loadRoles();
   }, []);
+
+  const loadRoles = async () => {
+    try {
+      const response = await rolesAPI.getAll();
+      const rolesData = response?.data ?? response;
+      if (Array.isArray(rolesData)) {
+        setAvailableRoles(rolesData);
+      }
+    } catch (err) {
+      console.error('Failed to load roles:', err);
+    }
+  };
+
+  const getRoleName = (roleId) => {
+    if (!roleId) return '-';
+    const role = availableRoles.find(r => r.id === roleId);
+    return role ? role.name : '-';
+  };
+
+  const handleCreateRole = async (e) => {
+    e.preventDefault();
+    if (!newRole.name.trim()) {
+      setError('Role name is required');
+      return;
+    }
+    try {
+      await rolesAPI.create(newRole);
+      setSuccess('Role created successfully!');
+      setNewRole({ name: '', description: '' });
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create role');
+    }
+  };
+
+  const handleDeleteRole = async (roleId) => {
+    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    try {
+      await rolesAPI.delete(roleId);
+      setSuccess('Role deleted successfully!');
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete role');
+    }
+  };
+
+  const handleAddRolePermission = async (roleId) => {
+    if (!newRolePermission.page || !newRolePermission.permission) {
+      setError('Please select both page and permission');
+      return;
+    }
+    try {
+      await rolesAPI.addPermission(roleId, newRolePermission);
+      setSuccess('Permission added to role!');
+      setNewRolePermission({ page: '', permission: '' });
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to add permission');
+    }
+  };
+
+  const handleRemoveRolePermission = async (roleId, permissionId) => {
+    try {
+      await rolesAPI.removePermission(roleId, permissionId);
+      setSuccess('Permission removed from role!');
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to remove permission');
+    }
+  };
 
   // Check permissions at page level
   if (!hasPermission('employees', 'read') && 
@@ -403,6 +483,13 @@ export default function Employees() {
   const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
 
+  // Helper function to get manager name from reports_to ID
+  const getManagerName = (reportsToId) => {
+    if (!reportsToId) return '-';
+    const manager = employees.find(e => e.id === reportsToId);
+    return manager ? `${manager.first_name} ${manager.last_name}` : '-';
+  };
+
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
@@ -416,6 +503,12 @@ export default function Employees() {
             <div className="flex space-x-2">
               {hasPermission('employees', 'admin') && (
                 <>
+                  <button
+                    onClick={() => setShowRolesModal(true)}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
+                  >
+                    Manage Roles
+                  </button>
                   <button
                     onClick={() => setShowDataImport(true)}
                     className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
@@ -471,6 +564,8 @@ export default function Employees() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reports To</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -489,6 +584,16 @@ export default function Employees() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                         {employee.role}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {employee.role_id ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                            {getRoleName(employee.role_id)}
+                          </span>
+                        ) : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {getManagerName(employee.reports_to)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -578,6 +683,7 @@ export default function Employees() {
           employee={editingEmployee}
           onSubmit={handleSubmit}
           onCancel={closeModal}
+          employees={employees}
         />
       </Modal>
 
@@ -816,6 +922,167 @@ export default function Employees() {
               className="btn btn-secondary"
             >
               <i className="bi bi-x-circle me-2"></i>
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Roles Management Modal */}
+      <Modal isOpen={showRolesModal} onClose={() => setShowRolesModal(false)}>
+        <div className={`p-4 ${isDarkMode ? 'bg-dark' : 'bg-white'}`}>
+          <h3 className={`text-lg font-medium mb-4 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+            Manage Roles
+          </h3>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+              <div className="text-sm text-red-700">{error}</div>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
+              <div className="text-sm text-green-700">{success}</div>
+            </div>
+          )}
+
+          {/* Create New Role Form */}
+          <form onSubmit={handleCreateRole} className="mb-4 p-3 border rounded">
+            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Create New Role</h5>
+            <div className="row g-3">
+              <div className="col-md-5">
+                <input
+                  type="text"
+                  value={newRole.name}
+                  onChange={(e) => setNewRole({...newRole, name: e.target.value})}
+                  className="form-control"
+                  placeholder="Role Name"
+                  required
+                />
+              </div>
+              <div className="col-md-5">
+                <input
+                  type="text"
+                  value={newRole.description}
+                  onChange={(e) => setNewRole({...newRole, description: e.target.value})}
+                  className="form-control"
+                  placeholder="Description (optional)"
+                />
+              </div>
+              <div className="col-md-2">
+                <button type="submit" className="btn btn-primary w-100">
+                  Create
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Existing Roles List */}
+          <div className="mt-4">
+            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Existing Roles</h5>
+            {availableRoles.length === 0 ? (
+              <p className="text-muted">No roles defined yet. Create one above.</p>
+            ) : (
+              <div className="space-y-4">
+                {availableRoles.map((role) => (
+                  <div key={role.id} className="border rounded p-3">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <h6 className={`mb-1 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                          {role.name}
+                          {role.is_system && (
+                            <span className="badge bg-secondary ms-2">System</span>
+                          )}
+                        </h6>
+                        {role.description && (
+                          <small className="text-muted">{role.description}</small>
+                        )}
+                      </div>
+                      {!role.is_system && (
+                        <button
+                          onClick={() => handleDeleteRole(role.id)}
+                          className="btn btn-sm btn-outline-danger"
+                          title="Delete Role"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Role Permissions */}
+                    <div className="mt-2">
+                      <small className={`d-block mb-2 ${isDarkMode ? 'text-light' : 'text-muted'}`}>
+                        <strong>Permissions:</strong>
+                      </small>
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {role.role_permissions?.length > 0 ? (
+                          role.role_permissions.map((perm) => (
+                            <span key={perm.id} className="badge bg-secondary d-flex align-items-center gap-1">
+                              {perm.page}:{perm.permission}
+                              <button
+                                onClick={() => handleRemoveRolePermission(role.id, perm.id)}
+                                className="btn-close btn-close-white ms-1"
+                                style={{ fontSize: '0.5rem' }}
+                                title="Remove permission"
+                              />
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-muted">No permissions assigned</span>
+                        )}
+                      </div>
+
+                      {/* Add Permission to Role */}
+                      <div className="d-flex gap-2 mt-2">
+                        <select
+                          value={editingRole === role.id ? newRolePermission.page : ''}
+                          onChange={(e) => {
+                            setEditingRole(role.id);
+                            setNewRolePermission({...newRolePermission, page: e.target.value});
+                          }}
+                          className="form-select form-select-sm"
+                          style={{ maxWidth: '150px' }}
+                        >
+                          <option value="">Page...</option>
+                          {pages.map(page => (
+                            <option key={page} value={page}>{page}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={editingRole === role.id ? newRolePermission.permission : ''}
+                          onChange={(e) => {
+                            setEditingRole(role.id);
+                            setNewRolePermission({...newRolePermission, permission: e.target.value});
+                          }}
+                          className="form-select form-select-sm"
+                          style={{ maxWidth: '150px' }}
+                        >
+                          <option value="">Permission...</option>
+                          {permissions.map(perm => (
+                            <option key={perm} value={perm}>{perm}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleAddRolePermission(role.id)}
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="d-flex justify-content-end mt-4">
+            <button
+              onClick={() => setShowRolesModal(false)}
+              className="btn btn-secondary"
+            >
               Close
             </button>
           </div>

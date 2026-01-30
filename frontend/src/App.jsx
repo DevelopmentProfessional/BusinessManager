@@ -8,7 +8,6 @@ import Services from './pages/Services';
 import Suppliers from './pages/Suppliers';
 import Employees from './pages/Employees';
 import Schedule from './pages/Schedule';
-import Attendance from './pages/Attendance';
 import Documents from './pages/Documents';
 import DocumentEditor from './pages/DocumentEditor';
 import Profile from './pages/Profile';
@@ -128,13 +127,6 @@ function App() {
           <ProtectedRoute requiredPermission="inventory:read">
             <Layout>
               <Inventory />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/attendance" element={
-          <ProtectedRoute requiredPermission="attendance:read">
-            <Layout>
-              <Attendance />
             </Layout>
           </ProtectedRoute>
         } />

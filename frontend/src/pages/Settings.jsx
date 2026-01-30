@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CogIcon, 
   ServerIcon,
@@ -10,7 +10,9 @@ import {
   CalendarIcon,
   KeyIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  CircleStackIcon,
+  SwatchIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api from '../services/api';
@@ -29,6 +31,75 @@ export default function Settings() {
     new_password: '',
     confirm_password: ''
   });
+
+  // Branding settings state
+  const [branding, setBranding] = useState({
+    primaryColor: '#3B82F6',
+    secondaryColor: '#10B981',
+    accentColor: '#8B5CF6',
+    logoUrl: '',
+    companyName: 'Business Manager',
+    tagline: ''
+  });
+
+  // Database/Connection settings state
+  const [dbSettings, setDbSettings] = useState({
+    connectionString: '',
+    apiBaseUrl: '',
+    onlyofficeUrl: ''
+  });
+
+  // Load saved settings from localStorage on mount
+  useEffect(() => {
+    const savedBranding = localStorage.getItem('app_branding');
+    if (savedBranding) {
+      try {
+        setBranding(JSON.parse(savedBranding));
+      } catch (e) {
+        console.warn('Failed to parse saved branding settings');
+      }
+    }
+
+    const savedDbSettings = localStorage.getItem('app_db_settings');
+    if (savedDbSettings) {
+      try {
+        setDbSettings(JSON.parse(savedDbSettings));
+      } catch (e) {
+        console.warn('Failed to parse saved db settings');
+      }
+    } else {
+      // Initialize with current env values
+      setDbSettings({
+        connectionString: '',
+        apiBaseUrl: import.meta.env.VITE_API_URL || '',
+        onlyofficeUrl: import.meta.env.VITE_ONLYOFFICE_URL || ''
+      });
+    }
+  }, []);
+
+  const handleSaveBranding = () => {
+    localStorage.setItem('app_branding', JSON.stringify(branding));
+    // Apply CSS variables for immediate effect
+    document.documentElement.style.setProperty('--color-primary', branding.primaryColor);
+    document.documentElement.style.setProperty('--color-secondary', branding.secondaryColor);
+    document.documentElement.style.setProperty('--color-accent', branding.accentColor);
+    setSuccess('Branding settings saved successfully!');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleSaveDbSettings = () => {
+    localStorage.setItem('app_db_settings', JSON.stringify(dbSettings));
+    setSuccess('Connection settings saved! Some changes may require a page refresh.');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleBrandingChange = (field, value) => {
+    setBranding(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDbSettingsChange = (field, value) => {
+    setDbSettings(prev => ({ ...prev, [field]: value }));
+  };
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
@@ -78,6 +149,8 @@ export default function Settings() {
 
   const tabs = [
     { id: 'account', name: 'Account', icon: UserIcon },
+    { id: 'branding', name: 'Branding', icon: SwatchIcon },
+    { id: 'database', name: 'Database', icon: CircleStackIcon },
     { id: 'general', name: 'General', icon: CogIcon },
     { id: 'api', name: 'API & Debug', icon: ServerIcon },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
@@ -312,6 +385,309 @@ export default function Settings() {
                   </div>
                 )}
                 
+                {success && (
+                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
+                      <CheckCircleIcon className="h-5 w-5" />
+                      <span>{success}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Branding Settings */}
+            {activeTab === 'branding' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Branding Settings
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                  Customize the look and feel of the application for all users.
+                </p>
+
+                {/* Company Info */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Company Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={branding.companyName}
+                        onChange={(e) => handleBrandingChange('companyName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                        placeholder="Your Company Name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Tagline
+                      </label>
+                      <input
+                        type="text"
+                        value={branding.tagline}
+                        onChange={(e) => handleBrandingChange('tagline', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                        placeholder="Your company tagline"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Logo URL
+                      </label>
+                      <input
+                        type="url"
+                        value={branding.logoUrl}
+                        onChange={(e) => handleBrandingChange('logoUrl', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://example.com/logo.png"
+                      />
+                      {branding.logoUrl && (
+                        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                          <img 
+                            src={branding.logoUrl} 
+                            alt="Logo preview" 
+                            className="h-12 object-contain"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color Scheme */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Color Scheme</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Primary Color
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.primaryColor}
+                          onChange={(e) => handleBrandingChange('primaryColor', e.target.value)}
+                          className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={branding.primaryColor}
+                          onChange={(e) => handleBrandingChange('primaryColor', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Used for buttons, links, and accents</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Secondary Color
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.secondaryColor}
+                          onChange={(e) => handleBrandingChange('secondaryColor', e.target.value)}
+                          className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={branding.secondaryColor}
+                          onChange={(e) => handleBrandingChange('secondaryColor', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Used for success states and highlights</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Accent Color
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.accentColor}
+                          onChange={(e) => handleBrandingChange('accentColor', e.target.value)}
+                          className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={branding.accentColor}
+                          onChange={(e) => handleBrandingChange('accentColor', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Used for special elements and badges</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Preview</h3>
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div className="flex items-center gap-4 mb-4">
+                      {branding.logoUrl && (
+                        <img src={branding.logoUrl} alt="Logo" className="h-8 object-contain" onError={(e) => e.target.style.display = 'none'} />
+                      )}
+                      <div>
+                        <h4 className="font-bold" style={{ color: branding.primaryColor }}>{branding.companyName || 'Company Name'}</h4>
+                        {branding.tagline && <p className="text-sm text-gray-500">{branding.tagline}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        className="px-4 py-2 text-white rounded-lg"
+                        style={{ backgroundColor: branding.primaryColor }}
+                      >
+                        Primary Button
+                      </button>
+                      <button 
+                        className="px-4 py-2 text-white rounded-lg"
+                        style={{ backgroundColor: branding.secondaryColor }}
+                      >
+                        Secondary
+                      </button>
+                      <span 
+                        className="px-3 py-2 text-white rounded-full text-sm"
+                        style={{ backgroundColor: branding.accentColor }}
+                      >
+                        Accent Badge
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSaveBranding}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Save Branding Settings
+                </button>
+
+                {success && (
+                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
+                      <CheckCircleIcon className="h-5 w-5" />
+                      <span>{success}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Database/Connection Settings */}
+            {activeTab === 'database' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Database & Connection Settings
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                  Configure database connection and external service URLs. Changes require admin privileges.
+                </p>
+
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+                  <div className="flex items-start gap-2">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800 dark:text-yellow-300">Important</h4>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                        These settings are stored locally and override environment variables. 
+                        For production deployments, configure these via environment variables instead.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Database Connection String */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Database Connection String
+                    </label>
+                    <input
+                      type="password"
+                      value={dbSettings.connectionString}
+                      onChange={(e) => handleDbSettingsChange('connectionString', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      placeholder="postgresql://user:password@host:port/database"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      PostgreSQL connection string for the backend database
+                    </p>
+                  </div>
+
+                  {/* API Base URL */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      API Base URL
+                    </label>
+                    <input
+                      type="url"
+                      value={dbSettings.apiBaseUrl}
+                      onChange={(e) => handleDbSettingsChange('apiBaseUrl', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      placeholder="http://localhost:8000/api/v1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Base URL for the backend API (VITE_API_URL)
+                    </p>
+                  </div>
+
+                  {/* OnlyOffice URL */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      OnlyOffice Document Server URL
+                    </label>
+                    <input
+                      type="url"
+                      value={dbSettings.onlyofficeUrl}
+                      onChange={(e) => handleDbSettingsChange('onlyofficeUrl', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      placeholder="http://localhost:8082"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      URL for OnlyOffice Document Server for document editing (VITE_ONLYOFFICE_URL)
+                    </p>
+                  </div>
+
+                  {/* Current Environment Info */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Current Environment</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">VITE_API_URL:</span>
+                        <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+                          {import.meta.env.VITE_API_URL || '(not set)'}
+                        </code>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">VITE_ONLYOFFICE_URL:</span>
+                        <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+                          {import.meta.env.VITE_ONLYOFFICE_URL || '(not set)'}
+                        </code>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Environment:</span>
+                        <code className="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+                          {import.meta.env.DEV ? 'Development' : 'Production'}
+                        </code>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSaveDbSettings}
+                  className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Save Connection Settings
+                </button>
+
                 {success && (
                   <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <div className="flex items-center gap-2 text-green-800 dark:text-green-300">

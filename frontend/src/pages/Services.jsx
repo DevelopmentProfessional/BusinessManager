@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon, ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { servicesAPI } from '../services/api';
+import { servicesAPI, clientsAPI } from '../services/api';
 import Modal from './components/Modal';
 import ServiceForm from './components/ServiceForm';
 import MobileTable from './components/MobileTable';
@@ -31,10 +31,81 @@ export default function Services() {
   const [isImporting, setIsImporting] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // POS State
+  const [activeTab, setActiveTab] = useState('services'); // 'services' or 'pos'
+  const [cart, setCart] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clients, setClientsLocal] = useState([]);
+  const [clientSearch, setClientSearch] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
     loadServices();
+    loadClients();
   }, []);
+
+  const loadClients = async () => {
+    try {
+      const response = await clientsAPI.getAll();
+      const data = response?.data ?? response;
+      if (Array.isArray(data)) setClientsLocal(data);
+    } catch (err) {
+      console.error('Failed to load clients for POS:', err);
+    }
+  };
+
+  // POS Functions
+  const addToCart = (service) => {
+    const existing = cart.find(item => item.id === service.id);
+    if (existing) {
+      setCart(cart.map(item => 
+        item.id === service.id ? { ...item, quantity: item.quantity + 1 } : item
+      ));
+    } else {
+      setCart([...cart, { ...service, quantity: 1 }]);
+    }
+  };
+
+  const removeFromCart = (serviceId) => {
+    setCart(cart.filter(item => item.id !== serviceId));
+  };
+
+  const updateCartQuantity = (serviceId, quantity) => {
+    if (quantity <= 0) {
+      removeFromCart(serviceId);
+    } else {
+      setCart(cart.map(item => 
+        item.id === serviceId ? { ...item, quantity } : item
+      ));
+    }
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCheckout = () => {
+    if (cart.length === 0) {
+      setError('Cart is empty');
+      return;
+    }
+    setShowCheckout(true);
+  };
+
+  const processPayment = () => {
+    // In a real app, this would create a transaction record
+    alert(`Payment of $${cartTotal.toFixed(2)} processed via ${paymentMethod}${selectedClient ? ` for ${selectedClient.name}` : ''}!`);
+    setCart([]);
+    setSelectedClient(null);
+    setShowCheckout(false);
+    clearError();
+  };
+
+  const filteredClients = clients.filter(c => 
+    c.name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.email?.toLowerCase().includes(clientSearch.toLowerCase())
+  );
 
   // Auto-open create modal when navigated with ?new=1 and then clean the URL
   useEffect(() => {
@@ -149,7 +220,32 @@ export default function Services() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Services</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Services</h1>
+          {/* Tab Switcher */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('services')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'services' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Services
+            </button>
+            <button
+              onClick={() => setActiveTab('pos')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'pos' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ShoppingCartIcon className="h-4 w-4" />
+              Point of Sale
+              {cartItemCount > 0 && (
+                <span className="bg-primary-600 text-white text-xs rounded-full px-2 py-0.5">{cartItemCount}</span>
+              )}
+            </button>
+          </div>
+        </div>
         
         {/* Search and Add Button Row */}
         <div className="mt-4">
@@ -194,6 +290,135 @@ export default function Services() {
         </div>
       )}
 
+      {/* POS View */}
+      {activeTab === 'pos' && (
+        <div className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Services Grid */}
+            <div className="lg:col-span-2">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Services</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {services.map(service => (
+                  <button
+                    key={service.id}
+                    onClick={() => addToCart(service)}
+                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-primary-500 hover:shadow-md transition-all text-left"
+                  >
+                    <div className="font-medium text-gray-900">{service.name}</div>
+                    <div className="text-primary-600 font-bold">${service.price?.toFixed(2)}</div>
+                    <div className="text-xs text-gray-500">{service.duration_minutes} min</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cart */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <ShoppingCartIcon className="h-5 w-5" />
+                Cart ({cartItemCount})
+              </h3>
+
+              {cart.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">Cart is empty</p>
+              ) : (
+                <>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {cart.map(item => (
+                      <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{item.name}</div>
+                          <div className="text-xs text-gray-500">${item.price?.toFixed(2)} each</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="w-6 h-6 bg-gray-200 rounded text-sm">-</button>
+                          <span className="w-6 text-center text-sm">{item.quantity}</span>
+                          <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="w-6 h-6 bg-gray-200 rounded text-sm">+</button>
+                          <button onClick={() => removeFromCart(item.id)} className="text-red-500 ml-2"><XMarkIcon className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t mt-4 pt-4">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total:</span>
+                      <span>${cartTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Client Selection */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <UserIcon className="h-4 w-4 inline mr-1" />
+                      Client (optional)
+                    </label>
+                    {selectedClient ? (
+                      <div className="flex items-center justify-between p-2 bg-primary-50 rounded">
+                        <span className="text-sm">{selectedClient.name}</span>
+                        <button onClick={() => setSelectedClient(null)} className="text-gray-500"><XMarkIcon className="h-4 w-4" /></button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Search clients..."
+                          value={clientSearch}
+                          onChange={(e) => setClientSearch(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        />
+                        {clientSearch && (
+                          <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
+                            {filteredClients.slice(0, 5).map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => { setSelectedClient(c); setClientSearch(''); }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                              >
+                                {c.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPaymentMethod('cash')}
+                        className={`flex-1 py-2 px-3 rounded border text-sm flex items-center justify-center gap-1 ${paymentMethod === 'cash' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
+                      >
+                        <BanknotesIcon className="h-4 w-4" /> Cash
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('card')}
+                        className={`flex-1 py-2 px-3 rounded border text-sm flex items-center justify-center gap-1 ${paymentMethod === 'card' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
+                      >
+                        <CreditCardIcon className="h-4 w-4" /> Card
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={processPayment}
+                    className="w-full mt-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                  >
+                    Complete Payment - ${cartTotal.toFixed(2)}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Services Tab Content */}
+      {activeTab === 'services' && (
+        <>
       {/* Mobile view */}
       <div className="mt-6 md:hidden">
         <MobileTable
@@ -288,6 +513,8 @@ export default function Services() {
           </div>
         </div>
       </div>
+        </>
+      )}
 
       {/* Modal for Service Form */}
       <Modal isOpen={isModalOpen && modalContent === 'service-form'} onClose={closeModal}>

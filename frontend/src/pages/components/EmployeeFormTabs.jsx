@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import useDarkMode from '../../services/useDarkMode';
+import { rolesAPI } from '../../services/api';
 
-export default function EmployeeFormTabs({ employee, onSubmit, onCancel }) {
+export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employees = [] }) {
   const { isDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState('employee');
+  const [roles, setRoles] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -13,8 +16,29 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel }) {
     phone: '',
     role: 'EMPLOYEE',
     hire_date: new Date().toISOString().split('T')[0],
-    is_active: true
+    is_active: true,
+    reports_to: '',
+    role_id: ''
   });
+
+  // Load available roles
+  useEffect(() => {
+    const loadRoles = async () => {
+      setRolesLoading(true);
+      try {
+        const response = await rolesAPI.getAll();
+        const rolesData = response?.data ?? response;
+        if (Array.isArray(rolesData)) {
+          setRoles(rolesData);
+        }
+      } catch (err) {
+        console.error('Failed to load roles:', err);
+      } finally {
+        setRolesLoading(false);
+      }
+    };
+    loadRoles();
+  }, []);
 
   useEffect(() => {
     if (employee) {
@@ -27,10 +51,15 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel }) {
         phone: employee.phone || '',
         role: employee.role || 'EMPLOYEE',
         hire_date: employee.hire_date ? employee.hire_date.split('T')[0] : new Date().toISOString().split('T')[0],
-        is_active: employee.is_active !== undefined ? employee.is_active : true
+        is_active: employee.is_active !== undefined ? employee.is_active : true,
+        reports_to: employee.reports_to || '',
+        role_id: employee.role_id || ''
       });
     }
   }, [employee]);
+
+  // Filter out current employee from manager options (can't report to self)
+  const managerOptions = employees.filter(e => e.id !== employee?.id);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -71,7 +100,17 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel }) {
     if (!submitData.email.trim()) {
       submitData.email = null;
     }
-    
+
+    // Handle reports_to - convert empty string to null
+    if (!submitData.reports_to) {
+      submitData.reports_to = null;
+    }
+
+    // Handle role_id - convert empty string to null
+    if (!submitData.role_id) {
+      submitData.role_id = null;
+    }
+
     onSubmit(submitData);
   };
 
@@ -226,7 +265,59 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel }) {
                   className="form-control"
                 />
               </div>
-              
+
+              <div className="col-md-6">
+                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                  Reports To
+                </label>
+                <select
+                  name="reports_to"
+                  value={formData.reports_to}
+                  onChange={handleInputChange}
+                  className="form-select"
+                >
+                  <option value="">No Manager (Top Level)</option>
+                  {managerOptions.map(mgr => (
+                    <option key={mgr.id} value={mgr.id}>
+                      {mgr.first_name} {mgr.last_name} ({mgr.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-6">
+                <label className={`form-label ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                  Assigned Role
+                  <span className="ms-1 text-muted" style={{ fontSize: '0.75rem' }}>(inherits permissions)</span>
+                </label>
+                <select
+                  name="role_id"
+                  value={formData.role_id}
+                  onChange={handleInputChange}
+                  className="form-select"
+                  disabled={rolesLoading}
+                >
+                  <option value="">No Role Assigned</option>
+                  {roles.map(role => (
+                    <option key={role.id} value={role.id}>
+                      {role.name} {role.role_permissions?.length > 0 && `(${role.role_permissions.length} permissions)`}
+                    </option>
+                  ))}
+                </select>
+                {formData.role_id && roles.find(r => r.id === formData.role_id)?.role_permissions?.length > 0 && (
+                  <div className="mt-2 p-2 border rounded bg-light" style={{ fontSize: '0.8rem' }}>
+                    <strong>Role Permissions:</strong>
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      {roles.find(r => r.id === formData.role_id)?.role_permissions?.map(perm => (
+                        <span key={perm.id} className="badge bg-secondary">
+                          {perm.page}:{perm.permission}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="col-12">
                 <div className="form-check">
                   <input

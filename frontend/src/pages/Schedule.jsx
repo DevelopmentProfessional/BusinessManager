@@ -5,6 +5,7 @@ import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/
 import Modal from './components/Modal';
 import ScheduleForm from './components/ScheduleForm';
 import PermissionGate from './components/PermissionGate';
+import AttendanceWidget from './components/AttendanceWidget';
 import useDarkMode from '../services/useDarkMode';
 
 export default function Schedule() {
@@ -285,6 +286,11 @@ export default function Schedule() {
   return (
     <div className="h-100 d-flex flex-column">
       <PermissionGate page="schedule" permission="read">
+        {/* Attendance Widget - Clock In/Out */}
+        <div className="mb-3 px-2">
+          <AttendanceWidget compact={true} />
+        </div>
+
         <h4 className="text-center mb-3">
           {currentView === 'day'
             ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
