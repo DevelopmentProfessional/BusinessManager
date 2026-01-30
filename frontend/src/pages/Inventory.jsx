@@ -23,16 +23,16 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+    <form onSubmit={handleSubmit} className="space-y-1">
+      <div className="mb-1">
+        <h3 className="text-lg font-medium text-gray-900 mb-1">
           Update Inventory
         </h3>
       </div>
 
-      <div>
+      <div className="flex gap-1">
         <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-          Current Quantity *
+          Current Quantity
         </label>
         <input
           type="number"
@@ -45,9 +45,9 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
         />
       </div>
 
-      <div>
+      <div className="flex gap-1">
         <label htmlFor="minStockLevel" className="block text-sm font-medium text-gray-700">
-          Minimum Stock Level *
+          Minimum Stock Level
         </label>
         <input
           type="number"
@@ -60,7 +60,7 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
         />
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex justify-start space-x-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">
           Cancel
         </button>
@@ -323,7 +323,7 @@ export default function Inventory() {
 
   return (
     <div className="h-full flex flex-col min-h-0 overflow-hidden">
-      <div className="flex-shrink-0 mb-4">
+      <div className="flex-shrink-0 mb-1">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
       </div>
 
@@ -422,93 +422,7 @@ export default function Inventory() {
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
               {/* Desktop Search, Filters, and Action Buttons - Inside Table Container */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  {/* Left side: Search and Filters */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    {/* Search Input */}
-                    <div className="relative">
-                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search by name or SKU..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-                      />
-                    </div>
-
-                    {/* Type Filter */}
-                    <div className="flex items-center gap-2">
-                      <FunnelIcon className="h-4 w-4 text-gray-400" />
-                      <select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-                      >
-                        <option value="all">All Types</option>
-                        <option value="PRODUCT">Products</option>
-                        <option value="RESOURCE">Resources</option>
-                        <option value="ASSET">Assets</option>
-                      </select>
-                    </div>
-
-                    {/* Stock Filter */}
-                    <select
-                      value={stockFilter}
-                      onChange={(e) => setStockFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-                    >
-                      <option value="all">All Stock</option>
-                      <option value="low">Low Stock</option>
-                      <option value="ok">In Stock</option>
-                    </select>
-
-                    {/* Results count */}
-                    <span className="text-sm text-gray-500">
-                      {filteredInventory.length} of {inventory.length} items
-                    </span>
-                  </div>
-
-                  {/* Right side: Action Buttons */}
-                  <PermissionGate page="inventory" permission="write">
-                    <div className="flex items-center gap-2">
-                      <CSVImportButton
-                        entityName="Items"
-                        onImport={handleCSVImport}
-                        onComplete={loadInventoryData}
-                        requiredFields={['name']}
-                        fieldMapping={{
-                          'item name': 'name',
-                          'product name': 'name',
-                          'item': 'name',
-                          'product': 'name',
-                          'stock': 'quantity',
-                          'qty': 'quantity',
-                          'min stock': 'min_stock_level',
-                          'minimum stock': 'min_stock_level',
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateItem}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
-                      >
-                        <PlusIcon className="h-4 w-4" />
-                        Add Item
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleOpenScanner}
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
-                      >
-                        <CameraIcon className="h-4 w-4" />
-                        Scan
-                      </button>
-                    </div>
-                  </PermissionGate>
-                </div>
-              </div>
+          
 
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
@@ -597,7 +511,93 @@ export default function Inventory() {
                   ))}
                 </tbody>
               </table>
-              
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  {/* Left side: Search and Filters */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Search Input */}
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by name or SKU..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                      />
+                    </div>
+
+                    {/* Type Filter */}
+                    <div className="flex items-center gap-2">
+                      <FunnelIcon className="h-4 w-4 text-gray-400" />
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="PRODUCT">Products</option>
+                        <option value="RESOURCE">Resources</option>
+                        <option value="ASSET">Assets</option>
+                      </select>
+                    </div>
+
+                    {/* Stock Filter */}
+                    <select
+                      value={stockFilter}
+                      onChange={(e) => setStockFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                    >
+                      <option value="all">All Stock</option>
+                      <option value="low">Low Stock</option>
+                      <option value="ok">In Stock</option>
+                    </select>
+
+                    {/* Results count */}
+                    <span className="text-sm text-gray-500">
+                      {filteredInventory.length} of {inventory.length} items
+                    </span>
+                  </div>
+
+                  {/* Right side: Action Buttons */}
+                  <PermissionGate page="inventory" permission="write">
+                    <div className="flex items-center gap-2">
+                      <CSVImportButton
+                        entityName="Items"
+                        onImport={handleCSVImport}
+                        onComplete={loadInventoryData}
+                        requiredFields={['name']}
+                        fieldMapping={{
+                          'item name': 'name',
+                          'product name': 'name',
+                          'item': 'name',
+                          'product': 'name',
+                          'stock': 'quantity',
+                          'qty': 'quantity',
+                          'min stock': 'min_stock_level',
+                          'minimum stock': 'min_stock_level',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateItem}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        Add Item
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenScanner}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
+                      >
+                        <CameraIcon className="h-4 w-4" />
+                        Scan
+                      </button>
+                    </div>
+                  </PermissionGate>
+                </div>
+              </div>
               {filteredInventory.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-500">

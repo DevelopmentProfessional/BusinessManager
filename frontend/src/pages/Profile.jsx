@@ -164,39 +164,29 @@ const Profile = () => {
   };
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid py-1">
       {/* Welcome Section */}
-      <div className="card mb-4">
-        <div className="card-body">
-          <div className="d-flex align-items-center gap-3">
+      <div className="card mb-1">
+        <div className="card-body">w
+          <div className="d-flex align-items-center gap-1">
             <div className="flex-shrink-0">
-              <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '4rem', height: '4rem' }}>
+              <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2rem', height: '2rem' }}>
                 <UserIcon className="h-8 w-8 text-primary" />
               </div>
             </div>
             <div className="flex-grow-1">
               <h1 className="h3 mb-1">{greeting}, {user.first_name}!</h1>
-              <p className="text-muted mb-0">Welcome to your business management dashboard</p>
-            </div>
-            <Link to="/settings" className="btn btn-outline-secondary">
-              <CogIcon className="h-5 w-5 me-2" />
-              Settings
-            </Link>
+             </div>
+           
           </div>
         </div>
       </div>
 
       {/* Employee Info & Quick Stats Row */}
-      <div className="row g-4 mb-4">
+      <div className="row g-1 mb-1">
         {/* Employee Information */}
         <div className="col-lg-6">
-          <div className="card h-100">
-            <div className="card-header bg-transparent">
-              <h2 className="h5 mb-0">
-                <UserIcon className="h-5 w-5 me-2" />
-                My Information
-              </h2>
-            </div>
+          <div className="card h-100">        
             <div className="card-body">
               <div className="row g-3">
                 <div className="col-sm-6">
@@ -258,7 +248,7 @@ const Profile = () => {
               </h2>
             </div>
             <div className="card-body">
-              <div className="row g-3">
+              <div className="row g-1">
                 <div className="col-6">
                   <div className="card bg-primary bg-opacity-10 border-0">
                     <div className="card-body text-center py-4">
@@ -288,7 +278,7 @@ const Profile = () => {
       </div>
 
       {/* Personal Settings */}
-      <div className="card mb-4">
+      <div className="card mb-1">
         <div className="card-header bg-transparent">
           <h2 className="h5 mb-0">
             <CogIcon className="h-5 w-5 me-2" />
@@ -296,23 +286,16 @@ const Profile = () => {
           </h2>
         </div>
         <div className="card-body">
-          <div className="row g-3">
-            <div className="col-md-6">
-              <div className="d-flex align-items-center justify-content-between p-3 border rounded">
+          <div className="row g-1">
+            <div className="col-md-1">
+              <div className="d-flex align-items-center justify-content-between p-1 border rounded">
                 <div className="d-flex align-items-center gap-3">
                   {isDarkMode ? (
                     <MoonIcon className="h-6 w-6 text-primary" />
                   ) : (
                     <SunIcon className="h-6 w-6 text-warning" />
-                  )}
-                  <div>
-                    <div className="fw-medium">Dark Mode</div>
-                    <div className="text-muted small">
-                      {isDarkMode ? 'Dark theme enabled' : 'Light theme enabled'}
-                    </div>
-                  </div>
-                </div>
-                <div className="form-check form-switch">
+                  )}                  
+                    <div className="form-check form-switch">
                   <input
                     className="form-check-input"
                     type="checkbox"
@@ -323,22 +306,11 @@ const Profile = () => {
                     style={{ width: '3rem', height: '1.5rem' }}
                   />
                 </div>
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="d-flex align-items-center justify-content-between p-3 border rounded">
-                <div className="d-flex align-items-center gap-3">
-                  <BellIcon className="h-6 w-6 text-info" />
-                  <div>
-                    <div className="fw-medium">Notifications</div>
-                    <div className="text-muted small">Manage notification preferences</div>
-                  </div>
                 </div>
-                <Link to="/settings" className="btn btn-sm btn-outline-secondary">
-                  Configure
-                </Link>
+               
               </div>
             </div>
+           
           </div>
         </div>
       </div>
@@ -352,10 +324,7 @@ const Profile = () => {
           </h2>
         </div>
         <div className="card-body">
-          <p className="text-muted small mb-3">
-            Switch between different database environments for development, testing, or production.
-            Changes require an application restart to take effect.
-          </p>
+         
           
           {dbMessage && (
             <div className="alert alert-success d-flex align-items-center mb-3" role="alert">
@@ -410,48 +379,10 @@ const Profile = () => {
               <span className="ms-2 text-muted">Switching environment...</span>
             </div>
           )}
-
-          <div className="mt-3 p-3 bg-light rounded">
-            <div className="d-flex align-items-center gap-2 text-muted small">
-              <ArrowPathIcon className="h-4 w-4" />
-              <span>
-                <strong>Note:</strong> After switching environments, restart the backend server for changes to take effect.
-              </span>
-            </div>
-          </div>
+ 
         </div>
       </div>
-
-      {/* Quick Links */}
-      <div className="mb-4">
-        <h2 className="h5 mb-3">Quick Access</h2>
-        <div className="row g-3">
-          {quickLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <div key={link.name} className="col-md-6 col-lg-4">
-                <Link to={link.href} className="text-decoration-none">
-                  <div className="card h-100 hover-shadow transition">
-                    <div className="card-body">
-                      <div className="d-flex align-items-start gap-3">
-                        <div className="flex-shrink-0">
-                          <div className={`bg-${link.color} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center`} style={{ width: '3rem', height: '3rem' }}>
-                            <Icon className={`h-6 w-6 text-${link.color}`} />
-                          </div>
-                        </div>
-                        <div className="flex-grow-1">
-                          <h3 className="h6 mb-1">{link.name}</h3>
-                          <p className="text-muted small mb-0">{link.description}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+ 
     </div>
   );
 };
