@@ -202,14 +202,6 @@ const useStore = create((set, get) => ({
     clients: state.clients.filter(client => client.id !== id)
   })),
 
-  // Items state
-  items: [],
-  setItems: (items) => set({ items }),
-  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
-  removeItem: (id) => set((state) => ({
-    items: state.items.filter(item => item.id !== id)
-  })),
-
   // Services state
   services: [],
   setServices: (services) => set({ services }),

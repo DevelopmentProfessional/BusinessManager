@@ -29,12 +29,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, documents
+    from backend.routers import auth, isud
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    # Only do this when the missing module is the routers package itself.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.documents"}:
-        from routers import auth, isud, documents  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud"}:
+        from routers import auth, isud  # type: ignore
     else:
         raise
 
@@ -170,10 +169,116 @@ async def startup_event():
     print("Database tables initialized")
     print("All routers loaded successfully")
 
-# Include routers
+# Include routers (documents + document_category CRUD go through isud)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
-app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
+
+# Document file operations only: upload (create record + file) and download (serve file).
+# List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).
+import shutil
+import uuid as _uuid
+from uuid import UUID
+from typing import Optional
+from fastapi import Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse
+
+try:
+    from backend.database import get_session
+    from backend.models import Document, User
+    from backend.routers.auth import get_current_user
+except ModuleNotFoundError:
+    from database import get_session
+    from models import Document, User
+    from routers.auth import get_current_user
+
+_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(_UPLOAD_DIR, exist_ok=True)
+
+
+def _resolve_document_path(file_path: str, upload_dir: str) -> str:
+    if not file_path:
+        return ""
+    if os.path.isabs(file_path) and os.path.exists(file_path):
+        return file_path
+    fallback = os.path.join(upload_dir, os.path.basename(file_path))
+    if os.path.exists(fallback):
+        return fallback
+    return file_path
+
+
+@app.post("/api/v1/documents/upload", tags=["documents"])
+async def document_upload(
+    file: UploadFile = File(...),
+    description: Optional[str] = Form(None),
+    entity_type: Optional[str] = Form(None),
+    entity_id: Optional[str] = Form(None),
+    category_id: Optional[str] = Form(None),
+    session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a file and create a document record. Metadata CRUD is via isud."""
+    file_ext = os.path.splitext(file.filename or "")[1]
+    unique_filename = f"{_uuid.uuid4()}{file_ext}"
+    path = os.path.join(_UPLOAD_DIR, unique_filename)
+    try:
+        with open(path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        file_size = os.path.getsize(path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    parsed_entity_id = UUID(entity_id) if entity_id else None
+    parsed_category_id = UUID(category_id) if category_id else None
+    doc = Document(
+        filename=unique_filename,
+        original_filename=file.filename or "unknown",
+        file_path=path,
+        file_size=file_size,
+        content_type=file.content_type or "application/octet-stream",
+        description=description,
+        entity_type=entity_type,
+        entity_id=parsed_entity_id,
+        category_id=parsed_category_id,
+        owner_id=current_user.id,
+    )
+    session.add(doc)
+    session.commit()
+    session.refresh(doc)
+    return doc
+
+
+@app.get("/api/v1/documents/{document_id}/download", tags=["documents"])
+async def document_download(
+    document_id: UUID,
+    download: bool = Query(False, description="Force download"),
+    session=Depends(get_session),
+):
+    """Serve the document file. Document metadata is via isud."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    disposition = "attachment" if download else "inline"
+    return FileResponse(
+        path,
+        filename=doc.original_filename,
+        media_type=doc.content_type,
+        headers={"Content-Disposition": f'{disposition}; filename="{doc.original_filename}"'},
+    )
+
+
+@app.get("/api/v1/documents/{document_id}/onlyoffice-config", tags=["documents"])
+async def document_onlyoffice_config(
+    document_id: UUID,
+    session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Stub for document editor component; real config/connection lives in the editor."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"documentType": None, "notConfigured": True, "document": {"title": doc.original_filename}}
 
 
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import IconButton from './IconButton';
 import ActionFooter from './ActionFooter';
 
@@ -7,8 +7,10 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    category: '',
     price: '',
-    duration_minutes: '60'
+    duration_minutes: '60',
+    image_url: ''
   });
 
   useEffect(() => {
@@ -16,8 +18,10 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
       setFormData({
         name: service.name || '',
         description: service.description || '',
+        category: service.category || '',
         price: service.price?.toString() || '',
-        duration_minutes: service.duration_minutes?.toString() || '60'
+        duration_minutes: service.duration_minutes?.toString() || '60',
+        image_url: service.image_url || ''
       });
     }
   }, [service]);
@@ -32,11 +36,15 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({
+    const submitData = {
       ...formData,
       price: parseFloat(formData.price),
       duration_minutes: parseInt(formData.duration_minutes)
-    });
+    };
+    // Only include image_url if it has a value
+    if (!submitData.image_url) delete submitData.image_url;
+    if (!submitData.category) delete submitData.category;
+    onSubmit(submitData);
   };
 
   return (
@@ -60,6 +68,21 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
           onChange={handleChange}
           className="input-field mt-1"
           placeholder="Enter service name"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Category
+        </label>
+        <input
+          type="text"
+          id="category"
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          className="input-field mt-1"
+          placeholder="e.g., Hair, Nails, Spa"
         />
       </div>
 
@@ -111,6 +134,32 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
           className="input-field mt-1"
           placeholder="60"
         />
+      </div>
+
+      <div>
+        <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <PhotoIcon className="h-4 w-4 inline mr-1" />
+          Image URL
+        </label>
+        <input
+          type="url"
+          id="image_url"
+          name="image_url"
+          value={formData.image_url}
+          onChange={handleChange}
+          className="input-field mt-1"
+          placeholder="https://example.com/image.jpg"
+        />
+        {formData.image_url && (
+          <div className="mt-2">
+            <img 
+              src={formData.image_url} 
+              alt="Preview" 
+              className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+              onError={(e) => e.target.style.display = 'none'}
+            />
+          </div>
+        )}
       </div>
 
       <ActionFooter>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
@@ -230,7 +230,12 @@ export default function Documents() {
   const [editingCatName, setEditingCatName] = useState('');
   const [editingCatDesc, setEditingCatDesc] = useState('');
 
+  // Ref to prevent double fetching in StrictMode
+  const hasFetched = useRef(false);
+
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadDocuments();
     loadCategories();
   }, []);
@@ -487,11 +492,11 @@ export default function Documents() {
           <PermissionGate page="documents" permission="write">
             <button
               type="button"
-              onClick={() => setIsCategoriesOpen((v) => !v)}
+              onClick={() => setIsCategoriesOpen(true)}
               className="btn-secondary"
               title="Manage Categories"
             >
-              {isCategoriesOpen ? 'Hide Categories' : 'Manage Categories'}
+              Manage Categories
             </button>
           </PermissionGate>
         </div>
@@ -503,137 +508,9 @@ export default function Documents() {
         </div>
       )}
 
-      {/* Categories Management Panel */}
-      {isCategoriesOpen && (
-        <div className="mt-4 p-4 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Manage Categories
-            </h3>
-          </div>
-          <form
-            onSubmit={handleCreateCategory}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4"
-          >
-            <input
-              type="text"
-              placeholder="New category name"
-              className="input-field"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Description (optional)"
-              className="input-field"
-              value={newCatDesc}
-              onChange={(e) => setNewCatDesc(e.target.value)}
-            />
-            <div className="flex justify-end">
-              <button type="submit" className="btn-primary">
-                Add Category
-              </button>
-            </div>
-          </form>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-100 dark:bg-gray-700">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {categories.map((cat) => (
-                  <tr key={cat.id}>
-                    <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                      {editingCatId === cat.id ? (
-                        <input
-                          className="input-field"
-                          value={editingCatName}
-                          onChange={(e) => setEditingCatName(e.target.value)}
-                        />
-                      ) : (
-                        cat.name
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                      {editingCatId === cat.id ? (
-                        <input
-                          className="input-field"
-                          value={editingCatDesc}
-                          onChange={(e) => setEditingCatDesc(e.target.value)}
-                        />
-                      ) : (
-                        cat.description || '-'
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-sm">
-                      {editingCatId === cat.id ? (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            onClick={() => saveEditCategory(cat.id)}
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={cancelEditCategory}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => startEditCategory(cat)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary text-red-700"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {categories.length === 0 && (
-                  <tr>
-                    <td
-                      className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400"
-                      colSpan={3}
-                    >
-                      No categories yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
+      {/* Documents List */}
+      <div className="mt-6">
         <MobileTable
           data={documents}
           columns={[
@@ -678,6 +555,13 @@ export default function Documents() {
                 <PencilIcon className="h-5 w-5" />
               </button>
               <button
+                onClick={() => handleOpenHistory(item)}
+                className="flex-shrink-0 p-2 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                title="History"
+              >
+                <ClockIcon className="h-5 w-5" />
+              </button>
+              <button
                 onClick={() => handleOpenSign(item)}
                 className="flex-shrink-0 p-2 text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                 title="Sign"
@@ -689,138 +573,6 @@ export default function Documents() {
           emptyMessage="No documents uploaded yet"
         />
         <MobileAddButton onClick={handleUploadDocument} label="Upload" />
-      </div>
-
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      File Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Entity Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      File Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Upload Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Signed
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {documents.map((document) => (
-                    <tr
-                      key={document.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                      onClick={() => handleView(document)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        <div className="flex items-center">
-                          <DocumentIcon className="h-5 w-5 text-gray-400 mr-2" />
-                          {document.original_filename}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {document.entity_type ? (
-                          <span className="capitalize">
-                            {document.entity_type}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatFileSize(document.file_size)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(document.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {document.description || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {document.is_signed ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400">
-                            Signed
-                            {document.signed_by ? ` by ${document.signed_by}` : ''}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
-                            Not signed
-                          </span>
-                        )}
-                      </td>
-                      <td
-                        className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          onClick={() => handleView(document)}
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                          title="View"
-                        >
-                          <EyeIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(document)}
-                          className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenHistory(document)}
-                          className="text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300"
-                          title="History"
-                        >
-                          <ClockIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenSign(document)}
-                          className="text-green-700 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                          title="Sign"
-                        >
-                          <CheckIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDocument(document.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          title="Delete"
-                        >
-                          <TrashIcon className="h-5 w-5 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {documents.length === 0 && (
-                <div className="text-center py-12">
-                  <DocumentIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No documents found. Upload your first document to get started.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Document Upload Modal */}
@@ -968,6 +720,144 @@ export default function Documents() {
               </button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      {/* Categories Management Modal */}
+      <Modal isOpen={isCategoriesOpen} onClose={() => setIsCategoriesOpen(false)}>
+        {isCategoriesOpen && (
+          <div className="flex flex-col max-h-[70vh]">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+              Manage Categories
+            </h3>
+
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                      Delete
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {categories.map((cat) => (
+                    <tr key={cat.id}>
+                      <td className="px-4 py-2 text-sm">
+                        <button
+                          type="button"
+                          className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          title="Delete category"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                        {editingCatId === cat.id ? (
+                          <input
+                            className="input-field"
+                            value={editingCatName}
+                            onChange={(e) => setEditingCatName(e.target.value)}
+                          />
+                        ) : (
+                          cat.name
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                        {editingCatId === cat.id ? (
+                          <input
+                            className="input-field"
+                            value={editingCatDesc}
+                            onChange={(e) => setEditingCatDesc(e.target.value)}
+                          />
+                        ) : (
+                          cat.description || '-'
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-sm">
+                        {editingCatId === cat.id ? (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              onClick={() => saveEditCategory(cat.id)}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              onClick={cancelEditCategory}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => startEditCategory(cat)}
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {categories.length === 0 && (
+                    <tr>
+                      <td
+                        className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400"
+                        colSpan={4}
+                      >
+                        No categories yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Add Category form at bottom */}
+            <form
+              onSubmit={handleCreateCategory}
+              className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="New category name"
+                  className="input-field"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Description (optional)"
+                  className="input-field"
+                  value={newCatDesc}
+                  onChange={(e) => setNewCatDesc(e.target.value)}
+                />
+                <div className="flex justify-end">
+                  <button type="submit" className="btn-primary">
+                    Add Category
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         )}
       </Modal>
     </div>

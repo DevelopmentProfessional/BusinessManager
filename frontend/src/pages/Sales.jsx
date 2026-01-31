@@ -1,15 +1,179 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon, ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  PencilIcon, TrashIcon, ArrowUpTrayIcon, ShoppingCartIcon, XMarkIcon, 
+  UserIcon, CreditCardIcon, BanknotesIcon, ClockIcon, TagIcon,
+  PlusIcon, MinusIcon, CheckCircleIcon, ArrowLeftIcon,
+  MagnifyingGlassIcon, PhotoIcon, SparklesIcon, CubeIcon, Squares2X2Icon
+} from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import useStore from '../services/useStore';
-import { servicesAPI, clientsAPI, itemsAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
 import ServiceForm from './components/ServiceForm';
 import MobileTable from './components/MobileTable';
 import MobileAddButton from './components/MobileAddButton';
 import PermissionGate from './components/PermissionGate';
-import CSVImportButton from './components/CSVImportButton';
-import { useLocation, useNavigate } from 'react-router-dom';
+import ProductDetailModal from './components/ProductDetailModal';
+import CheckoutModal from './components/CheckoutModal';
+
+// Unified Product/Service Card Component
+const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity }) => {
+  const isService = itemType === 'service';
+  const hasImage = item.image_url;
+  
+  return (
+    <button
+      onClick={() => onSelect(item, itemType)}
+      className={`group relative flex flex-col bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 overflow-hidden hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] h-48 ${
+        inCart 
+          ? 'border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-800' 
+          : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
+      }`}
+    >
+      {/* Full Card Background Image */}
+      <div className={`absolute inset-0 ${hasImage ? '' : 'bg-gradient-to-br'} ${
+        isService 
+          ? 'from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800' 
+          : 'from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800'
+      }`}>
+        {hasImage ? (
+          <img 
+            src={item.image_url} 
+            alt={item.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            {isService ? (
+              <SparklesIcon className="h-16 w-16 text-primary-400/50 dark:text-primary-500/50" />
+            ) : (
+              <CubeIcon className="h-16 w-16 text-emerald-400/50 dark:text-emerald-500/50" />
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Gradient Overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      
+      {/* Type Badge - Top Left */}
+      <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${
+        isService 
+          ? 'bg-primary-500/90 text-white' 
+          : 'bg-emerald-500/90 text-white'
+      }`}>
+        {isService ? 'Service' : 'Product'}
+      </div>
+      
+      {/* In Cart Indicator - Top Right */}
+      {inCart && (
+        <div className="absolute top-2 right-2 flex items-center gap-1 bg-emerald-500 rounded-full px-2 py-0.5">
+          <CheckCircleSolid className="h-4 w-4 text-white" />
+          {cartQuantity > 0 && (
+            <span className="text-white text-xs font-bold">
+              {cartQuantity}
+            </span>
+          )}
+        </div>
+      )}
+      
+      {/* Content Footer - Overlays bottom of image */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+        <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1 drop-shadow-md">
+          {item.name}
+        </h3>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-bold text-white drop-shadow-md">
+            ${item.price?.toFixed(2)}
+          </span>
+          
+          {isService && item.duration_minutes && (
+            <span className="flex items-center text-xs text-white/80 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
+              <ClockIcon className="h-3 w-3 mr-1" />
+              {item.duration_minutes}m
+            </span>
+          )}
+          
+          {!isService && item.sku && (
+            <span className="text-xs text-white/70 font-mono bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
+              {item.sku}
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Hover Overlay */}
+      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors pointer-events-none" />
+    </button>
+  );
+};
+
+// Cart Item Component
+const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
+  const isService = item.itemType === 'service';
+  
+  return (
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      {/* Mini Image/Icon */}
+      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+        isService 
+          ? 'bg-primary-100 dark:bg-primary-900' 
+          : 'bg-emerald-100 dark:bg-emerald-900'
+      }`}>
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+        ) : isService ? (
+          <SparklesIcon className="h-6 w-6 text-primary-500" />
+        ) : (
+          <CubeIcon className="h-6 w-6 text-emerald-500" />
+        )}
+      </div>
+      
+      {/* Item Info */}
+      <div className="flex-1 min-w-0">
+        <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">{item.name}</h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          ${item.price?.toFixed(2)} × {item.quantity}
+        </p>
+      </div>
+      
+      {/* Quantity Controls */}
+      <div className="flex items-center gap-1">
+        <button 
+          onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)}
+          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
+        >
+          <MinusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+        </button>
+        <span className="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">{item.quantity}</span>
+        <button 
+          onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)}
+          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
+        >
+          <PlusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+        </button>
+      </div>
+      
+      {/* Subtotal & Remove */}
+      <div className="text-right">
+        <p className="font-semibold text-sm text-gray-900 dark:text-white">
+          ${(item.price * item.quantity).toFixed(2)}
+        </p>
+        <button 
+          onClick={() => onRemove(item.cartKey)}
+          className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function Sales() {
   const { 
@@ -17,8 +181,6 @@ export default function Sales() {
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
-
-  // Use the permission refresh hook
 
   // Check permissions at page level
   if (!hasPermission('services', 'read') && 
@@ -34,14 +196,21 @@ export default function Sales() {
   const navigate = useNavigate();
   
   // POS State
-  const [activeTab, setActiveTab] = useState('pos'); // 'pos' or 'services'
+  const [activeTab, setActiveTab] = useState('pos');
+  const [posCategory, setPosCategory] = useState('all'); // 'all', 'services', 'products'
+  const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clients, setClientsLocal] = useState([]);
   const [clientSearch, setClientSearch] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [products, setProducts] = useState([]);
+  
+  // Product Detail Modal State
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItemType, setSelectedItemType] = useState(null);
+  const [showProductModal, setShowProductModal] = useState(false);
 
   useEffect(() => {
     loadServices();
@@ -61,13 +230,16 @@ export default function Sales() {
 
   const loadProducts = async () => {
     try {
-      const response = await itemsAPI.getAll();
+      const response = await inventoryAPI.getAll();
       const data = response?.data ?? response;
       if (Array.isArray(data)) {
-        // Filter to only include items marked as PRODUCT type
-        const productItems = data.filter(item => 
-          (item.type || '').toUpperCase() === 'PRODUCT'
-        );
+        // Filter to include items that are products (or untyped/legacy 'item' type)
+        // Exclude only RESOURCE and ASSET types which are not sellable
+        const productItems = data.filter(item => {
+          const itemType = (item.type || '').toUpperCase();
+          // Include: PRODUCT, empty, 'item' (legacy), or any non-resource/asset
+          return itemType !== 'RESOURCE' && itemType !== 'ASSET';
+        });
         setProducts(productItems);
       }
     } catch (err) {
@@ -75,18 +247,32 @@ export default function Sales() {
     }
   };
 
+  // Open product detail modal
+  const handleSelectItem = (item, itemType) => {
+    setSelectedItem(item);
+    setSelectedItemType(itemType);
+    setShowProductModal(true);
+  };
+
   // POS Functions
   // Use cartKey to distinguish services from products (avoids ID collisions)
-  const addToCart = (item, itemType = 'service') => {
+  const addToCart = (item, itemType = 'service', quantity = 1) => {
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find(c => c.cartKey === cartKey);
     if (existing) {
       setCart(cart.map(c => 
-        c.cartKey === cartKey ? { ...c, quantity: c.quantity + 1 } : c
+        c.cartKey === cartKey ? { ...c, quantity } : c
       ));
     } else {
-      setCart([...cart, { ...item, cartKey, itemType, quantity: 1 }]);
+      setCart([...cart, { ...item, cartKey, itemType, quantity }]);
     }
+  };
+  
+  // Get quantity of item in cart
+  const getCartQuantity = (itemId, itemType) => {
+    const cartKey = `${itemType}-${itemId}`;
+    const item = cart.find(c => c.cartKey === cartKey);
+    return item?.quantity || 0;
   };
 
   const removeFromCart = (cartKey) => {
@@ -114,19 +300,14 @@ export default function Sales() {
     setShowCheckout(true);
   };
 
-  const processPayment = () => {
+  const processPayment = (paymentMethod) => {
     // In a real app, this would create a transaction record
-    alert(`Payment of $${cartTotal.toFixed(2)} processed via ${paymentMethod}${selectedClient ? ` for ${selectedClient.name}` : ''}!`);
+    console.log(`Payment of $${cartTotal.toFixed(2)} processed via ${paymentMethod}${selectedClient ? ` for ${selectedClient.name}` : ''}`);
     setCart([]);
     setSelectedClient(null);
     setShowCheckout(false);
     clearError();
   };
-
-  const filteredClients = clients.filter(c => 
-    c.name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    c.email?.toLowerCase().includes(clientSearch.toLowerCase())
-  );
 
   // Auto-open create modal when navigated with ?new=1 and then clean the URL
   useEffect(() => {
@@ -209,33 +390,6 @@ export default function Sales() {
     event.target.value = '';
   };
 
-  const handleCSVImportServices = async (records) => {
-    let success = 0;
-    let failed = 0;
-    const errors = [];
-
-    for (const record of records) {
-      try {
-        const serviceData = {
-          name: record.name,
-          description: record.description || '',
-          price: parseFloat(record.price) || 0,
-          duration: parseInt(record.duration) || 60,
-          category: record.category || '',
-        };
-        
-        await servicesAPI.create(serviceData);
-        success++;
-      } catch (err) {
-        failed++;
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
-        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
-      }
-    }
-
-    return { success, failed, errors };
-  };
-
   const handleSubmitService = async (serviceData) => {
     try {
       if (editingService) {
@@ -257,6 +411,29 @@ export default function Sales() {
     loadServices();
   };
 
+  // Filter items based on search and category
+  const filteredServices = services.filter(s => 
+    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredProducts = products.filter(p => 
+    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredClients = clients.filter(c => 
+    c.name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.email?.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
+  // Check if item is in cart
+  const isInCart = (itemId, itemType) => {
+    return cart.some(c => c.cartKey === `${itemType}-${itemId}`);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -266,218 +443,308 @@ export default function Sales() {
   }
 
   return (
-    <div className="h-full flex flex-col min-h-0 overflow-hidden">
-      <div className="flex-shrink-0 mb-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
+    <div className="h-full flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-900 -m-4 md:-m-6 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex-shrink-0 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Point of Sale & Service Management
+            </p>
+          </div>
+          
           {/* Tab Switcher */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setActiveTab('services')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'services' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Services
-            </button>
+          <div className="flex bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setActiveTab('pos')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'pos' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                activeTab === 'pos' 
+                  ? 'bg-primary-600 text-white shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <ShoppingCartIcon className="h-4 w-4" />
               Point of Sale
               {cartItemCount > 0 && (
-                <span className="bg-primary-600 text-white text-xs rounded-full px-2 py-0.5">{cartItemCount}</span>
+                <span className={`text-xs rounded-full px-2 py-0.5 ${
+                  activeTab === 'pos' ? 'bg-white/20 text-white' : 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+                }`}>
+                  {cartItemCount}
+                </span>
               )}
             </button>
-          </div>
-        </div>
-        
-        {/* Search and Add Button Row */}
-        <div className="mt-4">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Search services by name or category..."
-              className="form-control"
-            />
-            <PermissionGate page="services" permission="write">
-              <div className="input-group-append d-flex">
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="btn btn-outline-secondary"
-                >
-                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh
-                </button>
-                <label className="btn btn-outline-primary cursor-pointer">
-                  <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
-                  {isImporting ? 'Importing...' : 'Import CSV'}
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                    disabled={isImporting}
-                  />
-                </label>
-              </div>
-            </PermissionGate>
+            <button
+              onClick={() => setActiveTab('services')}
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'services' 
+                  ? 'bg-primary-600 text-white shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Manage Services
+            </button>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+        <div className="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={clearError} className="text-red-500 hover:text-red-700">
+            <XMarkIcon className="h-5 w-5" />
+          </button>
         </div>
       )}
 
       {/* POS View */}
       {activeTab === 'pos' && (
-        <div className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Services & Products Grid */}
-            <div className="lg:col-span-2">
-              {/* Services Section */}
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Services</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                {services.map(service => (
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
+          {/* Products/Services Grid */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {/* Search and Filter Bar */}
+            <div className="flex-shrink-0 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search */}
+                <div className="flex-1 relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search products and services..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Category Filter */}
+                <div className="flex bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
                   <button
-                    key={`service-${service.id}`}
-                    onClick={() => addToCart(service, 'service')}
-                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-primary-500 hover:shadow-md transition-all text-left"
+                    onClick={() => setPosCategory('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      posCategory === 'all' 
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
                   >
-                    <div className="font-medium text-gray-900">{service.name}</div>
-                    <div className="text-primary-600 font-bold">${service.price?.toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">{service.duration_minutes} min</div>
+                    All
                   </button>
-                ))}
+                  <button
+                    onClick={() => setPosCategory('services')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
+                      posCategory === 'services' 
+                        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <SparklesIcon className="h-4 w-4" />
+                    Services
+                  </button>
+                  <button
+                    onClick={() => setPosCategory('products')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
+                      posCategory === 'products' 
+                        ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <CubeIcon className="h-4 w-4" />
+                    Products
+                  </button>
+                </div>
               </div>
-
-              {/* Products Section */}
-              {products.length > 0 && (
-                <>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Products</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {products.map(product => (
-                      <button
-                        key={`product-${product.id}`}
-                        onClick={() => addToCart(product, 'product')}
-                        className="p-4 bg-green-50 border border-green-200 rounded-lg hover:border-green-500 hover:shadow-md transition-all text-left"
-                      >
-                        <div className="font-medium text-gray-900">{product.name}</div>
-                        <div className="text-green-600 font-bold">${product.price?.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500">{product.sku}</div>
-                      </button>
+            </div>
+            
+            {/* Items Grid */}
+            <div className="flex-1 overflow-y-auto pr-2">
+              {/* Services Section */}
+              {(posCategory === 'all' || posCategory === 'services') && filteredServices.length > 0 && (
+                <div className="mb-6">
+                  {posCategory === 'all' && (
+                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <SparklesIcon className="h-4 w-4" />
+                      Services ({filteredServices.length})
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredServices.map(service => (
+                      <ItemCard
+                        key={`service-${service.id}`}
+                        item={service}
+                        itemType="service"
+                        onSelect={handleSelectItem}
+                        inCart={isInCart(service.id, 'service')}
+                        cartQuantity={getCartQuantity(service.id, 'service')}
+                      />
                     ))}
                   </div>
-                </>
+                </div>
+              )}
+              
+              {/* Products Section */}
+              {(posCategory === 'all' || posCategory === 'products') && filteredProducts.length > 0 && (
+                <div className="mb-6">
+                  {posCategory === 'all' && (
+                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <CubeIcon className="h-4 w-4" />
+                      Products ({filteredProducts.length})
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredProducts.map(product => (
+                      <ItemCard
+                        key={`product-${product.id}`}
+                        item={product}
+                        itemType="product"
+                        onSelect={handleSelectItem}
+                        inCart={isInCart(product.id, 'product')}
+                        cartQuantity={getCartQuantity(product.id, 'product')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Empty State */}
+              {filteredServices.length === 0 && filteredProducts.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                    <MagnifyingGlassIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No items found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter</p>
+                </div>
               )}
             </div>
+          </div>
 
-            {/* Cart */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                <ShoppingCartIcon className="h-5 w-5" />
-                Cart ({cartItemCount})
-              </h3>
+          {/* Cart Sidebar */}
+          <div className="w-full lg:w-96 flex-shrink-0">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm h-full flex flex-col">
+              {/* Cart Header */}
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <ShoppingCartIcon className="h-5 w-5" />
+                    Cart
+                  </h3>
+                  {cart.length > 0 && (
+                    <button 
+                      onClick={() => setCart([])}
+                      className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {cart.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Cart is empty</p>
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
+                    <ShoppingCartIcon className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-1">Cart is empty</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Add items to get started</p>
+                </div>
               ) : (
                 <>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {/* Cart Items */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {cart.map(item => (
-                      <div key={item.cartKey} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{item.name}</div>
-                          <div className="text-xs text-gray-500">${item.price?.toFixed(2)} each</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => updateCartQuantity(item.cartKey, item.quantity - 1)} className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300">-</button>
-                          <span className="w-6 text-center text-sm">{item.quantity}</span>
-                          <button onClick={() => updateCartQuantity(item.cartKey, item.quantity + 1)} className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300">+</button>
-                          <button onClick={() => removeFromCart(item.cartKey)} className="text-red-500 ml-2"><XMarkIcon className="h-4 w-4" /></button>
-                        </div>
-                      </div>
+                      <CartItem
+                        key={item.cartKey}
+                        item={item}
+                        onUpdateQuantity={updateCartQuantity}
+                        onRemove={removeFromCart}
+                      />
                     ))}
-                  </div>
-
-                  <div className="border-t mt-4 pt-4">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total:</span>
-                      <span>${cartTotal.toFixed(2)}</span>
-                    </div>
                   </div>
 
                   {/* Client Selection */}
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       <UserIcon className="h-4 w-4 inline mr-1" />
-                      Client (optional)
+                      Customer (optional)
                     </label>
                     {selectedClient ? (
-                      <div className="flex items-center justify-between p-2 bg-primary-50 rounded">
-                        <span className="text-sm">{selectedClient.name}</span>
-                        <button onClick={() => setSelectedClient(null)} className="text-gray-500"><XMarkIcon className="h-4 w-4" /></button>
+                      <div className="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedClient.name}</p>
+                          {selectedClient.email && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => setSelectedClient(null)} 
+                          className="p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors"
+                        >
+                          <XMarkIcon className="h-4 w-4 text-gray-500" />
+                        </button>
                       </div>
                     ) : (
-                      <div>
+                      <div className="relative">
                         <input
                           type="text"
-                          placeholder="Search clients..."
+                          placeholder="Search customers..."
                           value={clientSearch}
-                          onChange={(e) => setClientSearch(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                          onChange={(e) => {
+                            setClientSearch(e.target.value);
+                            setShowClientDropdown(true);
+                          }}
+                          onFocus={() => setShowClientDropdown(true)}
+                          className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
-                        {clientSearch && (
-                          <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
+                        {showClientDropdown && clientSearch && (
+                          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                             {filteredClients.slice(0, 5).map(c => (
                               <button
                                 key={c.id}
-                                onClick={() => { setSelectedClient(c); setClientSearch(''); }}
-                                className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                                onClick={() => { 
+                                  setSelectedClient(c); 
+                                  setClientSearch(''); 
+                                  setShowClientDropdown(false);
+                                }}
+                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
                               >
-                                {c.name}
+                                <p className="font-medium">{c.name}</p>
+                                {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
                               </button>
                             ))}
+                            {filteredClients.length === 0 && (
+                              <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No customers found</p>
+                            )}
                           </div>
                         )}
                       </div>
                     )}
                   </div>
 
-                  {/* Payment Method */}
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setPaymentMethod('cash')}
-                        className={`flex-1 py-2 px-3 rounded border text-sm flex items-center justify-center gap-1 ${paymentMethod === 'cash' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
-                      >
-                        <BanknotesIcon className="h-4 w-4" /> Cash
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod('card')}
-                        className={`flex-1 py-2 px-3 rounded border text-sm flex items-center justify-center gap-1 ${paymentMethod === 'card' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300'}`}
-                      >
-                        <CreditCardIcon className="h-4 w-4" /> Card
-                      </button>
+                  {/* Cart Summary & Checkout */}
+                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartItemCount} items)</span>
+                        <span className="text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Tax (8%)</span>
+                        <span className="text-gray-900 dark:text-white">${(cartTotal * 0.08).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-900 dark:text-white">Total</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">${(cartTotal * 1.08).toFixed(2)}</span>
+                      </div>
                     </div>
+                    
+                    <button
+                      onClick={handleCheckout}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                    >
+                      <CreditCardIcon className="h-5 w-5" />
+                      Proceed to Checkout
+                    </button>
                   </div>
-
-                  <button
-                    onClick={processPayment}
-                    className="w-full mt-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-                  >
-                    Complete Payment - ${cartTotal.toFixed(2)}
-                  </button>
                 </>
               )}
             </div>
@@ -487,138 +754,123 @@ export default function Sales() {
 
       {/* Services Tab Content */}
       {activeTab === 'services' && (
-        <>
-      {/* Mobile view - table scrolls inside */}
-      <div className="mt-4 md:hidden flex-1 min-h-0 flex flex-col">
-        <MobileTable
-          data={services}
-          columns={[
-            { key: 'name', title: 'Name' },
-            { key: 'price', title: 'Price', render: (v) => `$${v.toFixed(2)}` },
-            { key: 'duration_minutes', title: 'Duration', render: (v) => `${v} min` },
-          ]}
-          onEdit={(item) => handleEditService(item)}
-          onDelete={(item) => handleDeleteService(item.id)}
-          editPermission={{ page: 'services', permission: 'write' }}
-          deletePermission={{ page: 'services', permission: 'delete' }}
-          emptyMessage="No services found"
-        />
-        <PermissionGate page="services" permission="write">
-          <MobileAddButton onClick={handleCreateService} label="Add" />
-        </PermissionGate>
-      </div>
-
-      {/* Desktop table - scrolls inside */}
-      <div className="mt-4 hidden md:flex flex-1 flex-col min-h-0 overflow-auto">
-        <div className="-mx-4 -my-2 sm:-mx-6 lg:-mx-8 flex-1 min-h-0">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              {/* Desktop Toolbar */}
-              <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">
-                    {services.length} services
-                  </span>
-                  <PermissionGate page="services" permission="write">
-                    <div className="flex items-center gap-2">
-                      <CSVImportButton
-                        entityName="Services"
-                        onImport={handleCSVImportServices}
-                        onComplete={loadServices}
-                        requiredFields={['name']}
-                        fieldMapping={{
-                          'service name': 'name',
-                          'service': 'name',
-                          'cost': 'price',
-                          'rate': 'price',
-                          'time': 'duration',
-                          'minutes': 'duration',
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateService}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
-                      >
-                        <PlusIcon className="h-4 w-4" />
-                        Add Service
-                      </button>
-                    </div>
-                  </PermissionGate>
-                </div>
+        <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+          {/* Services Header */}
+          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
               </div>
-
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {services.map((service) => (
-                    <tr key={service.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {service.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${service.price.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {service.duration_minutes} min
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {service.description || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                        <PermissionGate page="services" permission="delete">
-                          <button
-                            onClick={() => handleDeleteService(service.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                        <PermissionGate page="services" permission="write">
-                          <button
-                            onClick={() => handleEditService(service)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="Edit"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {services.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No services found. Add your first service to get started.</p>
+              <PermissionGate page="services" permission="write">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleRefresh}
+                    className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    Refresh
+                  </button>
+                  <label className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-colors cursor-pointer flex items-center gap-2">
+                    <ArrowUpTrayIcon className="h-4 w-4" />
+                    {isImporting ? 'Importing...' : 'Import'}
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportCSV}
+                      className="hidden"
+                      disabled={isImporting}
+                    />
+                  </label>
+                  <button
+                    onClick={handleCreateService}
+                    className="px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add Service
+                  </button>
                 </div>
-              )}
+              </PermissionGate>
             </div>
           </div>
+          
+          {/* Services List */}
+          <div className="flex-1 overflow-auto">
+            <MobileTable
+              data={filteredServices}
+              columns={[
+                { key: 'name', title: 'Name' },
+                { key: 'category', title: 'Category', render: (v) => v || '-' },
+                { key: 'price', title: 'Price', render: (v) => `$${v?.toFixed(2) || '0.00'}` },
+                { key: 'duration_minutes', title: 'Duration', render: (v) => `${v || 0} min` },
+              ]}
+              onEdit={(item) => handleEditService(item)}
+              onDelete={(item) => handleDeleteService(item.id)}
+              editPermission={{ page: 'services', permission: 'write' }}
+              deletePermission={{ page: 'services', permission: 'delete' }}
+              emptyMessage="No services found"
+            />
+          </div>
         </div>
-      </div>
-        </>
       )}
+
+      {/* Floating Cart Button - Bottom Left */}
+      {activeTab === 'pos' && (
+        <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
+          {/* Quick Add Button */}
+          <button
+            onClick={() => setPosCategory(posCategory === 'all' ? 'services' : posCategory === 'services' ? 'products' : 'all')}
+            className="p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all group"
+            title="Toggle category filter"
+          >
+            <Squares2X2Icon className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400" />
+          </button>
+          
+          {/* Cart Summary Button */}
+          {cart.length > 0 && (
+            <button
+              onClick={handleCheckout}
+              className="flex items-center gap-3 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all group"
+            >
+              <div className="relative">
+                <ShoppingCartIcon className="h-6 w-6" />
+                <span className="absolute -top-2 -right-2 bg-white text-emerald-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              </div>
+              <div className="text-left">
+                <p className="text-xs opacity-80">Checkout</p>
+                <p className="font-bold">${cartTotal.toFixed(2)}</p>
+              </div>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        isOpen={showProductModal}
+        onClose={() => setShowProductModal(false)}
+        item={selectedItem}
+        itemType={selectedItemType}
+        onAddToCart={addToCart}
+        cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0}
+      />
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        cart={cart}
+        cartTotal={cartTotal}
+        selectedClient={selectedClient}
+        onProcessPayment={processPayment}
+      />
 
       {/* Modal for Service Form */}
       <Modal isOpen={isModalOpen && modalContent === 'service-form'} onClose={closeModal}>

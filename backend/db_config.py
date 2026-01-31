@@ -45,18 +45,25 @@ def set_current_environment(environment: str) -> bool:
 
 
 def get_database_url() -> str:
-    """Get the database URL for the current environment."""
+    """Get the database URL for the current environment.
+    When DATABASE_URL is set (e.g. on Render), use it so the deployed app uses the linked database.
+    """
+    # Prefer env var so Render/CI/production use the injected connection string
+    env_url = os.getenv("DATABASE_URL", "").strip()
+    if env_url:
+        return env_url
+
     env = get_current_environment()
     url = DATABASE_ENVIRONMENTS.get(env, "")
-    
+
     # If the selected environment has no URL configured, fall back to development
     if not url:
         url = DATABASE_ENVIRONMENTS.get("development", "")
-    
+
     # If still no URL, fall back to SQLite for local development
     if not url:
-        url = os.getenv("DATABASE_URL", "sqlite:///./business_manager.db")
-    
+        url = "sqlite:///./business_manager.db"
+
     return url
 
 

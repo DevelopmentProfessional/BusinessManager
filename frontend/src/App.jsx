@@ -1,22 +1,45 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './pages/components/Layout';
 import Login from './pages/Login';
-import Clients from './pages/Clients';
-import Inventory from './pages/Inventory';
-import Sales from './pages/Sales';
-import Suppliers from './pages/Suppliers';
-import Employees from './pages/Employees';
-import Schedule from './pages/Schedule';
-import Documents from './pages/Documents';
-import DocumentEditor from './pages/DocumentEditor';
-import Profile from './pages/Profile';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
 import useDarkMode from './services/useDarkMode';
 import GlobalClientModal from './pages/components/GlobalClientModal';
+
+// Lazy load pages - only load when navigating to them
+const Clients = lazy(() => import('./pages/Clients'));
+const Inventory = lazy(() => import('./pages/Inventory'));
+const Sales = lazy(() => import('./pages/Sales'));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
+const Employees = lazy(() => import('./pages/Employees'));
+const Schedule = lazy(() => import('./pages/Schedule'));
+const Documents = lazy(() => import('./pages/Documents'));
+const DocumentEditor = lazy(() => import('./pages/DocumentEditor'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+    <div className="spinner-border text-primary" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+  </div>
+);
+
+// Component to clear errors on navigation
+const ClearErrorOnNavigate = () => {
+  const location = useLocation();
+  const { clearError } = useStore();
+
+  useEffect(() => {
+    clearError();
+  }, [location.pathname, clearError]);
+
+  return null;
+};
 
 
 
@@ -80,93 +103,98 @@ function App() {
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Layout>
-              <Navigate to="/profile" replace />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/clients" element={
-          <ProtectedRoute requiredPermission="clients:read">
-            <Layout>
-              <Clients />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/sales" element={
-          <ProtectedRoute requiredPermission="services:read">
-            <Layout>
-              <Sales />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/suppliers" element={
-          <ProtectedRoute requiredPermission="suppliers:read">
-            <Layout>
-              <Suppliers />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/employees" element={
-          <ProtectedRoute requiredPermission="employees:read">
-            <Layout>
-              <Employees />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/schedule" element={
-          <ProtectedRoute requiredPermission="schedule:read">
-            <Layout>
-              <Schedule />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/inventory" element={
-          <ProtectedRoute requiredPermission="inventory:read">
-            <Layout>
-              <Inventory />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/documents" element={
-          <ProtectedRoute requiredPermission="documents:read">
-            <Layout>
-              <Documents />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/documents/:documentId/edit" element={
-          <ProtectedRoute requiredPermission="documents:write">
-            <DocumentEditor />
-          </ProtectedRoute>
-        } />
-        <Route path="/reports" element={
-          <ProtectedRoute requiredPermission="schedule:read">
-            <Layout>
-              <Reports />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Layout>
-              <Profile />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        {/* Catch-all route for any unmatched paths */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <ClearErrorOnNavigate />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout>
+                <Navigate to="/profile" replace />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/clients" element={
+            <ProtectedRoute requiredPermission="clients:read">
+              <Layout>
+                <Clients />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/sales" element={
+            <ProtectedRoute requiredPermission="services:read">
+              <Layout>
+                <Sales />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/suppliers" element={
+            <ProtectedRoute requiredPermission="suppliers:read">
+              <Layout>
+                <Suppliers />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/employees" element={
+            <ProtectedRoute requiredPermission="employees:read">
+              <Layout>
+                <Employees />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/schedule" element={
+            <ProtectedRoute requiredPermission="schedule:read">
+              <Layout>
+                <Schedule />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/inventory" element={
+            <ProtectedRoute requiredPermission="inventory:read">
+              <Layout>
+                <Inventory />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/documents" element={
+            <ProtectedRoute requiredPermission="documents:read">
+              <Layout>
+                <Documents />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/documents/:documentId/edit" element={
+            <ProtectedRoute requiredPermission="documents:write">
+              <Suspense fallback={<PageLoader />}>
+                <DocumentEditor />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/reports" element={
+            <ProtectedRoute requiredPermission="schedule:read">
+              <Layout>
+                <Reports />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Layout>
+                <Settings />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          {/* Catch-all route for any unmatched paths */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       <GlobalClientModal />
     </Router>
   );

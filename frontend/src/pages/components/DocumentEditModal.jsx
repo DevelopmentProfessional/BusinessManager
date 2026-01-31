@@ -15,8 +15,10 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Load meta lists on mount
+  // Load meta lists only when modal opens
   useEffect(() => {
+    if (!isOpen) return;
+
     const loadMetaLists = async () => {
       try {
         const [catsRes, empRes] = await Promise.all([
@@ -30,7 +32,7 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
       }
     };
     loadMetaLists();
-  }, []);
+  }, [isOpen]);
 
   // Initialize form when document changes
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import CustomDropdown from './CustomDropdown';
 import IconButton from './IconButton';
 import ActionFooter from './ActionFooter';
@@ -12,6 +12,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     description: '',
     // Use enum names expected by backend/DB enum (PRODUCT, RESOURCE, ASSET)
     type: 'PRODUCT',
+    image_url: '',
   });
   const [initialQuantity, setInitialQuantity] = useState('0');
 
@@ -28,6 +29,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
               ? item.type.toUpperCase()
               : 'PRODUCT')
           : 'PRODUCT'),
+        image_url: item.image_url || '',
       });
     } else if (initialSku) {
       setFormData(prev => ({ ...prev, sku: initialSku }));
@@ -60,6 +62,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     const type = typeof formData.type === 'string'
       ? formData.type.toUpperCase()
       : 'PRODUCT';
+    const image_url = (formData.image_url || '').trim();
     const payload = {
       name,
       sku,
@@ -67,6 +70,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       description: description || undefined,
       // Backend accepts enum name or value; we send NAME for clarity
       type,
+      image_url: image_url || undefined,
     };
     const qty = parseInt(String(initialQuantity || '0'), 10);
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
@@ -184,6 +188,32 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
           className="input-field mt-1"
           placeholder="Item description"
         />
+      </div>
+
+      <div>
+        <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <PhotoIcon className="h-4 w-4 inline mr-1" />
+          Image URL
+        </label>
+        <input
+          type="url"
+          id="image_url"
+          name="image_url"
+          value={formData.image_url}
+          onChange={handleChange}
+          className="input-field mt-1"
+          placeholder="https://example.com/image.jpg"
+        />
+        {formData.image_url && (
+          <div className="mt-2">
+            <img 
+              src={formData.image_url} 
+              alt="Preview" 
+              className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+              onError={(e) => e.target.style.display = 'none'}
+            />
+          </div>
+        )}
       </div>
 
       <ActionFooter>

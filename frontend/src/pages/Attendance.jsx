@@ -354,8 +354,8 @@ export default function Attendance() {
         </div>
       )}
 
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden flex-1">
+      {/* Attendance Records */}
+      <div className="mt-6 flex-1">
         <MobileTable
           data={attendanceRecords}
           columns={[
@@ -370,79 +370,15 @@ export default function Attendance() {
         />
       </div>
 
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block flex-1">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Employee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Clock In
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Clock Out
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Hours
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Notes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {attendanceRecords.map((record) => (
-                    <tr key={record.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {getEmployeeName(record.user_id || record.employee_id)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(record.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.clock_in ? new Date(record.clock_in).toLocaleTimeString() : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.clock_out ? new Date(record.clock_out).toLocaleTimeString() : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.total_hours ? record.total_hours.toFixed(2) + ' hrs' : calculateHours(record.clock_in, record.clock_out)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {record.notes || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {attendanceRecords.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No attendance records found. Add your first record to get started.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Check In/Out Button - Bottom Center (Mobile) */}
+      {/* Check In/Out Button - Bottom Center */}
       <PermissionGate page="attendance" permission="write">
         <button
           onClick={handleCheckInOut}
           disabled={clockActionLoading || !user?.id}
           className={`
             fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30
-            ${isClockedIn 
-              ? 'bg-red-600 hover:bg-red-700' 
+            ${isClockedIn
+              ? 'bg-red-600 hover:bg-red-700'
               : 'bg-green-600 hover:bg-green-700'
             }
             text-white
@@ -450,7 +386,6 @@ export default function Attendance() {
             flex items-center gap-2 transition-all
             font-medium text-sm
             disabled:opacity-50 disabled:cursor-not-allowed
-            md:hidden
           `}
         >
           {clockActionLoading ? (
@@ -470,44 +405,6 @@ export default function Attendance() {
             </>
           )}
         </button>
-      </PermissionGate>
-
-      {/* Check In/Out Button - Desktop (Top Right) */}
-      <PermissionGate page="attendance" permission="write">
-        <div className="hidden md:block fixed top-20 right-4 z-30">
-          <button
-            onClick={handleCheckInOut}
-            disabled={clockActionLoading || !user?.id}
-            className={`
-              ${isClockedIn 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-green-600 hover:bg-green-700'
-              }
-              text-white
-              px-4 py-2 rounded-lg shadow-lg hover:shadow-xl
-              flex items-center gap-2 transition-all
-              font-medium text-sm
-              disabled:opacity-50 disabled:cursor-not-allowed
-            `}
-          >
-            {clockActionLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Processing...</span>
-              </>
-            ) : isClockedIn ? (
-              <>
-                <StopIcon className="h-4 w-4" />
-                <span>Check Out</span>
-              </>
-            ) : (
-              <>
-                <PlayIcon className="h-4 w-4" />
-                <span>Check In</span>
-              </>
-            )}
-          </button>
-        </div>
       </PermissionGate>
 
       {/* Modal for Attendance Form */}

@@ -10,7 +10,6 @@ import MobileAddButton from './components/MobileAddButton';
 import PermissionGate from './components/PermissionGate';
 import IconButton from './components/IconButton';
 import ActionFooter from './components/ActionFooter';
-import CSVImportButton from './components/CSVImportButton';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Clients() {
@@ -147,34 +146,6 @@ export default function Clients() {
     setFilter('clients', 'searchTerm', value);
   };
 
-  const handleCSVImportClients = async (records) => {
-    let success = 0;
-    let failed = 0;
-    const errors = [];
-
-    for (const record of records) {
-      try {
-        const clientData = {
-          name: record.name,
-          email: record.email || '',
-          phone: record.phone || '',
-          address: record.address || '',
-          notes: record.notes || '',
-          membership_tier: record.membership_tier || 'none',
-        };
-        
-        await clientsAPI.create(clientData);
-        success++;
-      } catch (err) {
-        failed++;
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
-        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
-      }
-    }
-
-    return { success, failed, errors };
-  };
-
   const handleRefresh = () => {
     loadClients();
   };
@@ -249,8 +220,8 @@ export default function Clients() {
         </div>
       )}
 
-      {/* Mobile Layout - fills remaining space, list scrolls inside */}
-      <div className="md:hidden flex-1 flex flex-col min-h-0">
+      {/* Client List - fills remaining space, list scrolls inside */}
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Client List Area - scrollable container */}
         <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ${selectedClient ? 'flex-shrink-0' : ''}`}>
           <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -340,112 +311,6 @@ export default function Clients() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Desktop Layout - table scrolls inside, page does not */}
-      <div className="hidden md:flex flex-1 flex-col min-h-0">
-        <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 shadow ring-1 ring-black ring-opacity-5 dark:ring-gray-700 md:rounded-lg border border-gray-200 dark:border-gray-700">
-          {/* Desktop Toolbar */}
-          <div className="bg-gray-50 dark:bg-gray-700 px-6 py-3 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-20">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {filteredClients.length} of {clients.length} clients
-              </span>
-              <PermissionGate page="clients" permission="write">
-                <div className="flex items-center gap-2">
-                  <CSVImportButton
-                    entityName="Clients"
-                    onImport={handleCSVImportClients}
-                    onComplete={loadClients}
-                    requiredFields={['name']}
-                    fieldMapping={{
-                      'client name': 'name',
-                      'full name': 'name',
-                      'customer': 'name',
-                      'customer name': 'name',
-                      'email address': 'email',
-                      'phone number': 'phone',
-                      'telephone': 'phone',
-                      'mobile': 'phone',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateClient}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Add Client
-                  </button>
-                </div>
-              </PermissionGate>
-            </div>
-          </div>
-
-          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
-            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-12 z-10">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Address
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredClients.map((client) => (
-                <tr key={client.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {client.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.email || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.phone || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.address || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <PermissionGate page="clients" permission="write">
-                      <button
-                        onClick={() => handleEditClient(client)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                    </PermissionGate>
-                    <PermissionGate page="clients" permission="delete">
-                      <button
-                        onClick={() => handleDeleteClient(client.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </PermissionGate>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {clients.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No clients found</p>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Page footer: icon-only actions with tooltips - does not scroll */}

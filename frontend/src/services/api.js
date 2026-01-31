@@ -169,35 +169,27 @@ export const clientsAPI = {
   },
 };
 
-// Items API
-export const itemsAPI = {
-  getAll: () => getCachedOrFetch('items', () => api.get('/isud/items')),
-  getById: (id) => api.get(`/isud/items/${id}`),
+// Inventory API (replaces both items and inventory APIs)
+export const inventoryAPI = {
+  getAll: () => getCachedOrFetch('inventory', () => api.get('/isud/inventory')),
+  getById: (id) => api.get(`/isud/inventory/${id}`),
+  getLowStock: () => getCachedOrFetch('inventory-low-stock', () => api.get('/isud/inventory/low-stock')),
   create: (data) => {
-    clearCache('items');
-    return api.post('/isud/items', data);
+    clearCache('inventory');
+    return api.post('/isud/inventory', data);
   },
   update: (id, data) => {
-    clearCache('items');
-    return api.put(`/isud/items/${id}`, data);
+    clearCache('inventory');
+    return api.put(`/isud/inventory/${id}`, data);
   },
   delete: (id) => {
-    clearCache('items');
-    return api.delete(`/isud/items/${id}`);
+    clearCache('inventory');
+    return api.delete(`/isud/inventory/${id}`);
   },
 };
 
-export const inventoryAPI = {
-  getAll: () => getCachedOrFetch('inventory', () => api.get('/isud/inventory')),
-  getLowStock: () => getCachedOrFetch('inventory-low-stock', () => api.get('/isud/inventory/low-stock')),
-  update: (itemId, quantity, { min_stock_level, location } = {}) => {
-    const body = { item_id: itemId, quantity };
-    if (min_stock_level != null) body.min_stock_level = min_stock_level;
-    if (location != null) body.location = location;
-    clearCache('inventory');
-    return api.post('/isud/inventory', body);
-  },
-};
+// Legacy alias for backward compatibility (deprecated - use inventoryAPI)
+export const itemsAPI = inventoryAPI;
 
 export const servicesAPI = {
   getAll: () => getCachedOrFetch('services', () => api.get('/isud/services')),
@@ -329,66 +321,68 @@ export const attendanceAPI = {
   },
 };
 
+// Documents: full CRUD via ISUD pattern including file uploads.
 export const documentsAPI = {
-  getAll: () => getCachedOrFetch('documents', () => api.get('/documents')),
-  getById: (id) => api.get(`/documents/${id}`),
-  getByEntity: (entityType, entityId) => api.get(`/documents/by-entity/${entityType}/${entityId}`),
-  upload: (file, description) => {
+  getAll: () => getCachedOrFetch('documents', () => api.get('/isud/documents')),
+  getById: (id) => api.get(`/isud/documents/${id}`),
+  getByEntity: (entityType, entityId) =>
+    api.get('/isud/documents', { params: { entity_type: entityType, entity_id: entityId } }),
+  upload: (file, description, extra = {}) => {
+    clearCache('documents');
     const formData = new FormData();
     formData.append('file', file);
     if (description) formData.append('description', description);
-    
-    // Let the browser set Content-Type with proper boundary
-    return api.post('/documents', formData);
+    if (extra.entity_type) formData.append('entity_type', extra.entity_type);
+    if (extra.entity_id) formData.append('entity_id', extra.entity_id);
+    if (extra.category_id) formData.append('category_id', extra.category_id);
+    return api.post('/isud/document/insert', formData);
   },
-  uploadBulk: (files, { entity_type, entity_id, description } = {}) => {
-    const formData = new FormData();
-    for (const file of files) {
-      formData.append('files', file);
-    }
-    if (description) formData.append('description', description);
-    if (entity_type) formData.append('entity_type', entity_type);
-    if (entity_id) formData.append('entity_id', entity_id);
-    return api.post('/documents/bulk', formData);
-  },
+  uploadBulk: (files, { entity_type, entity_id, description } = {}) =>
+    Promise.all(
+      files.map((file) =>
+        documentsAPI.upload(file, description, { entity_type, entity_id })
+      )
+    ),
   delete: (id) => {
     clearCache('documents');
-    return api.delete(`/documents/${id}`);
+    return api.delete(`/isud/documents/${id}`);
   },
   update: (id, data) => {
     clearCache('documents');
-    return api.put(`/documents/${id}`, data);
+    return api.put(`/isud/documents/${id}`, data);
   },
-  sign: (id, signerName) => api.post(`/documents/${id}/sign`, { signed_by: signerName }),
-  fileUrl: (id) => `/api/v1/documents/${id}/download`,
+  sign: (id, signerName) =>
+    api.put(`/isud/documents/${id}`, {
+      is_signed: true,
+      signed_by: signerName,
+      signed_at: new Date().toISOString(),
+    }),
+  fileUrl: (id, { download = false } = {}) =>
+    `${api.defaults.baseURL}/documents/${id}/download${download ? '?download=true' : ''}`,
   historyFileUrl: (historyId, { download = true } = {}) =>
-    `/api/v1/documents/history/${historyId}/download${download ? '?download=true' : ''}`,
-  history: (id) => api.get(`/documents/${id}/history`),
-  replaceContent: (id, file, note) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (note) formData.append('note', note);
-    return api.put(`/documents/${id}/content`, formData);
-  },
-  listAssignments: (id) => api.get(`/documents/${id}/assignments`),
-  addAssignment: (id, user_id) => api.post(`/documents/${id}/assignments`, { user_id }),
-  removeAssignment: (id, user_id) => api.delete(`/documents/${id}/assignments/${user_id}`),
+    `${api.defaults.baseURL}/documents/history/${historyId}/download${download ? '?download=true' : ''}`,
+  history: () => Promise.resolve({ data: [] }),
+  replaceContent: () => Promise.reject(new Error('Replace content: use document editor component')),
+  listAssignments: () => Promise.resolve({ data: [] }),
+  addAssignment: () => Promise.reject(new Error('Assignments: use document editor component')),
+  removeAssignment: () => Promise.reject(new Error('Assignments: use document editor component')),
   onlyofficeConfig: (id) => api.get(`/documents/${id}/onlyoffice-config`),
 };
 
+// Document categories: full CRUD via isud (table document_category).
 export const documentCategoriesAPI = {
-  list: () => getCachedOrFetch('document-categories', () => api.get('/document-categories')),
+  list: () => getCachedOrFetch('document-categories', () => api.get('/isud/document_category')),
   create: (data) => {
     clearCache('document-categories');
-    return api.post('/document-categories', data);
-  }, // { name, description? }
+    return api.post('/isud/document_category', data);
+  },
   update: (id, data) => {
     clearCache('document-categories');
-    return api.put(`/document-categories/${id}`, data);
+    return api.put(`/isud/document_category/${id}`, data);
   },
   delete: (id) => {
     clearCache('document-categories');
-    return api.delete(`/document-categories/${id}`);
+    return api.delete(`/isud/document_category/${id}`);
   },
 };
 
@@ -445,7 +439,6 @@ export const reportsAPI = {
  */
 export const isudAPI = {
   clients: clientsAPI,
-  items: itemsAPI,
   inventory: inventoryAPI,
   services: servicesAPI,
   suppliers: suppliersAPI,

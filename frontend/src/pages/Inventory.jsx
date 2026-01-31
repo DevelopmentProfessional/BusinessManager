@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { inventoryAPI, itemsAPI } from '../services/api';
+import { inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
 import BarcodeScanner from './components/BarcodeScanner';
 import ItemForm from './components/ItemForm';
@@ -16,7 +16,7 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(inventoryItem.item_id, { 
+    onSubmit(inventoryItem.id, { 
       quantity: parseInt(quantity),
       min_stock_level: parseInt(minStockLevel)
     });
@@ -74,7 +74,7 @@ function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
 
 export default function Inventory() {
   const { 
-    inventory, setInventory, items, setItems,
+    inventory, setInventory,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
@@ -103,14 +103,10 @@ export default function Inventory() {
   const loadInventoryData = async () => {
     setLoading(true);
     try {
-      const [inventoryRes, itemsRes] = await Promise.all([
-        inventoryAPI.getAll(),
-        itemsAPI.getAll()
-      ]);
+      const inventoryRes = await inventoryAPI.getAll();
 
       // Handle both direct data and response.data formats
       const inventoryData = inventoryRes?.data ?? inventoryRes;
-      const itemsData = itemsRes?.data ?? itemsRes;
 
       if (Array.isArray(inventoryData)) {
         setInventory(inventoryData);
@@ -119,19 +115,11 @@ export default function Inventory() {
         setInventory([]);
       }
 
-      if (Array.isArray(itemsData)) {
-        setItems(itemsData);
-      } else {
-        console.error('Invalid items data format:', itemsData);
-        setItems([]);
-      }
-
       clearError();
     } catch (err) {
       setError('Failed to load inventory data');
       console.error('Error loading inventory:', err);
       setInventory([]);
-      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -164,7 +152,7 @@ export default function Inventory() {
     const scanned = String(code || '').trim();
     setScannedCode(scanned);
     // If item already exists, show notification instead of opening the modal
-    const exists = items.some((p) => (p?.sku || '').trim() === scanned && scanned.length > 0);
+    const exists = inventory.some((p) => (p?.sku || '').trim() === scanned && scanned.length > 0);
     if (exists) {
       closeModal();
       setError(`Item with SKU "${scanned}" already exists in the database.`);
@@ -175,9 +163,9 @@ export default function Inventory() {
     openModal('item-form');
   };
 
-  const handleSubmitUpdate = async (itemId, updateData) => {
+  const handleSubmitUpdate = async (inventoryId, updateData) => {
     try {
-      await inventoryAPI.update(itemId, updateData.quantity, { min_stock_level: updateData.min_stock_level });
+      await inventoryAPI.update(inventoryId, updateData);
       // Reload inventory to get updated data
       loadInventoryData();
       closeModal();
@@ -191,32 +179,20 @@ export default function Inventory() {
 
   const handleSubmitNewItem = async (itemData, { initialQuantity }) => {
     try {
-      const resp = await itemsAPI.create(itemData);
-      // Upsert initial inventory quantity
-      await inventoryAPI.update(resp.data.id, Number.isFinite(initialQuantity) ? initialQuantity : 0);
+      // Create inventory item directly (inventory now contains all product fields)
+      const inventoryData = {
+        ...itemData,
+        quantity: Number.isFinite(initialQuantity) ? initialQuantity : 0,
+      };
+      await inventoryAPI.create(inventoryData);
       await loadInventoryData();
       closeModal();
       clearError();
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to save item';
       setError(String(detail));
-      console.error('Item create error:', err?.response || err);
+      console.error('Inventory create error:', err?.response || err);
     }
-  };
-
-  const getItemName = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item ? item.name : 'Unknown Item';
-  };
-
-  const getItemSku = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item ? item.sku : 'N/A';
-  };
-
-  const getItemType = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item?.type || 'PRODUCT';
   };
 
   const getItemTypeLabel = (type) => {
@@ -233,14 +209,14 @@ export default function Inventory() {
 
   const isLowStock = (item) => item.quantity <= item.min_stock_level;
 
-  const handleDeleteItem = async (itemId) => {
+  const handleDeleteItem = async (inventoryId) => {
     if (!hasPermission('inventory', 'delete')) {
       setError('You do not have permission to delete items');
       return;
     }
-    if (!window.confirm('Are you sure you want to delete this item? This will also remove its inventory record.')) return;
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
-      await itemsAPI.delete(itemId);
+      await inventoryAPI.delete(inventoryId);
       await loadInventoryData();
       clearError();
     } catch (err) {
@@ -256,25 +232,19 @@ export default function Inventory() {
 
     for (const record of records) {
       try {
-        // Create item with CSV data
-        const itemData = {
+        // Create inventory item directly with all fields
+        const inventoryData = {
           name: record.name,
           sku: record.sku || '',
           description: record.description || '',
           price: parseFloat(record.price) || 0,
           type: (record.type || 'PRODUCT').toUpperCase(),
+          quantity: parseInt(record.quantity) || parseInt(record.initial_quantity) || 0,
+          min_stock_level: parseInt(record.min_stock_level) || parseInt(record.min_stock) || 10,
+          location: record.location || null,
         };
         
-        const resp = await itemsAPI.create(itemData);
-        
-        // Set initial inventory quantity if provided
-        const initialQty = parseInt(record.quantity) || parseInt(record.initial_quantity) || 0;
-        const minStock = parseInt(record.min_stock_level) || parseInt(record.min_stock) || 10;
-        
-        if (resp?.data?.id) {
-          await inventoryAPI.update(resp.data.id, initialQty, minStock);
-        }
-        
+        await inventoryAPI.create(inventoryData);
         success++;
       } catch (err) {
         failed++;
@@ -289,20 +259,17 @@ export default function Inventory() {
   // Filtered inventory based on search, type, and stock filters
   const filteredInventory = useMemo(() => {
     return inventory.filter((inv) => {
-      const item = items.find(p => p.id === inv.item_id);
-      if (!item) return false;
-
-      // Search filter (name or SKU)
+      // Search filter (name or SKU) - inventory now has these fields directly
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
-        const matchesName = (item.name || '').toLowerCase().includes(term);
-        const matchesSku = (item.sku || '').toLowerCase().includes(term);
+        const matchesName = (inv.name || '').toLowerCase().includes(term);
+        const matchesSku = (inv.sku || '').toLowerCase().includes(term);
         if (!matchesName && !matchesSku) return false;
       }
 
       // Type filter
       if (typeFilter !== 'all') {
-        const itemType = (item.type || 'PRODUCT').toUpperCase();
+        const itemType = (inv.type || 'PRODUCT').toUpperCase();
         if (itemType !== typeFilter) return false;
       }
 
@@ -312,7 +279,7 @@ export default function Inventory() {
 
       return true;
     });
-  }, [inventory, items, searchTerm, typeFilter, stockFilter]);
+  }, [inventory, searchTerm, typeFilter, stockFilter]);
 
   // Scroll to bottom when data loads (to show newest items near footer)
   useEffect(() => {
@@ -367,7 +334,7 @@ export default function Inventory() {
               <tbody>
                 {filteredInventory.map((inv, index) => (
                   <tr
-                    key={inv.item_id || index}
+                    key={inv.id || index}
                     className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     style={{ height: '56px' }}
                   >
@@ -377,7 +344,7 @@ export default function Inventory() {
                         <IconButton
                           icon={TrashIcon}
                           label="Delete"
-                          onClick={() => handleDeleteItem(inv.item_id)}
+                          onClick={() => handleDeleteItem(inv.id)}
                           variant="danger"
                           className="!p-1.5"
                         />
@@ -386,19 +353,19 @@ export default function Inventory() {
                     {/* Item name */}
                     <td className="px-3 py-2">
                       <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {getItemName(inv.item_id)}
+                        {inv.name}
                       </div>
                     </td>
                     {/* SKU */}
                     <td className="px-3 py-2 hidden sm:table-cell">
                       <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {getItemSku(inv.item_id)}
+                        {inv.sku}
                       </div>
                     </td>
                     {/* Type */}
                     <td className="px-3 py-2 hidden md:table-cell">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(getItemType(inv.item_id))}`}>
-                        {getItemTypeLabel(getItemType(inv.item_id))}
+                      <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(inv.type)}`}>
+                        {getItemTypeLabel(inv.type)}
                       </span>
                     </td>
                     {/* Stock quantity */}
@@ -465,7 +432,8 @@ export default function Inventory() {
           </table>
 
           {/* Controls Row */}
-          <div className="p-3 border-t border-gray-200 dark:border-gray-600">
+          <div className="p-3 border-t border-gray-200 dark:border-gray-600 space-y-2">
+            {/* Top Row: Search and Filters */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Search Input */}
               <div className="relative flex-1 min-w-[180px]">
@@ -506,10 +474,12 @@ export default function Inventory() {
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {filteredInventory.length}/{inventory.length}
               </span>
+            </div>
 
-              {/* Action Buttons */}
-              <PermissionGate page="inventory" permission="write">
-                <div className="flex items-center gap-2 ml-auto">
+            {/* Bottom Row: Action Buttons (far left) */}
+            <PermissionGate page="inventory" permission="write">
+              <div className="flex items-center">
+                <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                   <CSVImportButton
                     entityName="Items"
                     onImport={handleCSVImport}
@@ -525,11 +495,12 @@ export default function Inventory() {
                       'min stock': 'min_stock_level',
                       'minimum stock': 'min_stock_level',
                     }}
+                    className="!rounded-none !border-0 !border-r border-gray-300 dark:border-gray-600"
                   />
                   <button
                     type="button"
                     onClick={handleCreateItem}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 transition-all font-medium text-sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 flex items-center gap-1 transition-all font-medium text-sm border-r border-blue-700"
                   >
                     <PlusIcon className="h-4 w-4" />
                     Add
@@ -537,14 +508,14 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={handleOpenScanner}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 transition-all font-medium text-sm"
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 flex items-center gap-1 transition-all font-medium text-sm"
                   >
                     <CameraIcon className="h-4 w-4" />
                     Scan
                   </button>
                 </div>
-              </PermissionGate>
-            </div>
+              </div>
+            </PermissionGate>
           </div>
         </div>
       </div>

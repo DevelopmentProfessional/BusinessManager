@@ -7,7 +7,7 @@ import bcrypt
 
 class EntityType(str, Enum):
     CLIENT = "client"
-    ITEM = "item"
+    INVENTORY = "inventory"  # Changed from ITEM
     EMPLOYEE = "employee"
     ASSET = "asset"
 
@@ -16,6 +16,7 @@ class ItemType(str, Enum):
     PRODUCT = "product"
     RESOURCE = "resource"
     ASSET = "asset"
+    ITEM = "item"  # Legacy value for backward compatibility
 
 
 class AttendanceStatus(str, Enum):
@@ -163,26 +164,23 @@ class Client(BaseModel, table=True):
     schedules: List["Schedule"] = Relationship(back_populates="client")
 
 
-# Item model
-class Item(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)
-    sku: str = Field(unique=True, index=True)
-    price: float = Field(ge=0)
-    description: Optional[str] = Field(default=None)
-    type: ItemType = Field(default=ItemType.PRODUCT)
-    inventory: Optional["Inventory"] = Relationship(back_populates="item")
-
-
-# Inventory model
+# Inventory model (standalone - replaces Item model)
 class Inventory(BaseModel, table=True):
-    item_id: UUID = Field(foreign_key="item.id")
+    # Product/Item fields (merged from former Item model)
+    name: str = Field(index=True)
+    sku: str = Field(unique=True, index=True)
+    price: float = Field(ge=0, default=0)
+    description: Optional[str] = Field(default=None)
+    type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
+    image_url: Optional[str] = Field(default=None)  # URL or path to product image
+    
+    # Inventory-specific fields
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
-    quantity: int = Field(ge=0)
+    quantity: int = Field(ge=0, default=0)
     min_stock_level: int = Field(ge=0, default=10)
     location: Optional[str] = Field(default=None)
     
     # Relationships
-    item: Item = Relationship(back_populates="inventory")
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
 
 
@@ -205,6 +203,7 @@ class Service(BaseModel, table=True):
     category: Optional[str] = Field(default=None)
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
+    image_url: Optional[str] = Field(default=None)  # URL or path to service image
     
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="service")
@@ -213,44 +212,20 @@ class Service(BaseModel, table=True):
 # Employee model
 # Employee model removed - now using User model directly
 
-# Schedule model
+# Schedule model - matches actual database schema
 class Schedule(BaseModel, table=True):
-    # Core fields (client/service optional for meetings/tasks)
+    # Core fields that exist in database
     client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
     service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
-    employee_id: UUID = Field(foreign_key="user.id")  # Primary assignee
+    employee_id: UUID = Field(foreign_key="user.id")
     appointment_date: datetime
-    status: str = Field(default="scheduled")  # scheduled, completed, cancelled
+    status: str = Field(default="scheduled")
     notes: Optional[str] = Field(default=None)
-
-    # Appointment type and title
-    appointment_type: AppointmentType = Field(default=AppointmentType.ONE_TIME)
-    title: Optional[str] = Field(default=None)  # For meetings/tasks
-
-    # Series/Recurring fields
-    series_id: Optional[UUID] = Field(default=None)  # Groups recurring appointments
-    frequency: Optional[RecurrenceFrequency] = Field(default=None)
-    recurrence_end_date: Optional[datetime] = Field(default=None)
-
-    # Duration fields
-    duration_minutes: int = Field(default=60)
-    end_time: Optional[datetime] = Field(default=None)
-
-    # Task-specific fields
-    deadline: Optional[datetime] = Field(default=None)
-    is_completed: bool = Field(default=False)
-    priority: TaskPriority = Field(default=TaskPriority.NORMAL)
-
-    # Meeting fields
-    is_all_day: bool = Field(default=False)
-    location: Optional[str] = Field(default=None)
 
     # Relationships
     client: Optional[Client] = Relationship(back_populates="schedules")
     service: Optional[Service] = Relationship(back_populates="schedules")
     employee: "User" = Relationship(back_populates="schedules")
-    attendees: List["ScheduleAttendee"] = Relationship(back_populates="schedule")
-    linked_documents: List["ScheduleDocument"] = Relationship(back_populates="schedule")
 
 
 # Schedule Attendee model (for meetings with multiple participants)
@@ -259,10 +234,7 @@ class ScheduleAttendee(BaseModel, table=True):
     schedule_id: UUID = Field(foreign_key="schedule.id")
     user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
-    attendance_status: str = Field(default="pending")  # pending, confirmed, declined
-
-    # Relationships
-    schedule: Schedule = Relationship(back_populates="attendees")
+    attendance_status: str = Field(default="pending")
 
 
 # Schedule Document link model
@@ -270,9 +242,6 @@ class ScheduleDocument(BaseModel, table=True):
     __tablename__ = "schedule_document"
     schedule_id: UUID = Field(foreign_key="schedule.id")
     document_id: UUID = Field(foreign_key="document.id")
-
-    # Relationships
-    schedule: Schedule = Relationship(back_populates="linked_documents")
 
 
 # Asset model
@@ -291,14 +260,16 @@ class Attendance(BaseModel, table=True):
     user: User = Relationship(back_populates="attendance_records")
 
 
-# Document model
+# Document model (table name and types aligned with PostgreSQL schema)
 class Document(BaseModel, table=True):
+    __tablename__ = "document"
     filename: str
     original_filename: str
     file_path: str
     file_size: int = Field(ge=0)
     content_type: str
-    entity_type: Optional[EntityType] = Field(default=None)
+    # Use str to match PG varchar/enum; API and DB both use string values
+    entity_type: Optional[str] = Field(default=None)
     entity_id: Optional[UUID] = Field(default=None)
     description: Optional[str] = Field(default=None)
     # e-sign fields
@@ -374,14 +345,37 @@ class ClientRead(SQLModel):
         )
 
 
-class ItemCreate(SQLModel):
+class InventoryCreate(SQLModel):
+    """Schema for creating inventory items (replaces ItemCreate)"""
+    name: str
+    sku: str
+    price: float = 0
+    description: Optional[str] = None
+    type: Optional[Union[ItemType, str]] = "product"
+    image_url: Optional[str] = None
+    quantity: int = 0
+    min_stock_level: int = 10
+    location: Optional[str] = None
+    supplier_id: Optional[UUID] = None
+
+
+class InventoryRead(SQLModel):
+    """Schema for reading inventory items (excludes relationship fields)"""
+    id: UUID
     name: str
     sku: str
     price: float
     description: Optional[str] = None
-    # Accept either enum value/name as string or ItemType; router will normalize
-    type: Optional[Union[ItemType, str]] = "product"
+    type: str
+    image_url: Optional[str] = None
+    supplier_id: Optional[UUID] = None
+    quantity: int
+    min_stock_level: int
+    location: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
+    model_config = {"from_attributes": True}
 
 
 class UserCreate(SQLModel):
@@ -503,17 +497,6 @@ class ScheduleCreate(SQLModel):
     appointment_date: datetime
     status: str = "scheduled"
     notes: Optional[str] = None
-    appointment_type: Optional[str] = "one_time"
-    title: Optional[str] = None
-    series_id: Optional[UUID] = None
-    frequency: Optional[str] = None
-    recurrence_end_date: Optional[datetime] = None
-    duration_minutes: int = 60
-    end_time: Optional[datetime] = None
-    deadline: Optional[datetime] = None
-    priority: Optional[str] = "normal"
-    is_all_day: bool = False
-    location: Optional[str] = None
 
 
 class ScheduleUpdate(SQLModel):
@@ -523,17 +506,21 @@ class ScheduleUpdate(SQLModel):
     appointment_date: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
-    appointment_type: Optional[str] = None
-    title: Optional[str] = None
-    frequency: Optional[str] = None
-    recurrence_end_date: Optional[datetime] = None
-    duration_minutes: Optional[int] = None
-    end_time: Optional[datetime] = None
-    deadline: Optional[datetime] = None
-    is_completed: Optional[bool] = None
-    priority: Optional[str] = None
-    is_all_day: Optional[bool] = None
-    location: Optional[str] = None
+
+
+class ScheduleRead(SQLModel):
+    """Schema for reading schedule records (excludes relationship fields)"""
+    id: UUID
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: UUID
+    appointment_date: datetime
+    status: str
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
 
 
 class ScheduleAttendeeCreate(SQLModel):
