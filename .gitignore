@@ -47,6 +47,10 @@ Thumbs.db
 *.db
 *.bak
 
+# Uploaded files (keep directory but ignore contents)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 # Coverage / reports
 coverage.xml
 

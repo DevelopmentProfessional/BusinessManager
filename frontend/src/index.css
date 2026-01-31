@@ -70,6 +70,27 @@
   .overflow-scroll-container-y {
     @apply min-h-0 flex-1 overflow-y-auto overflow-x-auto;
   }
+
+  /* DOCX Preview container styles */
+  .docx-preview-container {
+    @apply bg-white dark:bg-gray-100 p-4 rounded shadow-inner;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .docx-preview-container .docx {
+    @apply text-gray-900;
+    font-family: 'Calibri', 'Arial', sans-serif;
+  }
+
+  .docx-preview-container table {
+    @apply border-collapse border border-gray-300;
+  }
+
+  .docx-preview-container table td,
+  .docx-preview-container table th {
+    @apply border border-gray-300 p-2;
+  }
 }
 
 

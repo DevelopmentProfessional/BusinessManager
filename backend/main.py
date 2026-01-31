@@ -29,12 +29,12 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud
+    from backend.routers import auth, isud, documents
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
     # Only do this when the missing module is the routers package itself.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud"}:
-        from routers import auth, isud  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.documents"}:
+        from routers import auth, isud, documents  # type: ignore
     else:
         raise
 
@@ -161,11 +161,19 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
+    # Initialize database tables
+    try:
+        from backend.database import create_db_and_tables
+    except ModuleNotFoundError:
+        from database import create_db_and_tables
+    create_db_and_tables()
+    print("Database tables initialized")
     print("All routers loaded successfully")
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
+app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
 
 
 
