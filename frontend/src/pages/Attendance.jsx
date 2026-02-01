@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
@@ -36,9 +36,9 @@ function AttendanceForm({ onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Add Attendance Record</h3>
+    <form onSubmit={handleSubmit} className="space-y-1">
+      <div className="mb-1">
+        <h3 className="text-lg font-medium text-gray-900 mb-1">Add Attendance Record</h3>
       </div>
 
       <div>
@@ -73,7 +73,7 @@ function AttendanceForm({ onSubmit, onCancel }) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-1">
         <div>
           <label htmlFor="clock_in" className="block text-sm font-medium text-gray-700">
             Clock In
@@ -142,24 +142,22 @@ export default function Attendance() {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [clockActionLoading, setClockActionLoading] = useState(false);
+  const hasFetched = useRef(false);
 
   // Check permissions at page level
-  if (!hasPermission('attendance', 'read') && 
-      !hasPermission('attendance', 'write') && 
-      !hasPermission('attendance', 'delete') && 
+  if (!hasPermission('attendance', 'read') &&
+      !hasPermission('attendance', 'write') &&
+      !hasPermission('attendance', 'delete') &&
       !hasPermission('attendance', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadAttendanceData();
     checkClockStatus();
   }, []);
-
-  // Check clock status whenever attendance records change
-  useEffect(() => {
-    checkClockStatus();
-  }, [attendanceRecords, user]);
 
   const loadAttendanceData = async () => {
     setLoading(true);

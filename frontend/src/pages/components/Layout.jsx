@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   UserGroupIcon,
   WrenchScrewdriverIcon,
@@ -9,15 +9,15 @@ import {
   DocumentIcon,
   EllipsisHorizontalIcon,
   Cog6ToothIcon,
-  ArrowRightOnRectangleIcon,
   UserCircleIcon,
   ChartBarIcon,
+  ShoppingCartIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
-import DarkModeToggle from './DarkModeToggle';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
-// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Schedule, Settings
+// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
 const allNavigation = [
   { name: 'Profile', href: '/profile', icon: UserCircleIcon },
   { name: 'Reports', href: '/reports', icon: ChartBarIcon, permission: 'reports:read' },
@@ -25,7 +25,8 @@ const allNavigation = [
   { name: 'Clients', href: '/clients', icon: UserGroupIcon, permission: 'clients:read' },
   { name: 'Employees', href: '/employees', icon: UsersIcon, permission: 'employees:read' },
   { name: 'Documents', href: '/documents', icon: DocumentIcon, permission: 'documents:read' },
-  { name: 'Sales', href: '/sales', icon: WrenchScrewdriverIcon, permission: 'services:read' },
+  { name: 'Sales', href: '/sales', icon: ShoppingCartIcon, permission: 'services:read' },
+  { name: 'Services', href: '/services', icon: SparklesIcon, permission: 'services:read' },
   { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
@@ -37,14 +38,7 @@ function classNames(...classes) {
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout, hasPermission } = useStore();
-
-  const handleLogout = () => {
-    logout();
-      // Redirect to login
-  navigate('/login');
-  };
+  const { hasPermission } = useStore();
 
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
@@ -61,20 +55,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-vh-100 bg-body d-flex flex-column">
-      
-      {/* Header with user info */}
-      <header className="border-bottom p-1">
-        <div className="d-flex justify-content-between align-items-center w-100">
-          <div className="d-flex align-items-center gap-2">
-            <DarkModeToggle />
-            <h1 className="h6 mb-0 text-body-emphasis">{user?.first_name || 'User'}</h1>
-          </div>
-          <button onClick={handleLogout} className="btn btn-outline-danger btn-sm" title="Log out" aria-label="Log out">
-            <ArrowRightOnRectangleIcon className="h-4 w-4" />
-          </button> 
-        </div>
-      </header>
-
       {/* Main content - min-h-0 so children can use overflow without making page scroll */}
       <main className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
         {children}

@@ -35,6 +35,8 @@ READ_SCHEMA_MAP = {
     'client': ClientRead,
     'clients': ClientRead,
     'inventory': InventoryRead,
+    'service': ServiceRead,
+    'services': ServiceRead,
     'user': UserRead,
     'users': UserRead,
     'schedule': ScheduleRead,
@@ -44,28 +46,58 @@ READ_SCHEMA_MAP = {
 
 def _serialize_record(record, table_name: str):
     """Serialize a record using the appropriate Read schema if available."""
+    if record is None:
+        return None
+        
     read_schema = READ_SCHEMA_MAP.get(table_name.lower())
     if read_schema:
         # Use from_orm_safe if available (for custom conversion logic)
         if hasattr(read_schema, 'from_orm_safe'):
-            return read_schema.from_orm_safe(record)
+            result = read_schema.from_orm_safe(record)
+            # Convert to dict if it's a SQLModel instance
+            if hasattr(result, 'model_dump'):
+                return result.model_dump(mode='json')
+            return result
         # Otherwise use model_validate with from_attributes
-        return read_schema.model_validate(record)
+        try:
+            validated = read_schema.model_validate(record)
+            # CRITICAL: Convert to dict so all fields are included and relationships excluded
+            if hasattr(validated, 'model_dump'):
+                return validated.model_dump(mode='json')
+            return validated
+        except Exception as e:
+            # Fallback: use model_dump directly with relationship exclusion
+            if hasattr(record, 'model_dump'):
+                return record.model_dump(mode='json', exclude={'supplier', 'inventory_items', 'schedules'})
+            raise
+    
+    # No schema - use model_dump directly with relationship exclusion
+    if hasattr(record, 'model_dump'):
+        return record.model_dump(mode='json', exclude={'supplier', 'inventory_items', 'schedules'})
     return record
 
 
 def _serialize_records(records, table_name: str):
     """Serialize multiple records using the appropriate Read schema."""
+    if not records:
+        return []
+        
     read_schema = READ_SCHEMA_MAP.get(table_name.lower())
     if read_schema:
         if hasattr(read_schema, 'from_orm_safe'):
-            return [read_schema.from_orm_safe(r) for r in records]
-        return [read_schema.model_validate(r) for r in records]
-    return records
+            results = [read_schema.from_orm_safe(r) for r in records]
+            return [(r.model_dump(mode='json') if hasattr(r, 'model_dump') else r) for r in results]
+        try:
+            validated_list = [read_schema.model_validate(r) for r in records]
+            return [(v.model_dump(mode='json') if hasattr(v, 'model_dump') else v) for v in validated_list]
+        except Exception:
+            return [(r.model_dump(mode='json', exclude={'supplier', 'inventory_items', 'schedules'}) if hasattr(r, 'model_dump') else r) for r in records]
+    
+    # No schema - use model_dump directly with relationship exclusion
+    return [(r.model_dump(mode='json', exclude={'supplier', 'inventory_items', 'schedules'}) if hasattr(r, 'model_dump') else r) for r in records]
 
-# In-memory cache for model mapping (rebuilt on each import to handle model changes)
+# In-memory cache for model mapping
 _MODEL_MAPPING_CACHE: Optional[Dict[str, Type[SQLModel]]] = None
-_MODEL_MAPPING_BUILT = False
 
 def _build_model_mapping() -> Dict[str, Type[SQLModel]]:
     """Dynamically discover all SQLModel table classes from models module."""

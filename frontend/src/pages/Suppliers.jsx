@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
@@ -29,8 +29,11 @@ export default function Suppliers() {
   const [editingSupplier, setEditingSupplier] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadSuppliers();
   }, []);
 
@@ -203,19 +206,19 @@ export default function Suppliers() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {suppliers.map((supplier) => (
                     <tr key={supplier.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-1 py-1 whitespace-nowrap text-sm font-medium text-gray-900">
                         {supplier.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-500">
                         {supplier.email || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-500">
                         {supplier.phone || '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-1 py-1 text-sm text-gray-500">
                         {supplier.address || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                      <td className="px-1 py-1 whitespace-nowrap text-right text-sm font-medium space-x-1">
                         <PermissionGate page="suppliers" permission="delete">
                           <button
                             onClick={() => handleDeleteSupplier(supplier.id)}
@@ -241,7 +244,7 @@ export default function Suppliers() {
               </table>
               
               {suppliers.length === 0 && (
-                <div className="text-center py-12">
+                <div className="text-center py-1">
                   <p className="text-gray-500">No suppliers found. Add your first supplier to get started.</p>
                 </div>
               )}
@@ -284,11 +287,11 @@ function SupplierForm({ supplier, onSubmit, onCancel }) {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">
+    <div className="p-1">
+      <h2 className="text-lg font-medium text-gray-900 mb-1">
         {supplier ? 'Edit Supplier' : 'Add Supplier'}
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-1">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
             Name *

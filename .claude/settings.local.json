@@ -15,7 +15,9 @@
       "Bash(wmic process where \"name like ''%python%''\" get commandline)",
       "Bash(wmic process:*)",
       "Bash(powershell -Command \"\\(Get-Item main.py\\).LastWriteTime = Get-Date\")",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(start:*)",
+      "Bash(timeout /t:*)"
     ]
   }
 }

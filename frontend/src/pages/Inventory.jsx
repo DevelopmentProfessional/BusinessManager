@@ -6,71 +6,10 @@ import { inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
 import BarcodeScanner from './components/BarcodeScanner';
 import ItemForm from './components/ItemForm';
+import ItemDetailModal from './components/ItemDetailModal';
 import PermissionGate from './components/PermissionGate';
 import CSVImportButton from './components/CSVImportButton';
 import IconButton from './components/IconButton';
-
-function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
-  const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
-  const [minStockLevel, setMinStockLevel] = useState(inventoryItem?.min_stock_level || 10);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(inventoryItem.id, { 
-      quantity: parseInt(quantity),
-      min_stock_level: parseInt(minStockLevel)
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-1">
-      <div className="mb-1">
-        <h3 className="text-lg font-medium text-gray-900 mb-1">
-          Update Inventory
-        </h3>
-      </div>
-
-      <div className="flex gap-1">
-        <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-          Current Quantity
-        </label>
-        <input
-          type="number"
-          id="quantity"
-          min="0"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="input-field mt-1"
-          placeholder="Enter current quantity"
-        />
-      </div>
-
-      <div className="flex gap-1">
-        <label htmlFor="minStockLevel" className="block text-sm font-medium text-gray-700">
-          Minimum Stock Level
-        </label>
-        <input
-          type="number"
-          id="minStockLevel"
-          min="0"
-          value={minStockLevel}
-          onChange={(e) => setMinStockLevel(e.target.value)}
-          className="input-field mt-1"
-          placeholder="Enter minimum stock level"
-        />
-      </div>
-
-      <div className="flex justify-start space-x-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary">
-          Update Inventory
-        </button>
-      </div>
-    </form>
-  );
-}
 
 export default function Inventory() {
   const { 
@@ -95,8 +34,11 @@ export default function Inventory() {
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
   const scrollRef = useRef(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadInventoryData();
   }, []);
 
@@ -193,21 +135,44 @@ export default function Inventory() {
       setError(String(detail));
       console.error('Inventory create error:', err?.response || err);
     }
-  };
+  }; 
 
   const getItemTypeLabel = (type) => {
-    const labels = { PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', product: 'Product', resource: 'Resource', asset: 'Asset' };
+    const labels = { 
+      PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', LOCATION: 'Location', ITEM: 'Item',
+      product: 'Product', resource: 'Resource', asset: 'Asset', location: 'Location', item: 'Item'
+    };
     return labels[type] || type || 'Product';
   };
 
   const getItemTypeColor = (type) => {
     const upperType = (type || '').toUpperCase();
-    if (upperType === 'RESOURCE') return 'bg-blue-100 text-blue-800';
-    if (upperType === 'ASSET') return 'bg-purple-100 text-purple-800';
-    return 'bg-gray-100 text-gray-800'; // PRODUCT
+    if (upperType === 'RESOURCE') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+    if (upperType === 'ASSET') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+    if (upperType === 'LOCATION') return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
+    if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'; // PRODUCT
   };
 
-  const isLowStock = (item) => item.quantity <= item.min_stock_level;
+  // Location and Asset items always have "OK" status
+  const isLocationOrAsset = (item) => {
+    const upperType = (item.type || '').toUpperCase();
+    return upperType === 'LOCATION' || upperType === 'ASSET';
+  };
+
+  const isLowStock = (item) => {
+    // Location and Asset items are always "OK"
+    if (isLocationOrAsset(item)) return false;
+    return item.quantity <= item.min_stock_level;
+  };
+
+  // Get stock status color (uses the former status badge colors)
+  const getStockColor = (item) => {
+    if (isLowStock(item)) {
+      return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+    }
+    return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+  };
 
   const handleDeleteItem = async (inventoryId) => {
     if (!hasPermission('inventory', 'delete')) {
@@ -296,263 +261,266 @@ export default function Inventory() {
     );
   }
 
-  return (
-    <div className="h-full flex flex-col min-h-0 overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 mb-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
+return (
+  <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+
+    {/* Header */}
+    <div className="flex-shrink-0 border-bottom p-3">
+      <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Inventory</h1>
+    </div>
+
+    {/* Error / Low Stock Alerts */}
+    {error && (
+      <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
+        {error}
+      </div>
+    )}
+
+    {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length > 0 && (
+      <div className="flex-shrink-0 alert alert-warning border-0 rounded-0 m-0 d-flex align-items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
+          <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+        </svg>
+        <span className="fw-medium">
+          {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length} item(s) are running low on stock!
+        </span>
+      </div>
+    )}
+
+    {/* Main upside-down table container */}
+    <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+      {/* Scrollable rows – grow upwards from bottom */}
+      <div
+        ref={scrollRef}
+        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+        style={{ background: 'var(--bs-body-bg)' }}
+      >
+        {filteredInventory.length > 0 ? (
+          <table className="table table-borderless table-hover mb-0 table-fixed">
+            <colgroup>
+              <col style={{ width: '60px' }} />
+              <col />
+              <col style={{ width: '140px', maxWidth: '140px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '60px' }} />
+            </colgroup>
+            <tbody>
+              {filteredInventory.map((inv, index) => (
+                <tr
+                  key={inv.id || index}
+                  className="align-middle border-bottom"
+                  style={{ height: '56px' }}
+                >
+                  {/* Delete */}
+                  <td className="text-center px-2">
+                    <PermissionGate page="inventory" permission="delete">
+                      <button
+                        onClick={() => handleDeleteItem(inv.id)}
+                        className="btn btn-sm btn-outline-danger border-0 p-1"
+                        title="Delete"
+                      >
+                        ×
+                      </button>
+                    </PermissionGate>
+                  </td>
+
+                  {/* Name */}
+                  <td className="px-3">
+                    <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                      {inv.name}
+                    </div>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-3">
+                    <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>
+                      {getItemTypeLabel(inv.type)}
+                    </span>
+                  </td>
+
+                  {/* Stock */}
+                  <td className="text-center px-3">
+                    <span className={`badge rounded-pill ${getStockColor(inv)}`}>
+                      {inv.quantity}
+                    </span>
+                  </td>
+
+                  {/* Edit */}
+                  <td className="text-center px-2">
+                    <PermissionGate page="inventory" permission="write">
+                      <button
+                        onClick={() => handleUpdateInventory(inv)}
+                        className="btn btn-sm btn-outline-primary border-0 p-1"
+                        title="Edit"
+                      >
+                        ✎
+                      </button>
+                    </PermissionGate>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+            No inventory items found
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="flex-shrink-0 mt-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+      {/* Fixed bottom – headers + controls */}
+      <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+        {/* Column Headers */}
+        <table className="table table-borderless mb-0 bg-light">
+          <colgroup>
+            <col style={{ width: '60px' }} />
+            <col />
+            <col style={{ width: '140px', maxWidth: '140px' }} />
+            <col style={{ width: '100px' }} />
+            <col style={{ width: '60px' }} />
+          </colgroup>
+          <tfoot>
+            <tr className="bg-secondary-subtle">
+              <th className="text-center"></th>
+              <th>Item</th>
+              <th>Type</th>
+              <th className="text-center">Stock</th>
+              <th className="text-center"></th>
+            </tr>
+          </tfoot>
+        </table>
 
-      {/* Low Stock Alert */}
-      {inventory.filter(isLowStock).length > 0 && (
-        <div className="flex-shrink-0 mt-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 px-4 py-2 rounded">
-          <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-            <span className="font-medium text-sm">
-              {inventory.filter(isLowStock).length} item(s) are running low on stock!
+        {/* Controls */}
+        <div className="p-2 border-top">
+          {/* Filters row */}
+          <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
+            <div className="flex-grow-1 position-relative" style={{ minWidth: '180px' }}>
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name or SKU..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control ps-5"
+              />
+            </div>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="form-select"
+              style={{ maxWidth: '160px' }}
+            >
+              <option value="all">All Types</option>
+              <option value="PRODUCT">Products</option>
+              <option value="RESOURCE">Resources</option>
+              <option value="ASSET">Assets</option>
+              <option value="LOCATION">Locations</option>
+              <option value="ITEM">Items</option>
+            </select>
+
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className="form-select"
+              style={{ maxWidth: '140px' }}
+            >
+              <option value="all">All Stock</option>
+              <option value="low">Low Stock</option>
+              <option value="ok">In Stock</option>
+            </select>
+
+            <span className="text-muted small ms-2">
+              {filteredInventory.length} / {inventory.length}
             </span>
           </div>
-        </div>
-      )}
 
-      {/* Upside-down table container - rows start at bottom, grow upwards */}
-      <div className="mt-2 flex-1 min-h-0 flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-
-        {/* Scrollable table body - flex-direction: column-reverse makes rows grow upward */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto flex flex-col-reverse bg-white dark:bg-gray-900"
-        >
-          {filteredInventory.length > 0 ? (
-            <table className="w-full border-collapse table-fixed mt-auto">
-              <tbody>
-                {filteredInventory.map((inv, index) => (
-                  <tr
-                    key={inv.id || index}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    style={{ height: '56px' }}
-                  >
-                    {/* Delete button */}
-                    <td className="w-12 px-2 text-center">
-                      <PermissionGate page="inventory" permission="delete">
-                        <IconButton
-                          icon={TrashIcon}
-                          label="Delete"
-                          onClick={() => handleDeleteItem(inv.id)}
-                          variant="danger"
-                          className="!p-1.5"
-                        />
-                      </PermissionGate>
-                    </td>
-                    {/* Item name */}
-                    <td className="px-3 py-2">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {inv.name}
-                      </div>
-                    </td>
-                    {/* SKU */}
-                    <td className="px-3 py-2 hidden sm:table-cell">
-                      <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {inv.sku}
-                      </div>
-                    </td>
-                    {/* Type */}
-                    <td className="px-3 py-2 hidden md:table-cell">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getItemTypeColor(inv.type)}`}>
-                        {getItemTypeLabel(inv.type)}
-                      </span>
-                    </td>
-                    {/* Stock quantity */}
-                    <td className="px-3 py-2 text-center">
-                      <span className={`text-sm font-medium ${isLowStock(inv) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                        {inv.quantity}
-                      </span>
-                    </td>
-                    {/* Min stock level */}
-                    <td className="px-3 py-2 text-center hidden sm:table-cell">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {inv.min_stock_level}
-                      </span>
-                    </td>
-                    {/* Status */}
-                    <td className="px-3 py-2 text-center">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        isLowStock(inv)
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
-                          : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-                      }`}>
-                        {isLowStock(inv) ? 'Low' : 'OK'}
-                      </span>
-                    </td>
-                    {/* Edit button */}
-                    <td className="w-12 px-2 text-center">
-                      <PermissionGate page="inventory" permission="write">
-                        <IconButton
-                          icon={PencilIcon}
-                          label="Edit"
-                          onClick={() => handleUpdateInventory(inv)}
-                          variant="ghost"
-                          className="!p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                        />
-                      </PermissionGate>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400 mt-auto">
-              No inventory items found
-            </div>
-          )}
-        </div>
-
-        {/* Sticky footer with headers and controls */}
-        <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          {/* Column Headers */}
-          <table className="w-full border-collapse table-fixed">
-            <tfoot>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="w-12 px-2 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center"></th>
-                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-left">Item</th>
-                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-left hidden sm:table-cell">SKU</th>
-                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-left hidden md:table-cell">Type</th>
-                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center">Stock</th>
-                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center hidden sm:table-cell">Min</th>
-                <th className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center">Status</th>
-                <th className="w-12 px-2 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 text-center"></th>
-              </tr>
-            </tfoot>
-          </table>
-
-          {/* Controls Row */}
-          <div className="p-3 border-t border-gray-200 dark:border-gray-600 space-y-2">
-            {/* Top Row: Search and Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Search Input */}
-              <div className="relative flex-1 min-w-[180px]">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name or SKU..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+          {/* Action buttons – far left */}
+          <PermissionGate page="inventory" permission="write">
+            <div className="d-flex gap-2">
+              <div className="btn-group">
+                <CSVImportButton
+                  entityName="Items"
+                  onImport={handleCSVImport}
+                  onComplete={loadInventoryData}
+                  requiredFields={['name']}
+                  fieldMapping={{
+                    'item name': 'name',
+                    'product name': 'name',
+                    'item': 'name',
+                    'product': 'name',
+                    'stock': 'quantity',
+                    'qty': 'quantity',
+                    'min stock': 'min_stock_level',
+                    'minimum stock': 'min_stock_level',
+                  }}
+                  className="btn btn-outline-secondary"
                 />
+                <button
+                  type="button"
+                  onClick={handleCreateItem}
+                  className="btn btn-primary"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                  </svg>
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenScanner}
+                  className="btn btn-outline-secondary"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                    <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
+                    <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
+                  </svg>
+                  Scan
+                </button>
               </div>
-
-              {/* Type Filter */}
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              >
-                <option value="all">All Types</option>
-                <option value="PRODUCT">Products</option>
-                <option value="RESOURCE">Resources</option>
-                <option value="ASSET">Assets</option>
-              </select>
-
-              {/* Stock Filter */}
-              <select
-                value={stockFilter}
-                onChange={(e) => setStockFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              >
-                <option value="all">All Stock</option>
-                <option value="low">Low Stock</option>
-                <option value="ok">In Stock</option>
-              </select>
-
-              {/* Results count */}
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {filteredInventory.length}/{inventory.length}
-              </span>
             </div>
-
-            {/* Bottom Row: Action Buttons (far left) */}
-            <PermissionGate page="inventory" permission="write">
-              <div className="flex items-center">
-                <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                  <CSVImportButton
-                    entityName="Items"
-                    onImport={handleCSVImport}
-                    onComplete={loadInventoryData}
-                    requiredFields={['name']}
-                    fieldMapping={{
-                      'item name': 'name',
-                      'product name': 'name',
-                      'item': 'name',
-                      'product': 'name',
-                      'stock': 'quantity',
-                      'qty': 'quantity',
-                      'min stock': 'min_stock_level',
-                      'minimum stock': 'min_stock_level',
-                    }}
-                    className="!rounded-none !border-0 !border-r border-gray-300 dark:border-gray-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateItem}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 flex items-center gap-1 transition-all font-medium text-sm border-r border-blue-700"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleOpenScanner}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 flex items-center gap-1 transition-all font-medium text-sm"
-                  >
-                    <CameraIcon className="h-4 w-4" />
-                    Scan
-                  </button>
-                </div>
-              </div>
-            </PermissionGate>
-          </div>
+          </PermissionGate>
         </div>
       </div>
-
-      {/* Modal: Inventory Update */}
-      <Modal isOpen={isModalOpen && modalContent === 'inventory-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'inventory-form' && editingInventory && (
-          <InventoryUpdateForm
-            inventoryItem={editingInventory}
-            onSubmit={handleSubmitUpdate}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-
-      {/* Modal: Barcode Scanner */}
-      <Modal isOpen={isModalOpen && modalContent === 'barcode-scan'} onClose={closeModal} title="Scan Barcode">
-        {isModalOpen && modalContent === 'barcode-scan' && (
-          <BarcodeScanner
-            onDetected={(code) => handleDetectedBarcode(code)}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-
-      {/* Modal: Add Item (prefilled with scanned code) */}
-      <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'item-form' && (
-          <ItemForm
-            initialSku={scannedCode}
-            showInitialQuantity
-            onSubmitWithExtras={handleSubmitNewItem}
-            onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
     </div>
-  );
+
+    {/* Modals remain unchanged */}
+    <ItemDetailModal
+      isOpen={isModalOpen && modalContent === 'inventory-form'}
+      onClose={closeModal}
+      item={editingInventory}
+      itemType={editingInventory?.type || 'product'}
+      mode="inventory"
+      onUpdateInventory={handleSubmitUpdate}
+    />
+
+    <Modal isOpen={isModalOpen && modalContent === 'barcode-scan'} onClose={closeModal} title="Scan Barcode">
+      {isModalOpen && modalContent === 'barcode-scan' && (
+        <BarcodeScanner
+          onDetected={(code) => handleDetectedBarcode(code)}
+          onCancel={closeModal}
+        />
+      )}
+    </Modal>
+
+    <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
+      {isModalOpen && modalContent === 'item-form' && (
+        <ItemForm
+          initialSku={scannedCode}
+          showInitialQuantity
+          onSubmitWithExtras={handleSubmitNewItem}
+          onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
+          onCancel={closeModal}
+        />
+      )}
+    </Modal>
+
+  </div>
+);
 }

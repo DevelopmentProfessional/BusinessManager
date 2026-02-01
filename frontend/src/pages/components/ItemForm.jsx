@@ -82,9 +82,9 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+    <form onSubmit={handleSubmit} className="space-y-1">
+      <div className="mb-1">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
           {item ? 'Edit Item' : 'Add New Item'}
         </h3>
       </div>

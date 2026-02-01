@@ -119,8 +119,8 @@ export default function CheckoutModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between p-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
+          <div className="flex items-center gap-1">
             <div className="p-2 bg-white/20 rounded-lg">
               <ShoppingCartIcon className="h-5 w-5 text-white" />
             </div>
@@ -139,8 +139,8 @@ export default function CheckoutModal({
         </div>
         
         {paymentSuccess ? (
-          <div className="p-12 text-center">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center animate-in zoom-in duration-300">
+          <div className="p-1 text-center">
+            <div className="w-24 h-24 mx-auto mb-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center animate-in zoom-in duration-300">
               <CheckCircleSolid className="h-14 w-14 text-emerald-500" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
@@ -150,15 +150,15 @@ export default function CheckoutModal({
         ) : (
           <div className="flex flex-col md:flex-row max-h-[calc(90vh-80px)] overflow-hidden">
             {/* Order Summary */}
-            <div className="md:w-2/5 p-5 bg-gray-50 dark:bg-gray-800/50 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <div className="md:w-2/5 p-1 bg-gray-50 dark:bg-gray-800/50 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-1">
                 <ReceiptPercentIcon className="h-5 w-5 text-gray-500" />
                 Order Summary
               </h3>
               
               {selectedClient && (
-                <div className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/30 rounded-xl border border-primary-200 dark:border-primary-800">
-                  <div className="flex items-center gap-2">
+                <div className="mb-1 p-1 bg-primary-50 dark:bg-primary-900/30 rounded-xl border border-primary-200 dark:border-primary-800">
+                  <div className="flex items-center gap-1">
                     <UserIcon className="h-4 w-4 text-primary-500" />
                     <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Customer</p>
                   </div>
@@ -169,7 +169,7 @@ export default function CheckoutModal({
                 </div>
               )}
               
-              <div className="space-y-2 max-h-48 overflow-y-auto mb-4 pr-1">
+              <div className="space-y-1 max-h-48 overflow-y-auto mb-1 pr-1">
                 {cart.map(item => (
                   <div key={item.cartKey} className="flex justify-between text-sm p-2 bg-white dark:bg-gray-800 rounded-lg">
                     <div className="flex-1 min-w-0">
@@ -185,7 +185,7 @@ export default function CheckoutModal({
                 ))}
               </div>
               
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-1 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                   <span className="text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
@@ -202,11 +202,11 @@ export default function CheckoutModal({
             </div>
             
             {/* Payment Form */}
-            <div className="md:w-3/5 p-5 overflow-y-auto">
+            <div className="md:w-3/5 p-1 overflow-y-auto">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h3>
               
               {/* Payment Method Tabs */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-1 mb-1">
                 <button
                   onClick={() => setPaymentMethod('card')}
                   className={`flex-1 py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
@@ -232,7 +232,7 @@ export default function CheckoutModal({
               </div>
               
               {paymentMethod === 'card' ? (
-                <div className="space-y-4">
+                <div className="space-y-1">
                   {/* Card Number */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">

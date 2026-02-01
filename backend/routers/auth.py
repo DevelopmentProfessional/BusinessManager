@@ -1388,59 +1388,8 @@ def remove_role_permission(
 
 
 # ============================================================================
-# Database Environment Switching
+# Database Environment (DEPRECATED)
 # ============================================================================
-
-# Import db_config for environment management
-try:
-    from backend.db_config import get_current_environment, set_current_environment, get_all_environments
-except ImportError:
-    from db_config import get_current_environment, set_current_environment, get_all_environments
-
-
-@router.get("/db-environment")
-def get_database_environment(payload: dict = Depends(verify_token)):
-    """Get current database environment and available options."""
-    return {
-        "current": get_current_environment(),
-        "environments": get_all_environments()
-    }
-
-
-@router.post("/db-environment")
-def switch_database_environment(
-    environment: str = Body(..., embed=True),
-    payload: dict = Depends(verify_token)
-):
-    """
-    Switch to a different database environment.
-    Note: Requires application restart to take effect.
-    """
-    all_envs = get_all_environments()
-    
-    if environment not in all_envs:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid environment. Must be one of: {', '.join(all_envs.keys())}"
-        )
-    
-    # Check if the environment is configured
-    if not all_envs[environment]["configured"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"The '{environment}' environment is not configured yet."
-        )
-    
-    success = set_current_environment(environment)
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to save environment configuration"
-        )
-    
-    return {
-        "message": f"Database environment switched to '{environment}'. Please restart the application for changes to take effect.",
-        "current": environment,
-        "restart_required": True
-    }
+# NOTE: Database environment preference is now stored in the user's profile
+# (User.db_environment field). Use the user update endpoint to change it.
+# These endpoints are kept for backward compatibility but may be removed.

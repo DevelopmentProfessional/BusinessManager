@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import { scheduleAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
+import { scheduleAPI } from '../services/api';
 import Modal from './components/Modal';
 import ScheduleForm from './components/ScheduleForm';
 import PermissionGate from './components/PermissionGate';
@@ -9,7 +9,7 @@ import AttendanceWidget from './components/AttendanceWidget';
 import useDarkMode from '../services/useDarkMode';
 
 export default function Schedule() {
-  const { appointments, clients, services, employees, loading, setClients, setServices, setEmployees, setAppointments, hasPermission, isAuthenticated, user } = useStore();
+  const { appointments, clients, services, employees, loading, setAppointments, hasPermission, isAuthenticated, user } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Use the permission refresh hook
@@ -30,9 +30,14 @@ export default function Schedule() {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [draggedAppointment, setDraggedAppointment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
+  const hasFetched = useRef(false);
 
+  // Load ONLY schedule data on mount - services, employees, clients loaded on-demand in ScheduleForm
   useEffect(() => {
-    const loadData = async () => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+    
+    const loadSchedule = async () => {
       // Check if user is authenticated before making API calls
       if (!isAuthenticated()) {
         console.error('User not authenticated - skipping data load');
@@ -40,38 +45,7 @@ export default function Schedule() {
       }
       
       try {
-        const clientsResponse = await clientsAPI.getAll();
-        const clientsData = clientsResponse?.data ?? clientsResponse;
-        if (Array.isArray(clientsData)) {
-          setClients(clientsData);
-        } else {
-          console.error('Invalid clients data format:', clientsData);
-        }
-        
-        const servicesResponse = await servicesAPI.getAll();
-        const servicesData = servicesResponse?.data ?? servicesResponse;
-        if (Array.isArray(servicesData)) {
-          setServices(servicesData);
-        } else {
-          console.error('Invalid services data format:', servicesData);
-        }
-        
-        // Load employees from schedule endpoint to get permission-filtered list
-        const employeesResponse = await scheduleAPI.getAvailableEmployees();
-        const employeesData = employeesResponse?.data ?? employeesResponse;
-        if (Array.isArray(employeesData)) {
-          // Transform the data to match the expected format
-          const transformedEmployees = employeesData.map(emp => ({
-            id: emp.id,
-            first_name: emp.name?.split(' ')[0] || '',
-            last_name: emp.name?.split(' ').slice(1).join(' ') || '',
-            role: emp.role || 'employee'
-          }));
-          setEmployees(transformedEmployees);
-        } else {
-          console.error('Invalid employees data format:', employeesData);
-        }
-        
+        // Only load schedule/appointments - other data loads on-demand in form
         const scheduleResponse = await scheduleAPI.getAll();
         const scheduleData = scheduleResponse?.data ?? scheduleResponse;
         if (Array.isArray(scheduleData)) {
@@ -80,17 +54,15 @@ export default function Schedule() {
           console.error('Invalid schedule data format:', scheduleData);
         }
       } catch (error) {
-        console.error('Error loading schedule data:', error);
-        // If it's an authentication error, the user needs to log in
+        console.error('Error loading schedule:', error);
         if (error.response?.status === 401 || error.response?.status === 403) {
-          console.error('Authentication required - redirecting to login');
-          // The PermissionGate will handle the redirect
+          console.error('Authentication required');
         }
       }
     };
 
-    loadData();
-  }, [setClients, setServices, setEmployees, isAuthenticated]);
+    loadSchedule();
+  }, [setAppointments, isAuthenticated]);
 
   // Get calendar data based on current view
   const getCalendarDays = () => {
@@ -182,6 +154,19 @@ export default function Schedule() {
     setIsModalOpen(true);
   }, [canCreateSchedule]);
 
+  // Helper to refresh schedule data (uses cache deduplication)
+  const refreshSchedules = useCallback(async () => {
+    try {
+      const scheduleResponse = await scheduleAPI.getAll();
+      const scheduleData = scheduleResponse?.data ?? scheduleResponse;
+      if (Array.isArray(scheduleData)) {
+        setAppointments(scheduleData);
+      }
+    } catch (err) {
+      console.error('Failed to refresh schedules:', err);
+    }
+  }, [setAppointments]);
+
   const handleSubmitAppointment = useCallback(async (appointmentData) => {
     if (editingAppointment && editingAppointment.id) {
       await scheduleAPI.update(editingAppointment.id, appointmentData);
@@ -189,14 +174,12 @@ export default function Schedule() {
       await scheduleAPI.create(appointmentData);
     }
     
-    const scheduleResponse = await scheduleAPI.getAll();
-    if (scheduleResponse?.data) {
-      setAppointments(scheduleResponse.data);
-    }
+    // Refresh schedules - cache will prevent duplicate calls if already in flight
+    await refreshSchedules();
     
     setIsModalOpen(false);
     setEditingAppointment(null);
-  }, [editingAppointment, setAppointments]);
+  }, [editingAppointment, refreshSchedules]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e, appointment) => {
@@ -249,13 +232,9 @@ export default function Schedule() {
       notes: draggedAppointment.notes || null
     };
     
-    const response = await scheduleAPI.update(draggedAppointment.id, updatedAppointment);
-    if (response?.data) {
-      const scheduleResponse = await scheduleAPI.getAll();
-      if (scheduleResponse?.data) {
-        setAppointments(scheduleResponse.data);
-      }
-    }
+    await scheduleAPI.update(draggedAppointment.id, updatedAppointment);
+    // Refresh schedules - cache will prevent duplicate calls if already in flight
+    await refreshSchedules();
     
     setDraggedAppointment(null);
     setDragOverCell(null);
@@ -569,12 +548,7 @@ export default function Schedule() {
             
             <button
               type="button"
-              onClick={async () => {
-                const scheduleResponse = await scheduleAPI.getAll();
-                if (scheduleResponse?.data) {
-                  setAppointments(scheduleResponse.data);
-                }
-              }}
+              onClick={refreshSchedules}
               className="btn btn-outline-secondary btn-sm"
             >
 🔄            </button>
@@ -605,9 +579,6 @@ export default function Schedule() {
         <Modal isOpen={isModalOpen} onClose={closeModal}>
           <ScheduleForm
             appointment={editingAppointment}
-            clients={clients}
-            services={services}
-            employees={employees}
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
           />

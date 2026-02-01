@@ -79,9 +79,9 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
   }, [error]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+    <form onSubmit={handleSubmit} className="space-y-1">
+      <div className="mb-1">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
           {client ? 'Edit Client' : 'Add New Client'}
         </h3>
       </div>
@@ -166,10 +166,10 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
       </div>
 
       {/* Membership Section */}
-      <div className="border-t pt-4 mt-4">
-        <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">Membership</h4>
+      <div className="border-t pt-1 mt-1">
+        <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-1">Membership</h4>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-1">
           <div>
             <label htmlFor="membership_tier" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Membership Tier

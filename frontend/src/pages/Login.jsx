@@ -265,8 +265,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-1 px-1 sm:px-1 lg:px-1">
+      <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-1 rounded-2xl shadow-xl">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-900/50 mb-4">
             <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -282,7 +282,7 @@ const Login = () => {
         </div>
         
         {!showPasswordReset ? (
-          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          <form className="mt-1 space-y-1" onSubmit={handleLogin}>
             {/* Success Message */}
             {success && (
               <div className="rounded-lg bg-green-900/30 border border-green-700 p-4">
@@ -307,7 +307,7 @@ const Login = () => {
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-1">
               {/* Username Field */}
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
@@ -417,7 +417,7 @@ const Login = () => {
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Enter your username and new password</p>
             </div>
             
-            <form className="space-y-6" onSubmit={handlePasswordReset}>
+            <form className="space-y-1" onSubmit={handlePasswordReset}>
               {/* Error Message */}
               {error && (
                 <div className="rounded-lg bg-red-900/30 border border-red-700 p-4">
@@ -430,7 +430,7 @@ const Login = () => {
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-1">
                 {/* Username Field */}
                 <div>
                   <label htmlFor="reset-username" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
@@ -484,7 +484,7 @@ const Login = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-4">
+              <div className="flex space-x-1">
                 <button
                   type="button"
                   onClick={() => {

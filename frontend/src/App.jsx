@@ -10,6 +10,7 @@ import GlobalClientModal from './pages/components/GlobalClientModal';
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import('./pages/Clients'));
 const Inventory = lazy(() => import('./pages/Inventory'));
+const Services = lazy(() => import('./pages/Services'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const Employees = lazy(() => import('./pages/Employees'));
@@ -125,6 +126,13 @@ function App() {
             <ProtectedRoute requiredPermission="services:read">
               <Layout>
                 <Sales />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/services" element={
+            <ProtectedRoute requiredPermission="services:read">
+              <Layout>
+                <Services />
               </Layout>
             </ProtectedRoute>
           } />

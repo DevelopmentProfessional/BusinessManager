@@ -16,6 +16,7 @@ class ItemType(str, Enum):
     PRODUCT = "product"
     RESOURCE = "resource"
     ASSET = "asset"
+    LOCATION = "location"
     ITEM = "item"  # Legacy value for backward compatibility
 
 
@@ -92,6 +93,7 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
+    db_environment: str = Field(default="development")  # User's preferred database environment
 
     # Hierarchy - who this user reports to
     reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
@@ -179,6 +181,9 @@ class Inventory(BaseModel, table=True):
     quantity: int = Field(ge=0, default=0)
     min_stock_level: int = Field(ge=0, default=10)
     location: Optional[str] = Field(default=None)
+    
+    # Service link - for resources/assets tied to specific services
+    service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
     
     # Relationships
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
@@ -327,8 +332,15 @@ class ClientRead(SQLModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+    model_config = {"from_attributes": True}
+
     @classmethod
     def from_orm_safe(cls, obj):
+        # Handle membership_tier which could be an enum or a string
+        tier = obj.membership_tier
+        if tier is not None:
+            tier = tier.value if hasattr(tier, 'value') else str(tier)
+
         return cls(
             id=obj.id,
             name=obj.name,
@@ -336,7 +348,7 @@ class ClientRead(SQLModel):
             phone=obj.phone,
             address=obj.address,
             notes=obj.notes,
-            membership_tier=obj.membership_tier.value if obj.membership_tier else None,
+            membership_tier=tier,
             membership_since=obj.membership_since,
             membership_expires=obj.membership_expires,
             membership_points=obj.membership_points or 0,
@@ -359,6 +371,21 @@ class InventoryCreate(SQLModel):
     supplier_id: Optional[UUID] = None
 
 
+class ServiceRead(SQLModel):
+    """Schema for reading service records (excludes relationship fields)"""
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price: float
+    duration_minutes: int
+    image_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class InventoryRead(SQLModel):
     """Schema for reading inventory items (excludes relationship fields)"""
     id: UUID
@@ -369,6 +396,7 @@ class InventoryRead(SQLModel):
     type: str
     image_url: Optional[str] = None
     supplier_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
     quantity: int
     min_stock_level: int
     location: Optional[str] = None
@@ -403,6 +431,8 @@ class UserUpdate(SQLModel):
     force_password_reset: Optional[bool] = None
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    dark_mode: Optional[bool] = None
+    db_environment: Optional[str] = None  # User's preferred database environment
 
 
 class UserRead(SQLModel):
@@ -420,6 +450,8 @@ class UserRead(SQLModel):
     last_login: Optional[datetime] = None
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    dark_mode: bool = False
+    db_environment: str = "development"  # User's preferred database environment
     created_at: datetime
     updated_at: Optional[datetime] = None
 

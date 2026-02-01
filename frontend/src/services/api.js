@@ -401,9 +401,11 @@ export const adminAPI = {
   testAppointments: () => api.get('/admin/test-appointments'),
 };
 
+// DEPRECATED: Database environment is now stored in user profile (user.db_environment)
+// Use employeesAPI.updateUser(userId, { db_environment: 'development' }) to update
 export const dbEnvironmentAPI = {
-  getCurrent: () => api.get('/auth/db-environment'),
-  switch: (environment) => api.post('/auth/db-environment', { environment }),
+  getCurrent: () => Promise.resolve({ data: { current: 'development', environments: {} } }),
+  switch: () => Promise.resolve({ data: { message: 'Use user profile to update db_environment' } }),
 };
 
 export const reportsAPI = {

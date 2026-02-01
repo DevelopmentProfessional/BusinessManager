@@ -69,16 +69,16 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+    <form onSubmit={handleSubmit} className="space-y-1">
+      <div className="mb-1">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
           Upload Document
         </h3>
       </div>
 
       {/* Drag and Drop Zone */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+        className={`border-2 border-dashed rounded-lg p-1 text-center transition-colors ${
           dragActive
             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
             : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'

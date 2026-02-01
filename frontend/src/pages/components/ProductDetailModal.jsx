@@ -100,14 +100,14 @@ export default function ProductDetailModal({
         </div>
         
         {/* Content */}
-        <div className="p-6">
+        <div className="p-1">
           {/* Title & Price */}
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-1">
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                 {item.name}
               </h2>
-              <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                 {isService && item.duration_minutes && (
                   <span className="flex items-center gap-1">
                     <ClockIcon className="h-4 w-4" />
@@ -136,15 +136,15 @@ export default function ProductDetailModal({
           
           {/* Description */}
           {item.description && (
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 leading-relaxed">
               {item.description}
             </p>
           )}
           
           {/* Quantity Selector */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
               <button 
                 onClick={decrementQuantity}
                 disabled={quantity <= 1}
@@ -165,7 +165,7 @@ export default function ProductDetailModal({
           </div>
           
           {/* Total & Add Button */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
             <div className="flex-1">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Total</p>
               <p className={`text-2xl font-bold ${

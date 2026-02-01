@@ -158,7 +158,7 @@ export default function Settings() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
+      <div className="mb-1">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <CogIcon className="h-8 w-8" />
           Settings
@@ -199,16 +199,16 @@ export default function Settings() {
             {/* Account Settings */}
             {activeTab === 'account' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                   Account Settings
                 </h2>
                 
                 {/* Personal Information */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Personal Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <div className="flex items-center gap-3">
+                <div className="mb-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Personal Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                    <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="flex items-center gap-1">
                         <div className="flex-shrink-0">
                           <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-2">
                             <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -220,8 +220,8 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <div className="flex items-center gap-3">
+                    <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="flex items-center gap-1">
                         <div className="flex-shrink-0">
                           <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-2">
                             <UserIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -233,8 +233,8 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <div className="flex items-center gap-3">
+                    <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="flex items-center gap-1">
                         <div className="flex-shrink-0">
                           <div className="bg-purple-100 dark:bg-purple-900/30 rounded-full p-2">
                             <EnvelopeIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -246,8 +246,8 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <div className="flex items-center gap-3">
+                    <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="flex items-center gap-1">
                         <div className="flex-shrink-0">
                           <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-full p-2">
                             <ShieldCheckIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
@@ -263,8 +263,8 @@ export default function Settings() {
                 </div>
 
                 {/* Appearance */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Appearance</h3>
+                <div className="mb-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Appearance</h3>
                   <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">Dark Mode</h4>
@@ -276,10 +276,10 @@ export default function Settings() {
 
                 {/* Password Change */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Security</h3>
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Security</h3>
+                  <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
                         <div className="flex-shrink-0">
                           <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-2">
                             <KeyIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -399,7 +399,7 @@ export default function Settings() {
             {/* Branding Settings */}
             {activeTab === 'branding' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                   Branding Settings
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
@@ -407,8 +407,8 @@ export default function Settings() {
                 </p>
 
                 {/* Company Info */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Company Information</h3>
+                <div className="mb-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Company Information</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -460,8 +460,8 @@ export default function Settings() {
                 </div>
 
                 {/* Color Scheme */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Color Scheme</h3>
+                <div className="mb-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Color Scheme</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -527,9 +527,9 @@ export default function Settings() {
                 </div>
 
                 {/* Preview */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Preview</h3>
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div className="mb-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Preview</h3>
+                  <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
                     <div className="flex items-center gap-4 mb-4">
                       {branding.logoUrl && (
                         <img src={branding.logoUrl} alt="Logo" className="h-8 object-contain" onError={(e) => e.target.style.display = 'none'} />
@@ -583,7 +583,7 @@ export default function Settings() {
             {/* Database/Connection Settings */}
             {activeTab === 'database' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                   Database & Connection Settings
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
@@ -656,7 +656,7 @@ export default function Settings() {
                   </div>
 
                   {/* Current Environment Info */}
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <div className="p-1 bg-gray-50 dark:bg-gray-900 rounded-lg">
                     <h4 className="font-medium text-gray-900 dark:text-white mb-2">Current Environment</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
@@ -702,7 +702,7 @@ export default function Settings() {
             {/* General Settings */}
             {activeTab === 'general' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                   General Settings
                 </h2>
                 <div className="space-y-4">
@@ -727,7 +727,7 @@ export default function Settings() {
             {/* API & Debug Settings */}
             {activeTab === 'api' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                   API & Debug Information
                 </h2>
                 <ApiDebugInfo />
@@ -737,7 +737,7 @@ export default function Settings() {
             {/* Notifications Settings */}
             {activeTab === 'notifications' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                   Notification Settings
                 </h2>
                 <div className="space-y-4">

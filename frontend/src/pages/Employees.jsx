@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
@@ -45,10 +45,13 @@ export default function Employees() {
     last_name: '',
     role: 'employee'
   });
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadEmployees();
-    loadRoles();
+    // Roles are loaded on-demand when the Manage Roles modal is opened
   }, []);
 
   const loadRoles = async () => {
@@ -526,69 +529,152 @@ export default function Employees() {
   }
 
   return (
-    <div className="h-full flex flex-col min-h-0 overflow-hidden p-6 max-w-7xl mx-auto">
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white shadow rounded-lg">
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Employee & User Management</h1>
-            <div className="flex space-x-2">
-              {hasPermission('employees', 'admin') && (
-                <>
-                  <button
-                    onClick={() => setShowRolesModal(true)}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
+    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+
+      {/* Header */}
+      <div className="flex-shrink-0 border-bottom p-3">
+        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
+      </div>
+
+      {/* Error / Success Alerts */}
+      {error && (
+        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="flex-shrink-0 alert alert-success border-0 rounded-0 m-0">
+          {success}
+        </div>
+      )}
+
+      {/* Main upside-down table container */}
+      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+        {/* Scrollable rows – grow upwards from bottom */}
+        <div
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          style={{ background: 'var(--bs-body-bg)' }}
+        >
+          {employees.length > 0 ? (
+            <table className="table table-borderless table-hover mb-0 table-fixed">
+              <colgroup>
+                <col style={{ width: '60px' }} />
+                <col />
+                <col style={{ width: '120px' }} />
+                <col style={{ width: '100px' }} />
+                <col style={{ width: '80px' }} />
+              </colgroup>
+              <tbody>
+                {employees.map((employee, index) => (
+                  <tr
+                    key={employee.id || index}
+                    className="align-middle border-bottom"
+                    style={{ height: '56px' }}
                   >
-                    Manage Roles
-                  </button>
-                  <button
-                    onClick={() => setShowDataImport(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-                  >
-                    Import Data
-                  </button>
-                  <button
-                    onClick={handleTestAppointments}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                  >
-                    Test System
-                  </button>
-                  <button
-                    onClick={() => setShowCreateUser(true)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                  >
-                    Create User
-                  </button>
-                </>
-              )}
-              {hasPermission('employees', 'write') && !hasPermission('employees', 'admin') && (
-                <button onClick={handleCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-                  Add Employee
-                </button>
-              )}
+                    {/* Delete */}
+                    <td className="text-center px-2">
+                      <PermissionGate page="employees" permission="delete">
+                        <button
+                          onClick={() => handleDelete(employee.id)}
+                          className="btn btn-sm btn-outline-danger border-0 p-1"
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </PermissionGate>
+                    </td>
+
+                    {/* Name */}
+                    <td className="px-3">
+                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                        {employee.first_name} {employee.last_name}
+                      </div>
+                      <small className="text-muted">{employee.email}</small>
+                    </td>
+
+                    {/* Role */}
+                    <td className="px-3">
+                      <span className={`badge rounded-pill ${
+                        employee.role === 'admin' ? 'bg-danger' :
+                        employee.role === 'manager' ? 'bg-warning text-dark' :
+                        'bg-primary'
+                      }`}>
+                        {employee.role}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="text-center px-3">
+                      <span className={`badge rounded-pill ${
+                        employee.is_locked ? 'bg-danger' :
+                        employee.is_active ? 'bg-success' : 'bg-secondary'
+                      }`}>
+                        {employee.is_locked ? 'Locked' : employee.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+
+                    {/* Edit */}
+                    <td className="text-center px-2">
+                      <PermissionGate page="employees" permission="write">
+                        <button
+                          onClick={() => handleEdit(employee)}
+                          className="btn btn-sm btn-outline-primary border-0 p-1"
+                          title="Edit"
+                        >
+                          ✎
+                        </button>
+                      </PermissionGate>
+                      {hasPermission('employees', 'admin') && (
+                        <button
+                          onClick={() => handleManagePermissions(employee)}
+                          className="btn btn-sm btn-outline-secondary border-0 p-1 ms-1"
+                          title="Permissions"
+                        >
+                          🔑
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+              No employees found
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
+        {/* Fixed bottom – headers + controls */}
+        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+          {/* Column Headers */}
+          <table className="table table-borderless mb-0 bg-light">
+            <colgroup>
+              <col style={{ width: '60px' }} />
+              <col />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '80px' }} />
+            </colgroup>
+            <tfoot>
+              <tr className="bg-secondary-subtle">
+                <th className="text-center"></th>
+                <th>Name</th>
+                <th>Role</th>
+                <th className="text-center">Status</th>
+                <th className="text-center"></th>
+              </tr>
+            </tfoot>
+          </table>
 
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="text-sm text-green-700">{success}</div>
-            </div>
-          )}
-
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <div className="flex-shrink-0 flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-gray-900">
-                {hasPermission('employees', 'admin') ? 'Users & Employees' : 'Employees'}
-              </h2>
-              <PermissionGate page="employees" permission="write">
-                <div className="flex items-center gap-2">
+          {/* Controls */}
+          <div className="p-2 border-top">
+            {/* Action buttons */}
+            <PermissionGate page="employees" permission="write">
+              <div className="d-flex gap-2 flex-wrap">
+                <div className="btn-group">
                   <CSVImportButton
                     entityName="Employees"
                     onImport={handleCSVImportEmployees}
@@ -603,137 +689,44 @@ export default function Employees() {
                       'user': 'username',
                       'email address': 'email',
                     }}
+                    className="btn btn-outline-secondary"
                   />
                   <button
                     type="button"
                     onClick={handleCreate}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm"
+                    className="btn btn-primary"
                   >
-                    <PlusIcon className="h-4 w-4" />
-                    Add Employee
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                    </svg>
+                    Add
                   </button>
                 </div>
-              </PermissionGate>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reports To</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {employees.map((employee) => (
-                    <tr key={employee.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.first_name} {employee.last_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.username}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
-                        {employee.role}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {employee.role_id ? (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                            {getRoleName(employee.role_id)}
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getManagerName(employee.reports_to)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          employee.is_locked 
-                            ? 'bg-red-100 text-red-800' 
-                            : employee.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {employee.is_locked ? 'Locked' : employee.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                        {employee.force_password_reset && (
-                          <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            Reset Required
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        {hasPermission('employees', 'write') && (
-                          <button
-                            onClick={() => handleEdit(employee)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="Edit Employee"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        
-                        {hasPermission('employees', 'admin') && (
-                          <>
-                            <button
-                              onClick={() => {
-                                handleManagePermissions(employee);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Manage Permissions"
-                            >
-                              Permissions
-                            </button>
-                            {employee.is_locked ? (
-                              <button
-                                onClick={() => handleUnlockUser(employee.id)}
-                                className="text-green-600 hover:text-green-900"
-                              >
-                                Unlock
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleLockUser(employee.id)}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                Lock
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleForcePasswordReset(employee.id)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                            >
-                              Force Reset
-                            </button>
-                          </>
-                        )}
-                        
-                        {hasPermission('employees', 'delete') && (
-                          <button
-                            onClick={() => {
-                              handleDelete(employee.id);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete Employee"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                {hasPermission('employees', 'admin') && (
+                  <>
+                    <button
+                      onClick={() => {
+                        loadRoles();
+                        setShowRolesModal(true);
+                      }}
+                      className="btn btn-outline-secondary"
+                    >
+                      Roles
+                    </button>
+                    <button
+                      onClick={() => setShowCreateUser(true)}
+                      className="btn btn-outline-secondary"
+                    >
+                      Create User
+                    </button>
+                  </>
+                )}
+                <span className="text-muted small ms-auto align-self-center">
+                  {employees.length} employee(s)
+                </span>
+              </div>
+            </PermissionGate>
+          </div>
         </div>
       </div>
 
@@ -749,90 +742,106 @@ export default function Employees() {
 
       {/* Create User Modal */}
       {showCreateUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New User</h3>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Username</label>
-                  <input
-                    type="text"
-                    value={newUser.username}
-                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Password</label>
-                  <input
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    value={newUser.first_name}
-                    onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    value={newUser.last_name}
-                    onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
-                  <select
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  >
-                    {roles.map(role => (
-                      <option key={role} value={role}>{role}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {loading ? 'Creating...' : 'Create User'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateUser(false)}
-                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Create New User</h5>
+                <button type="button" className="btn-close" onClick={() => setShowCreateUser(false)}></button>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={handleCreateUser}>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="createUserUsername"
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                      className="form-control"
+                      placeholder="Username"
+                      required
+                    />
+                    <label htmlFor="createUserUsername">Username</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="email"
+                      id="createUserEmail"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                      className="form-control"
+                      placeholder="Email"
+                      required
+                    />
+                    <label htmlFor="createUserEmail">Email</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="password"
+                      id="createUserPassword"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                      className="form-control"
+                      placeholder="Password"
+                      required
+                    />
+                    <label htmlFor="createUserPassword">Password</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="createUserFirstName"
+                      value={newUser.first_name}
+                      onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
+                      className="form-control"
+                      placeholder="First Name"
+                      required
+                    />
+                    <label htmlFor="createUserFirstName">First Name</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="createUserLastName"
+                      value={newUser.last_name}
+                      onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
+                      className="form-control"
+                      placeholder="Last Name"
+                      required
+                    />
+                    <label htmlFor="createUserLastName">Last Name</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <select
+                      id="createUserRole"
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                      className="form-select"
+                    >
+                      {roles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                    <label htmlFor="createUserRole">Role</label>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="btn btn-primary flex-grow-1"
+                    >
+                      {loading ? 'Creating...' : 'Create User'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateUser(false)}
+                      className="btn btn-secondary flex-grow-1"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -1199,7 +1208,7 @@ export default function Employees() {
           loadEmployees();
         }}
       />
-      </div>
+
     </div>
   );
 }

@@ -11,11 +11,21 @@ export default function CustomDropdown({
   disabled = false,
   name = '',
   id = '',
-  searchable = false
+  searchable = false,
+  onOpen = null,
+  loading = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+
+  // Call onOpen callback when dropdown opens
+  const handleOpen = () => {
+    if (!disabled) {
+      setIsOpen(true);
+      if (onOpen) onOpen();
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -63,7 +73,7 @@ export default function CustomDropdown({
               }
             }}
             onFocus={() => {
-              setIsOpen(true);
+              handleOpen();
               setSearchTerm('');
             }}
             placeholder={placeholder}
@@ -90,7 +100,11 @@ export default function CustomDropdown({
       ) : (
         <button
           type="button"
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={() => {
+            if (disabled) return;
+            if (!isOpen && onOpen) onOpen();
+            setIsOpen(!isOpen);
+          }}
           className={`
             w-full px-3 py-2 border rounded-lg 
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
@@ -113,7 +127,12 @@ export default function CustomDropdown({
 
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-          {filteredOptions.length === 0 ? (
+          {loading ? (
+            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+              <span className="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+              Loading...
+            </div>
+          ) : filteredOptions.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No options available</div>
           ) : (
             filteredOptions.map((option) => (

@@ -22,46 +22,91 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' }
 ];
 
-export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
+export default function ScheduleForm({ appointment, onSubmit, onCancel, clients: clientsProp, services: servicesProp, employees: employeesProp }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
-  const [clients, setClients] = useState([]);
-  const [services, setServices] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [clients, setClients] = useState(clientsProp || []);
+  const [services, setServices] = useState(servicesProp || []);
+  const [employees, setEmployees] = useState(employeesProp || []);
   const [timeError, setTimeError] = useState('');
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
   const navigate = useNavigate();
 
-  // Own link to isud DB: fetch data so component works on any page
+  // Load services and employees if not provided as props (clients loaded on-demand)
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const [clientsRes, servicesRes, employeesRes] = await Promise.all([
-          isudAPI.clients.getAll(),
-          isudAPI.services.getAll(),
-          isudAPI.schedule.getAvailableEmployees(),
-        ]);
-        if (cancelled) return;
-        const clientsData = clientsRes?.data ?? clientsRes;
-        const servicesData = servicesRes?.data ?? servicesRes;
-        const employeesRaw = employeesRes?.data ?? employeesRes;
-        if (Array.isArray(clientsData)) setClients(clientsData);
-        if (Array.isArray(servicesData)) setServices(servicesData);
-        if (Array.isArray(employeesRaw)) {
-          const transformed = employeesRaw.map(emp => ({
-            id: emp.id,
-            first_name: emp.first_name ?? emp.firstName ?? '',
-            last_name: emp.last_name ?? emp.lastName ?? '',
-            role: emp.role ?? '',
-          }));
-          setEmployees(transformed);
+    // Use props if provided
+    if (servicesProp && servicesProp.length > 0) {
+      setServices(servicesProp);
+    }
+    if (employeesProp && employeesProp.length > 0) {
+      setEmployees(employeesProp);
+    }
+    if (clientsProp && clientsProp.length > 0) {
+      setClients(clientsProp);
+      setClientsLoaded(true);
+    }
+    
+    // Only fetch services and employees if props are not provided
+    const needsServices = !servicesProp || servicesProp.length === 0;
+    const needsEmployees = !employeesProp || employeesProp.length === 0;
+    
+    if (needsServices || needsEmployees) {
+      let cancelled = false;
+      const load = async () => {
+        try {
+          const promises = [];
+          if (needsServices) promises.push(isudAPI.services.getAll());
+          if (needsEmployees) promises.push(isudAPI.schedule.getAvailableEmployees());
+          
+          const results = await Promise.all(promises);
+          if (cancelled) return;
+          
+          let resultIndex = 0;
+          if (needsServices) {
+            const servicesData = results[resultIndex]?.data ?? results[resultIndex];
+            if (Array.isArray(servicesData)) setServices(servicesData);
+            resultIndex++;
+          }
+          if (needsEmployees) {
+            const employeesRaw = results[resultIndex]?.data ?? results[resultIndex];
+            if (Array.isArray(employeesRaw)) {
+              const transformed = employeesRaw.map(emp => ({
+                id: emp.id,
+                first_name: emp.first_name ?? emp.firstName ?? '',
+                last_name: emp.last_name ?? emp.lastName ?? '',
+                role: emp.role ?? '',
+              }));
+              setEmployees(transformed);
+            }
+          }
+        } catch (err) {
+          if (!cancelled) console.error('ScheduleForm failed to load services/employees', err);
         }
-      } catch (err) {
-        if (!cancelled) console.error('ScheduleForm failed to load isud data', err);
+      };
+      load();
+      return () => { cancelled = true; };
+    }
+  }, [servicesProp, employeesProp, clientsProp]);
+
+  // Load clients on-demand when dropdown opens
+  const handleClientDropdownOpen = async () => {
+    // Skip if already loaded or loading
+    if (clientsLoaded || clientsLoading || (clients && clients.length > 0)) return;
+    
+    setClientsLoading(true);
+    try {
+      const response = await isudAPI.clients.getAll();
+      const clientsData = response?.data ?? response;
+      if (Array.isArray(clientsData)) {
+        setClients(clientsData);
+        setClientsLoaded(true);
       }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, []);
+    } catch (err) {
+      console.error('Failed to load clients:', err);
+    } finally {
+      setClientsLoading(false);
+    }
+  };
   
   // Extract local YYYY-MM-DD and HH:mm from a Date or ISO string reliably (no timezone shifts)
   const extractLocalParts = (value) => {
@@ -175,14 +220,14 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+    <form onSubmit={handleSubmit} className="space-y-1">
+      <div className="mb-1">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
           {appointment ? 'Edit Appointment' : 'Book New Appointment'}
         </h3>
       </div>
 
-      <div className="flex items-center gap-2"> 
+      <div className="flex items-center gap-1"> 
       <PermissionGate page="clients" permission="write">
           <button
             type="button"
@@ -211,11 +256,13 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           required
           className="flex-1"
           searchable={true}
+          onOpen={handleClientDropdownOpen}
+          loading={clientsLoading}
         />
     
       </div>
 
-      <div className="flex items-center gap-2"> 
+      <div className="flex items-center gap-1"> 
       <PermissionGate page="services" permission="write">
           <button
             type="button"
@@ -243,7 +290,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       
       </div>
 
-      <div className="flex items-center gap-2"> 
+      <div className="flex items-center gap-1"> 
       <PermissionGate page="employees" permission="write">
           <button
             type="button"
@@ -281,7 +328,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       </div>
 
       {/* Appointment Type & Duration */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-1">
         <div>
           <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
             <CalendarDaysIcon className="h-4 w-4 inline mr-1" />

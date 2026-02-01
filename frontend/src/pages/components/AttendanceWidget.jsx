@@ -11,57 +11,7 @@ export default function AttendanceWidget({ compact = false }) {
   const [error, setError] = useState('');
   const [todayHours, setTodayHours] = useState(null);
 
-  useEffect(() => {
-    if (user?.id) {
-      checkClockStatus();
-    }
-  }, [user]);
-
-  const checkClockStatus = async () => {
-    if (!user?.id) return;
-
-    try {
-      const response = await attendanceAPI.checkUser();
-
-      if (response?.data) {
-        const isCurrentlyClockedIn = response.data.is_clocked_in || false;
-        setIsClockedIn(isCurrentlyClockedIn);
-
-        if (isCurrentlyClockedIn && response.data.current_record) {
-          setCurrentRecord(response.data.current_record);
-        } else {
-          setCurrentRecord(null);
-        }
-
-        // Calculate today's hours from records
-        if (response.data.today_hours !== undefined) {
-          setTodayHours(response.data.today_hours);
-        }
-      } else {
-        // Fallback
-        const meResponse = await attendanceAPI.me();
-        if (meResponse?.data && Array.isArray(meResponse.data)) {
-          const today = new Date().toISOString().split('T')[0];
-          const todayRecords = meResponse.data.filter(record => {
-            const recordDate = new Date(record.date).toISOString().split('T')[0];
-            return recordDate === today;
-          });
-
-          const openRecord = todayRecords.find(r => r.clock_in && !r.clock_out);
-          setIsClockedIn(!!openRecord);
-          setCurrentRecord(openRecord || null);
-
-          // Sum up completed hours
-          const totalHours = todayRecords.reduce((sum, r) => sum + (r.total_hours || 0), 0);
-          setTodayHours(totalHours);
-        }
-      }
-    } catch (err) {
-      console.error('Error checking clock status:', err);
-      setIsClockedIn(false);
-      setCurrentRecord(null);
-    }
-  };
+  // No auto-load on mount - attendance is click-based only
 
   const handleClockAction = async () => {
     if (!user?.id) {
@@ -79,15 +29,23 @@ export default function AttendanceWidget({ compact = false }) {
 
     try {
       if (isClockedIn) {
-        await attendanceAPI.clockOut();
+        const response = await attendanceAPI.clockOut();
         setIsClockedIn(false);
         setCurrentRecord(null);
+        // Update today's hours from response if available
+        if (response?.data?.total_hours !== undefined) {
+          setTodayHours(prev => (prev || 0) + response.data.total_hours);
+        }
       } else {
-        await attendanceAPI.clockIn();
+        const response = await attendanceAPI.clockIn();
         setIsClockedIn(true);
+        // Set current record from response
+        if (response?.data) {
+          setCurrentRecord(response.data);
+        } else {
+          setCurrentRecord({ clock_in: new Date().toISOString() });
+        }
       }
-      // Refresh status
-      await checkClockStatus();
     } catch (err) {
       const errorMessage = err.response?.data?.detail ||
         (isClockedIn ? 'Failed to clock out' : 'Failed to clock in');
