@@ -471,108 +471,184 @@ export default function Documents() {
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Documents
-          </h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
-          <PermissionGate page="documents" permission="write">
-            <button
-              type="button"
-              onClick={handleUploadDocument}
-              className="btn-primary flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Upload Document
-            </button>
-          </PermissionGate>
-          <PermissionGate page="documents" permission="write">
-            <button
-              type="button"
-              onClick={() => setIsCategoriesOpen(true)}
-              className="btn-secondary"
-              title="Manage Categories"
-            >
-              Manage Categories
-            </button>
-          </PermissionGate>
-        </div>
+    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+
+      {/* Header */}
+      <div className="flex-shrink-0 border-bottom p-3">
+        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Documents</h1>
       </div>
 
+      {/* Error Alert */}
       {error && (
-        <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
+        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
           {error}
         </div>
       )}
 
+      {/* Main table container */}
+      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-      {/* Documents List */}
-      <div className="mt-6">
-        <MobileTable
-          data={documents}
-          columns={[
-            { key: 'original_filename', title: 'File Name' },
-            {
-              key: 'entity_type',
-              title: 'Entity',
-              render: (v) =>
-                v ? <span className="capitalize">{v}</span> : '-',
-            },
-            {
-              key: 'file_size',
-              title: 'Size',
-              render: (v) => formatFileSize(v),
-            },
-            {
-              key: 'is_signed',
-              title: 'Signed',
-              render: (v) =>
-                v ? (
-                  <span className="text-green-600">Yes</span>
-                ) : (
-                  <span className="text-gray-500">No</span>
-                ),
-            },
-          ]}
-          onDelete={(item) => handleDeleteDocument(item.id)}
-          rightActions={(item) => (
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleView(item)}
-                className="flex-shrink-0 p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                title="View"
-              >
-                <EyeIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => handleOpenEdit(item)}
-                className="flex-shrink-0 p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title="Edit"
-              >
-                <PencilIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => handleOpenHistory(item)}
-                className="flex-shrink-0 p-2 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                title="History"
-              >
-                <ClockIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => handleOpenSign(item)}
-                className="flex-shrink-0 p-2 text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                title="Sign"
-              >
-                <CheckIcon className="h-5 w-5" />
-              </button>
+        {/* Scrollable rows – grow upwards from bottom */}
+        <div
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          style={{ background: 'var(--bs-body-bg)' }}
+        >
+          {documents.length > 0 ? (
+            <table className="table table-borderless table-hover mb-0 table-fixed">
+              <colgroup>
+                <col style={{ width: '60px' }} />
+                <col />
+                <col style={{ width: '100px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '60px' }} />
+                <col style={{ width: '140px' }} />
+              </colgroup>
+              <tbody>
+                {documents.map((doc, index) => (
+                  <tr
+                    key={doc.id || index}
+                    className="align-middle border-bottom"
+                    style={{ height: '56px' }}
+                  >
+                    {/* Delete */}
+                    <td className="text-center px-2">
+                      <PermissionGate page="documents" permission="delete">
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="btn btn-sm btn-outline-danger border-0 p-1"
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </PermissionGate>
+                    </td>
+
+                    {/* File Name */}
+                    <td className="px-3">
+                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                        {doc.original_filename}
+                      </div>
+                      <div className="small text-muted text-truncate">
+                        {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
+                      </div>
+                    </td>
+
+                    {/* File Size */}
+                    <td className="px-3 text-muted">
+                      <div className="text-truncate" style={{ maxWidth: '100%' }}>
+                        {formatFileSize(doc.file_size)}
+                      </div>
+                    </td>
+
+                    {/* Signed Status */}
+                    <td className="text-center px-3">
+                      <span className={`badge rounded-pill ${
+                        doc.is_signed 
+                          ? 'bg-success' 
+                          : 'bg-secondary'
+                      }`}>
+                        {doc.is_signed ? 'Signed' : 'Unsigned'}
+                      </span>
+                    </td>
+
+                    {/* View */}
+                    <td className="text-center px-2">
+                      <button
+                        onClick={() => handleView(doc)}
+                        className="btn btn-sm btn-outline-primary border-0 p-1"
+                        title="View"
+                      >
+                        👁
+                      </button>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="text-center px-2">
+                      <div className="d-flex gap-1 justify-content-center">
+                        <button
+                          onClick={() => handleOpenEdit(doc)}
+                          className="btn btn-sm btn-outline-secondary border-0 p-1"
+                          title="Edit"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => handleOpenHistory(doc)}
+                          className="btn btn-sm btn-outline-warning border-0 p-1"
+                          title="History"
+                        >
+                          🕒
+                        </button>
+                        <button
+                          onClick={() => handleOpenSign(doc)}
+                          className="btn btn-sm btn-outline-success border-0 p-1"
+                          title="Sign"
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+              No documents found
             </div>
           )}
-          emptyMessage="No documents uploaded yet"
-        />
-        <MobileAddButton onClick={handleUploadDocument} label="Upload" />
+        </div>
+
+        {/* Fixed bottom – headers + controls */}
+        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+          {/* Column Headers */}
+          <table className="table table-borderless mb-0 bg-light">
+            <colgroup>
+              <col style={{ width: '60px' }} />
+              <col />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '60px' }} />
+              <col style={{ width: '140px' }} />
+            </colgroup>
+            <tfoot>
+              <tr className="bg-secondary-subtle">
+                <th className="text-center"></th>
+                <th>Document</th>
+                <th>Size</th>
+                <th className="text-center">Status</th>
+                <th className="text-center">View</th>
+                <th className="text-center">Actions</th>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Controls */}
+          <div className="p-2 border-top">
+            {/* Action buttons */}
+            <PermissionGate page="documents" permission="write">
+              <div className="d-flex gap-2 w-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoriesOpen(true)}
+                  className="btn btn-outline-secondary"
+                >
+                  Categories
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUploadDocument}
+                  className="btn btn-primary flex"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                  </svg>
+                  Upload
+                </button>
+              </div>
+            </PermissionGate>
+          </div>
+        </div>
       </div>
 
       {/* Document Upload Modal */}

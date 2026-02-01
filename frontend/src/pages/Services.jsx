@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, MagnifyingGlassIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -168,8 +167,10 @@ export default function Services() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '16rem' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
@@ -192,7 +193,7 @@ export default function Services() {
       {/* Main table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        {/* Scrollable rows */}
+        {/* Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
@@ -201,77 +202,45 @@ export default function Services() {
           {filteredServices.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
-                <col style={{ width: '60px' }} />
                 <col />
-                <col style={{ width: '120px' }} />
                 <col style={{ width: '100px' }} />
                 <col style={{ width: '80px' }} />
-                <col style={{ width: '60px' }} />
+                <col style={{ width: '80px' }} />
               </colgroup>
               <tbody>
-                {filteredServices.map((svc, index) => (
+                {filteredServices.map((service, index) => (
                   <tr
-                    key={svc.id || index}
+                    key={service.id || index}
                     className="align-middle border-bottom"
-                    style={{ height: '56px' }}
+                    style={{ height: '56px', cursor: 'pointer' }}
+                    onClick={() => handleEditService(service)}
                   >
-                    {/* Delete */}
-                    <td className="text-center px-2">
-                      <PermissionGate page="services" permission="delete">
-                        <button
-                          onClick={() => handleDeleteService(svc.id)}
-                          className="btn btn-sm btn-outline-danger border-0 p-1"
-                          title="Delete"
-                        >
-                          ×
-                        </button>
-                      </PermissionGate>
-                    </td>
-
-                    {/* Name */}
+                    {/* Service Name */}
                     <td className="px-3">
                       <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
-                        {svc.name}
+                        {service.name}
                       </div>
-                      {svc.description && (
-                        <div className="text-muted small text-truncate" style={{ maxWidth: '100%' }}>
-                          {svc.description}
-                        </div>
-                      )}
                     </td>
 
                     {/* Category */}
                     <td className="px-3">
-                      {svc.category && (
-                        <span className="badge rounded-pill bg-secondary-subtle text-secondary">
-                          {svc.category}
-                        </span>
-                      )}
+                      <span className="badge bg-secondary-subtle text-secondary rounded-pill">
+                        {service.category || 'General'}
+                      </span>
                     </td>
 
                     {/* Price */}
                     <td className="text-center px-3">
-                      <span className="badge rounded-pill bg-success-subtle text-success">
-                        ${svc.price?.toFixed(2) || '0.00'}
+                      <span className="fw-medium">
+                        ${(service.price || 0).toFixed(2)}
                       </span>
                     </td>
 
                     {/* Duration */}
-                    <td className="text-center px-3 text-muted small">
-                      {svc.duration_minutes || 0} min
-                    </td>
-
-                    {/* Edit */}
-                    <td className="text-center px-2">
-                      <PermissionGate page="services" permission="write">
-                        <button
-                          onClick={() => handleEditService(svc)}
-                          className="btn btn-sm btn-outline-primary border-0 p-1"
-                          title="Edit"
-                        >
-                          ✎
-                        </button>
-                      </PermissionGate>
+                    <td className="text-center px-3">
+                      <span className="badge bg-info text-white rounded-pill">
+                        {service.duration_minutes || 30}min
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -279,7 +248,7 @@ export default function Services() {
             </table>
           ) : (
             <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
-              No services found
+              {searchTerm || categoryFilter !== 'all' ? 'No services found matching filters' : 'No services found'}
             </div>
           )}
         </div>
@@ -289,89 +258,87 @@ export default function Services() {
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-light">
             <colgroup>
-              <col style={{ width: '60px' }} />
               <col />
-              <col style={{ width: '120px' }} />
               <col style={{ width: '100px' }} />
               <col style={{ width: '80px' }} />
-              <col style={{ width: '60px' }} />
+              <col style={{ width: '80px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-secondary-subtle">
-                <th className="text-center"></th>
                 <th>Service</th>
                 <th>Category</th>
                 <th className="text-center">Price</th>
                 <th className="text-center">Duration</th>
-                <th className="text-center"></th>
               </tr>
             </tfoot>
           </table>
 
           {/* Controls */}
           <div className="p-2 border-top">
-            {/* Filters row */}
-            <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
-              <div className="flex-grow-1 position-relative" style={{ minWidth: '180px' }}>
-                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search services..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="form-control ps-5"
-                />
-              </div>
+            {/* Search row */}
+            <div className="position-relative w-100 mb-2">
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search services..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control ps-5 w-100"
+              />
+            </div>
 
+            {/* Filters row */}
+            <div className="d-flex gap-2 mb-2">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="form-select"
-                style={{ maxWidth: '160px' }}
               >
-                <option value="all">All Categories</option>
-                {categories.filter(c => c !== 'all').map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>
+                    {cat === 'all' ? 'All Categories' : cat || 'No Category'}
+                  </option>
                 ))}
               </select>
 
-              <span className="text-muted small ms-2">
+              <span className="text-muted small text-nowrap">
                 {filteredServices.length} / {services.length}
               </span>
             </div>
 
             {/* Action buttons */}
             <PermissionGate page="services" permission="write">
-              <div className="d-flex gap-2">
-                <div className="btn-group">
-                  <CSVImportButton
-                    entityName="Services"
-                    onImport={handleCSVImport}
-                    onComplete={loadServices}
-                    requiredFields={['name']}
-                    fieldMapping={{
-                      'service name': 'name',
-                      'service': 'name',
-                      'duration': 'duration_minutes',
-                      'time': 'duration_minutes',
-                    }}
-                    className="btn btn-outline-secondary"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateService}
-                    className="btn btn-primary"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                    </svg>
-                    Add
-                  </button>
-                </div>
+              <div className="d-flex gap-2 w-100">
+                <CSVImportButton
+                  entityName="Services"
+                  onImport={handleCSVImport}
+                  onComplete={loadServices}
+                  requiredFields={['name']}
+                  fieldMapping={{
+                    'service name': 'name',
+                    'service': 'name',
+                    'cost': 'price',
+                    'rate': 'price',
+                    'time': 'duration_minutes',
+                    'duration': 'duration_minutes',
+                    'type': 'category',
+                  }}
+                  className="btn btn-outline-secondary"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateService}
+                  className="btn btn-primary"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                  </svg>
+                  Add
+                </button>
               </div>
             </PermissionGate>
           </div>
@@ -379,12 +346,18 @@ export default function Services() {
       </div>
 
       {/* Service Form Modal */}
-      <Modal isOpen={isModalOpen && modalContent === 'service-form'} onClose={closeModal}>
+      <Modal 
+        isOpen={isModalOpen && modalContent === 'service-form'} 
+        onClose={closeModal}
+        title={editingService ? 'Edit Service' : 'Add Service'}
+      >
         {isModalOpen && modalContent === 'service-form' && (
           <ServiceForm
             service={editingService}
             onSubmit={handleSubmitService}
             onCancel={closeModal}
+            onDelete={editingService && hasPermission('services', 'delete') ? handleDeleteService : null}
+            canDelete={editingService && hasPermission('services', 'delete')}
           />
         )}
       </Modal>

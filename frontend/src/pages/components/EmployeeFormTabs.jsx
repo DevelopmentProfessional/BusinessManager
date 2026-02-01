@@ -4,7 +4,15 @@ import { rolesAPI, isudAPI } from '../../services/api';
 import IconButton from './IconButton';
 import ActionFooter from './ActionFooter';
 
-export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employees: employeesProp = [] }) {
+export default function EmployeeFormTabs({ 
+  employee, 
+  onSubmit, 
+  onCancel, 
+  onDelete, 
+  onManagePermissions, 
+  employees: employeesProp = [],
+  canDelete = false 
+}) {
   const [activeTab, setActiveTab] = useState('employee');
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -137,8 +145,8 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
   };
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
-      <h3 className="mb-4 text-gray-900 dark:text-gray-100">
+    <div className="p-0">
+      <h3 className="mb-4 fw-bold">
         {employee ? 'Edit Employee' : 'Add New Employee'}
       </h3>
 
@@ -171,7 +179,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
           <div className="tab-pane">
             <div className="row g-3">
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Username <span className="text-danger">*</span>
                 </label>
                 <input
@@ -186,7 +194,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Password {!employee && <span className="text-danger">*</span>}
                 </label>
                 <input
@@ -201,7 +209,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   First Name <span className="text-danger">*</span>
                 </label>
                 <input
@@ -216,7 +224,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Last Name <span className="text-danger">*</span>
                 </label>
                 <input
@@ -231,7 +239,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Email
                 </label>
                 <input
@@ -245,7 +253,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Phone
                 </label>
                 <input
@@ -259,7 +267,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Role
                 </label>
                 <select
@@ -276,7 +284,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
               
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Hire Date
                 </label>
                 <input
@@ -289,7 +297,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
 
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Reports To
                 </label>
                 <select
@@ -308,7 +316,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
               </div>
 
               <div className="col-md-6">
-                <label className={`form-label text-gray-900 dark:text-gray-100`}>
+                <label className="form-label">
                   Assigned Role
                   <span className="ms-1 text-muted" style={{ fontSize: '0.75rem' }}>(inherits permissions)</span>
                 </label>
@@ -350,7 +358,7 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
                     className="form-check-input"
                     id="is_active"
                   />
-                  <label className={`form-check-label text-gray-900 dark:text-gray-100`} htmlFor="is_active">
+                  <label className="form-check-label" htmlFor="is_active">
                     Active Employee
                   </label>
                 </div>
@@ -362,21 +370,77 @@ export default function EmployeeFormTabs({ employee, onSubmit, onCancel, employe
         {/* Permissions Tab */}
         {activeTab === 'permissions' && (
           <div className="tab-pane">
-            <div className={`text-center p-4 text-gray-600 dark:text-gray-400`}>
-              <i className="bi bi-info-circle fs-1 mb-3"></i>
-              <p>Permissions are managed after the employee is created.</p>
-              <p>Use the "Manage Permissions" button in the employee list to set up permissions.</p>
-            </div>
+            {employee ? (
+              <div className="text-center p-4">
+                <i className="bi bi-key fs-1 mb-3 text-primary"></i>
+                <h5>Employee Permissions</h5>
+                <p className="text-muted mb-3">Manage this employee's access permissions.</p>
+                {onManagePermissions ? (
+                  <button
+                    type="button"
+                    onClick={() => onManagePermissions(employee)}
+                    className="btn btn-primary"
+                  >
+                    <i className="bi bi-gear me-2"></i>
+                    Manage Permissions
+                  </button>
+                ) : (
+                  <p className="text-muted">Permission management is not available.</p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-4">
+                <i className="bi bi-info-circle fs-1 mb-3 text-secondary"></i>
+                <p className="text-muted">Create the employee first, then manage permissions.</p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Form Actions - footer, icon only with tooltips */}
-        <ActionFooter className="d-flex justify-content-end gap-2 mt-4">
-          <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
-          {activeTab === 'employee' && (
-            <IconButton icon={CheckIcon} label={employee ? 'Update Employee' : 'Create Employee'} type="submit" variant="primary" />
-          )}
-        </ActionFooter>
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <div className="d-flex gap-2">
+            {employee && canDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this employee?')) {
+                    onDelete(employee.id);
+                  }
+                }}
+                className="btn btn-outline-danger"
+              >
+                Delete Employee
+              </button>
+            )}
+            {employee && onManagePermissions && (
+              <button
+                type="button"
+                onClick={() => onManagePermissions(employee)}
+                className="btn btn-outline-secondary"
+              >
+                Manage Permissions
+              </button>
+            )}
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn btn-outline-secondary"
+            >
+              Cancel
+            </button>
+            {activeTab === 'employee' && (
+              <button
+                type="submit"
+                className="btn btn-primary"
+              >
+                {employee ? 'Update Employee' : 'Create Employee'}
+              </button>
+            )}
+          </div>
+        </div>
       </form>
     </div>
   );

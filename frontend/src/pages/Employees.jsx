@@ -15,7 +15,7 @@ export default function Employees() {
   const { 
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal,
+    isModalOpen, modalContent, openModal, closeModal,
     user: currentUser, hasPermission
   } = useStore();
 
@@ -196,6 +196,7 @@ export default function Employees() {
   };
 
   const handleEdit = (employee) => {
+    console.log('handleEdit called with:', employee);
     setEditingEmployee(employee);
     openModal('employee-form');
   };
@@ -560,38 +561,32 @@ export default function Employees() {
           {employees.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
-                <col style={{ width: '60px' }} />
                 <col />
                 <col style={{ width: '120px' }} />
-                <col style={{ width: '100px' }} />
-                <col style={{ width: '80px' }} />
               </colgroup>
               <tbody>
                 {employees.map((employee, index) => (
                   <tr
                     key={employee.id || index}
                     className="align-middle border-bottom"
-                    style={{ height: '56px' }}
+                    style={{ height: '56px', cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Row clicked for employee:', employee);
+                      handleEdit(employee);
+                    }}
                   >
-                    {/* Delete */}
-                    <td className="text-center px-2">
-                      <PermissionGate page="employees" permission="delete">
-                        <button
-                          onClick={() => handleDelete(employee.id)}
-                          className="btn btn-sm btn-outline-danger border-0 p-1"
-                          title="Delete"
-                        >
-                          ×
-                        </button>
-                      </PermissionGate>
-                    </td>
-
-                    {/* Name */}
+                    {/* Name with color coding for active/inactive */}
                     <td className="px-3">
-                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                      <div 
+                        className={`fw-medium text-truncate ${
+                          employee.is_active ? 'text-success' : 'text-muted'
+                        }`} 
+                        style={{ maxWidth: '100%' }}
+                      >
                         {employee.first_name} {employee.last_name}
                       </div>
-                      <small className="text-muted">{employee.email}</small>
                     </td>
 
                     {/* Role */}
@@ -603,38 +598,6 @@ export default function Employees() {
                       }`}>
                         {employee.role}
                       </span>
-                    </td>
-
-                    {/* Status */}
-                    <td className="text-center px-3">
-                      <span className={`badge rounded-pill ${
-                        employee.is_locked ? 'bg-danger' :
-                        employee.is_active ? 'bg-success' : 'bg-secondary'
-                      }`}>
-                        {employee.is_locked ? 'Locked' : employee.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-
-                    {/* Edit */}
-                    <td className="text-center px-2">
-                      <PermissionGate page="employees" permission="write">
-                        <button
-                          onClick={() => handleEdit(employee)}
-                          className="btn btn-sm btn-outline-primary border-0 p-1"
-                          title="Edit"
-                        >
-                          ✎
-                        </button>
-                      </PermissionGate>
-                      {hasPermission('employees', 'admin') && (
-                        <button
-                          onClick={() => handleManagePermissions(employee)}
-                          className="btn btn-sm btn-outline-secondary border-0 p-1 ms-1"
-                          title="Permissions"
-                        >
-                          🔑
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -652,19 +615,13 @@ export default function Employees() {
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-light">
             <colgroup>
-              <col style={{ width: '60px' }} />
               <col />
               <col style={{ width: '120px' }} />
-              <col style={{ width: '100px' }} />
-              <col style={{ width: '80px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-secondary-subtle">
-                <th className="text-center"></th>
-                <th>Name</th>
+                <th>Employee</th>
                 <th>Role</th>
-                <th className="text-center">Status</th>
-                <th className="text-center"></th>
               </tr>
             </tfoot>
           </table>
@@ -702,25 +659,6 @@ export default function Employees() {
                     Add
                   </button>
                 </div>
-                {hasPermission('employees', 'admin') && (
-                  <>
-                    <button
-                      onClick={() => {
-                        loadRoles();
-                        setShowRolesModal(true);
-                      }}
-                      className="btn btn-outline-secondary"
-                    >
-                      Roles
-                    </button>
-                    <button
-                      onClick={() => setShowCreateUser(true)}
-                      className="btn btn-outline-secondary"
-                    >
-                      Create User
-                    </button>
-                  </>
-                )}
                 <span className="text-muted small ms-auto align-self-center">
                   {employees.length} employee(s)
                 </span>
@@ -731,13 +669,22 @@ export default function Employees() {
       </div>
 
       {/* Employee Form Modal */}
-      <Modal isOpen={isModalOpen && openModal === 'employee-form'} onClose={closeModal}>
-        <EmployeeFormTabs
-          employee={editingEmployee}
-          onSubmit={handleSubmit}
-          onCancel={closeModal}
-          employees={employees}
-        />
+      <Modal 
+        isOpen={isModalOpen && modalContent === 'employee-form'} 
+        onClose={closeModal}
+        title={editingEmployee ? 'Edit Employee' : 'Add Employee'}
+      >
+        {isModalOpen && modalContent === 'employee-form' && (
+          <EmployeeFormTabs
+            employee={editingEmployee}
+            onSubmit={handleSubmit}
+            onCancel={closeModal}
+            onDelete={editingEmployee ? handleDelete : null}
+            onManagePermissions={editingEmployee && hasPermission('employees', 'admin') ? handleManagePermissions : null}
+            employees={employees}
+            canDelete={editingEmployee && hasPermission('employees', 'delete')}
+          />
+        )}
       </Modal>
 
       {/* Create User Modal */}

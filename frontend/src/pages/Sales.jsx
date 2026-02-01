@@ -70,50 +70,9 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       {/* Gradient Overlay for text readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       
-      {/* Type Badge - Top Left */}
-      <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${
-        isService 
-          ? 'bg-primary-500/90 text-white' 
-          : 'bg-emerald-500/90 text-white'
-      }`}>
-        {isService ? 'Service' : 'Product'}
-      </div>
-      
-      {/* Cart Controls - Top Right */}
-      <div className="absolute top-2 right-2">
-        {inCart ? (
-          <div className="flex items-center gap-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg px-1 py-0.5">
-            <button
-              onClick={handleDecrement}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900 text-gray-600 dark:text-gray-300 hover:text-red-600 transition-colors"
-            >
-              <MinusIcon className="h-3.5 w-3.5" />
-            </button>
-            <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-white">
-              {cartQuantity}
-            </span>
-            <button
-              onClick={handleIncrement}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
-            >
-              <PlusIcon className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleAddToCart}
-            className="flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white transition-colors"
-          >
-            <ShoppingCartIcon className="h-3.5 w-3.5" />
-            Add
-          </button>
-        )}
-      </div>
-      
-      {/* Content Footer - Overlays bottom of image with badge-style backgrounds */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
-        {/* Name Badge */}
-        <div className={`inline-block px-2 py-1 rounded-lg mb-1 backdrop-blur-sm ${
+      {/* Item Name - Top Left */}
+      <div className="absolute top-2 left-2">
+        <div className={`inline-block px-2 py-1 rounded-lg backdrop-blur-sm ${
           isService 
             ? 'bg-primary-600/90' 
             : 'bg-emerald-600/90'
@@ -122,7 +81,10 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
             {item.name}
           </h3>
         </div>
-        
+      </div>
+      
+      {/* Content Footer - Overlays bottom of image with badge-style backgrounds */}
+      <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
         <div className="flex items-center justify-between gap-2">
           {/* Price Badge */}
           <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${
@@ -133,18 +95,36 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
             ${item.price?.toFixed(2)}
           </span>
           
-          {isService && item.duration_minutes && (
-            <span className="flex items-center text-xs text-white bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
-              <ClockIcon className="h-3 w-3 mr-1" />
-              {item.duration_minutes}m
-            </span>
-          )}
-          
-          {!isService && item.sku && (
-            <span className="text-xs text-white font-mono bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
-              {item.sku}
-            </span>
-          )}
+          {/* Cart Controls - Bottom Right */}
+          <div>
+            {inCart ? (
+              <div className="flex items-center gap-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg px-1 py-0.5">
+                <button
+                  onClick={handleDecrement}
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900 text-gray-600 dark:text-gray-300 hover:text-red-600 transition-colors"
+                >
+                  <MinusIcon className="h-3.5 w-3.5" />
+                </button>
+                <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-white">
+                  {cartQuantity}
+                </span>
+                <button
+                  onClick={handleIncrement}
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                className="flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white transition-colors"
+              >
+                <ShoppingCartIcon className="h-3.5 w-3.5" />
+                Add
+              </button>
+            )}
+          </div>
         </div>
       </div>
       

@@ -50,15 +50,15 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   // Default (non-fullscreen) modal
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-1 px-1 pb-1 text-center sm:block sm:p-0">
+      <div className="flex items-end justify-center min-h-screen">
         {Overlay}
 
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-gray-700">
-          <div className={`bg-white dark:bg-gray-800 ${noPadding ? '' : 'px-1 pt-1 pb-1 sm:p-1 sm:pb-1'}`}>
-            <div className="sm:flex sm:items-start">
-              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+        <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-y-auto">
+          <div className={`bg-white dark:bg-gray-800 ${noPadding ? '' : 'px-4 pt-4 pb-4'}`}>
+            <div className="w-full">
+              <div className="w-full">
                 {title && (
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{title}</h3>
                     <button type="button" onClick={onClose} title="Close" aria-label="Close" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                       <XMarkIcon className="h-6 w-6" />
@@ -70,7 +70,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
             </div>
           </div>
           {footer && (
-            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-1 sm:px-1">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
               {footer}
             </div>
           )}

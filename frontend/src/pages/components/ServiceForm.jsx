@@ -3,7 +3,7 @@ import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import IconButton from './IconButton';
 import ActionFooter from './ActionFooter';
 
-export default function ServiceForm({ service, onSubmit, onCancel }) {
+export default function ServiceForm({ service, onSubmit, onCancel, onDelete, canDelete }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -162,10 +162,38 @@ export default function ServiceForm({ service, onSubmit, onCancel }) {
         )}
       </div>
 
-      <ActionFooter>
-        <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
-        <IconButton icon={CheckIcon} label={service ? 'Update Service' : 'Create Service'} type="submit" variant="primary" />
-      </ActionFooter>
+      <div className="d-flex justify-content-between align-items-center mt-4">
+        <div>
+          {service && canDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this service?')) {
+                  onDelete(service.id);
+                }
+              }}
+              className="btn btn-outline-danger"
+            >
+              Delete Service
+            </button>
+          )}
+        </div>
+        <div className="d-flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn btn-outline-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+          >
+            {service ? 'Update Service' : 'Create Service'}
+          </button>
+        </div>
+      </div>
     </form>
   );
 }
