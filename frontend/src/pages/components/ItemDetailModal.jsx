@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   XMarkIcon, ShoppingCartIcon, ClockIcon, TagIcon,
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon,
-  MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon
+  MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
@@ -19,15 +20,17 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
  * @param {function} onUpdateInventory - Handler for updating inventory (inventory mode)
  * @param {number} cartQuantity - Current quantity in cart (sales mode)
  */
-export default function ItemDetailModal({ 
-  isOpen, 
-  onClose, 
-  item, 
+export default function ItemDetailModal({
+  isOpen,
+  onClose,
+  item,
   itemType = 'product',
   mode = 'sales', // 'sales' or 'inventory'
   onAddToCart,
   onUpdateInventory,
-  cartQuantity = 0 
+  onDelete,
+  canDelete = false,
+  cartQuantity = 0
 }) {
   const [quantity, setQuantity] = useState(1);
   const [stockQuantity, setStockQuantity] = useState(0);
@@ -67,6 +70,13 @@ export default function ItemDetailModal({
       quantity: parseInt(stockQuantity),
       min_stock_level: parseInt(minStockLevel)
     });
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      onDelete?.(item.id);
+      onClose();
+    }
   };
 
   const incrementQuantity = () => setQuantity(q => q + 1);
@@ -334,6 +344,16 @@ export default function ItemDetailModal({
               )}
               
               <div className="flex gap-3 pt-2">
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="py-3 px-4 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-medium transition-colors flex items-center gap-2"
+                    title="Delete Item"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onClose}

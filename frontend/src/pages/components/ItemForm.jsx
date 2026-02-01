@@ -3,8 +3,9 @@ import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import CustomDropdown from './CustomDropdown';
 import IconButton from './IconButton';
 import ActionFooter from './ActionFooter';
+import BarcodeScanner from './BarcodeScanner';
 
-export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null }) {
+export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
   const [formData, setFormData] = useState({
     name: '',
     sku: initialSku || '',
@@ -15,6 +16,8 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     image_url: '',
   });
   const [initialQuantity, setInitialQuantity] = useState('0');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scanError, setScanError] = useState('');
 
   useEffect(() => {
     if (item) {
@@ -42,6 +45,21 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleBarcodeDetected = (code) => {
+    const scanned = String(code || '').trim();
+    setScanError('');
+
+    // Check if SKU already exists
+    if (existingSkus.includes(scanned)) {
+      setScanError(`Item with SKU "${scanned}" already exists.`);
+      return;
+    }
+
+    // Set the scanned code as SKU
+    setFormData(prev => ({ ...prev, sku: scanned }));
+    setIsScannerOpen(false);
   };
 
   const handleSubmit = (e) => {
@@ -127,17 +145,59 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         <label htmlFor="sku" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           SKU *
         </label>
-        <input
-          type="text"
-          id="sku"
-          name="sku"
-          required
-          value={formData.sku}
-          onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Enter item SKU"
-        />
+        <div className="d-flex gap-2 mt-1">
+          <input
+            type="text"
+            id="sku"
+            name="sku"
+            required
+            value={formData.sku}
+            onChange={handleChange}
+            className="input-field flex-grow-1"
+            placeholder="Enter item SKU"
+          />
+          {showScanner && (
+            <button
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="btn btn-outline-secondary"
+              title="Scan Barcode"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
+                <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
+              </svg>
+            </button>
+          )}
+        </div>
+        {scanError && (
+          <p className="text-danger small mt-1">{scanError}</p>
+        )}
       </div>
+
+      {/* Barcode Scanner Modal */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Scan Barcode</h5>
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(false)}
+                className="btn btn-sm btn-outline-secondary"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <BarcodeScanner
+                onDetected={handleBarcodeDetected}
+                onCancel={() => setIsScannerOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">

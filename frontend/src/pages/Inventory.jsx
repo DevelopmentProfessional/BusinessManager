@@ -1,15 +1,13 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
-import BarcodeScanner from './components/BarcodeScanner';
 import ItemForm from './components/ItemForm';
 import ItemDetailModal from './components/ItemDetailModal';
 import PermissionGate from './components/PermissionGate';
 import CSVImportButton from './components/CSVImportButton';
-import IconButton from './components/IconButton';
 
 export default function Inventory() {
   const { 
@@ -29,7 +27,6 @@ export default function Inventory() {
   }
 
   const [editingInventory, setEditingInventory] = useState(null);
-  const [scannedCode, setScannedCode] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
@@ -81,27 +78,6 @@ export default function Inventory() {
       setError('You do not have permission to create items');
       return;
     }
-    setScannedCode('');
-    openModal('item-form');
-  };
-
-  const handleOpenScanner = () => {
-    setScannedCode('');
-    openModal('barcode-scan');
-  };
-
-  const handleDetectedBarcode = (code) => {
-    const scanned = String(code || '').trim();
-    setScannedCode(scanned);
-    // If item already exists, show notification instead of opening the modal
-    const exists = inventory.some((p) => (p?.sku || '').trim() === scanned && scanned.length > 0);
-    if (exists) {
-      closeModal();
-      setError(`Item with SKU "${scanned}" already exists in the database.`);
-      return;
-    }
-    // Otherwise open item form prefilled with scanned code
-    clearError();
     openModal('item-form');
   };
 
@@ -300,64 +276,37 @@ return (
         {filteredInventory.length > 0 ? (
           <table className="table table-borderless table-hover mb-0 table-fixed">
             <colgroup>
-              <col style={{ width: '60px' }} />
               <col />
-              <col style={{ width: '140px', maxWidth: '140px' }} />
-              <col style={{ width: '100px' }} />
-              <col style={{ width: '60px' }} />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '50px' }} />
             </colgroup>
             <tbody>
               {filteredInventory.map((inv, index) => (
                 <tr
                   key={inv.id || index}
                   className="align-middle border-bottom"
-                  style={{ height: '56px' }}
+                  style={{ height: '56px', cursor: 'pointer' }}
+                  onClick={() => handleUpdateInventory(inv)}
                 >
-                  {/* Delete */}
-                  <td className="text-center px-2">
-                    <PermissionGate page="inventory" permission="delete">
-                      <button
-                        onClick={() => handleDeleteItem(inv.id)}
-                        className="btn btn-sm btn-outline-danger border-0 p-1"
-                        title="Delete"
-                      >
-                        ×
-                      </button>
-                    </PermissionGate>
-                  </td>
-
                   {/* Name */}
-                  <td className="px-3">
-                    <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                  <td className="px-1">
+                    <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
                       {inv.name}
                     </div>
                   </td>
 
                   {/* Type */}
-                  <td className="px-3">
+                  <td className="px-1">
                     <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>
                       {getItemTypeLabel(inv.type)}
                     </span>
                   </td>
 
                   {/* Stock */}
-                  <td className="text-center px-3">
+                  <td className="text-center px-1">
                     <span className={`badge rounded-pill ${getStockColor(inv)}`}>
                       {inv.quantity}
                     </span>
-                  </td>
-
-                  {/* Edit */}
-                  <td className="text-center px-2">
-                    <PermissionGate page="inventory" permission="write">
-                      <button
-                        onClick={() => handleUpdateInventory(inv)}
-                        className="btn btn-sm btn-outline-primary border-0 p-1"
-                        title="Edit"
-                      >
-                        ✎
-                      </button>
-                    </PermissionGate>
                   </td>
                 </tr>
               ))}
@@ -375,47 +324,43 @@ return (
         {/* Column Headers */}
         <table className="table table-borderless mb-0 bg-light">
           <colgroup>
-            <col style={{ width: '60px' }} />
             <col />
-            <col style={{ width: '140px', maxWidth: '140px' }} />
-            <col style={{ width: '100px' }} />
-            <col style={{ width: '60px' }} />
+            <col style={{ width: '80px' }} />
+            <col style={{ width: '50px' }} />
           </colgroup>
           <tfoot>
             <tr className="bg-secondary-subtle">
-              <th className="text-center"></th>
               <th>Item</th>
               <th>Type</th>
               <th className="text-center">Stock</th>
-              <th className="text-center"></th>
             </tr>
           </tfoot>
         </table>
 
         {/* Controls */}
         <div className="p-2 border-top">
-          {/* Filters row */}
-          <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
-            <div className="flex-grow-1 position-relative" style={{ minWidth: '180px' }}>
-              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Search by name or SKU..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-control ps-5"
-              />
-            </div>
+          {/* Search row */}
+          <div className="position-relative w-100 mb-2">
+            <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Search by name or SKU..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-control ps-5 w-100"
+            />
+          </div>
 
+          {/* Filters row */}
+          <div className="d-flex gap-2 mb-2">
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="form-select"
-              style={{ maxWidth: '160px' }}
             >
               <option value="all">All Types</option>
               <option value="PRODUCT">Products</option>
@@ -428,62 +373,47 @@ return (
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
-              className="form-select"
-              style={{ maxWidth: '140px' }}
-            >
+              className="form-select">
               <option value="all">All Stock</option>
               <option value="low">Low Stock</option>
               <option value="ok">In Stock</option>
             </select>
 
-            <span className="text-muted small ms-2">
+            <span className="text-muted small text-nowrap">
               {filteredInventory.length} / {inventory.length}
             </span>
           </div>
 
-          {/* Action buttons – far left */}
+          {/* Action buttons */}
           <PermissionGate page="inventory" permission="write">
-            <div className="d-flex gap-2">
-              <div className="btn-group">
-                <CSVImportButton
-                  entityName="Items"
-                  onImport={handleCSVImport}
-                  onComplete={loadInventoryData}
-                  requiredFields={['name']}
-                  fieldMapping={{
-                    'item name': 'name',
-                    'product name': 'name',
-                    'item': 'name',
-                    'product': 'name',
-                    'stock': 'quantity',
-                    'qty': 'quantity',
-                    'min stock': 'min_stock_level',
-                    'minimum stock': 'min_stock_level',
-                  }}
-                  className="btn btn-outline-secondary"
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateItem}
-                  className="btn btn-primary"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                  </svg>
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenScanner}
-                  className="btn btn-outline-secondary"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                    <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
-                    <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
-                  </svg>
-                  Scan
-                </button>
-              </div>
+            <div className="d-flex gap-2 w-100">
+              <CSVImportButton
+                entityName="Items"
+                onImport={handleCSVImport}
+                onComplete={loadInventoryData}
+                requiredFields={['name']}
+                fieldMapping={{
+                  'item name': 'name',
+                  'product name': 'name',
+                  'item': 'name',
+                  'product': 'name',
+                  'stock': 'quantity',
+                  'qty': 'quantity',
+                  'min stock': 'min_stock_level',
+                  'minimum stock': 'min_stock_level',
+                }}
+                className="btn btn-outline-secondary"
+              />
+              <button
+                type="button"
+                onClick={handleCreateItem}
+                className="btn btn-primary flex"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                </svg>
+                Add
+              </button>
             </div>
           </PermissionGate>
         </div>
@@ -498,25 +428,19 @@ return (
       itemType={editingInventory?.type || 'product'}
       mode="inventory"
       onUpdateInventory={handleSubmitUpdate}
+      onDelete={handleDeleteItem}
+      canDelete={hasPermission('inventory', 'delete')}
     />
-
-    <Modal isOpen={isModalOpen && modalContent === 'barcode-scan'} onClose={closeModal} title="Scan Barcode">
-      {isModalOpen && modalContent === 'barcode-scan' && (
-        <BarcodeScanner
-          onDetected={(code) => handleDetectedBarcode(code)}
-          onCancel={closeModal}
-        />
-      )}
-    </Modal>
 
     <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
       {isModalOpen && modalContent === 'item-form' && (
         <ItemForm
-          initialSku={scannedCode}
           showInitialQuantity
           onSubmitWithExtras={handleSubmitNewItem}
           onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
           onCancel={closeModal}
+          showScanner
+          existingSkus={inventory.map(i => i.sku).filter(Boolean)}
         />
       )}
     </Modal>

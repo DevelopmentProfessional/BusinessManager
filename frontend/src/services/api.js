@@ -6,17 +6,22 @@ const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
-  // Check if we're in development (localhost or 127.0.0.1)
-  const isLocalhost = window.location.hostname === 'localhost' || 
-                      window.location.hostname === '127.0.0.1' ||
-                      window.location.hostname === '';
-  
-  if (isLocalhost) {
+
+  const hostname = window.location.hostname;
+
+  // Check if we're in development (localhost, 127.0.0.1, or private network IPs)
+  const isLocalhost = hostname === 'localhost' ||
+                      hostname === '127.0.0.1' ||
+                      hostname === '';
+
+  // Check for private/local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+  const isPrivateIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
+
+  if (isLocalhost || isPrivateIP) {
     // Local development uses Vite proxy
     return '/api/v1';
   }
-  
+
   // Production uses direct backend URL
   return 'https://businessmanager-reference-api.onrender.com/api/v1';
 };

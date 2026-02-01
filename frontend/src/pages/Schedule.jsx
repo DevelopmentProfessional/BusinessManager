@@ -498,13 +498,15 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className="d-flex justify-content-between align-items-center mt-3 p-2 border-top">
-          <div className="d-flex gap-1">
+        <div className="mt-3 p-2 border-top">
+          {/* Row 1: Month, Week, Previous, Next */}
+          <div className="d-flex gap-1 mb-1">
             {/* Month View - Calendar Grid Icon */}
             <button
               type="button"
               onClick={() => setCurrentView('month')}
               className={`btn btn-sm ${currentView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Month View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -517,6 +519,7 @@ export default function Schedule() {
               type="button"
               onClick={() => setCurrentView('week')}
               className={`btn btn-sm ${currentView === 'week' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Week View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -524,25 +527,8 @@ export default function Schedule() {
                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
               </svg>
             </button>
-            {/* Day View - Single Day Icon */}
+            {/* Previous */}
             <button
-              type="button"
-              onClick={() => setCurrentView('day')}
-              className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              title="Day View"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
-              </svg>
-            </button>
-<button
-              type="button"
-              onClick={() => setCurrentDate(new Date())}
-              className="btn btn-outline-secondary btn-sm"
-            >
-              Today
-            </button>
-               <button
               type="button"
               onClick={() => {
                 const newDate = new Date(currentDate);
@@ -555,17 +541,15 @@ export default function Schedule() {
                 }
                 setCurrentDate(newDate);
               }}
-              className="btn btn-outline-secondary btn-sm"
+              className="btn btn-sm btn-outline-secondary"
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Previous"
             >
-             ◀️
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+              </svg>
             </button>
-            
-            <button
-              type="button"
-              onClick={refreshSchedules}
-              className="btn btn-outline-secondary btn-sm"
-            >
-🔄            </button>
+            {/* Next */}
             <button
               type="button"
               onClick={() => {
@@ -579,15 +563,43 @@ export default function Schedule() {
                 }
                 setCurrentDate(newDate);
               }}
-              className="btn btn-outline-secondary btn-sm"
+              className="btn btn-sm btn-outline-secondary"
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Next"
             >
-             ▶️
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+              </svg>
             </button>
-
-
-
           </div>
-           
+          {/* Row 2: Day, Today */}
+          <div className="d-flex gap-1">
+            {/* Day View - Single Day Icon */}
+            <button
+              type="button"
+              onClick={() => setCurrentView('day')}
+              className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Day View"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
+              </svg>
+            </button>
+            {/* Today - Calendar with day number */}
+            <button
+              type="button"
+              onClick={() => setCurrentDate(new Date())}
+              className="btn btn-sm btn-outline-secondary"
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Today"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+                <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">{new Date().getDate()}</text>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <Modal isOpen={isModalOpen} onClose={closeModal}>

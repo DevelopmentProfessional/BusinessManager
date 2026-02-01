@@ -50,9 +50,12 @@ if ($env:PORT) { $port = [int]$env:PORT }
 $bindHost = "0.0.0.0"
 if ($env:HOST) { $bindHost = $env:HOST }
 
-Write-Host "Starting Business Manager..." -ForegroundColor Cyan
-Write-Host "Frontend will be available at: http://localhost:5173" -ForegroundColor Green
-Write-Host "Backend API will be available at: http://localhost:$port" -ForegroundColor Green
+Write-Host "Starting Business Manager (HTTPS)..." -ForegroundColor Cyan
+Write-Host "Frontend will be available at: https://localhost:5173" -ForegroundColor Green
+Write-Host "Backend API (internal): http://localhost:$port (proxied through Vite)" -ForegroundColor Gray
+Write-Host ""
+Write-Host "Note: Your browser may show a security warning for self-signed certificates." -ForegroundColor Yellow
+Write-Host "Click 'Advanced' and 'Proceed to localhost' to continue." -ForegroundColor Yellow
 Write-Host ""
 
 # Start frontend (Vite) in a new window - use npm run dev:frontend from project root
@@ -62,7 +65,7 @@ Write-Host "Frontend started (PID: $($frontendProcess.Id))" -ForegroundColor Yel
 Write-Host "Starting backend in this window (any error below is from the backend)..." -ForegroundColor Cyan
 Write-Host ""
 
-# Start backend (Uvicorn) in the current window
+# Start backend (Uvicorn) - HTTP internally, Vite proxies HTTPS requests to it
 $backendExitCode = 0
 try {
 	& $pythonExe @pythonArgs -m uvicorn backend.main:app --reload --host $bindHost --port $port
