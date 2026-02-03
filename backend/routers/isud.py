@@ -18,7 +18,6 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 # Ensure upload directory exists
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-
 def _resolve_document_path(file_path: str, upload_dir: str) -> str:
     """Resolve path for a document file (stored path or upload_dir + basename)."""
     if not file_path:
@@ -42,7 +41,6 @@ READ_SCHEMA_MAP = {
     'schedule': ScheduleRead,
     'schedules': ScheduleRead,
 }
-
 
 def _serialize_record(record, table_name: str):
     """Serialize a record using the appropriate Read schema if available."""
@@ -75,7 +73,6 @@ def _serialize_record(record, table_name: str):
     if hasattr(record, 'model_dump'):
         return record.model_dump(mode='json', exclude={'supplier', 'inventory_items', 'schedules'})
     return record
-
 
 def _serialize_records(records, table_name: str):
     """Serialize multiple records using the appropriate Read schema."""
@@ -238,7 +235,6 @@ async def insert_with_file(
     session.refresh(record)
     return _serialize_record(record, table_name)
 
-
 @router.post("/{table_name}")
 async def insert(
     table_name: str,
@@ -257,7 +253,6 @@ async def insert(
     session.commit()
     session.refresh(record)
     return _serialize_record(record, table_name)
-
 
 @router.put("/{table_name}/{record_id}")
 async def update_by_id(
@@ -336,7 +331,6 @@ async def select_by_id(
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
     return _serialize_record(record, table_name)
 
-
 @router.put("/{table_name}")
 async def update(
     table_name: str,
@@ -397,7 +391,6 @@ async def update(
     session.commit()
     session.refresh(record)
     return _serialize_record(record, table_name)
-
 
 @router.delete("/{table_name}/{record_id}")
 async def delete_by_id(

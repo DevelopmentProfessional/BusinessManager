@@ -1106,7 +1106,6 @@ def get_roles(
     roles = session.exec(select(Role)).all()
     return roles
 
-
 @router.post("/roles", response_model=RoleRead)
 def create_role(
     role_data: RoleCreate,
@@ -1138,7 +1137,6 @@ def create_role(
 
     return role
 
-
 @router.get("/roles/{role_id}", response_model=RoleRead)
 def get_role(
     role_id: str,
@@ -1168,7 +1166,6 @@ def get_role(
         )
 
     return role
-
 
 @router.put("/roles/{role_id}", response_model=RoleRead)
 def update_role(
@@ -1226,7 +1223,6 @@ def update_role(
 
     return role
 
-
 @router.delete("/roles/{role_id}")
 def delete_role(
     role_id: str,
@@ -1278,7 +1274,6 @@ def delete_role(
     session.commit()
 
     return {"message": "Role deleted successfully"}
-
 
 @router.post("/roles/{role_id}/permissions", response_model=RolePermissionRead)
 def add_role_permission(
@@ -1343,7 +1338,6 @@ def add_role_permission(
 
     return role_perm
 
-
 @router.delete("/roles/{role_id}/permissions/{permission_id}")
 def remove_role_permission(
     role_id: str,
@@ -1385,7 +1379,6 @@ def remove_role_permission(
     session.commit()
 
     return {"message": "Permission removed from role"}
-
 
 # ============================================================================
 # Database Environment (DEPRECATED)

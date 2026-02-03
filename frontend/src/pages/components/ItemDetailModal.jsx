@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  XMarkIcon, ShoppingCartIcon, ClockIcon, TagIcon,
+  XMarkIcon, ShoppingCartIcon, TagIcon,
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon,
   MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon,
   TrashIcon
@@ -8,24 +8,14 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
 /**
- * ItemDetailModal - Unified modal for viewing/editing items
- * Used by both Sales (Add to Cart) and Inventory (Update Stock) pages
- * 
- * @param {boolean} isOpen - Whether modal is open
- * @param {function} onClose - Close handler
- * @param {object} item - The item to display
- * @param {string} itemType - 'service', 'product', 'asset', 'location', 'resource', 'item'
- * @param {string} mode - 'sales' for POS (Add to Cart) or 'inventory' for stock management
- * @param {function} onAddToCart - Handler for adding to cart (sales mode)
- * @param {function} onUpdateInventory - Handler for updating inventory (inventory mode)
- * @param {number} cartQuantity - Current quantity in cart (sales mode)
+ * ItemDetailModal - Full screen modal for viewing/editing items
  */
 export default function ItemDetailModal({
   isOpen,
   onClose,
   item,
   itemType = 'product',
-  mode = 'sales', // 'sales' or 'inventory'
+  mode = 'sales',
   onAddToCart,
   onUpdateInventory,
   onDelete,
@@ -33,31 +23,55 @@ export default function ItemDetailModal({
   cartQuantity = 0
 }) {
   const [quantity, setQuantity] = useState(1);
-  const [stockQuantity, setStockQuantity] = useState(0);
-  const [minStockLevel, setMinStockLevel] = useState(10);
-  
+  const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
+    price: 0,
+    description: '',
+    quantity: 0,
+    min_stock_level: 10,
+    location: '',
+    image_url: '',
+    type: 'PRODUCT'
+  });
+
   const upperType = (itemType || item?.type || 'product').toUpperCase();
   const isService = upperType === 'SERVICE';
   const isAsset = upperType === 'ASSET';
   const isLocation = upperType === 'LOCATION';
   const isResource = upperType === 'RESOURCE';
-  const hasImage = item?.image_url;
+  const hasImage = formData.image_url;
   const inCart = cartQuantity > 0;
   const isSalesMode = mode === 'sales';
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen && item) {
+      setFormData({
+        name: item.name || '',
+        sku: item.sku || '',
+        price: item.price || 0,
+        description: item.description || '',
+        quantity: item.quantity || 0,
+        min_stock_level: item.min_stock_level || 10,
+        location: item.location || '',
+        image_url: item.image_url || '',
+        type: item.type || 'PRODUCT'
+      });
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
-      } else {
-        setStockQuantity(item.quantity || 0);
-        setMinStockLevel(item.min_stock_level || 10);
       }
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode]);
 
   if (!isOpen || !item) return null;
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? (parseFloat(value) || 0) : value
+    }));
+  };
 
   const handleAddToCart = () => {
     onAddToCart?.(item, itemType, quantity);
@@ -67,8 +81,15 @@ export default function ItemDetailModal({
   const handleUpdateInventory = (e) => {
     e.preventDefault();
     onUpdateInventory?.(item.id, {
-      quantity: parseInt(stockQuantity),
-      min_stock_level: parseInt(minStockLevel)
+      name: formData.name,
+      sku: formData.sku,
+      price: parseFloat(formData.price) || 0,
+      description: formData.description,
+      quantity: parseInt(formData.quantity) || 0,
+      min_stock_level: parseInt(formData.min_stock_level) || 10,
+      location: formData.location,
+      image_url: formData.image_url,
+      type: formData.type
     });
   };
 
@@ -82,297 +103,347 @@ export default function ItemDetailModal({
   const incrementQuantity = () => setQuantity(q => q + 1);
   const decrementQuantity = () => setQuantity(q => Math.max(1, q - 1));
 
-  // Get type-specific colors
-  const getTypeColors = () => {
-    if (isService) return {
-      gradient: 'from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800',
-      badge: 'bg-primary-500 text-white',
-      icon: 'text-primary-400 dark:text-primary-500',
-      price: 'text-primary-600 dark:text-primary-400',
-      button: 'bg-primary-600 hover:bg-primary-700 shadow-primary-600/20',
-      iconComponent: SparklesIcon
-    };
-    if (isAsset) return {
-      gradient: 'from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800',
-      badge: 'bg-purple-500 text-white',
-      icon: 'text-purple-400 dark:text-purple-500',
-      price: 'text-purple-600 dark:text-purple-400',
-      button: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20',
-      iconComponent: WrenchScrewdriverIcon
-    };
-    if (isLocation) return {
-      gradient: 'from-teal-100 to-teal-200 dark:from-teal-900 dark:to-teal-800',
-      badge: 'bg-teal-500 text-white',
-      icon: 'text-teal-400 dark:text-teal-500',
-      price: 'text-teal-600 dark:text-teal-400',
-      button: 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/20',
-      iconComponent: BuildingOfficeIcon
-    };
-    if (isResource) return {
-      gradient: 'from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800',
-      badge: 'bg-blue-500 text-white',
-      icon: 'text-blue-400 dark:text-blue-500',
-      price: 'text-blue-600 dark:text-blue-400',
-      button: 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20',
-      iconComponent: CubeIcon
-    };
-    return {
-      gradient: 'from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800',
-      badge: 'bg-emerald-500 text-white',
-      icon: 'text-emerald-400 dark:text-emerald-500',
-      price: 'text-emerald-600 dark:text-emerald-400',
-      button: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
-      iconComponent: CubeIcon
-    };
+  const getTypeIcon = () => {
+    if (isService) return <SparklesIcon className="h-16 w-16" />;
+    if (isAsset) return <WrenchScrewdriverIcon className="h-16 w-16" />;
+    if (isLocation) return <BuildingOfficeIcon className="h-16 w-16" />;
+    if (isResource) return <CubeIcon className="h-16 w-16" />;
+    return <CubeIcon className="h-16 w-16" />;
   };
 
-  const colors = getTypeColors();
-  const TypeIcon = colors.iconComponent;
-
-  const getTypeLabel = () => {
-    const labels = { 
-      SERVICE: 'Service', PRODUCT: 'Product', ASSET: 'Asset', 
-      LOCATION: 'Location', RESOURCE: 'Resource', ITEM: 'Item' 
-    };
-    return labels[upperType] || 'Product';
-  };
+  const isLowStock = formData.quantity <= formData.min_stock_level;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <div
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
     >
-      <div 
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
+      {/* Modal content wrapper */}
+      <div className="d-flex flex-column bg-white" style={{ maxHeight: '100%' }}>
+      {/* Header Bar */}
+      <div className="d-flex align-items-center justify-content-between p-3 border-bottom bg-white flex-shrink-0">
+        <h5 className="mb-0 fw-bold">
+          {isSalesMode ? 'Item Details' : 'Edit Item'}
+        </h5>
+        <button
+          onClick={onClose}
+          className="btn btn-outline-secondary btn-sm rounded-circle p-0"
+          style={{ width: '36px', height: '36px' }}
+        >
+          <XMarkIcon className="h-5 w-5" style={{ margin: 'auto', display: 'block' }} />
+        </button>
+      </div>
+
+      {/* Image Section - Proportional width/height with sales preview */}
+      <div
+        className="flex-shrink-0 position-relative"
+        style={{
+          background: hasImage ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        }}
       >
-        {/* Image Header */}
-        <div className={`relative h-56 w-full ${hasImage ? '' : `bg-gradient-to-br ${colors.gradient}`}`}>
-          {hasImage ? (
-            <img 
-              src={item.image_url} 
-              alt={item.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <TypeIcon className={`h-24 w-24 ${colors.icon} opacity-50`} />
-            </div>
-          )}
-          
-          {/* Gradient overlay for images */}
-          {hasImage && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-          )}
-          
-          {/* Close Button */}
-          <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full transition-colors"
-          >
-            <XMarkIcon className="h-5 w-5 text-white" />
-          </button>
-          
-          {/* Type Badge */}
-          <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium ${colors.badge}`}>
-            {getTypeLabel()}
+        {hasImage ? (
+          <img
+            src={formData.image_url}
+            alt={formData.name}
+            className="w-100"
+            style={{ height: 'auto', display: 'block' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        ) : (
+          <div className="d-flex align-items-center justify-content-center text-white opacity-50" style={{ height: '120px' }}>
+            {getTypeIcon()}
           </div>
-          
-          {/* In Cart Badge (Sales mode only) */}
-          {isSalesMode && inCart && (
-            <div className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-sm font-medium">
-              <CheckCircleSolid className="h-4 w-4" />
-              {cartQuantity} in cart
-            </div>
-          )}
-          
-          {/* Stock Badge (Inventory mode only) */}
-          {!isSalesMode && (
-            <div className={`absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
-              (isLocation || isAsset) 
-                ? 'bg-green-500 text-white' 
-                : item.quantity <= item.min_stock_level 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-green-500 text-white'
-            }`}>
-              {(isLocation || isAsset) ? 'OK' : `${item.quantity} in stock`}
-            </div>
-          )}
-        </div>
-        
-        {/* Content */}
-        <div className="p-5">
-          {/* Title & Price */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                {item.name}
-              </h2>
-              <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                {isService && item.duration_minutes && (
-                  <span className="flex items-center gap-1">
-                    <ClockIcon className="h-4 w-4" />
-                    {item.duration_minutes} min
-                  </span>
-                )}
-                {!isService && item.sku && (
-                  <span className="flex items-center gap-1">
-                    <TagIcon className="h-4 w-4" />
-                    {item.sku}
-                  </span>
-                )}
-                {item.location && (
-                  <span className="flex items-center gap-1">
-                    <MapPinIcon className="h-4 w-4" />
-                    {item.location}
-                  </span>
-                )}
-                {item.category && (
-                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs">
-                    {item.category}
+        )}
+
+        {/* Sales Preview Overlay - shows how item appears in sales mode */}
+        {!isSalesMode && (
+          <div
+            className="position-absolute bottom-0 start-0 end-0 p-3"
+            style={{
+              background: 'linear-gradient(transparent, rgba(0,0,0,0.7))'
+            }}
+          >
+            <div className="text-white">
+              <div className="fw-bold" style={{ fontSize: '1.1rem' }}>
+                {formData.name || 'Item Name'}
+              </div>
+              <div className="d-flex justify-content-between align-items-center">
+                <span className="fw-bold" style={{ fontSize: '1.25rem' }}>
+                  ${(parseFloat(formData.price) || 0).toFixed(2)}
+                </span>
+                {!isLocation && !isAsset && (
+                  <span className={`badge ${isLowStock ? 'bg-danger' : 'bg-success'}`}>
+                    {formData.quantity} in stock
                   </span>
                 )}
               </div>
             </div>
-            {item.price > 0 && (
-              <div className={`text-2xl font-bold ${colors.price}`}>
-                ${item.price?.toFixed(2)}
+          </div>
+        )}
+
+        {/* Stock Status Badge - only in sales mode */}
+        {isSalesMode && !isLocation && !isAsset && (
+          <span className={`badge position-absolute bottom-0 end-0 m-3 ${isLowStock ? 'bg-danger' : 'bg-success'}`}>
+            {formData.quantity} in stock {isLowStock && '(Low)'}
+          </span>
+        )}
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-grow-1 overflow-auto p-3">
+        {isSalesMode ? (
+          /* Sales Mode - Display only */
+          <div>
+            <h4 className="fw-bold mb-2">{item.name}</h4>
+            <div className="fs-4 fw-bold text-primary mb-3">${item.price?.toFixed(2)}</div>
+
+            {item.description && (
+              <p className="text-muted mb-3">{item.description}</p>
+            )}
+
+            <div className="d-flex gap-2 text-muted small mb-4">
+              {item.sku && (
+                <span className="d-flex align-items-center gap-1">
+                  <TagIcon className="h-4 w-4" /> {item.sku}
+                </span>
+              )}
+              {item.location && (
+                <span className="d-flex align-items-center gap-1">
+                  <MapPinIcon className="h-4 w-4" /> {item.location}
+                </span>
+              )}
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <span className="fw-medium">Quantity</span>
+              <div className="d-flex align-items-center gap-3">
+                <button
+                  onClick={decrementQuantity}
+                  disabled={quantity <= 1}
+                  className="btn btn-outline-secondary rounded-circle p-0"
+                  style={{ width: '44px', height: '44px' }}
+                >
+                  <MinusIcon className="h-5 w-5" style={{ margin: 'auto', display: 'block' }} />
+                </button>
+                <span className="fs-4 fw-semibold" style={{ minWidth: '50px', textAlign: 'center' }}>
+                  {quantity}
+                </span>
+                <button
+                  onClick={incrementQuantity}
+                  className="btn btn-outline-secondary rounded-circle p-0"
+                  style={{ width: '44px', height: '44px' }}
+                >
+                  <PlusIcon className="h-5 w-5" style={{ margin: 'auto', display: 'block' }} />
+                </button>
+              </div>
+            </div>
+
+            <div className="d-flex align-items-center gap-3">
+              <div>
+                <small className="text-muted">Total</small>
+                <div className="fs-3 fw-bold text-primary">
+                  ${(item.price * quantity).toFixed(2)}
+                </div>
+              </div>
+              <button
+                onClick={handleAddToCart}
+                className="btn btn-primary flex-grow-1 py-3 d-flex align-items-center justify-content-center gap-2"
+              >
+                <ShoppingCartIcon className="h-5 w-5" />
+                {inCart ? 'Update Cart' : 'Add to Cart'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Inventory Mode - Editable Form */
+          <form onSubmit={handleUpdateInventory}>
+            {/* Name */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">Name *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="form-control"
+                required
+              />
+            </div>
+
+            {/* SKU */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">SKU</label>
+              <input
+                type="text"
+                name="sku"
+                value={formData.sku}
+                onChange={handleChange}
+                className="form-control"
+              />
+            </div>
+
+            {/* Price */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">Price</label>
+              <div className="input-group">
+                <span className="input-group-text">$</span>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  className="form-control"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {/* Type */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">Type</label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className="form-select"
+              >
+                <option value="PRODUCT">Product</option>
+                <option value="RESOURCE">Resource</option>
+                <option value="ASSET">Asset</option>
+                <option value="LOCATION">Location</option>
+                <option value="ITEM">Item</option>
+              </select>
+            </div>
+
+            {/* Description */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className="form-control"
+                rows="3"
+              />
+            </div>
+
+            {/* Quantity & Min Stock - only for trackable items */}
+            {!isLocation && !isAsset && (
+              <>
+                <div className="row mb-3">
+                  <div className="col-6">
+                    <label className="form-label fw-medium">Quantity</label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleChange}
+                      className="form-control"
+                      min="0"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label fw-medium">Min Stock Level</label>
+                    <input
+                      type="number"
+                      name="min_stock_level"
+                      value={formData.min_stock_level}
+                      onChange={handleChange}
+                      className="form-control"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Stock Status */}
+                <div className={`alert ${isLowStock ? 'alert-danger' : 'alert-success'} d-flex align-items-center gap-2 mb-3`}>
+                  {isLowStock ? (
+                    <>
+                      <span className="fw-medium">Low Stock Warning</span>
+                      <span className="small">Current quantity is at or below minimum level</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircleSolid className="h-5 w-5" />
+                      <span className="fw-medium">Stock OK</span>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Location */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">Location</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="form-control"
+                placeholder="e.g., Warehouse A, Shelf 3"
+              />
+            </div>
+
+            {/* Image URL */}
+            <div className="mb-3">
+              <label className="form-label fw-medium">Image URL</label>
+              <input
+                type="url"
+                name="image_url"
+                value={formData.image_url}
+                onChange={handleChange}
+                className="form-control"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            {/* Status for locations/assets */}
+            {(isLocation || isAsset) && (
+              <div className="alert alert-success d-flex align-items-center gap-2 mb-3">
+                <CheckCircleSolid className="h-5 w-5" />
+                <div>
+                  <strong>Status: OK</strong>
+                  <div className="small">{isLocation ? 'Locations' : 'Assets'} do not track stock levels</div>
+                </div>
               </div>
             )}
+          </form>
+        )}
+      </div>
+
+      {/* Fixed Footer with Action Buttons */}
+      <div className="flex-shrink-0 p-3 border-top bg-white">
+        {!isSalesMode ? (
+          <div className="d-flex gap-2 justify-content-start">
+            {canDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="btn btn-outline-danger d-flex align-items-center gap-1"
+              >
+                <TrashIcon className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleUpdateInventory}
+              className="btn btn-primary"
+            >
+              Save
+            </button>
           </div>
-          
-          {/* Description */}
-          {item.description && (
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">
-              {item.description}
-            </p>
-          )}
-          
-          {/* Sales Mode: Quantity Selector & Add to Cart */}
-          {isSalesMode && (
-            <>
-              {/* Quantity Selector */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</span>
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={decrementQuantity}
-                    disabled={quantity <= 1}
-                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <MinusIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                  </button>
-                  <span className="w-12 text-center text-lg font-semibold text-gray-900 dark:text-white">
-                    {quantity}
-                  </span>
-                  <button 
-                    onClick={incrementQuantity}
-                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
-                  >
-                    <PlusIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                  </button>
-                </div>
-              </div>
-              
-              {/* Total & Add Button */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Total</p>
-                  <p className={`text-2xl font-bold ${colors.price}`}>
-                    ${(item.price * quantity).toFixed(2)}
-                  </p>
-                </div>
-                <button
-                  onClick={handleAddToCart}
-                  className={`flex-1 py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-lg ${colors.button}`}
-                >
-                  <ShoppingCartIcon className="h-5 w-5" />
-                  {inCart ? 'Update Cart' : 'Add to Cart'}
-                </button>
-              </div>
-            </>
-          )}
-          
-          {/* Inventory Mode: Stock Management */}
-          {!isSalesMode && (
-            <form onSubmit={handleUpdateInventory} className="space-y-4">
-              {/* Only show quantity fields for non-location/asset items */}
-              {!isLocation && !isAsset && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Current Quantity
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={stockQuantity}
-                      onChange={(e) => setStockQuantity(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Minimum Stock Level
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={minStockLevel}
-                      onChange={(e) => setMinStockLevel(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                </>
-              )}
-              
-              {/* For locations/assets, just show a simple status */}
-              {(isLocation || isAsset) && (
-                <div className="text-center py-4">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
-                    <CheckCircleSolid className="h-5 w-5" />
-                    <span className="font-medium">Status: OK</span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    {isLocation ? 'Locations' : 'Assets'} do not track stock levels
-                  </p>
-                </div>
-              )}
-              
-              <div className="flex gap-3 pt-2">
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    className="py-3 px-4 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-medium transition-colors flex items-center gap-2"
-                    title="Delete Item"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                {!isLocation && !isAsset && (
-                  <button
-                    type="submit"
-                    className={`flex-1 py-3 px-4 rounded-xl font-semibold text-white transition-all ${colors.button}`}
-                  >
-                    Update Inventory
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-        </div>
+        ) : null}
+      </div>
       </div>
     </div>
   );
