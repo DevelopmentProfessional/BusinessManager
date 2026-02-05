@@ -29,11 +29,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud
+    from backend.routers import auth, isud, settings
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud"}:
-        from routers import auth, isud  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings"}:
+        from routers import auth, isud, settings  # type: ignore
     else:
         raise
 
@@ -172,6 +172,7 @@ async def startup_event():
 # Include routers (documents + document_category CRUD go through isud)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
+app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
 
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).

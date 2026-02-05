@@ -191,6 +191,34 @@ export const inventoryAPI = {
     clearCache('inventory');
     return api.delete(`/isud/inventory/${id}`);
   },
+  
+  // Image management
+  getImages: (inventoryId) => api.get(`/isud/inventory/${inventoryId}/images`),
+  addImageUrl: (inventoryId, imageData) => {
+    clearCache('inventory');
+    return api.post(`/isud/inventory/${inventoryId}/images/url`, imageData);
+  },
+  uploadImageFile: (inventoryId, file, isPrimary = false) => {
+    clearCache('inventory');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('is_primary', isPrimary);
+    return api.post(`/isud/inventory/${inventoryId}/images/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  updateImage: (imageId, imageData) => {
+    clearCache('inventory');
+    return api.put(`/isud/inventory/images/${imageId}`, imageData);
+  },
+  deleteImage: (imageId) => {
+    clearCache('inventory');
+    return api.delete(`/isud/inventory/images/${imageId}`);
+  },
+  getImageFileUrl: (imageId) =>
+    `${api.defaults.baseURL}/isud/inventory/images/${imageId}/file`,
 };
 
 // Legacy alias for backward compatibility (deprecated - use inventoryAPI)
@@ -411,6 +439,21 @@ export const adminAPI = {
 export const dbEnvironmentAPI = {
   getCurrent: () => Promise.resolve({ data: { current: 'development', environments: {} } }),
   switch: () => Promise.resolve({ data: { message: 'Use user profile to update db_environment' } }),
+};
+
+export const settingsAPI = {
+  getScheduleSettings: () => getCachedOrFetch('schedule-settings', () => api.get('/settings/schedule')),
+  updateScheduleSettings: (data) => {
+    clearCache('schedule-settings');
+    return api.put('/settings/schedule', data);
+  },
+};
+
+// Schema/Database Import API
+export const schemaAPI = {
+  getTables: () => getCachedOrFetch('schema-tables', () => api.get('/isud/schema/tables')),
+  getTableColumns: (tableName) => getCachedOrFetch(`schema-columns-${tableName}`, () => api.get(`/isud/schema/tables/${tableName}/columns`)),
+  bulkImport: (tableName, records) => api.post(`/isud/schema/tables/${tableName}/import`, records),
 };
 
 export const reportsAPI = {

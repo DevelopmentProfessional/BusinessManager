@@ -532,8 +532,8 @@ export default function Employees() {
   return (
     <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
 
-      {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-3">
+      {/* Header - sticky on mobile */}
+      <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
       </div>
 

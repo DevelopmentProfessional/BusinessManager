@@ -11,11 +11,13 @@ import { servicesAPI, clientsAPI, inventoryAPI } from '../services/api';
 import PermissionGate from './components/PermissionGate';
 import ItemDetailModal from './components/ItemDetailModal';
 import CheckoutModal from './components/CheckoutModal';
+import { getDisplayImageUrl } from './components/imageUtils';
 
 // Unified Product/Service Card Component
 const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart }) => {
   const isService = itemType === 'service';
-  const hasImage = item.image_url;
+  const imageUrl = getDisplayImageUrl(item);
+  const hasImage = !!imageUrl;
   
   const handleIncrement = (e) => {
     e.stopPropagation();
@@ -42,29 +44,37 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       }`}
     >
       {/* Full Card Background Image */}
-      <div className={`absolute inset-0 ${hasImage ? '' : 'bg-gradient-to-br'} ${
-        isService 
+      <div className={`absolute inset-0 ${hasImage ? '' : 'bg-gradient-to-br'} ${        isService 
           ? 'from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800' 
           : 'from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800'
       }`}>
         {hasImage ? (
-          <img 
-            src={item.image_url} 
-            alt={item.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            {isService ? (
-              <SparklesIcon className="h-16 w-16 text-primary-400/50 dark:text-primary-500/50" />
-            ) : (
-              <CubeIcon className="h-16 w-16 text-emerald-400/50 dark:text-emerald-500/50" />
-            )}
+          <div className="w-full h-full">
+            <img
+              src={imageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover object-center"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                // Show fallback when image fails
+                const fallback = e.target.parentElement.nextElementSibling;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
           </div>
-        )}
+        ) : null}
+        {/* Fallback icon - always present but conditionally visible */}
+        <div 
+          className={`absolute inset-0 flex items-center justify-content center ${
+            hasImage ? 'hidden' : 'flex'
+          }`}
+        >
+          {isService ? (
+            <SparklesIcon className="h-16 w-16 text-primary-400/50 dark:text-primary-500/50" />
+          ) : (
+            <CubeIcon className="h-16 w-16 text-emerald-400/50 dark:text-emerald-500/50" />
+          )}
+        </div>
       </div>
       
       {/* Gradient Overlay for text readability */}
@@ -137,22 +147,39 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
 // Cart Item Component
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const isService = item.itemType === 'service';
-  
+  const imageUrl = getDisplayImageUrl(item);
+
   return (
     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
       {/* Mini Image/Icon */}
-      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-        isService 
-          ? 'bg-primary-100 dark:bg-primary-900' 
+      <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${
+        isService
+          ? 'bg-primary-100 dark:bg-primary-900'
           : 'bg-emerald-100 dark:bg-emerald-900'
       }`}>
-        {item.image_url ? (
-          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-        ) : isService ? (
-          <SparklesIcon className="h-6 w-6 text-primary-500" />
-        ) : (
-          <CubeIcon className="h-6 w-6 text-emerald-500" />
-        )}
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover object-center"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              const fallback = e.target.nextElementSibling;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-full h-full flex items-center justify-center ${
+            imageUrl ? 'hidden' : 'flex'
+          }`}
+        >
+          {isService ? (
+            <SparklesIcon className="h-6 w-6 text-primary-500" />
+          ) : (
+            <CubeIcon className="h-6 w-6 text-emerald-500" />
+          )}
+        </div>
       </div>
       
       {/* Item Info */}

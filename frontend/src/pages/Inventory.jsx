@@ -240,8 +240,8 @@ export default function Inventory() {
 return (
   <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
 
-    {/* Header */}
-    <div className="flex-shrink-0 border-bottom p-3">
+    {/* Header - sticky on mobile */}
+    <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
       <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Inventory</h1>
     </div>
 
@@ -360,7 +360,7 @@ return (
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="form-select"
+              className="form-select w-auto"
             >
               <option value="all">All Types</option>
               <option value="PRODUCT">Products</option>
@@ -373,15 +373,12 @@ return (
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
-              className="form-select">
+              className="form-select w-auto">
               <option value="all">All Stock</option>
               <option value="low">Low Stock</option>
               <option value="ok">In Stock</option>
             </select>
 
-            <span className="text-muted small text-nowrap">
-              {filteredInventory.length} / {inventory.length}
-            </span>
           </div>
 
           {/* Action buttons */}

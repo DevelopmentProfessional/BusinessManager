@@ -3,9 +3,11 @@ import {
   XMarkIcon, ShoppingCartIcon, TagIcon,
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon,
   MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon,
-  TrashIcon
+  TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
+import { inventoryAPI } from '../../services/api';
+import { getImageSrc } from './imageUtils';
 
 /**
  * ItemDetailModal - Full screen modal for viewing/editing items
@@ -23,6 +25,8 @@ export default function ItemDetailModal({
   cartQuantity = 0
 }) {
   const [quantity, setQuantity] = useState(1);
+  const [images, setImages] = useState([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -40,7 +44,10 @@ export default function ItemDetailModal({
   const isAsset = upperType === 'ASSET';
   const isLocation = upperType === 'LOCATION';
   const isResource = upperType === 'RESOURCE';
-  const hasImage = formData.image_url;
+  const hasLegacyImage = formData.image_url;
+  const hasImages = images.length > 0;
+  const currentImage = hasImages ? images[currentImageIndex] : null;
+  const displayImage = currentImage ? getImageSrc(currentImage) : (hasLegacyImage ? formData.image_url : null);
   const inCart = cartQuantity > 0;
   const isSalesMode = mode === 'sales';
 
@@ -60,8 +67,23 @@ export default function ItemDetailModal({
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
       }
+      
+      // Load images for this inventory item
+      loadImages(item.id);
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode]);
+
+  const loadImages = async (inventoryId) => {
+    try {
+      const response = await inventoryAPI.getImages(inventoryId);
+      const imageList = response.data || [];
+      setImages(imageList);
+      setCurrentImageIndex(0);
+    } catch (error) {
+      console.error('Error loading images:', error);
+      setImages([]);
+    }
+  };
 
   if (!isOpen || !item) return null;
 
@@ -134,24 +156,66 @@ export default function ItemDetailModal({
         </button>
       </div>
 
-      {/* Image Section - Proportional width/height with sales preview */}
-      <div
-        className="flex-shrink-0 position-relative"
-        style={{
-          background: hasImage ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        }}
-      >
-        {hasImage ? (
-          <img
-            src={formData.image_url}
-            alt={formData.name}
-            className="w-100"
-            style={{ height: 'auto', display: 'block' }}
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-        ) : (
-          <div className="d-flex align-items-center justify-content-center text-white opacity-50" style={{ height: '120px' }}>
+      {/* Image Section - Multiple images with navigation */}
+      <div className="flex-shrink-0 position-relative">
+        <div className="square-image-container">
+          {displayImage ? (
+            <img
+              src={displayImage}
+              alt={formData.name}
+              className="square-image"
+              onError={(e) => { 
+                e.target.style.display = 'none';
+                // Show placeholder when image fails to load
+                const placeholder = e.target.nextElementSibling;
+                if (placeholder) placeholder.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          {/* Placeholder/Fallback always present */}
+          <div 
+            className="square-image-placeholder" 
+            style={{ display: displayImage ? 'none' : 'flex' }}
+          >
             {getTypeIcon()}
+          </div>
+        </div>
+
+        {/* Image Navigation Controls */}
+        {hasImages && images.length > 1 && (
+          <>
+            <button
+              onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
+              className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2"
+              style={{ width: '32px', height: '32px' }}
+            >
+              <ChevronLeftIcon className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
+              className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2"
+              style={{ width: '32px', height: '32px' }}
+            >
+              <ChevronRightIcon className="h-4 w-4" />
+            </button>
+            {/* Image counter */}
+            <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
+              {currentImageIndex + 1} / {images.length}
+            </div>
+          </>
+        )}
+
+        {/* Legacy image indicator */}
+        {hasLegacyImage && !hasImages && (
+          <div className="position-absolute bottom-0 start-0 bg-warning bg-opacity-75 text-dark px-2 py-1 rounded-top-end text-xs">
+            Legacy
+          </div>
+        )}
+
+        {/* Primary image indicator */}
+        {currentImage && currentImage.is_primary && (
+          <div className="position-absolute top-0 start-0 bg-primary text-white px-2 py-1 rounded-bottom-end text-xs">
+            Primary
           </div>
         )}
 
@@ -417,12 +481,14 @@ export default function ItemDetailModal({
       {/* Fixed Footer with Action Buttons */}
       <div className="flex-shrink-0 p-3 border-top bg-white">
         {!isSalesMode ? (
-          <div className="d-flex gap-2 justify-content-start">
+          <div className="d-flex gap-3 justify-content-center align-items-center">
             {canDelete && (
               <button
                 type="button"
                 onClick={handleDelete}
-                className="btn btn-outline-danger d-flex align-items-center gap-1"
+                className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
+                style={{ width: '48px', height: '48px' }}
+                title="Delete Item"
               >
                 <TrashIcon className="h-5 w-5" />
               </button>
@@ -430,16 +496,20 @@ export default function ItemDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary"
+              className="btn btn-secondary rounded-circle d-flex align-items-center justify-content-center"
+              style={{ width: '48px', height: '48px' }}
+              title="Cancel"
             >
-              Cancel
+              <XMarkIcon className="h-5 w-5" />
             </button>
             <button
               type="button"
               onClick={handleUpdateInventory}
-              className="btn btn-primary"
+              className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+              style={{ width: '48px', height: '48px' }}
+              title="Save Changes"
             >
-              Save
+              <CheckIcon className="h-5 w-5" />
             </button>
           </div>
         ) : null}

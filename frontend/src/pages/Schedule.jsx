@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import { scheduleAPI } from '../services/api';
+import { scheduleAPI, settingsAPI } from '../services/api';
 import Modal from './components/Modal';
 import ScheduleForm from './components/ScheduleForm';
 import PermissionGate from './components/PermissionGate';
@@ -30,21 +30,49 @@ export default function Schedule() {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [draggedAppointment, setDraggedAppointment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const hasFetched = useRef(false);
+  const calendarGridRef = useRef(null);
+
+  // Update clock every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Schedule settings state
+  const [scheduleSettings, setScheduleSettings] = useState({
+    start_of_day: '06:00',
+    end_of_day: '21:00',
+    attendance_check_in_required: true
+  });
 
   // Load ONLY schedule data on mount - services, employees, clients loaded on-demand in ScheduleForm
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    
+
     const loadSchedule = async () => {
       // Check if user is authenticated before making API calls
       if (!isAuthenticated()) {
         console.error('User not authenticated - skipping data load');
         return;
       }
-      
+
       try {
+        // Load schedule settings
+        const settingsResponse = await settingsAPI.getScheduleSettings();
+        if (settingsResponse?.data) {
+          setScheduleSettings({
+            start_of_day: settingsResponse.data.start_of_day || '06:00',
+            end_of_day: settingsResponse.data.end_of_day || '21:00',
+            attendance_check_in_required: settingsResponse.data.attendance_check_in_required ?? true
+          });
+        }
+
         // Only load schedule/appointments - other data loads on-demand in form
         const scheduleResponse = await scheduleAPI.getAll();
         const scheduleData = scheduleResponse?.data ?? scheduleResponse;
@@ -105,10 +133,12 @@ export default function Schedule() {
     }
   };
 
-  // Get time slots for week and day views (full 24 hours)
+  // Get time slots for week and day views (based on settings)
   const getTimeSlots = () => {
     const timeSlots = [];
-    for (let hour = 0; hour <= 23; hour++) {
+    const startHour = parseInt(scheduleSettings.start_of_day.split(':')[0], 10) || 6;
+    const endHour = parseInt(scheduleSettings.end_of_day.split(':')[0], 10) || 21;
+    for (let hour = startHour; hour <= endHour; hour++) {
       timeSlots.push(hour);
     }
     return timeSlots;
@@ -116,6 +146,26 @@ export default function Schedule() {
 
   const days = getCalendarDays();
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Auto-scroll to current time when switching to day or week view
+  useEffect(() => {
+    if ((currentView === 'day' || currentView === 'week') && calendarGridRef.current) {
+      const currentHour = new Date().getHours();
+      const startHour = parseInt(scheduleSettings.start_of_day.split(':')[0], 10) || 6;
+      const endHour = parseInt(scheduleSettings.end_of_day.split(':')[0], 10) || 21;
+      
+      // Only scroll if current hour is within the displayed range
+      if (currentHour >= startHour && currentHour <= endHour) {
+        // Small delay to ensure the grid is rendered
+        setTimeout(() => {
+          const timeSlotElement = calendarGridRef.current?.querySelector(`[data-hour="${currentHour}"]`);
+          if (timeSlotElement) {
+            timeSlotElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
+    }
+  }, [currentView, scheduleSettings.start_of_day, scheduleSettings.end_of_day]);
 
   const canCreateSchedule = useCallback(() => {
     return (
@@ -265,19 +315,29 @@ export default function Schedule() {
   return (
     <div className="h-100 d-flex flex-column">
       <PermissionGate page="schedule" permission="read">
-        {/* Attendance Widget - Clock In/Out */}
-        <div className="mb-3 px-2">
-          <AttendanceWidget compact={true} />
-        </div>
+        {/* Attendance Widget - Clock In/Out (conditionally rendered based on settings) */}
+        {scheduleSettings.attendance_check_in_required && (
+          <div className="mb-3 px-2">
+            <AttendanceWidget compact={true} />
+          </div>
+        )}
 
-        <h4 className="text-center mb-3">
-          {currentView === 'day'
-            ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-            : currentView === 'week'
-            ? `Week of ${new Date(currentDate.getTime() - currentDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-            : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-          }
-        </h4>
+        {/* Header with clock */}
+        <div className="d-flex justify-content-between align-items-center px-3 mb-2">
+          <div className="schedule-clock">
+            <span className="clock-time">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+            <span className="clock-date">{currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+          </div>
+          <h4 className="text-center mb-0 flex-grow-1">
+            {currentView === 'day'
+              ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+              : currentView === 'week'
+              ? `Week of ${new Date(currentDate.getTime() - currentDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+              : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            }
+          </h4>
+          <div style={{ width: '100px' }}></div> {/* Spacer for balance */}
+        </div>
 
         <div className="calendar-container">
           {/* Week day headers */}
@@ -290,11 +350,18 @@ export default function Schedule() {
             ) : currentView === 'week' ? (
               <>
                 <div className="calendar-header-cell">Time</div>
-                {weekDays.map(day => (
-                  <div key={day} className="calendar-header-cell">
-                    {day}
-                  </div>
-                ))}
+                {days.map((date, index) => {
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  return (
+                    <div 
+                      key={index} 
+                      className={`calendar-header-cell ${isToday ? 'today-header' : ''}`}
+                    >
+                      <div className="day-name">{weekDays[date.getDay()]}</div>
+                      <div className={`day-date ${isToday ? 'today-badge' : ''}`}>{date.getDate()}</div>
+                    </div>
+                  );
+                })}
               </>
             ) : (
               weekDays.map(day => (
@@ -306,12 +373,15 @@ export default function Schedule() {
           </div>
 
           {/* Calendar grid */}
-          <div className={`calendar-grid ${currentView === 'week' ? 'week-view' : currentView === 'day' ? 'day-view' : ''}`}>
+          <div 
+            ref={calendarGridRef}
+            className={`calendar-grid ${currentView === 'week' ? 'week-view' : currentView === 'day' ? 'day-view' : ''}`}
+          >
             {currentView === 'week' ? (
               // Week view with time slots
               getTimeSlots().map(hour => (
                 <React.Fragment key={hour}>
-                  <div className="time-slot-cell">
+                  <div className="time-slot-cell" data-hour={hour}>
                     {hour.toString().padStart(2, '0')}:00
                   </div>
                   {days.map((date, dayIndex) => {
@@ -319,11 +389,15 @@ export default function Schedule() {
                       const appointmentTime = new Date(appointment.appointment_date);
                       return appointmentTime.getHours() === hour;
                     });
+                    const isToday = date.toDateString() === new Date().toDateString();
+                    const isCurrentHour = currentTime.getHours() === hour && isToday;
+                    const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
                     
                     return (
                       <div
                         key={`${hour}-${dayIndex}`}
-                        className={`calendar-cell time-slot border ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                        className={`calendar-cell time-slot border ${isToday ? 'today-column' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                        style={{ position: 'relative' }}
                         onClick={() => {
                           const slotDate = new Date(date);
                           slotDate.setHours(hour, 0, 0, 0);
@@ -366,6 +440,16 @@ export default function Schedule() {
                             </div>
                           );
                         })}
+                        {/* Current time indicator line */}
+                        {isCurrentHour && (
+                          <div 
+                            className="current-time-indicator"
+                            style={{ top: `${currentMinutePercent}%` }}
+                          >
+                            <div className="current-time-dot"></div>
+                            <div className="current-time-line"></div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -378,14 +462,17 @@ export default function Schedule() {
                   const appointmentTime = new Date(appointment.appointment_date);
                   return appointmentTime.getHours() === hour;
                 });
+                const isCurrentHour = currentTime.getHours() === hour && days[0].toDateString() === new Date().toDateString();
+                const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
                 
                 return (
                   <React.Fragment key={hour}>
-                    <div className="time-slot-cell">
+                    <div className="time-slot-cell" data-hour={hour}>
                       {hour.toString().padStart(2, '0')}:00
                     </div>
                     <div
                       className={`calendar-cell time-slot border ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                      style={{ position: 'relative' }}
                       onClick={() => {
                         const slotDate = new Date(days[0]);
                         slotDate.setHours(hour, 0, 0, 0);
@@ -427,6 +514,16 @@ export default function Schedule() {
                           </div>
                         );
                       })}
+                      {/* Current time indicator line */}
+                      {isCurrentHour && (
+                        <div 
+                          className="current-time-indicator"
+                          style={{ top: `${currentMinutePercent}%` }}
+                        >
+                          <div className="current-time-dot"></div>
+                          <div className="current-time-line"></div>
+                        </div>
+                      )}
                     </div>
                   </React.Fragment>
                 );
@@ -612,6 +709,53 @@ export default function Schedule() {
       </PermissionGate>
 
       <style>{`
+        /* Schedule Clock */
+        .schedule-clock {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          min-width: 100px;
+        }
+        
+        .clock-time {
+          font-size: 24px;
+          font-weight: 700;
+          color: ${isDarkMode ? '#60a5fa' : '#2563eb'};
+          line-height: 1.1;
+        }
+        
+        .clock-date {
+          font-size: 12px;
+          color: ${isDarkMode ? '#9ca3af' : '#6b7280'};
+        }
+        
+        /* Current Time Indicator */
+        .current-time-indicator {
+          position: absolute;
+          left: 0;
+          right: 0;
+          display: flex;
+          align-items: center;
+          z-index: 5;
+          pointer-events: none;
+        }
+        
+        .current-time-dot {
+          width: 10px;
+          height: 10px;
+          background-color: #ef4444;
+          border-radius: 50%;
+          margin-left: -5px;
+          box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+        }
+        
+        .current-time-line {
+          flex: 1;
+          height: 2px;
+          background-color: #ef4444;
+          box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+        }
+        
         .calendar-container {
           background: ${isDarkMode ? '#2d3748' : 'white'};
           width: 100%;
@@ -631,6 +775,17 @@ export default function Schedule() {
           text-align: center;
           font-weight: 600;
           color: ${isDarkMode ? '#e2e8f0' : '#495057'};
+          padding: 4px 2px;
+        }
+        
+        .calendar-header-cell .day-name {
+          font-size: 12px;
+          font-weight: 500;
+        }
+        
+        .calendar-header-cell .day-date {
+          font-size: 14px;
+          font-weight: 600;
         }
         
         .calendar-grid {
@@ -670,10 +825,13 @@ export default function Schedule() {
           align-items: center;
           justify-content: center;
           border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
+          min-height: 60px;
+          height: 60px;
         }
         
         .time-slot {
           min-height: 60px;
+          height: 60px;
         }
         
         .calendar-cell {
@@ -682,6 +840,12 @@ export default function Schedule() {
           position: relative;
           background: ${isDarkMode ? '#2d3748' : 'white'};
           color: ${isDarkMode ? '#e2e8f0' : 'inherit'};
+        }
+        
+        .calendar-cell.time-slot {
+          min-height: 60px;
+          height: 60px;
+          box-sizing: border-box;
         }
         
         .calendar-cell:hover {
@@ -696,8 +860,55 @@ export default function Schedule() {
         }
         
         .today {
-          background-color: #e3f2fd;
+          background-color: ${isDarkMode ? '#1e3a5f' : '#e3f2fd'} !important;
           font-weight: bold;
+        }
+        
+        .today .date-number {
+          background-color: ${isDarkMode ? '#2563eb' : '#2196f3'};
+          color: white;
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 2px;
+        }
+        
+        .today-header {
+          background-color: ${isDarkMode ? '#2563eb' : '#2196f3'} !important;
+          color: white !important;
+        }
+        
+        .today-header .day-name {
+          font-size: 11px;
+          opacity: 0.9;
+        }
+        
+        .today-header .day-date {
+          font-size: 16px;
+          font-weight: bold;
+        }
+        
+        .day-date.today-badge {
+          background-color: white;
+          color: ${isDarkMode ? '#2563eb' : '#2196f3'};
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 2px auto 0;
+        }
+        
+        .today-column {
+          background-color: ${isDarkMode ? '#1e3a5f' : '#e3f2fd'} !important;
+        }
+        
+        .today-column:hover {
+          background-color: ${isDarkMode ? '#2d4a6f' : '#bbdefb'} !important;
         }
         
         .date-number {

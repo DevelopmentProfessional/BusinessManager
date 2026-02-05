@@ -9,11 +9,19 @@ import IconButton from './IconButton';
 import ActionFooter from './ActionFooter';
 
 const APPOINTMENT_TYPES = [
-  { value: 'one_time', label: 'One-Time Appointment' },
-  { value: 'series', label: 'Recurring Series' },
-  { value: 'meeting', label: 'Meeting' },
-  { value: 'task', label: 'Task' }
+  { value: 'one_time', label: 'Appointment', description: 'Client appointment with service' },
+  { value: 'series', label: 'Recurring', description: 'Recurring appointment series' },
+  { value: 'meeting', label: 'Meeting', description: 'Internal meeting (employees only)' },
+  { value: 'task', label: 'Task', description: 'Personal task or reminder' }
 ];
+
+// Define which fields are needed for each appointment type
+const APPOINTMENT_TYPE_CONFIG = {
+  one_time: { needsClient: true, needsService: true, needsEmployee: true, clientMultiple: false },
+  series: { needsClient: true, needsService: true, needsEmployee: true, clientMultiple: false },
+  meeting: { needsClient: false, needsService: false, needsEmployee: true, employeeMultiple: true },
+  task: { needsClient: false, needsService: false, needsEmployee: true, employeeMultiple: false }
+};
 
 const RECURRENCE_OPTIONS = [
   { value: 'daily', label: 'Daily' },
@@ -207,154 +215,218 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
     const timeText = `${hourText}:${minuteText}`;
     const appointmentDateStr = `${dateText}T${timeText}:00`;
 
-    onSubmit({
-      client_id: formData.client_id,
-      service_id: formData.service_id,
+    // Get config for current type to determine required fields
+    const config = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
+
+    const submitData = {
       employee_id: formData.employee_id,
       appointment_date: appointmentDateStr,
       notes: formData.notes,
       appointment_type: formData.appointment_type,
       recurrence_frequency: formData.appointment_type === 'series' ? formData.recurrence_frequency : null,
       duration_minutes: parseInt(formData.duration_minutes) || 60
-    });
+    };
+
+    // Only include client_id and service_id if needed for this type
+    if (config.needsClient && formData.client_id) {
+      submitData.client_id = formData.client_id;
+    }
+    if (config.needsService && formData.service_id) {
+      submitData.service_id = formData.service_id;
+    }
+
+    onSubmit(submitData);
   };
+
+  // Get config for current appointment type
+  const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-1">
       <div className="mb-1">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
-          {appointment ? 'Edit Appointment' : 'Book New Appointment'}
+          {appointment ? 'Edit Event' : 'Create New Event'}
         </h3>
       </div>
 
-      <div className="flex items-center gap-1"> 
-      <PermissionGate page="clients" permission="write">
-          <button
-            type="button"
-            onClick={() => openAddClientModal((newClient) => {
-              // Auto-select the newly created client
-              setFormData(prev => ({ ...prev, client_id: newClient.id }));
-              // Refresh local clients list
-              setClients(prev => [...prev, newClient]);
-            })}
-            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-            title="Add new client"
-            aria-label="Add new client"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </button>
-        </PermissionGate>
-        <CustomDropdown
-          name="client_id"
-          value={formData.client_id}
-          onChange={handleChange}
-          options={clients.map((client) => ({
-            value: client.id,
-            label: client.name
-          }))}
-          placeholder="Select a client"
-          required
-          className="flex-1"
-          searchable={true}
-          onOpen={handleClientDropdownOpen}
-          loading={clientsLoading}
-        />
-    
+      {/* Appointment Type - FIRST so it controls what fields show */}
+      <div className="mb-3">
+        <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+          Event Type
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {APPOINTMENT_TYPES.map((type) => (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() => handleChange({ target: { name: 'appointment_type', value: type.value } })}
+              className={`p-2 rounded-lg border text-left transition-all ${
+                formData.appointment_type === type.value
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+              }`}
+            >
+              <div className="font-medium text-sm">{type.label}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{type.description}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="flex items-center gap-1"> 
-      <PermissionGate page="services" permission="write">
-          <button
-            type="button"
-            onClick={() => { closeModal(); navigate('/sales?new=1'); }}
-            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-            title="Add new service"
-            aria-label="Add new service"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </button>
-        </PermissionGate>
-        <CustomDropdown
-          name="service_id"
-          value={formData.service_id}
-          onChange={handleChange}
-          options={services.map((service) => ({
-            value: service.id,
-            label: `${service.name} - $${service.price}`
-          }))}
-          placeholder="Select a service"
-          required
-          className="flex-1"
-          searchable={true}
-        />
-      
-      </div>
-
-      <div className="flex items-center gap-1"> 
-      <PermissionGate page="employees" permission="write">
-          <button
-            type="button"
-            onClick={() => { closeModal(); navigate('/employees?new=1'); }}
-            className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-            title="Add new employee"
-            aria-label="Add new employee"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </button>
-        </PermissionGate>
-        <div className="flex-1">
+      {/* Client Selection - only for appointments/series */}
+      {typeConfig.needsClient && (
+        <div className="flex items-center gap-1"> 
+          <PermissionGate page="clients" permission="write">
+            <button
+              type="button"
+              onClick={() => openAddClientModal((newClient) => {
+                setFormData(prev => ({ ...prev, client_id: newClient.id }));
+                setClients(prev => [...prev, newClient]);
+              })}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
+              title="Add new client"
+              aria-label="Add new client"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </button>
+          </PermissionGate>
           <CustomDropdown
-            name="employee_id"
-            value={formData.employee_id}
+            name="client_id"
+            value={formData.client_id}
             onChange={handleChange}
-            options={(isWriteOnly && user)
-              ? employees.filter(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase())
-              : employees
-            .map((employee) => ({
-              value: employee.id,
-              label: `${employee.first_name} ${employee.last_name} - ${employee.role}`
+            options={clients.map((client) => ({
+              value: client.id,
+              label: client.name
             }))}
-            placeholder="Select an employee"
+            placeholder="Select a client"
             required
+            className="flex-1"
             searchable={true}
-            disabled={isWriteOnly}
+            onOpen={handleClientDropdownOpen}
+            loading={clientsLoading}
           />
-          {(isWriteOnly || employees.length === 1) && (
-            <p className="text-xs text-gray-500 mt-1">
-              You can only schedule appointments for yourself
-            </p>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Appointment Type & Duration */}
-      <div className="grid grid-cols-2 gap-1">
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            <CalendarDaysIcon className="h-4 w-4 inline mr-1" />
-            Appointment Type
-          </label>
+      {/* Service Selection - only for appointments/series */}
+      {typeConfig.needsService && (
+        <div className="flex items-center gap-1"> 
+          <PermissionGate page="services" permission="write">
+            <button
+              type="button"
+              onClick={() => { closeModal(); navigate('/sales?new=1'); }}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
+              title="Add new service"
+              aria-label="Add new service"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </button>
+          </PermissionGate>
           <CustomDropdown
-            name="appointment_type"
-            value={formData.appointment_type}
+            name="service_id"
+            value={formData.service_id}
             onChange={handleChange}
-            options={APPOINTMENT_TYPES}
-            placeholder="Select type"
+            options={services.map((service) => ({
+              value: service.id,
+              label: `${service.name} - $${service.price}`
+            }))}
+            placeholder="Select a service"
+            required
+            className="flex-1"
+            searchable={true}
           />
         </div>
+      )}
+
+      {/* Employee Selection - always shown */}
+      {typeConfig.needsEmployee && (
+        <div className="flex items-center gap-1"> 
+          <PermissionGate page="employees" permission="write">
+            <button
+              type="button"
+              onClick={() => { closeModal(); navigate('/employees?new=1'); }}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
+              title="Add new employee"
+              aria-label="Add new employee"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </button>
+          </PermissionGate>
+          <div className="flex-1">
+            <CustomDropdown
+              name="employee_id"
+              value={formData.employee_id}
+              onChange={handleChange}
+              options={(isWriteOnly && user)
+                ? employees.filter(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase())
+                : employees
+              .map((employee) => ({
+                value: employee.id,
+                label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ''}`
+              }))}
+              placeholder={formData.appointment_type === 'meeting' ? 'Select attendees' : 'Select employee'}
+              required
+              searchable={true}
+              disabled={isWriteOnly}
+            />
+            {(isWriteOnly || employees.length === 1) && (
+              <p className="text-xs text-gray-500 mt-1">
+                You can only schedule for yourself
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Meeting Title - only for meetings */}
+      {formData.appointment_type === 'meeting' && (
         <div>
           <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            <ClockIcon className="h-4 w-4 inline mr-1" />
-            Duration (minutes)
+            Meeting Title
           </label>
-          <CustomDropdown
-            name="duration_minutes"
-            value={formData.duration_minutes?.toString() || '60'}
+          <input
+            type="text"
+            name="notes"
+            value={formData.notes}
             onChange={handleChange}
-            options={[15, 30, 45, 60, 90, 120, 180].map(m => ({ value: m.toString(), label: `${m} min` }))}
-            placeholder="Duration"
+            placeholder="Enter meeting title or agenda"
+            className="input-field w-full"
+            required
           />
         </div>
+      )}
+
+      {/* Task Title - only for tasks */}
+      {formData.appointment_type === 'task' && (
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            Task Description
+          </label>
+          <input
+            type="text"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="What needs to be done?"
+            className="input-field w-full"
+            required
+          />
+        </div>
+      )}
+
+      {/* Duration */}
+      <div>
+        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+          <ClockIcon className="h-4 w-4 inline mr-1" />
+          Duration
+        </label>
+        <CustomDropdown
+          name="duration_minutes"
+          value={formData.duration_minutes?.toString() || '60'}
+          onChange={handleChange}
+          options={[15, 30, 45, 60, 90, 120, 180].map(m => ({ value: m.toString(), label: `${m} min` }))}
+          placeholder="Duration"
+        />
       </div>
 
       {/* Recurrence (only for series) */}
@@ -428,17 +500,23 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
       </div>
       {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
 
-      <div> 
-        <textarea
-          id="notes"
-          name="notes"
-          rows={3}
-          value={formData.notes}
-          onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Additional notes for the appointment"
-        />
-      </div>
+      {/* Notes - only for appointments/series (meetings/tasks use notes for title) */}
+      {(formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && (
+        <div> 
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            Notes (optional)
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={2}
+            value={formData.notes}
+            onChange={handleChange}
+            className="input-field mt-1"
+            placeholder="Additional notes for the appointment"
+          />
+        </div>
+      )}
 
       <ActionFooter>
         <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />

@@ -48,6 +48,113 @@
     @apply text-gray-900 dark:text-gray-100;
   }
 
+  /* Responsive square image container */
+  .square-image-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%; /* Creates a 1:1 aspect ratio */
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+  }
+
+  .square-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Crops the image to fill container while maintaining aspect ratio */
+    object-position: center; /* Centers the image within the container */
+    display: block;
+    transition: transform 0.3s ease; /* Smooth scaling on hover */
+  }
+
+  .square-image:hover {
+    transform: scale(1.05); /* Subtle zoom effect on hover */
+  }
+
+  .square-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0.5;
+  }
+
+  /* Fixed size square containers for specific use cases */
+  .square-sm {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+
+  .square-md {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .square-lg {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .square-xl {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  /* Responsive variations for different screen sizes */
+  @media (max-width: 576px) {
+    .square-image-container {
+      border-radius: 6px;
+    }
+    
+    .square-image:hover {
+      transform: scale(1.02); /* Less aggressive zoom on mobile */
+    }
+  }
+
+  @media (min-width: 768px) {
+    .square-image-container {
+      border-radius: 10px;
+    }
+  }
+
+  @media (min-width: 992px) {
+    .square-image-container {
+      border-radius: 12px;
+    }
+  }
+
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .square-image {
+      transition: none;
+    }
+    
+    .square-image:hover {
+      transform: none;
+    }
+  }
+
 .text-muted {
   @apply text-gray-600 dark:text-gray-400;
 }

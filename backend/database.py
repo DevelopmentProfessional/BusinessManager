@@ -120,6 +120,7 @@ def create_db_and_tables():
     _ensure_document_extra_columns_if_needed()
     _ensure_employee_user_id_column_if_needed()
     _normalize_item_types_if_needed()
+    _ensure_inventory_image_table_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -295,3 +296,95 @@ def _ensure_employee_user_id_column_if_needed():
         if "user_id" not in col_names:
             # Add column
             conn.execute(text("ALTER TABLE employee ADD COLUMN user_id TEXT"))
+
+
+def _ensure_inventory_image_table_if_needed():
+    """Ensure InventoryImage table exists and has proper structure."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            # Check if inventoryimage table exists
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='inventoryimage'"
+            )).fetchone()
+            if not tbl_exists:
+                # Create the table if it doesn't exist
+                conn.execute(text("""
+                    CREATE TABLE inventoryimage (
+                        id TEXT PRIMARY KEY,
+                        inventory_id TEXT NOT NULL,
+                        image_url TEXT,
+                        file_path TEXT,
+                        file_name TEXT,
+                        is_primary BOOLEAN NOT NULL DEFAULT 0,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at DATETIME,
+                        updated_at DATETIME,
+                        FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
+                        CONSTRAINT check_image_source CHECK (
+                            (image_url IS NOT NULL AND file_path IS NULL) OR
+                            (image_url IS NULL AND file_path IS NOT NULL) OR
+                            (image_url IS NOT NULL AND file_path IS NOT NULL)
+                        )
+                    )
+                """))
+                print("✓ Created InventoryImage table for SQLite")
+    else:
+        # PostgreSQL version
+        with engine.begin() as conn:
+            # Check if inventoryimage table exists
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'inventoryimage')"
+            )).scalar()
+            if not tbl_exists:
+                # Create the table if it doesn't exist
+                conn.execute(text("""
+                    CREATE TABLE inventoryimage (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        inventory_id UUID NOT NULL,
+                        image_url TEXT,
+                        file_path TEXT,
+                        file_name TEXT,
+                        is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_inventory_image_inventory 
+                            FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
+                        CONSTRAINT check_image_source CHECK (
+                            (image_url IS NOT NULL AND file_path IS NULL) OR
+                            (image_url IS NULL AND file_path IS NOT NULL) OR
+                            (image_url IS NOT NULL AND file_path IS NOT NULL)
+                        )
+                    )
+                """))
+                
+                # Create indexes for better performance
+                conn.execute(text(
+                    "CREATE INDEX idx_inventoryimage_inventory_id ON inventoryimage(inventory_id)"
+                ))
+                conn.execute(text(
+                    "CREATE INDEX idx_inventoryimage_is_primary ON inventoryimage(inventory_id, is_primary) WHERE is_primary = TRUE"
+                ))
+                conn.execute(text(
+                    "CREATE INDEX idx_inventoryimage_sort_order ON inventoryimage(inventory_id, sort_order)"
+                ))
+                
+                # Create trigger to update updated_at timestamp
+                conn.execute(text("""
+                    CREATE OR REPLACE FUNCTION update_inventoryimage_updated_at()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        NEW.updated_at = CURRENT_TIMESTAMP;
+                        RETURN NEW;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                """))
+                
+                conn.execute(text("""
+                    CREATE TRIGGER trigger_inventoryimage_updated_at
+                        BEFORE UPDATE ON inventoryimage
+                        FOR EACH ROW
+                        EXECUTE FUNCTION update_inventoryimage_updated_at();
+                """))
+                
+                print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")

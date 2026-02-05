@@ -255,6 +255,44 @@ export default function CSVImportButton({
             </div>
           )}
 
+          {/* Column Mapping Display */}
+          {headers.length > 0 && (
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Columns to import:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {headers.map((header, i) => {
+                  const mappedField = fieldMapping[header.toLowerCase()] || 
+                                     fieldMapping[header] || 
+                                     header.toLowerCase().replace(/\s+/g, '_');
+                  const isRequired = requiredFields.includes(mappedField);
+                  return (
+                    <div 
+                      key={i} 
+                      className={`px-2 py-1 rounded text-xs ${
+                        isRequired 
+                          ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                      }`}
+                    >
+                      <span className="font-medium">{header}</span>
+                      {header.toLowerCase().replace(/\s+/g, '_') !== mappedField && (
+                        <span className="text-gray-500 dark:text-gray-400"> → {mappedField}</span>
+                      )}
+                      {isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              {requiredFields.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <span className="text-red-500">*</span> Required fields
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Preview Table */}
           {parsedData.length > 0 && (
             <div className="mb-4">

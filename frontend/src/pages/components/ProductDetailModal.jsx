@@ -4,6 +4,7 @@ import {
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
+import { getDisplayImageUrl } from './imageUtils';
 
 /**
  * ProductDetailModal - A reusable modal for displaying product/service details
@@ -19,7 +20,8 @@ export default function ProductDetailModal({
 }) {
   const [quantity, setQuantity] = React.useState(1);
   const isService = itemType === 'service';
-  const hasImage = item?.image_url;
+  const imageUrl = getDisplayImageUrl(item);
+  const hasImage = !!imageUrl;
   const inCart = cartQuantity > 0;
 
   // Reset quantity when modal opens with new item
@@ -49,29 +51,35 @@ export default function ProductDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Image Header */}
-        <div className={`relative h-56 w-full ${hasImage ? '' : 'bg-gradient-to-br'} ${
+        <div className={`relative h-56 w-full overflow-hidden ${hasImage ? '' : 'bg-gradient-to-br'} ${
           isService 
             ? 'from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800' 
             : 'from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800'
         }`}>
           {hasImage ? (
-            <img 
-              src={item.image_url} 
+            <img
+              src={imageUrl}
               alt={item.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
               onError={(e) => {
                 e.target.style.display = 'none';
+                const fallback = e.target.nextElementSibling;
+                if (fallback) fallback.style.display = 'flex';
               }}
             />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              {isService ? (
-                <SparklesIcon className="h-24 w-24 text-primary-400 dark:text-primary-500 opacity-50" />
-              ) : (
-                <CubeIcon className="h-24 w-24 text-emerald-400 dark:text-emerald-500 opacity-50" />
-              )}
-            </div>
-          )}
+          ) : null}
+          {/* Fallback - always present but conditionally visible */}
+          <div 
+            className={`absolute inset-0 flex items-center justify-center ${
+              hasImage ? 'hidden' : 'flex'
+            }`}
+          >
+            {isService ? (
+              <SparklesIcon className="h-24 w-24 text-primary-400 dark:text-primary-500 opacity-50" />
+            ) : (
+              <CubeIcon className="h-24 w-24 text-emerald-400 dark:text-emerald-500 opacity-50" />
+            )}
+          </div>
           
           {/* Close Button */}
           <button 

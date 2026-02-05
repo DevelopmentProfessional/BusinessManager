@@ -174,7 +174,7 @@ class Inventory(BaseModel, table=True):
     price: float = Field(ge=0, default=0)
     description: Optional[str] = Field(default=None)
     type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
-    image_url: Optional[str] = Field(default=None)  # URL or path to product image
+    image_url: Optional[str] = Field(default=None)  # Legacy field - kept for backward compatibility
     
     # Inventory-specific fields
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
@@ -187,6 +187,20 @@ class Inventory(BaseModel, table=True):
     
     # Relationships
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
+    images: List["InventoryImage"] = Relationship(back_populates="inventory_item", cascade_delete=True)
+
+
+class InventoryImage(BaseModel, table=True):
+    """Model for storing multiple images per inventory item"""
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    image_url: Optional[str] = Field(default=None)  # For URL-based images
+    file_path: Optional[str] = Field(default=None)  # For uploaded file images
+    file_name: Optional[str] = Field(default=None)  # Original filename
+    is_primary: bool = Field(default=False)  # Whether this is the primary image
+    sort_order: int = Field(default=0)  # For ordering images
+    
+    # Relationships
+    inventory_item: Inventory = Relationship(back_populates="images")
 
 
 # Supplier model
@@ -263,6 +277,14 @@ class Attendance(BaseModel, table=True):
     
     # Relationships
     user: User = Relationship(back_populates="attendance_records")
+
+
+# App Settings model (singleton pattern for global settings)
+class AppSettings(BaseModel, table=True):
+    __tablename__ = "app_settings"
+    start_of_day: str = Field(default="06:00")  # HH:MM format
+    end_of_day: str = Field(default="21:00")  # HH:MM format
+    attendance_check_in_required: bool = Field(default=True)
 
 
 # Document model (table name and types aligned with PostgreSQL schema)
@@ -387,14 +409,14 @@ class ServiceRead(SQLModel):
 
 
 class InventoryRead(SQLModel):
-    """Schema for reading inventory items (excludes relationship fields)"""
+    """Schema for reading inventory items (includes images)"""
     id: UUID
     name: str
     sku: str
     price: float
     description: Optional[str] = None
     type: str
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None  # Legacy field
     supplier_id: Optional[UUID] = None
     service_id: Optional[UUID] = None
     quantity: int
@@ -402,8 +424,43 @@ class InventoryRead(SQLModel):
     location: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    images: List["InventoryImageRead"] = []
 
     model_config = {"from_attributes": True}
+
+
+class InventoryImageCreate(SQLModel):
+    """Schema for creating inventory images"""
+    inventory_id: UUID
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: bool = False
+    sort_order: int = 0
+
+
+class InventoryImageRead(SQLModel):
+    """Schema for reading inventory images"""
+    id: UUID
+    inventory_id: UUID
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: bool
+    sort_order: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryImageUpdate(SQLModel):
+    """Schema for updating inventory images"""
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: Optional[bool] = None
+    sort_order: Optional[int] = None
 
 
 class UserCreate(SQLModel):
@@ -585,3 +642,27 @@ class PasswordResetRequest(SQLModel):
 class PasswordChangeRequest(SQLModel):
     current_password: str
     new_password: str
+
+
+# App Settings request/response models
+class AppSettingsCreate(SQLModel):
+    start_of_day: str = "06:00"
+    end_of_day: str = "21:00"
+    attendance_check_in_required: bool = True
+
+
+class AppSettingsUpdate(SQLModel):
+    start_of_day: Optional[str] = None
+    end_of_day: Optional[str] = None
+    attendance_check_in_required: Optional[bool] = None
+
+
+class AppSettingsRead(SQLModel):
+    id: UUID
+    start_of_day: str
+    end_of_day: str
+    attendance_check_in_required: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
