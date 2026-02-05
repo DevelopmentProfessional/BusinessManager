@@ -187,7 +187,7 @@ class Inventory(BaseModel, table=True):
     
     # Relationships
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
-    images: List["InventoryImage"] = Relationship(back_populates="inventory_item", cascade_delete=True)
+    images: List["InventoryImage"] = Relationship(back_populates="inventory_item", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class InventoryImage(BaseModel, table=True):
