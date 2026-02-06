@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
 import useDarkMode from './services/useDarkMode';
+import useBranding from './services/useBranding';
 import GlobalClientModal from './pages/components/GlobalClientModal';
 
 // Lazy load pages - only load when navigating to them
@@ -67,6 +68,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 function App() {
   const { setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
   const { initializeDarkMode } = useDarkMode();
+  const { isInitialized: brandingInitialized } = useBranding();
 
   // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {

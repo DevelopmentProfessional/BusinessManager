@@ -39,14 +39,14 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       onClick={() => onSelect(item, itemType)}
       className={`group relative flex flex-col bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 overflow-hidden hover:shadow-lg cursor-pointer h-48 ${
         inCart 
-          ? 'border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-800' 
+          ? 'border-secondary-500 ring-2 ring-secondary-200 dark:ring-secondary-800' 
           : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
       }`}
     >
       {/* Full Card Background Image */}
       <div className={`absolute inset-0 ${hasImage ? '' : 'bg-gradient-to-br'} ${        isService 
           ? 'from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800' 
-          : 'from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800'
+          : 'from-secondary-100 to-secondary-200 dark:from-secondary-900 dark:to-secondary-800'
       }`}>
         {hasImage ? (
           <div className="w-full h-full">
@@ -72,7 +72,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
           {isService ? (
             <SparklesIcon className="h-16 w-16 text-primary-400/50 dark:text-primary-500/50" />
           ) : (
-            <CubeIcon className="h-16 w-16 text-emerald-400/50 dark:text-emerald-500/50" />
+            <CubeIcon className="h-16 w-16 text-secondary-400/50 dark:text-secondary-500/50" />
           )}
         </div>
       </div>
@@ -85,7 +85,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
         <div className={`inline-block px-2 py-1 rounded-lg backdrop-blur-sm ${
           isService 
             ? 'bg-primary-600/90' 
-            : 'bg-emerald-600/90'
+            : 'bg-secondary-600/90'
         }`}>
           <h3 className="font-semibold text-white text-sm line-clamp-1">
             {item.name}
@@ -100,7 +100,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
           <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${
             isService 
               ? 'bg-primary-700/90' 
-              : 'bg-emerald-700/90'
+              : 'bg-secondary-700/90'
           }`}>
             ${item.price?.toFixed(2)}
           </span>
@@ -120,7 +120,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
                 </span>
                 <button
                   onClick={handleIncrement}
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-secondary-100 dark:hover:bg-secondary-900 text-gray-600 dark:text-gray-300 hover:text-secondary-600 transition-colors"
                 >
                   <PlusIcon className="h-3.5 w-3.5" />
                 </button>
@@ -128,7 +128,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
             ) : (
               <button
                 onClick={handleAddToCart}
-                className="flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-emerald-500 hover:text-white transition-colors"
+                className="flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-secondary-500 hover:text-white transition-colors"
               >
                 <ShoppingCartIcon className="h-3.5 w-3.5" />
                 Add
@@ -155,7 +155,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
       <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${
         isService
           ? 'bg-primary-100 dark:bg-primary-900'
-          : 'bg-emerald-100 dark:bg-emerald-900'
+          : 'bg-secondary-100 dark:bg-secondary-900'
       }`}>
         {imageUrl ? (
           <img
@@ -177,7 +177,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
           {isService ? (
             <SparklesIcon className="h-6 w-6 text-primary-500" />
           ) : (
-            <CubeIcon className="h-6 w-6 text-emerald-500" />
+            <CubeIcon className="h-6 w-6 text-secondary-500" />
           )}
         </div>
       </div>
@@ -435,94 +435,21 @@ export default function Sales() {
 
   return (
     <div className="h-full flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-900 -m-4 md:-m-6 p-4 md:p-6">
-      {/* Header */}
-      <div className="flex-shrink-0 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Point of Sale
-            </p>
+      {/* Sticky Header - Title Only */}
+      <div className="flex-shrink-0 sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 pb-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales</h1>
+        {error && (
+          <div className="mt-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-xl flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={clearError} className="text-red-500 hover:text-red-700">
+              <XMarkIcon className="h-5 w-5" />
+            </button>
           </div>
-
-          {/* Cart indicator */}
-          {cartItemCount > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900 rounded-xl">
-              <ShoppingCartIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                {cartItemCount} items · ${cartTotal.toFixed(2)}
-              </span>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {error && (
-        <div className="mb-1 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-1 py-1 rounded-xl flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={clearError} className="text-red-500 hover:text-red-700">
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-      )}
-
-      {/* POS View - Full Width Grid */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {/* Search and Filter Bar */}
-        <div className="flex-shrink-0 mb-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search products and services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            
-            {/* Category Filter */}
-            <div className="flex bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
-              <button
-                onClick={() => setPosCategory('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  posCategory === 'all' 
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' 
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setPosCategory('services')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                  posCategory === 'services' 
-                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' 
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <SparklesIcon className="h-4 w-4" />
-                Services
-              </button>
-              <button
-                onClick={() => setPosCategory('products')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                  posCategory === 'products' 
-                    ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' 
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <CubeIcon className="h-4 w-4" />
-                Products
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        {/* Items Grid - Full Width */}
-        <div className="flex-1 overflow-y-auto pb-24">
+      {/* Main Body - Items Grid */}
+      <div className="flex-1 overflow-y-auto pb-40">
           {/* Services Section */}
           {(posCategory === 'all' || posCategory === 'services') && filteredServices.length > 0 && (
             <div className="mb-6">
@@ -588,30 +515,82 @@ export default function Sales() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Floating Cart Button - Bottom Left */}
-      <button
-        onClick={() => setShowCartModal(true)}
-        className="fixed bottom-6 left-6 z-40 flex items-center gap-3 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
-      >
-        <div className="relative">
-          <ShoppingCartIcon className="h-6 w-6" />
-          {cartItemCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-white text-emerald-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-              {cartItemCount}
-            </span>
-          )}
-        </div>
-        {cartItemCount > 0 ? (
-          <div className="text-left">
-            <p className="text-xs opacity-80">{cartItemCount} items</p>
-            <p className="font-bold">${cartTotal.toFixed(2)}</p>
+      {/* Fixed Footer - Search, Filter, and Cart */}
+      <div className="flex-shrink-0 fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-4 md:ml-64">
+        {/* Search Row */}
+        <div className="mb-3">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products and services..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
           </div>
-        ) : (
-          <span className="font-medium">Cart</span>
-        )}
-      </button>
+        </div>
+
+        {/* Filter Row with Cart Button */}
+        <div className="flex items-center gap-3">
+          {/* Cart Button - Leftmost */}
+          <button
+            onClick={() => setShowCartModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
+          >
+            <div className="relative">
+              <ShoppingCartIcon className="h-5 w-5" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-white text-secondary-600 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </div>
+            {cartItemCount > 0 ? (
+              <span className="font-semibold">${cartTotal.toFixed(2)}</span>
+            ) : (
+              <span className="font-medium">Cart</span>
+            )}
+          </button>
+
+          {/* Category Filter */}
+          <div className="flex-1 flex bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-1">
+            <button
+              onClick={() => setPosCategory('all')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                posCategory === 'all'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setPosCategory('services')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                posCategory === 'services'
+                  ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              <SparklesIcon className="h-4 w-4" />
+              Services
+            </button>
+            <button
+              onClick={() => setPosCategory('products')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                posCategory === 'products'
+                  ? 'bg-secondary-100 dark:bg-secondary-900 text-secondary-700 dark:text-secondary-300'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              <CubeIcon className="h-4 w-4" />
+              Products
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Cart Modal */}
       {showCartModal && (
@@ -744,13 +723,13 @@ export default function Sales() {
                     </div>
                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
                       <span className="text-gray-900 dark:text-white">Total</span>
-                      <span className="text-emerald-600 dark:text-emerald-400">${(cartTotal * 1.08).toFixed(2)}</span>
+                      <span className="text-secondary-600 dark:text-secondary-400">${(cartTotal * 1.08).toFixed(2)}</span>
                     </div>
                   </div>
                   
                   <button
                     onClick={() => { setShowCartModal(false); handleCheckout(); }}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                    className="w-full py-4 bg-secondary-600 hover:bg-secondary-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-secondary-600/20"
                   >
                     <CreditCardIcon className="h-5 w-5" />
                     Proceed to Checkout

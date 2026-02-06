@@ -47,7 +47,14 @@ export default function Schedule() {
   const [scheduleSettings, setScheduleSettings] = useState({
     start_of_day: '06:00',
     end_of_day: '21:00',
-    attendance_check_in_required: true
+    attendance_check_in_required: true,
+    monday_enabled: true,
+    tuesday_enabled: true,
+    wednesday_enabled: true,
+    thursday_enabled: true,
+    friday_enabled: true,
+    saturday_enabled: true,
+    sunday_enabled: true
   });
 
   // Load ONLY schedule data on mount - services, employees, clients loaded on-demand in ScheduleForm
@@ -69,7 +76,14 @@ export default function Schedule() {
           setScheduleSettings({
             start_of_day: settingsResponse.data.start_of_day || '06:00',
             end_of_day: settingsResponse.data.end_of_day || '21:00',
-            attendance_check_in_required: settingsResponse.data.attendance_check_in_required ?? true
+            attendance_check_in_required: settingsResponse.data.attendance_check_in_required ?? true,
+            monday_enabled: settingsResponse.data.monday_enabled ?? true,
+            tuesday_enabled: settingsResponse.data.tuesday_enabled ?? true,
+            wednesday_enabled: settingsResponse.data.wednesday_enabled ?? true,
+            thursday_enabled: settingsResponse.data.thursday_enabled ?? true,
+            friday_enabled: settingsResponse.data.friday_enabled ?? true,
+            saturday_enabled: settingsResponse.data.saturday_enabled ?? true,
+            sunday_enabled: settingsResponse.data.sunday_enabled ?? true
           });
         }
 
@@ -93,6 +107,21 @@ export default function Schedule() {
   }, [setAppointments, isAuthenticated]);
 
   // Get calendar data based on current view
+  // Helper to check if a day is enabled based on settings
+  const isDayEnabled = (date) => {
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const dayMap = [
+      'sunday_enabled',    // 0
+      'monday_enabled',    // 1
+      'tuesday_enabled',   // 2
+      'wednesday_enabled', // 3
+      'thursday_enabled',  // 4
+      'friday_enabled',    // 5
+      'saturday_enabled'   // 6
+    ];
+    return scheduleSettings[dayMap[dayOfWeek]];
+  };
+
   const getCalendarDays = () => {
     if (currentView === 'day') {
       return [new Date(currentDate)];
@@ -105,28 +134,68 @@ export default function Schedule() {
       for (let i = 0; i < 7; i++) { // 7 days (Sun-Sat)
         const day = new Date(startOfWeek);
         day.setDate(startOfWeek.getDate() + i);
-        days.push(day);
+        // Only include enabled days
+        if (isDayEnabled(day)) {
+          days.push(day);
+        }
       }
       return days;
     } else {
-      // Month view
+      // Month view - show only enabled days in a grid
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
-      const startDate = new Date(firstDay);
       
-      // Start on Sunday (standard calendar)
-      startDate.setDate(startDate.getDate() - firstDay.getDay());
+      // Get all enabled days of the week
+      const enabledDays = [];
+      for (let i = 0; i < 7; i++) {
+        const testDate = new Date(2024, 0, i); // Use a reference week
+        if (isDayEnabled(testDate)) {
+          enabledDays.push(i);
+        }
+      }
       
+      // Find the first occurrence of an enabled day in the month
+      let startDate = new Date(firstDay);
+      while (!isDayEnabled(startDate) && startDate <= lastDay) {
+        startDate.setDate(startDate.getDate() + 1);
+      }
+      
+      // Generate days for the month, only including enabled days
       const days = [];
       const currentDateObj = new Date(startDate);
       
-      // Generate 6 weeks * 7 days = 42 days (Sun-Sat)
-      while (days.length < 42) {
-        days.push(new Date(currentDateObj));
+      // Go back to include days from previous month if needed to fill first week
+      const firstEnabledDay = enabledDays[0];
+      const startDayOfWeek = startDate.getDay();
+      if (startDayOfWeek !== firstEnabledDay) {
+        // Calculate how many days back we need to go
+        let daysBack = 0;
+        let checkDay = startDayOfWeek;
+        while (checkDay !== firstEnabledDay) {
+          checkDay = (checkDay - 1 + 7) % 7;
+          daysBack++;
+          if (daysBack > 7) break; // Safety check
+        }
+        currentDateObj.setDate(currentDateObj.getDate() - daysBack);
+      }
+      
+      // Generate up to 6 weeks of enabled days
+      const maxDays = enabledDays.length * 6;
+      while (days.length < maxDays) {
+        const dayToAdd = new Date(currentDateObj);
+        if (isDayEnabled(dayToAdd)) {
+          days.push(dayToAdd);
+        }
         currentDateObj.setDate(currentDateObj.getDate() + 1);
+        
+        // Stop if we've gone too far past the current month
+        if (currentDateObj.getMonth() > month + 1 || 
+            (currentDateObj.getMonth() === month + 1 && currentDateObj.getDate() > 7)) {
+          break;
+        }
       }
       
       return days;
@@ -146,6 +215,16 @@ export default function Schedule() {
 
   const days = getCalendarDays();
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Calculate number of columns for dynamic grid layout
+  const numEnabledDays = currentView === 'week' || currentView === 'month' 
+    ? days.slice(0, 7).length 
+    : 7;
+  const gridColumns = currentView === 'week' 
+    ? `60px repeat(${numEnabledDays}, 1fr)` 
+    : currentView === 'day'
+      ? '60px 1fr'
+      : `repeat(${numEnabledDays}, 1fr)`;
 
   // Auto-scroll to current time when switching to day or week view
   useEffect(() => {
@@ -341,7 +420,7 @@ export default function Schedule() {
 
         <div className="calendar-container">
           {/* Week day headers */}
-          <div className="calendar-header">
+          <div className="calendar-header" style={{ gridTemplateColumns: gridColumns }}>
             {currentView === 'day' ? (
               <>
                 <div className="calendar-header-cell">Time</div>
@@ -364,11 +443,15 @@ export default function Schedule() {
                 })}
               </>
             ) : (
-              weekDays.map(day => (
-                <div key={day} className="calendar-header-cell">
-                  {day}
-                </div>
-              ))
+              // Month view headers - only show enabled days
+              days.slice(0, 7).map((date, index) => {
+                const dayName = weekDays[date.getDay()];
+                return (
+                  <div key={index} className="calendar-header-cell">
+                    {dayName}
+                  </div>
+                );
+              })
             )}
           </div>
 
@@ -376,6 +459,7 @@ export default function Schedule() {
           <div 
             ref={calendarGridRef}
             className={`calendar-grid ${currentView === 'week' ? 'week-view' : currentView === 'day' ? 'day-view' : ''}`}
+            style={{ gridTemplateColumns: gridColumns }}
           >
             {currentView === 'week' ? (
               // Week view with time slots
@@ -435,8 +519,7 @@ export default function Schedule() {
                                 setIsModalOpen(true);
                               }}
                             >
-                              <div className="appointment-time">{timeString}</div>
-                              <div className="appointment-client">{clientName}</div>
+                              <div className="appointment-service">{serviceName}</div>
                             </div>
                           );
                         })}
@@ -578,8 +661,7 @@ export default function Schedule() {
                                 setIsModalOpen(true);
                               }}
                             >
-                              <div className="appointment-time">{timeString}</div>
-                              <div className="appointment-client">{clientName}</div>
+                              <div className="appointment-service">{serviceName}</div>
                             </div>
                           );
                         })}
@@ -769,13 +851,20 @@ export default function Schedule() {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
           background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
+          gap: 0;
         }
         
         .calendar-header-cell {
           text-align: center;
           font-weight: 600;
           color: ${isDarkMode ? '#e2e8f0' : '#495057'};
-          padding: 4px 2px;
+          padding: 8px 4px;
+          border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
+          border-right: none;
+        }
+        
+        .calendar-header-cell:last-child {
+          border-right: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
         }
         
         .calendar-header-cell .day-name {
@@ -793,12 +882,16 @@ export default function Schedule() {
           grid-template-columns: repeat(7, 1fr);
           flex: 1;
           overflow: auto;
+          gap: 0;
         }
         
         .calendar-grid.week-view {
           grid-template-columns: 60px repeat(7, 1fr);
           flex: 1;
           overflow: auto;
+          gap: 2px;
+          background: ${isDarkMode ? '#6b7280' : '#dee2e6'};
+          padding: 2px;
         }
         
         .calendar-grid.week-view .time-slot-cell {
@@ -813,6 +906,7 @@ export default function Schedule() {
           grid-template-columns: 60px 1fr;
           flex: 1;
           overflow: auto;
+          gap: 0;
         }
         
         .time-slot-cell {
@@ -824,14 +918,7 @@ export default function Schedule() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
-          min-height: 60px;
-          height: 60px;
-        }
-        
-        .time-slot {
-          min-height: 60px;
-          height: 60px;
+          box-sizing: border-box;
         }
         
         .calendar-cell {
@@ -840,11 +927,10 @@ export default function Schedule() {
           position: relative;
           background: ${isDarkMode ? '#2d3748' : 'white'};
           color: ${isDarkMode ? '#e2e8f0' : 'inherit'};
+          box-sizing: border-box;
         }
         
         .calendar-cell.time-slot {
-          min-height: 60px;
-          height: 60px;
           box-sizing: border-box;
         }
         
@@ -937,6 +1023,94 @@ export default function Schedule() {
         
         .appointment-dot:hover {
           background: #0056b3;
+        }
+        
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+          .calendar-container {
+            height: calc(100vh - 250px);
+          }
+          
+          .calendar-header-cell {
+            padding: 6px 2px;
+            font-size: 11px;
+          }
+          
+          .calendar-header-cell .day-name {
+            font-size: 10px;
+          }
+          
+          .calendar-header-cell .day-date {
+            font-size: 12px;
+          }
+          
+          .time-slot-cell {
+            font-size: 10px;
+            min-height: 50px;
+            height: 50px;
+            padding: 2px;
+          }
+          
+          .calendar-cell.time-slot {
+            min-height: 50px;
+            height: 50px;
+          }
+          
+          .calendar-cell {
+            min-height: 80px;
+          }
+          
+          .appointment-dot {
+            font-size: 9px;
+            padding: 3px 4px;
+          }
+          
+          .appointment-time {
+            font-size: 8px;
+          }
+          
+          .appointment-client {
+            font-size: 9px;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .calendar-container {
+            height: calc(100vh - 280px);
+          }
+          
+          .calendar-header-cell {
+            padding: 4px 1px;
+            font-size: 10px;
+          }
+          
+          .calendar-header-cell .day-name {
+            font-size: 9px;
+          }
+          
+          .calendar-header-cell .day-date {
+            font-size: 11px;
+          }
+          
+          .time-slot-cell {
+            font-size: 9px;
+            min-height: 45px;
+            height: 45px;
+          }
+          
+          .calendar-cell.time-slot {
+            min-height: 45px;
+            height: 45px;
+          }
+          
+          .calendar-cell {
+            min-height: 70px;
+          }
+          
+          .appointment-dot {
+            font-size: 8px;
+            padding: 2px 3px;
+          }
         }
         
         .drag-over {

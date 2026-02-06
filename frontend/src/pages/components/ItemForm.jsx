@@ -107,10 +107,10 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       {/* Two-column layout */}
       <div className="d-flex flex-column flex-md-row" style={{ height: '100%' }}>
         
-        {/* Left Section - POS Card Preview (30% height on mobile, side column on desktop) */}
+        {/* Left Section - Compact POS Card Preview */}
         <div className="flex-shrink-0 p-2 d-flex flex-column align-items-center justify-content-center bg-gray-100 dark:bg-gray-900" 
-             style={{ height: '30%', minHeight: '120px', maxHeight: '150px' }}>
-          {/* Compact POS Card Preview */}
+             style={{ minHeight: '100px', maxHeight: '120px' }}>
+          {/* Mini POS Card Preview */}
           <div 
             className={`relative flex flex-col bg-white dark:bg-gray-800 rounded-lg border-2 overflow-hidden ${
               formData.type === 'PRODUCT' 
@@ -119,7 +119,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                   ? 'border-blue-400'
                   : 'border-purple-400'
             }`}
-            style={{ width: '90px', height: '90px' }}
+            style={{ width: '70px', height: '70px' }}
           >
             {/* Background with gradient or image */}
             <div className={`absolute inset-0 ${
@@ -138,7 +138,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <PhotoIcon className={`h-12 w-12 ${
+                  <PhotoIcon className={`h-8 w-8 ${
                     formData.type === 'PRODUCT' 
                       ? 'text-emerald-400/50' 
                       : formData.type === 'RESOURCE'
@@ -153,23 +153,23 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             
             {/* Item Name - Top Left */}
-            <div className="absolute top-2 left-2 right-2">
-              <div className={`inline-block px-2 py-1 rounded-lg backdrop-blur-sm ${
+            <div className="absolute top-1 left-1 right-1">
+              <div className={`inline-block px-1 py-0.5 rounded backdrop-blur-sm ${
                 formData.type === 'PRODUCT' 
                   ? 'bg-emerald-600/90' 
                   : formData.type === 'RESOURCE'
                     ? 'bg-blue-600/90'
                     : 'bg-purple-600/90'
               }`}>
-                <span className="font-semibold text-white text-sm line-clamp-1">
+                <span className="font-medium text-white text-xs line-clamp-1">
                   {formData.name || 'Item Name'}
                 </span>
               </div>
             </div>
             
             {/* Price Badge - Bottom Left */}
-            <div className="absolute bottom-2 left-2">
-              <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${
+            <div className="absolute bottom-1 left-1">
+              <span className={`inline-block px-1 py-0.5 rounded text-xs font-bold text-white backdrop-blur-sm ${
                 formData.type === 'PRODUCT' 
                   ? 'bg-emerald-700/90' 
                   : formData.type === 'RESOURCE'

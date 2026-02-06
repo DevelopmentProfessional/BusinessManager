@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dynamic Branding Color System */
+:root {
+  /* Primary Color Palette (Default: Blue #3B82F6) */
+  --color-primary-50: 239 246 255;
+  --color-primary-100: 219 234 254;
+  --color-primary-200: 191 219 254;
+  --color-primary-300: 147 197 253;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-primary-800: 30 64 175;
+  --color-primary-900: 30 58 138;
+  --color-primary-950: 23 37 84;
+
+  /* Secondary Color Palette (Default: Emerald #10B981) */
+  --color-secondary-50: 236 253 245;
+  --color-secondary-100: 209 250 229;
+  --color-secondary-200: 167 243 208;
+  --color-secondary-300: 110 231 183;
+  --color-secondary-400: 52 211 153;
+  --color-secondary-500: 16 185 129;
+  --color-secondary-600: 5 150 105;
+  --color-secondary-700: 4 120 87;
+  --color-secondary-800: 6 95 70;
+  --color-secondary-900: 6 78 59;
+  --color-secondary-950: 2 44 34;
+
+  /* Accent Color Palette (Default: Purple #8B5CF6) */
+  --color-accent-50: 250 245 255;
+  --color-accent-100: 243 232 255;
+  --color-accent-200: 233 213 255;
+  --color-accent-300: 216 180 254;
+  --color-accent-400: 192 132 252;
+  --color-accent-500: 139 92 246;
+  --color-accent-600: 124 58 237;
+  --color-accent-700: 109 40 217;
+  --color-accent-800: 91 33 182;
+  --color-accent-900: 76 29 149;
+  --color-accent-950: 46 16 101;
+
+  /* Base color references for components */
+  --color-primary: rgb(var(--color-primary-500));
+  --color-secondary: rgb(var(--color-secondary-500));
+  --color-accent: rgb(var(--color-accent-500));
+}
+
 /* Bootstrap overrides and theme-aware base styles */
 @layer base {
   * {
@@ -26,13 +73,49 @@
 }
 
 @layer components {
-  /* Theme-aware utility classes */
+  /* Theme-aware utility classes using branded colors */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
 
   .btn-secondary {
     @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  /* Success button using secondary branded color */
+  .btn-success {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  /* Accent button using accent branded color */
+  .btn-accent {
+    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  /* Branded focus rings */
+  .focus-ring-primary {
+    @apply focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .focus-ring-secondary {
+    @apply focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2;
+  }
+
+  .focus-ring-accent {
+    @apply focus:ring-2 focus:ring-accent-500 focus:ring-offset-2;
+  }
+
+  /* Branded badges */
+  .badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
+  }
+
+  .badge-secondary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800 dark:bg-secondary-900 dark:text-secondary-200;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-100 text-accent-800 dark:bg-accent-900 dark:text-accent-200;
   }
 
   .input-field {

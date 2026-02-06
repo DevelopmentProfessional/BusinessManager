@@ -285,6 +285,14 @@ class AppSettings(BaseModel, table=True):
     start_of_day: str = Field(default="06:00")  # HH:MM format
     end_of_day: str = Field(default="21:00")  # HH:MM format
     attendance_check_in_required: bool = Field(default=True)
+    # Days of operation (True = business operates on this day)
+    monday_enabled: bool = Field(default=True)
+    tuesday_enabled: bool = Field(default=True)
+    wednesday_enabled: bool = Field(default=True)
+    thursday_enabled: bool = Field(default=True)
+    friday_enabled: bool = Field(default=True)
+    saturday_enabled: bool = Field(default=True)
+    sunday_enabled: bool = Field(default=True)
 
 
 # Document model (table name and types aligned with PostgreSQL schema)
@@ -649,12 +657,26 @@ class AppSettingsCreate(SQLModel):
     start_of_day: str = "06:00"
     end_of_day: str = "21:00"
     attendance_check_in_required: bool = True
+    monday_enabled: bool = True
+    tuesday_enabled: bool = True
+    wednesday_enabled: bool = True
+    thursday_enabled: bool = True
+    friday_enabled: bool = True
+    saturday_enabled: bool = True
+    sunday_enabled: bool = True
 
 
 class AppSettingsUpdate(SQLModel):
     start_of_day: Optional[str] = None
     end_of_day: Optional[str] = None
     attendance_check_in_required: Optional[bool] = None
+    monday_enabled: Optional[bool] = None
+    tuesday_enabled: Optional[bool] = None
+    wednesday_enabled: Optional[bool] = None
+    thursday_enabled: Optional[bool] = None
+    friday_enabled: Optional[bool] = None
+    saturday_enabled: Optional[bool] = None
+    sunday_enabled: Optional[bool] = None
 
 
 class AppSettingsRead(SQLModel):
@@ -662,6 +684,95 @@ class AppSettingsRead(SQLModel):
     start_of_day: str
     end_of_day: str
     attendance_check_in_required: bool
+    monday_enabled: bool
+    tuesday_enabled: bool
+    wednesday_enabled: bool
+    thursday_enabled: bool
+    friday_enabled: bool
+    saturday_enabled: bool
+    sunday_enabled: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Database Connection model for storing multiple database configurations
+class DatabaseConnection(BaseModel, table=True):
+    name: str = Field(index=True)  # e.g., "Development", "Test", "Production"
+    environment: str = Field(index=True)  # e.g., "development", "test", "production"
+    host: str
+    port: int = Field(default=5432)
+    database_name: str
+    username: str
+    password: str  # Should be encrypted in production
+    ssl_mode: str = Field(default="require")  # For Render: require, prefer, disable
+    is_active: bool = Field(default=True)
+    visible_to_users: bool = Field(default=False)  # Toggle for user visibility
+    description: Optional[str] = Field(default=None)
+    
+    # Additional Render-specific fields
+    external_url: Optional[str] = Field(default=None)  # Render external database URL
+    internal_url: Optional[str] = Field(default=None)  # Render internal database URL
+    
+    # Connection pool settings
+    pool_size: int = Field(default=10)
+    max_overflow: int = Field(default=20)
+
+
+class DatabaseConnectionCreate(SQLModel):
+    name: str
+    environment: str
+    host: str
+    port: int = 5432
+    database_name: str
+    username: str
+    password: str
+    ssl_mode: str = "require"
+    is_active: bool = True
+    visible_to_users: bool = False
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: int = 10
+    max_overflow: int = 20
+
+
+class DatabaseConnectionUpdate(SQLModel):
+    name: Optional[str] = None
+    environment: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    database_name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    ssl_mode: Optional[str] = None
+    is_active: Optional[bool] = None
+    visible_to_users: Optional[bool] = None
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: Optional[int] = None
+    max_overflow: Optional[int] = None
+
+
+class DatabaseConnectionRead(SQLModel):
+    id: UUID
+    name: str
+    environment: str
+    host: str
+    port: int
+    database_name: str
+    username: str
+    password: str  # In production, consider masking this
+    ssl_mode: str
+    is_active: bool
+    visible_to_users: bool
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: int
+    max_overflow: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
