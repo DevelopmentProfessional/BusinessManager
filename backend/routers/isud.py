@@ -341,8 +341,8 @@ async def insert_with_file(
 
         # Extract all form fields
         for key, value in form.items():
-            if isinstance(value, UploadFile):
-                # Store the file for processing
+            if hasattr(value, 'read') or isinstance(value, UploadFile):
+                # Store the file for processing (check both duck-type and isinstance)
                 if key == "file":
                     uploaded_file = value
             else:
@@ -595,18 +595,23 @@ async def delete_by_id(
                     os.remove(path)
                 except OSError:
                     pass
-        # Clean up document_assignment records
+        # Clean up document_assignment records before deleting the document
         try:
             assign_stmt = sql_select(DocumentAssignment).where(
                 DocumentAssignment.document_id == record_id
             )
             for a in session.exec(assign_stmt).all():
                 session.delete(a)
+            session.flush()  # Flush assignment deletes before document delete
         except Exception:
             pass  # Table may not exist yet
 
     session.delete(record)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
     return {"count": 1}
 
 
