@@ -113,13 +113,17 @@ allowed_origins = [
     # Local development
     "http://localhost:5173",
     "https://localhost:5173",
+    "https://vite.localhost:5173",
     "https://localhost:5174",
     "http://localhost:5174",
     # Network access
     "https://192.168.4.118:5173",
     "http://192.168.4.118:5173",
     "https://192.168.4.118:5174",
-    "http://192.168.4.118:5174"
+    "http://192.168.4.118:5174",
+    # Render / production frontend (set in Render env or add your deployed frontend URL)
+    "https://businessmanager-reference.onrender.com",
+    "https://businessmanager-reference-api.onrender.com",
 ]
 
 # Add any additional origins from environment variable
