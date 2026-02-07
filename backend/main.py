@@ -196,13 +196,15 @@ from typing import Optional
 from fastapi import Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 
+from sqlmodel import select as sql_select
+
 try:
     from backend.database import get_session
-    from backend.models import Document, User
+    from backend.models import Document, DocumentAssignment, DocumentAssignmentRead, User
     from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
-    from models import Document, User
+    from models import Document, DocumentAssignment, DocumentAssignmentRead, User
     from routers.auth import get_current_user
 
 _UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -294,6 +296,73 @@ async def document_onlyoffice_config(
         raise HTTPException(status_code=404, detail="Document not found")
     return {"documentType": None, "notConfigured": True, "document": {"title": doc.original_filename}}
 
+
+# --- Document Assignment Endpoints ---
+
+@app.get("/api/v1/documents/{document_id}/assignments", tags=["documents"])
+async def list_document_assignments(
+    document_id: UUID,
+    session=Depends(get_session),
+):
+    """List all entity assignments for a document."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    stmt = sql_select(DocumentAssignment).where(
+        DocumentAssignment.document_id == document_id
+    )
+    assignments = session.exec(stmt).all()
+    return [DocumentAssignmentRead.model_validate(a).model_dump(mode="json") for a in assignments]
+
+
+@app.post("/api/v1/documents/{document_id}/assignments", tags=["documents"])
+async def add_document_assignment(
+    document_id: UUID,
+    body: dict,
+    session=Depends(get_session),
+):
+    """Link a document to an entity (employee, client, or inventory item)."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    entity_type = body.get("entity_type", "employee")
+    entity_id = body.get("entity_id")
+    if not entity_id:
+        raise HTTPException(status_code=400, detail="entity_id is required")
+
+    assignment = DocumentAssignment(
+        document_id=document_id,
+        entity_type=entity_type,
+        entity_id=UUID(entity_id) if isinstance(entity_id, str) else entity_id,
+        assigned_by=body.get("assigned_by"),
+        notes=body.get("notes"),
+    )
+    session.add(assignment)
+    session.commit()
+    session.refresh(assignment)
+    return DocumentAssignmentRead.model_validate(assignment).model_dump(mode="json")
+
+
+@app.delete("/api/v1/documents/{document_id}/assignments/{entity_id}", tags=["documents"])
+async def remove_document_assignment(
+    document_id: UUID,
+    entity_id: UUID,
+    entity_type: str = Query("employee"),
+    session=Depends(get_session),
+):
+    """Remove an entity assignment from a document."""
+    stmt = sql_select(DocumentAssignment).where(
+        DocumentAssignment.document_id == document_id,
+        DocumentAssignment.entity_id == entity_id,
+        DocumentAssignment.entity_type == entity_type,
+    )
+    assignment = session.exec(stmt).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    session.delete(assignment)
+    session.commit()
+    return {"deleted": True}
 
 
 if __name__ == "__main__":

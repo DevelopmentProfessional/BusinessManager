@@ -323,6 +323,53 @@ class DocumentCategory(BaseModel, table=True):
     description: Optional[str] = Field(default=None)
 
 
+class DocumentRead(SQLModel):
+    """Schema for reading document records (excludes relationship fields)."""
+    id: UUID
+    filename: str
+    original_filename: str
+    file_path: str
+    file_size: int
+    content_type: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[UUID] = None
+    description: Optional[str] = None
+    is_signed: bool = False
+    signed_by: Optional[str] = None
+    signed_at: Optional[datetime] = None
+    owner_id: Optional[UUID] = None
+    review_date: Optional[datetime] = None
+    category_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentAssignment(BaseModel, table=True):
+    """Junction table linking documents to employees, clients, or inventory items."""
+    __tablename__ = "document_assignment"
+    document_id: UUID = Field(foreign_key="document.id", index=True)
+    entity_type: str = Field(index=True)   # "employee", "client", "inventory"
+    entity_id: UUID = Field(index=True)
+    assigned_by: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    notes: Optional[str] = Field(default=None)
+
+
+class DocumentAssignmentRead(SQLModel):
+    """Schema for reading document assignment records."""
+    id: UUID
+    document_id: UUID
+    entity_type: str
+    entity_id: UUID
+    assigned_by: Optional[UUID] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 # Request/Response models for API
 class ClientCreate(SQLModel):
     name: str

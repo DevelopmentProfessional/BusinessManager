@@ -108,10 +108,53 @@ def _migrate_documents_table_if_needed():
         conn.execute(text("DROP TABLE document"))
         conn.execute(text("ALTER TABLE document_new RENAME TO document"))    
     
+def _migrate_document_entity_type_enum_to_varchar():
+    """Convert document.entity_type from PostgreSQL enum to VARCHAR.
+
+    The Document model defines entity_type as Optional[str], but older
+    database schemas created a PostgreSQL enum column. This causes insert
+    failures: 'column entity_type is of type entitytype but expression is
+    of type character varying'. This migration converts the column to
+    VARCHAR and normalises existing values to lowercase.
+    """
+    if DATABASE_URL.startswith("sqlite"):
+        return  # SQLite doesn't have enums
+    with engine.begin() as conn:
+        result = conn.execute(text(
+            "SELECT udt_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document' AND column_name='entity_type'"
+        ))
+        row = result.fetchone()
+        if not row or row[0] in ("varchar", "text", "character varying"):
+            return  # Already correct type or column missing
+        # Convert enum to VARCHAR
+        conn.execute(text(
+            "ALTER TABLE document ALTER COLUMN entity_type TYPE VARCHAR USING entity_type::TEXT"
+        ))
+        # Normalise to lowercase
+        conn.execute(text(
+            "UPDATE document SET entity_type = LOWER(entity_type) WHERE entity_type IS NOT NULL"
+        ))
+        # Map legacy 'item' to 'inventory'
+        conn.execute(text(
+            "UPDATE document SET entity_type = 'inventory' WHERE entity_type = 'item'"
+        ))
+        # Drop orphaned enum type if unused
+        remaining = conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE udt_name = 'entitytype' AND table_schema = 'public'"
+        )).scalar()
+        if remaining == 0:
+            conn.execute(text("DROP TYPE IF EXISTS entitytype"))
+        print("✓ Migrated document.entity_type from enum to VARCHAR")
+
+
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
     # Pre-create migrations: move legacy product/assets to item schema and adjust inventory FK
     _migrate_products_and_inventory_to_items_if_needed()
+    # Convert document.entity_type from PG enum to varchar BEFORE create_all
+    _migrate_document_entity_type_enum_to_varchar()
     # Create all tables based on current models
     SQLModel.metadata.create_all(engine)
     # Post-create migrations

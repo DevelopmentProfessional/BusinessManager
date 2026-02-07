@@ -396,9 +396,15 @@ export const documentsAPI = {
     `${api.defaults.baseURL}/documents/history/${historyId}/download${download ? '?download=true' : ''}`,
   history: () => Promise.resolve({ data: [] }),
   replaceContent: () => Promise.reject(new Error('Replace content: use document editor component')),
-  listAssignments: () => Promise.resolve({ data: [] }),
-  addAssignment: () => Promise.reject(new Error('Assignments: use document editor component')),
-  removeAssignment: () => Promise.reject(new Error('Assignments: use document editor component')),
+  listAssignments: (documentId) =>
+    api.get(`/documents/${documentId}/assignments`),
+  addAssignment: (documentId, entityId, entityType = 'employee') =>
+    api.post(`/documents/${documentId}/assignments`, {
+      entity_type: entityType,
+      entity_id: entityId,
+    }),
+  removeAssignment: (documentId, entityId, entityType = 'employee') =>
+    api.delete(`/documents/${documentId}/assignments/${entityId}?entity_type=${entityType}`),
   onlyofficeConfig: (id) => api.get(`/documents/${id}/onlyoffice-config`),
 };
 

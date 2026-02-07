@@ -41,6 +41,9 @@ READ_SCHEMA_MAP = {
     'users': UserRead,
     'schedule': ScheduleRead,
     'schedules': ScheduleRead,
+    'document': DocumentRead,
+    'documents': DocumentRead,
+    'document_assignment': DocumentAssignmentRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):
@@ -367,6 +370,25 @@ async def insert_with_file(
             record_data["file_path"] = file_path
             record_data["file_size"] = len(contents)
             record_data["content_type"] = uploaded_file.content_type or "application/octet-stream"
+
+        # Document-specific type coercion for form fields (strings from FormData)
+        if table_name.lower() in ("document", "documents"):
+            for uuid_field in ("entity_id", "category_id", "owner_id"):
+                val = record_data.get(uuid_field)
+                if val is None or val in ("", "null", "undefined"):
+                    record_data.pop(uuid_field, None)
+                elif isinstance(val, str):
+                    try:
+                        record_data[uuid_field] = UUID(val)
+                    except (ValueError, TypeError):
+                        record_data.pop(uuid_field, None)
+            # Coerce file_size to int if it came as a string
+            fs = record_data.get("file_size")
+            if isinstance(fs, str):
+                try:
+                    record_data["file_size"] = int(fs)
+                except (ValueError, TypeError):
+                    pass
     else:
         # Handle JSON body
         try:
@@ -379,10 +401,15 @@ async def insert_with_file(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
 
-    session.add(record)
-    session.commit()
-    session.refresh(record)
-    return _serialize_record(record, table_name)
+    try:
+        session.add(record)
+        session.commit()
+        session.refresh(record)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    return _serialize_record(record, table_name, session)
 
 @router.post("/{table_name}")
 async def insert(
@@ -559,14 +586,24 @@ async def delete_by_id(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
-    # When deleting a document, also remove the file from disk
-    if table_name.lower() in ("document", "documents") and hasattr(record, "file_path") and record.file_path:
-        path = _resolve_document_path(record.file_path, UPLOAD_DIR)
-        if path and os.path.exists(path):
-            try:
-                os.remove(path)
-            except OSError:
-                pass
+    # When deleting a document, also remove the file from disk and clean up assignments
+    if table_name.lower() in ("document", "documents"):
+        if hasattr(record, "file_path") and record.file_path:
+            path = _resolve_document_path(record.file_path, UPLOAD_DIR)
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+        # Clean up document_assignment records
+        try:
+            assign_stmt = sql_select(DocumentAssignment).where(
+                DocumentAssignment.document_id == record_id
+            )
+            for a in session.exec(assign_stmt).all():
+                session.delete(a)
+        except Exception:
+            pass  # Table may not exist yet
 
     session.delete(record)
     session.commit()

@@ -8,6 +8,7 @@ import {
   PencilIcon,
   CheckIcon,
   ClockIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { documentsAPI, documentCategoriesAPI } from '../services/api';
@@ -501,7 +502,7 @@ export default function Documents() {
                 <col style={{ width: '100px' }} />
                 <col style={{ width: '80px' }} />
                 <col style={{ width: '60px' }} />
-                <col style={{ width: '140px' }} />
+                <col style={{ width: '180px' }} />
               </colgroup>
               <tbody>
                 {documents.map((doc, index) => (
@@ -565,6 +566,13 @@ export default function Documents() {
                     {/* Actions */}
                     <td className="text-center px-2">
                       <div className="d-flex gap-1 justify-content-center">
+                        <a
+                          href={documentsAPI.fileUrl(doc.id, { download: true })}
+                          className="btn btn-sm btn-outline-info border-0 p-1"
+                          title="Download"
+                        >
+                          <ArrowDownTrayIcon className="h-4 w-4" />
+                        </a>
                         <button
                           onClick={() => handleOpenEdit(doc)}
                           className="btn btn-sm btn-outline-secondary border-0 p-1"
@@ -609,7 +617,7 @@ export default function Documents() {
               <col style={{ width: '100px' }} />
               <col style={{ width: '80px' }} />
               <col style={{ width: '60px' }} />
-              <col style={{ width: '140px' }} />
+              <col style={{ width: '180px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-secondary-subtle">
