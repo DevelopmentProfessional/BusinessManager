@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../../services/api';
 import { renderAsync } from 'docx-preview';
+import { isEditableType, getEditorConfig } from './editors/documentEditorUtils';
+import { useDocumentEditor } from './editors/useDocumentEditor';
+import EditorToolbar from './editors/EditorToolbar';
+
+// Lazy-load editor components to reduce initial bundle
+const RichTextEditor = lazy(() => import('./editors/RichTextEditor'));
+const CodeEditor = lazy(() => import('./editors/CodeEditor'));
 
 // Determine document type from content_type and filename
 function getDocumentType(doc) {
@@ -14,6 +21,10 @@ function getDocumentType(doc) {
   }
   if (ct.includes('pdf') || name.endsWith('.pdf')) {
     return 'pdf';
+  }
+  // Prioritize content_type for text/ types — handles edited DOCX saved as HTML
+  if (ct.startsWith('text/') || ct === 'application/json' || ct === 'application/javascript') {
+    return 'text';
   }
   if (ct.includes('wordprocessingml.document') || name.endsWith('.docx')) {
     return 'docx';
@@ -30,7 +41,8 @@ function getDocumentType(doc) {
   if (ct.includes('ms-excel') || name.endsWith('.xls')) {
     return 'xls';
   }
-  if (ct.includes('text/') || /\.(txt|csv|json|xml|html|css|js|md)$/i.test(name)) {
+  // Fallback text check by extension
+  if (/\.(txt|csv|json|xml|html|css|js|md|py|sql|yaml|yml|sh|ts|tsx|jsx)$/i.test(name)) {
     return 'text';
   }
   return 'unknown';
@@ -385,11 +397,146 @@ function UnknownViewer({ document, onEdit }) {
   );
 }
 
+// Editor Area Component — renders the appropriate editor based on document type
+function EditorArea({ document, documentType }) {
+  const editorRef = useRef(null);
+  const { editorType, codeLanguage } = getEditorConfig(documentType, document.original_filename);
+  const {
+    content,
+    setContent,
+    isDirty,
+    isLoading,
+    isSaving,
+    saveStatus,
+    error,
+    saveContent,
+  } = useDocumentEditor(document.id, documentType, document.original_filename);
+
+  const handleUndo = () => {
+    if (editorType === 'richtext' && editorRef.current) {
+      editorRef.current.chain().focus().undo().run();
+    } else if (editorType === 'code' && editorRef.current?.undo) {
+      editorRef.current.undo();
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorType === 'richtext' && editorRef.current) {
+      editorRef.current.chain().focus().redo().run();
+    } else if (editorType === 'code' && editorRef.current?.redo) {
+      editorRef.current.redo();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {documentType === 'docx' ? 'Converting document for editing...' : 'Loading content...'}
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="text-center">
+          <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded mb-4">{error}</div>
+          <a
+            href={documentsAPI.fileUrl(document.id)}
+            download
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            Download Instead
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <EditorToolbar
+        editorType={editorType}
+        editor={editorRef.current}
+        onSave={saveContent}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        isDirty={isDirty}
+        isSaving={isSaving}
+        saveStatus={saveStatus}
+      />
+      <div className="flex-1 overflow-hidden">
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+          }
+        >
+          {editorType === 'richtext' ? (
+            <RichTextEditor
+              ref={editorRef}
+              content={content}
+              onChange={setContent}
+            />
+          ) : (
+            <CodeEditor
+              ref={editorRef}
+              content={content}
+              onChange={setContent}
+              language={codeLanguage || 'text'}
+            />
+          )}
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
 // Main Document Viewer Modal
 export default function DocumentViewerModal({ isOpen, onClose, document, onEdit }) {
+  const [mode, setMode] = useState('view'); // 'view' or 'edit'
+  const [showDocxWarning, setShowDocxWarning] = useState(false);
+  const [editorDirty, setEditorDirty] = useState(false);
+
+  // Reset mode when document changes
+  useEffect(() => {
+    setMode('view');
+    setEditorDirty(false);
+  }, [document?.id]);
+
   if (!isOpen || !document) return null;
 
   const documentType = getDocumentType(document);
+  const editable = isEditableType(documentType);
+
+  const handleToggleEdit = () => {
+    if (mode === 'edit') {
+      // Switching back to view mode — no unsaved guard needed here since
+      // the EditorArea uses its own hook and doesn't lose state
+      setMode('view');
+    } else {
+      // Switching to edit mode
+      if (documentType === 'docx') {
+        setShowDocxWarning(true);
+      } else {
+        setMode('edit');
+      }
+    }
+  };
+
+  const handleConfirmDocxEdit = () => {
+    setShowDocxWarning(false);
+    setMode('edit');
+  };
+
+  const handleClose = () => {
+    onClose();
+  };
 
   const renderViewer = () => {
     switch (documentType) {
@@ -416,8 +563,36 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
       />
+
+      {/* DOCX Conversion Warning */}
+      {showDocxWarning && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md mx-4">
+            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
+              Edit Document
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              This Word document will be converted to HTML for editing. Some formatting (headers, footers, complex layouts) may be simplified. Once saved, the document will be stored as HTML.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDocxWarning(false)}
+                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDocxEdit}
+                className="px-4 py-2 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
+              >
+                Continue to Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Content */}
       <div className="fixed inset-4 sm:inset-8 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
@@ -430,6 +605,20 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
             </h3>
           </div>
           <div className="flex items-center gap-2">
+            {/* View/Edit toggle — only for editable types */}
+            {editable && (
+              <button
+                onClick={handleToggleEdit}
+                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded transition-colors ${
+                  mode === 'edit'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <PencilIcon className="h-4 w-4" />
+                {mode === 'edit' ? 'Editing' : 'Edit'}
+              </button>
+            )}
             <a
               href={documentsAPI.fileUrl(document.id)}
               download
@@ -440,7 +629,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
             </a>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
             >
               <XMarkIcon className="h-6 w-6" />
@@ -448,8 +637,14 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
           </div>
         </div>
 
-        {/* Viewer Content */}
-        <div className="flex-1 overflow-hidden">{renderViewer()}</div>
+        {/* Content: Editor or Viewer */}
+        <div className="flex-1 overflow-hidden">
+          {mode === 'edit' ? (
+            <EditorArea document={document} documentType={documentType} />
+          ) : (
+            renderViewer()
+          )}
+        </div>
 
         {/* Footer with document info */}
         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">

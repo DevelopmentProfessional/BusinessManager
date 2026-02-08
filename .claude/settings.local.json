@@ -17,7 +17,18 @@
       "Bash(powershell -Command \"\\(Get-Item main.py\\).LastWriteTime = Get-Date\")",
       "Bash(taskkill:*)",
       "Bash(start:*)",
-      "Bash(timeout /t:*)"
+      "Bash(timeout /t:*)",
+      "Bash(findstr:*)",
+      "Bash(del /q \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\backend\\\\uploads\\\\*.txt\")",
+      "Bash(del /q \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\backend\\\\uploads\\\\*.pdf\")",
+      "Bash(git fetch:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix document upload file detection and cascade delete error handling\n\nUse duck-type check \\(hasattr ''read''\\) for UploadFile detection to handle\nStarlette/FastAPI type mismatch. Add session.flush\\(\\) before document\ndelete to ensure assignment cleanup, and wrap commit in try/except.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(npx vite build:*)",
+      "Bash(pushd:*)",
+      "Bash(popd:*)"
     ]
   }
 }

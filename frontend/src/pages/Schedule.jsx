@@ -217,14 +217,15 @@ export default function Schedule() {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
   // Calculate number of columns for dynamic grid layout
+  // Use minmax(0, 1fr) so columns share width equally and don't size to content
   const numEnabledDays = currentView === 'week' || currentView === 'month' 
     ? days.slice(0, 7).length 
     : 7;
   const gridColumns = currentView === 'week' 
-    ? `60px repeat(${numEnabledDays}, 1fr)` 
+    ? `60px repeat(${numEnabledDays}, minmax(0, 1fr))` 
     : currentView === 'day'
-      ? '60px 1fr'
-      : `repeat(${numEnabledDays}, 1fr)`;
+      ? '60px minmax(0, 1fr)'
+      : `repeat(${numEnabledDays}, minmax(0, 1fr))`;
 
   // Auto-scroll to current time when switching to day or week view
   useEffect(() => {
@@ -418,9 +419,9 @@ export default function Schedule() {
           <div style={{ width: '100px' }}></div> {/* Spacer for balance */}
         </div>
 
-        <div className="calendar-container">
-          {/* Week day headers */}
-          <div className="calendar-header" style={{ gridTemplateColumns: gridColumns }}>
+        <div className="calendar-container" style={{ '--schedule-grid-cols': gridColumns }}>
+          {/* Week day headers - same column template as grid so widths match */}
+          <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
             {currentView === 'day' ? (
               <>
                 <div className="calendar-header-cell">Time</div>
@@ -480,7 +481,7 @@ export default function Schedule() {
                     return (
                       <div
                         key={`${hour}-${dayIndex}`}
-                        className={`calendar-cell time-slot border ${isToday ? 'today-column' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                        className={`calendar-cell time-slot ${isToday ? 'today-column' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
                         style={{ position: 'relative' }}
                         onClick={() => {
                           const slotDate = new Date(date);
@@ -620,7 +621,7 @@ export default function Schedule() {
                 return (
                   <div
                     key={index}
-                    className={`calendar-cell border ${!isCurrentMonth(date) ? 'other-month' : ''} ${isToday ? 'today' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() ? 'drag-over' : ''}`}
+                    className={`calendar-cell border-1 ${!isCurrentMonth(date) ? 'other-month' : ''} ${isToday ? 'today' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() ? 'drag-over' : ''}`}
                     onClick={() => handleDateClick(date)}
                     onDragOver={(e) => handleDragOver(e, date)}
                     onDragLeave={handleDragLeave}
@@ -841,17 +842,20 @@ export default function Schedule() {
         .calendar-container {
           background: ${isDarkMode ? '#2d3748' : 'white'};
           width: 100%;
+          min-width: 0;
           height: calc(100vh - 200px);
           display: flex;
           flex-direction: column;
-          overflow: auto;
+          overflow: hidden;
         }
         
         .calendar-header {
           display: grid;
-          grid-template-columns: repeat(7, 1fr);
+          grid-template-columns: repeat(7, minmax(0, 1fr));
           background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
           gap: 0;
+          min-width: 0;
+          flex-shrink: 0;
         }
         
         .calendar-header-cell {
@@ -861,6 +865,8 @@ export default function Schedule() {
           padding: 8px 4px;
           border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
           border-right: none;
+          min-width: 0;
+          overflow: hidden;
         }
         
         .calendar-header-cell:last-child {
@@ -879,19 +885,21 @@ export default function Schedule() {
         
         .calendar-grid {
           display: grid;
-          grid-template-columns: repeat(7, 1fr);
+          grid-template-columns: repeat(7, minmax(0, 1fr));
           flex: 1;
           overflow: auto;
           gap: 0;
+          min-width: 0;
         }
         
         .calendar-grid.week-view {
-          grid-template-columns: 60px repeat(7, 1fr);
+          grid-template-columns: 60px repeat(7, minmax(0, 1fr));
           flex: 1;
           overflow: auto;
           gap: 2px;
           background: ${isDarkMode ? '#6b7280' : '#dee2e6'};
           padding: 2px;
+          min-width: 0;
         }
         
         .calendar-grid.week-view .time-slot-cell {
@@ -919,15 +927,20 @@ export default function Schedule() {
           align-items: center;
           justify-content: center;
           box-sizing: border-box;
+          min-width: 0;
         }
         
         .calendar-cell {
           min-height: 100px;
+          min-width: 0;
           cursor: pointer;
           position: relative;
           background: ${isDarkMode ? '#2d3748' : 'white'};
           color: ${isDarkMode ? '#e2e8f0' : 'inherit'};
           box-sizing: border-box;
+          text-align: center;
+          padding: 4px;
+          overflow: hidden;
         }
         
         .calendar-cell.time-slot {
@@ -959,7 +972,7 @@ export default function Schedule() {
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 2px;
+          margin: 2px auto 4px auto;
         }
         
         .today-header {
@@ -1001,6 +1014,9 @@ export default function Schedule() {
           font-size: 14px;
           font-weight: 500;
           margin-bottom: 4px;
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
         }
         
         .appointments {
@@ -1017,6 +1033,7 @@ export default function Schedule() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          min-width: 0;
           cursor: pointer;
           transition: background-color 0.2s;
         }

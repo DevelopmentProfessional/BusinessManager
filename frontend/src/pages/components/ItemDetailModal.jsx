@@ -135,123 +135,128 @@ export default function ItemDetailModal({
 
   const isLowStock = formData.quantity <= formData.min_stock_level;
 
+  // Reusable image display with navigation
+  const renderImage = (containerStyle = {}) => (
+    <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: '#f0f0f0', ...containerStyle }}>
+      {displayImage ? (
+        <img
+          src={displayImage}
+          alt={formData.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          onError={(e) => {
+            e.target.style.display = 'none';
+            const placeholder = e.target.nextElementSibling;
+            if (placeholder) placeholder.style.display = 'flex';
+          }}
+        />
+      ) : null}
+      <div
+        style={{
+          display: displayImage ? 'none' : 'flex',
+          width: '100%', height: '100%',
+          alignItems: 'center', justifyContent: 'center',
+          color: '#adb5bd', position: 'absolute', top: 0, left: 0
+        }}
+      >
+        {getTypeIcon()}
+      </div>
+
+      {hasImages && images.length > 1 && (
+        <>
+          <button
+            onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
+            className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1"
+            style={{ width: '28px', height: '28px', padding: 0 }}
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
+            className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1"
+            style={{ width: '28px', height: '28px', padding: 0 }}
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+          <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1" style={{ fontSize: '0.7rem', borderTopLeftRadius: '4px' }}>
+            {currentImageIndex + 1} / {images.length}
+          </div>
+        </>
+      )}
+
+      {hasLegacyImage && !hasImages && (
+        <div className="position-absolute bottom-0 start-0 bg-warning bg-opacity-75 text-dark px-2 py-1" style={{ fontSize: '0.65rem', borderTopRightRadius: '4px' }}>
+          Legacy
+        </div>
+      )}
+
+      {currentImage && currentImage.is_primary && (
+        <div className="position-absolute top-0 start-0 bg-primary text-white px-2 py-1" style={{ fontSize: '0.65rem', borderBottomRightRadius: '4px' }}>
+          Primary
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
     >
-      {/* Modal content wrapper */}
       <div className="d-flex flex-column bg-white" style={{ maxHeight: '100%' }}>
-      {/* Header Bar */}
-      <div className="d-flex align-items-center justify-content-between p-3 border-bottom bg-white flex-shrink-0">
-        <h5 className="mb-0 fw-bold">
-          {isSalesMode ? 'Item Details' : 'Edit Item'}
-        </h5>
-        <button
-          onClick={onClose}
-          className="btn btn-outline-secondary btn-sm rounded-circle p-0"
-          style={{ width: '36px', height: '36px' }}
-        >
-          <XMarkIcon className="h-5 w-5" style={{ margin: 'auto', display: 'block' }} />
-        </button>
-      </div>
 
-      {/* Image Section - Multiple images with navigation */}
-      <div className="flex-shrink-0 position-relative">
-        <div className="square-image-container">
-          {displayImage ? (
-            <img
-              src={displayImage}
-              alt={formData.name}
-              className="square-image"
-              onError={(e) => { 
-                e.target.style.display = 'none';
-                // Show placeholder when image fails to load
-                const placeholder = e.target.nextElementSibling;
-                if (placeholder) placeholder.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          {/* Placeholder/Fallback always present */}
-          <div 
-            className="square-image-placeholder" 
-            style={{ display: displayImage ? 'none' : 'flex' }}
-          >
-            {getTypeIcon()}
+      {/* Sales Mode: Full-width image header */}
+      {isSalesMode && (
+        <div className="flex-shrink-0 position-relative">
+          <div className="square-image-container">
+            {displayImage ? (
+              <img
+                src={displayImage}
+                alt={formData.name}
+                className="square-image"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const placeholder = e.target.nextElementSibling;
+                  if (placeholder) placeholder.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div
+              className="square-image-placeholder"
+              style={{ display: displayImage ? 'none' : 'flex' }}
+            >
+              {getTypeIcon()}
+            </div>
           </div>
+
+          {hasImages && images.length > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
+                className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2"
+                style={{ width: '32px', height: '32px' }}
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
+                className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2"
+                style={{ width: '32px', height: '32px' }}
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+              <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            </>
+          )}
+
+          {!isLocation && !isAsset && (
+            <span className={`badge position-absolute bottom-0 end-0 m-3 ${isLowStock ? 'bg-danger' : 'bg-success'}`}>
+              {formData.quantity} in stock {isLowStock && '(Low)'}
+            </span>
+          )}
         </div>
-
-        {/* Image Navigation Controls */}
-        {hasImages && images.length > 1 && (
-          <>
-            <button
-              onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
-              className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2"
-              style={{ width: '32px', height: '32px' }}
-            >
-              <ChevronLeftIcon className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
-              className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2"
-              style={{ width: '32px', height: '32px' }}
-            >
-              <ChevronRightIcon className="h-4 w-4" />
-            </button>
-            {/* Image counter */}
-            <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
-              {currentImageIndex + 1} / {images.length}
-            </div>
-          </>
-        )}
-
-        {/* Legacy image indicator */}
-        {hasLegacyImage && !hasImages && (
-          <div className="position-absolute bottom-0 start-0 bg-warning bg-opacity-75 text-dark px-2 py-1 rounded-top-end text-xs">
-            Legacy
-          </div>
-        )}
-
-        {/* Primary image indicator */}
-        {currentImage && currentImage.is_primary && (
-          <div className="position-absolute top-0 start-0 bg-primary text-white px-2 py-1 rounded-bottom-end text-xs">
-            Primary
-          </div>
-        )}
-
-        {/* Sales Preview Overlay - shows how item appears in sales mode */}
-        {!isSalesMode && (
-          <div
-            className="position-absolute bottom-0 start-0 end-0 p-3"
-            style={{
-              background: 'linear-gradient(transparent, rgba(0,0,0,0.7))'
-            }}
-          >
-            <div className="text-white">
-              <div className="fw-bold" style={{ fontSize: '1.1rem' }}>
-                {formData.name || 'Item Name'}
-              </div>
-              <div className="d-flex justify-content-between align-items-center">
-                <span className="fw-bold" style={{ fontSize: '1.25rem' }}>
-                  ${(parseFloat(formData.price) || 0).toFixed(2)}
-                </span>
-                {!isLocation && !isAsset && (
-                  <span className={`badge ${isLowStock ? 'bg-danger' : 'bg-success'}`}>
-                    {formData.quantity} in stock
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Stock Status Badge - only in sales mode */}
-        {isSalesMode && !isLocation && !isAsset && (
-          <span className={`badge position-absolute bottom-0 end-0 m-3 ${isLowStock ? 'bg-danger' : 'bg-success'}`}>
-            {formData.quantity} in stock {isLowStock && '(Low)'}
-          </span>
-        )}
-      </div>
+      )}
 
       {/* Scrollable Content Area */}
       <div className="flex-grow-1 overflow-auto p-3">
@@ -312,7 +317,7 @@ export default function ItemDetailModal({
               </div>
               <button
                 onClick={handleAddToCart}
-                className="btn btn-primary flex-grow-1 py-3 d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2"
               >
                 <ShoppingCartIcon className="h-5 w-5" />
                 {inCart ? 'Update Cart' : 'Add to Cart'}
@@ -320,11 +325,72 @@ export default function ItemDetailModal({
             </div>
           </div>
         ) : (
-          /* Inventory Mode - Editable Form */
+          /* Inventory Mode - Image + Stock fields at top, form fields below */
           <form onSubmit={handleUpdateInventory}>
-            {/* Name */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">Name *</label>
+            {/* Top Section: Image (left) + Stock fields (right) */}
+            <div className="d-flex gap-3" style={{ minHeight: '200px' }}>
+              {/* Image */}
+              <div className="flex-shrink-0" style={{ width: '45%' }}>
+                {renderImage({ width: '100%', aspectRatio: '1' })}
+              </div>
+
+              {/* Stock fields stacked on the right */}
+              <div className="flex-grow-1 d-flex flex-column justify-content-center">
+                {!isLocation && !isAsset ? (
+                  <>
+                    <div>
+                      <label className="form-label fw-medium small mb-0">Max Count</label>
+                      <input
+                        type="number"
+                        name="min_stock_level"
+                        value={formData.min_stock_level}
+                        onChange={handleChange}
+                        className="form-control form-control-sm"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label fw-medium small mb-0">Min Count</label>
+                      <input
+                        type="number"
+                        readOnly
+                        value={0}
+                        className="form-control form-control-sm bg-light"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label fw-medium small mb-0">Current Count</label>
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={formData.quantity}
+                        onChange={handleChange}
+                        className="form-control form-control-sm"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                       <div className={`text-center py-1 rounded fw-medium small ${isLowStock ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
+                        {isLowStock ? 'Low Stock' : 'In Stock'}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="d-flex align-items-center gap-2 text-success">
+                    <CheckCircleSolid className="h-5 w-5" />
+                    <div>
+                      <div className="fw-medium">Status: OK</div>
+                      <div className="small text-muted">{isLocation ? 'Locations' : 'Assets'} do not track stock</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Full-width form fields below */}
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0">Name *</label>
               <input
                 type="text"
                 name="name"
@@ -335,21 +401,8 @@ export default function ItemDetailModal({
               />
             </div>
 
-            {/* SKU */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">SKU</label>
-              <input
-                type="text"
-                name="sku"
-                value={formData.sku}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-
-            {/* Price */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">Price</label>
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0">Price</label>
               <div className="input-group">
                 <span className="input-group-text">$</span>
                 <input
@@ -364,9 +417,8 @@ export default function ItemDetailModal({
               </div>
             </div>
 
-            {/* Type */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">Type</label>
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0  ">Type</label>
               <select
                 name="type"
                 value={formData.type}
@@ -381,9 +433,8 @@ export default function ItemDetailModal({
               </select>
             </div>
 
-            {/* Description */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">Description</label>
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -393,54 +444,19 @@ export default function ItemDetailModal({
               />
             </div>
 
-            {/* Quantity & Min Stock - only for trackable items */}
-            {!isLocation && !isAsset && (
-              <>
-                <div className="row mb-3">
-                  <div className="col-6">
-                    <label className="form-label fw-medium">Quantity</label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={formData.quantity}
-                      onChange={handleChange}
-                      className="form-control"
-                      min="0"
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label fw-medium">Min Stock Level</label>
-                    <input
-                      type="number"
-                      name="min_stock_level"
-                      value={formData.min_stock_level}
-                      onChange={handleChange}
-                      className="form-control"
-                      min="0"
-                    />
-                  </div>
-                </div>
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0">SKU</label>
+              <input
+                type="text"
+                name="sku"
+                value={formData.sku}
+                onChange={handleChange}
+                className="form-control"
+              />
+            </div>
 
-                {/* Stock Status */}
-                <div className={`alert ${isLowStock ? 'alert-danger' : 'alert-success'} d-flex align-items-center gap-2 mb-3`}>
-                  {isLowStock ? (
-                    <>
-                      <span className="fw-medium">Low Stock Warning</span>
-                      <span className="small">Current quantity is at or below minimum level</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircleSolid className="h-5 w-5" />
-                      <span className="fw-medium">Stock OK</span>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Location */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">Location</label>
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0">Location</label>
               <input
                 type="text"
                 name="location"
@@ -451,9 +467,8 @@ export default function ItemDetailModal({
               />
             </div>
 
-            {/* Image URL */}
-            <div className="mb-3">
-              <label className="form-label fw-medium">Image URL</label>
+            <div className="mb-1">
+              <label className="form-label fw-medium mb-0">Image URL</label>
               <input
                 type="url"
                 name="image_url"
@@ -463,17 +478,6 @@ export default function ItemDetailModal({
                 placeholder="https://example.com/image.jpg"
               />
             </div>
-
-            {/* Status for locations/assets */}
-            {(isLocation || isAsset) && (
-              <div className="alert alert-success d-flex align-items-center gap-2 mb-3">
-                <CheckCircleSolid className="h-5 w-5" />
-                <div>
-                  <strong>Status: OK</strong>
-                  <div className="small">{isLocation ? 'Locations' : 'Assets'} do not track stock levels</div>
-                </div>
-              </div>
-            )}
           </form>
         )}
       </div>

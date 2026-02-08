@@ -284,6 +284,67 @@ async def document_download(
     )
 
 
+@app.get("/api/v1/documents/{document_id}/content", tags=["documents"])
+async def document_get_content(
+    document_id: UUID,
+    session=Depends(get_session),
+):
+    """Read document file as text for in-browser editing."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    file_size = os.path.getsize(path)
+    if file_size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large for browser editing (max 5 MB). Download to edit locally.")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except UnicodeDecodeError:
+        try:
+            with open(path, "r", encoding="latin-1") as f:
+                content = f.read()
+        except Exception:
+            raise HTTPException(status_code=400, detail="File is not a text file and cannot be edited in the browser.")
+    return {"content": content, "content_type": doc.content_type, "original_filename": doc.original_filename}
+
+
+@app.put("/api/v1/documents/{document_id}/content", tags=["documents"])
+async def document_save_content(
+    document_id: UUID,
+    body: dict,
+    session=Depends(get_session),
+):
+    """Save edited document content back to disk."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    content = body.get("content")
+    if content is None:
+        raise HTTPException(status_code=400, detail="Content is required")
+    new_content_type = body.get("content_type")
+    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        file_size = os.path.getsize(path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")
+    doc.file_size = file_size
+    if new_content_type:
+        doc.content_type = new_content_type
+    try:
+        session.add(doc)
+        session.commit()
+        session.refresh(doc)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return {"success": True, "file_size": file_size, "content_type": doc.content_type}
+
+
 @app.get("/api/v1/documents/{document_id}/onlyoffice-config", tags=["documents"])
 async def document_onlyoffice_config(
     document_id: UUID,

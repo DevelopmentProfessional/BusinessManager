@@ -406,6 +406,11 @@ export const documentsAPI = {
   removeAssignment: (documentId, entityId, entityType = 'employee') =>
     api.delete(`/documents/${documentId}/assignments/${entityId}?entity_type=${entityType}`),
   onlyofficeConfig: (id) => api.get(`/documents/${id}/onlyoffice-config`),
+  getContent: (id) => api.get(`/documents/${id}/content`),
+  saveContent: (id, content, contentType) => {
+    clearCache('documents');
+    return api.put(`/documents/${id}/content`, { content, content_type: contentType });
+  },
 };
 
 // Document categories: full CRUD via isud (table document_category).
