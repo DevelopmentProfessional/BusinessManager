@@ -474,7 +474,7 @@ export default function Schedule() {
   }
 
   return (
-    <div className="h-100 d-flex flex-column">
+    <div className="schedule-page h-100 d-flex flex-column">
       <PermissionGate page="schedule" permission="read">
         {/* Attendance Widget - Clock In/Out (conditionally rendered based on settings) */}
         {scheduleSettings.attendance_check_in_required && (
@@ -484,12 +484,12 @@ export default function Schedule() {
         )}
 
         {/* Header with clock */}
-        <div className="d-flex justify-content-between align-items-center px-3 mb-2">
+        <div className="schedule-header-bar d-flex justify-content-between align-items-center px-3 mb-2">
           <div className="schedule-clock">
             <span className="clock-time">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
             <span className="clock-date">{currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
           </div>
-          <h4 className="text-center mb-0 flex-grow-1">
+          <h4 className="text-center mb-0">
             {currentView === 'day'
               ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
               : currentView === 'week'
@@ -500,7 +500,8 @@ export default function Schedule() {
           <div style={{ width: '100px' }}></div> {/* Spacer for balance */}
         </div>
 
-        <div className="calendar-container" style={{ '--schedule-grid-cols': gridColumns }}>
+        <div className="schedule-body">
+          <div className="calendar-container" style={{ '--schedule-grid-cols': gridColumns }}>
           {/* Week day headers - same column template as grid so widths match */}
           <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
             {currentView === 'day' ? (
@@ -757,9 +758,10 @@ export default function Schedule() {
               })
             )}
           </div>
+          </div>
         </div>
 
-        <div className="mt-3 p-2 border-top">
+        <div className="schedule-footer px-2 py-1 border-top">
           {/* Row 1: Month, Week, Previous, Next */}
           <div className="d-flex gap-1 mb-1">
             {/* Month View - Calendar Grid Icon */}
@@ -875,6 +877,30 @@ export default function Schedule() {
 
       <style>{`
         /* Schedule Clock */
+        .schedule-page {
+          min-height: 100vh;
+          height: 100vh;
+          min-height: 100dvh;
+          height: 100dvh;
+          overflow: hidden;
+        }
+
+        .schedule-header-bar,
+        .schedule-footer {
+          flex-shrink: 0;
+        }
+
+        .schedule-footer {
+          margin-top: auto;
+        }
+
+        .schedule-body {
+          flex: 1;
+          min-height: 0;
+          overflow: auto;
+          display: flex;
+        }
+
         .schedule-clock {
           display: flex;
           flex-direction: column;
@@ -925,10 +951,11 @@ export default function Schedule() {
           background: ${isDarkMode ? '#2d3748' : 'white'};
           width: 100%;
           min-width: 0;
-          height: calc(100vh - 200px);
+          flex: 1;
+          min-height: 0;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
+          overflow: visible;
         }
         
         .calendar-header {
@@ -969,35 +996,45 @@ export default function Schedule() {
           display: grid;
           grid-template-columns: repeat(7, minmax(0, 1fr));
           flex: 1;
-          overflow: auto;
+          overflow: hidden;
           gap: 0;
           min-width: 0;
+          min-height: 0;
+          height: 100%;
         }
-        
+
+        .calendar-grid:not(.week-view):not(.day-view) {
+          grid-auto-rows: minmax(0, 1fr);
+        }
+
         .calendar-grid.week-view {
           grid-template-columns: 60px repeat(7, minmax(0, 1fr));
           flex: 1;
-          overflow: auto;
+          overflow: hidden;
           gap: 2px;
           background: ${isDarkMode ? '#6b7280' : '#dee2e6'};
           padding: 2px;
           min-width: 0;
+          min-height: 0;
+          grid-auto-rows: 60px;
         }
-        
+
         .calendar-grid.week-view .time-label-cell {
           grid-column: 1;
         }
         .calendar-grid.week-view .calendar-cell:not(.time-label-cell) {
           grid-column: auto;
         }
-        
+
         .calendar-grid.day-view {
           grid-template-columns: 60px 1fr;
           flex: 1;
-          overflow: auto;
+          overflow: hidden;
           gap: 0;
+          min-height: 0;
+          grid-auto-rows: 60px;
         }
-        
+
         .calendar-cell.time-label-cell {
           background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
           color: ${isDarkMode ? '#e2e8f0' : '#495057'};
@@ -1009,10 +1046,11 @@ export default function Schedule() {
           justify-content: center;
           box-sizing: border-box;
           min-width: 0;
+          height: 100%;
         }
-        
+
         .calendar-cell {
-          min-height: 100px;
+          min-height: 0;
           min-width: 0;
           cursor: pointer;
           position: relative;
@@ -1020,13 +1058,15 @@ export default function Schedule() {
           color: ${isDarkMode ? '#e2e8f0' : 'inherit'};
           box-sizing: border-box;
           text-align: center;
-          padding: 4px;
-          overflow: hidden;
+          padding: 1px;
+          overflow: auto;
           border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
+          height: 100%;
         }
-        
+
         .calendar-cell.time-slot {
           box-sizing: border-box;
+          height: 100%;
         }
         
         .calendar-cell:hover {
@@ -1126,9 +1166,6 @@ export default function Schedule() {
         
         /* Responsive Styles */
         @media (max-width: 768px) {
-          .calendar-container {
-            height: calc(100vh - 250px);
-          }
           .calendar-header-cell {
             padding: 6px 2px;
             font-size: 11px;
@@ -1139,18 +1176,13 @@ export default function Schedule() {
           .calendar-header-cell .day-date {
             font-size: 12px;
           }
+          .calendar-grid.week-view,
+          .calendar-grid.day-view {
+            grid-auto-rows: 20px;
+          }
           .calendar-cell.time-label-cell {
             font-size: 10px;
-            min-height: 50px;
-            height: 50px;
-            padding: 2px;
-          }
-          .calendar-cell.time-slot {
-            min-height: 50px;
-            height: 50px;
-          }
-          .calendar-cell {
-            min-height: 80px;
+            padding: 1px;
           }
           .appointment-dot {
             font-size: 9px;
@@ -1165,9 +1197,6 @@ export default function Schedule() {
         }
         
         @media (max-width: 480px) {
-          .calendar-container {
-            height: calc(100vh - 280px);
-          }
           .calendar-header-cell {
             padding: 4px 1px;
             font-size: 10px;
@@ -1178,17 +1207,12 @@ export default function Schedule() {
           .calendar-header-cell .day-date {
             font-size: 11px;
           }
+          .calendar-grid.week-view,
+          .calendar-grid.day-view {
+            grid-auto-rows: 45px;
+          }
           .calendar-cell.time-label-cell {
             font-size: 9px;
-            min-height: 45px;
-            height: 45px;
-          }
-          .calendar-cell.time-slot {
-            min-height: 45px;
-            height: 45px;
-          }
-          .calendar-cell {
-            min-height: 70px;
           }
           .appointment-dot {
             font-size: 8px;
