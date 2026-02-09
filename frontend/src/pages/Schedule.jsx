@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import { scheduleAPI, settingsAPI } from '../services/api';
+import { scheduleAPI, settingsAPI, isudAPI } from '../services/api';
 import Modal from './components/Modal';
 import ScheduleForm from './components/ScheduleForm';
 import PermissionGate from './components/PermissionGate';
@@ -297,19 +297,100 @@ export default function Schedule() {
     }
   }, [setAppointments]);
 
-  const handleSubmitAppointment = useCallback(async (appointmentData) => {
-    if (editingAppointment && editingAppointment.id) {
-      await scheduleAPI.update(editingAppointment.id, appointmentData);
-    } else {
-      await scheduleAPI.create(appointmentData);
+  const normalizeIds = useCallback((value) => {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (!value) return [];
+    return [value];
+  }, []);
+
+  const syncScheduleAttendees = useCallback(async (scheduleId, employeeIds, clientIds, primaryEmployeeId, primaryClientId) => {
+    if (!scheduleId) return;
+
+    try {
+      const existingResponse = await isudAPI.scheduleAttendees.getBySchedule(scheduleId);
+      const existing = existingResponse?.data ?? existingResponse;
+      if (Array.isArray(existing) && existing.length > 0) {
+        await Promise.all(existing.map(attendee => isudAPI.scheduleAttendees.delete(attendee.id)));
+      }
+
+      const dedupe = (ids) => Array.from(new Set(ids));
+      const employeeAttendees = dedupe(employeeIds).filter((id) => id && id !== primaryEmployeeId);
+      const clientAttendees = dedupe(clientIds).filter((id) => id && id !== primaryClientId);
+
+      const createRequests = [
+        ...employeeAttendees.map((userId) => isudAPI.scheduleAttendees.create({
+          schedule_id: scheduleId,
+          user_id: userId,
+        })),
+        ...clientAttendees.map((clientId) => isudAPI.scheduleAttendees.create({
+          schedule_id: scheduleId,
+          client_id: clientId,
+        })),
+      ];
+
+      if (createRequests.length > 0) {
+        await Promise.all(createRequests);
+      }
+    } catch (err) {
+      console.error('Failed to sync schedule attendees:', err);
     }
-    
+  }, []);
+
+  const deleteScheduleAttendees = useCallback(async (scheduleId) => {
+    if (!scheduleId) return;
+    try {
+      const existingResponse = await isudAPI.scheduleAttendees.getBySchedule(scheduleId);
+      const existing = existingResponse?.data ?? existingResponse;
+      if (Array.isArray(existing) && existing.length > 0) {
+        await Promise.all(existing.map(attendee => isudAPI.scheduleAttendees.delete(attendee.id)));
+      }
+    } catch (err) {
+      console.error('Failed to delete schedule attendees:', err);
+    }
+  }, []);
+
+  const handleSubmitAppointment = useCallback(async (appointmentData) => {
+    const employeeIds = normalizeIds(appointmentData.employee_ids ?? appointmentData.employee_id);
+    const clientIds = normalizeIds(appointmentData.client_ids ?? appointmentData.client_id);
+    const primaryEmployeeId = employeeIds[0] || appointmentData.employee_id;
+    const primaryClientId = clientIds[0] || appointmentData.client_id;
+
+    const schedulePayload = {
+      ...appointmentData,
+      employee_id: primaryEmployeeId,
+      client_id: primaryClientId,
+    };
+    delete schedulePayload.employee_ids;
+    delete schedulePayload.client_ids;
+
+    let savedRecord;
+    if (editingAppointment && editingAppointment.id) {
+      const response = await scheduleAPI.update(editingAppointment.id, schedulePayload);
+      savedRecord = response?.data ?? response;
+    } else {
+      const response = await scheduleAPI.create(schedulePayload);
+      savedRecord = response?.data ?? response;
+    }
+
+    const scheduleId = savedRecord?.id || editingAppointment?.id;
+    await syncScheduleAttendees(scheduleId, employeeIds, clientIds, primaryEmployeeId, primaryClientId);
+
     // Refresh schedules - cache will prevent duplicate calls if already in flight
     await refreshSchedules();
     
     setIsModalOpen(false);
     setEditingAppointment(null);
-  }, [editingAppointment, refreshSchedules]);
+  }, [editingAppointment, normalizeIds, refreshSchedules, syncScheduleAttendees]);
+
+  const handleDeleteAppointment = useCallback(async () => {
+    if (!editingAppointment?.id) return;
+    const scheduleId = editingAppointment.id;
+    await deleteScheduleAttendees(scheduleId);
+    await scheduleAPI.delete(scheduleId);
+    await refreshSchedules();
+    setIsModalOpen(false);
+    setEditingAppointment(null);
+  }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e, appointment) => {
@@ -466,7 +547,7 @@ export default function Schedule() {
               // Week view with time slots
               getTimeSlots().map(hour => (
                 <React.Fragment key={hour}>
-                  <div className="time-slot-cell" data-hour={hour}>
+                  <div className="calendar-cell time-slot time-label-cell" data-hour={hour}>
                     {hour.toString().padStart(2, '0')}:00
                   </div>
                   {days.map((date, dayIndex) => {
@@ -551,11 +632,11 @@ export default function Schedule() {
                 
                 return (
                   <React.Fragment key={hour}>
-                    <div className="time-slot-cell" data-hour={hour}>
+                    <div className="calendar-cell time-slot time-label-cell" data-hour={hour}>
                       {hour.toString().padStart(2, '0')}:00
                     </div>
                     <div
-                      className={`calendar-cell time-slot border ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
+                      className={`calendar-cell time-slot ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
                       style={{ position: 'relative' }}
                       onClick={() => {
                         const slotDate = new Date(days[0]);
@@ -621,7 +702,7 @@ export default function Schedule() {
                 return (
                   <div
                     key={index}
-                    className={`calendar-cell border-1 ${!isCurrentMonth(date) ? 'other-month' : ''} ${isToday ? 'today' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() ? 'drag-over' : ''}`}
+                    className={`calendar-cell ${!isCurrentMonth(date) ? 'other-month' : ''} ${isToday ? 'today' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() ? 'drag-over' : ''}`}
                     onClick={() => handleDateClick(date)}
                     onDragOver={(e) => handleDragOver(e, date)}
                     onDragLeave={handleDragLeave}
@@ -787,6 +868,7 @@ export default function Schedule() {
             appointment={editingAppointment}
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
+            onDelete={handleDeleteAppointment}
           />
         </Modal>
       </PermissionGate>
@@ -902,11 +984,10 @@ export default function Schedule() {
           min-width: 0;
         }
         
-        .calendar-grid.week-view .time-slot-cell {
+        .calendar-grid.week-view .time-label-cell {
           grid-column: 1;
         }
-        
-        .calendar-grid.week-view .calendar-cell {
+        .calendar-grid.week-view .calendar-cell:not(.time-label-cell) {
           grid-column: auto;
         }
         
@@ -917,7 +998,7 @@ export default function Schedule() {
           gap: 0;
         }
         
-        .time-slot-cell {
+        .calendar-cell.time-label-cell {
           background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
           color: ${isDarkMode ? '#e2e8f0' : '#495057'};
           font-size: 12px;
@@ -941,6 +1022,7 @@ export default function Schedule() {
           text-align: center;
           padding: 4px;
           overflow: hidden;
+          border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
         }
         
         .calendar-cell.time-slot {
@@ -1047,45 +1129,36 @@ export default function Schedule() {
           .calendar-container {
             height: calc(100vh - 250px);
           }
-          
           .calendar-header-cell {
             padding: 6px 2px;
             font-size: 11px;
           }
-          
           .calendar-header-cell .day-name {
             font-size: 10px;
           }
-          
           .calendar-header-cell .day-date {
             font-size: 12px;
           }
-          
-          .time-slot-cell {
+          .calendar-cell.time-label-cell {
             font-size: 10px;
             min-height: 50px;
             height: 50px;
             padding: 2px;
           }
-          
           .calendar-cell.time-slot {
             min-height: 50px;
             height: 50px;
           }
-          
           .calendar-cell {
             min-height: 80px;
           }
-          
           .appointment-dot {
             font-size: 9px;
             padding: 3px 4px;
           }
-          
           .appointment-time {
             font-size: 8px;
           }
-          
           .appointment-client {
             font-size: 9px;
           }
@@ -1095,35 +1168,28 @@ export default function Schedule() {
           .calendar-container {
             height: calc(100vh - 280px);
           }
-          
           .calendar-header-cell {
             padding: 4px 1px;
             font-size: 10px;
           }
-          
           .calendar-header-cell .day-name {
             font-size: 9px;
           }
-          
           .calendar-header-cell .day-date {
             font-size: 11px;
           }
-          
-          .time-slot-cell {
+          .calendar-cell.time-label-cell {
             font-size: 9px;
             min-height: 45px;
             height: 45px;
           }
-          
           .calendar-cell.time-slot {
             min-height: 45px;
             height: 45px;
           }
-          
           .calendar-cell {
             min-height: 70px;
           }
-          
           .appointment-dot {
             font-size: 8px;
             padding: 2px 3px;
@@ -1132,7 +1198,7 @@ export default function Schedule() {
         
         .drag-over {
           background-color: ${isDarkMode ? '#4a5568' : '#e3f2fd'} !important;
-          border: 2px dashed ${isDarkMode ? '#90cdf4' : '#2196f3'} !important;
+          border: 1px dashed ${isDarkMode ? '#90cdf4' : '#2196f3'} !important;
         }
         
         .appointment-time {

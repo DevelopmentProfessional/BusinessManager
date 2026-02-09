@@ -334,6 +334,16 @@ export const scheduleAPI = {
     clearCache('schedule');
     return api.put(`/isud/schedules/${id}`, data);
   },
+  delete: (id) => {
+    clearCache('schedule');
+    return api.delete(`/isud/schedules/${id}`);
+  },
+};
+
+export const scheduleAttendeesAPI = {
+  getBySchedule: (scheduleId) => api.get(`/isud/schedule_attendee?schedule_id=${scheduleId}`),
+  create: (data) => api.post('/isud/schedule_attendee', data),
+  delete: (id) => api.delete(`/isud/schedule_attendee/${id}`),
 };
 
 export const attendanceAPI = {
@@ -505,6 +515,7 @@ export const isudAPI = {
   suppliers: suppliersAPI,
   employees: employeesAPI,
   schedule: scheduleAPI,
+  scheduleAttendees: scheduleAttendeesAPI,
   attendance: attendanceAPI,
 };
 

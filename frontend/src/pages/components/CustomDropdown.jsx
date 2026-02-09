@@ -13,7 +13,8 @@ export default function CustomDropdown({
   id = '',
   searchable = false,
   onOpen = null,
-  loading = false
+  loading = false,
+  multiSelect = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,14 +45,40 @@ export default function CustomDropdown({
     };
   }, []);
 
+  const normalizedValue = multiSelect
+    ? (Array.isArray(value) ? value : value ? [value] : [])
+    : value;
+  const selectedOptions = multiSelect
+    ? options.filter(option => normalizedValue.includes(option.value))
+    : [];
+  const selectedOption = !multiSelect
+    ? options.find(option => option.value === value)
+    : null;
+  const displayValue = multiSelect
+    ? (selectedOptions.length === 0
+        ? placeholder
+        : selectedOptions.length <= 2
+          ? selectedOptions.map(option => option.label).join(', ')
+          : `${selectedOptions.length} selected`)
+    : (selectedOption ? selectedOption.label : placeholder);
+  const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
+
   const handleSelect = (option) => {
+    if (multiSelect) {
+      const next = new Set(selectedSet);
+      if (next.has(option.value)) {
+        next.delete(option.value);
+      } else {
+        next.add(option.value);
+      }
+      onChange({ target: { name, value: Array.from(next) } });
+      setSearchTerm('');
+      return;
+    }
     onChange({ target: { name, value: option.value } });
     setIsOpen(false);
     setSearchTerm('');
   };
-
-  const selectedOption = options.find(option => option.value === value);
-  const displayValue = selectedOption ? selectedOption.label : placeholder;
 
   // Filter options based on search term
   const filteredOptions = searchable && searchTerm 
@@ -82,7 +109,7 @@ export default function CustomDropdown({
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
               border-gray-300 dark:border-gray-600
               ${disabled ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500'}
-              ${required && !value ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : ''}
+              ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : ''}
             `}
             disabled={disabled}
           />
@@ -111,11 +138,11 @@ export default function CustomDropdown({
             flex items-center justify-between
             border-gray-300 dark:border-gray-600
             ${disabled ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500'}
-            ${required && !value ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : ''}
+            ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : ''}
           `}
           disabled={disabled}
         >
-          <span className={!selectedOption ? 'text-gray-500 dark:text-gray-400' : ''}>
+          <span className={(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? 'text-gray-500 dark:text-gray-400' : ''}>
             {displayValue}
           </span>
           <ChevronDownIcon 
@@ -135,7 +162,9 @@ export default function CustomDropdown({
           ) : filteredOptions.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No options available</div>
           ) : (
-            filteredOptions.map((option) => (
+            filteredOptions.map((option) => {
+              const isSelected = multiSelect ? selectedSet.has(option.value) : option.value === value;
+              return (
               <button
                 key={option.value}
                 type="button"
@@ -143,12 +172,14 @@ export default function CustomDropdown({
                 className={`
                   w-full px-3 py-2 text-left focus:outline-none
                   hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
-                  ${option.value === value ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-200'}
+                  ${isSelected ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-200'}
                 `}
+                aria-pressed={isSelected}
               >
                 {option.label}
               </button>
-            ))
+            );
+            })
           )}
         </div>
       )}

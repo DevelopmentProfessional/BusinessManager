@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
 import { isudAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, CalendarDaysIcon, ClockIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CalendarDaysIcon, ClockIcon, XMarkIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
 import CustomDropdown from './CustomDropdown';
 import IconButton from './IconButton';
@@ -17,10 +17,10 @@ const APPOINTMENT_TYPES = [
 
 // Define which fields are needed for each appointment type
 const APPOINTMENT_TYPE_CONFIG = {
-  one_time: { needsClient: true, needsService: true, needsEmployee: true, clientMultiple: false },
-  series: { needsClient: true, needsService: true, needsEmployee: true, clientMultiple: false },
-  meeting: { needsClient: false, needsService: false, needsEmployee: true, employeeMultiple: true },
-  task: { needsClient: false, needsService: false, needsEmployee: true, employeeMultiple: false }
+  one_time: { needsClient: true, needsService: true, needsEmployee: true, clientMultiple: true, employeeMultiple: true },
+  series: { needsClient: true, needsService: true, needsEmployee: true, clientMultiple: true, employeeMultiple: true },
+  meeting: { needsClient: false, needsService: false, needsEmployee: true, clientMultiple: false, employeeMultiple: true },
+  task: { needsClient: false, needsService: false, needsEmployee: true, clientMultiple: false, employeeMultiple: false }
 };
 
 const RECURRENCE_OPTIONS = [
@@ -30,7 +30,7 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' }
 ];
 
-export default function ScheduleForm({ appointment, onSubmit, onCancel, clients: clientsProp, services: servicesProp, employees: employeesProp }) {
+export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -132,31 +132,29 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
       const { date, time } = extractLocalParts(appointment.appointment_date);
       const [hour, minute] = time.split(':');
       return {
-        client_id: appointment.client_id || '',
+        client_ids: appointment.client_id ? [appointment.client_id] : [],
         service_id: appointment.service_id || '',
-        employee_id: appointment.employee_id || '',
+        employee_ids: appointment.employee_id ? [appointment.employee_id] : [],
         appointment_date: date,
         appointment_hour: hour,
         appointment_minute: minute,
         notes: appointment.notes || '',
         appointment_type: appointment.appointment_type || 'one_time',
         recurrence_frequency: appointment.recurrence_frequency || '',
-        duration_minutes: appointment.duration_minutes || 60,
-        attendees: appointment.attendees || []
+        duration_minutes: appointment.duration_minutes || 60
       };
     }
     return {
-      client_id: '',
+      client_ids: [],
       service_id: '',
-      employee_id: '',
+      employee_ids: [],
       appointment_date: '',
       appointment_hour: '',
       appointment_minute: '',
       notes: '',
       appointment_type: 'one_time',
       recurrence_frequency: '',
-      duration_minutes: 60,
-      attendees: []
+      duration_minutes: 60
     };
   };
 
@@ -172,21 +170,41 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
 
   useEffect(() => {
     if (user && isWriteOnly) {
-      // Lock employee_id to current user when write-only
+      // Lock employee selection to current user when write-only
       const self = employees.find(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase());
-      if (self && formData.employee_id !== self.id) {
-        setFormData(prev => ({ ...prev, employee_id: self.id }));
+      if (self && (!Array.isArray(formData.employee_ids) || formData.employee_ids[0] !== self.id)) {
+        setFormData(prev => ({ ...prev, employee_ids: [self.id] }));
       }
-    } else if (!formData.employee_id && employees.length === 1) {
-      setFormData(prev => ({ ...prev, employee_id: employees[0].id }));
+    } else if ((!Array.isArray(formData.employee_ids) || formData.employee_ids.length === 0) && employees.length === 1) {
+      setFormData(prev => ({ ...prev, employee_ids: [employees[0].id] }));
     }
-  }, [employees, formData.employee_id, isWriteOnly, user]);
+  }, [employees, formData.employee_ids, isWriteOnly, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleClientChange = (e) => {
+    const next = Array.isArray(e.target.value)
+      ? e.target.value
+      : e.target.value ? [e.target.value] : [];
+    setFormData(prev => ({
+      ...prev,
+      client_ids: next
+    }));
+  };
+
+  const handleEmployeeChange = (e) => {
+    const next = Array.isArray(e.target.value)
+      ? e.target.value
+      : e.target.value ? [e.target.value] : [];
+    setFormData(prev => ({
+      ...prev,
+      employee_ids: next
     }));
   };
 
@@ -218,8 +236,12 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
     // Get config for current type to determine required fields
     const config = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
 
+    const employeeIds = Array.isArray(formData.employee_ids) ? formData.employee_ids.filter(Boolean) : [];
+    const clientIds = Array.isArray(formData.client_ids) ? formData.client_ids.filter(Boolean) : [];
+
     const submitData = {
-      employee_id: formData.employee_id,
+      employee_id: employeeIds[0] || '',
+      employee_ids: employeeIds,
       appointment_date: appointmentDateStr,
       notes: formData.notes,
       appointment_type: formData.appointment_type,
@@ -228,8 +250,9 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
     };
 
     // Only include client_id and service_id if needed for this type
-    if (config.needsClient && formData.client_id) {
-      submitData.client_id = formData.client_id;
+    if (config.needsClient && clientIds.length > 0) {
+      submitData.client_id = clientIds[0];
+      submitData.client_ids = clientIds;
     }
     if (config.needsService && formData.service_id) {
       submitData.service_id = formData.service_id;
@@ -254,74 +277,76 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
           Event Type
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          {APPOINTMENT_TYPES.map((type) => (
-            <button
-              key={type.value}
-              type="button"
-              onClick={() => handleChange({ target: { name: 'appointment_type', value: type.value } })}
-              className={`p-2 rounded-lg border text-left transition-all ${
-                formData.appointment_type === type.value
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-              }`}
-            >
-              <div className="font-medium text-sm">{type.label}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{type.description}</div>
-            </button>
-          ))}
-        </div>
+        <CustomDropdown
+          name="appointment_type"
+          value={formData.appointment_type}
+          onChange={handleChange}
+          options={APPOINTMENT_TYPES.map((type) => ({
+            value: type.value,
+            label: type.label
+          }))}
+          placeholder="Select event type"
+          required
+        />
       </div>
 
       {/* Client Selection - only for appointments/series */}
       {typeConfig.needsClient && (
-        <div className="flex items-center gap-1"> 
-          <PermissionGate page="clients" permission="write">
-            <button
-              type="button"
-              onClick={() => openAddClientModal((newClient) => {
-                setFormData(prev => ({ ...prev, client_id: newClient.id }));
-                setClients(prev => [...prev, newClient]);
-              })}
-              className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-              title="Add new client"
-              aria-label="Add new client"
-            >
-              <PlusIcon className="h-5 w-5" />
-            </button>
-          </PermissionGate>
+        <div className="input-group">
+          <span className="input-group-text p-0 bg-transparent border-0">
+            <PermissionGate page="clients" permission="write">
+              <button
+                type="button"
+                onClick={() => openAddClientModal((newClient) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    client_ids: Array.from(new Set([...(prev.client_ids || []), newClient.id]))
+                  }));
+                  setClients(prev => [...prev, newClient]);
+                })}
+                className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
+                title="Add new client"
+                aria-label="Add new client"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+            </PermissionGate>
+          </span>
           <CustomDropdown
             name="client_id"
-            value={formData.client_id}
-            onChange={handleChange}
+            value={typeConfig.clientMultiple ? formData.client_ids : (formData.client_ids[0] || '')}
+            onChange={handleClientChange}
             options={clients.map((client) => ({
               value: client.id,
               label: client.name
             }))}
-            placeholder="Select a client"
+            placeholder={typeConfig.clientMultiple ? 'Select clients' : 'Select a client'}
             required
             className="flex-1"
             searchable={true}
             onOpen={handleClientDropdownOpen}
             loading={clientsLoading}
+            multiSelect={typeConfig.clientMultiple}
           />
         </div>
       )}
 
       {/* Service Selection - only for appointments/series */}
       {typeConfig.needsService && (
-        <div className="flex items-center gap-1"> 
-          <PermissionGate page="services" permission="write">
-            <button
-              type="button"
-              onClick={() => { closeModal(); navigate('/sales?new=1'); }}
-              className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-              title="Add new service"
-              aria-label="Add new service"
-            >
-              <PlusIcon className="h-5 w-5" />
-            </button>
-          </PermissionGate>
+        <div className="input-group">
+          <span className="input-group-text p-0 bg-transparent border-0">
+            <PermissionGate page="services" permission="write">
+              <button
+                type="button"
+                onClick={() => { closeModal(); navigate('/sales?new=1'); }}
+                className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
+                title="Add new service"
+                aria-label="Add new service"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+            </PermissionGate>
+          </span>
           <CustomDropdown
             name="service_id"
             value={formData.service_id}
@@ -340,41 +365,44 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
 
       {/* Employee Selection - always shown */}
       {typeConfig.needsEmployee && (
-        <div className="flex items-center gap-1"> 
-          <PermissionGate page="employees" permission="write">
-            <button
-              type="button"
-              onClick={() => { closeModal(); navigate('/employees?new=1'); }}
-              className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-              title="Add new employee"
-              aria-label="Add new employee"
-            >
-              <PlusIcon className="h-5 w-5" />
-            </button>
-          </PermissionGate>
-          <div className="flex-1">
+        <div>
+          <div className="input-group">
+            <span className="input-group-text p-0 bg-transparent border-0">
+              <PermissionGate page="employees" permission="write">
+                <button
+                  type="button"
+                  onClick={() => { closeModal(); navigate('/employees?new=1'); }}
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
+                  title="Add new employee"
+                  aria-label="Add new employee"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                </button>
+              </PermissionGate>
+            </span>
             <CustomDropdown
               name="employee_id"
-              value={formData.employee_id}
-              onChange={handleChange}
-              options={(isWriteOnly && user)
+              value={typeConfig.employeeMultiple ? formData.employee_ids : (formData.employee_ids[0] || '')}
+              onChange={handleEmployeeChange}
+              options={((isWriteOnly && user)
                 ? employees.filter(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase())
                 : employees
-              .map((employee) => ({
+              ).map((employee) => ({
                 value: employee.id,
                 label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ''}`
               }))}
-              placeholder={formData.appointment_type === 'meeting' ? 'Select attendees' : 'Select employee'}
+              placeholder={typeConfig.employeeMultiple ? 'Select employees' : 'Select employee'}
               required
               searchable={true}
               disabled={isWriteOnly}
+              multiSelect={typeConfig.employeeMultiple}
             />
-            {(isWriteOnly || employees.length === 1) && (
-              <p className="text-xs text-gray-500 mt-1">
-                You can only schedule for yourself
-              </p>
-            )}
           </div>
+          {(isWriteOnly || employees.length === 1) && (
+            <p className="text-xs text-gray-500 mt-1">
+              You can only schedule for yourself
+            </p>
+          )}
         </div>
       )}
 
@@ -446,7 +474,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div> 
           <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Date
@@ -461,41 +489,37 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
             className="input-field mt-1"
           />
         </div>
-
         <div>
-          <label htmlFor="appointment_hour" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Hour
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Time
           </label>
-          <CustomDropdown
-            name="appointment_hour"
-            value={formData.appointment_hour || ''}
-            onChange={handleChange}
-            options={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => ({
-              value: hour.toString().padStart(2, '0'),
-              label: hour.toString().padStart(2, '0')
-            }))}
-            placeholder="Hour"
-            required
-            className={timeError ? 'border-red-500' : ''}
-          />
-        </div>
-
-        <div> 
-          <label htmlFor="appointment_minute" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Minute
-          </label>
-          <CustomDropdown
-            name="appointment_minute"
-            value={formData.appointment_minute || ''}
-            onChange={handleChange}
-            options={[0, 15, 30, 45].map(minute => ({
-              value: minute.toString().padStart(2, '0'),
-              label: minute.toString().padStart(2, '0')
-            }))}
-            placeholder="Minute"
-            required
-            className={timeError ? 'border-red-500' : ''}
-          />
+          <div className="input-group mt-1">
+            <CustomDropdown
+              name="appointment_hour"
+              value={formData.appointment_hour || ''}
+              onChange={handleChange}
+              options={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => ({
+                value: hour.toString().padStart(2, '0'),
+                label: hour.toString().padStart(2, '0')
+              }))}
+              placeholder="Hour"
+              required
+              className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
+            />
+            <span className="input-group-text">:</span>
+            <CustomDropdown
+              name="appointment_minute"
+              value={formData.appointment_minute || ''}
+              onChange={handleChange}
+              options={[0, 15, 30, 45].map(minute => ({
+                value: minute.toString().padStart(2, '0'),
+                label: minute.toString().padStart(2, '0')
+              }))}
+              placeholder="Minute"
+              required
+              className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
+            />
+          </div>
         </div>
       </div>
       {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
@@ -518,7 +542,10 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, clients:
         </div>
       )}
 
-      <ActionFooter>
+      <ActionFooter className="justify-center">
+        {appointment?.id && onDelete && (
+          <IconButton icon={TrashIcon} label="Delete" onClick={onDelete} variant="danger" />
+        )}
         <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
         <IconButton icon={CheckIcon} label={appointment ? 'Update Appointment' : 'Book Appointment'} type="submit" variant="primary" />
       </ActionFooter>
