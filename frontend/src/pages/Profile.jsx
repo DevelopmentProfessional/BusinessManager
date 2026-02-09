@@ -107,9 +107,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="container-fluid py-1">
-  
-    
+    <div className="container-fluid py-1 d-flex flex-column min-vh-100">
+      <div className="mt-auto">
       {/* Employee Information */}
       <div className="card mb-1 p-2">
         <div className="card-body">
@@ -254,7 +253,7 @@ const Profile = () => {
  
         </div>
       </div>
- 
+      </div>
     </div>
   );
 };

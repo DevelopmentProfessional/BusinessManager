@@ -403,7 +403,7 @@ export default function Reports() {
   }
 
   return (
-    <div className="h-full flex flex-col p-1">
+    <div className="min-h-screen flex flex-col p-1">
       {/* Header */}
       <div className="mb-1">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Reports & Analytics</h1>
@@ -418,55 +418,57 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Report Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-        {accessibleReports.map((report) => (
-          <div
-            key={report.id}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => handleReportSelect(report)}
-          >
-            <div className="p-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className={`p-3 rounded-lg bg-${report.color}-100`}>
-                  <report.icon className={`h-6 w-6 text-${report.color}-600`} />
+      <div className="mt-auto">
+        {/* Report Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          {accessibleReports.map((report) => (
+            <div
+              key={report.id}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleReportSelect(report)}
+            >
+              <div className="p-1">
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`p-3 rounded-lg bg-${report.color}-100`}>
+                    <report.icon className={`h-6 w-6 text-${report.color}-600`} />
+                  </div>
+                  <EyeIcon className="h-5 w-5 text-gray-400" />
                 </div>
-                <EyeIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {report.title}
-              </h3>
-              
-              <p className="text-sm text-gray-600 mb-1">
-                {report.description}
-              </p>
-              
-              <div className="flex flex-wrap gap-1">
-                {report.tables.map((table) => (
-                  <span
-                    key={table}
-                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
-                  >
-                    {table}
-                  </span>
-                ))}
+                
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {report.title}
+                </h3>
+                
+                <p className="text-sm text-gray-600 mb-1">
+                  {report.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-1">
+                  {report.tables.map((table) => (
+                    <span
+                      key={table}
+                      className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                    >
+                      {table}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {accessibleReports.length === 0 && (
-        <div className="text-center py-1">
-          <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            You don't have permissions to view any reports.
-          </p>
+          ))}
         </div>
-      )}
+
+        {/* Empty State */}
+        {accessibleReports.length === 0 && (
+          <div className="text-center py-1">
+            <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              You don't have permissions to view any reports.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Report Modal */}
       <Modal 

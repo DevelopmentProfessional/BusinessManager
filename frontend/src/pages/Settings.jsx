@@ -381,10 +381,12 @@ export default function Settings() {
   ];
 
   return (
-    <div className="h-full flex flex-col pb-20">
+    <div className="min-h-screen flex flex-col pb-20">
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-3 sm:p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 max-w-4xl mx-auto">
+      <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4 flex flex-col">
+        <div className="mt-auto w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-100">
+            <div className="w-full max-w-3xl mx-auto">
           {/* Schedule Settings */}
           {activeTab === 'schedule' && (
             <div>
@@ -1017,11 +1019,13 @@ export default function Settings() {
               )}
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Bottom Fixed Navigation - Responsive */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 md:ml-64">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40">
         <nav className="flex justify-center gap-1 py-2 px-2 sm:px-4 max-w-md mx-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
