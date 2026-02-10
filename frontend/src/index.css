@@ -2,47 +2,284 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Bootstrap overrides and custom styles */
+/* Dynamic Branding Color System */
+:root {
+  /* Primary Color Palette (Default: Blue #3B82F6) */
+  --color-primary-50: 239 246 255;
+  --color-primary-100: 219 234 254;
+  --color-primary-200: 191 219 254;
+  --color-primary-300: 147 197 253;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-primary-800: 30 64 175;
+  --color-primary-900: 30 58 138;
+  --color-primary-950: 23 37 84;
+
+  /* Secondary Color Palette (Default: Emerald #10B981) */
+  --color-secondary-50: 236 253 245;
+  --color-secondary-100: 209 250 229;
+  --color-secondary-200: 167 243 208;
+  --color-secondary-300: 110 231 183;
+  --color-secondary-400: 52 211 153;
+  --color-secondary-500: 16 185 129;
+  --color-secondary-600: 5 150 105;
+  --color-secondary-700: 4 120 87;
+  --color-secondary-800: 6 95 70;
+  --color-secondary-900: 6 78 59;
+  --color-secondary-950: 2 44 34;
+
+  /* Accent Color Palette (Default: Purple #8B5CF6) */
+  --color-accent-50: 250 245 255;
+  --color-accent-100: 243 232 255;
+  --color-accent-200: 233 213 255;
+  --color-accent-300: 216 180 254;
+  --color-accent-400: 192 132 252;
+  --color-accent-500: 139 92 246;
+  --color-accent-600: 124 58 237;
+  --color-accent-700: 109 40 217;
+  --color-accent-800: 91 33 182;
+  --color-accent-900: 76 29 149;
+  --color-accent-950: 46 16 101;
+
+  /* Base color references for components */
+  --color-primary: rgb(var(--color-primary-500));
+  --color-secondary: rgb(var(--color-secondary-500));
+  --color-accent: rgb(var(--color-accent-500));
+}
+
+/* Bootstrap overrides and theme-aware base styles */
 @layer base {
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-gray-600;
   }
-  
-  /* Ensure Bootstrap dark mode works properly */
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+
   [data-bs-theme="dark"] {
     color-scheme: dark;
   }
-  
+
+  [data-bs-theme="dark"] body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
   [data-bs-theme="light"] {
     color-scheme: light;
   }
 }
 
 @layer components {
-  /* Custom utility classes that work with both Tailwind and Bootstrap */
+  /* Theme-aware utility classes using branded colors */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
-  
+
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors;
   }
-  
+
+  /* Success button using secondary branded color */
+  .btn-success {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  /* Accent button using accent branded color */
+  .btn-accent {
+    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+
+  /* Branded focus rings */
+  .focus-ring-primary {
+    @apply focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .focus-ring-secondary {
+    @apply focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2;
+  }
+
+  .focus-ring-accent {
+    @apply focus:ring-2 focus:ring-accent-500 focus:ring-offset-2;
+  }
+
+  /* Branded badges */
+  .badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
+  }
+
+  .badge-secondary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800 dark:bg-secondary-900 dark:text-secondary-200;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-100 text-accent-800 dark:bg-accent-900 dark:text-accent-200;
+  }
+
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
-  
+
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700;
   }
-  
-  /* Dark mode specific overrides */
-  [data-bs-theme="dark"] .card {
-    @apply bg-gray-800 border-gray-700;
+
+  /* Theme-aware text */
+  .text-body-emphasis {
+    @apply text-gray-900 dark:text-gray-100;
   }
-  
-  [data-bs-theme="dark"] .input-field {
-    @apply bg-gray-800 border-gray-600 text-gray-100;
+
+  /* Responsive square image container */
+  .square-image-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%; /* Creates a 1:1 aspect ratio */
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+  }
+
+  .square-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Crops the image to fill container while maintaining aspect ratio */
+    object-position: center; /* Centers the image within the container */
+    display: block;
+    transition: transform 0.3s ease; /* Smooth scaling on hover */
+  }
+
+  .square-image:hover {
+    transform: scale(1.05); /* Subtle zoom effect on hover */
+  }
+
+  .square-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0.5;
+  }
+
+  /* Fixed size square containers for specific use cases */
+  .square-sm {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+
+  .square-md {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .square-lg {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .square-xl {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  /* Responsive variations for different screen sizes */
+  @media (max-width: 576px) {
+    .square-image-container {
+      border-radius: 6px;
+    }
+    
+    .square-image:hover {
+      transform: scale(1.02); /* Less aggressive zoom on mobile */
+    }
+  }
+
+  @media (min-width: 768px) {
+    .square-image-container {
+      border-radius: 10px;
+    }
+  }
+
+  @media (min-width: 992px) {
+    .square-image-container {
+      border-radius: 12px;
+    }
+  }
+
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .square-image {
+      transition: none;
+    }
+    
+    .square-image:hover {
+      transform: none;
+    }
+  }
+
+.text-muted {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+  /* Theme-aware table styles (for Tailwind tables) */
+  [data-bs-theme="dark"] .divide-gray-200 > * + * {
+    border-color: theme('colors.gray.700');
+  }
+
+  /*
+   * Scrollable container: use on the element that should scroll instead of the page.
+   * Parent must be flex with a defined height (or flex-1 min-h-0).
+   * Use on table wrappers, list wrappers, etc. so the component scrolls internally.
+   */
+  .overflow-scroll-container {
+    @apply min-h-0 flex-1 overflow-auto;
+  }
+
+  /* Same but for flex column children that should take remaining space and scroll */
+  .overflow-scroll-container-y {
+    @apply min-h-0 flex-1 overflow-y-auto overflow-x-auto;
+  }
+
+  /* DOCX Preview container styles */
+  .docx-preview-container {
+    @apply bg-white dark:bg-gray-100 p-4 rounded shadow-inner;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .docx-preview-container .docx {
+    @apply text-gray-900;
+    font-family: 'Calibri', 'Arial', sans-serif;
+  }
+
+  .docx-preview-container table {
+    @apply border-collapse border border-gray-300;
+  }
+
+  .docx-preview-container table td,
+  .docx-preview-container table th {
+    @apply border border-gray-300 p-2;
   }
 }
 

@@ -1,26 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import useStore from '../services/useStore';
 import { clientsAPI } from '../services/api';
-import Modal from '../components/Modal';
-import ClientForm from '../components/ClientForm';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
-import { useLocation, useNavigate } from 'react-router-dom';
+import Modal from './components/Modal';
+import ClientForm from './components/ClientForm';
+import PermissionGate from './components/PermissionGate';
+import CSVImportButton from './components/CSVImportButton';
 
 export default function Clients() {
   const { 
     clients, setClients, addClient, updateClient, removeClient,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission,
-    setFilter, getFilter
+    isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
-
-  // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('clients', 'read') && 
@@ -31,18 +23,20 @@ export default function Clients() {
   }
 
   const [editingClient, setEditingClient] = useState(null);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(() => getFilter('clients', 'searchTerm', ''));
-  const [isImporting, setIsImporting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tierFilter, setTierFilter] = useState('all');
+  const scrollRef = useRef(null);
+  const hasFetched = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadClients();
   }, []);
 
-  // Auto-open create modal when navigated with ?new=1 and then clean the URL
+  // Auto-open create modal when navigated with ?new=1
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('new') === '1') {
@@ -57,11 +51,19 @@ export default function Clients() {
     setLoading(true);
     try {
       const response = await clientsAPI.getAll();
-      setClients(response.data);
-      clearError();
+      const clientsData = response?.data ?? response;
+      if (Array.isArray(clientsData)) {
+        setClients(clientsData);
+        clearError();
+      } else {
+        console.error('Invalid clients data format:', clientsData);
+        setError('Invalid data format received from server');
+        setClients([]);
+      }
     } catch (err) {
       setError('Failed to load clients');
-      console.error(err);
+      console.error('Error loading clients:', err);
+      setClients([]);
     } finally {
       setLoading(false);
     }
@@ -93,316 +95,325 @@ export default function Clients() {
     
     if (!window.confirm('Are you sure you want to delete this client?')) return;
 
-    await clientsAPI.delete(clientId);
-    removeClient(clientId);
-  };
-
-  const handleImportCSV = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setIsImporting(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await clientsAPI.uploadCSV(formData);
-    if (response?.data) {
-      loadClients();
+    try {
+      await clientsAPI.delete(clientId);
+      removeClient(clientId);
+      clearError();
+    } catch (err) {
+      const errorMsg = err?.response?.data?.detail || 'Failed to delete client';
+      setError(errorMsg);
+      console.error(err);
     }
-    
-    setIsImporting(false);
-    event.target.value = '';
   };
 
   const handleSubmitClient = async (clientData) => {
     try {
       if (editingClient) {
         const response = await clientsAPI.update(editingClient.id, clientData);
-        updateClient(editingClient.id, response.data);
+        const updatedClient = response?.data ?? response;
+        updateClient(editingClient.id, updatedClient);
       } else {
         const response = await clientsAPI.create(clientData);
-        addClient(response.data);
+        const newClient = response?.data ?? response;
+        addClient(newClient);
       }
       closeModal();
       clearError();
     } catch (err) {
-      setError('Failed to save client');
+      const errorMsg = err?.response?.data?.detail || 'Failed to save client';
+      setError(errorMsg);
       console.error(err);
     }
   };
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    setFilter('clients', 'searchTerm', value);
+  const handleCSVImport = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const clientData = {
+          name: record.name,
+          email: record.email || null,
+          phone: record.phone || null,
+          address: record.address || null,
+          notes: record.notes || null,
+          membership_tier: (record.membership_tier || 'NONE').toUpperCase(),
+        };
+        
+        await clientsAPI.create(clientData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
+      }
+    }
+
+    return { success, failed, errors };
   };
 
-  const handleRefresh = () => {
-    loadClients();
+  // Get membership tier badge color
+  const getTierColor = (tier) => {
+    const upperTier = (tier || 'NONE').toUpperCase();
+    if (upperTier === 'PLATINUM') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+    if (upperTier === 'GOLD') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+    if (upperTier === 'SILVER') return 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
+    if (upperTier === 'BRONZE') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'; // NONE
   };
 
-  // Filter clients based on search term
-  const filteredClients = clients.filter(client =>
-    client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.address?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getTierLabel = (tier) => {
+    const labels = { NONE: 'None', BRONZE: 'Bronze', SILVER: 'Silver', GOLD: 'Gold', PLATINUM: 'Platinum' };
+    return labels[(tier || 'NONE').toUpperCase()] || tier || 'None';
+  };
+
+  // Filter clients
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) => {
+      // Search filter
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesName = (client.name || '').toLowerCase().includes(term);
+        const matchesEmail = (client.email || '').toLowerCase().includes(term);
+        const matchesPhone = (client.phone || '').toLowerCase().includes(term);
+        if (!matchesName && !matchesEmail && !matchesPhone) return false;
+      }
+
+      // Tier filter
+      if (tierFilter !== 'all') {
+        const clientTier = (client.membership_tier || 'NONE').toUpperCase();
+        if (clientTier !== tierFilter) return false;
+      }
+
+      return true;
+    });
+  }, [clients, searchTerm, tierFilter]);
+
+  // Scroll to bottom when data loads
+  useEffect(() => {
+    if (scrollRef.current && filteredClients.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filteredClients.length]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '16rem' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
 
-  // Table columns configuration
-  const columns = [
-    { key: 'name', title: 'Name' },
-    { key: 'email', title: 'Email', render: (value) => value || '-' },
-    { key: 'phone', title: 'Phone', render: (value) => value || '-' },
-    { key: 'address', title: 'Address', render: (value) => value || '-' },
-  ];
-
-  // Transaction columns for history panel
-  const transactionColumns = [
-    { key: 'date', title: 'Date', render: (value) => new Date(value).toLocaleDateString() },
-    { key: 'description', title: 'Description' },
-    { key: 'amount', title: 'Amount', render: (value) => `$${value}` },
-    { key: 'status', title: 'Status' },
-  ];
-
-  const handleClientSelect = (client) => {
-    if (selectedClient?.id === client.id) {
-      setSelectedClient(null);
-    } else {
-      setSelectedClient(client);
-      // Mock transaction data - replace with actual API call
-      setTransactions([
-        { id: 1, date: '2024-01-15', description: 'Service Payment', amount: 150, status: 'Completed' },
-        { id: 2, date: '2024-01-10', description: 'Item Purchase', amount: 75, status: 'Pending' },
-        { id: 3, date: '2024-01-05', description: 'Consultation Fee', amount: 100, status: 'Completed' },
-      ]);
-    }
-  };
-
   return (
-    <div className="h-full flex flex-col">
+    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-        
-        {/* Search and Add Button Row */}
-        <div className="mt-4">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Search clients by name, email, phone, or address..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="form-control"
-            />
-            <PermissionGate page="clients" permission="write">
-              <div className="input-group-append d-flex">
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="btn btn-outline-secondary"
-                >
-                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      <div className="flex-shrink-0 border-bottom p-3">
+        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Clients</h1>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
+          {error}
+        </div>
+      )}
+
+      {/* Main table container */}
+      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+        {/* Scrollable rows – grow upwards from bottom */}
+        <div
+          ref={scrollRef}
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          style={{ background: 'var(--bs-body-bg)' }}
+        >
+          {filteredClients.length > 0 ? (
+            <table className="table table-borderless table-hover mb-0 table-fixed">
+              <colgroup>
+                <col style={{ width: '50px' }} />
+                <col />
+                <col style={{ width: '180px' }} />
+                <col style={{ width: '140px' }} />
+                <col style={{ width: '100px' }} />
+                <col style={{ width: '50px' }} />
+              </colgroup>
+              <tbody>
+                {filteredClients.map((client, index) => (
+                  <tr
+                    key={client.id || index}
+                    className="align-middle border-bottom"
+                    style={{ height: '56px' }}
+                  >
+                    {/* Delete */}
+                    <td className="text-center px-2">
+                      <PermissionGate page="clients" permission="delete">
+                        <button
+                          onClick={() => handleDeleteClient(client.id)}
+                          className="btn btn-sm btn-outline-danger border-0 p-1"
+                          title="Delete"
+                        >
+                          ×
+                        </button>
+                      </PermissionGate>
+                    </td>
+
+                    {/* Name */}
+                    <td className="px-3">
+                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                        {client.name}
+                      </div>
+                      <div className="small text-muted text-truncate">
+                        {client.email || client.phone || 'No contact'}
+                      </div>
+                    </td>
+
+                    {/* Phone */}
+                    <td className="px-3 text-muted">
+                      <div className="text-truncate" style={{ maxWidth: '100%' }}>
+                        {client.phone || '-'}
+                      </div>
+                    </td>
+
+                    {/* Membership */}
+                    <td className="px-3">
+                      <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>
+                        {getTierLabel(client.membership_tier)}
+                      </span>
+                    </td>
+
+                    {/* Points */}
+                    <td className="text-center px-3">
+                      <span className="badge bg-secondary-subtle text-secondary">
+                        {client.membership_points || 0} pts
+                      </span>
+                    </td>
+
+                    {/* Edit */}
+                    <td className="text-center px-2">
+                      <PermissionGate page="clients" permission="write">
+                        <button
+                          onClick={() => handleEditClient(client)}
+                          className="btn btn-sm btn-outline-primary border-0 p-1"
+                          title="Edit"
+                        >
+                          ✎
+                        </button>
+                      </PermissionGate>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+              {searchTerm ? `No clients found matching "${searchTerm}"` : 'No clients found'}
+            </div>
+          )}
+        </div>
+
+        {/* Fixed bottom – headers + controls */}
+        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+          {/* Column Headers */}
+          <table className="table table-borderless mb-0 bg-light">
+            <colgroup>
+              <col style={{ width: '50px' }} />
+              <col />
+              <col style={{ width: '180px' }} />
+              <col style={{ width: '140px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '50px' }} />
+            </colgroup>
+            <tfoot>
+              <tr className="bg-secondary-subtle">
+                <th className="text-center"></th>
+                <th>Client</th>
+                <th>Phone</th>
+                <th>Membership</th>
+                <th className="text-center">Points</th>
+                <th className="text-center"></th>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Controls */}
+          <div className="p-2 border-top">
+            {/* Filters row */}
+            <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
+              <div className="flex-grow-1 position-relative" style={{ minWidth: '180px' }}>
+                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
                   </svg>
-                  Refresh
-                </button>
-                <label className="btn btn-outline-primary cursor-pointer">
-                  <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
-                  {isImporting ? 'Importing...' : 'Import CSV'}
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                    disabled={isImporting}
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="form-control ps-5"
+                />
+              </div>
+
+              <select
+                value={tierFilter}
+                onChange={(e) => setTierFilter(e.target.value)}
+                className="form-select"
+                style={{ maxWidth: '160px' }}
+              >
+                <option value="all">All Tiers</option>
+                <option value="NONE">No Membership</option>
+                <option value="BRONZE">Bronze</option>
+                <option value="SILVER">Silver</option>
+                <option value="GOLD">Gold</option>
+                <option value="PLATINUM">Platinum</option>
+              </select>
+
+              <span className="text-muted small ms-2">
+                {filteredClients.length} / {clients.length}
+              </span>
+            </div>
+
+            {/* Action buttons */}
+            <PermissionGate page="clients" permission="write">
+              <div className="d-flex gap-2">
+                <div className="btn-group">
+                  <CSVImportButton
+                    entityName="Clients"
+                    onImport={handleCSVImport}
+                    onComplete={loadClients}
+                    requiredFields={['name']}
+                    fieldMapping={{
+                      'client name': 'name',
+                      'full name': 'name',
+                      'client': 'name',
+                      'email address': 'email',
+                      'phone number': 'phone',
+                      'tier': 'membership_tier',
+                      'membership': 'membership_tier',
+                    }}
+                    className="btn btn-outline-secondary"
                   />
-                </label>
+                  <button
+                    type="button"
+                    onClick={handleCreateClient}
+                    className="btn btn-primary"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                    </svg>
+                    Add
+                  </button>
+                </div>
               </div>
             </PermissionGate>
           </div>
         </div>
       </div>
-
-      {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Mobile Layout */}
-      <div className="md:hidden flex-1 flex flex-col">
-        {/* Client List Area */}
-        <div className={`flex-1 transition-all duration-300 ${selectedClient ? 'flex-shrink-0' : ''}`}>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full">
-            {filteredClients.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {filteredClients.map((client) => (
-                  <div 
-                    key={client.id}
-                    onClick={() => handleClientSelect(client)}
-                    className={`p-4 cursor-pointer transition-colors ${
-                      selectedClient?.id === client.id 
-                        ? 'bg-blue-50 border-l-4 border-l-blue-500' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
-                          {client.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 truncate">
-                          {client.email || client.phone || 'No contact info'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <PermissionGate page="clients" permission="delete">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClient(client.id);
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </PermissionGate>
-                        <PermissionGate page="clients" permission="write">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditClient(client);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                        </PermissionGate>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-32">
-                <p className="text-gray-500">
-                  {searchTerm ? `No clients found matching "${searchTerm}"` : 'No clients found'}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Transaction History Panel */}
-        {selectedClient && (
-          <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            {/* Selected Client Header */}
-            <div className="p-4 border-b border-gray-200 bg-blue-50">
-              <h3 className="text-lg font-medium text-gray-900">
-                {selectedClient.name}
-              </h3>
-              <p className="text-sm text-gray-600">Transaction History</p>
-            </div>
-            
-            {/* Transaction Table */}
-            <div className="max-h-64 overflow-y-auto">
-              <MobileTable
-                data={transactions}
-                columns={transactionColumns}
-                onEdit={(transaction) => console.log('Edit transaction:', transaction)}
-                onDelete={(transaction) => console.log('Delete transaction:', transaction)}
-                loading={false}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden md:block">
-        <div className="bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-          <table className="min-w-full divide-y divide-gray-300">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Address
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredClients.map((client) => (
-                <tr key={client.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {client.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.email || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.phone || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {client.address || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <PermissionGate page="clients" permission="write">
-                      <button
-                        onClick={() => handleEditClient(client)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                    </PermissionGate>
-                    <PermissionGate page="clients" permission="delete">
-                      <button
-                        onClick={() => handleDeleteClient(client.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </PermissionGate>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {clients.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No clients found</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile Add Button */}
-      <PermissionGate page="clients" permission="write">
-        <MobileAddButton 
-          onClick={handleCreateClient}
-          label="Add Client"
-        />
-      </PermissionGate>
 
       {/* Modal for Client Form */}
       <Modal isOpen={isModalOpen && modalContent === 'client-form'} onClose={closeModal}>

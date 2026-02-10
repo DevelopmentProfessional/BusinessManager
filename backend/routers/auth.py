@@ -12,7 +12,8 @@ from backend.database import get_session
 from backend.models import (
     User, UserCreate, UserUpdate, UserRead, UserPermission, UserPermissionCreate,
     UserPermissionUpdate, UserPermissionRead, LoginRequest, LoginResponse,
-    PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType
+    PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType,
+    Role, RolePermission, RoleCreate, RoleUpdate, RoleRead, RolePermissionCreate, RolePermissionRead
 )
 
 router = APIRouter()
@@ -98,33 +99,47 @@ def get_current_user(
     return user
 
 def get_user_permissions_list(user: User, session: Session) -> List[str]:
-    """Get user permissions as list of strings"""
+    """Get user permissions as list of strings (including inherited role permissions)"""
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
-        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
+        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin']
         all_permissions = ['read', 'write', 'delete', 'admin']
         admin_permissions = []
         for page in all_pages:
             for permission in all_permissions:
                 admin_permissions.append(f"{page}:{permission}")
         return admin_permissions
-    
-    permissions = session.exec(
+
+    permission_strings = set()  # Use set to avoid duplicates
+
+    # Get permissions from assigned role (if any)
+    if user.role_id:
+        role_permissions = session.exec(
+            select(RolePermission).where(RolePermission.role_id == user.role_id)
+        ).all()
+        for rp in role_permissions:
+            try:
+                val = getattr(rp.permission, "value", str(rp.permission))
+            except Exception:
+                val = str(rp.permission)
+            permission_strings.add(f"{rp.page}:{str(val).lower()}")
+
+    # Get user's individual permissions (these can override or add to role permissions)
+    user_permissions = session.exec(
         select(UserPermission).where(UserPermission.user_id == user.id)
     ).all()
-    
+
     # Convert to list of strings like "clients:read", "inventory:write"
-    permission_strings = []
-    for perm in permissions:
+    for perm in user_permissions:
         if perm.granted:
             # Be tolerant of legacy/corrupt rows where enum casing or value is wrong
             try:
                 val = getattr(perm.permission, "value", str(perm.permission))
             except Exception:
                 val = str(perm.permission)
-            permission_strings.append(f"{perm.page}:{str(val).lower()}")
-    
-    return permission_strings
+            permission_strings.add(f"{perm.page}:{str(val).lower()}")
+
+    return list(permission_strings)
 
 @router.get("/initialize")
 @router.post("/initialize")
@@ -142,7 +157,7 @@ def initialize_admin(session: Session = Depends(get_session)):
     
     admin_user = User(
         username="admin",
-        email="admin@lavishbeautyhairandnail.care",
+        email="admin@businessmanager.com",
         password_hash=hashed_password.decode('utf-8'),
         first_name="Admin",
         last_name="User",
@@ -1070,3 +1085,304 @@ def get_account_status(
         "last_login": user.last_login,
         "force_password_reset": user.force_password_reset
     }
+
+
+# ============================================================================
+# Role Management Endpoints
+# ============================================================================
+
+@router.get("/roles", response_model=List[RoleRead])
+def get_roles(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get all roles with their permissions (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    roles = session.exec(select(Role)).all()
+    return roles
+
+@router.post("/roles", response_model=RoleRead)
+def create_role(
+    role_data: RoleCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Create a new role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    # Check if role name already exists
+    existing = session.exec(select(Role).where(Role.name == role_data.name)).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role with this name already exists"
+        )
+
+    role = Role(
+        name=role_data.name,
+        description=role_data.description
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+
+    return role
+
+@router.get("/roles/{role_id}", response_model=RoleRead)
+def get_role(
+    role_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get a role by ID with its permissions (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    return role
+
+@router.put("/roles/{role_id}", response_model=RoleRead)
+def update_role(
+    role_id: str,
+    role_data: RoleUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Update a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    if role.is_system:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify system roles"
+        )
+
+    if role_data.name is not None:
+        # Check if name is taken by another role
+        existing = session.exec(
+            select(Role).where(Role.name == role_data.name, Role.id != role_uuid)
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Role with this name already exists"
+            )
+        role.name = role_data.name
+
+    if role_data.description is not None:
+        role.description = role_data.description
+
+    role.updated_at = datetime.utcnow()
+    session.commit()
+    session.refresh(role)
+
+    return role
+
+@router.delete("/roles/{role_id}")
+def delete_role(
+    role_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Delete a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    if role.is_system:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete system roles"
+        )
+
+    # Check if any users are assigned to this role
+    users_with_role = session.exec(select(User).where(User.role_id == role_uuid)).first()
+    if users_with_role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete role while users are assigned to it"
+        )
+
+    # Delete role permissions first
+    role_perms = session.exec(select(RolePermission).where(RolePermission.role_id == role_uuid)).all()
+    for perm in role_perms:
+        session.delete(perm)
+
+    session.delete(role)
+    session.commit()
+
+    return {"message": "Role deleted successfully"}
+
+@router.post("/roles/{role_id}/permissions", response_model=RolePermissionRead)
+def add_role_permission(
+    role_id: str,
+    permission_data: RolePermissionCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Add a permission to a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    # Validate permission type
+    try:
+        perm_type = PermissionType(permission_data.permission.lower())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid permission type. Must be one of: {[p.value for p in PermissionType]}"
+        )
+
+    # Check if permission already exists for this role
+    existing = session.exec(
+        select(RolePermission).where(
+            RolePermission.role_id == role_uuid,
+            RolePermission.page == permission_data.page,
+            RolePermission.permission == perm_type
+        )
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This permission already exists for this role"
+        )
+
+    role_perm = RolePermission(
+        role_id=role_uuid,
+        page=permission_data.page,
+        permission=perm_type
+    )
+    session.add(role_perm)
+    session.commit()
+    session.refresh(role_perm)
+
+    return role_perm
+
+@router.delete("/roles/{role_id}/permissions/{permission_id}")
+def remove_role_permission(
+    role_id: str,
+    permission_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Remove a permission from a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+        perm_uuid = UUID(permission_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    perm = session.get(RolePermission, perm_uuid)
+    if not perm or perm.role_id != role_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permission not found for this role"
+        )
+
+    session.delete(perm)
+    session.commit()
+
+    return {"message": "Permission removed from role"}
+
+# ============================================================================
+# Database Environment (DEPRECATED)
+# ============================================================================
+# NOTE: Database environment preference is now stored in the user's profile
+# (User.db_environment field). Use the user update endpoint to change it.
+# These endpoints are kept for backward compatibility but may be removed.

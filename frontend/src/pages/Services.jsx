@@ -1,63 +1,55 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, PencilIcon, TrashIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { servicesAPI } from '../services/api';
-import Modal from '../components/Modal';
-import ServiceForm from '../components/ServiceForm';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
-import { useLocation, useNavigate } from 'react-router-dom';
+import Modal from './components/Modal';
+import ServiceForm from './components/ServiceForm';
+import PermissionGate from './components/PermissionGate';
+import CSVImportButton from './components/CSVImportButton';
 
 export default function Services() {
-  const { 
+  const {
     services, setServices, addService, updateService, removeService,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
-  // Use the permission refresh hook
-  usePermissionRefresh();
-
   // Check permissions at page level
-  if (!hasPermission('services', 'read') && 
-      !hasPermission('services', 'write') && 
-      !hasPermission('services', 'delete') && 
+  if (!hasPermission('services', 'read') &&
+      !hasPermission('services', 'write') &&
+      !hasPermission('services', 'delete') &&
       !hasPermission('services', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
 
   const [editingService, setEditingService] = useState(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const scrollRef = useRef(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadServices();
   }, []);
-
-  // Auto-open create modal when navigated with ?new=1 and then clean the URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('new') === '1') {
-      setEditingService(null);
-      openModal('service-form');
-      params.delete('new');
-      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
-    }
-  }, [location.search]);
 
   const loadServices = async () => {
     setLoading(true);
     try {
       const response = await servicesAPI.getAll();
-      setServices(response.data);
-      clearError();
+      const servicesData = response?.data ?? response;
+      if (Array.isArray(servicesData)) {
+        setServices(servicesData);
+        clearError();
+      } else {
+        console.error('Invalid services data format:', servicesData);
+        setServices([]);
+      }
     } catch (err) {
       setError('Failed to load services');
-      console.error(err);
+      console.error('Error loading services:', err);
+      setServices([]);
     } finally {
       setLoading(false);
     }
@@ -86,28 +78,15 @@ export default function Services() {
       setError('You do not have permission to delete services');
       return;
     }
-    
     if (!window.confirm('Are you sure you want to delete this service?')) return;
-
-    await servicesAPI.delete(serviceId);
-    removeService(serviceId);
-  };
-
-  const handleImportCSV = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setIsImporting(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await servicesAPI.uploadCSV(formData);
-    if (response?.data) {
-      loadServices();
+    try {
+      await servicesAPI.delete(serviceId);
+      removeService(serviceId);
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to delete service';
+      setError(String(detail));
     }
-    
-    setIsImporting(false);
-    event.target.value = '';
   };
 
   const handleSubmitService = async (serviceData) => {
@@ -127,171 +106,262 @@ export default function Services() {
     }
   };
 
-  const handleRefresh = () => {
-    loadServices();
+  const handleCSVImport = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const serviceData = {
+          name: record.name,
+          description: record.description || '',
+          price: parseFloat(record.price) || 0,
+          duration_minutes: parseInt(record.duration_minutes) || parseInt(record.duration) || 30,
+          category: record.category || '',
+        };
+        await servicesAPI.create(serviceData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
+      }
+    }
+    return { success, failed, errors };
   };
+
+  // Get unique categories for filter
+  const categories = useMemo(() => {
+    const cats = new Set(services.map(s => s.category).filter(Boolean));
+    return ['all', ...Array.from(cats)];
+  }, [services]);
+
+  // Filtered services based on search and category
+  const filteredServices = useMemo(() => {
+    return services.filter((svc) => {
+      // Search filter
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesName = (svc.name || '').toLowerCase().includes(term);
+        const matchesDesc = (svc.description || '').toLowerCase().includes(term);
+        const matchesCat = (svc.category || '').toLowerCase().includes(term);
+        if (!matchesName && !matchesDesc && !matchesCat) return false;
+      }
+
+      // Category filter
+      if (categoryFilter !== 'all') {
+        if ((svc.category || '') !== categoryFilter) return false;
+      }
+
+      return true;
+    });
+  }, [services, searchTerm, categoryFilter]);
+
+  // Scroll to bottom when data loads
+  useEffect(() => {
+    if (scrollRef.current && filteredServices.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filteredServices.length]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '16rem' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Services</h1>
-        
-        {/* Search and Add Button Row */}
-        <div className="mt-4">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Search services by name or category..."
-              className="form-control"
-            />
+    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+
+      {/* Header */}
+      <div className="flex-shrink-0 border-bottom p-3">
+        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Services</h1>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
+          {error}
+        </div>
+      )}
+
+      {/* Main table container */}
+      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+        {/* Scrollable rows – grow upwards from bottom */}
+        <div
+          ref={scrollRef}
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          style={{ background: 'var(--bs-body-bg)' }}
+        >
+          {filteredServices.length > 0 ? (
+            <table className="table table-borderless table-hover mb-0 table-fixed">
+              <colgroup>
+                <col />
+                <col style={{ width: '100px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '80px' }} />
+              </colgroup>
+              <tbody>
+                {filteredServices.map((service, index) => (
+                  <tr
+                    key={service.id || index}
+                    className="align-middle border-bottom"
+                    style={{ height: '56px', cursor: 'pointer' }}
+                    onClick={() => handleEditService(service)}
+                  >
+                    {/* Service Name */}
+                    <td className="px-3">
+                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                        {service.name}
+                      </div>
+                    </td>
+
+                    {/* Category */}
+                    <td className="px-3">
+                      <span className="badge bg-secondary-subtle text-secondary rounded-pill">
+                        {service.category || 'General'}
+                      </span>
+                    </td>
+
+                    {/* Price */}
+                    <td className="text-center px-3">
+                      <span className="fw-medium">
+                        ${(service.price || 0).toFixed(2)}
+                      </span>
+                    </td>
+
+                    {/* Duration */}
+                    <td className="text-center px-3">
+                      <span className="badge bg-info text-white rounded-pill">
+                        {service.duration_minutes || 30}min
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+              {searchTerm || categoryFilter !== 'all' ? 'No services found matching filters' : 'No services found'}
+            </div>
+          )}
+        </div>
+
+        {/* Fixed bottom – headers + controls */}
+        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+          {/* Column Headers */}
+          <table className="table table-borderless mb-0 bg-light">
+            <colgroup>
+              <col />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '80px' }} />
+            </colgroup>
+            <tfoot>
+              <tr className="bg-secondary-subtle">
+                <th>Service</th>
+                <th>Category</th>
+                <th className="text-center">Price</th>
+                <th className="text-center">Duration</th>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Controls */}
+          <div className="p-2 border-top">
+            {/* Search row */}
+            <div className="position-relative w-100 mb-2">
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search services..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control ps-5 w-100"
+              />
+            </div>
+
+            {/* Filters row */}
+            <div className="d-flex gap-2 mb-2">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="form-select"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>
+                    {cat === 'all' ? 'All Categories' : cat || 'No Category'}
+                  </option>
+                ))}
+              </select>
+
+              <span className="text-muted small text-nowrap">
+                {filteredServices.length} / {services.length}
+              </span>
+            </div>
+
+            {/* Action buttons */}
             <PermissionGate page="services" permission="write">
-              <div className="input-group-append d-flex">
+              <div className="d-flex gap-2 w-100">
+                <CSVImportButton
+                  entityName="Services"
+                  onImport={handleCSVImport}
+                  onComplete={loadServices}
+                  requiredFields={['name']}
+                  fieldMapping={{
+                    'service name': 'name',
+                    'service': 'name',
+                    'cost': 'price',
+                    'rate': 'price',
+                    'time': 'duration_minutes',
+                    'duration': 'duration_minutes',
+                    'type': 'category',
+                  }}
+                  className="btn btn-outline-secondary"
+                />
                 <button
                   type="button"
-                  onClick={handleRefresh}
-                  className="btn btn-outline-secondary"
+                  onClick={handleCreateService}
+                  className="btn btn-primary"
                 >
-                  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
                   </svg>
-                  Refresh
+                  Add
                 </button>
-                <label className="btn btn-outline-primary cursor-pointer">
-                  <ArrowUpTrayIcon className="h-4 w-4 mr-1" />
-                  {isImporting ? 'Importing...' : 'Import CSV'}
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                    disabled={isImporting}
-                  />
-                </label>
               </div>
             </PermissionGate>
           </div>
         </div>
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
-        <MobileTable
-          data={services}
-          columns={[
-            { key: 'name', title: 'Name' },
-            { key: 'price', title: 'Price', render: (v) => `$${v.toFixed(2)}` },
-            { key: 'duration_minutes', title: 'Duration', render: (v) => `${v} min` },
-          ]}
-          onEdit={(item) => handleEditService(item)}
-          onDelete={(item) => handleDeleteService(item.id)}
-          editPermission={{ page: 'services', permission: 'write' }}
-          deletePermission={{ page: 'services', permission: 'delete' }}
-          emptyMessage="No services found"
-        />
-        <PermissionGate page="services" permission="write">
-          <MobileAddButton onClick={handleCreateService} label="Add" />
-        </PermissionGate>
-      </div>
-
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {services.map((service) => (
-                    <tr key={service.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {service.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${service.price.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {service.duration_minutes} min
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {service.description || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                        <PermissionGate page="services" permission="delete">
-                          <button
-                            onClick={() => handleDeleteService(service.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                        <PermissionGate page="services" permission="write">
-                          <button
-                            onClick={() => handleEditService(service)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="Edit"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {services.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No services found. Add your first service to get started.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal for Service Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'service-form'} onClose={closeModal}>
+      {/* Service Form Modal */}
+      <Modal 
+        isOpen={isModalOpen && modalContent === 'service-form'} 
+        onClose={closeModal}
+        title={editingService ? 'Edit Service' : 'Add Service'}
+      >
         {isModalOpen && modalContent === 'service-form' && (
           <ServiceForm
             service={editingService}
             onSubmit={handleSubmitService}
             onCancel={closeModal}
+            onDelete={editingService && hasPermission('services', 'delete') ? handleDeleteService : null}
+            canDelete={editingService && hasPermission('services', 'delete')}
           />
         )}
       </Modal>
+
     </div>
   );
 }

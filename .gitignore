@@ -47,6 +47,10 @@ Thumbs.db
 *.db
 *.bak
 
+# Uploaded files (keep directory but ignore contents)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 # Coverage / reports
 coverage.xml
 
@@ -67,3 +71,6 @@ simple_migration.py
 # Root-level test folders (ensure not deployed nor committed by default)
 /test/
 /tests/
+
+# SSL certificates (local development only)
+ssl/*.pem

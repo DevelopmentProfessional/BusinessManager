@@ -1,116 +1,64 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
-import { inventoryAPI, itemsAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import BarcodeScanner from '../components/BarcodeScanner';
-import ItemForm from '../components/ItemForm';
-import PermissionGate from '../components/PermissionGate';
-
-function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
-  const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
-  const [minStockLevel, setMinStockLevel] = useState(inventoryItem?.min_stock_level || 10);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(inventoryItem.item_id, { 
-      quantity: parseInt(quantity),
-      min_stock_level: parseInt(minStockLevel)
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Update Inventory
-        </h3>
-      </div>
-
-      <div>
-        <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-          Current Quantity *
-        </label>
-        <input
-          type="number"
-          id="quantity"
-          min="0"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="input-field mt-1"
-          placeholder="Enter current quantity"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="minStockLevel" className="block text-sm font-medium text-gray-700">
-          Minimum Stock Level *
-        </label>
-        <input
-          type="number"
-          id="minStockLevel"
-          min="0"
-          value={minStockLevel}
-          onChange={(e) => setMinStockLevel(e.target.value)}
-          className="input-field mt-1"
-          placeholder="Enter minimum stock level"
-        />
-      </div>
-
-      <div className="flex justify-end space-x-3 pt-4">
-        <button type="button" onClick={onCancel} className="btn-secondary">
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary">
-          Update Inventory
-        </button>
-      </div>
-    </form>
-  );
-}
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import useStore from '../services/useStore';
+import { inventoryAPI } from '../services/api';
+import Modal from './components/Modal';
+import ItemForm from './components/ItemForm';
+import ItemDetailModal from './components/ItemDetailModal';
+import PermissionGate from './components/PermissionGate';
+import CSVImportButton from './components/CSVImportButton';
 
 export default function Inventory() {
   const { 
-    inventory, setInventory, items, setItems,
+    inventory, setInventory,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
-  if (!hasPermission('inventory', 'read') && 
-      !hasPermission('inventory', 'write') && 
-      !hasPermission('inventory', 'delete') && 
+  if (!hasPermission('inventory', 'read') &&
+      !hasPermission('inventory', 'write') &&
+      !hasPermission('inventory', 'delete') &&
       !hasPermission('inventory', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
 
   const [editingInventory, setEditingInventory] = useState(null);
-  const [scannedCode, setScannedCode] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
+  const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
+  const scrollRef = useRef(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadInventoryData();
   }, []);
 
   const loadInventoryData = async () => {
     setLoading(true);
     try {
-      const [inventoryRes, itemsRes] = await Promise.all([
-        inventoryAPI.getAll(),
-        itemsAPI.getAll()
-      ]);
+      const inventoryRes = await inventoryAPI.getAll();
 
-      setInventory(inventoryRes.data);
-      setItems(itemsRes.data);
+      // Handle both direct data and response.data formats
+      const inventoryData = inventoryRes?.data ?? inventoryRes;
+
+      if (Array.isArray(inventoryData)) {
+        setInventory(inventoryData);
+      } else {
+        console.error('Invalid inventory data format:', inventoryData);
+        setInventory([]);
+      }
+
       clearError();
     } catch (err) {
       setError('Failed to load inventory data');
-      console.error(err);
+      console.error('Error loading inventory:', err);
+      setInventory([]);
     } finally {
       setLoading(false);
     }
@@ -130,33 +78,12 @@ export default function Inventory() {
       setError('You do not have permission to create items');
       return;
     }
-    setScannedCode('');
     openModal('item-form');
   };
 
-  const handleOpenScanner = () => {
-    setScannedCode('');
-    openModal('barcode-scan');
-  };
-
-  const handleDetectedBarcode = (code) => {
-    const scanned = String(code || '').trim();
-    setScannedCode(scanned);
-    // If item already exists, show notification instead of opening the modal
-    const exists = items.some((p) => (p?.sku || '').trim() === scanned && scanned.length > 0);
-    if (exists) {
-      closeModal();
-      setError(`Item with SKU "${scanned}" already exists in the database.`);
-      return;
-    }
-    // Otherwise open item form prefilled with scanned code
-    clearError();
-    openModal('item-form');
-  };
-
-  const handleSubmitUpdate = async (itemId, updateData) => {
+  const handleSubmitUpdate = async (inventoryId, updateData) => {
     try {
-      await inventoryAPI.update(itemId, updateData.quantity, { min_stock_level: updateData.min_stock_level });
+      await inventoryAPI.update(inventoryId, updateData);
       // Reload inventory to get updated data
       loadInventoryData();
       closeModal();
@@ -170,30 +97,137 @@ export default function Inventory() {
 
   const handleSubmitNewItem = async (itemData, { initialQuantity }) => {
     try {
-      const resp = await itemsAPI.create(itemData);
-      // Upsert initial inventory quantity
-      await inventoryAPI.update(resp.data.id, Number.isFinite(initialQuantity) ? initialQuantity : 0);
+      // Create inventory item directly (inventory now contains all product fields)
+      const inventoryData = {
+        ...itemData,
+        quantity: Number.isFinite(initialQuantity) ? initialQuantity : 0,
+      };
+      await inventoryAPI.create(inventoryData);
       await loadInventoryData();
       closeModal();
       clearError();
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to save item';
       setError(String(detail));
-      console.error('Item create error:', err?.response || err);
+      console.error('Inventory create error:', err?.response || err);
+    }
+  }; 
+
+  const getItemTypeLabel = (type) => {
+    const labels = { 
+      PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', LOCATION: 'Location', ITEM: 'Item',
+      product: 'Product', resource: 'Resource', asset: 'Asset', location: 'Location', item: 'Item'
+    };
+    return labels[type] || type || 'Product';
+  };
+
+  const getItemTypeColor = (type) => {
+    const upperType = (type || '').toUpperCase();
+    if (upperType === 'RESOURCE') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+    if (upperType === 'ASSET') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+    if (upperType === 'LOCATION') return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
+    if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'; // PRODUCT
+  };
+
+  // Location and Asset items always have "OK" status
+  const isLocationOrAsset = (item) => {
+    const upperType = (item.type || '').toUpperCase();
+    return upperType === 'LOCATION' || upperType === 'ASSET';
+  };
+
+  const isLowStock = (item) => {
+    // Location and Asset items are always "OK"
+    if (isLocationOrAsset(item)) return false;
+    return item.quantity <= item.min_stock_level;
+  };
+
+  // Get stock status color (uses the former status badge colors)
+  const getStockColor = (item) => {
+    if (isLowStock(item)) {
+      return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+    }
+    return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+  };
+
+  const handleDeleteItem = async (inventoryId) => {
+    if (!hasPermission('inventory', 'delete')) {
+      setError('You do not have permission to delete items');
+      return;
+    }
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    try {
+      await inventoryAPI.delete(inventoryId);
+      await loadInventoryData();
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to delete item';
+      setError(String(detail));
     }
   };
 
-  const getItemName = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item ? item.name : 'Unknown Item';
+  const handleCSVImport = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        // Create inventory item directly with all fields
+        const inventoryData = {
+          name: record.name,
+          sku: record.sku || '',
+          description: record.description || '',
+          price: parseFloat(record.price) || 0,
+          type: (record.type || 'PRODUCT').toUpperCase(),
+          quantity: parseInt(record.quantity) || parseInt(record.initial_quantity) || 0,
+          min_stock_level: parseInt(record.min_stock_level) || parseInt(record.min_stock) || 10,
+          location: record.location || null,
+        };
+        
+        await inventoryAPI.create(inventoryData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
+      }
+    }
+
+    return { success, failed, errors };
   };
 
-  const getItemSku = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item ? item.sku : 'N/A';
-  };
+  // Filtered inventory based on search, type, and stock filters
+  const filteredInventory = useMemo(() => {
+    return inventory.filter((inv) => {
+      // Search filter (name or SKU) - inventory now has these fields directly
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesName = (inv.name || '').toLowerCase().includes(term);
+        const matchesSku = (inv.sku || '').toLowerCase().includes(term);
+        if (!matchesName && !matchesSku) return false;
+      }
 
-  const isLowStock = (item) => item.quantity <= item.min_stock_level;
+      // Type filter
+      if (typeFilter !== 'all') {
+        const itemType = (inv.type || 'PRODUCT').toUpperCase();
+        if (itemType !== typeFilter) return false;
+      }
+
+      // Stock filter
+      if (stockFilter === 'low' && !isLowStock(inv)) return false;
+      if (stockFilter === 'ok' && isLowStock(inv)) return false;
+
+      return true;
+    });
+  }, [inventory, searchTerm, typeFilter, stockFilter]);
+
+  // Scroll to bottom when data loads (to show newest items near footer)
+  useEffect(() => {
+    if (scrollRef.current && filteredInventory.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filteredInventory.length]);
 
   if (loading) {
     return (
@@ -203,189 +237,211 @@ export default function Inventory() {
     );
   }
 
-  return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
-          <PermissionGate page="inventory" permission="write">
-            <button
-              type="button"
-              onClick={handleCreateItem}
-              className="btn-primary inline-flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Item
-            </button>
-          </PermissionGate>
-          <PermissionGate page="inventory" permission="write">
-            <button
-              type="button"
-              onClick={handleOpenScanner}
-              className="btn-secondary inline-flex items-center"
-            >
-              <CameraIcon className="h-5 w-5 mr-2" />
-              Scan
-            </button>
-          </PermissionGate>
-        </div>
-      </div>
+return (
+  <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Low Stock Alert */}
-      {inventory.filter(isLowStock).length > 0 && (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-          <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-            <span className="font-medium">
-              {inventory.filter(isLowStock).length} item(s) are running low on stock!
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
-        <MobileTable
-          data={inventory}
-          columns={[
-            { key: 'item', title: 'Item', render: (_, item) => getItemName(item.item_id) },
-            { key: 'sku', title: 'SKU', render: (_, item) => getItemSku(item.item_id) },
-            { key: 'quantity', title: 'Stock' },
-            { key: 'min_stock_level', title: 'Min' },
-            { key: 'status', title: 'Status', render: (_, item) => (isLowStock(item) ? 'Low' : 'OK') },
-            { key: 'location', title: 'Location', render: (v) => v || '-' },
-          ]}
-          onEdit={(item) => handleUpdateInventory(item)}
-          editPermission={{ page: 'inventory', permission: 'write' }}
-          emptyMessage="No inventory items found"
-        />
-        {/* No primary add action on Inventory; updates are per-row */}
-      </div>
-
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Item
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      SKU
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Current Stock
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Min Level
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {inventory.map((item) => (
-                    <tr key={item.id} className={isLowStock(item) ? 'bg-yellow-50' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {getItemName(item.item_id)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getItemSku(item.item_id)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.min_stock_level}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          isLowStock(item)
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {isLowStock(item) ? 'Low Stock' : 'In Stock'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.location || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <PermissionGate page="inventory" permission="write">
-                          <button
-                            onClick={() => handleUpdateInventory(item)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {inventory.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No inventory items found. Add items to start tracking inventory.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal: Inventory Update */}
-      <Modal isOpen={isModalOpen && modalContent === 'inventory-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'inventory-form' && editingInventory && (
-          <InventoryUpdateForm
-            inventoryItem={editingInventory}
-            onSubmit={handleSubmitUpdate}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-
-      {/* Modal: Barcode Scanner */}
-      <Modal isOpen={isModalOpen && modalContent === 'barcode-scan'} onClose={closeModal} title="Scan Barcode">
-        {isModalOpen && modalContent === 'barcode-scan' && (
-          <BarcodeScanner
-            onDetected={(code) => handleDetectedBarcode(code)}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-
-      {/* Modal: Add Item (prefilled with scanned code) */}
-      <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'item-form' && (
-          <ItemForm
-            initialSku={scannedCode}
-            showInitialQuantity
-            onSubmitWithExtras={handleSubmitNewItem}
-            onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
+    {/* Header - sticky on mobile */}
+    <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
+      <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Inventory</h1>
     </div>
-  );
+
+    {/* Error / Low Stock Alerts */}
+    {error && (
+      <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
+        {error}
+      </div>
+    )}
+
+    {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length > 0 && (
+      <div className="flex-shrink-0 alert alert-warning border-0 rounded-0 m-0 d-flex align-items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
+          <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+        </svg>
+        <span className="fw-medium">
+          {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length} item(s) are running low on stock!
+        </span>
+      </div>
+    )}
+
+    {/* Main upside-down table container */}
+    <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+      {/* Scrollable rows – grow upwards from bottom */}
+      <div
+        ref={scrollRef}
+        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+        style={{ background: 'var(--bs-body-bg)' }}
+      >
+        {filteredInventory.length > 0 ? (
+          <table className="table table-borderless table-hover mb-0 table-fixed">
+            <colgroup>
+              <col />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '50px' }} />
+            </colgroup>
+            <tbody>
+              {filteredInventory.map((inv, index) => (
+                <tr
+                  key={inv.id || index}
+                  className="align-middle border-bottom"
+                  style={{ height: '56px', cursor: 'pointer' }}
+                  onClick={() => handleUpdateInventory(inv)}
+                >
+                  {/* Name */}
+                  <td className="px-1">
+                    <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
+                      {inv.name}
+                    </div>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-1">
+                    <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>
+                      {getItemTypeLabel(inv.type)}
+                    </span>
+                  </td>
+
+                  {/* Stock */}
+                  <td className="text-center px-1">
+                    <span className={`badge rounded-pill ${getStockColor(inv)}`}>
+                      {inv.quantity}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+            No inventory items found
+          </div>
+        )}
+      </div>
+
+      {/* Fixed bottom – headers + controls */}
+      <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+        {/* Column Headers */}
+        <table className="table table-borderless mb-0 bg-light">
+          <colgroup>
+            <col />
+            <col style={{ width: '80px' }} />
+            <col style={{ width: '50px' }} />
+          </colgroup>
+          <tfoot>
+            <tr className="bg-secondary-subtle">
+              <th>Item</th>
+              <th>Type</th>
+              <th className="text-center">Stock</th>
+            </tr>
+          </tfoot>
+        </table>
+
+        {/* Controls */}
+        <div className="p-2 border-top">
+          {/* Search row */}
+          <div className="position-relative w-100 mb-2">
+            <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Search by name or SKU..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-control ps-5 w-100"
+            />
+          </div>
+
+          {/* Filters row */}
+          <div className="d-flex gap-2 mb-2">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="form-select w-auto"
+            >
+              <option value="all">All Types</option>
+              <option value="PRODUCT">Products</option>
+              <option value="RESOURCE">Resources</option>
+              <option value="ASSET">Assets</option>
+              <option value="LOCATION">Locations</option>
+              <option value="ITEM">Items</option>
+            </select>
+
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className="form-select w-auto">
+              <option value="all">All Stock</option>
+              <option value="low">Low Stock</option>
+              <option value="ok">In Stock</option>
+            </select>
+
+          </div>
+
+          {/* Action buttons */}
+          <PermissionGate page="inventory" permission="write">
+            <div className="d-flex gap-2 w-100">
+              <CSVImportButton
+                entityName="Items"
+                onImport={handleCSVImport}
+                onComplete={loadInventoryData}
+                requiredFields={['name']}
+                fieldMapping={{
+                  'item name': 'name',
+                  'product name': 'name',
+                  'item': 'name',
+                  'product': 'name',
+                  'stock': 'quantity',
+                  'qty': 'quantity',
+                  'min stock': 'min_stock_level',
+                  'minimum stock': 'min_stock_level',
+                }}
+                className="btn btn-outline-secondary"
+              />
+              <button
+                type="button"
+                onClick={handleCreateItem}
+                className="btn btn-primary flex"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                </svg>
+                Add
+              </button>
+            </div>
+          </PermissionGate>
+        </div>
+      </div>
+    </div>
+
+    {/* Modals remain unchanged */}
+    <ItemDetailModal
+      isOpen={isModalOpen && modalContent === 'inventory-form'}
+      onClose={closeModal}
+      item={editingInventory}
+      itemType={editingInventory?.type || 'product'}
+      mode="inventory"
+      onUpdateInventory={handleSubmitUpdate}
+      onDelete={handleDeleteItem}
+      canDelete={hasPermission('inventory', 'delete')}
+    />
+
+    <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
+      {isModalOpen && modalContent === 'item-form' && (
+        <ItemForm
+          showInitialQuantity
+          onSubmitWithExtras={handleSubmitNewItem}
+          onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
+          onCancel={closeModal}
+          showScanner
+          existingSkus={inventory.map(i => i.sku).filter(Boolean)}
+        />
+      )}
+    </Modal>
+
+  </div>
+);
 }

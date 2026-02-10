@@ -7,18 +7,52 @@ import bcrypt
 
 class EntityType(str, Enum):
     CLIENT = "client"
-    ITEM = "item"
+    INVENTORY = "inventory"  # Changed from ITEM
     EMPLOYEE = "employee"
     ASSET = "asset"
 
-# Item type classification (keeps legacy values for compatibility)
+
 class ItemType(str, Enum):
-    CONSUMABLE = "consumable"
-    ITEM = "item"
+    PRODUCT = "product"
+    RESOURCE = "resource"
+    ASSET = "asset"
+    LOCATION = "location"
+    ITEM = "item"  # Legacy value for backward compatibility
+
 
 class AttendanceStatus(str, Enum):
     CLOCK_IN = "clock_in"
     CLOCK_OUT = "clock_out"
+
+
+class MembershipTier(str, Enum):
+    NONE = "none"
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    PLATINUM = "platinum"
+
+
+class AppointmentType(str, Enum):
+    ONE_TIME = "one_time"
+    SERIES = "series"
+    MEETING = "meeting"
+    TASK = "task"
+
+
+class RecurrenceFrequency(str, Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+
+
+class TaskPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
 
 # User roles and permissions
 class UserRole(str, Enum):
@@ -59,7 +93,14 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
-    
+    db_environment: str = Field(default="development")  # User's preferred database environment
+
+    # Hierarchy - who this user reports to
+    reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
+
+    # Role assignment - links to Role model for inherited permissions
+    role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
+
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
     attendance_records: List["Attendance"] = Relationship(back_populates="user")
@@ -81,9 +122,31 @@ class UserPermission(BaseModel, table=True):
     page: str  # e.g., "clients", "inventory", "employees"
     permission: PermissionType
     granted: bool = Field(default=True)
-    
+
     # Relationships
     user: User = Relationship(back_populates="permissions")
+
+
+# Role model - defines a role with attached permissions
+class Role(BaseModel, table=True):
+    name: str = Field(unique=True, index=True)  # e.g., "Manager", "Receptionist"
+    description: Optional[str] = Field(default=None)
+    is_system: bool = Field(default=False)  # System roles cannot be deleted
+
+    # Relationships
+    role_permissions: List["RolePermission"] = Relationship(back_populates="role")
+
+
+# RolePermission model - permissions attached to a role
+class RolePermission(BaseModel, table=True):
+    __tablename__ = "role_permission"
+    role_id: UUID = Field(foreign_key="role.id")
+    page: str  # e.g., "clients", "inventory", "employees"
+    permission: PermissionType
+
+    # Relationships
+    role: Role = Relationship(back_populates="role_permissions")
+
 
 # Client model
 class Client(BaseModel, table=True):
@@ -92,64 +155,53 @@ class Client(BaseModel, table=True):
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
-    
+
+    # Membership fields
+    membership_tier: MembershipTier = Field(default=MembershipTier.NONE)
+    membership_since: Optional[datetime] = Field(default=None)
+    membership_expires: Optional[datetime] = Field(default=None)
+    membership_points: int = Field(default=0)
+
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="client")
 
-class ClientRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
 
-# Item model
-class Item(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # Item names must be unique
-    sku: str = Field(unique=True, index=True)
-    price: float = Field(ge=0)
-    description: Optional[str] = Field(default=None)
-    # Store as string in DB to tolerate legacy values; routers coerce to ItemType for API
-    type: str = Field(default="item")
-    
-    # Relationships
-    inventory: Optional["Inventory"] = Relationship(back_populates="item")
-
-# Item read model (exclude relationships for API responses)
-class ItemRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    sku: str
-    price: float
-    description: Optional[str] = None
-    type: ItemType = ItemType.ITEM
-
-# Inventory model
+# Inventory model (standalone - replaces Item model)
 class Inventory(BaseModel, table=True):
-    item_id: UUID = Field(foreign_key="item.id")
+    # Product/Item fields (merged from former Item model)
+    name: str = Field(index=True)
+    sku: str = Field(unique=True, index=True)
+    price: float = Field(ge=0, default=0)
+    description: Optional[str] = Field(default=None)
+    type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
+    image_url: Optional[str] = Field(default=None)  # Legacy field - kept for backward compatibility
+    
+    # Inventory-specific fields
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
-    quantity: int = Field(ge=0)
+    quantity: int = Field(ge=0, default=0)
     min_stock_level: int = Field(ge=0, default=10)
     location: Optional[str] = Field(default=None)
     
+    # Service link - for resources/assets tied to specific services
+    service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
+    
     # Relationships
-    item: Item = Relationship(back_populates="inventory")
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
+    images: List["InventoryImage"] = Relationship(back_populates="inventory_item")
 
-class InventoryRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    item_id: UUID
-    supplier_id: Optional[UUID] = None
-    quantity: int
-    min_stock_level: int
-    location: Optional[str] = None
+
+class InventoryImage(BaseModel, table=True):
+    """Model for storing multiple images per inventory item"""
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    image_url: Optional[str] = Field(default=None)  # For URL-based images
+    file_path: Optional[str] = Field(default=None)  # For uploaded file images
+    file_name: Optional[str] = Field(default=None)  # Original filename
+    is_primary: bool = Field(default=False)  # Whether this is the primary image
+    sort_order: int = Field(default=0)  # For ordering images
+    
+    # Relationships
+    inventory_item: Inventory = Relationship(back_populates="images")
+
 
 # Supplier model
 class Supplier(BaseModel, table=True):
@@ -162,15 +214,6 @@ class Supplier(BaseModel, table=True):
     # Relationships
     inventory_items: List[Inventory] = Relationship(back_populates="supplier")
 
-class SupplierRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    contact_person: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
 
 # Service model
 class Service(BaseModel, table=True):
@@ -179,47 +222,46 @@ class Service(BaseModel, table=True):
     category: Optional[str] = Field(default=None)
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
+    image_url: Optional[str] = Field(default=None)  # URL or path to service image
     
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="service")
 
-class ServiceRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: float
-    duration_minutes: int
 
 # Employee model
 # Employee model removed - now using User model directly
 
-# Schedule model
+# Schedule model - matches actual database schema
 class Schedule(BaseModel, table=True):
-    client_id: UUID = Field(foreign_key="client.id")
-    service_id: UUID = Field(foreign_key="service.id")
-    employee_id: UUID = Field(foreign_key="user.id")  # Now references user directly
+    # Core fields that exist in database
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
+    employee_id: UUID = Field(foreign_key="user.id")
     appointment_date: datetime
-    status: str = Field(default="scheduled")  # scheduled, completed, cancelled
+    status: str = Field(default="scheduled")
     notes: Optional[str] = Field(default=None)
-    
+
     # Relationships
-    client: Client = Relationship(back_populates="schedules")
-    service: Service = Relationship(back_populates="schedules")
+    client: Optional[Client] = Relationship(back_populates="schedules")
+    service: Optional[Service] = Relationship(back_populates="schedules")
     employee: "User" = Relationship(back_populates="schedules")
 
-class ScheduleRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    client_id: UUID
-    service_id: UUID
-    employee_id: UUID
-    appointment_date: datetime
-    status: str
-    notes: Optional[str] = None
+
+# Schedule Attendee model (for meetings with multiple participants)
+class ScheduleAttendee(BaseModel, table=True):
+    __tablename__ = "schedule_attendee"
+    schedule_id: UUID = Field(foreign_key="schedule.id")
+    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    attendance_status: str = Field(default="pending")
+
+
+# Schedule Document link model
+class ScheduleDocument(BaseModel, table=True):
+    __tablename__ = "schedule_document"
+    schedule_id: UUID = Field(foreign_key="schedule.id")
+    document_id: UUID = Field(foreign_key="document.id")
+
 
 # Asset model
 ## Asset model removed
@@ -236,25 +278,33 @@ class Attendance(BaseModel, table=True):
     # Relationships
     user: User = Relationship(back_populates="attendance_records")
 
-class AttendanceRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    user_id: UUID  # Now only references user
-    date: datetime
-    clock_in: Optional[datetime] = None
-    clock_out: Optional[datetime] = None
-    total_hours: Optional[float] = None
-    notes: Optional[str] = None
 
-# Document model
+# App Settings model (singleton pattern for global settings)
+class AppSettings(BaseModel, table=True):
+    __tablename__ = "app_settings"
+    start_of_day: str = Field(default="06:00")  # HH:MM format
+    end_of_day: str = Field(default="21:00")  # HH:MM format
+    attendance_check_in_required: bool = Field(default=True)
+    # Days of operation (True = business operates on this day)
+    monday_enabled: bool = Field(default=True)
+    tuesday_enabled: bool = Field(default=True)
+    wednesday_enabled: bool = Field(default=True)
+    thursday_enabled: bool = Field(default=True)
+    friday_enabled: bool = Field(default=True)
+    saturday_enabled: bool = Field(default=True)
+    sunday_enabled: bool = Field(default=True)
+
+
+# Document model (table name and types aligned with PostgreSQL schema)
 class Document(BaseModel, table=True):
+    __tablename__ = "document"
     filename: str
     original_filename: str
     file_path: str
     file_size: int = Field(ge=0)
     content_type: str
-    entity_type: Optional[EntityType] = Field(default=None)
+    # Use str to match PG varchar/enum; API and DB both use string values
+    entity_type: Optional[str] = Field(default=None)
     entity_id: Optional[UUID] = Field(default=None)
     description: Optional[str] = Field(default=None)
     # e-sign fields
@@ -266,17 +316,21 @@ class Document(BaseModel, table=True):
     review_date: Optional[datetime] = Field(default=None)
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
 
-# Document read schema for API responses
+
+class DocumentCategory(BaseModel, table=True):
+    __tablename__ = "document_category"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+
+
 class DocumentRead(SQLModel):
+    """Schema for reading document records (excludes relationship fields)."""
     id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
     filename: str
     original_filename: str
     file_path: str
     file_size: int
     content_type: str
-    # Use string for entity_type to be tolerant of legacy values
     entity_type: Optional[str] = None
     entity_id: Optional[UUID] = None
     description: Optional[str] = None
@@ -286,6 +340,35 @@ class DocumentRead(SQLModel):
     owner_id: Optional[UUID] = None
     review_date: Optional[datetime] = None
     category_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentAssignment(BaseModel, table=True):
+    """Junction table linking documents to employees, clients, or inventory items."""
+    __tablename__ = "document_assignment"
+    document_id: UUID = Field(foreign_key="document.id", index=True)
+    entity_type: str = Field(index=True)   # "employee", "client", "inventory"
+    entity_id: UUID = Field(index=True)
+    assigned_by: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    notes: Optional[str] = Field(default=None)
+
+
+class DocumentAssignmentRead(SQLModel):
+    """Schema for reading document assignment records."""
+    id: UUID
+    document_id: UUID
+    entity_type: str
+    entity_id: UUID
+    assigned_by: Optional[UUID] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
 
 # Request/Response models for API
 class ClientCreate(SQLModel):
@@ -294,6 +377,11 @@ class ClientCreate(SQLModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[MembershipTier] = MembershipTier.NONE
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: Optional[int] = 0
+
 
 class ClientUpdate(SQLModel):
     name: Optional[str] = None
@@ -301,128 +389,146 @@ class ClientUpdate(SQLModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[MembershipTier] = None
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: Optional[int] = None
 
-class ItemCreate(SQLModel):
+
+class ClientRead(SQLModel):
+    id: UUID
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    membership_tier: Optional[str] = None
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: int = 0
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_orm_safe(cls, obj):
+        # Handle membership_tier which could be an enum or a string
+        tier = obj.membership_tier
+        if tier is not None:
+            tier = tier.value if hasattr(tier, 'value') else str(tier)
+
+        return cls(
+            id=obj.id,
+            name=obj.name,
+            email=obj.email,
+            phone=obj.phone,
+            address=obj.address,
+            notes=obj.notes,
+            membership_tier=tier,
+            membership_since=obj.membership_since,
+            membership_expires=obj.membership_expires,
+            membership_points=obj.membership_points or 0,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
+        )
+
+
+class InventoryCreate(SQLModel):
+    """Schema for creating inventory items (replaces ItemCreate)"""
+    name: str
+    sku: str
+    price: float = 0
+    description: Optional[str] = None
+    type: Optional[Union[ItemType, str]] = "product"
+    image_url: Optional[str] = None
+    quantity: int = 0
+    min_stock_level: int = 10
+    location: Optional[str] = None
+    supplier_id: Optional[UUID] = None
+
+
+class ServiceRead(SQLModel):
+    """Schema for reading service records (excludes relationship fields)"""
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price: float
+    duration_minutes: int
+    image_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryRead(SQLModel):
+    """Schema for reading inventory items (includes images)"""
+    id: UUID
     name: str
     sku: str
     price: float
     description: Optional[str] = None
-    # Accept either enum value/name as string or ItemType; router will normalize
-    type: Optional[Union[ItemType, str]] = "item"
-
-class ItemUpdate(SQLModel):
-    name: Optional[str] = None
-    sku: Optional[str] = None
-    price: Optional[float] = None
-    description: Optional[str] = None
-    # Accept either enum value/name as string or ItemType; router will normalize
-    type: Optional[Union[ItemType, str]] = None
-
-class ServiceCreate(SQLModel):
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: float
-    duration_minutes: int = 60
-
-class ServiceUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: Optional[float] = None
-    duration_minutes: Optional[int] = None
-
-# EmployeeCreate removed - now using UserCreate
-
-class ScheduleCreate(SQLModel):
-    # Accept strings or UUIDs; router will normalize
-    client_id: Union[UUID, str]
-    service_id: Union[UUID, str]
-    employee_id: Union[UUID, str]
-    # Accept strings or datetime; router will normalize
-    appointment_date: Union[datetime, str]
-    notes: Optional[str] = None
-
-class AttendanceCreate(SQLModel):
-    user_id: UUID  # Now references user directly
-    date: datetime
-    clock_in: Optional[datetime] = None
-    clock_out: Optional[datetime] = None
-
-# Document update schema
-class DocumentUpdate(SQLModel):
-    description: Optional[str] = None
-    owner_id: Optional[UUID] = None
-    review_date: Optional[datetime] = None
-    category_id: Optional[UUID] = None
-
-# Document Category model
-class DocumentCategory(BaseModel, table=True):
-    __tablename__ = "document_category"
-    name: str = Field(unique=True, index=True)
-    description: Optional[str] = Field(default=None)
-
-
-# Document Assignment model (many-to-many: document -> user)
-class DocumentAssignment(BaseModel, table=True):
-    __tablename__ = "document_assignment"
-    document_id: UUID = Field(foreign_key="document.id")
-    user_id: UUID = Field(foreign_key="user.id")
-
-
-# Document History model (versioned files)
-class DocumentHistory(BaseModel, table=True):
-    __tablename__ = "document_history"
-    document_id: UUID = Field(foreign_key="document.id")
-    version: int
-    file_path: str
-    file_size: int
-    content_type: str
-    note: Optional[str] = Field(default=None)
-
-class DocumentAssignmentRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    document_id: UUID
-    user_id: UUID
-
-class DocumentAssignmentCreate(SQLModel):
-    user_id: UUID
-
-# Read schemas
-class DocumentHistoryRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    version: int
-    file_path: str
-    file_size: int
-    content_type: str
-    note: Optional[str] = None
-
-class DocumentCategoryRead(SQLModel):
-    id: UUID
-    created_at: datetime
+    type: str
+    image_url: Optional[str] = None  # Legacy field
+    supplier_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    quantity: int
+    min_stock_level: int
+    location: Optional[str] = None
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    name: str
-    description: Optional[str] = None
+    images: List["InventoryImageRead"] = []
 
-class DocumentCategoryCreate(SQLModel):
-    name: str
-    description: Optional[str] = None
+    model_config = {"from_attributes": True}
 
-class DocumentCategoryUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
 
-# Authentication models
+class InventoryImageCreate(SQLModel):
+    """Schema for creating inventory images"""
+    inventory_id: UUID
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: bool = False
+    sort_order: int = 0
+
+
+class InventoryImageRead(SQLModel):
+    """Schema for reading inventory images"""
+    id: UUID
+    inventory_id: UUID
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: bool
+    sort_order: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryImageUpdate(SQLModel):
+    """Schema for updating inventory images"""
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+
 class UserCreate(SQLModel):
     username: str
-    email: Optional[str] = None  # Made optional
+    email: Optional[str] = None
     password: str
     first_name: str
     last_name: str
     phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+
 
 class UserUpdate(SQLModel):
     username: Optional[str] = None
@@ -432,105 +538,293 @@ class UserUpdate(SQLModel):
     last_name: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
-    hire_date: Optional[datetime] = None
     is_active: Optional[bool] = None
     is_locked: Optional[bool] = None
     force_password_reset: Optional[bool] = None
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    dark_mode: Optional[bool] = None
+    db_environment: Optional[str] = None  # User's preferred database environment
+
 
 class UserRead(SQLModel):
     id: UUID
     username: str
-    email: Optional[str] = None  # Made optional
+    email: Optional[str] = None
     first_name: str
     last_name: str
     phone: Optional[str] = None
     role: UserRole
-    hire_date: Optional[datetime] = None  # Made optional to handle admin user
+    hire_date: datetime
     is_active: bool
     is_locked: bool
     force_password_reset: bool
     last_login: Optional[datetime] = None
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    dark_mode: bool = False
+    db_environment: str = "development"  # User's preferred database environment
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
-    # Employee permission fields (optional, only present if user has linked employee)
-    clients_read: Optional[bool] = None
-    clients_write: Optional[bool] = None
-    clients_delete: Optional[bool] = None
-    clients_admin: Optional[bool] = None
-    
-    inventory_read: Optional[bool] = None
-    inventory_write: Optional[bool] = None
-    inventory_delete: Optional[bool] = None
-    inventory_admin: Optional[bool] = None
-    
-    services_read: Optional[bool] = None
-    services_write: Optional[bool] = None
-    services_delete: Optional[bool] = None
-    services_admin: Optional[bool] = None
-    
-    employees_read: Optional[bool] = None
-    employees_write: Optional[bool] = None
-    employees_delete: Optional[bool] = None
-    employees_admin: Optional[bool] = None
-    
-    schedule_read: Optional[bool] = None
-    schedule_write: Optional[bool] = None
-    schedule_delete: Optional[bool] = None
-    schedule_admin: Optional[bool] = None
-    schedule_view_all: Optional[bool] = None
-    
-    attendance_read: Optional[bool] = None
-    attendance_write: Optional[bool] = None
-    attendance_delete: Optional[bool] = None
-    attendance_admin: Optional[bool] = None
-    
-    documents_read: Optional[bool] = None
-    documents_write: Optional[bool] = None
-    documents_delete: Optional[bool] = None
-    documents_admin: Optional[bool] = None
-    
-    admin_read: Optional[bool] = None
-    admin_write: Optional[bool] = None
-    admin_delete: Optional[bool] = None
-    admin_admin: Optional[bool] = None
+
+    model_config = {"from_attributes": True}
+
+
+class UserPermissionCreate(SQLModel):
+    user_id: Optional[UUID] = None
+    page: str
+    permission: str
+    granted: bool = True
+
+
+class UserPermissionUpdate(SQLModel):
+    page: Optional[str] = None
+    permission: Optional[str] = None
+    granted: Optional[bool] = None
+
+
+class UserPermissionRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    page: str
+    permission: PermissionType
+    granted: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Role request/response models
+class RoleCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+
+
+class RoleUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class RolePermissionCreate(SQLModel):
+    page: str
+    permission: str
+
+
+class RolePermissionRead(SQLModel):
+    id: UUID
+    role_id: UUID
+    page: str
+    permission: PermissionType
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RoleRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    is_system: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    role_permissions: List[RolePermissionRead] = []
+
+    model_config = {"from_attributes": True}
+
+
+# Schedule request/response models
+class ScheduleCreate(SQLModel):
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: UUID
+    appointment_date: datetime
+    status: str = "scheduled"
+    notes: Optional[str] = None
+
+
+class ScheduleUpdate(SQLModel):
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    appointment_date: Optional[datetime] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ScheduleRead(SQLModel):
+    """Schema for reading schedule records (excludes relationship fields)"""
+    id: UUID
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: UUID
+    appointment_date: datetime
+    status: str
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleAttendeeCreate(SQLModel):
+    user_id: Optional[UUID] = None
+    client_id: Optional[UUID] = None
+    attendance_status: str = "pending"
+
+
+class ScheduleDocumentLink(SQLModel):
+    document_id: UUID
+
 
 class LoginRequest(SQLModel):
     username: str
     password: str
     remember_me: bool = False
 
+
 class LoginResponse(SQLModel):
     access_token: str
-    token_type: str = "bearer"
     user: UserRead
     permissions: List[str]
+
 
 class PasswordResetRequest(SQLModel):
     username: str
     new_password: str
 
+
 class PasswordChangeRequest(SQLModel):
     current_password: str
     new_password: str
 
-class UserPermissionCreate(SQLModel):
-    # Optional: allow specifying the target user in the request body as well as in the URL
-    user_id: Optional[Union[UUID, str]] = None
-    page: str
-    permission: PermissionType
-    granted: bool = True
 
-class UserPermissionUpdate(SQLModel):
-    permission: Optional[PermissionType] = None
-    granted: Optional[bool] = None
+# App Settings request/response models
+class AppSettingsCreate(SQLModel):
+    start_of_day: str = "06:00"
+    end_of_day: str = "21:00"
+    attendance_check_in_required: bool = True
+    monday_enabled: bool = True
+    tuesday_enabled: bool = True
+    wednesday_enabled: bool = True
+    thursday_enabled: bool = True
+    friday_enabled: bool = True
+    saturday_enabled: bool = True
+    sunday_enabled: bool = True
 
-class UserPermissionRead(SQLModel):
+
+class AppSettingsUpdate(SQLModel):
+    start_of_day: Optional[str] = None
+    end_of_day: Optional[str] = None
+    attendance_check_in_required: Optional[bool] = None
+    monday_enabled: Optional[bool] = None
+    tuesday_enabled: Optional[bool] = None
+    wednesday_enabled: Optional[bool] = None
+    thursday_enabled: Optional[bool] = None
+    friday_enabled: Optional[bool] = None
+    saturday_enabled: Optional[bool] = None
+    sunday_enabled: Optional[bool] = None
+
+
+class AppSettingsRead(SQLModel):
     id: UUID
-    page: str
-    permission: PermissionType
-    granted: bool
-    created_at: datetime
+    start_of_day: str
+    end_of_day: str
+    attendance_check_in_required: bool
+    monday_enabled: bool
+    tuesday_enabled: bool
+    wednesday_enabled: bool
+    thursday_enabled: bool
+    friday_enabled: bool
+    saturday_enabled: bool
+    sunday_enabled: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Database Connection model for storing multiple database configurations
+class DatabaseConnection(BaseModel, table=True):
+    name: str = Field(index=True)  # e.g., "Development", "Test", "Production"
+    environment: str = Field(index=True)  # e.g., "development", "test", "production"
+    host: str
+    port: int = Field(default=5432)
+    database_name: str
+    username: str
+    password: str  # Should be encrypted in production
+    ssl_mode: str = Field(default="require")  # For Render: require, prefer, disable
+    is_active: bool = Field(default=True)
+    visible_to_users: bool = Field(default=False)  # Toggle for user visibility
+    description: Optional[str] = Field(default=None)
+    
+    # Additional Render-specific fields
+    external_url: Optional[str] = Field(default=None)  # Render external database URL
+    internal_url: Optional[str] = Field(default=None)  # Render internal database URL
+    
+    # Connection pool settings
+    pool_size: int = Field(default=10)
+    max_overflow: int = Field(default=20)
+
+
+class DatabaseConnectionCreate(SQLModel):
+    name: str
+    environment: str
+    host: str
+    port: int = 5432
+    database_name: str
+    username: str
+    password: str
+    ssl_mode: str = "require"
+    is_active: bool = True
+    visible_to_users: bool = False
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: int = 10
+    max_overflow: int = 20
+
+
+class DatabaseConnectionUpdate(SQLModel):
+    name: Optional[str] = None
+    environment: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    database_name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    ssl_mode: Optional[str] = None
+    is_active: Optional[bool] = None
+    visible_to_users: Optional[bool] = None
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: Optional[int] = None
+    max_overflow: Optional[int] = None
+
+
+class DatabaseConnectionRead(SQLModel):
+    id: UUID
+    name: str
+    environment: str
+    host: str
+    port: int
+    database_name: str
+    username: str
+    password: str  # In production, consider masking this
+    ssl_mode: str
+    is_active: bool
+    visible_to_users: bool
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: int
+    max_overflow: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
 
 # TaskLink model for linking tasks together (many-to-many)
 class TaskLink(BaseModel, table=True):
