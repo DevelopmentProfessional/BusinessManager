@@ -210,6 +210,34 @@ export const scheduleAPI = {
   },
 };
 
+export const tasksAPI = {
+  getAll: () => getCachedOrFetch('tasks', () => api.get('/tasks')),
+  getById: (id) => api.get(`/tasks/${id}`),
+  getByTitle: (title) => api.get(`/tasks/by-title/${encodeURIComponent(title)}`),
+  create: (data) => {
+    clearCache('tasks');
+    return api.post('/tasks', data);
+  },
+  update: (id, data) => {
+    clearCache('tasks');
+    return api.put(`/tasks/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('tasks');
+    return api.delete(`/tasks/${id}`);
+  },
+  linkByTitle: (taskId, targetTaskTitle) => {
+    clearCache('tasks');
+    return api.post(`/tasks/${taskId}/link`, {
+      target_task_title: targetTaskTitle
+    });
+  },
+  unlink: (taskId, targetTaskId) => {
+    clearCache('tasks');
+    return api.delete(`/tasks/${taskId}/link/${targetTaskId}`);
+  },
+};
+
 export const attendanceAPI = {
   getAll: () => getCachedOrFetch('attendance', () => api.get('/attendance')),
   getByUser: (userId) => api.get(`/attendance/user/${userId}`),
