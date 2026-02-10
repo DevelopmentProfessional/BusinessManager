@@ -6,7 +6,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import PermissionGate from './PermissionGate';
 import CustomDropdown from './CustomDropdown';
 
-export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
+export default function ScheduleForm({ appointment, onSubmit, onCancel, saveError, isSaving }) {
   const { clients, services, employees, closeModal, hasPermission, user } = useStore();
   const { isDarkMode } = useDarkMode();
   const [timeError, setTimeError] = useState('');
@@ -108,7 +108,8 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
       service_id: formData.service_id,
       employee_id: formData.employee_id,
       appointment_date: appointmentDateStr,
-      notes: formData.notes
+      notes: formData.notes,
+      status: appointment?.status || 'scheduled' // Preserve status when editing
     });
   };
 
@@ -213,6 +214,63 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         </div>
       </div>
 
+      {/* Display clients and employees list when editing */}
+      {appointment && (
+        <div className={`mt-4 p-3 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <div className="mb-3">
+            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Clients
+            </label>
+            <div className={`max-h-32 overflow-y-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {clients.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  {clients.map((client) => (
+                    <li key={client.id}>{client.name}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No clients available</p>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Employees
+            </label>
+            <div className={`max-h-32 overflow-y-auto ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {employees.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  {employees.map((employee) => (
+                    <li key={employee.id}>
+                      {employee.first_name} {employee.last_name} - {employee.role}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No employees available</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Display duration of selected service */}
+      {formData.service_id && (
+        <div className="mt-4">
+          <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            Duration
+          </label>
+          <div className={`mt-1 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {(() => {
+              const selectedService = services.find(s => s.id === formData.service_id);
+              return selectedService 
+                ? `${selectedService.duration_minutes} minutes`
+                : 'No service selected';
+            })()}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-4">
         <div> 
           <label htmlFor="appointment_date" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -266,6 +324,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
         </div>
       </div>
       {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
+      {saveError && <p className="text-red-500 text-xs mt-1">{saveError}</p>}
 
       <div> 
         <textarea
@@ -284,14 +343,16 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel }) {
           type="button"
           onClick={onCancel}
           className="btn-secondary"
+          disabled={isSaving}
         >
           Cancel
         </button>
         <button
           type="submit"
           className="btn-primary"
+          disabled={isSaving}
         >
-          {appointment ? 'Update Appointment' : 'Book Appointment'}
+          {isSaving ? 'Saving...' : (appointment ? 'Update Appointment' : 'Book Appointment')}
         </button>
       </div>
     </form>

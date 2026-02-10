@@ -25,10 +25,10 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import
+    from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import, tasks
 except Exception:
     # Fallback if executed with CWD=backend and package not resolved
-    from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import  # type: ignore
+    from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import, tasks  # type: ignore
 
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):
@@ -154,6 +154,14 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
+    # Initialize database tables (safe to run multiple times)
+    try:
+        from backend.database import create_db_and_tables
+        create_db_and_tables()
+        print("✅ Database tables initialized/verified")
+    except Exception as e:
+        print(f"⚠️  Database initialization warning: {e}")
+        # Don't fail startup if tables already exist
     print("All routers loaded successfully")
 
 # Include routers
@@ -166,6 +174,7 @@ app.include_router(employees.router, prefix="/api/v1", tags=["employees"])
 app.include_router(schedule.router, prefix="/api/v1", tags=["schedule"])
 app.include_router(attendance.router, prefix="/api/v1", tags=["attendance"])
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
+app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(csv_import.router, prefix="/api/v1", tags=["csv-import"])
 

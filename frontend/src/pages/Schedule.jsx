@@ -31,6 +31,8 @@ export default function Schedule() {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [draggedAppointment, setDraggedAppointment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -172,19 +174,36 @@ export default function Schedule() {
   }, [canCreateSchedule]);
 
   const handleSubmitAppointment = useCallback(async (appointmentData) => {
-    if (editingAppointment && editingAppointment.id) {
-      await scheduleAPI.update(editingAppointment.id, appointmentData);
-    } else {
-      await scheduleAPI.create(appointmentData);
-    }
+    setIsSaving(true);
+    setSaveError(null);
     
-    const scheduleResponse = await scheduleAPI.getAll();
-    if (scheduleResponse?.data) {
-      setAppointments(scheduleResponse.data);
+    try {
+      if (editingAppointment && editingAppointment.id) {
+        // Preserve status if it exists, otherwise default to 'scheduled'
+        const updateData = {
+          ...appointmentData,
+          status: appointmentData.status || editingAppointment.status || 'scheduled'
+        };
+        await scheduleAPI.update(editingAppointment.id, updateData);
+      } else {
+        await scheduleAPI.create(appointmentData);
+      }
+      
+      // Refresh appointments list
+      const scheduleResponse = await scheduleAPI.getAll();
+      if (scheduleResponse?.data) {
+        setAppointments(scheduleResponse.data);
+      }
+      
+      setIsModalOpen(false);
+      setEditingAppointment(null);
+      setSaveError(null);
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+      setSaveError(error.response?.data?.detail || error.message || 'Failed to save appointment. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-    
-    setIsModalOpen(false);
-    setEditingAppointment(null);
   }, [editingAppointment, setAppointments]);
 
   // Drag and drop handlers
@@ -253,6 +272,8 @@ export default function Schedule() {
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingAppointment(null);
+    setSaveError(null);
+    setIsSaving(false);
   }, []);
 
   const isCurrentMonth = (date) => {
@@ -368,6 +389,7 @@ export default function Schedule() {
                             >
                               <div className="appointment-time">{timeString}</div>
                               <div className="appointment-client">{clientName}</div>
+                              <div className="appointment-service">{serviceName}</div>
                             </div>
                           );
                         })}
@@ -429,6 +451,7 @@ export default function Schedule() {
                           >
                             <div className="appointment-time">{timeString}</div>
                             <div className="appointment-client">{clientName}</div>
+                            <div className="appointment-service">{serviceName}</div>
                           </div>
                         );
                       })}
@@ -488,6 +511,7 @@ export default function Schedule() {
                             >
                               <div className="appointment-time">{timeString}</div>
                               <div className="appointment-client">{clientName}</div>
+                              <div className="appointment-service">{serviceName}</div>
                             </div>
                           );
                         })}
@@ -594,6 +618,8 @@ export default function Schedule() {
             employees={employees}
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
+            saveError={saveError}
+            isSaving={isSaving}
           />
         </Modal>
       </PermissionGate>
@@ -728,6 +754,13 @@ export default function Schedule() {
         .appointment-client {
           font-size: 9px;
           opacity: 0.9;
+        }
+        
+        .appointment-service {
+          font-size: 8px;
+          opacity: 0.8;
+          font-style: italic;
+          margin-top: 2px;
         }
         
                  .more-appointments {
