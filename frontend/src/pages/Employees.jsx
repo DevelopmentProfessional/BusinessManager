@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
-import api, { employeesAPI, adminAPI } from '../services/api';
-import Modal from '../components/Modal';
-import EmployeeFormTabs from '../components/EmployeeFormTabs';
-import CustomDropdown from '../components/CustomDropdown';
-import DataImportModal from '../components/DataImportModal';
-import useDarkMode from '../store/useDarkMode';
+import { PlusIcon } from '@heroicons/react/24/outline';
+import useStore from '../services/useStore';
+import api, { employeesAPI, adminAPI, rolesAPI } from '../services/api';
+import Modal from './components/Modal';
+import EmployeeFormTabs from './components/EmployeeFormTabs';
+import CustomDropdown from './components/CustomDropdown';
+import DataImportModal from './components/DataImportModal';
+import CSVImportButton from './components/CSVImportButton';
+import PermissionGate from './components/PermissionGate';
+import useDarkMode from '../services/useDarkMode';
 
 export default function Employees() {
   const { 
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, openModal, closeModal,
+    isModalOpen, modalContent, openModal, closeModal,
     user: currentUser, hasPermission
   } = useStore();
 
   const { isDarkMode } = useDarkMode();
   
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -31,6 +32,11 @@ export default function Employees() {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [showDataImport, setShowDataImport] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [newRole, setNewRole] = useState({ name: '', description: '' });
+  const [newRolePermission, setNewRolePermission] = useState({ page: '', permission: '' });
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -39,10 +45,88 @@ export default function Employees() {
     last_name: '',
     role: 'employee'
   });
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadEmployees();
+    // Roles are loaded on-demand when the Manage Roles modal is opened
   }, []);
+
+  const loadRoles = async () => {
+    try {
+      const response = await rolesAPI.getAll();
+      const rolesData = response?.data ?? response;
+      if (Array.isArray(rolesData)) {
+        setAvailableRoles(rolesData);
+      }
+    } catch (err) {
+      console.error('Failed to load roles:', err);
+    }
+  };
+
+  const getRoleName = (roleId) => {
+    if (!roleId) return '-';
+    const role = availableRoles.find(r => r.id === roleId);
+    return role ? role.name : '-';
+  };
+
+  const handleCreateRole = async (e) => {
+    e.preventDefault();
+    if (!newRole.name.trim()) {
+      setError('Role name is required');
+      return;
+    }
+    try {
+      await rolesAPI.create(newRole);
+      setSuccess('Role created successfully!');
+      setNewRole({ name: '', description: '' });
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create role');
+    }
+  };
+
+  const handleDeleteRole = async (roleId) => {
+    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    try {
+      await rolesAPI.delete(roleId);
+      setSuccess('Role deleted successfully!');
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete role');
+    }
+  };
+
+  const handleAddRolePermission = async (roleId) => {
+    if (!newRolePermission.page || !newRolePermission.permission) {
+      setError('Please select both page and permission');
+      return;
+    }
+    try {
+      await rolesAPI.addPermission(roleId, newRolePermission);
+      setSuccess('Permission added to role!');
+      setNewRolePermission({ page: '', permission: '' });
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to add permission');
+    }
+  };
+
+  const handleRemoveRolePermission = async (roleId, permissionId) => {
+    try {
+      await rolesAPI.removePermission(roleId, permissionId);
+      setSuccess('Permission removed from role!');
+      loadRoles();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to remove permission');
+    }
+  };
 
   // Check permissions at page level
   if (!hasPermission('employees', 'read') && 
@@ -57,19 +141,22 @@ export default function Employees() {
     
     setLoading(true);
     try {
-      
       const response = await employeesAPI.getAll();
       
-      
-      if (response.data && Array.isArray(response.data)) {
-        // Process employee data if needed
+      // Handle both direct data and response.data formats
+      const employeesData = response?.data ?? response;
+      if (Array.isArray(employeesData)) {
+        setEmployees(employeesData);
+        clearError();
+      } else {
+        console.error('Invalid employees data format:', employeesData);
+        setError('Invalid data format received from server');
+        setEmployees([]);
       }
-      
-      setEmployees(response.data);
-      clearError();
     } catch (err) {
-      
       setError('Failed to load employees');
+      console.error('Error loading employees:', err);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -80,7 +167,36 @@ export default function Employees() {
     openModal('employee-form');
   };
 
+  const handleCSVImportEmployees = async (records) => {
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const employeeData = {
+          username: record.username || record.email?.split('@')[0] || `user_${Date.now()}`,
+          email: record.email || '',
+          password: record.password || 'TempPass123!',
+          first_name: record.first_name || record.firstname || '',
+          last_name: record.last_name || record.lastname || '',
+          role: record.role || 'employee',
+        };
+        
+        await employeesAPI.create(employeeData);
+        success++;
+      } catch (err) {
+        failed++;
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
+        errors.push(`Row ${success + failed}: ${record.first_name || record.email || 'Unknown'} - ${detail}`);
+      }
+    }
+
+    return { success, failed, errors };
+  };
+
   const handleEdit = (employee) => {
+    console.log('handleEdit called with:', employee);
     setEditingEmployee(employee);
     openModal('employee-form');
   };
@@ -402,270 +518,277 @@ export default function Employees() {
   const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
 
+  // Helper function to get manager name from reports_to ID
+  const getManagerName = (reportsToId) => {
+    if (!reportsToId) return '-';
+    const manager = employees.find(e => e.id === reportsToId);
+    return manager ? `${manager.first_name} ${manager.last_name}` : '-';
+  };
+
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Employee & User Management</h1>
-            <div className="flex space-x-2">
-              {hasPermission('employees', 'admin') && (
-                <>
-                  <button
-                    onClick={() => setShowDataImport(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+
+      {/* Header - sticky on mobile */}
+      <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
+        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
+      </div>
+
+      {/* Error / Success Alerts */}
+      {error && (
+        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="flex-shrink-0 alert alert-success border-0 rounded-0 m-0">
+          {success}
+        </div>
+      )}
+
+      {/* Main upside-down table container */}
+      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+
+        {/* Scrollable rows – grow upwards from bottom */}
+        <div
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          style={{ background: 'var(--bs-body-bg)' }}
+        >
+          {employees.length > 0 ? (
+            <table className="table table-borderless table-hover mb-0 table-fixed">
+              <colgroup>
+                <col />
+                <col style={{ width: '120px' }} />
+              </colgroup>
+              <tbody>
+                {employees.map((employee, index) => (
+                  <tr
+                    key={employee.id || index}
+                    className="align-middle border-bottom"
+                    style={{ height: '56px', cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Row clicked for employee:', employee);
+                      handleEdit(employee);
+                    }}
                   >
-                    Import Data
-                  </button>
-                  <button
-                    onClick={handleTestAppointments}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                  >
-                    Test System
-                  </button>
-                  <button
-                    onClick={() => setShowCreateUser(true)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                  >
-                    Create User
-                  </button>
-                </>
-              )}
-              {hasPermission('employees', 'write') && !hasPermission('employees', 'admin') && (
-                <button onClick={handleCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-                  Add Employee
-                </button>
-              )}
+                    {/* Name with color coding for active/inactive */}
+                    <td className="px-3">
+                      <div 
+                        className={`fw-medium text-truncate ${
+                          employee.is_active ? 'text-success' : 'text-muted'
+                        }`} 
+                        style={{ maxWidth: '100%' }}
+                      >
+                        {employee.first_name} {employee.last_name}
+                      </div>
+                    </td>
+
+                    {/* Role */}
+                    <td className="px-3">
+                      <span className={`badge rounded-pill ${
+                        employee.role === 'admin' ? 'bg-danger' :
+                        employee.role === 'manager' ? 'bg-warning text-dark' :
+                        'bg-primary'
+                      }`}>
+                        {employee.role}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+              No employees found
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="p-6 space-y-8">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
+        {/* Fixed bottom – headers + controls */}
+        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+          {/* Column Headers */}
+          <table className="table table-borderless mb-0 bg-light">
+            <colgroup>
+              <col />
+              <col style={{ width: '120px' }} />
+            </colgroup>
+            <tfoot>
+              <tr className="bg-secondary-subtle">
+                <th>Employee</th>
+                <th>Role</th>
+              </tr>
+            </tfoot>
+          </table>
 
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="text-sm text-green-700">{success}</div>
-            </div>
-          )}
-
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">
-              {hasPermission('employees', 'admin') ? 'Users & Employees' : 'Employees'}
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {employees.map((employee) => (
-                    <tr key={employee.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.first_name} {employee.last_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.username}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
-                        {employee.role}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          employee.is_locked 
-                            ? 'bg-red-100 text-red-800' 
-                            : employee.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {employee.is_locked ? 'Locked' : employee.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                        {employee.force_password_reset && (
-                          <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            Reset Required
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        {hasPermission('employees', 'write') && (
-                          <button
-                            onClick={() => handleEdit(employee)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="Edit Employee"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        
-                        {hasPermission('employees', 'admin') && (
-                          <>
-                            <button
-                              onClick={() => {
-                                handleManagePermissions(employee);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Manage Permissions"
-                            >
-                              Permissions
-                            </button>
-                            {employee.is_locked ? (
-                              <button
-                                onClick={() => handleUnlockUser(employee.id)}
-                                className="text-green-600 hover:text-green-900"
-                              >
-                                Unlock
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleLockUser(employee.id)}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                Lock
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleForcePasswordReset(employee.id)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                            >
-                              Force Reset
-                            </button>
-                          </>
-                        )}
-                        
-                        {hasPermission('employees', 'delete') && (
-                          <button
-                            onClick={() => {
-                              handleDelete(employee.id);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete Employee"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Controls */}
+          <div className="p-2 border-top">
+            {/* Action buttons */}
+            <PermissionGate page="employees" permission="write">
+              <div className="d-flex gap-2 flex-wrap">
+                <div className="btn-group">
+                  <CSVImportButton
+                    entityName="Employees"
+                    onImport={handleCSVImportEmployees}
+                    onComplete={loadEmployees}
+                    requiredFields={['email']}
+                    fieldMapping={{
+                      'first name': 'first_name',
+                      'firstname': 'first_name',
+                      'last name': 'last_name',
+                      'lastname': 'last_name',
+                      'user name': 'username',
+                      'user': 'username',
+                      'email address': 'email',
+                    }}
+                    className="btn btn-outline-secondary"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreate}
+                    className="btn btn-primary"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
+                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                    </svg>
+                    Add
+                  </button>
+                </div>
+                <span className="text-muted small ms-auto align-self-center">
+                  {employees.length} employee(s)
+                </span>
+              </div>
+            </PermissionGate>
+          </div>
         </div>
       </div>
 
       {/* Employee Form Modal */}
-      <Modal isOpen={isModalOpen && openModal === 'employee-form'} onClose={closeModal}>
-        <EmployeeFormTabs
-          employee={editingEmployee}
-          onSubmit={handleSubmit}
-          onCancel={closeModal}
-        />
+      <Modal 
+        isOpen={isModalOpen && modalContent === 'employee-form'} 
+        onClose={closeModal}
+        title={editingEmployee ? 'Edit Employee' : 'Add Employee'}
+      >
+        {isModalOpen && modalContent === 'employee-form' && (
+          <EmployeeFormTabs
+            employee={editingEmployee}
+            onSubmit={handleSubmit}
+            onCancel={closeModal}
+            onDelete={editingEmployee ? handleDelete : null}
+            onManagePermissions={editingEmployee && hasPermission('employees', 'admin') ? handleManagePermissions : null}
+            employees={employees}
+            canDelete={editingEmployee && hasPermission('employees', 'delete')}
+          />
+        )}
       </Modal>
 
       {/* Create User Modal */}
       {showCreateUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New User</h3>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Username</label>
-                  <input
-                    type="text"
-                    value={newUser.username}
-                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Password</label>
-                  <input
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    value={newUser.first_name}
-                    onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    value={newUser.last_name}
-                    onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
-                  <select
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  >
-                    {roles.map(role => (
-                      <option key={role} value={role}>{role}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {loading ? 'Creating...' : 'Create User'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateUser(false)}
-                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Create New User</h5>
+                <button type="button" className="btn-close" onClick={() => setShowCreateUser(false)}></button>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={handleCreateUser}>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="createUserUsername"
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                      className="form-control"
+                      placeholder="Username"
+                      required
+                    />
+                    <label htmlFor="createUserUsername">Username</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="email"
+                      id="createUserEmail"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                      className="form-control"
+                      placeholder="Email"
+                      required
+                    />
+                    <label htmlFor="createUserEmail">Email</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="password"
+                      id="createUserPassword"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                      className="form-control"
+                      placeholder="Password"
+                      required
+                    />
+                    <label htmlFor="createUserPassword">Password</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="createUserFirstName"
+                      value={newUser.first_name}
+                      onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
+                      className="form-control"
+                      placeholder="First Name"
+                      required
+                    />
+                    <label htmlFor="createUserFirstName">First Name</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="createUserLastName"
+                      value={newUser.last_name}
+                      onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
+                      className="form-control"
+                      placeholder="Last Name"
+                      required
+                    />
+                    <label htmlFor="createUserLastName">Last Name</label>
+                  </div>
+                  <div className="form-floating mb-3">
+                    <select
+                      id="createUserRole"
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                      className="form-select"
+                    >
+                      {roles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                    <label htmlFor="createUserRole">Role</label>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="btn btn-primary flex-grow-1"
+                    >
+                      {loading ? 'Creating...' : 'Create User'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateUser(false)}
+                      className="btn btn-secondary flex-grow-1"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -821,6 +944,167 @@ export default function Employees() {
         </div>
       </Modal>
 
+      {/* Roles Management Modal */}
+      <Modal isOpen={showRolesModal} onClose={() => setShowRolesModal(false)}>
+        <div className={`p-4 ${isDarkMode ? 'bg-dark' : 'bg-white'}`}>
+          <h3 className={`text-lg font-medium mb-4 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+            Manage Roles
+          </h3>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+              <div className="text-sm text-red-700">{error}</div>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
+              <div className="text-sm text-green-700">{success}</div>
+            </div>
+          )}
+
+          {/* Create New Role Form */}
+          <form onSubmit={handleCreateRole} className="mb-4 p-3 border rounded">
+            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Create New Role</h5>
+            <div className="row g-3">
+              <div className="col-md-5">
+                <input
+                  type="text"
+                  value={newRole.name}
+                  onChange={(e) => setNewRole({...newRole, name: e.target.value})}
+                  className="form-control"
+                  placeholder="Role Name"
+                  required
+                />
+              </div>
+              <div className="col-md-5">
+                <input
+                  type="text"
+                  value={newRole.description}
+                  onChange={(e) => setNewRole({...newRole, description: e.target.value})}
+                  className="form-control"
+                  placeholder="Description (optional)"
+                />
+              </div>
+              <div className="col-md-2">
+                <button type="submit" className="btn btn-primary w-100">
+                  Create
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Existing Roles List */}
+          <div className="mt-4">
+            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Existing Roles</h5>
+            {availableRoles.length === 0 ? (
+              <p className="text-muted">No roles defined yet. Create one above.</p>
+            ) : (
+              <div className="space-y-4">
+                {availableRoles.map((role) => (
+                  <div key={role.id} className="border rounded p-3">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <h6 className={`mb-1 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
+                          {role.name}
+                          {role.is_system && (
+                            <span className="badge bg-secondary ms-2">System</span>
+                          )}
+                        </h6>
+                        {role.description && (
+                          <small className="text-muted">{role.description}</small>
+                        )}
+                      </div>
+                      {!role.is_system && (
+                        <button
+                          onClick={() => handleDeleteRole(role.id)}
+                          className="btn btn-sm btn-outline-danger"
+                          title="Delete Role"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Role Permissions */}
+                    <div className="mt-2">
+                      <small className={`d-block mb-2 ${isDarkMode ? 'text-light' : 'text-muted'}`}>
+                        <strong>Permissions:</strong>
+                      </small>
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {role.role_permissions?.length > 0 ? (
+                          role.role_permissions.map((perm) => (
+                            <span key={perm.id} className="badge bg-secondary d-flex align-items-center gap-1">
+                              {perm.page}:{perm.permission}
+                              <button
+                                onClick={() => handleRemoveRolePermission(role.id, perm.id)}
+                                className="btn-close btn-close-white ms-1"
+                                style={{ fontSize: '0.5rem' }}
+                                title="Remove permission"
+                              />
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-muted">No permissions assigned</span>
+                        )}
+                      </div>
+
+                      {/* Add Permission to Role */}
+                      <div className="d-flex gap-2 mt-2">
+                        <select
+                          value={editingRole === role.id ? newRolePermission.page : ''}
+                          onChange={(e) => {
+                            setEditingRole(role.id);
+                            setNewRolePermission({...newRolePermission, page: e.target.value});
+                          }}
+                          className="form-select form-select-sm"
+                          style={{ maxWidth: '150px' }}
+                        >
+                          <option value="">Page...</option>
+                          {pages.map(page => (
+                            <option key={page} value={page}>{page}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={editingRole === role.id ? newRolePermission.permission : ''}
+                          onChange={(e) => {
+                            setEditingRole(role.id);
+                            setNewRolePermission({...newRolePermission, permission: e.target.value});
+                          }}
+                          className="form-select form-select-sm"
+                          style={{ maxWidth: '150px' }}
+                        >
+                          <option value="">Permission...</option>
+                          {permissions.map(perm => (
+                            <option key={perm} value={perm}>{perm}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleAddRolePermission(role.id)}
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="d-flex justify-content-end mt-4">
+            <button
+              onClick={() => setShowRolesModal(false)}
+              className="btn btn-secondary"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* System Info Display */}
       {systemInfo && (
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -871,7 +1155,7 @@ export default function Employees() {
           loadEmployees();
         }}
       />
-      </div>
+
     </div>
   );
 }

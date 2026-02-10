@@ -3,8 +3,14 @@ from sqlalchemy import text
 import os
 from typing import Generator
 
-# Database URL from environment variable - defaults to SQLite for easy local development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./business_manager.db")
+# Import database configuration
+try:
+    from backend.db_config import get_database_url
+except ImportError:
+    from db_config import get_database_url
+
+# Database URL from db_config (supports environment switching)
+DATABASE_URL = get_database_url()
 
 # Create engine with appropriate settings for SQLite (local) or PostgreSQL (production)
 if DATABASE_URL.startswith("sqlite"):
@@ -102,10 +108,53 @@ def _migrate_documents_table_if_needed():
         conn.execute(text("DROP TABLE document"))
         conn.execute(text("ALTER TABLE document_new RENAME TO document"))    
     
+def _migrate_document_entity_type_enum_to_varchar():
+    """Convert document.entity_type from PostgreSQL enum to VARCHAR.
+
+    The Document model defines entity_type as Optional[str], but older
+    database schemas created a PostgreSQL enum column. This causes insert
+    failures: 'column entity_type is of type entitytype but expression is
+    of type character varying'. This migration converts the column to
+    VARCHAR and normalises existing values to lowercase.
+    """
+    if DATABASE_URL.startswith("sqlite"):
+        return  # SQLite doesn't have enums
+    with engine.begin() as conn:
+        result = conn.execute(text(
+            "SELECT udt_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document' AND column_name='entity_type'"
+        ))
+        row = result.fetchone()
+        if not row or row[0] in ("varchar", "text", "character varying"):
+            return  # Already correct type or column missing
+        # Convert enum to VARCHAR
+        conn.execute(text(
+            "ALTER TABLE document ALTER COLUMN entity_type TYPE VARCHAR USING entity_type::TEXT"
+        ))
+        # Normalise to lowercase
+        conn.execute(text(
+            "UPDATE document SET entity_type = LOWER(entity_type) WHERE entity_type IS NOT NULL"
+        ))
+        # Map legacy 'item' to 'inventory'
+        conn.execute(text(
+            "UPDATE document SET entity_type = 'inventory' WHERE entity_type = 'item'"
+        ))
+        # Drop orphaned enum type if unused
+        remaining = conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE udt_name = 'entitytype' AND table_schema = 'public'"
+        )).scalar()
+        if remaining == 0:
+            conn.execute(text("DROP TYPE IF EXISTS entitytype"))
+        print("✓ Migrated document.entity_type from enum to VARCHAR")
+
+
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
     # Pre-create migrations: move legacy product/assets to item schema and adjust inventory FK
     _migrate_products_and_inventory_to_items_if_needed()
+    # Convert document.entity_type from PG enum to varchar BEFORE create_all
+    _migrate_document_entity_type_enum_to_varchar()
     # Create all tables based on current models
     SQLModel.metadata.create_all(engine)
     # Post-create migrations
@@ -114,6 +163,7 @@ def create_db_and_tables():
     _ensure_document_extra_columns_if_needed()
     _ensure_employee_user_id_column_if_needed()
     _normalize_item_types_if_needed()
+    _ensure_inventory_image_table_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -289,3 +339,95 @@ def _ensure_employee_user_id_column_if_needed():
         if "user_id" not in col_names:
             # Add column
             conn.execute(text("ALTER TABLE employee ADD COLUMN user_id TEXT"))
+
+
+def _ensure_inventory_image_table_if_needed():
+    """Ensure InventoryImage table exists and has proper structure."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            # Check if inventoryimage table exists
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='inventoryimage'"
+            )).fetchone()
+            if not tbl_exists:
+                # Create the table if it doesn't exist
+                conn.execute(text("""
+                    CREATE TABLE inventoryimage (
+                        id TEXT PRIMARY KEY,
+                        inventory_id TEXT NOT NULL,
+                        image_url TEXT,
+                        file_path TEXT,
+                        file_name TEXT,
+                        is_primary BOOLEAN NOT NULL DEFAULT 0,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at DATETIME,
+                        updated_at DATETIME,
+                        FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
+                        CONSTRAINT check_image_source CHECK (
+                            (image_url IS NOT NULL AND file_path IS NULL) OR
+                            (image_url IS NULL AND file_path IS NOT NULL) OR
+                            (image_url IS NOT NULL AND file_path IS NOT NULL)
+                        )
+                    )
+                """))
+                print("✓ Created InventoryImage table for SQLite")
+    else:
+        # PostgreSQL version
+        with engine.begin() as conn:
+            # Check if inventoryimage table exists
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'inventoryimage')"
+            )).scalar()
+            if not tbl_exists:
+                # Create the table if it doesn't exist
+                conn.execute(text("""
+                    CREATE TABLE inventoryimage (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        inventory_id UUID NOT NULL,
+                        image_url TEXT,
+                        file_path TEXT,
+                        file_name TEXT,
+                        is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_inventory_image_inventory 
+                            FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
+                        CONSTRAINT check_image_source CHECK (
+                            (image_url IS NOT NULL AND file_path IS NULL) OR
+                            (image_url IS NULL AND file_path IS NOT NULL) OR
+                            (image_url IS NOT NULL AND file_path IS NOT NULL)
+                        )
+                    )
+                """))
+                
+                # Create indexes for better performance
+                conn.execute(text(
+                    "CREATE INDEX idx_inventoryimage_inventory_id ON inventoryimage(inventory_id)"
+                ))
+                conn.execute(text(
+                    "CREATE INDEX idx_inventoryimage_is_primary ON inventoryimage(inventory_id, is_primary) WHERE is_primary = TRUE"
+                ))
+                conn.execute(text(
+                    "CREATE INDEX idx_inventoryimage_sort_order ON inventoryimage(inventory_id, sort_order)"
+                ))
+                
+                # Create trigger to update updated_at timestamp
+                conn.execute(text("""
+                    CREATE OR REPLACE FUNCTION update_inventoryimage_updated_at()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        NEW.updated_at = CURRENT_TIMESTAMP;
+                        RETURN NEW;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                """))
+                
+                conn.execute(text("""
+                    CREATE TRIGGER trigger_inventoryimage_updated_at
+                        BEFORE UPDATE ON inventoryimage
+                        FOR EACH ROW
+                        EXECUTE FUNCTION update_inventoryimage_updated_at();
+                """))
+                
+                print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")

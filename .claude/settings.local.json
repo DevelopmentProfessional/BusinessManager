@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd document management backend and improved frontend\n\n- Add backend/routers/documents.py with full CRUD for documents and categories\n- Document upload, download, sign, history, and content replace endpoints\n- Add DocumentViewerModal component with type-specific viewers \\(image, PDF, DOCX, text\\)\n- Add DocumentEditModal component for document metadata editing\n- Update Documents.jsx with drag-drop upload and improved UI\n- Initialize database tables on startup\n- Add uploads directory for file storage\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(python:*)",
+      "Bash(timeout 10 .venv/Scripts/python.exe:*)",
+      "Bash(../.venv/Scripts/python.exe:*)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(where:*)",
+      "Bash(C:/Python313/python.exe:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process where \"name like ''%python%''\" get commandline)",
+      "Bash(wmic process:*)",
+      "Bash(powershell -Command \"\\(Get-Item main.py\\).LastWriteTime = Get-Date\")",
+      "Bash(taskkill:*)",
+      "Bash(start:*)",
+      "Bash(timeout /t:*)",
+      "Bash(findstr:*)",
+      "Bash(del /q \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\backend\\\\uploads\\\\*.txt\")",
+      "Bash(del /q \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\backend\\\\uploads\\\\*.pdf\")",
+      "Bash(git fetch:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix document upload file detection and cascade delete error handling\n\nUse duck-type check \\(hasattr ''read''\\) for UploadFile detection to handle\nStarlette/FastAPI type mismatch. Add session.flush\\(\\) before document\ndelete to ensure assignment cleanup, and wrap commit in try/except.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(npx vite build:*)",
+      "Bash(pushd:*)",
+      "Bash(popd:*)"
+    ]
+  }
+}

@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
+import useStore from '../services/useStore';
 import { suppliersAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
+import Modal from './components/Modal';
+import MobileTable from './components/MobileTable';
+import MobileAddButton from './components/MobileAddButton';
+import PermissionGate from './components/PermissionGate';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Suppliers() {
@@ -17,7 +16,6 @@ export default function Suppliers() {
   } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
   // Check permissions at page level
   if (!hasPermission('suppliers', 'read') && 
@@ -31,8 +29,11 @@ export default function Suppliers() {
   const [editingSupplier, setEditingSupplier] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadSuppliers();
   }, []);
 
@@ -51,11 +52,20 @@ export default function Suppliers() {
     setLoading(true);
     try {
       const response = await suppliersAPI.getAll();
-      setSuppliers(response.data);
-      clearError();
+      // Handle both direct data and response.data formats
+      const suppliersData = response?.data ?? response;
+      if (Array.isArray(suppliersData)) {
+        setSuppliers(suppliersData);
+        clearError();
+      } else {
+        console.error('Invalid suppliers data format:', suppliersData);
+        setError('Invalid data format received from server');
+        setSuppliers([]);
+      }
     } catch (err) {
       setError('Failed to load suppliers');
-      console.error(err);
+      console.error('Error loading suppliers:', err);
+      setSuppliers([]);
     } finally {
       setLoading(false);
     }
@@ -123,8 +133,8 @@ export default function Suppliers() {
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
+    <div className="h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-shrink-0 sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
         </div>
@@ -148,8 +158,8 @@ export default function Suppliers() {
         </div>
       )}
 
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
+      {/* Mobile view - fills space, table scrolls inside */}
+      <div className="mt-4 md:hidden flex-1 min-h-0 flex flex-col">
         <MobileTable
           data={suppliers}
           columns={[
@@ -168,9 +178,9 @@ export default function Suppliers() {
         </PermissionGate>
       </div>
 
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      {/* Desktop table - scrolls inside, page does not */}
+      <div className="mt-4 hidden md:flex flex-1 flex-col min-h-0 overflow-auto">
+        <div className="-mx-4 -my-2 sm:-mx-6 lg:-mx-8 flex-1 min-h-0">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">
@@ -196,19 +206,19 @@ export default function Suppliers() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {suppliers.map((supplier) => (
                     <tr key={supplier.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-1 py-1 whitespace-nowrap text-sm font-medium text-gray-900">
                         {supplier.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-500">
                         {supplier.email || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-500">
                         {supplier.phone || '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-1 py-1 text-sm text-gray-500">
                         {supplier.address || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                      <td className="px-1 py-1 whitespace-nowrap text-right text-sm font-medium space-x-1">
                         <PermissionGate page="suppliers" permission="delete">
                           <button
                             onClick={() => handleDeleteSupplier(supplier.id)}
@@ -234,7 +244,7 @@ export default function Suppliers() {
               </table>
               
               {suppliers.length === 0 && (
-                <div className="text-center py-12">
+                <div className="text-center py-1">
                   <p className="text-gray-500">No suppliers found. Add your first supplier to get started.</p>
                 </div>
               )}
@@ -277,11 +287,11 @@ function SupplierForm({ supplier, onSubmit, onCancel }) {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">
+    <div className="p-1">
+      <h2 className="text-lg font-medium text-gray-900 mb-1">
         {supplier ? 'Edit Supplier' : 'Add Supplier'}
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-1">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
             Name *
