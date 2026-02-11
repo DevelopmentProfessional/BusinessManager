@@ -11,14 +11,15 @@ CONFIG_FILE = Path(__file__).parent / "db_environment.json"
 
 # Hardcoded database URLs for each environment
 DATABASE_ENVIRONMENTS = {
-    "local": "postgresql://postgres:password@localhost:5432/businessmanager",
+    "local": "sqlite:///./business_manager.db",
+    "local-postgres": "postgresql://postgres:password@localhost:5432/businessmanager",
     "development": "postgresql://db_reference_user:AGONHh5kBrXztl8hwYUEIGpCZncxK06j@dpg-d5scoucoud1c73b1s5tg-a.oregon-postgres.render.com/db_reference_name",
     "test": "",  # Empty for now - can be configured later
     "production": "",  # Empty for now - can be configured later
 }
 
-# Default environment
-DEFAULT_ENVIRONMENT = "development"
+# Default environment - use SQLite for local development
+DEFAULT_ENVIRONMENT = "local"
 
 
 def get_current_environment() -> str:
