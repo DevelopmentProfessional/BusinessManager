@@ -46,6 +46,7 @@ Thumbs.db
 *.sqlite3
 *.db
 *.bak
+backend/db_environment.json
 
 # Uploaded files (keep directory but ignore contents)
 backend/uploads/*

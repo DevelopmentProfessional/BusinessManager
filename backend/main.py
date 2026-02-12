@@ -174,11 +174,61 @@ async def startup_event():
     print("Business Management API is starting...")
     # Initialize database tables
     try:
-        from backend.database import create_db_and_tables
+        from backend.database import create_db_and_tables, get_session
     except ModuleNotFoundError:
-        from database import create_db_and_tables
+        from database import create_db_and_tables, get_session
     create_db_and_tables()
     print("Database tables initialized")
+
+    # Seed default database connections from db_config if none exist
+    try:
+        from backend.db_config import DATABASE_ENVIRONMENTS
+    except ImportError:
+        from db_config import DATABASE_ENVIRONMENTS
+    try:
+        from backend.models import DatabaseConnection
+    except ImportError:
+        from models import DatabaseConnection
+    from sqlmodel import select, Session
+    try:
+        from backend.database import engine
+    except ImportError:
+        from database import engine
+
+    with Session(engine) as session:
+        existing = session.exec(select(DatabaseConnection)).first()
+        if not existing:
+            for env_name, url in DATABASE_ENVIRONMENTS.items():
+                if not url or url.startswith("sqlite"):
+                    continue
+                # Parse PostgreSQL URL: postgresql://user:pass@host:port/dbname
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(url)
+                    conn = DatabaseConnection(
+                        name=f"Render {env_name.capitalize()}",
+                        environment=env_name,
+                        host=parsed.hostname or "",
+                        port=parsed.port or 5432,
+                        database_name=parsed.path.lstrip("/") if parsed.path else "",
+                        username=parsed.username or "",
+                        password=parsed.password or "",
+                        ssl_mode="require",
+                        is_active=True,
+                        visible_to_users=True,
+                        description=f"Render {env_name} PostgreSQL database",
+                        external_url=url,
+                    )
+                    session.add(conn)
+                    print(f"Seeded database connection: {conn.name}")
+                except Exception as e:
+                    print(f"Failed to seed connection for {env_name}: {e}")
+            try:
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                print(f"Failed to commit seeded connections: {e}")
+
     print("All routers loaded successfully")
 
 # Include routers (documents + document_category CRUD go through isud)

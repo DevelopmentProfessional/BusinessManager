@@ -544,56 +544,39 @@ def create_user_permission(
     session: Session = Depends(get_session)
 ):
     """Create user permission (admin only)"""
-    print(f"🔥 PERMISSION CREATE DEBUG - user_id: {user_id}")
-    
     # Convert user_id to UUID with error handling
     try:
         user_uuid = UUID(user_id)
-    except (ValueError, TypeError) as e:
-        print(f"🔥 PERMISSION CREATE DEBUG - Invalid user_id format: {user_id}")
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid user_id format: {user_id}. Must be a valid UUID."
         )
-    print(f"🔥 PERMISSION CREATE DEBUG - Converted user_id to UUID: {user_uuid}")
-    print(f"🔥 PERMISSION CREATE DEBUG - permission_data: {permission_data}")
-    print(f"🔥 PERMISSION CREATE DEBUG - permission type: {permission_data.permission}")
-    print(f"🔥 PERMISSION CREATE DEBUG - valid permission types: {list(PermissionType)}")
-    
-    # Validate permission type (no auto-conversion to avoid enum issues)
+
+    # Validate permission type
     valid_permissions = [p.value for p in PermissionType]
-    original_permission = permission_data.permission
-    
     try:
-        # Test if permission type is valid
-        perm_type = PermissionType(permission_data.permission)
-        print(f"🔥 PERMISSION CREATE DEBUG - Permission type validation passed: {perm_type}")
-    except ValueError as e:
-        print(f"🔥 PERMISSION CREATE DEBUG - Invalid permission type: {permission_data.permission}")
-        print(f"🔥 PERMISSION CREATE DEBUG - Available types: {valid_permissions}")
+        PermissionType(permission_data.permission)
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
         )
-    
+
     if current_user.role != UserRole.ADMIN:
-        print(f"🔥 PERMISSION CREATE DEBUG - Access denied: {current_user.role} != ADMIN")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     user = session.get(User, user_uuid)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Found user: {user}")
     if not user:
-        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - User {user_uuid} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     # Check if permission already exists
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Checking for existing permission...")
     existing_permission = session.exec(
         select(UserPermission).where(
             (UserPermission.user_id == user_uuid) &
@@ -601,35 +584,29 @@ def create_user_permission(
             (UserPermission.permission == permission_data.permission)
         )
     ).first()
-    
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Existing permission: {existing_permission}")
-    
+
     if existing_permission:
-        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission already exists!")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Permission already exists"
         )
-    
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Creating new permission...")
+
     permission = UserPermission(
         user_id=user_uuid,
         page=permission_data.page,
         permission=permission_data.permission,
         granted=permission_data.granted
     )
-    
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission object created: {permission}")
+
     session.add(permission)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission added to session")
-    session.commit()
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Session committed")
-    session.refresh(permission)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission refreshed: {permission}")
-    
-    result = UserPermissionRead.from_orm(permission)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Returning result: {result}")
-    return result
+    try:
+        session.commit()
+        session.refresh(permission)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
+    return UserPermissionRead.from_orm(permission)
 
 # Convenience endpoint: allow creating a permission with user_id in the body instead of the URL
 @router.post("/permissions", response_model=UserPermissionRead)
@@ -777,52 +754,42 @@ def delete_user_permission(
     session: Session = Depends(get_session)
 ):
     """Delete user permission (admin only)"""
-    print(f"🔥 DELETE PERMISSION DEBUG - user_id: {user_id} (type: {type(user_id)})")
-    print(f"🔥 DELETE PERMISSION DEBUG - permission_id: {permission_id} (type: {type(permission_id)})")
-    
     # Convert IDs to UUID with error handling
     try:
         user_uuid = UUID(user_id)
         permission_uuid = UUID(permission_id)
-    except (ValueError, TypeError) as e:
-        print(f"🔥 DELETE PERMISSION DEBUG - Invalid ID format: user_id={user_id}, permission_id={permission_id}")
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid ID format. Both user_id and permission_id must be valid UUIDs."
         )
-    
+
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     permission = session.get(UserPermission, permission_uuid)
-    print(f"🔥 DELETE PERMISSION DEBUG - Found permission: {permission}")
-    
     if not permission:
-        print(f"🔥 DELETE PERMISSION DEBUG - Permission {permission_uuid} not found in database")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
-    
-    print(f"🔥 DELETE PERMISSION DEBUG - permission.user_id: {permission.user_id} (type: {type(permission.user_id)})")
-    print(f"🔥 DELETE PERMISSION DEBUG - Comparing {permission.user_id} != {user_uuid}")
-    print(f"🔥 DELETE PERMISSION DEBUG - Comparison result: {permission.user_id != user_uuid}")
-    
+
     if permission.user_id != user_uuid:
-        print(f"🔥 DELETE PERMISSION DEBUG - User ID mismatch! Permission belongs to {permission.user_id}, not {user_uuid}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
-    
-    print(f"🔥 DELETE PERMISSION DEBUG - Deleting permission {permission_uuid} for user {user_uuid}")
+
     session.delete(permission)
-    session.commit()
-    print(f"🔥 DELETE PERMISSION DEBUG - Permission deleted successfully")
-    
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     return {"message": "Permission deleted"}
 
 @router.post("/admin/normalize-permissions")

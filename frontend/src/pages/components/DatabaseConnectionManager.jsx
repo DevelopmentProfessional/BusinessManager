@@ -9,9 +9,7 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import api from '../../services/api';
 
 export default function DatabaseConnectionManager() {
   const [connections, setConnections] = useState([]);
@@ -46,11 +44,8 @@ export default function DatabaseConnectionManager() {
   const loadConnections = async () => {
     try {
       setLoading(true);
-      setError(''); // Clear any previous errors
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/api/v1/database-connections/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      setError('');
+      const response = await api.get('/database-connections/');
       setConnections(response.data);
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to load database connections';
@@ -67,12 +62,7 @@ export default function DatabaseConnectionManager() {
 
   const handleToggleVisibility = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `${API_BASE_URL}/api/v1/database-connections/${id}/toggle-visibility`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.patch(`/database-connections/${id}/toggle-visibility`);
       setSuccess('Visibility updated successfully');
       setTimeout(() => setSuccess(''), 3000);
       loadConnections();
@@ -86,10 +76,7 @@ export default function DatabaseConnectionManager() {
     if (!confirm('Are you sure you want to delete this database connection?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API_BASE_URL}/api/v1/database-connections/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/database-connections/${id}`);
       setSuccess('Connection deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
       loadConnections();
@@ -103,12 +90,7 @@ export default function DatabaseConnectionManager() {
     e.preventDefault();
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_BASE_URL}/api/v1/database-connections/`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post('/database-connections/', formData);
       setSuccess('Connection added successfully');
       setTimeout(() => setSuccess(''), 3000);
       setShowAddModal(false);

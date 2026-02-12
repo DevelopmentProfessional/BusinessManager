@@ -31,8 +31,12 @@ def get_or_create_settings(session: Session) -> AppSettings:
             attendance_check_in_required=True
         )
         session.add(settings)
-        session.commit()
-        session.refresh(settings)
+        try:
+            session.commit()
+            session.refresh(settings)
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to create default settings: {str(e)}")
     return settings
 
 
@@ -57,7 +61,11 @@ def update_schedule_settings(
         setattr(settings, field, value)
 
     settings.updated_at = datetime.utcnow()
-    session.commit()
-    session.refresh(settings)
+    try:
+        session.commit()
+        session.refresh(settings)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
     return AppSettingsRead.model_validate(settings)

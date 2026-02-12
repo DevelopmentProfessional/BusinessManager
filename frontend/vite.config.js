@@ -1,28 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import fs from 'fs'
-import path from 'path'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
-  const plugins = [react()]
-  
-  // Load SSL certificates for local HTTPS
-  const sslDir = path.resolve(__dirname, '../ssl')
-  const keyPath = path.join(sslDir, 'key.pem')
-  const certPath = path.join(sslDir, 'cert.pem')
-  
-  // Check if certificates exist
-  const hasSSL = fs.existsSync(keyPath) && fs.existsSync(certPath)
+  const plugins = [react(), basicSsl()]
 
   return {
     plugins,
     server: {
-      // HTTPS enabled with our self-signed certificate
-      https: hasSSL ? {
-        key: fs.readFileSync(keyPath),
-        cert: fs.readFileSync(certPath),
-      } : true,
+      // HTTPS enabled with @vitejs/plugin-basic-ssl
+      https: true,
       // Allow override via env var VITE_PORT; default to 5173
       port: Number(process.env.VITE_PORT || 5173),
       host: true,
@@ -30,7 +18,7 @@ export default defineConfig(({ command, mode }) => {
       // Backend runs on HTTP internally, Vite handles the HTTPS for the browser
       proxy: {
         '/api': {
-          target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
+          target: process.env.VITE_API_PROXY_TARGET || 'https://businessmanager-reference-api.onrender.com',
           changeOrigin: true,
           secure: false,
           configure: (proxy, _options) => {

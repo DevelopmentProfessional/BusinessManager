@@ -221,9 +221,6 @@ export const inventoryAPI = {
     `${api.defaults.baseURL}/isud/inventory/images/${imageId}/file`,
 };
 
-// Legacy alias for backward compatibility (deprecated - use inventoryAPI)
-export const itemsAPI = inventoryAPI;
-
 export const servicesAPI = {
   getAll: () => getCachedOrFetch('services', () => api.get('/isud/services')),
   getById: (id) => api.get(`/isud/services/${id}`),

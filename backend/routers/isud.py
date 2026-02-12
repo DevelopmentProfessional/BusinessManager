@@ -44,6 +44,18 @@ READ_SCHEMA_MAP = {
     'document': DocumentRead,
     'documents': DocumentRead,
     'document_assignment': DocumentAssignmentRead,
+    'supplier': SupplierRead,
+    'suppliers': SupplierRead,
+    'attendance': AttendanceRead,
+    'app_settings': AppSettingsRead,
+    'role': RoleRead,
+    'roles': RoleRead,
+    'role_permission': RolePermissionRead,
+    'user_permission': UserPermissionRead,
+    'inventory_image': InventoryImageRead,
+    'inventoryimage': InventoryImageRead,
+    'database_connection': DatabaseConnectionRead,
+    'databaseconnection': DatabaseConnectionRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):
@@ -426,9 +438,13 @@ async def insert(
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
 
     session.add(record)
-    session.commit()
-    session.refresh(record)
-    return _serialize_record(record, table_name)
+    try:
+        session.commit()
+        session.refresh(record)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+    return _serialize_record(record, table_name, session)
 
 @router.put("/{table_name}/{record_id}")
 async def update_by_id(
@@ -449,8 +465,12 @@ async def update_by_id(
             setattr(record, key, value)
 
     session.add(record)
-    session.commit()
-    session.refresh(record)
+    try:
+        session.commit()
+        session.refresh(record)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
     return _serialize_record(record, table_name, session)
 
 @router.get("/{table_name}")
@@ -492,11 +512,6 @@ async def select(
 
     records = session.exec(stmt).all()
     return _serialize_records(records, table_name, session)
-
-
-def _serialize_records(records, table_name: str, session=None):
-    """Serialize a list of records."""
-    return [_serialize_record(record, table_name, session) for record in records]
 
 @router.get("/{table_name}/{record_id}")
 async def select_by_id(
@@ -557,7 +572,11 @@ async def update(
                     setattr(record, key, value)
             session.add(record)
 
-        session.commit()
+        try:
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
         return {"count": len(records)}
 
     record = session.exec(stmt).first()
@@ -569,9 +588,13 @@ async def update(
             setattr(record, key, value)
 
     session.add(record)
-    session.commit()
-    session.refresh(record)
-    return _serialize_record(record, table_name)
+    try:
+        session.commit()
+        session.refresh(record)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+    return _serialize_record(record, table_name, session)
 
 @router.delete("/{table_name}/{record_id}")
 async def delete_by_id(
@@ -648,9 +671,13 @@ async def add_inventory_image_url(
             session.add(existing_image)
     
     session.add(image)
-    session.commit()
-    session.refresh(image)
-    
+    try:
+        session.commit()
+        session.refresh(image)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     return InventoryImageRead.model_validate(image)
 
 
@@ -716,9 +743,13 @@ async def upload_inventory_image_file(
             session.add(existing_image)
     
     session.add(image)
-    session.commit()
-    session.refresh(image)
-    
+    try:
+        session.commit()
+        session.refresh(image)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     return InventoryImageRead.model_validate(image)
 
 
@@ -766,9 +797,13 @@ async def update_inventory_image(
             session.add(other_image)
     
     session.add(image)
-    session.commit()
-    session.refresh(image)
-    
+    try:
+        session.commit()
+        session.refresh(image)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     return InventoryImageRead.model_validate(image)
 
 
@@ -790,8 +825,12 @@ async def delete_inventory_image(
             pass
     
     session.delete(image)
-    session.commit()
-    
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     return {"message": "Image deleted successfully"}
 
 

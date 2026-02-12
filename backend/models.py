@@ -463,6 +463,35 @@ class ServiceRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class SupplierRead(SQLModel):
+    """Schema for reading supplier records (excludes relationship fields)"""
+    id: UUID
+    name: str
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class AttendanceRead(SQLModel):
+    """Schema for reading attendance records (excludes relationship fields)"""
+    id: UUID
+    user_id: UUID
+    date: datetime
+    clock_in: Optional[datetime] = None
+    clock_out: Optional[datetime] = None
+    total_hours: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class InventoryRead(SQLModel):
     """Schema for reading inventory items (includes images)"""
     id: UUID

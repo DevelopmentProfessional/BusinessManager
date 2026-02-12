@@ -9,7 +9,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: dd_reference_temp
+          name: db_reference_temp
           property: connectionString
       - key: ALLOWED_ORIGINS
         value: https://businessmanager-reference.onrender.com,http://localhost:5173
@@ -27,7 +27,7 @@ services:
         value: https://businessmanager-reference-api.onrender.com/api/v1
 
 databases:
-  - name: dd_reference_temp
+  - name: db_reference_temp
     databaseName: businessmanager
     user: businessmanager
     plan: starter

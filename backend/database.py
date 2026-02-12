@@ -12,12 +12,11 @@ except ImportError:
 # Database URL from db_config (supports environment switching)
 DATABASE_URL = get_database_url()
 
-# Create engine with appropriate settings for SQLite (local) or PostgreSQL (production)
+# Create engine with appropriate settings
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 else:
-    # PostgreSQL settings - use psycopg driver instead of psycopg2
-    # Normalize both 'postgres://' and 'postgresql://' to psycopg driver URL
+    # PostgreSQL - normalize URL to use psycopg driver
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
     elif DATABASE_URL.startswith("postgresql://"):
