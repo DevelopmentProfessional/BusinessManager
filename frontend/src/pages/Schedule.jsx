@@ -30,6 +30,8 @@ export default function Schedule() {
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [draggedAppointment, setDraggedAppointment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const hasFetched = useRef(false);
   const calendarGridRef = useRef(null);
@@ -350,36 +352,48 @@ export default function Schedule() {
   }, []);
 
   const handleSubmitAppointment = useCallback(async (appointmentData) => {
-    const employeeIds = normalizeIds(appointmentData.employee_ids ?? appointmentData.employee_id);
-    const clientIds = normalizeIds(appointmentData.client_ids ?? appointmentData.client_id);
-    const primaryEmployeeId = employeeIds[0] || appointmentData.employee_id;
-    const primaryClientId = clientIds[0] || appointmentData.client_id;
-
-    const schedulePayload = {
-      ...appointmentData,
-      employee_id: primaryEmployeeId,
-      client_id: primaryClientId,
-    };
-    delete schedulePayload.employee_ids;
-    delete schedulePayload.client_ids;
-
-    let savedRecord;
-    if (editingAppointment && editingAppointment.id) {
-      const response = await scheduleAPI.update(editingAppointment.id, schedulePayload);
-      savedRecord = response?.data ?? response;
-    } else {
-      const response = await scheduleAPI.create(schedulePayload);
-      savedRecord = response?.data ?? response;
-    }
-
-    const scheduleId = savedRecord?.id || editingAppointment?.id;
-    await syncScheduleAttendees(scheduleId, employeeIds, clientIds, primaryEmployeeId, primaryClientId);
-
-    // Refresh schedules - cache will prevent duplicate calls if already in flight
-    await refreshSchedules();
+    setIsSaving(true);
+    setSaveError(null);
     
-    setIsModalOpen(false);
-    setEditingAppointment(null);
+    try {
+      const employeeIds = normalizeIds(appointmentData.employee_ids ?? appointmentData.employee_id);
+      const clientIds = normalizeIds(appointmentData.client_ids ?? appointmentData.client_id);
+      const primaryEmployeeId = employeeIds[0] || appointmentData.employee_id;
+      const primaryClientId = clientIds[0] || appointmentData.client_id;
+
+      const schedulePayload = {
+        ...appointmentData,
+        employee_id: primaryEmployeeId,
+        client_id: primaryClientId,
+        status: appointmentData.status || editingAppointment?.status || 'scheduled'
+      };
+      delete schedulePayload.employee_ids;
+      delete schedulePayload.client_ids;
+
+      let savedRecord;
+      if (editingAppointment && editingAppointment.id) {
+        const response = await scheduleAPI.update(editingAppointment.id, schedulePayload);
+        savedRecord = response?.data ?? response;
+      } else {
+        const response = await scheduleAPI.create(schedulePayload);
+        savedRecord = response?.data ?? response;
+      }
+
+      const scheduleId = savedRecord?.id || editingAppointment?.id;
+      await syncScheduleAttendees(scheduleId, employeeIds, clientIds, primaryEmployeeId, primaryClientId);
+
+      // Refresh schedules - cache will prevent duplicate calls if already in flight
+      await refreshSchedules();
+      
+      setIsModalOpen(false);
+      setEditingAppointment(null);
+      setSaveError(null);
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+      setSaveError(error.response?.data?.detail || error.message || 'Failed to save appointment. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   }, [editingAppointment, normalizeIds, refreshSchedules, syncScheduleAttendees]);
 
   const handleDeleteAppointment = useCallback(async () => {
@@ -391,6 +405,7 @@ export default function Schedule() {
     setIsModalOpen(false);
     setEditingAppointment(null);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
+>>>>>>> fd42e7720f92de848e36fdf0c01414e7e474469b
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e, appointment) => {
@@ -454,6 +469,8 @@ export default function Schedule() {
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingAppointment(null);
+    setSaveError(null);
+    setIsSaving(false);
   }, []);
 
   const isCurrentMonth = (date) => {
@@ -602,6 +619,8 @@ export default function Schedule() {
                                 setIsModalOpen(true);
                               }}
                             >
+                              <div className="appointment-time">{timeString}</div>
+                              <div className="appointment-client">{clientName}</div>
                               <div className="appointment-service">{serviceName}</div>
                             </div>
                           );
@@ -677,6 +696,7 @@ export default function Schedule() {
                           >
                             <div className="appointment-time">{timeString}</div>
                             <div className="appointment-client">{clientName}</div>
+                            <div className="appointment-service">{serviceName}</div>
                           </div>
                         );
                       })}
@@ -744,6 +764,8 @@ export default function Schedule() {
                                 setIsModalOpen(true);
                               }}
                             >
+                              <div className="appointment-time">{timeString}</div>
+                              <div className="appointment-client">{clientName}</div>
                               <div className="appointment-service">{serviceName}</div>
                             </div>
                           );
@@ -870,6 +892,8 @@ export default function Schedule() {
             appointment={editingAppointment}
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
+            saveError={saveError}
+            isSaving={isSaving}
             onDelete={handleDeleteAppointment}
           />
         </Modal>
@@ -1233,6 +1257,13 @@ export default function Schedule() {
         .appointment-client {
           font-size: 9px;
           opacity: 0.9;
+        }
+        
+        .appointment-service {
+          font-size: 8px;
+          opacity: 0.8;
+          font-style: italic;
+          margin-top: 2px;
         }
         
                  .more-appointments {

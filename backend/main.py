@@ -29,6 +29,12 @@ from starlette.responses import Response
 import uvicorn
 
 try:
+<<<<<<< HEAD
+    from backend.routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import, tasks
+except Exception:
+    # Fallback if executed with CWD=backend and package not resolved
+    from routers import clients, inventory, suppliers, services, employees, schedule, attendance, documents, auth, admin, csv_import, tasks  # type: ignore
+=======
     from backend.routers import auth, isud, settings, database_connections
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
@@ -36,6 +42,7 @@ except ModuleNotFoundError as e:
         from routers import auth, isud, settings, database_connections  # type: ignore
     else:
         raise
+>>>>>>> fd42e7720f92de848e36fdf0c01414e7e474469b
 
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):
@@ -172,20 +179,38 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
-    # Initialize database tables
+    # Initialize database tables (safe to run multiple times)
     try:
-        from backend.database import create_db_and_tables
-    except ModuleNotFoundError:
-        from database import create_db_and_tables
-    create_db_and_tables()
-    print("Database tables initialized")
+        try:
+            from backend.database import create_db_and_tables
+        except ModuleNotFoundError:
+            from database import create_db_and_tables
+        create_db_and_tables()
+        print("✅ Database tables initialized/verified")
+    except Exception as e:
+        print(f"⚠️  Database initialization warning: {e}")
+        # Don't fail startup if tables already exist
     print("All routers loaded successfully")
 
 # Include routers (documents + document_category CRUD go through isud)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
+<<<<<<< HEAD
+app.include_router(clients.router, prefix="/api/v1", tags=["clients"])
+app.include_router(inventory.router, prefix="/api/v1", tags=["inventory"])
+app.include_router(suppliers.router, prefix="/api/v1", tags=["suppliers"])
+app.include_router(services.router, prefix="/api/v1", tags=["services"])
+app.include_router(employees.router, prefix="/api/v1", tags=["employees"])
+app.include_router(schedule.router, prefix="/api/v1", tags=["schedule"])
+app.include_router(attendance.router, prefix="/api/v1", tags=["attendance"])
+app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
+app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(csv_import.router, prefix="/api/v1", tags=["csv-import"])
+=======
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
 app.include_router(database_connections.router, prefix="/api/v1", tags=["database-connections"])
+>>>>>>> fd42e7720f92de848e36fdf0c01414e7e474469b
 
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).
