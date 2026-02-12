@@ -41,21 +41,6 @@ READ_SCHEMA_MAP = {
     'users': UserRead,
     'schedule': ScheduleRead,
     'schedules': ScheduleRead,
-    'document': DocumentRead,
-    'documents': DocumentRead,
-    'document_assignment': DocumentAssignmentRead,
-    'supplier': SupplierRead,
-    'suppliers': SupplierRead,
-    'attendance': AttendanceRead,
-    'app_settings': AppSettingsRead,
-    'role': RoleRead,
-    'roles': RoleRead,
-    'role_permission': RolePermissionRead,
-    'user_permission': UserPermissionRead,
-    'inventory_image': InventoryImageRead,
-    'inventoryimage': InventoryImageRead,
-    'database_connection': DatabaseConnectionRead,
-    'databaseconnection': DatabaseConnectionRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):
@@ -188,125 +173,6 @@ def get_model_class(table_name: str) -> Type[SQLModel]:
 
 router = APIRouter()
 
-# ============================================================================
-# Schema/Metadata Endpoints
-# ============================================================================
-
-@router.get("/schema/tables")
-async def get_available_tables():
-    """Get list of all available database tables."""
-    mapping = get_model_mapping()
-    tables = []
-    for table_name, model_class in mapping.items():
-        tables.append({
-            "name": table_name,
-            "display_name": table_name.replace("_", " ").title()
-        })
-    return sorted(tables, key=lambda x: x["name"])
-
-@router.get("/schema/tables/{table_name}/columns")
-async def get_table_columns(table_name: str):
-    """Get column information for a specific table."""
-    model_class = get_model_class(table_name)
-    columns = []
-    
-    for field_name, field_info in model_class.model_fields.items():
-        # Skip auto-generated fields like id, created_at, updated_at for import
-        is_auto = field_name in ['id', 'created_at', 'updated_at']
-        
-        # Get type annotation as string
-        annotation = field_info.annotation
-        type_name = str(annotation) if annotation else "string"
-        if hasattr(annotation, "__name__"):
-            type_name = annotation.__name__
-        elif hasattr(annotation, "__origin__"):
-            type_name = str(annotation.__origin__.__name__ if hasattr(annotation.__origin__, "__name__") else annotation)
-        
-        # Check if field is required (no default value)
-        is_required = field_info.default is None and field_info.default_factory is None
-        
-        columns.append({
-            "name": field_name,
-            "display_name": field_name.replace("_", " ").title(),
-            "type": type_name,
-            "required": is_required and not is_auto,
-            "auto_generated": is_auto
-        })
-    
-    return columns
-
-@router.post("/schema/tables/{table_name}/import")
-async def bulk_import(
-    table_name: str,
-    records: List[Dict[str, Any]],
-    session: Session = Depends(get_session),
-):
-    """Bulk import records into a table from CSV data."""
-    model_class = get_model_class(table_name)
-    
-    # Get valid field names for this model
-    valid_fields = set(model_class.model_fields.keys())
-    # Remove auto-generated fields
-    auto_fields = {'id', 'created_at', 'updated_at'}
-    importable_fields = valid_fields - auto_fields
-    
-    imported_count = 0
-    errors = []
-    
-    for idx, record_data in enumerate(records):
-        try:
-            # Sanitize input - replace dangerous characters
-            sanitized_data = {}
-            for key, value in record_data.items():
-                # Normalize the key (lowercase, replace spaces with underscores)
-                normalized_key = key.lower().strip().replace(" ", "_")
-                
-                # Skip if not a valid field
-                if normalized_key not in importable_fields:
-                    continue
-                
-                # Sanitize string values
-                if isinstance(value, str):
-                    # Replace characters that could break SQL or cause issues
-                    value = value.replace("'", "''")  # Escape single quotes
-                    value = value.replace("\\", "\\\\")  # Escape backslashes
-                    value = value.strip()
-                    
-                    # Skip empty strings for non-string fields
-                    if not value:
-                        continue
-                
-                sanitized_data[normalized_key] = value
-            
-            # Skip empty records
-            if not sanitized_data:
-                continue
-            
-            # Create and insert the record
-            new_record = model_class(**sanitized_data)
-            session.add(new_record)
-            imported_count += 1
-            
-        except Exception as e:
-            errors.append({
-                "row": idx + 1,
-                "error": str(e),
-                "data": record_data
-            })
-    
-    try:
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error during import: {str(e)}")
-    
-    return {
-        "success": True,
-        "imported": imported_count,
-        "total": len(records),
-        "errors": errors[:10] if errors else []  # Return first 10 errors only
-    }
-
 def _coerce_filter_value(model_class: Type[SQLModel], column: str, raw_value: str) -> Any:
     field_info = model_class.model_fields.get(column)
     if field_info is None:
@@ -353,8 +219,8 @@ async def insert_with_file(
 
         # Extract all form fields
         for key, value in form.items():
-            if hasattr(value, 'read') or isinstance(value, UploadFile):
-                # Store the file for processing (check both duck-type and isinstance)
+            if isinstance(value, UploadFile):
+                # Store the file for processing
                 if key == "file":
                     uploaded_file = value
             else:
@@ -382,25 +248,6 @@ async def insert_with_file(
             record_data["file_path"] = file_path
             record_data["file_size"] = len(contents)
             record_data["content_type"] = uploaded_file.content_type or "application/octet-stream"
-
-        # Document-specific type coercion for form fields (strings from FormData)
-        if table_name.lower() in ("document", "documents"):
-            for uuid_field in ("entity_id", "category_id", "owner_id"):
-                val = record_data.get(uuid_field)
-                if val is None or val in ("", "null", "undefined"):
-                    record_data.pop(uuid_field, None)
-                elif isinstance(val, str):
-                    try:
-                        record_data[uuid_field] = UUID(val)
-                    except (ValueError, TypeError):
-                        record_data.pop(uuid_field, None)
-            # Coerce file_size to int if it came as a string
-            fs = record_data.get("file_size")
-            if isinstance(fs, str):
-                try:
-                    record_data["file_size"] = int(fs)
-                except (ValueError, TypeError):
-                    pass
     else:
         # Handle JSON body
         try:
@@ -413,15 +260,10 @@ async def insert_with_file(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
 
-    try:
-        session.add(record)
-        session.commit()
-        session.refresh(record)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-    return _serialize_record(record, table_name, session)
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return _serialize_record(record, table_name)
 
 @router.post("/{table_name}")
 async def insert(
@@ -438,13 +280,9 @@ async def insert(
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
 
     session.add(record)
-    try:
-        session.commit()
-        session.refresh(record)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
-    return _serialize_record(record, table_name, session)
+    session.commit()
+    session.refresh(record)
+    return _serialize_record(record, table_name)
 
 @router.put("/{table_name}/{record_id}")
 async def update_by_id(
@@ -465,12 +303,8 @@ async def update_by_id(
             setattr(record, key, value)
 
     session.add(record)
-    try:
-        session.commit()
-        session.refresh(record)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+    session.commit()
+    session.refresh(record)
     return _serialize_record(record, table_name, session)
 
 @router.get("/{table_name}")
@@ -512,6 +346,11 @@ async def select(
 
     records = session.exec(stmt).all()
     return _serialize_records(records, table_name, session)
+
+
+def _serialize_records(records, table_name: str, session=None):
+    """Serialize a list of records."""
+    return [_serialize_record(record, table_name, session) for record in records]
 
 @router.get("/{table_name}/{record_id}")
 async def select_by_id(
@@ -572,11 +411,7 @@ async def update(
                     setattr(record, key, value)
             session.add(record)
 
-        try:
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+        session.commit()
         return {"count": len(records)}
 
     record = session.exec(stmt).first()
@@ -588,13 +423,9 @@ async def update(
             setattr(record, key, value)
 
     session.add(record)
-    try:
-        session.commit()
-        session.refresh(record)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
-    return _serialize_record(record, table_name, session)
+    session.commit()
+    session.refresh(record)
+    return _serialize_record(record, table_name)
 
 @router.delete("/{table_name}/{record_id}")
 async def delete_by_id(
@@ -609,32 +440,17 @@ async def delete_by_id(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
-    # When deleting a document, also remove the file from disk and clean up assignments
-    if table_name.lower() in ("document", "documents"):
-        if hasattr(record, "file_path") and record.file_path:
-            path = _resolve_document_path(record.file_path, UPLOAD_DIR)
-            if path and os.path.exists(path):
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
-        # Clean up document_assignment records before deleting the document
-        try:
-            assign_stmt = sql_select(DocumentAssignment).where(
-                DocumentAssignment.document_id == record_id
-            )
-            for a in session.exec(assign_stmt).all():
-                session.delete(a)
-            session.flush()  # Flush assignment deletes before document delete
-        except Exception:
-            pass  # Table may not exist yet
+    # When deleting a document, also remove the file from disk
+    if table_name.lower() in ("document", "documents") and hasattr(record, "file_path") and record.file_path:
+        path = _resolve_document_path(record.file_path, UPLOAD_DIR)
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
     session.delete(record)
-    try:
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+    session.commit()
     return {"count": 1}
 
 
@@ -671,13 +487,9 @@ async def add_inventory_image_url(
             session.add(existing_image)
     
     session.add(image)
-    try:
-        session.commit()
-        session.refresh(image)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
-
+    session.commit()
+    session.refresh(image)
+    
     return InventoryImageRead.model_validate(image)
 
 
@@ -743,13 +555,9 @@ async def upload_inventory_image_file(
             session.add(existing_image)
     
     session.add(image)
-    try:
-        session.commit()
-        session.refresh(image)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
-
+    session.commit()
+    session.refresh(image)
+    
     return InventoryImageRead.model_validate(image)
 
 
@@ -797,13 +605,9 @@ async def update_inventory_image(
             session.add(other_image)
     
     session.add(image)
-    try:
-        session.commit()
-        session.refresh(image)
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
-
+    session.commit()
+    session.refresh(image)
+    
     return InventoryImageRead.model_validate(image)
 
 
@@ -825,12 +629,8 @@ async def delete_inventory_image(
             pass
     
     session.delete(image)
-    try:
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
-
+    session.commit()
+    
     return {"message": "Image deleted successfully"}
 
 

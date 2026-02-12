@@ -18,9 +18,7 @@ DATABASE_ENVIRONMENTS = {
     "production": "",  # Empty for now - can be configured later
 }
 
-# Default environment
-# - On Render: DATABASE_URL env var is injected (takes priority over this)
-# - Local dev: frontend proxies to Render API directly, backend only needed for local work
+# Default environment - use SQLite for local development
 DEFAULT_ENVIRONMENT = "local"
 
 
@@ -64,6 +62,7 @@ def get_database_url() -> str:
     if not url:
         url = DATABASE_ENVIRONMENTS.get("development", "")
 
+    # If still no URL, fall back to SQLite for local development
     if not url:
         url = "sqlite:///./business_manager.db"
 
