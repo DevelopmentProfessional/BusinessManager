@@ -23,7 +23,20 @@
 **History:**
 - Add sales history section on the sales page.
 
-## CODE THESE
+## CODE THESE 
+
+
+
+**Inventory:** 
+- companies want to manage procurements. 
+- Add these to the item edit component. 
+      unit cost 
+      weight 
+      length 
+      height 
+      pattern 
+      manufactur date 
+      expiration date 
 
 **Employee:**
 - Add to the database for the employee table a "supervisor" column
