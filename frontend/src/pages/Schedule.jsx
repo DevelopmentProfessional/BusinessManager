@@ -405,7 +405,6 @@ export default function Schedule() {
     setIsModalOpen(false);
     setEditingAppointment(null);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
->>>>>>> fd42e7720f92de848e36fdf0c01414e7e474469b
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e, appointment) => {
