@@ -853,3 +853,80 @@ class DatabaseConnectionRead(SQLModel):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# TaskLink model for linking tasks together (many-to-many)
+class TaskLink(BaseModel, table=True):
+    __tablename__ = "task_link"
+    source_task_id: UUID = Field(foreign_key="task.id")
+    target_task_id: UUID = Field(foreign_key="task.id")
+    link_type: Optional[str] = Field(default="related")  # related, blocks, blocked_by, depends_on, etc.
+    
+    # Relationships
+    source_task: Optional["Task"] = Relationship(
+        back_populates="linked_tasks",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.source_task_id]"}
+    )
+    target_task: Optional["Task"] = Relationship(
+        back_populates="reverse_linked_tasks",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.target_task_id]"}
+    )
+
+# Task model
+class Task(BaseModel, table=True):
+    title: str = Field(index=True)  # Task title (not unique, allowing multiple tasks with same title)
+    description: Optional[str] = Field(default=None)
+    status: str = Field(default="pending")  # pending, in_progress, completed, cancelled
+    priority: Optional[str] = Field(default="medium")  # low, medium, high
+    due_date: Optional[datetime] = Field(default=None)
+    assigned_to_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    
+    # Relationships
+    assigned_to: Optional["User"] = Relationship()
+    linked_tasks: List["TaskLink"] = Relationship(
+        back_populates="source_task",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.source_task_id]"}
+    )
+    reverse_linked_tasks: List["TaskLink"] = Relationship(
+        back_populates="target_task",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.target_task_id]"}
+    )
+
+class TaskRead(SQLModel):
+    id: UUID
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    title: str
+    description: Optional[str] = None
+    status: str
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assigned_to_id: Optional[UUID] = None
+    linked_task_titles: Optional[List[str]] = None  # Titles of linked tasks
+
+class TaskCreate(SQLModel):
+    title: str
+    description: Optional[str] = None
+    status: Optional[str] = "pending"
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    assigned_to_id: Optional[UUID] = None
+    linked_task_titles: Optional[List[str]] = None  # List of task titles to link to
+
+class TaskUpdate(SQLModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assigned_to_id: Optional[UUID] = None
+    linked_task_titles: Optional[List[str]] = None  # List of task titles to link to
+
+class TaskLinkRead(SQLModel):
+    id: UUID
+    created_at: datetime
+    source_task_id: UUID
+    target_task_id: UUID
+    source_task_title: Optional[str] = None
+    target_task_title: Optional[str] = None
+    link_type: Optional[str] = None
