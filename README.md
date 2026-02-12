@@ -15,6 +15,10 @@ _______________________________________
 				CODE THESE 
 _______________________________________
 
+Page laytout and formatting: 
+	For mobvile devices. there is a hanging peiece, is there such a functiuon to hide that at the top of the screen on mobile devices? for instance. on the s24 brwoser. It shows the home icon, the address bar, the add new tab button, the tabs,m and the op[tiopns at the top. i woud lklike that to be hidden or somthing and perhaps add a button to toggle it back on if needed. 
+
+
 employeee : 
  	Add to the database for the employee table a "supervisor" column
 	When selecting to edit the meployee. The modal should have some tabs on it, each tab can be a unique component. (Details, benefits, permissions, Performance) 
@@ -24,9 +28,16 @@ employeee :
 		Performance page needs log of reviews, goals, feedbacks, completed and pending tasks stats. 
 Sales :
 	on the customer search, add an "+" button to create a new client. opens the new client modal 
+	on the cart componenet6. Add the cancel button to the bottom of the modqal. Also, the Add to cart button should not be there since there is alreadyt a quantit.y but whgat should be there is the amount already in the cart. 
+	For the fotter of dthe sales page. ity should be the Search Bar. then each of the buttons should be cirtcles. Instead of making the filter for the AlL, Services, Products into three. Put it into two checkboxes where selecting one or the other just adds or remo9ves the products visibility or activates the same mechnisims that already exissts. But instead of three buttons, it would jsut the be the services and products. essentially, it should be (Service)(product)(cart).
+	
 components:
 	all the buttons should be on the bottom left within the footer section
 	the width should be based on the length of the text within it, no col spacing 
+
+Schedule: 
+	The appointments that span over cells need to span to thier actau length, they all seem to take up an hour chunk of time currently. They need to be the side of thier actrual time they take up. 
+	The week page on the mobiole phbone is too long and requires scrolling. The calendar in the middle can scroll which is fine, so the calendar in the middle needs a container in which it can be scvrolled, but the footer and header should be at the top and bottom and the uswwer shouildnt need to scro9ll to gfet to them. 
 
 
 Profile: 
@@ -39,7 +50,8 @@ Settings:
 	float the settingts cards to the bottom of thje page 
 	General sdettings : For the log, make there also be an image upload that would save to the branding settings in the database. 
 	
-
+Inventory: 
+	Make the middle scrollable element on the ninventory page 100% vertical height minus the height of the Inventory header and the Filter foioters height so that there is no overflow when scro9llingall the way to the top or bottom of the screen on mobile devices. 
 
 
 Brand Name — The official name of the company (e.g., Nike, Apple, Coca-Cola).
