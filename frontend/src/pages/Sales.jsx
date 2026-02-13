@@ -4,7 +4,8 @@ import {
   ShoppingCartIcon, XMarkIcon,
   UserIcon, CreditCardIcon, ClockIcon,
   PlusIcon, MinusIcon,
-  MagnifyingGlassIcon, SparklesIcon, CubeIcon
+  MagnifyingGlassIcon, SparklesIcon, CubeIcon,
+  ChevronDownIcon, ChevronUpIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI, clientsAPI, inventoryAPI } from '../services/api';
@@ -227,7 +228,7 @@ export default function Sales() {
   const {
     services, setServices,
     loading, setLoading, error, setError, clearError,
-    hasPermission
+    hasPermission, openAddClientModal
   } = useStore();
 
   // Check permissions at page level
@@ -239,7 +240,8 @@ export default function Sales() {
   }
 
   // POS State
-  const [posCategory, setPosCategory] = useState('all'); // 'all', 'services', 'products'
+  const [showServices, setShowServices] = useState(true);
+  const [showProducts, setShowProducts] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -256,6 +258,15 @@ export default function Sales() {
   const [selectedItemType, setSelectedItemType] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const hasFetched = useRef(false);
+
+  // Sales History State
+  const [salesHistory, setSalesHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('salesHistory');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -371,8 +382,20 @@ export default function Sales() {
   };
 
   const processPayment = (paymentMethod) => {
-    // In a real app, this would create a transaction record
-    console.log(`Payment of $${cartTotal.toFixed(2)} processed via ${paymentMethod}${selectedClient ? ` for ${selectedClient.name}` : ''}`);
+    const sale = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      client: selectedClient ? { name: selectedClient.name, email: selectedClient.email } : null,
+      items: cart.map(item => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
+      subtotal: cartTotal,
+      tax: cartTotal * 0.08,
+      total: cartTotal * 1.08,
+      paymentMethod,
+    };
+    const updated = [sale, ...salesHistory].slice(0, 50); // Keep last 50
+    setSalesHistory(updated);
+    try { localStorage.setItem('salesHistory', JSON.stringify(updated)); } catch {}
+
     setCart([]);
     setSelectedClient(null);
     setShowCheckout(false);
@@ -448,12 +471,58 @@ export default function Sales() {
         )}
       </div>
 
+      {/* Sales History Section */}
+      {salesHistory.length > 0 && (
+        <div className="flex-shrink-0">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+          >
+            <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-300">
+              <ClockIcon className="h-4 w-4" />
+              Sales History ({salesHistory.length})
+            </span>
+            {showHistory
+              ? <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+              : <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            }
+          </button>
+          {showHistory && (
+            <div className="max-h-60 overflow-y-auto border-b border-gray-200 dark:border-gray-700">
+              {salesHistory.map(sale => (
+                <div key={sale.id} className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700/50 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">
+                        {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {' '}
+                        {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {sale.client && (
+                        <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                      {sale.items.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ''}`).join(', ')}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 text-right ml-3">
+                    <span className="font-semibold text-gray-900 dark:text-white">${sale.total.toFixed(2)}</span>
+                    <div className="text-xs text-gray-400 capitalize">{sale.paymentMethod}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Body - Items Grid */}
       <div className="flex-1 overflow-y-auto pb-40">
           {/* Services Section */}
-          {(posCategory === 'all' || posCategory === 'services') && filteredServices.length > 0 && (
+          {showServices && filteredServices.length > 0 && (
             <div className="mb-6">
-              {posCategory === 'all' && (
+              {showProducts && (
                 <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <SparklesIcon className="h-4 w-4" />
                   Services ({filteredServices.length})
@@ -478,9 +547,9 @@ export default function Sales() {
           )}
           
           {/* Products Section */}
-          {(posCategory === 'all' || posCategory === 'products') && filteredProducts.length > 0 && (
+          {showProducts && filteredProducts.length > 0 && (
             <div className="mb-6">
-              {posCategory === 'all' && (
+              {showServices && (
                 <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <CubeIcon className="h-4 w-4" />
                   Products ({filteredProducts.length})
@@ -516,10 +585,10 @@ export default function Sales() {
           )}
         </div>
 
-      {/* Fixed Footer - Search, Filter, and Cart */}
-      <div className="flex-shrink-0 fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-4 md:ml-64">
+      {/* Fixed Footer - Search, Toggles, Cart */}
+      <div className="flex-shrink-0 fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 md:ml-64">
         {/* Search Row */}
-        <div className="mb-3">
+        <div className="mb-2">
           <div className="relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -527,68 +596,55 @@ export default function Sales() {
               placeholder="Search products and services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </div>
 
-        {/* Filter Row with Cart Button */}
+        {/* Controls Row - left-aligned, content-width */}
         <div className="flex items-center gap-3">
-          {/* Cart Button - Leftmost */}
+          {/* Circular Cart Button */}
           <button
             onClick={() => setShowCartModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
+            className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary-600 hover:bg-secondary-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
           >
-            <div className="relative">
-              <ShoppingCartIcon className="h-5 w-5" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-white text-secondary-600 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {cartItemCount}
-                </span>
-              )}
-            </div>
-            {cartItemCount > 0 ? (
-              <span className="font-semibold">${cartTotal.toFixed(2)}</span>
-            ) : (
-              <span className="font-medium">Cart</span>
+            <ShoppingCartIcon className="h-5 w-5" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                {cartItemCount}
+              </span>
             )}
           </button>
 
-          {/* Category Filter */}
-          <div className="flex-1 flex bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-1">
-            <button
-              onClick={() => setPosCategory('all')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                posCategory === 'all'
-                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setPosCategory('services')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                posCategory === 'services'
-                  ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              <SparklesIcon className="h-4 w-4" />
-              Services
-            </button>
-            <button
-              onClick={() => setPosCategory('products')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                posCategory === 'products'
-                  ? 'bg-secondary-100 dark:bg-secondary-900 text-secondary-700 dark:text-secondary-300'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              <CubeIcon className="h-4 w-4" />
-              Products
-            </button>
-          </div>
+          {/* Service Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowServices((prev) => !prev)}
+            aria-pressed={showServices}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full border transition-colors ${
+              showServices
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            <SparklesIcon className={`h-4 w-4 ${showServices ? 'text-white' : 'text-primary-500'}`} />
+            <span className="text-sm font-medium">Services</span>
+          </button>
+
+          {/* Product Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowProducts((prev) => !prev)}
+            aria-pressed={showProducts}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full border transition-colors ${
+              showProducts
+                ? 'bg-secondary-600 text-white border-secondary-600'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            <CubeIcon className={`h-4 w-4 ${showProducts ? 'text-white' : 'text-secondary-500'}`} />
+            <span className="text-sm font-medium">Products</span>
+          </button>
         </div>
       </div>
 
@@ -608,24 +664,16 @@ export default function Sales() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <ShoppingCartIcon className="h-5 w-5" />
-                  Cart
+                  Cart ({cartItemCount})
                 </h3>
-                <div className="flex items-center gap-2">
-                  {cart.length > 0 && (
-                    <button 
-                      onClick={() => setCart([])}
-                      className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                    >
-                      Clear all
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => setShowCartModal(false)}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                {cart.length > 0 && (
+                  <button
+                    onClick={() => setCart([])}
+                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
                   >
-                    <XMarkIcon className="h-5 w-5 text-gray-500" />
+                    Clear all
                   </button>
-                </div>
+                )}
               </div>
             </div>
 
@@ -674,25 +722,40 @@ export default function Sales() {
                     </div>
                   ) : (
                     <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search customers..."
-                        value={clientSearch}
-                        onChange={(e) => {
-                          setClientSearch(e.target.value);
-                          setShowClientDropdown(true);
-                        }}
-                        onFocus={() => { loadClients(); setShowClientDropdown(true); }}
-                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Search customers..."
+                          value={clientSearch}
+                          onChange={(e) => {
+                            setClientSearch(e.target.value);
+                            setShowClientDropdown(true);
+                          }}
+                          onFocus={() => { loadClients(); setShowClientDropdown(true); }}
+                          className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => openAddClientModal((newClient) => {
+                            setSelectedClient(newClient);
+                            setClientsLocal(prev => [...prev, newClient]);
+                            setClientSearch('');
+                            setShowClientDropdown(false);
+                          })}
+                          className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                          title="Add new customer"
+                        >
+                          <PlusIcon className="h-5 w-5" />
+                        </button>
+                      </div>
                       {showClientDropdown && clientSearch && (
                         <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                           {filteredClients.slice(0, 5).map(c => (
                             <button
                               key={c.id}
-                              onClick={() => { 
-                                setSelectedClient(c); 
-                                setClientSearch(''); 
+                              onClick={() => {
+                                setSelectedClient(c);
+                                setClientSearch('');
                                 setShowClientDropdown(false);
                               }}
                               className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
@@ -702,7 +765,18 @@ export default function Sales() {
                             </button>
                           ))}
                           {filteredClients.length === 0 && (
-                            <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No customers found</p>
+                            <button
+                              onClick={() => openAddClientModal((newClient) => {
+                                setSelectedClient(newClient);
+                                setClientsLocal(prev => [...prev, newClient]);
+                                setClientSearch('');
+                                setShowClientDropdown(false);
+                              })}
+                              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
+                            >
+                              <PlusIcon className="h-4 w-4" />
+                              Create new customer
+                            </button>
                           )}
                         </div>
                       )}
@@ -733,6 +807,12 @@ export default function Sales() {
                   >
                     <CreditCardIcon className="h-5 w-5" />
                     Proceed to Checkout
+                  </button>
+                  <button
+                    onClick={() => setShowCartModal(false)}
+                    className="w-full py-2 mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  >
+                    Continue Shopping
                   </button>
                 </div>
               </>

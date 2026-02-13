@@ -254,9 +254,9 @@ export default function Services() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+        <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
-          <table className="table table-borderless mb-0 bg-light">
+          <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
               <col />
               <col style={{ width: '100px' }} />
@@ -264,7 +264,7 @@ export default function Services() {
               <col style={{ width: '80px' }} />
             </colgroup>
             <tfoot>
-              <tr className="bg-secondary-subtle">
+              <tr className="bg-gray-100 dark:bg-gray-700">
                 <th>Service</th>
                 <th>Category</th>
                 <th className="text-center">Price</th>
@@ -274,7 +274,7 @@ export default function Services() {
           </table>
 
           {/* Controls */}
-          <div className="p-2 border-top">
+          <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Search row */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">

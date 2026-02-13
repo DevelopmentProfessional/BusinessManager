@@ -611,15 +611,15 @@ export default function Employees() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+        <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
-          <table className="table table-borderless mb-0 bg-light">
+          <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
               <col />
               <col style={{ width: '120px' }} />
             </colgroup>
             <tfoot>
-              <tr className="bg-secondary-subtle">
+              <tr className="bg-gray-100 dark:bg-gray-700">
                 <th>Employee</th>
                 <th>Role</th>
               </tr>
@@ -627,7 +627,7 @@ export default function Employees() {
           </table>
 
           {/* Controls */}
-          <div className="p-2 border-top">
+          <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Action buttons */}
             <PermissionGate page="employees" permission="write">
               <div className="d-flex gap-2 flex-wrap">

@@ -575,12 +575,12 @@ export default function Schedule() {
                     const isToday = date.toDateString() === new Date().toDateString();
                     const isCurrentHour = currentTime.getHours() === hour && isToday;
                     const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
-                    
+
                     return (
                       <div
                         key={`${hour}-${dayIndex}`}
                         className={`calendar-cell time-slot ${isToday ? 'today-column' : ''} ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
-                        style={{ position: 'relative' }}
+                        style={{ position: 'relative', overflow: 'visible', zIndex: 0 }}
                         onClick={() => {
                           const slotDate = new Date(date);
                           slotDate.setHours(hour, 0, 0, 0);
@@ -596,37 +596,50 @@ export default function Schedule() {
                           const service = services.find(s => s.id === appointment.service_id);
                           const serviceName = service ? service.name : 'Unknown Service';
                           const appointmentTime = new Date(appointment.appointment_date);
-                          const timeString = appointmentTime.toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
+                          const timeString = appointmentTime.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
                             minute: '2-digit',
-                            hour12: false 
+                            hour12: false
                           });
-                          
+                          const startMinute = appointmentTime.getMinutes();
+                          const duration = appointment.duration_minutes || 60;
+                          const topPercent = (startMinute / 60) * 100;
+                          const heightPercent = (duration / 60) * 100;
+                          const apptType = appointment.appointment_type || 'one_time';
+
                           return (
-                            <div 
-                              key={appointment.id} 
-                              className="appointment-dot" 
-                              title={`${clientName} - ${serviceName} at ${timeString}`}
+                            <div
+                              key={appointment.id}
+                              className={`appointment-block appointment-type-${apptType}`}
+                              title={`${clientName} - ${serviceName} at ${timeString} (${duration}min)`}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Page-level permission gating for editing
                                 if (!canEditAppointment(appointment)) return;
                                 setEditingAppointment(appointment);
                                 setIsModalOpen(true);
                               }}
+                              style={{
+                                position: 'absolute',
+                                top: `${topPercent}%`,
+                                height: `${heightPercent}%`,
+                                left: '2px',
+                                right: '2px',
+                                zIndex: 2,
+                                minHeight: '18px',
+                              }}
                             >
                               <div className="appointment-time">{timeString}</div>
                               <div className="appointment-client">{clientName}</div>
-                              <div className="appointment-service">{serviceName}</div>
+                              {duration > 30 && <div className="appointment-service">{serviceName}</div>}
                             </div>
                           );
                         })}
                         {/* Current time indicator line */}
                         {isCurrentHour && (
-                          <div 
+                          <div
                             className="current-time-indicator"
                             style={{ top: `${currentMinutePercent}%` }}
                           >
@@ -648,7 +661,7 @@ export default function Schedule() {
                 });
                 const isCurrentHour = currentTime.getHours() === hour && days[0].toDateString() === new Date().toDateString();
                 const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
-                
+
                 return (
                   <React.Fragment key={hour}>
                     <div className="calendar-cell time-slot time-label-cell" data-hour={hour}>
@@ -656,7 +669,7 @@ export default function Schedule() {
                     </div>
                     <div
                       className={`calendar-cell time-slot ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? 'drag-over' : ''}`}
-                      style={{ position: 'relative' }}
+                      style={{ position: 'relative', overflow: 'visible', zIndex: 0 }}
                       onClick={() => {
                         const slotDate = new Date(days[0]);
                         slotDate.setHours(hour, 0, 0, 0);
@@ -672,17 +685,22 @@ export default function Schedule() {
                         const service = services.find(s => s.id === appointment.service_id);
                         const serviceName = service ? service.name : 'Unknown Service';
                         const appointmentTime = new Date(appointment.appointment_date);
-                        const timeString = appointmentTime.toLocaleTimeString('en-US', { 
-                          hour: '2-digit', 
+                        const timeString = appointmentTime.toLocaleTimeString('en-US', {
+                          hour: '2-digit',
                           minute: '2-digit',
-                          hour12: false 
+                          hour12: false
                         });
-                        
+                        const startMinute = appointmentTime.getMinutes();
+                        const duration = appointment.duration_minutes || 60;
+                        const topPercent = (startMinute / 60) * 100;
+                        const heightPercent = (duration / 60) * 100;
+                        const apptType = appointment.appointment_type || 'one_time';
+
                         return (
-                          <div 
-                            key={appointment.id} 
-                            className="appointment-dot" 
-                            title={`${clientName} - ${serviceName} at ${timeString}`}
+                          <div
+                            key={appointment.id}
+                            className={`appointment-block appointment-type-${apptType}`}
+                            title={`${clientName} - ${serviceName} at ${timeString} (${duration}min)`}
                             draggable={true}
                             onDragStart={(e) => handleDragStart(e, appointment)}
                             onDragEnd={handleDragEnd}
@@ -692,16 +710,25 @@ export default function Schedule() {
                               setEditingAppointment(appointment);
                               setIsModalOpen(true);
                             }}
+                            style={{
+                              position: 'absolute',
+                              top: `${topPercent}%`,
+                              height: `${heightPercent}%`,
+                              left: '2px',
+                              right: '2px',
+                              zIndex: 2,
+                              minHeight: '18px',
+                            }}
                           >
                             <div className="appointment-time">{timeString}</div>
                             <div className="appointment-client">{clientName}</div>
-                            <div className="appointment-service">{serviceName}</div>
+                            {duration > 30 && <div className="appointment-service">{serviceName}</div>}
                           </div>
                         );
                       })}
                       {/* Current time indicator line */}
                       {isCurrentHour && (
-                        <div 
+                        <div
                           className="current-time-indicator"
                           style={{ top: `${currentMinutePercent}%` }}
                         >
@@ -748,10 +775,12 @@ export default function Schedule() {
                             hour12: false 
                           });
                           
+                          const apptType = appointment.appointment_type || 'one_time';
+
                           return (
-                            <div 
-                              key={appointment.id} 
-                              className="appointment-dot" 
+                            <div
+                              key={appointment.id}
+                              className={`appointment-dot appointment-type-${apptType}`}
                               title={`${clientName} - ${serviceName} at ${timeString}`}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
@@ -920,7 +949,7 @@ export default function Schedule() {
         .schedule-body {
           flex: 1;
           min-height: 0;
-          overflow: auto;
+          overflow: hidden;
           display: flex;
         }
 
@@ -978,7 +1007,7 @@ export default function Schedule() {
           min-height: 0;
           display: flex;
           flex-direction: column;
-          overflow: visible;
+          overflow: hidden;
         }
         
         .calendar-header {
@@ -1033,7 +1062,8 @@ export default function Schedule() {
         .calendar-grid.week-view {
           grid-template-columns: 60px repeat(7, minmax(0, 1fr));
           flex: 1;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           gap: 2px;
           background: ${isDarkMode ? '#6b7280' : '#dee2e6'};
           padding: 2px;
@@ -1052,7 +1082,8 @@ export default function Schedule() {
         .calendar-grid.day-view {
           grid-template-columns: 60px 1fr;
           flex: 1;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           gap: 0;
           min-height: 0;
           grid-auto-rows: 60px;
@@ -1090,6 +1121,7 @@ export default function Schedule() {
         .calendar-cell.time-slot {
           box-sizing: border-box;
           height: 100%;
+          overflow: visible;
         }
         
         .calendar-cell:hover {
@@ -1182,10 +1214,41 @@ export default function Schedule() {
           cursor: pointer;
           transition: background-color 0.2s;
         }
-        
+
         .appointment-dot:hover {
-          background: #0056b3;
+          filter: brightness(0.85);
         }
+
+        /* Duration-aware appointment blocks for week/day views */
+        .appointment-block {
+          background: #007bff;
+          color: white;
+          padding: 2px 4px;
+          border-radius: 4px;
+          font-size: 10px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: background-color 0.2s, box-shadow 0.2s;
+          border-left: 3px solid rgba(0,0,0,0.2);
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
+        .appointment-block:hover {
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          z-index: 10 !important;
+        }
+
+        /* Type-specific colors */
+        .appointment-type-one_time { background: #007bff; border-left-color: #0056b3; }
+        .appointment-type-one_time:hover { background: #0069d9; }
+        .appointment-type-series { background: #6f42c1; border-left-color: #5a32a3; }
+        .appointment-type-series:hover { background: #5e37a6; }
+        .appointment-type-meeting { background: #17a2b8; border-left-color: #117a8b; }
+        .appointment-type-meeting:hover { background: #138496; }
+        .appointment-type-task { background: #28a745; border-left-color: #1e7e34; }
+        .appointment-type-task:hover { background: #218838; }
         
         /* Responsive Styles */
         @media (max-width: 768px) {
@@ -1211,6 +1274,11 @@ export default function Schedule() {
             font-size: 9px;
             padding: 3px 4px;
           }
+          .appointment-block {
+            font-size: 8px;
+            padding: 1px 3px;
+            border-left-width: 2px;
+          }
           .appointment-time {
             font-size: 8px;
           }
@@ -1218,7 +1286,7 @@ export default function Schedule() {
             font-size: 9px;
           }
         }
-        
+
         @media (max-width: 480px) {
           .calendar-header-cell {
             padding: 4px 1px;
@@ -1240,6 +1308,10 @@ export default function Schedule() {
           .appointment-dot {
             font-size: 8px;
             padding: 2px 3px;
+          }
+          .appointment-block {
+            font-size: 7px;
+            padding: 1px 2px;
           }
         }
         

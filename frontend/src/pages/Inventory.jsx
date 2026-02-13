@@ -7,7 +7,6 @@ import Modal from './components/Modal';
 import ItemForm from './components/ItemForm';
 import ItemDetailModal from './components/ItemDetailModal';
 import PermissionGate from './components/PermissionGate';
-import CSVImportButton from './components/CSVImportButton';
 
 export default function Inventory() {
   const { 
@@ -166,37 +165,6 @@ export default function Inventory() {
     }
   };
 
-  const handleCSVImport = async (records) => {
-    let success = 0;
-    let failed = 0;
-    const errors = [];
-
-    for (const record of records) {
-      try {
-        // Create inventory item directly with all fields
-        const inventoryData = {
-          name: record.name,
-          sku: record.sku || '',
-          description: record.description || '',
-          price: parseFloat(record.price) || 0,
-          type: (record.type || 'PRODUCT').toUpperCase(),
-          quantity: parseInt(record.quantity) || parseInt(record.initial_quantity) || 0,
-          min_stock_level: parseInt(record.min_stock_level) || parseInt(record.min_stock) || 10,
-          location: record.location || null,
-        };
-        
-        await inventoryAPI.create(inventoryData);
-        success++;
-      } catch (err) {
-        failed++;
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
-        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
-      }
-    }
-
-    return { success, failed, errors };
-  };
-
   // Filtered inventory based on search, type, and stock filters
   const filteredInventory = useMemo(() => {
     return inventory.filter((inv) => {
@@ -238,10 +206,10 @@ export default function Inventory() {
   }
 
 return (
-  <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+  <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
 
-    {/* Header - sticky on mobile */}
-    <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
+    {/* Header - always visible via flex-shrink-0 */}
+    <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ zIndex: 5 }}>
       <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Inventory</h1>
     </div>
 
@@ -320,16 +288,16 @@ return (
       </div>
 
       {/* Fixed bottom – headers + controls */}
-      <div className="flex-shrink-0 bg-light border-top shadow-sm" style={{ zIndex: 10 }}>
+      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         {/* Column Headers */}
-        <table className="table table-borderless mb-0 bg-light">
+        <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
           <colgroup>
             <col />
             <col style={{ width: '80px' }} />
             <col style={{ width: '50px' }} />
           </colgroup>
           <tfoot>
-            <tr className="bg-secondary-subtle">
+            <tr className="bg-gray-100 dark:bg-gray-700">
               <th>Item</th>
               <th>Type</th>
               <th className="text-center">Stock</th>
@@ -338,7 +306,7 @@ return (
         </table>
 
         {/* Controls */}
-        <div className="p-2 border-top">
+        <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           {/* Search row */}
           <div className="position-relative w-100 mb-2">
             <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -351,16 +319,28 @@ return (
               placeholder="Search by name or SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-control ps-5 w-100"
+              className="form-control ps-5 w-100 rounded-pill"
             />
           </div>
 
-          {/* Filters row */}
-          <div className="d-flex gap-2 mb-2">
+          {/* Controls row - Add, Type, Stock */}
+          <div className="d-flex align-items-center gap-2 mb-1">
+            <PermissionGate page="inventory" permission="write">
+              <button
+                type="button"
+                onClick={handleCreateItem}
+                className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                style={{ width: '3rem', height: '3rem' }}
+                title="Add item"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+            </PermissionGate>
+
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="form-select w-auto"
+              className="form-select w-auto rounded-pill"
             >
               <option value="all">All Types</option>
               <option value="PRODUCT">Products</option>
@@ -373,46 +353,12 @@ return (
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
-              className="form-select w-auto">
+              className="form-select w-auto rounded-pill">
               <option value="all">All Stock</option>
               <option value="low">Low Stock</option>
               <option value="ok">In Stock</option>
             </select>
-
           </div>
-
-          {/* Action buttons */}
-          <PermissionGate page="inventory" permission="write">
-            <div className="d-flex gap-2 w-100">
-              <CSVImportButton
-                entityName="Items"
-                onImport={handleCSVImport}
-                onComplete={loadInventoryData}
-                requiredFields={['name']}
-                fieldMapping={{
-                  'item name': 'name',
-                  'product name': 'name',
-                  'item': 'name',
-                  'product': 'name',
-                  'stock': 'quantity',
-                  'qty': 'quantity',
-                  'min stock': 'min_stock_level',
-                  'minimum stock': 'min_stock_level',
-                }}
-                className="btn btn-outline-secondary"
-              />
-              <button
-                type="button"
-                onClick={handleCreateItem}
-                className="btn btn-primary flex"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                </svg>
-                Add
-              </button>
-            </div>
-          </PermissionGate>
         </div>
       </div>
     </div>

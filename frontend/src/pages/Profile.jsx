@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
+import { getMobileEnvironment } from '../services/mobileEnvironment';
 import {
   UserIcon,
   CogIcon,
@@ -14,6 +15,7 @@ import {
   ClockIcon,
   CircleStackIcon,
   CheckCircleIcon,
+  ArrowDownTrayIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
@@ -40,6 +42,8 @@ const Profile = () => {
   const [dbLoading, setDbLoading] = useState(false);
   const [dbMessage, setDbMessage] = useState('');
   const [dbError, setDbError] = useState('');
+  const [installMessage, setInstallMessage] = useState('');
+  const [installError, setInstallError] = useState('');
 
   const handleSwitchEnvironment = async (env) => {
     if (env === currentDbEnvironment || !user?.id) return;
@@ -66,6 +70,43 @@ const Profile = () => {
       setTimeout(() => setDbError(''), 5000);
     } finally {
       setDbLoading(false);
+    }
+  };
+
+  const handleAddToHomeScreen = async () => {
+    setInstallMessage('');
+    setInstallError('');
+
+    const mobileEnv = getMobileEnvironment();
+
+    if (!mobileEnv.isMobileViewport) {
+      setInstallError('Add to Home Screen is available on mobile devices.');
+      return;
+    }
+
+    if (mobileEnv.isStandalone) {
+      setInstallMessage('This app is already installed on your home screen.');
+      return;
+    }
+
+    const deferredPrompt = window.__pwaDeferredPrompt;
+
+    if (!deferredPrompt) {
+      setInstallMessage(mobileEnv.installHint);
+      return;
+    }
+
+    try {
+      deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+
+      if (result?.outcome === 'accepted') {
+        setInstallMessage('Installation started. Open the app from your home screen once complete.');
+      } else {
+        setInstallMessage(mobileEnv.installHint);
+      }
+    } catch (error) {
+      setInstallError('Unable to open install prompt. Please use your browser menu to add to home screen.');
     }
   };
 
@@ -173,15 +214,28 @@ const Profile = () => {
                     style={{ width: '3rem', height: '1.5rem' }}/>
                 </div> 
               </div>
-              <button 
-                onClick={handleLogout} 
-                className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" 
-                title="Log out"
-              >
-                <ArrowRightOnRectangleIcon className="h-4 w-4" />
-                Logout
-              </button>
+              <div className="d-flex align-items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddToHomeScreen}
+                  className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                  title="Add app to home screen"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4" />
+                  Add to Home Screen
+                </button>
+                <button 
+                  onClick={handleLogout} 
+                  className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" 
+                  title="Log out"
+                >
+                  <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
             </div>
+            {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
+            {installError && <div className="small text-danger mt-2">{installError}</div>}
         </div>
       </div>
 

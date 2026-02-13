@@ -101,6 +101,19 @@ class User(BaseModel, table=True):
     # Role assignment - links to Role model for inherited permissions
     role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
 
+    # Details
+    iod_number: Optional[str] = Field(default=None)
+    location: Optional[str] = Field(default=None)
+
+    # Benefits / Compensation
+    salary: Optional[float] = Field(default=None)
+    pay_frequency: Optional[str] = Field(default=None)  # weekly, biweekly, monthly
+    insurance_plan: Optional[str] = Field(default=None)
+    vacation_days: Optional[int] = Field(default=None)
+    vacation_days_used: Optional[int] = Field(default=0)
+    sick_days: Optional[int] = Field(default=None)
+    sick_days_used: Optional[int] = Field(default=0)
+
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
     attendance_records: List["Attendance"] = Relationship(back_populates="user")
@@ -240,6 +253,8 @@ class Schedule(BaseModel, table=True):
     appointment_date: datetime
     status: str = Field(default="scheduled")
     notes: Optional[str] = Field(default=None)
+    appointment_type: str = Field(default="one_time")
+    duration_minutes: int = Field(default=60)
 
     # Relationships
     client: Optional[Client] = Relationship(back_populates="schedules")
@@ -557,6 +572,15 @@ class UserCreate(SQLModel):
     role: UserRole = UserRole.EMPLOYEE
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    iod_number: Optional[str] = None
+    location: Optional[str] = None
+    salary: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    insurance_plan: Optional[str] = None
+    vacation_days: Optional[int] = None
+    vacation_days_used: Optional[int] = 0
+    sick_days: Optional[int] = None
+    sick_days_used: Optional[int] = 0
 
 
 class UserUpdate(SQLModel):
@@ -574,6 +598,15 @@ class UserUpdate(SQLModel):
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: Optional[bool] = None
     db_environment: Optional[str] = None  # User's preferred database environment
+    iod_number: Optional[str] = None
+    location: Optional[str] = None
+    salary: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    insurance_plan: Optional[str] = None
+    vacation_days: Optional[int] = None
+    vacation_days_used: Optional[int] = None
+    sick_days: Optional[int] = None
+    sick_days_used: Optional[int] = None
 
 
 class UserRead(SQLModel):
@@ -593,6 +626,15 @@ class UserRead(SQLModel):
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: bool = False
     db_environment: str = "development"  # User's preferred database environment
+    iod_number: Optional[str] = None
+    location: Optional[str] = None
+    salary: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    insurance_plan: Optional[str] = None
+    vacation_days: Optional[int] = None
+    vacation_days_used: Optional[int] = 0
+    sick_days: Optional[int] = None
+    sick_days_used: Optional[int] = 0
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -670,6 +712,8 @@ class ScheduleCreate(SQLModel):
     appointment_date: datetime
     status: str = "scheduled"
     notes: Optional[str] = None
+    appointment_type: str = "one_time"
+    duration_minutes: int = 60
 
 
 class ScheduleUpdate(SQLModel):
@@ -679,6 +723,8 @@ class ScheduleUpdate(SQLModel):
     appointment_date: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    appointment_type: Optional[str] = None
+    duration_minutes: Optional[int] = None
 
 
 class ScheduleRead(SQLModel):
@@ -690,6 +736,8 @@ class ScheduleRead(SQLModel):
     appointment_date: datetime
     status: str
     notes: Optional[str] = None
+    appointment_type: str = "one_time"
+    duration_minutes: int = 60
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

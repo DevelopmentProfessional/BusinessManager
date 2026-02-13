@@ -202,7 +202,7 @@ export default function ItemDetailModal({
       className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
     >
-      <div className="d-flex flex-column bg-white" style={{ maxHeight: '100%' }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" style={{ maxHeight: '100%' }}>
 
       {/* Sales Mode: Full-width image header */}
       {isSalesMode && (
@@ -285,7 +285,12 @@ export default function ItemDetailModal({
 
             {/* Quantity Selector */}
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <span className="fw-medium">Quantity</span>
+              <div>
+                <span className="fw-medium">Quantity</span>
+                {inCart && (
+                  <div className="small text-muted">{cartQuantity} already in cart</div>
+                )}
+              </div>
               <div className="d-flex align-items-center gap-3">
                 <button
                   onClick={decrementQuantity}
@@ -317,10 +322,10 @@ export default function ItemDetailModal({
               </div>
               <button
                 onClick={handleAddToCart}
-                className="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                className={`btn flex-grow-1 d-flex align-items-center justify-content-center gap-2 ${inCart ? 'btn-secondary' : 'btn-primary'}`}
               >
                 <ShoppingCartIcon className="h-5 w-5" />
-                {inCart ? 'Update Cart' : 'Add to Cart'}
+                {inCart ? `Update (${cartQuantity} → ${quantity})` : `Add ${quantity} to Cart`}
               </button>
             </div>
           </div>
@@ -355,7 +360,7 @@ export default function ItemDetailModal({
                         type="number"
                         readOnly
                         value={0}
-                        className="form-control form-control-sm bg-light"
+                        className="form-control form-control-sm bg-light dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                         min="0"
                       />
                     </div>
@@ -483,7 +488,7 @@ export default function ItemDetailModal({
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 p-3 border-top bg-white">
+      <div className="flex-shrink-0 p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         {!isSalesMode ? (
           <div className="d-flex gap-3 justify-content-center align-items-center">
             {canDelete && (

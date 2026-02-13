@@ -163,6 +163,8 @@ def create_db_and_tables():
     _ensure_employee_user_id_column_if_needed()
     _normalize_item_types_if_needed()
     _ensure_inventory_image_table_if_needed()
+    _ensure_schedule_extra_columns_if_needed()
+    _ensure_user_extra_columns_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -430,3 +432,65 @@ def _ensure_inventory_image_table_if_needed():
                 """))
                 
                 print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")
+
+
+def _ensure_schedule_extra_columns_if_needed():
+    """Ensure schedule table has appointment_type and duration_minutes columns."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='schedule'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('schedule')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "appointment_type" not in col_names:
+                conn.execute(text("ALTER TABLE schedule ADD COLUMN appointment_type VARCHAR DEFAULT 'one_time'"))
+            if "duration_minutes" not in col_names:
+                conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name='schedule'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "appointment_type" not in col_names:
+                conn.execute(text("ALTER TABLE schedule ADD COLUMN appointment_type VARCHAR DEFAULT 'one_time'"))
+            if "duration_minutes" not in col_names:
+                conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+
+def _ensure_user_extra_columns_if_needed():
+    """Ensure user table has employee detail/benefit columns."""
+    new_cols = {
+        "iod_number": "VARCHAR",
+        "location": "VARCHAR",
+        "salary": "FLOAT",
+        "pay_frequency": "VARCHAR",
+        "insurance_plan": "VARCHAR",
+        "vacation_days": "INTEGER",
+        "vacation_days_used": "INTEGER DEFAULT 0",
+        "sick_days": "INTEGER",
+        "sick_days_used": "INTEGER DEFAULT 0",
+    }
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
+            col_names = {row[1] for row in cols}
+            for col, col_type in new_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {col_type}"))
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, col_type in new_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
