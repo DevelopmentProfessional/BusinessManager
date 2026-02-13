@@ -334,13 +334,13 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
               <button
                 type="button"
                 onClick={onCancel}
-                className="btn btn-outline-secondary flex-grow-1"
+                className="btn btn-outline-secondary rounded-pill flex-grow-1"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`btn flex-grow-1 text-white ${
+                className={`btn rounded-pill flex-grow-1 text-white ${
                   formData.type === 'PRODUCT' 
                     ? 'btn-success' 
                     : formData.type === 'RESOURCE'

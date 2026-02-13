@@ -49,6 +49,51 @@
   --color-accent: rgb(var(--color-accent-500));
 }
 
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+.app-shell {
+  height: var(--mobile-app-height, 100dvh);
+  min-height: var(--mobile-app-height, 100dvh);
+  overflow: hidden;
+}
+
+.app-shell-main {
+  padding-top: env(safe-area-inset-top);
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: rgb(31 41 55) !important;
+  color: rgb(243 244 246) !important;
+}
+
+[data-bs-theme="dark"] .table.bg-light {
+  --bs-table-bg: rgb(31 41 55) !important;
+  --bs-table-color: rgb(243 244 246) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: rgb(243 244 246) !important;
+}
+
+input[type="text"],
+input[type="search"],
+.form-control[type="number"],
+input[type="number"],
+.form-control[type="text"],
+.form-control[type="search"] {
+  border-radius: 9999px !important;
+}
+
+textarea,
+textarea.form-control {
+  border-radius: 0.75rem !important;
+}
+
 /* Bootstrap overrides and theme-aware base styles */
 @layer base {
   * {

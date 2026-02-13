@@ -54,9 +54,9 @@ export default function Layout({ children }) {
   });
 
   return (
-    <div className="min-vh-100 bg-body d-flex flex-column">
+    <div className="app-shell bg-body d-flex flex-column">
       {/* Main content - min-h-0 so children can use overflow without making page scroll */}
-      <main className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
+      <main className="app-shell-main flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
         {children}
       </main>
 
@@ -113,8 +113,8 @@ export default function Layout({ children }) {
           'position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center'
         )}
         style={{ 
-          width: '3.5rem', 
-          height: '3.5rem', 
+          width: '3rem', 
+          height: '3rem', 
           zIndex: 1040, 
           bottom: '1rem', 
           right: '1rem' 

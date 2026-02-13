@@ -264,12 +264,22 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
   // Get config for current appointment type
   const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
 
+  // Contextual titles and descriptions per type
+  const typeLabels = {
+    one_time: { title: appointment ? 'Edit Appointment' : 'New Appointment', subtitle: 'Schedule a client appointment with service' },
+    series: { title: appointment ? 'Edit Recurring' : 'New Recurring Appointment', subtitle: 'Set up a repeating appointment' },
+    meeting: { title: appointment ? 'Edit Meeting' : 'New Meeting', subtitle: 'Schedule an internal meeting' },
+    task: { title: appointment ? 'Edit Task' : 'New Task', subtitle: 'Create a personal task or reminder' },
+  };
+  const currentLabels = typeLabels[formData.appointment_type] || typeLabels.one_time;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-1">
       <div className="mb-1">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
-          {appointment ? 'Edit Event' : 'Create New Event'}
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-0">
+          {currentLabels.title}
         </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{currentLabels.subtitle}</p>
       </div>
 
       {/* Appointment Type - FIRST so it controls what fields show */}
@@ -289,6 +299,42 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           required
         />
       </div>
+
+      {/* Meeting Title - shown first for meetings */}
+      {formData.appointment_type === 'meeting' && (
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            Meeting Title
+          </label>
+          <input
+            type="text"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="Enter meeting title or agenda"
+            className="input-field w-full"
+            required
+          />
+        </div>
+      )}
+
+      {/* Task Description - shown first for tasks */}
+      {formData.appointment_type === 'task' && (
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            Task Description
+          </label>
+          <input
+            type="text"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="What needs to be done?"
+            className="input-field w-full"
+            required
+          />
+        </div>
+      )}
 
       {/* Client Selection - only for appointments/series */}
       {typeConfig.needsClient && (
@@ -363,7 +409,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
         </div>
       )}
 
-      {/* Employee Selection - always shown */}
+      {/* Employee Selection */}
       {typeConfig.needsEmployee && (
         <div>
           <div className="input-group">
@@ -391,7 +437,11 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
                 value: employee.id,
                 label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ''}`
               }))}
-              placeholder={typeConfig.employeeMultiple ? 'Select employees' : 'Select employee'}
+              placeholder={
+                formData.appointment_type === 'meeting' ? 'Select attendees'
+                : formData.appointment_type === 'task' ? 'Assign to'
+                : typeConfig.employeeMultiple ? 'Select employees' : 'Select employee'
+              }
               required
               searchable={true}
               disabled={isWriteOnly}
@@ -406,37 +456,18 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
         </div>
       )}
 
-      {/* Meeting Title - only for meetings */}
-      {formData.appointment_type === 'meeting' && (
+      {/* Recurrence (only for series) */}
+      {formData.appointment_type === 'series' && (
         <div>
           <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Meeting Title
+            Recurrence Frequency
           </label>
-          <input
-            type="text"
-            name="notes"
-            value={formData.notes}
+          <CustomDropdown
+            name="recurrence_frequency"
+            value={formData.recurrence_frequency}
             onChange={handleChange}
-            placeholder="Enter meeting title or agenda"
-            className="input-field w-full"
-            required
-          />
-        </div>
-      )}
-
-      {/* Task Title - only for tasks */}
-      {formData.appointment_type === 'task' && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Task Description
-          </label>
-          <input
-            type="text"
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="What needs to be done?"
-            className="input-field w-full"
+            options={RECURRENCE_OPTIONS}
+            placeholder="Select frequency"
             required
           />
         </div>
@@ -456,23 +487,6 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           placeholder="Duration"
         />
       </div>
-
-      {/* Recurrence (only for series) */}
-      {formData.appointment_type === 'series' && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Recurrence Frequency
-          </label>
-          <CustomDropdown
-            name="recurrence_frequency"
-            value={formData.recurrence_frequency}
-            onChange={handleChange}
-            options={RECURRENCE_OPTIONS}
-            placeholder="Select frequency"
-            required
-          />
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div> 
@@ -547,7 +561,17 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           <IconButton icon={TrashIcon} label="Delete" onClick={onDelete} variant="danger" />
         )}
         <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
-        <IconButton icon={CheckIcon} label={appointment ? 'Update Appointment' : 'Book Appointment'} type="submit" variant="primary" />
+        <IconButton
+          icon={CheckIcon}
+          label={appointment
+            ? `Update ${formData.appointment_type === 'meeting' ? 'Meeting' : formData.appointment_type === 'task' ? 'Task' : 'Appointment'}`
+            : formData.appointment_type === 'meeting' ? 'Schedule Meeting'
+            : formData.appointment_type === 'task' ? 'Create Task'
+            : 'Book Appointment'
+          }
+          type="submit"
+          variant="primary"
+        />
       </ActionFooter>
     </form>
   );

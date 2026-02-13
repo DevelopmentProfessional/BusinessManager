@@ -7,6 +7,8 @@ import useStore from './services/useStore';
 import useDarkMode from './services/useDarkMode';
 import useBranding from './services/useBranding';
 import GlobalClientModal from './pages/components/GlobalClientModal';
+import MobileAddressBarManager from './pages/components/MobileAddressBarManager';
+import InstallAppPrompt from './pages/components/InstallAppPrompt';
 
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import('./pages/Clients'));
@@ -107,6 +109,8 @@ function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ClearErrorOnNavigate />
+      <MobileAddressBarManager />
+      <InstallAppPrompt />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { ArrowUpTrayIcon, XMarkIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import Modal from './Modal';
 
@@ -13,12 +13,13 @@ import Modal from './Modal';
  * - requiredFields: array - list of required field names
  * - className: string - additional CSS classes for the button
  */
-export default function CSVImportButton({ 
-  onImport, 
-  onComplete, 
+export default function CSVImportButton({
+  onImport,
+  onComplete,
   entityName = 'Records',
   fieldMapping = {},
   requiredFields = [],
+  tableColumns = [],
   className = ''
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,6 +30,34 @@ export default function CSVImportButton({
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Compute column mapping info when tableColumns is provided
+  const mappingInfo = useMemo(() => {
+    if (headers.length === 0 || tableColumns.length === 0) return null;
+
+    const tableFieldSet = new Set(tableColumns.map(c => c.field));
+    const matched = [];
+    const unmatchedCsv = [];
+    const mappedTableFields = new Set();
+
+    headers.forEach(header => {
+      const mappedField = fieldMapping[header.toLowerCase()] ||
+                         fieldMapping[header] ||
+                         header.toLowerCase().replace(/\s+/g, '_');
+
+      if (tableFieldSet.has(mappedField)) {
+        const col = tableColumns.find(c => c.field === mappedField);
+        matched.push({ csvHeader: header, tableField: mappedField, tableLabel: col?.label || mappedField });
+        mappedTableFields.add(mappedField);
+      } else {
+        unmatchedCsv.push(header);
+      }
+    });
+
+    const missingTable = tableColumns.filter(c => !mappedTableFields.has(c.field));
+
+    return { matched, unmatchedCsv, missingTable };
+  }, [headers, tableColumns, fieldMapping]);
 
   const parseCSV = (text) => {
     const lines = text.split(/\r?\n/).filter(line => line.trim());
@@ -255,40 +284,112 @@ export default function CSVImportButton({
             </div>
           )}
 
-          {/* Column Mapping Display */}
+          {/* Column Mapping Preview */}
           {headers.length > 0 && (
-            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
+            <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Columns to import:
+                Column Mapping:
               </p>
-              <div className="flex flex-wrap gap-2">
-                {headers.map((header, i) => {
-                  const mappedField = fieldMapping[header.toLowerCase()] || 
-                                     fieldMapping[header] || 
-                                     header.toLowerCase().replace(/\s+/g, '_');
-                  const isRequired = requiredFields.includes(mappedField);
-                  return (
-                    <div 
-                      key={i} 
-                      className={`px-2 py-1 rounded text-xs ${
-                        isRequired 
-                          ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700' 
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      <span className="font-medium">{header}</span>
-                      {header.toLowerCase().replace(/\s+/g, '_') !== mappedField && (
-                        <span className="text-gray-500 dark:text-gray-400"> → {mappedField}</span>
-                      )}
-                      {isRequired && <span className="text-red-500 ml-1">*</span>}
+
+              {mappingInfo ? (
+                <div className="space-y-2">
+                  {/* Matched Columns */}
+                  {mappingInfo.matched.length > 0 && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1.5 flex items-center gap-1">
+                        <CheckCircleIcon className="h-3.5 w-3.5" />
+                        Matched ({mappingInfo.matched.length})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {mappingInfo.matched.map((m, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200">
+                            {m.csvHeader}{m.csvHeader.toLowerCase().replace(/\s+/g, '_') !== m.tableField && ` → ${m.tableLabel}`}
+                            {requiredFields.includes(m.tableField) && <span className="text-red-500 ml-0.5">*</span>}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-              {requiredFields.length > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  <span className="text-red-500">*</span> Required fields
-                </p>
+                  )}
+
+                  {/* Unmatched CSV Columns */}
+                  {mappingInfo.unmatchedCsv.length > 0 && (
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-1.5 flex items-center gap-1">
+                        <ExclamationCircleIcon className="h-3.5 w-3.5" />
+                        Unmatched CSV Columns ({mappingInfo.unmatchedCsv.length})
+                      </p>
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Will be skipped during import:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {mappingInfo.unmatchedCsv.map((h, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 line-through">
+                            {h}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing Table Columns */}
+                  {mappingInfo.missingTable.length > 0 && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                        Not in CSV ({mappingInfo.missingTable.length})
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Defaults will be used for these columns:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {mappingInfo.missingTable.map((c, i) => (
+                          <span key={i} className={`px-2 py-0.5 rounded text-xs ${
+                            requiredFields.includes(c.field)
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {c.label}
+                            {requiredFields.includes(c.field) && <span className="text-red-500 ml-0.5">*</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {requiredFields.length > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-red-500">*</span> Required
+                    </p>
+                  )}
+                </div>
+              ) : (
+                /* Fallback when tableColumns not provided */
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    {headers.map((header, i) => {
+                      const mappedField = fieldMapping[header.toLowerCase()] ||
+                                         fieldMapping[header] ||
+                                         header.toLowerCase().replace(/\s+/g, '_');
+                      const isRequired = requiredFields.includes(mappedField);
+                      return (
+                        <div
+                          key={i}
+                          className={`px-2 py-1 rounded text-xs ${
+                            isRequired
+                              ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                          }`}
+                        >
+                          <span className="font-medium">{header}</span>
+                          {header.toLowerCase().replace(/\s+/g, '_') !== mappedField && (
+                            <span className="text-gray-500 dark:text-gray-400"> → {mappedField}</span>
+                          )}
+                          {isRequired && <span className="text-red-500 ml-1">*</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {requiredFields.length > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      <span className="text-red-500">*</span> Required fields
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
