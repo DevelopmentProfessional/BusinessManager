@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../../services/api';
 import { renderAsync } from 'docx-preview';
@@ -26,12 +26,13 @@ function getDocumentType(doc) {
   if (ct.includes('pdf') || name.endsWith('.pdf')) {
     return 'pdf';
   }
-  // Prioritize content_type for text/ types — handles edited DOCX saved as HTML
-  if (ct.startsWith('text/') || ct === 'application/json' || ct === 'application/javascript') {
-    return 'text';
-  }
+  // Check DOCX before text/ — a .docx file may have content_type changed to text/html
+  // after editing, but should still be treated as DOCX for the rich text editor
   if (ct.includes('wordprocessingml.document') || name.endsWith('.docx')) {
     return 'docx';
+  }
+  if (ct.startsWith('text/') || ct === 'application/json' || ct === 'application/javascript') {
+    return 'text';
   }
   if (ct.includes('spreadsheetml.sheet') || name.endsWith('.xlsx')) {
     return 'xlsx';
@@ -388,6 +389,16 @@ function UnknownViewer({ document, onEdit }) {
 // Editor Area Component — renders the appropriate editor based on document type
 function EditorArea({ document, documentType }) {
   const editorRef = useRef(null);
+  // Track when the editor instance becomes available so toolbar re-renders with controls
+  const [editorInstance, setEditorInstance] = useState(null);
+  // Force re-render on editor transactions so toolbar buttons reflect current selection state
+  const [, setTxCount] = useState(0);
+  useEffect(() => {
+    if (!editorInstance) return;
+    const handler = () => setTxCount((n) => n + 1);
+    editorInstance.on('transaction', handler);
+    return () => editorInstance.off('transaction', handler);
+  }, [editorInstance]);
   const { editorType, codeLanguage } = getEditorConfig(documentType, document.original_filename);
   const {
     content,
@@ -400,19 +411,28 @@ function EditorArea({ document, documentType }) {
     saveContent,
   } = useDocumentEditor(document.id, documentType, document.original_filename);
 
+  // Callback ref: when the editor component sets its ref, capture the instance in state
+  // to trigger a re-render so the toolbar gets the live editor object
+  const editorCallbackRef = useCallback((instance) => {
+    editorRef.current = instance;
+    setEditorInstance(instance);
+  }, []);
+
   const handleUndo = () => {
-    if (editorType === 'richtext' && editorRef.current) {
-      editorRef.current.chain().focus().undo().run();
-    } else if (editorType === 'code' && editorRef.current?.undo) {
-      editorRef.current.undo();
+    const ed = editorRef.current;
+    if (editorType === 'richtext' && ed) {
+      ed.chain().focus().undo().run();
+    } else if (editorType === 'code' && ed?.undo) {
+      ed.undo();
     }
   };
 
   const handleRedo = () => {
-    if (editorType === 'richtext' && editorRef.current) {
-      editorRef.current.chain().focus().redo().run();
-    } else if (editorType === 'code' && editorRef.current?.redo) {
-      editorRef.current.redo();
+    const ed = editorRef.current;
+    if (editorType === 'richtext' && ed) {
+      ed.chain().focus().redo().run();
+    } else if (editorType === 'code' && ed?.redo) {
+      ed.redo();
     }
   };
 
@@ -449,7 +469,7 @@ function EditorArea({ document, documentType }) {
     <div className="flex flex-col h-full">
       <EditorToolbar
         editorType={editorType}
-        editor={editorRef.current}
+        editor={editorInstance}
         onSave={saveContent}
         onUndo={handleUndo}
         onRedo={handleRedo}
@@ -467,13 +487,13 @@ function EditorArea({ document, documentType }) {
         >
           {editorType === 'richtext' ? (
             <RichTextEditor
-              ref={editorRef}
+              ref={editorCallbackRef}
               content={content}
               onChange={setContent}
             />
           ) : (
             <CodeEditor
-              ref={editorRef}
+              ref={editorCallbackRef}
               content={content}
               onChange={setContent}
               language={codeLanguage || 'text'}

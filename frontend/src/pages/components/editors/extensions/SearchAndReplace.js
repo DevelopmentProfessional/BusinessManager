@@ -112,10 +112,8 @@ export const SearchAndReplace = Extension.create({
           const match = results[this.storage.currentIndex];
           if (match) {
             editor.commands.setTextSelection(match.from);
-            const dom = editor.view.domAtPos(match.from);
-            if (dom.node?.scrollIntoView) {
-              dom.node.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }
+            // scrollIntoView via the editor's built-in method
+            editor.commands.scrollIntoView();
           }
           return true;
         },
@@ -131,6 +129,7 @@ export const SearchAndReplace = Extension.create({
           const match = results[this.storage.currentIndex];
           if (match) {
             editor.commands.setTextSelection(match.from);
+            editor.commands.scrollIntoView();
           }
           return true;
         },
@@ -150,7 +149,15 @@ export const SearchAndReplace = Extension.create({
             .insertContent(replaceTerm)
             .run();
 
-          // Re-trigger search
+          // Clamp currentIndex so it doesn't exceed new results length
+          const newResults = this.storage.results;
+          if (this.storage.currentIndex >= newResults.length && newResults.length > 0) {
+            this.storage.currentIndex = newResults.length - 1;
+          } else if (newResults.length === 0) {
+            this.storage.currentIndex = 0;
+          }
+
+          // Re-trigger search decorations
           editor.view.dispatch(editor.state.tr);
           return true;
         },

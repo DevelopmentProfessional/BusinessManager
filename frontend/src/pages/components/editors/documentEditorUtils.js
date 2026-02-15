@@ -10,7 +10,7 @@ const CODE_EXTENSIONS = new Set([
   'txt', 'md', 'log',
 ]);
 
-const RICHTEXT_EXTENSIONS = new Set(['html', 'htm']);
+const RICHTEXT_EXTENSIONS = new Set(['html', 'htm', 'docx']);
 
 const LANGUAGE_MAP = {
   js: 'javascript', jsx: 'javascript', ts: 'javascript', tsx: 'javascript',

@@ -28,9 +28,17 @@ export function useDocumentEditor(documentId, documentType, filename) {
         const res = await fetch(documentsAPI.fileUrl(documentId));
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const arrayBuffer = await res.arrayBuffer();
-        const mammoth = await import('mammoth');
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        const html = result.value || '';
+        let html = '';
+        try {
+          const mammoth = await import('mammoth');
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          html = result.value || '';
+        } catch {
+          // Mammoth failed — file may have been previously saved as HTML text.
+          // Fall back to treating the bytes as UTF-8 text.
+          const decoder = new TextDecoder('utf-8');
+          html = decoder.decode(arrayBuffer);
+        }
         setContentState(html);
         setOriginalContent(html);
       } else {

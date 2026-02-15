@@ -98,8 +98,15 @@ export const Indent = Extension.create({
 
   addKeyboardShortcuts() {
     return {
-      Tab: () => this.editor.commands.indent(),
-      'Shift-Tab': () => this.editor.commands.outdent(),
+      Tab: () => {
+        // Let list item sink/nest handle Tab when inside a list
+        if (this.editor.isActive('listItem')) return false;
+        return this.editor.commands.indent();
+      },
+      'Shift-Tab': () => {
+        if (this.editor.isActive('listItem')) return false;
+        return this.editor.commands.outdent();
+      },
     };
   },
 });
