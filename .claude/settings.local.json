@@ -31,7 +31,12 @@
       "Bash(popd:*)",
       "Bash(del \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\frontend\\\\src\\\\scripts\\\\useDarkMode.js\")",
       "Bash(py -3 -c:*)",
-      "WebFetch(domain:businessmanager-reference-api.onrender.com)"
+      "WebFetch(domain:businessmanager-reference-api.onrender.com)",
+      "Bash(ls:*)",
+      "Bash(sqlite3:*)",
+      "Bash(python3:*)",
+      "Bash(pip show:*)",
+      "Bash(pkill:*)"
     ]
   }
 }
