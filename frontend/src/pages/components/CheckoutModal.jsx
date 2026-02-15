@@ -209,7 +209,7 @@ export default function CheckoutModal({
               <div className="flex gap-1 mb-1">
                 <button
                   onClick={() => setPaymentMethod('card')}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-2 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
                     paymentMethod === 'card' 
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' 
                       : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
@@ -220,7 +220,7 @@ export default function CheckoutModal({
                 </button>
                 <button
                   onClick={() => setPaymentMethod('cash')}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-2 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
                     paymentMethod === 'cash' 
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' 
                       : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
@@ -232,63 +232,61 @@ export default function CheckoutModal({
               </div>
               
               {paymentMethod === 'card' ? (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {/* Card Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Card Number
-                    </label>
-                    <div className="relative">
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <CreditCardIcon className="h-5 w-5 text-gray-400" />
+                    </span>
+                    <div className="form-floating">
                       <input
                         type="text"
+                        id="cardNumber"
                         value={cardNumber}
                         onChange={handleCardNumberChange}
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                        placeholder="Card Number"
+                        className="form-control form-control-sm"
                       />
-                      <CreditCardIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <label htmlFor="cardNumber">Card Number</label>
                     </div>
                   </div>
-                  
+
                   {/* Cardholder Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Cardholder Name
-                    </label>
+                  <div className="form-floating">
                     <input
                       type="text"
+                      id="cardName"
                       value={cardName}
                       onChange={(e) => setCardName(e.target.value)}
-                      placeholder="John Doe"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      placeholder="Cardholder Name"
+                      className="form-control form-control-sm"
                     />
+                    <label htmlFor="cardName">Cardholder Name</label>
                   </div>
-                  
+
                   {/* Expiry & CVC */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Expiry Date
-                      </label>
+                    <div className="form-floating">
                       <input
                         type="text"
+                        id="cardExpiry"
                         value={cardExpiry}
                         onChange={handleExpiryChange}
                         placeholder="MM/YY"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                        className="form-control form-control-sm"
                       />
+                      <label htmlFor="cardExpiry">Expiry Date</label>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        CVC
-                      </label>
+                    <div className="form-floating">
                       <input
                         type="text"
+                        id="cardCVC"
                         value={cardCVC}
                         onChange={handleCVCChange}
-                        placeholder="123"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                        placeholder="CVC"
+                        className="form-control form-control-sm"
                       />
+                      <label htmlFor="cardCVC">CVC</label>
                     </div>
                   </div>
                   

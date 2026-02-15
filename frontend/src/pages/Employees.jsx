@@ -763,7 +763,7 @@ export default function Employees() {
                       id="createUserRole"
                       value={newUser.role}
                       onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                      className="form-select"
+                      className="form-select form-select-sm"
                     >
                       {roles.map(role => (
                         <option key={role} value={role}>{role}</option>
@@ -809,7 +809,7 @@ export default function Employees() {
                 <select
                   value={newPermission.page}
                   onChange={(e) => setNewPermission({...newPermission, page: e.target.value})}
-                  className="form-select"
+                  className="form-select form-select-sm"
                   required
                 >
                   <option value="">Select Page</option>
@@ -822,7 +822,7 @@ export default function Employees() {
                 <select
                   value={newPermission.permission}
                   onChange={(e) => setNewPermission({...newPermission, permission: e.target.value})}
-                  className="form-select"
+                  className="form-select form-select-sm"
                   required
                 >
                   <option value="">Select Permission</option>

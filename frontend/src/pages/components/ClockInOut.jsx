@@ -135,7 +135,7 @@ export default function ClockInOut() {
             <button
               onClick={handleClockOut}
               disabled={loading}
-              className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               <StopIcon className="h-5 w-5" />
               <span>Clock Out</span>

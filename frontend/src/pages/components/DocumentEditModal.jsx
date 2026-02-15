@@ -132,7 +132,7 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
         <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit}>
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Edit Document
               </h3>
@@ -162,17 +162,16 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Description
-                </label>
+              <div className="form-floating mb-3">
                 <textarea
-                  className="input-field mt-1"
-                  rows={3}
+                  id="doc_description"
+                  className="form-control form-control-sm"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Document description"
+                  placeholder="Description"
+                  style={{ height: '80px' }}
                 />
+                <label htmlFor="doc_description">Description</label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -195,16 +194,16 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
                     placeholder="Select owner"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Review Date
-                  </label>
+                <div className="form-floating">
                   <input
                     type="date"
-                    className="input-field mt-1"
+                    id="doc_review_date"
+                    className="form-control form-control-sm"
                     value={reviewDate}
                     onChange={(e) => setReviewDate(e.target.value)}
+                    placeholder="Review Date"
                   />
+                  <label htmlFor="doc_review_date">Review Date</label>
                 </div>
               </div>
 
@@ -285,7 +284,7 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={onClose} className="btn-secondary">
                 Cancel
               </button>

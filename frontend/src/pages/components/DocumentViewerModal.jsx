@@ -10,6 +10,10 @@ import EditorToolbar from './editors/EditorToolbar';
 const RichTextEditor = lazy(() => import('./editors/RichTextEditor'));
 const CodeEditor = lazy(() => import('./editors/CodeEditor'));
 
+// Lazy-load heavy viewer components (xlsx, react-pdf)
+const XlsxViewerLazy = lazy(() => import('./viewers/XlsxViewer'));
+const PDFViewerLazy = lazy(() => import('./viewers/PDFViewer'));
+
 // Determine document type from content_type and filename
 function getDocumentType(doc) {
   if (!doc) return 'unknown';
@@ -144,32 +148,18 @@ function ImageViewer({ document, onEdit }) {
   );
 }
 
-// PDF Viewer Component
+// PDF Viewer — delegates to lazy-loaded react-pdf based viewer
 function PDFViewer({ document, onEdit }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <span className="text-sm text-gray-600 dark:text-gray-300">PDF Document</span>
-        <div className="flex items-center gap-2">
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
-            >
-              <PencilIcon className="h-4 w-4" />
-              Edit Metadata
-            </button>
-          )}
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
-      </div>
-      <div className="flex-1">
-        <iframe
-          title="PDF Preview"
-          src={documentsAPI.fileUrl(document.id)}
-          className="w-full h-full border-0"
-        />
-      </div>
-    </div>
+      }
+    >
+      <PDFViewerLazy document={document} onEdit={onEdit} />
+    </Suspense>
   );
 }
 
@@ -249,13 +239,11 @@ function DocxViewer({ document, onEdit }) {
   );
 }
 
-// Office Document Viewer (for xlsx, pptx, doc, xls - shows download option)
+// Office Document Viewer (for pptx, doc - shows download option)
 function OfficeViewer({ document, documentType, onEdit }) {
   const typeLabels = {
-    xlsx: 'Excel Spreadsheet',
     pptx: 'PowerPoint Presentation',
     doc: 'Word Document (Legacy)',
-    xls: 'Excel Spreadsheet (Legacy)',
   };
 
   return (
@@ -281,7 +269,7 @@ function OfficeViewer({ document, documentType, onEdit }) {
             Preview not available for this file type.
           </p>
           <a
-            href={documentsAPI.fileUrl(document.id)}
+            href={documentsAPI.fileUrl(document.id, { download: true })}
             download
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
           >
@@ -384,7 +372,7 @@ function UnknownViewer({ document, onEdit }) {
             Preview not available for this file type.
           </p>
           <a
-            href={documentsAPI.fileUrl(document.id)}
+            href={documentsAPI.fileUrl(document.id, { download: true })}
             download
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
           >
@@ -445,7 +433,7 @@ function EditorArea({ document, documentType }) {
         <div className="text-center">
           <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded mb-4">{error}</div>
           <a
-            href={documentsAPI.fileUrl(document.id)}
+            href={documentsAPI.fileUrl(document.id, { download: true })}
             download
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
           >
@@ -547,9 +535,20 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
       case 'docx':
         return <DocxViewer document={document} onEdit={onEdit} />;
       case 'xlsx':
+      case 'xls':
+        return (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+              </div>
+            }
+          >
+            <XlsxViewerLazy document={document} onEdit={onEdit} />
+          </Suspense>
+        );
       case 'pptx':
       case 'doc':
-      case 'xls':
         return <OfficeViewer document={document} documentType={documentType} onEdit={onEdit} />;
       case 'text':
         return <TextViewer document={document} onEdit={onEdit} />;
@@ -597,7 +596,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
       {/* Modal Content */}
       <div className="fixed inset-4 sm:inset-8 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-3 min-w-0">
             <DocumentIcon className="h-6 w-6 text-gray-400 flex-shrink-0" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -620,7 +619,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
               </button>
             )}
             <a
-              href={documentsAPI.fileUrl(document.id)}
+              href={documentsAPI.fileUrl(document.id, { download: true })}
               download
               className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
             >

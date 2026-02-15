@@ -58,10 +58,7 @@ function AttendanceForm({ onSubmit, onCancel }) {
         />
       </div>
 
-      <div>
-        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-          Date *
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="date"
           id="date"
@@ -69,53 +66,51 @@ function AttendanceForm({ onSubmit, onCancel }) {
           required
           value={formData.date}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
+          placeholder="Date"
         />
+        <label htmlFor="date">Date *</label>
       </div>
 
-      <div className="grid grid-cols-2 gap-1">
-        <div>
-          <label htmlFor="clock_in" className="block text-sm font-medium text-gray-700">
-            Clock In
-          </label>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="form-floating">
           <input
             type="time"
             id="clock_in"
             name="clock_in"
             value={formData.clock_in}
             onChange={handleChange}
-            className="input-field mt-1"
+            className="form-control form-control-sm"
+            placeholder="Clock In"
           />
+          <label htmlFor="clock_in">Clock In</label>
         </div>
 
-        <div>
-          <label htmlFor="clock_out" className="block text-sm font-medium text-gray-700">
-            Clock Out
-          </label>
+        <div className="form-floating">
           <input
             type="time"
             id="clock_out"
             name="clock_out"
             value={formData.clock_out}
             onChange={handleChange}
-            className="input-field mt-1"
+            className="form-control form-control-sm"
+            placeholder="Clock Out"
           />
+          <label htmlFor="clock_out">Clock Out</label>
         </div>
       </div>
 
-      <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-          Notes
-        </label>
+      <div className="form-floating mb-2 mt-2">
         <textarea
           id="notes"
           name="notes"
-          rows={3}
           value={formData.notes}
           onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Additional notes"
+          className="form-control form-control-sm"
+          placeholder="Notes"
+          style={{ height: '80px' }}
         />
+        <label htmlFor="notes">Notes</label>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
@@ -380,7 +375,7 @@ export default function Attendance() {
               : 'bg-green-600 hover:bg-green-700'
             }
             text-white
-            px-6 py-3 rounded-full shadow-lg hover:shadow-xl
+            px-6 py-2 rounded-full shadow-lg hover:shadow-xl
             flex items-center gap-2 transition-all
             font-medium text-sm
             disabled:opacity-50 disabled:cursor-not-allowed

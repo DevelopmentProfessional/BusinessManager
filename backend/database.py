@@ -302,26 +302,49 @@ def _normalize_item_types_if_needed():
                 pass
 
 def _ensure_document_extra_columns_if_needed():
-    """Ensure new columns exist on 'document' table: owner_id, review_date, category_id.
-    Create auxiliary tables if not present is handled by create_all, but on SQLite add columns if missing.
+    """Ensure new columns exist on 'document' table: owner_id, review_date, category_id,
+    is_signed, signed_by, signed_at.  Works on both SQLite and PostgreSQL.
     """
-    if not DATABASE_URL.startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        # Check document table exists
-        tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
-        )).fetchone()
-        if not tbl_exists:
-            return
-        cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
-        col_names = {row[1] for row in cols}
-        if "owner_id" not in col_names:
-            conn.execute(text("ALTER TABLE document ADD COLUMN owner_id TEXT"))
-        if "review_date" not in col_names:
-            conn.execute(text("ALTER TABLE document ADD COLUMN review_date DATETIME"))
-        if "category_id" not in col_names:
-            conn.execute(text("ALTER TABLE document ADD COLUMN category_id TEXT"))
+    # Column name -> (SQLite type, PostgreSQL type)
+    extra_cols = {
+        "owner_id": ("TEXT", "UUID"),
+        "review_date": ("DATETIME", "TIMESTAMP WITH TIME ZONE"),
+        "category_id": ("TEXT", "UUID"),
+        "is_signed": ("BOOLEAN NOT NULL DEFAULT 0", "BOOLEAN NOT NULL DEFAULT FALSE"),
+        "signed_by": ("TEXT", "TEXT"),
+        "signed_at": ("DATETIME", "TIMESTAMP WITH TIME ZONE"),
+    }
+
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
+            col_names = {row[1] for row in cols}
+            for col, (sqlite_type, _pg_type) in extra_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE document ADD COLUMN {col} {sqlite_type}"))
+    else:
+        # PostgreSQL
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='document')"
+            )).scalar()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='document'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, (_sqlite_type, pg_type) in extra_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
+                    print(f"  + Added column document.{col} ({pg_type})")
 
 def _ensure_employee_user_id_column_if_needed():
     """Ensure the 'employee' table has a 'user_id' column; add it if missing (SQLite)."""

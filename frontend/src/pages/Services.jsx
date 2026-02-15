@@ -296,7 +296,7 @@ export default function Services() {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="form-select"
+                className="form-select form-select-sm"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>

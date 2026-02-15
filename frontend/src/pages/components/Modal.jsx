@@ -54,7 +54,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         {Overlay}
 
         <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-y-auto">
-          <div className={`bg-white dark:bg-gray-800 ${noPadding ? '' : 'px-4 pt-4 pb-4'}`}>
+          <div className={`bg-white dark:bg-gray-800 ${noPadding ? '' : 'px-2 pt-4 pb-3'}`}>
             <div className="w-full">
               <div className="w-full">
                 {title && (
@@ -70,7 +70,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
             </div>
           </div>
           {footer && (
-            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2">
               {footer}
             </div>
           )}

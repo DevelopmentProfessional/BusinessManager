@@ -134,22 +134,17 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
         Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF
       </p>
 
-      <div>
-        <label
-          htmlFor="description"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Description (optional)
-        </label>
+      <div className="form-floating mb-2">
         <textarea
           id="description"
           name="description"
-          rows={3}
           value={formData.description}
           onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Document description"
+          className="form-control form-control-sm"
+          placeholder="Description"
+          style={{ height: '80px' }}
         />
+        <label htmlFor="description">Description (optional)</label>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
@@ -241,34 +236,49 @@ export default function Documents() {
     loadCategories();
   }, []);
 
-  const loadDocuments = async () => {
+  const loadDocuments = async (retries = 2) => {
     setLoading(true);
-    try {
-      const response = await documentsAPI.getAll();
-      const documentsData = response?.data ?? response;
-      if (Array.isArray(documentsData)) {
-        setDocuments(documentsData);
-        clearError();
-      } else {
-        console.error('Invalid documents data format:', documentsData);
-        setError('Invalid data format received from server');
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await documentsAPI.getAll();
+        const documentsData = response?.data ?? response;
+        if (Array.isArray(documentsData)) {
+          setDocuments(documentsData);
+          clearError();
+          setLoading(false);
+          return;
+        } else {
+          console.error('Invalid documents data format:', documentsData);
+          setError('Invalid data format received from server');
+          setDocuments([]);
+        }
+      } catch (err) {
+        const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+        if (isTimeout && attempt < retries) {
+          console.warn(`Document load timeout, retrying (${attempt + 1}/${retries})...`);
+          continue;
+        }
+        setError('Failed to load documents');
+        console.error('Error loading documents:', err);
         setDocuments([]);
       }
-    } catch (err) {
-      setError('Failed to load documents');
-      console.error('Error loading documents:', err);
-      setDocuments([]);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
-  const loadCategories = async () => {
-    try {
-      const res = await documentCategoriesAPI.list();
-      setCategories(res.data || []);
-    } catch (err) {
-      console.warn('Failed to load categories', err);
+  const loadCategories = async (retries = 2) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await documentCategoriesAPI.list();
+        setCategories(res.data || []);
+        return;
+      } catch (err) {
+        const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+        if (isTimeout && attempt < retries) {
+          continue;
+        }
+        console.warn('Failed to load categories', err);
+      }
     }
   };
 
@@ -481,8 +491,14 @@ export default function Documents() {
 
       {/* Error Alert */}
       {error && (
-        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
-          {error}
+        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0 d-flex align-items-center justify-content-between">
+          <span>{error}</span>
+          <button
+            className="btn btn-sm btn-outline-danger ms-3"
+            onClick={() => { clearError(); loadDocuments(); loadCategories(); }}
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -751,13 +767,17 @@ export default function Documents() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Upload new version
               </label>
-              <input type="file" name="newVersionFile" className="input-field" />
-              <input
-                type="text"
-                name="newVersionNote"
-                placeholder="Optional note for this version"
-                className="input-field"
-              />
+              <input type="file" name="newVersionFile" className="form-control form-control-sm mb-2" />
+              <div className="form-floating mb-2">
+                <input
+                  type="text"
+                  id="newVersionNote"
+                  name="newVersionNote"
+                  placeholder="Version Note"
+                  className="form-control form-control-sm"
+                />
+                <label htmlFor="newVersionNote">Version Note (optional)</label>
+              </div>
               <div className="flex justify-end">
                 <button type="submit" className="btn-primary">
                   Replace Content
@@ -778,18 +798,17 @@ export default function Documents() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {signDoc.original_filename}
             </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Signer Name *
-              </label>
+            <div className="form-floating mb-2">
               <input
                 type="text"
+                id="signerName"
                 required
-                className="input-field mt-1"
+                className="form-control form-control-sm"
                 value={signerName}
                 onChange={(e) => setSignerName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder="Signer Name"
               />
+              <label htmlFor="signerName">Signer Name *</label>
             </div>
             <div className="flex justify-end space-x-3 pt-2">
               <button
@@ -850,7 +869,7 @@ export default function Documents() {
                       <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                         {editingCatId === cat.id ? (
                           <input
-                            className="input-field"
+                            className="form-control form-control-sm"
                             value={editingCatName}
                             onChange={(e) => setEditingCatName(e.target.value)}
                           />
@@ -861,7 +880,7 @@ export default function Documents() {
                       <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                         {editingCatId === cat.id ? (
                           <input
-                            className="input-field"
+                            className="form-control form-control-sm"
                             value={editingCatDesc}
                             onChange={(e) => setEditingCatDesc(e.target.value)}
                           />
@@ -919,21 +938,29 @@ export default function Documents() {
               className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
             >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  placeholder="New category name"
-                  className="input-field"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Description (optional)"
-                  className="input-field"
-                  value={newCatDesc}
-                  onChange={(e) => setNewCatDesc(e.target.value)}
-                />
+                <div className="form-floating">
+                  <input
+                    type="text"
+                    id="newCatName"
+                    placeholder="Category Name"
+                    className="form-control form-control-sm"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    required
+                  />
+                  <label htmlFor="newCatName">Category Name *</label>
+                </div>
+                <div className="form-floating">
+                  <input
+                    type="text"
+                    id="newCatDesc"
+                    placeholder="Description"
+                    className="form-control form-control-sm"
+                    value={newCatDesc}
+                    onChange={(e) => setNewCatDesc(e.target.value)}
+                  />
+                  <label htmlFor="newCatDesc">Description</label>
+                </div>
                 <div className="flex justify-end">
                   <button type="submit" className="btn-primary">
                     Add Category

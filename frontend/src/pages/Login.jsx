@@ -265,20 +265,13 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-1 px-1 sm:px-1 lg:px-1">
-      <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-1 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex justify-center items-end bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-2 px-1 sm:px-1 lg:px-1">
+      <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-3xl shadow-xl">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-900/50 mb-4">
-            <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m2.25-18h15.75m-18 0l19.5 0m-19.5 0v18m0 0h2.25m15.75-18v18m0 0h2.25" />
-            </svg>
-          </div>
+           
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Business Manager
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Sign in to your account to get started
-          </p>
+            login
+          </h2> 
         </div>
         
         {!showPasswordReset ? (
@@ -307,59 +300,55 @@ const Login = () => {
               </div>
             )}
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               {/* Username Field */}
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
-                  Username
-                </label>
+              <div className="form-floating mb-2">
                 <input
                   id="username"
                   name="username"
                   type="text"
                   required
-                  className={`w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                    validationErrors.username ? 'border-red-500 dark:bg-red-900/20' : ''
+                  className={`form-control ${
+                    validationErrors.username ? 'is-invalid' : ''
                   }`}
-                  placeholder="Enter your username"
+                  placeholder="Username"
                   value={formData.username}
                   onChange={handleInputChange}
                 />
+                <label htmlFor="username">Username</label>
                 {validationErrors.username && (
                   <p className="mt-1 text-sm text-red-400">{validationErrors.username}</p>
                 )}
               </div>
 
               {/* Password Field */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    className={`w-full px-4 py-3 pr-12 border rounded-lg shadow-sm placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                      validationErrors.password ? 'border-red-500 dark:bg-red-900/20' : ''
-                    }`}
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                  />
-                  <button
-                    type="button"
-                    onClick={togglePasswordVisibility}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300 transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeSlashIcon className="h-5 w-5" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
+              <div className="form-floating mb-2 position-relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className={`form-control ${
+                    validationErrors.password ? 'is-invalid' : ''
+                  }`}
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  style={{ paddingRight: '3rem' }}
+                />
+                <label htmlFor="password">Password</label>
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="position-absolute text-gray-400 hover:text-gray-300 transition-colors"
+                  style={{ right: '1rem', top: '50%', transform: 'translateY(-50%)', zIndex: 5, background: 'none', border: 'none' }}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
                 {validationErrors.password && (
                   <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>
                 )}
@@ -373,11 +362,11 @@ const Login = () => {
                   id="remember_me"
                   name="remember_me"
                   type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded"
+                  className="h-4 w-4 mb-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded"
                   checked={formData.remember_me}
                   onChange={handleInputChange}
                 />
-                <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-200 dark:text-gray-200">
+                <label htmlFor="remember_me" className="ml-2 mb-4 block text-sm text-gray-200 dark:text-gray-200">
                   Remember me for 30 days
                 </label>
               </div>
@@ -385,17 +374,17 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setShowPasswordReset(true)}
-                className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                className="text-sm font-medium mb-4 text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 Forgot password?
               </button>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button */}          
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               {loading ? (
                 <div className="flex items-center">
@@ -406,9 +395,9 @@ const Login = () => {
                   Signing in...
                 </div>
               ) : (
-                'Sign in to Business Manager'
+                'Sign in'
               )}
-            </button>
+            </button> 
           </form>
         ) : (
           <div className="mt-8">
@@ -430,56 +419,50 @@ const Login = () => {
                 </div>
               )}
 
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {/* Username Field */}
-                <div>
-                  <label htmlFor="reset-username" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
-                    Username
-                  </label>
+                <div className="form-floating mb-2">
                   <input
                     id="reset-username"
                     name="username"
                     type="text"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                    placeholder="Enter your username"
+                    className="form-control"
+                    placeholder="Username"
                     value={resetData.username}
                     onChange={handleResetInputChange}
                   />
+                  <label htmlFor="reset-username">Username</label>
                 </div>
 
                 {/* New Password Field */}
-                <div>
-                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
-                    New Password
-                  </label>
+                <div className="form-floating mb-2">
                   <input
                     id="new-password"
                     name="new_password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                    placeholder="Enter new password (min 6 characters)"
+                    className="form-control"
+                    placeholder="New Password"
                     value={resetData.new_password}
                     onChange={handleResetInputChange}
                   />
+                  <label htmlFor="new-password">New Password</label>
                 </div>
 
                 {/* Confirm Password Field */}
-                <div>
-                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-200 dark:text-gray-200 mb-2">
-                    Confirm Password
-                  </label>
+                <div className="form-floating mb-2">
                   <input
                     id="confirm-password"
                     name="confirm_password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                    placeholder="Confirm new password"
+                    className="form-control"
+                    placeholder="Confirm Password"
                     value={resetData.confirm_password}
                     onChange={handleResetInputChange}
                   />
+                  <label htmlFor="confirm-password">Confirm Password</label>
                 </div>
               </div>
 
@@ -492,14 +475,14 @@ const Login = () => {
                     setError('');
                     setResetData({ username: '', new_password: '', confirm_password: '' });
                   }}
-                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                 >
                   Back to Login
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="flex-1 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">

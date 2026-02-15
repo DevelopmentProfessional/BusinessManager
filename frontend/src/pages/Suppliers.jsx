@@ -153,7 +153,7 @@ export default function Suppliers() {
       </div>
 
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">
           {error}
         </div>
       )}
@@ -186,19 +186,19 @@ export default function Suppliers() {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Phone
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th className="relative px-6 py-3">
+                    <th className="relative px-6 py-2">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -291,11 +291,8 @@ function SupplierForm({ supplier, onSubmit, onCancel }) {
       <h2 className="text-lg font-medium text-gray-900 mb-1">
         {supplier ? 'Edit Supplier' : 'Add Supplier'}
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-1">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Name *
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <div className="form-floating mb-2">
           <input
             type="text"
             id="name"
@@ -303,50 +300,49 @@ function SupplierForm({ supplier, onSubmit, onCancel }) {
             value={formData.name}
             onChange={handleChange}
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="form-control form-control-sm"
+            placeholder="Name"
           />
+          <label htmlFor="name">Name *</label>
         </div>
-        
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
+
+        <div className="form-floating mb-2">
           <input
             type="email"
             id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="form-control form-control-sm"
+            placeholder="Email"
           />
+          <label htmlFor="email">Email</label>
         </div>
-        
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone
-          </label>
+
+        <div className="form-floating mb-2">
           <input
             type="tel"
             id="phone"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="form-control form-control-sm"
+            placeholder="Phone"
           />
+          <label htmlFor="phone">Phone</label>
         </div>
-        
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-            Address
-          </label>
+
+        <div className="form-floating mb-2">
           <textarea
             id="address"
             name="address"
             value={formData.address}
             onChange={handleChange}
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="form-control form-control-sm"
+            placeholder="Address"
+            style={{ height: '80px' }}
           />
+          <label htmlFor="address">Address</label>
         </div>
         
         <div className="flex justify-end space-x-3 pt-4">

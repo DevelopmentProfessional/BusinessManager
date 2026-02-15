@@ -267,75 +267,92 @@ export default function EmployeeFormTabs({
           <div className="tab-pane">
             <div className="row g-3">
               <div className="col-md-6">
-                <label className="form-label">Username <span className="text-danger">*</span></label>
-                <input type="text" name="username" value={formData.username} onChange={handleInputChange}
-                  className="form-control" placeholder="Enter username" required />
+                <div className="form-floating">
+                  <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Username" required />
+                  <label htmlFor="username">Username *</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Password {!employee && <span className="text-danger">*</span>}</label>
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange}
-                  className="form-control" placeholder={employee ? "Leave blank to keep current" : "Enter password"}
-                  required={!employee} />
+                <div className="form-floating">
+                  <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Password"
+                    required={!employee} />
+                  <label htmlFor="password">{employee ? 'Password (blank = keep current)' : 'Password *'}</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">First Name <span className="text-danger">*</span></label>
-                <input type="text" name="first_name" value={formData.first_name} onChange={handleInputChange}
-                  className="form-control" placeholder="Enter first name" required />
+                <div className="form-floating">
+                  <input type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="First Name" required />
+                  <label htmlFor="first_name">First Name *</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Last Name <span className="text-danger">*</span></label>
-                <input type="text" name="last_name" value={formData.last_name} onChange={handleInputChange}
-                  className="form-control" placeholder="Enter last name" required />
+                <div className="form-floating">
+                  <input type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Last Name" required />
+                  <label htmlFor="last_name">Last Name *</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Email</label>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange}
-                  className="form-control" placeholder="Enter email (optional)" />
+                <div className="form-floating">
+                  <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Email" />
+                  <label htmlFor="email">Email</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Phone</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
-                  className="form-control" placeholder="Enter phone number" />
+                <div className="form-floating">
+                  <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Phone" />
+                  <label htmlFor="phone">Phone</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Role</label>
-                <select name="role" value={formData.role} onChange={handleInputChange} className="form-select">
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="VIEWER">Viewer</option>
-                </select>
+                <div className="form-floating">
+                  <select id="role" name="role" value={formData.role} onChange={handleInputChange} className="form-select form-select-sm">
+                    <option value="EMPLOYEE">Employee</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="VIEWER">Viewer</option>
+                  </select>
+                  <label htmlFor="role">Role</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Hire Date</label>
-                <input type="date" name="hire_date" value={formData.hire_date} onChange={handleInputChange}
-                  className="form-control" />
+                <div className="form-floating">
+                  <input type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Hire Date" />
+                  <label htmlFor="hire_date">Hire Date</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Supervisor</label>
-                <select name="reports_to" value={formData.reports_to} onChange={handleInputChange} className="form-select">
-                  <option value="">No Manager (Top Level)</option>
-                  {managerOptions.map(mgr => (
-                    <option key={mgr.id} value={mgr.id}>
-                      {mgr.first_name} {mgr.last_name} ({mgr.role})
-                    </option>
-                  ))}
-                </select>
+                <div className="form-floating">
+                  <select id="reports_to" name="reports_to" value={formData.reports_to} onChange={handleInputChange} className="form-select form-select-sm">
+                    <option value="">No Manager (Top Level)</option>
+                    {managerOptions.map(mgr => (
+                      <option key={mgr.id} value={mgr.id}>
+                        {mgr.first_name} {mgr.last_name} ({mgr.role})
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="reports_to">Supervisor</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">
-                  Assigned Role
-                  <span className="ms-1 text-muted" style={{ fontSize: '0.75rem' }}>(inherits permissions)</span>
-                </label>
-                <select name="role_id" value={formData.role_id} onChange={handleInputChange}
-                  className="form-select" disabled={rolesLoading}>
-                  <option value="">No Role Assigned</option>
-                  {roles.map(role => (
-                    <option key={role.id} value={role.id}>
-                      {role.name} {role.role_permissions?.length > 0 && `(${role.role_permissions.length} permissions)`}
-                    </option>
-                  ))}
-                </select>
+                <div className="form-floating">
+                  <select id="role_id" name="role_id" value={formData.role_id} onChange={handleInputChange}
+                    className="form-select form-select-sm" disabled={rolesLoading}>
+                    <option value="">No Role Assigned</option>
+                    {roles.map(role => (
+                      <option key={role.id} value={role.id}>
+                        {role.name} {role.role_permissions?.length > 0 && `(${role.role_permissions.length} permissions)`}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="role_id">Assigned Role</label>
+                </div>
                 {formData.role_id && roles.find(r => r.id === formData.role_id)?.role_permissions?.length > 0 && (
                   <div className="mt-2 p-2 border rounded bg-light" style={{ fontSize: '0.8rem' }}>
                     <strong>Role Permissions:</strong>
@@ -350,14 +367,18 @@ export default function EmployeeFormTabs({
                 )}
               </div>
               <div className="col-md-6">
-                <label className="form-label">IOD Number</label>
-                <input type="text" name="iod_number" value={formData.iod_number} onChange={handleInputChange}
-                  className="form-control" placeholder="IOD number" />
+                <div className="form-floating">
+                  <input type="text" id="iod_number" name="iod_number" value={formData.iod_number} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="IOD Number" />
+                  <label htmlFor="iod_number">IOD Number</label>
+                </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Location</label>
-                <input type="text" name="location" value={formData.location} onChange={handleInputChange}
-                  className="form-control" placeholder="Office location" />
+                <div className="form-floating">
+                  <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Location" />
+                  <label htmlFor="location">Location</label>
+                </div>
               </div>
 
               {/* Direct Reports (read-only) */}
@@ -395,22 +416,26 @@ export default function EmployeeFormTabs({
                 <hr className="mt-1 mb-2" />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Salary</label>
                 <div className="input-group">
                   <span className="input-group-text">$</span>
-                  <input type="number" name="salary" value={formData.salary} onChange={handleInputChange}
-                    className="form-control" placeholder="0.00" step="0.01" min="0" />
+                  <div className="form-floating">
+                    <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange}
+                      className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                    <label htmlFor="salary">Salary</label>
+                  </div>
                 </div>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Pay Frequency</label>
-                <select name="pay_frequency" value={formData.pay_frequency} onChange={handleInputChange} className="form-select">
-                  <option value="">Select frequency</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="biweekly">Bi-weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="annually">Annually</option>
-                </select>
+                <div className="form-floating">
+                  <select id="pay_frequency" name="pay_frequency" value={formData.pay_frequency} onChange={handleInputChange} className="form-select form-select-sm">
+                    <option value="">Select frequency</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Bi-weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="annually">Annually</option>
+                  </select>
+                  <label htmlFor="pay_frequency">Pay Frequency</label>
+                </div>
               </div>
 
               {/* Insurance */}
@@ -419,9 +444,11 @@ export default function EmployeeFormTabs({
                 <hr className="mt-1 mb-2" />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Insurance Plan</label>
-                <input type="text" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange}
-                  className="form-control" placeholder="Plan name or number" />
+                <div className="form-floating">
+                  <input type="text" id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Insurance Plan" />
+                  <label htmlFor="insurance_plan">Insurance Plan</label>
+                </div>
               </div>
 
               {/* Leave */}
@@ -430,24 +457,32 @@ export default function EmployeeFormTabs({
                 <hr className="mt-1 mb-2" />
               </div>
               <div className="col-md-3">
-                <label className="form-label">Vacation Days</label>
-                <input type="number" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange}
-                  className="form-control" placeholder="Total" min="0" />
+                <div className="form-floating">
+                  <input type="number" id="vacation_days" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Total" min="0" />
+                  <label htmlFor="vacation_days">Vacation Days</label>
+                </div>
               </div>
               <div className="col-md-3">
-                <label className="form-label">Vacation Used</label>
-                <input type="number" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange}
-                  className="form-control" placeholder="Used" min="0" />
+                <div className="form-floating">
+                  <input type="number" id="vacation_days_used" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Used" min="0" />
+                  <label htmlFor="vacation_days_used">Vacation Used</label>
+                </div>
               </div>
               <div className="col-md-3">
-                <label className="form-label">Sick Days</label>
-                <input type="number" name="sick_days" value={formData.sick_days} onChange={handleInputChange}
-                  className="form-control" placeholder="Total" min="0" />
+                <div className="form-floating">
+                  <input type="number" id="sick_days" name="sick_days" value={formData.sick_days} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Total" min="0" />
+                  <label htmlFor="sick_days">Sick Days</label>
+                </div>
               </div>
               <div className="col-md-3">
-                <label className="form-label">Sick Used</label>
-                <input type="number" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange}
-                  className="form-control" placeholder="Used" min="0" />
+                <div className="form-floating">
+                  <input type="number" id="sick_days_used" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange}
+                    className="form-control form-control-sm" placeholder="Used" min="0" />
+                  <label htmlFor="sick_days_used">Sick Used</label>
+                </div>
               </div>
 
               {/* Leave summary bar */}
@@ -562,7 +597,7 @@ export default function EmployeeFormTabs({
                     </table>
                   </div>
                 ) : (
-                  <p className="text-muted text-center py-3">No permissions assigned yet.</p>
+                  <p className="text-muted text-center py-2">No permissions assigned yet.</p>
                 )}
 
                 {/* Role inherited permissions */}
@@ -618,21 +653,21 @@ export default function EmployeeFormTabs({
                 <div className="col-12 mt-2">
                   <h6 className="text-muted text-uppercase small mb-0">Review History</h6>
                   <hr className="mt-1 mb-2" />
-                  <p className="text-muted text-center py-3 mb-0">No reviews recorded yet.</p>
+                  <p className="text-muted text-center py-2 mb-0">No reviews recorded yet.</p>
                 </div>
 
                 {/* Goals placeholder */}
                 <div className="col-12">
                   <h6 className="text-muted text-uppercase small mb-0">Goals</h6>
                   <hr className="mt-1 mb-2" />
-                  <p className="text-muted text-center py-3 mb-0">No goals set.</p>
+                  <p className="text-muted text-center py-2 mb-0">No goals set.</p>
                 </div>
 
                 {/* Feedback placeholder */}
                 <div className="col-12">
                   <h6 className="text-muted text-uppercase small mb-0">Feedback</h6>
                   <hr className="mt-1 mb-2" />
-                  <p className="text-muted text-center py-3 mb-0">No feedback entries.</p>
+                  <p className="text-muted text-center py-2 mb-0">No feedback entries.</p>
                 </div>
               </div>
             ) : (

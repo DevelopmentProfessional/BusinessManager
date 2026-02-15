@@ -86,10 +86,7 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
         </h3>
       </div>
 
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
-          Name *
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="text"
           id="name"
@@ -97,89 +94,79 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
           required
           value={formData.name}
           onChange={handleChange}
-          className={`input-field mt-1 ${fieldErrors.name ? 'border-red-500' : ''}`}
+          className={`form-control form-control-sm ${fieldErrors.name ? 'border-red-500' : ''}`}
           placeholder="Name"
         />
+        <label htmlFor="name">Name *</label>
         {fieldErrors.name && (
           <p className="text-red-500 text-sm mt-1">{fieldErrors.name}</p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Email
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="email"
           id="email"
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="Email"
         />
+        <label htmlFor="email">Email</label>
       </div>
 
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Phone
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="tel"
           id="phone"
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="Phone"
         />
+        <label htmlFor="phone">Phone</label>
       </div>
 
-      <div>
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Address
-        </label>
+      <div className="form-floating mb-2">
         <textarea
           id="address"
           name="address"
-          rows={2}
           value={formData.address}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="Address"
+          style={{ height: '60px' }}
         />
+        <label htmlFor="address">Address</label>
       </div>
 
-      <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Notes
-        </label>
+      <div className="form-floating mb-2">
         <textarea
           id="notes"
           name="notes"
-          rows={2}
           value={formData.notes}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="Notes"
+          style={{ height: '60px' }}
         />
+        <label htmlFor="notes">Notes</label>
       </div>
 
       {/* Membership Section */}
       <div className="border-t pt-1 mt-1">
         <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-1">Membership</h4>
 
-        <div className="grid grid-cols-2 gap-1">
-          <div>
-            <label htmlFor="membership_tier" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Membership Tier
-            </label>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="form-floating">
             <select
               id="membership_tier"
               name="membership_tier"
               value={formData.membership_tier}
               onChange={handleChange}
-              className="input-field mt-1"
+              className="form-select form-select-sm"
             >
               {MEMBERSHIP_TIERS.map(tier => (
                 <option key={tier.value} value={tier.value}>
@@ -187,12 +174,10 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
                 </option>
               ))}
             </select>
+            <label htmlFor="membership_tier">Membership Tier</label>
           </div>
 
-          <div>
-            <label htmlFor="membership_points" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Membership Points
-            </label>
+          <div className="form-floating">
             <input
               type="number"
               id="membership_points"
@@ -200,37 +185,36 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
               min="0"
               value={formData.membership_points}
               onChange={handleChange}
-              className="input-field mt-1"
+              className="form-control form-control-sm"
               placeholder="0"
             />
+            <label htmlFor="membership_points">Membership Points</label>
           </div>
 
-          <div>
-            <label htmlFor="membership_since" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Member Since
-            </label>
+          <div className="form-floating">
             <input
               type="date"
               id="membership_since"
               name="membership_since"
               value={formData.membership_since}
               onChange={handleChange}
-              className="input-field mt-1"
+              className="form-control form-control-sm"
+              placeholder="Member Since"
             />
+            <label htmlFor="membership_since">Member Since</label>
           </div>
 
-          <div>
-            <label htmlFor="membership_expires" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Membership Expires
-            </label>
+          <div className="form-floating">
             <input
               type="date"
               id="membership_expires"
               name="membership_expires"
               value={formData.membership_expires}
               onChange={handleChange}
-              className="input-field mt-1"
+              className="form-control form-control-sm"
+              placeholder="Membership Expires"
             />
+            <label htmlFor="membership_expires">Membership Expires</label>
           </div>
         </div>
       </div>

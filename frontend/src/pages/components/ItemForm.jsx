@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import BarcodeScanner from './BarcodeScanner';
+import cacheService from '../../services/cacheService';
 
 export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
   const [formData, setFormData] = useState({
@@ -8,13 +9,15 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     sku: initialSku || '',
     price: '',
     description: '',
-    // Use enum names expected by backend/DB enum (PRODUCT, RESOURCE, ASSET)
+    // Use enum names expected by backend/DB enum (PRODUCT, RESOURCE, ASSET, LOCATION, ITEM)
     type: 'PRODUCT',
     image_url: '',
+    location: '',
   });
   const [initialQuantity, setInitialQuantity] = useState('0');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
+  const [availableLocations, setAvailableLocations] = useState([]);
   
   useEffect(() => {
     if (item) {
@@ -25,16 +28,22 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         description: item.description || '',
         // Accept either value or name from API; normalize to enum NAME for submission
         type: (typeof item.type === 'string'
-          ? (['PRODUCT','RESOURCE','ASSET'].includes(item.type.toUpperCase())
+          ? (['PRODUCT','RESOURCE','ASSET','LOCATION','ITEM'].includes(item.type.toUpperCase())
               ? item.type.toUpperCase()
               : 'PRODUCT')
           : 'PRODUCT'),
         image_url: item.image_url || '',
+        location: item.location || '',
       });
     } else if (initialSku) {
       setFormData(prev => ({ ...prev, sku: initialSku }));
     }
   }, [item, initialSku]);
+
+  // Derive locations from cached inventory data (no extra API call)
+  useEffect(() => {
+    setAvailableLocations(cacheService.getLocations());
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -78,6 +87,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       ? formData.type.toUpperCase()
       : 'PRODUCT';
     const image_url = (formData.image_url || '').trim();
+    const location = (formData.location || '').trim();
     const payload = {
       name,
       sku,
@@ -86,6 +96,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       // Backend accepts enum name or value; we send NAME for clarity
       type,
       image_url: image_url || undefined,
+      location: (location && location !== '[NEW]') ? location : undefined,
     };
     const qty = parseInt(String(initialQuantity || '0'), 10);
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
@@ -119,7 +130,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                 ? 'border-emerald-400' 
                 : formData.type === 'RESOURCE'
                   ? 'border-blue-400'
-                  : 'border-purple-400'
+                  : formData.type === 'ASSET'
+                    ? 'border-purple-400'
+                    : formData.type === 'LOCATION'
+                      ? 'border-cyan-400'
+                      : 'border-orange-400'
             }`}
             style={{ width: '160px', height: '160px' }}
           >
@@ -129,7 +144,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                 ? 'bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800' 
                 : formData.type === 'RESOURCE'
                   ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800'
-                  : 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800'
+                  : formData.type === 'ASSET'
+                    ? 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800'
+                    : formData.type === 'LOCATION'
+                      ? 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900 dark:to-cyan-800'
+                      : 'bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800'
             }`}>
               {formData.image_url ? (
                 <img 
@@ -145,7 +164,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                       ? 'text-emerald-400/50' 
                       : formData.type === 'RESOURCE'
                         ? 'text-blue-400/50'
-                        : 'text-purple-400/50'
+                        : formData.type === 'ASSET'
+                          ? 'text-purple-400/50'
+                          : formData.type === 'LOCATION'
+                            ? 'text-cyan-400/50'
+                            : 'text-orange-400/50'
                   }`} />
                 </div>
               )}
@@ -161,7 +184,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                   ? 'bg-emerald-600/90' 
                   : formData.type === 'RESOURCE'
                     ? 'bg-blue-600/90'
-                    : 'bg-purple-600/90'
+                    : formData.type === 'ASSET'
+                      ? 'bg-purple-600/90'
+                      : formData.type === 'LOCATION'
+                        ? 'bg-cyan-600/90'
+                        : 'bg-orange-600/90'
               }`}>
                 <span className="font-semibold text-white text-sm line-clamp-1">
                   {formData.name || 'Item Name'}
@@ -176,7 +203,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                   ? 'bg-emerald-700/90' 
                   : formData.type === 'RESOURCE'
                     ? 'bg-blue-700/90'
-                    : 'bg-purple-700/90'
+                    : formData.type === 'ASSET'
+                      ? 'bg-purple-700/90'
+                      : formData.type === 'LOCATION'
+                        ? 'bg-cyan-700/90'
+                        : 'bg-orange-700/90'
               }`}>
                 ${formData.price ? parseFloat(formData.price).toFixed(2) : '0.00'}
               </span>
@@ -185,33 +216,54 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
           
           {/* Image URL below preview */}
           <div className="w-100 mt-2 px-1">
-            <input
-              type="url"
-              name="image_url"
-              value={formData.image_url}
-              onChange={handleChange}
-              className="form-control form-control-sm"
-              placeholder="Image URL"
-            />
+            <div className="form-floating">
+              <input
+                type="url"
+                id="image_url"
+                name="image_url"
+                value={formData.image_url}
+                onChange={handleChange}
+                className="form-control form-control-sm"
+                placeholder="Image URL"
+              />
+              <label htmlFor="image_url">Image URL</label>
+            </div>
           </div>
         </div>
 
         {/* Right Half - Scrollable Form Inputs */}
         <div className="flex-grow-1 overflow-auto" style={{ maxHeight: '80vh' }}>
-          <form onSubmit={handleSubmit} className="p-3">
+          <form onSubmit={handleSubmit} className="p-2">
             {/* Header */}
-            <h5 className="mb-3 fw-semibold">
+            <h5 className="mb-2 fw-semibold">
               {item ? 'Edit' : 'Add New Item'}
             </h5>
 
             {/* Item Type Selection */}
-            <div className="mb-3">
+            <div className="mb-2">
               <label className="form-label small text-muted">Type</label>
-              <div className="btn-group w-100" role="group">
+              
+              {/* Mobile Dropdown - visible on small screens */}
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                className="form-select form-select-sm d-md-none p-3"
+              >
+                <option className='p-3' value="PRODUCT">Product</option>
+                <option value="RESOURCE">Resource</option>
+                <option value="ASSET">Asset</option>
+                <option value="LOCATION">Location</option>
+                <option value="ITEM">Item</option>
+              </select>
+
+              {/* Desktop Button Group - hidden on small screens */}
+              <div className="d-none d-md-flex gap-2 flex-wrap" role="group">
                 {[
                   { value: 'PRODUCT', label: 'Product' },
                   { value: 'RESOURCE', label: 'Resource' },
-                  { value: 'ASSET', label: 'Asset' }
+                  { value: 'ASSET', label: 'Asset' },
+                  { value: 'LOCATION', label: 'Location' },
+                  { value: 'ITEM', label: 'Item' }
                 ].map(({ value, label }) => (
                   <button
                     key={value}
@@ -219,7 +271,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                     onClick={() => setFormData(prev => ({ ...prev, type: value }))}
                     className={`btn btn-sm ${
                       formData.type === value
-                        ? value === 'PRODUCT' ? 'btn-success' : value === 'RESOURCE' ? 'btn-primary' : 'btn-secondary'
+                        ? value === 'PRODUCT' ? 'btn-success' : value === 'RESOURCE' ? 'btn-primary' : value === 'ASSET' ? 'btn-warning' : value === 'LOCATION' ? 'btn-info' : 'btn-secondary'
                         : 'btn-outline-secondary'
                     }`}
                   >
@@ -316,40 +368,87 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
             </div>
 
             {/* Description */}
-            <div className="form-floating mb-3">
+            <div className="form-floating mb-2">
               <textarea
                 id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                className="form-control form-control-sm"
+                className="form-control form-control-sm pill-textarea"
                 placeholder="Description"
                 style={{ height: '60px' }}
               />
               <label htmlFor="description">Description</label>
             </div>
 
+            {/* Location */}
+            <div className="form-floating mb-2">
+              <select
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="form-select form-select-sm"
+              >
+                <option value="">Select a location...</option>
+                {availableLocations.map(location => (
+                  <option key={location} value={location}>
+                    {location}
+                  </option>
+                ))}
+                <option value="[NEW]">+ Add new location...</option>
+              </select>
+              <label htmlFor="location">Location</label>
+            </div>
+
+            {formData.location === '[NEW]' && (
+              <div className="form-floating mb-2">
+                <input
+                  type="text"
+                  id="new_location"
+                  name="location"
+                  value=""
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, location: e.target.value }));
+                  }}
+                  className="form-control form-control-sm"
+                  placeholder="Enter new location"
+                />
+                <label htmlFor="new_location">New Location</label>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="d-flex gap-2">
               <button
                 type="button"
                 onClick={onCancel}
-                className="btn btn-outline-secondary rounded-pill flex-grow-1"
+                className="btn btn-outline-secondary rounded-pill flex"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`btn rounded-pill flex-grow-1 text-white ${
+                className={`btn rounded-pill flex text-white justify-center ${
                   formData.type === 'PRODUCT' 
                     ? 'btn-success' 
                     : formData.type === 'RESOURCE'
                       ? 'btn-primary'
-                      : ''
+                      : formData.type === 'ASSET'
+                        ? ''
+                        : formData.type === 'LOCATION'
+                          ? 'btn-info'
+                          : ''
                 }`}
-                style={formData.type === 'ASSET' ? { backgroundColor: '#8b5cf6' } : {}}
+                style={
+                  formData.type === 'ASSET' 
+                    ? { backgroundColor: '#8b5cf6' }
+                    : formData.type === 'ITEM'
+                      ? { backgroundColor: '#f97316' }
+                      : {}
+                }
               >
-                <CheckIcon className="h-4 w-4 me-1" />
+                <CheckIcon className="w-6 me-1" />
                 {item ? 'Save' : 'Create'}
               </button>
             </div>
