@@ -297,142 +297,178 @@ export default function DatabaseConnectionManager() {
                   <div className="row g-3">
                     {/* Name */}
                     <div className="col-md-6">
-                      <label className="form-label">Connection Name *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Production DB"
-                        required
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          id="conn_name"
+                          className="form-control form-control-sm"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Connection Name"
+                          required
+                        />
+                        <label htmlFor="conn_name">Connection Name *</label>
+                      </div>
                     </div>
 
                     {/* Environment */}
                     <div className="col-md-6">
-                      <label className="form-label">Environment *</label>
-                      <select
-                        className="form-select"
-                        value={formData.environment}
-                        onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
-                        required
-                      >
-                        <option value="development">Development</option>
-                        <option value="test">Test</option>
-                        <option value="production">Production</option>
-                      </select>
+                      <div className="form-floating">
+                        <select
+                          id="conn_environment"
+                          className="form-select form-select-sm"
+                          value={formData.environment}
+                          onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                          required
+                        >
+                          <option value="development">Development</option>
+                          <option value="test">Test</option>
+                          <option value="production">Production</option>
+                        </select>
+                        <label htmlFor="conn_environment">Environment *</label>
+                      </div>
                     </div>
 
                     {/* Host */}
                     <div className="col-md-8">
-                      <label className="form-label">Host *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.host}
-                        onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                        placeholder="localhost or render-hostname.com"
-                        required
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          id="conn_host"
+                          className="form-control form-control-sm"
+                          value={formData.host}
+                          onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                          placeholder="Host"
+                          required
+                        />
+                        <label htmlFor="conn_host">Host *</label>
+                      </div>
                     </div>
 
                     {/* Port */}
                     <div className="col-md-4">
-                      <label className="form-label">Port *</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        value={formData.port}
-                        onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
-                        required
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="number"
+                          id="conn_port"
+                          className="form-control form-control-sm"
+                          value={formData.port}
+                          onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
+                          placeholder="Port"
+                          required
+                        />
+                        <label htmlFor="conn_port">Port *</label>
+                      </div>
                     </div>
 
                     {/* Database Name */}
                     <div className="col-md-6">
-                      <label className="form-label">Database Name *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.database_name}
-                        onChange={(e) => setFormData({ ...formData, database_name: e.target.value })}
-                        placeholder="business_manager"
-                        required
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          id="conn_database_name"
+                          className="form-control form-control-sm"
+                          value={formData.database_name}
+                          onChange={(e) => setFormData({ ...formData, database_name: e.target.value })}
+                          placeholder="Database Name"
+                          required
+                        />
+                        <label htmlFor="conn_database_name">Database Name *</label>
+                      </div>
                     </div>
 
                     {/* Username */}
                     <div className="col-md-6">
-                      <label className="form-label">Username *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                        placeholder="postgres"
-                        required
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          id="conn_username"
+                          className="form-control form-control-sm"
+                          value={formData.username}
+                          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                          placeholder="Username"
+                          required
+                        />
+                        <label htmlFor="conn_username">Username *</label>
+                      </div>
                     </div>
 
                     {/* Password */}
                     <div className="col-12">
-                      <label className="form-label">Password *</label>
-                      <input
-                        type="password"
-                        className="form-control"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="password"
+                          id="conn_password"
+                          className="form-control form-control-sm"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          placeholder="Password"
+                          required
+                        />
+                        <label htmlFor="conn_password">Password *</label>
+                      </div>
                     </div>
 
                     {/* SSL Mode */}
                     <div className="col-md-6">
-                      <label className="form-label">SSL Mode</label>
-                      <select
-                        className="form-select"
-                        value={formData.ssl_mode}
-                        onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}
-                      >
-                        <option value="require">Require</option>
-                        <option value="prefer">Prefer</option>
-                        <option value="disable">Disable</option>
-                      </select>
+                      <div className="form-floating">
+                        <select
+                          id="conn_ssl_mode"
+                          className="form-select form-select-sm"
+                          value={formData.ssl_mode}
+                          onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}
+                        >
+                          <option value="require">Require</option>
+                          <option value="prefer">Prefer</option>
+                          <option value="disable">Disable</option>
+                        </select>
+                        <label htmlFor="conn_ssl_mode">SSL Mode</label>
+                      </div>
                     </div>
 
                     {/* Pool Size */}
                     <div className="col-md-6">
-                      <label className="form-label">Pool Size</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        value={formData.pool_size}
-                        onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })}
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="number"
+                          id="conn_pool_size"
+                          className="form-control form-control-sm"
+                          value={formData.pool_size}
+                          onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })}
+                          placeholder="Pool Size"
+                        />
+                        <label htmlFor="conn_pool_size">Pool Size</label>
+                      </div>
                     </div>
 
                     {/* External URL (Render) */}
                     <div className="col-12">
-                      <label className="form-label">External URL (Optional - Render)</label>
-                      <input
-                        type="text"
-                        className="form-control font-monospace"
-                        value={formData.external_url}
-                        onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-                        placeholder="postgres://user:pass@host/db"
-                      />
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          id="conn_external_url"
+                          className="form-control form-control-sm font-monospace"
+                          value={formData.external_url}
+                          onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                          placeholder="External URL"
+                        />
+                        <label htmlFor="conn_external_url">External URL (Optional - Render)</label>
+                      </div>
                     </div>
 
                     {/* Description */}
                     <div className="col-12">
-                      <label className="form-label">Description</label>
-                      <textarea
-                        className="form-control"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        rows="2"
-                        placeholder="Optional description"
-                      />
+                      <div className="form-floating">
+                        <textarea
+                          id="conn_description"
+                          className="form-control form-control-sm"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="Description"
+                          style={{ height: '60px' }}
+                        />
+                        <label htmlFor="conn_description">Description</label>
+                      </div>
                     </div>
 
                     {/* Checkboxes */}

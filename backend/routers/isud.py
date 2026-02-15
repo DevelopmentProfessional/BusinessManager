@@ -6,8 +6,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
+from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlmodel import SQLModel, select as sql_select
 
 from ..database import get_session
@@ -41,6 +42,8 @@ READ_SCHEMA_MAP = {
     'users': UserRead,
     'schedule': ScheduleRead,
     'schedules': ScheduleRead,
+    'document': DocumentRead,
+    'documents': DocumentRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):
@@ -215,11 +218,11 @@ async def insert_with_file(
     if "multipart/form-data" in content_type:
         # Handle multipart form data (file uploads)
         form = await request.form()
-        uploaded_file: Optional[UploadFile] = None
+        uploaded_file: Optional[StarletteUploadFile] = None
 
         # Extract all form fields
         for key, value in form.items():
-            if isinstance(value, UploadFile):
+            if isinstance(value, StarletteUploadFile):
                 # Store the file for processing
                 if key == "file":
                     uploaded_file = value
@@ -237,10 +240,15 @@ async def insert_with_file(
             unique_filename = f"{uuid_module.uuid4()}{file_ext}"
             file_path = os.path.join(UPLOAD_DIR, unique_filename)
 
-            # Save file to disk
+            # Read file contents
             contents = await uploaded_file.read()
-            with open(file_path, "wb") as f:
-                f.write(contents)
+
+            # Save file to disk (best-effort; DB blob is the authoritative copy)
+            try:
+                with open(file_path, "wb") as f:
+                    f.write(contents)
+            except OSError:
+                file_path = unique_filename  # disk save failed; store filename only
 
             # Add file metadata to record
             record_data["filename"] = unique_filename
@@ -248,12 +256,18 @@ async def insert_with_file(
             record_data["file_path"] = file_path
             record_data["file_size"] = len(contents)
             record_data["content_type"] = uploaded_file.content_type or "application/octet-stream"
+
+            # Store raw bytes for later (saved to DocumentBlob after commit)
+            _file_bytes = contents
+        else:
+            _file_bytes = None
     else:
         # Handle JSON body
         try:
             record_data = await request.json()
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid request body")
+        _file_bytes = None
 
     try:
         record = model_class(**record_data)
@@ -261,9 +275,26 @@ async def insert_with_file(
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
 
     session.add(record)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
-    return _serialize_record(record, table_name)
+
+    # Serialize response BEFORE blob save (blob save may corrupt session state)
+    result = _serialize_record(record, table_name, session)
+
+    # Save file data to DocumentBlob table (separate from document metadata)
+    if _file_bytes is not None:
+        try:
+            blob = DocumentBlob(document_id=record.id, data=_file_bytes)
+            session.add(blob)
+            session.commit()
+        except Exception:
+            session.rollback()
+
+    return result
 
 @router.post("/{table_name}")
 async def insert(
@@ -307,6 +338,55 @@ async def update_by_id(
     session.refresh(record)
     return _serialize_record(record, table_name, session)
 
+
+# ===== INVENTORY LOCATIONS ENDPOINT (must be before generic routes) =====
+
+@router.get("/inventory/locations")
+async def get_inventory_locations(
+    session: Session = Depends(get_session)
+):
+    """Get all unique locations from inventory items"""
+    try:
+        # Query distinct locations from inventory table
+        result = session.execute(
+            sql_select(Inventory.location).where(Inventory.location.isnot(None)).distinct()
+        )
+        locations = [row[0] for row in result.fetchall() if row[0]]
+        return {"locations": sorted(locations)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch locations: {str(e)}")
+
+
+# ===== SYNC CHECK ENDPOINT (lightweight count + max timestamp) =====
+
+@router.get("/{table_name}/sync")
+async def sync_check(
+    table_name: str,
+    session: Session = Depends(get_session),
+):
+    """
+    Return a lightweight summary (row count + latest created_at) so the
+    frontend cache can decide whether an incremental fetch is needed.
+    """
+    model_class = get_model_class(table_name)
+
+    count_result = session.execute(
+        sql_select(func.count()).select_from(model_class.__table__)
+    )
+    total = count_result.scalar() or 0
+
+    max_created_at = None
+    if hasattr(model_class, "created_at"):
+        max_result = session.execute(
+            sql_select(func.max(model_class.created_at))
+        )
+        val = max_result.scalar()
+        if val is not None:
+            max_created_at = val.isoformat() if hasattr(val, "isoformat") else str(val)
+
+    return {"count": total, "max_created_at": max_created_at}
+
+
 @router.get("/{table_name}")
 async def select(
     table_name: str,
@@ -321,8 +401,21 @@ async def select(
 
     stmt = sql_select(model_class)
 
+    # ── Incremental fetch: _after=<ISO timestamp> ──────────────────
+    # Returns only rows whose created_at > the supplied value.
+    after_value = None
+    user_filters = []
+    for k, v in raw_filters:
+        if k == "_after":
+            after_value = v
+        else:
+            user_filters.append((k, v))
+
+    if after_value and hasattr(model_class, "created_at"):
+        stmt = stmt.where(model_class.created_at > after_value)
+
     conditions = []
-    for column, raw_value in raw_filters:
+    for column, raw_value in user_filters:
         if column not in model_class.model_fields:
             raise HTTPException(status_code=400, detail=f"Invalid filter column '{column}'")
 
@@ -338,7 +431,7 @@ async def select(
     if conditions:
         stmt = stmt.where(and_(*conditions))
 
-    if any(k == "id" for k, _ in raw_filters):
+    if any(k == "id" for k, _ in user_filters):
         record = session.exec(stmt).first()
         if not record:
             raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
@@ -440,17 +533,28 @@ async def delete_by_id(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
-    # When deleting a document, also remove the file from disk
-    if table_name.lower() in ("document", "documents") and hasattr(record, "file_path") and record.file_path:
-        path = _resolve_document_path(record.file_path, UPLOAD_DIR)
-        if path and os.path.exists(path):
-            try:
-                os.remove(path)
-            except OSError:
-                pass
+    # When deleting a document, also remove the file from disk and the DB blob
+    if table_name.lower() in ("document", "documents"):
+        if hasattr(record, "file_path") and record.file_path:
+            path = _resolve_document_path(record.file_path, UPLOAD_DIR)
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+        # Remove associated DocumentBlob
+        blob = session.exec(
+            sql_select(DocumentBlob).where(DocumentBlob.document_id == record_id)
+        ).first()
+        if blob:
+            session.delete(blob)
 
     session.delete(record)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
     return {"count": 1}
 
 

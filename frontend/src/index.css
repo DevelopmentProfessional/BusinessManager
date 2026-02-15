@@ -82,16 +82,38 @@ body,
 
 input[type="text"],
 input[type="search"],
-.form-control[type="number"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
 input[type="number"],
-.form-control[type="text"],
-.form-control[type="search"] {
+.form-control:not(textarea),
+.form-select {
   border-radius: 9999px !important;
+}
+
+/* Floating label adjustments for pill-shaped inputs */
+.form-floating > .form-control:not(textarea),
+.form-floating > .form-select {
+  padding-left: 1rem;
+}
+.form-floating > label {
+  padding-left: 1rem;
 }
 
 textarea,
 textarea.form-control {
   border-radius: 0.75rem !important;
+}
+
+.pill-textarea {
+  border-radius: 9999px !important;
+}
+
+.btn:not(.rounded-circle) {
+  border-radius: 9999px !important;
 }
 
 /* Bootstrap overrides and theme-aware base styles */
@@ -120,21 +142,21 @@ textarea.form-control {
 @layer components {
   /* Theme-aware utility classes using branded colors */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-full transition-colors;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-full transition-colors;
   }
 
   /* Success button using secondary branded color */
   .btn-success {
-    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium py-2 px-4 rounded-full transition-colors;
   }
 
   /* Accent button using accent branded color */
   .btn-accent {
-    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-full transition-colors;
   }
 
   /* Branded focus rings */

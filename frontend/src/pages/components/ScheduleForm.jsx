@@ -302,37 +302,35 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
       {/* Meeting Title - shown first for meetings */}
       {formData.appointment_type === 'meeting' && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Meeting Title
-          </label>
+        <div className="form-floating mb-2">
           <input
             type="text"
+            id="meeting_title"
             name="notes"
             value={formData.notes}
             onChange={handleChange}
-            placeholder="Enter meeting title or agenda"
-            className="input-field w-full"
+            placeholder="Meeting Title"
+            className="form-control form-control-sm"
             required
           />
+          <label htmlFor="meeting_title">Meeting Title</label>
         </div>
       )}
 
       {/* Task Description - shown first for tasks */}
       {formData.appointment_type === 'task' && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Task Description
-          </label>
+        <div className="form-floating mb-2">
           <input
             type="text"
+            id="task_description"
             name="notes"
             value={formData.notes}
             onChange={handleChange}
-            placeholder="What needs to be done?"
-            className="input-field w-full"
+            placeholder="Task Description"
+            className="form-control form-control-sm"
             required
           />
+          <label htmlFor="task_description">Task Description</label>
         </div>
       )}
 
@@ -489,10 +487,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div> 
-          <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Date
-          </label>
+        <div className="form-floating">
           <input
             type="date"
             id="appointment_date"
@@ -500,8 +495,10 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
             required
             value={formData.appointment_date}
             onChange={handleChange}
-            className="input-field mt-1"
+            className="form-control form-control-sm"
+            placeholder="Date"
           />
+          <label htmlFor="appointment_date">Date</label>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -540,19 +537,17 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
       {/* Notes - only for appointments/series (meetings/tasks use notes for title) */}
       {(formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && (
-        <div> 
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Notes (optional)
-          </label>
+        <div className="form-floating mb-2">
           <textarea
             id="notes"
             name="notes"
-            rows={2}
             value={formData.notes}
             onChange={handleChange}
-            className="input-field mt-1"
-            placeholder="Additional notes for the appointment"
+            className="form-control form-control-sm"
+            placeholder="Notes"
+            style={{ height: '60px' }}
           />
+          <label htmlFor="notes">Notes (optional)</label>
         </div>
       )}
 

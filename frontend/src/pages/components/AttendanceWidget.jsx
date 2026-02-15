@@ -177,7 +177,7 @@ export default function AttendanceWidget({ compact = false }) {
       <button
         onClick={handleClockAction}
         disabled={clockActionLoading}
-        className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+        className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
           isClockedIn
             ? 'bg-red-500 hover:bg-red-600 text-white'
             : 'bg-green-500 hover:bg-green-600 text-white'

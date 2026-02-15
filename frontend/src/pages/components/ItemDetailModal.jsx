@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import { inventoryAPI } from '../../services/api';
+import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
 
 /**
@@ -27,6 +28,7 @@ export default function ItemDetailModal({
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [availableLocations, setAvailableLocations] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -70,6 +72,9 @@ export default function ItemDetailModal({
       
       // Load images for this inventory item
       loadImages(item.id);
+      
+      // Load available locations from cache (no API call)
+      setAvailableLocations(cacheService.getLocations());
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode]);
 
@@ -340,46 +345,72 @@ export default function ItemDetailModal({
               </div>
 
               {/* Stock fields stacked on the right */}
-              <div className="flex-grow-1 d-flex flex-column justify-content-center">
+              <div className="flex-grow-1 d-flex flex-column  gap-1">
                 {!isLocation && !isAsset ? (
                   <>
-                    <div>
-                      <label className="form-label fw-medium small mb-0">Max Count</label>
+                  <div>
+                       <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
+                        {isLowStock ? 'Low Stock' : 'In Stock'}
+                      </div>
+                    </div>
+                    <div className="form-floating">
                       <input
                         type="number"
+                        id="min_stock_level"
                         name="min_stock_level"
                         value={formData.min_stock_level}
                         onChange={handleChange}
                         className="form-control form-control-sm"
+                        placeholder="Max Count"
                         min="0"
                       />
+                      <label htmlFor="min_stock_level">Max Count</label>
                     </div>
-                    <div>
-                      <label className="form-label fw-medium small mb-0">Min Count</label>
+                    <div className="form-floating">
                       <input
                         type="number"
+                        id="min_count"
                         readOnly
                         value={0}
                         className="form-control form-control-sm bg-light dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                        placeholder="Min Count"
                         min="0"
                       />
+                      <label htmlFor="min_count">Min Count</label>
                     </div>
-                    <div>
-                      <label className="form-label fw-medium small mb-0">Current Count</label>
+                    <div className="form-floating">
                       <input
                         type="number"
+                        id="quantity"
                         name="quantity"
                         value={formData.quantity}
                         onChange={handleChange}
                         className="form-control form-control-sm"
+                        placeholder="Current Count"
                         min="0"
                       />
+                      <label htmlFor="quantity">Current Count</label>
                     </div>
-                    <div>
-                       <div className={`text-center py-1 rounded fw-medium small ${isLowStock ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
-                        {isLowStock ? 'Low Stock' : 'In Stock'}
-                      </div>
-                    </div>
+
+                                <div className="mb-2">
+              <div className="input-group">
+                 <div className="form-floating">
+                  <input
+                    type="number"
+                    id="detail_price"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    className="form-control form-control-sm"
+                    placeholder="Price"
+                    step="0.01"
+                    min="0"
+                  />
+                  <label htmlFor="detail_price">Price</label>
+                </div>
+              </div>
+            </div>
+                    
                   </>
                 ) : (
                   <div className="d-flex align-items-center gap-2 text-success">
@@ -394,41 +425,29 @@ export default function ItemDetailModal({
             </div>
 
             {/* Full-width form fields below */}
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0">Name *</label>
+            <div className="form-floating mb-2">
               <input
                 type="text"
+                id="detail_name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="form-control"
+                className="form-control form-control-sm"
+                placeholder="Name"
                 required
               />
+              <label htmlFor="detail_name">Name *</label>
             </div>
 
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0">Price</label>
-              <div className="input-group">
-                <span className="input-group-text">$</span>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="form-control"
-                  step="0.01"
-                  min="0"
-                />
-              </div>
-            </div>
 
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0  ">Type</label>
+
+            <div className="form-floating mb-2">
               <select
+                id="detail_type"
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="form-select"
+                className="form-select form-select-sm"
               >
                 <option value="PRODUCT">Product</option>
                 <option value="RESOURCE">Resource</option>
@@ -436,52 +455,83 @@ export default function ItemDetailModal({
                 <option value="LOCATION">Location</option>
                 <option value="ITEM">Item</option>
               </select>
+              <label htmlFor="detail_type">Type</label>
             </div>
 
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0">Description</label>
+            <div className="form-floating mb-2">
               <textarea
+                id="detail_description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                className="form-control"
-                rows="3"
+                className="form-control form-control-sm"
+                placeholder="Description"
+                style={{ height: '80px' }}
               />
+              <label htmlFor="detail_description">Description</label>
             </div>
 
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0">SKU</label>
+            <div className="form-floating mb-2">
               <input
                 type="text"
+                id="detail_sku"
                 name="sku"
                 value={formData.sku}
                 onChange={handleChange}
-                className="form-control"
+                className="form-control form-control-sm"
+                placeholder="SKU"
               />
+              <label htmlFor="detail_sku">SKU</label>
             </div>
 
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0">Location</label>
-              <input
-                type="text"
+            <div className="form-floating mb-2">
+              <select
+                id="detail_location"
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
-                className="form-control"
-                placeholder="e.g., Warehouse A, Shelf 3"
-              />
+                className="form-select form-select-sm"
+              >
+                <option value="">Select a location...</option>
+                {availableLocations.map(location => (
+                  <option key={location} value={location}>
+                    {location}
+                  </option>
+                ))}
+                <option value="[NEW]">+ Add new location...</option>
+              </select>
+              <label htmlFor="detail_location">Location</label>
             </div>
 
-            <div className="mb-1">
-              <label className="form-label fw-medium mb-0">Image URL</label>
+            {formData.location === '[NEW]' && (
+              <div className="form-floating mb-2">
+                <input
+                  type="text"
+                  id="detail_new_location"
+                  name="location"
+                  value=""
+                  onChange={(e) => {
+                    // Update the location value to the new custom location
+                    setFormData(prev => ({ ...prev, location: e.target.value }));
+                  }}
+                  className="form-control form-control-sm"
+                  placeholder="Enter new location"
+                />
+                <label htmlFor="detail_new_location">New Location</label>
+              </div>
+            )}
+
+            <div className="form-floating mb-2">
               <input
                 type="url"
+                id="detail_image_url"
                 name="image_url"
                 value={formData.image_url}
                 onChange={handleChange}
-                className="form-control"
-                placeholder="https://example.com/image.jpg"
+                className="form-control form-control-sm"
+                placeholder="Image URL"
               />
+              <label htmlFor="detail_image_url">Image URL</label>
             </div>
           </form>
         )}
@@ -496,7 +546,7 @@ export default function ItemDetailModal({
                 type="button"
                 onClick={handleDelete}
                 className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '48px', height: '48px' }}
+                style={{ width: '40px', height: '40px' }}
                 title="Delete Item"
               >
                 <TrashIcon className="h-5 w-5" />
@@ -506,7 +556,7 @@ export default function ItemDetailModal({
               type="button"
               onClick={onClose}
               className="btn btn-secondary rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '48px', height: '48px' }}
+              style={{ width: '40px', height: '40px' }}
               title="Cancel"
             >
               <XMarkIcon className="h-5 w-5" />
@@ -515,7 +565,7 @@ export default function ItemDetailModal({
               type="button"
               onClick={handleUpdateInventory}
               className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '48px', height: '48px' }}
+              style={{ width: '40px', height: '40px' }}
               title="Save Changes"
             >
               <CheckIcon className="h-5 w-5" />

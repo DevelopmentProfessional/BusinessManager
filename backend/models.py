@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, LargeBinary
 from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -330,6 +331,14 @@ class Document(BaseModel, table=True):
     owner_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     review_date: Optional[datetime] = Field(default=None)
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
+
+
+class DocumentBlob(SQLModel, table=True):
+    """Stores file binary data in the database so documents survive ephemeral filesystems."""
+    __tablename__ = "document_blob"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    document_id: UUID = Field(foreign_key="document.id", unique=True, index=True)
+    data: bytes = Field(sa_column=Column(LargeBinary, nullable=False))
 
 
 class DocumentCategory(BaseModel, table=True):

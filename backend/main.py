@@ -29,11 +29,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks
+    from backend.routers import auth, isud, settings, database_connections
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks"}:
-        from routers import auth, isud, settings, database_connections, tasks  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections"}:
+        from routers import auth, isud, settings, database_connections  # type: ignore
     else:
         raise
 
@@ -80,8 +80,12 @@ class AggressiveCORSMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception as exc:
-            # Build a minimal 500 response while preserving CORS so browsers show the real error
-            response = Response("Internal Server Error", status_code=500)
+            # Build a 500 response with details, preserving CORS so browsers show the real error
+            import json, traceback
+            detail = str(exc)
+            traceback.print_exc()
+            body = json.dumps({"detail": detail})
+            response = Response(body, status_code=500, media_type="application/json")
         
         response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
@@ -172,17 +176,13 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
-    # Initialize database tables (safe to run multiple times)
+    # Initialize database tables
     try:
-        try:
-            from backend.database import create_db_and_tables
-        except ModuleNotFoundError:
-            from database import create_db_and_tables
-        create_db_and_tables()
-        print("✅ Database tables initialized/verified")
-    except Exception as e:
-        print(f"⚠️  Database initialization warning: {e}")
-        # Don't fail startup if tables already exist
+        from backend.database import create_db_and_tables
+    except ModuleNotFoundError:
+        from database import create_db_and_tables
+    create_db_and_tables()
+    print("Database tables initialized")
     print("All routers loaded successfully")
 
 # Include routers (documents + document_category CRUD go through isud)
@@ -190,7 +190,6 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
 app.include_router(database_connections.router, prefix="/api/v1", tags=["database-connections"])
-app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
 
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).
@@ -205,11 +204,11 @@ from sqlmodel import select as sql_select
 
 try:
     from backend.database import get_session
-    from backend.models import Document, DocumentAssignment, DocumentAssignmentRead, User
+    from backend.models import Document, DocumentBlob, DocumentAssignment, DocumentAssignmentRead, User
     from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
-    from models import Document, DocumentAssignment, DocumentAssignmentRead, User
+    from models import Document, DocumentBlob, DocumentAssignment, DocumentAssignmentRead, User
     from routers.auth import get_current_user
 
 _UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -241,12 +240,18 @@ async def document_upload(
     file_ext = os.path.splitext(file.filename or "")[1]
     unique_filename = f"{_uuid.uuid4()}{file_ext}"
     path = os.path.join(_UPLOAD_DIR, unique_filename)
+
+    # Read file contents into memory
+    contents = await file.read()
+    file_size = len(contents)
+
+    # Save to disk (best-effort; DB blob is the authoritative copy)
     try:
         with open(path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-        file_size = os.path.getsize(path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            f.write(contents)
+    except OSError:
+        path = unique_filename  # disk save failed; store filename only
+
     parsed_entity_id = UUID(entity_id) if entity_id else None
     parsed_category_id = UUID(category_id) if category_id else None
     doc = Document(
@@ -262,31 +267,103 @@ async def document_upload(
         owner_id=current_user.id,
     )
     session.add(doc)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(doc)
-    return doc
+
+    # Capture response before blob save (blob failure may invalidate session objects)
+    doc_response = doc.model_dump(mode='json')
+
+    # Save file data to DocumentBlob (survives filesystem wipes / redeploys)
+    try:
+        blob = DocumentBlob(document_id=doc.id, data=contents)
+        session.add(blob)
+        session.commit()
+    except Exception:
+        session.rollback()
+
+    return doc_response
+
+
+async def _serve_document_file(
+    document_id: UUID,
+    download: bool,
+    session,
+):
+    """Shared helper: serve a document file inline or as attachment.
+
+    Tries the filesystem first (fast). If the file isn't on disk, falls back
+    to the DocumentBlob table in the database (reliable across redeploys).
+    """
+    from starlette.responses import Response as StarletteResponse
+
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    disposition = "attachment" if download else "inline"
+
+    # Try filesystem first
+    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
+    if os.path.exists(path):
+        return FileResponse(
+            path,
+            filename=doc.original_filename,
+            media_type=doc.content_type,
+            headers={"Content-Disposition": f'{disposition}; filename="{doc.original_filename}"'},
+        )
+
+    # Fallback: serve from database blob
+    blob = session.exec(
+        sql_select(DocumentBlob).where(DocumentBlob.document_id == document_id)
+    ).first()
+    if not blob:
+        raise HTTPException(status_code=404, detail="File not found (not on disk or in database)")
+
+    # Optionally restore file to disk for future fast access
+    try:
+        restore_path = os.path.join(_UPLOAD_DIR, doc.filename)
+        os.makedirs(_UPLOAD_DIR, exist_ok=True)
+        with open(restore_path, "wb") as f:
+            f.write(blob.data)
+        # Update stored path if it changed
+        if doc.file_path != restore_path:
+            doc.file_path = restore_path
+            session.add(doc)
+            session.commit()
+    except OSError:
+        pass  # Disk restore failed; serve from memory
+
+    return StarletteResponse(
+        content=blob.data,
+        media_type=doc.content_type or "application/octet-stream",
+        headers={
+            "Content-Disposition": f'{disposition}; filename="{doc.original_filename}"',
+            "Content-Length": str(len(blob.data)),
+        },
+    )
+
+
+@app.get("/api/v1/documents/{document_id}/file", tags=["documents"])
+async def document_serve_file(
+    document_id: UUID,
+    session=Depends(get_session),
+):
+    """Serve the document file inline for in-browser viewing."""
+    return await _serve_document_file(document_id, download=False, session=session)
 
 
 @app.get("/api/v1/documents/{document_id}/download", tags=["documents"])
 async def document_download(
     document_id: UUID,
-    download: bool = Query(False, description="Force download"),
+    download: bool = Query(True, description="Force download"),
     session=Depends(get_session),
 ):
-    """Serve the document file. Document metadata is via isud."""
-    doc = session.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="File not found")
-    disposition = "attachment" if download else "inline"
-    return FileResponse(
-        path,
-        filename=doc.original_filename,
-        media_type=doc.content_type,
-        headers={"Content-Disposition": f'{disposition}; filename="{doc.original_filename}"'},
-    )
+    """Download the document file as an attachment."""
+    return await _serve_document_file(document_id, download=download, session=session)
 
 
 @app.get("/api/v1/documents/{document_id}/content", tags=["documents"])
@@ -298,21 +375,36 @@ async def document_get_content(
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    raw_bytes = None
     path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="File not found")
-    file_size = os.path.getsize(path)
-    if file_size > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large for browser editing (max 5 MB). Download to edit locally.")
+
+    if os.path.exists(path):
+        file_size = os.path.getsize(path)
+        if file_size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large for browser editing (max 5 MB).")
+        with open(path, "rb") as f:
+            raw_bytes = f.read()
+    else:
+        # Fallback: read from database blob
+        blob = session.exec(
+            sql_select(DocumentBlob).where(DocumentBlob.document_id == document_id)
+        ).first()
+        if not blob:
+            raise HTTPException(status_code=404, detail="File not found (not on disk or in database)")
+        if len(blob.data) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large for browser editing (max 5 MB).")
+        raw_bytes = blob.data
+
+    # Decode bytes to text
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
+        content = raw_bytes.decode("utf-8")
     except UnicodeDecodeError:
         try:
-            with open(path, "r", encoding="latin-1") as f:
-                content = f.read()
+            content = raw_bytes.decode("latin-1")
         except Exception:
             raise HTTPException(status_code=400, detail="File is not a text file and cannot be edited in the browser.")
+
     return {"content": content, "content_type": doc.content_type, "original_filename": doc.original_filename}
 
 
@@ -322,7 +414,7 @@ async def document_save_content(
     body: dict,
     session=Depends(get_session),
 ):
-    """Save edited document content back to disk."""
+    """Save edited document content back to disk and database."""
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -330,16 +422,34 @@ async def document_save_content(
     if content is None:
         raise HTTPException(status_code=400, detail="Content is required")
     new_content_type = body.get("content_type")
+    content_bytes = content.encode("utf-8")
+    file_size = len(content_bytes)
+
+    # Save to disk (best-effort)
     path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
-        file_size = os.path.getsize(path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")
+        os.makedirs(os.path.dirname(path) or _UPLOAD_DIR, exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(content_bytes)
+    except OSError:
+        pass  # Disk write failed; DB blob is the authoritative copy
+
+    # Update document metadata
     doc.file_size = file_size
     if new_content_type:
         doc.content_type = new_content_type
+
+    # Update or create DocumentBlob
+    blob = session.exec(
+        sql_select(DocumentBlob).where(DocumentBlob.document_id == document_id)
+    ).first()
+    if blob:
+        blob.data = content_bytes
+        session.add(blob)
+    else:
+        blob = DocumentBlob(document_id=document_id, data=content_bytes)
+        session.add(blob)
+
     try:
         session.add(doc)
         session.commit()

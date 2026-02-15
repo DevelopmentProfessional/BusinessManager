@@ -55,10 +55,7 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
         </h3>
       </div>
 
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Service Name *
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="text"
           id="name"
@@ -66,45 +63,39 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
           required
           value={formData.name}
           onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Enter service name"
+          className="form-control form-control-sm"
+          placeholder="Service Name"
         />
+        <label htmlFor="name">Service Name *</label>
       </div>
 
-      <div>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Category
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="text"
           id="category"
           name="category"
           value={formData.category}
           onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="e.g., Hair, Nails, Spa"
+          className="form-control form-control-sm"
+          placeholder="Category"
         />
+        <label htmlFor="category">Category</label>
       </div>
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description
-        </label>
+      <div className="form-floating mb-2">
         <textarea
           id="description"
           name="description"
-          rows={3}
           value={formData.description}
           onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Service description"
+          className="form-control form-control-sm"
+          placeholder="Description"
+          style={{ height: '80px' }}
         />
+        <label htmlFor="description">Description</label>
       </div>
 
-      <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Price *
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="number"
           id="price"
@@ -114,15 +105,13 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
           step="0.01"
           value={formData.price}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="0.00"
         />
+        <label htmlFor="price">Price *</label>
       </div>
 
-      <div>
-        <label htmlFor="duration_minutes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Duration (minutes) *
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="number"
           id="duration_minutes"
@@ -131,25 +120,23 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
           min="1"
           value={formData.duration_minutes}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="60"
         />
+        <label htmlFor="duration_minutes">Duration (minutes) *</label>
       </div>
 
-      <div>
-        <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          <PhotoIcon className="h-4 w-4 inline mr-1" />
-          Image URL
-        </label>
+      <div className="form-floating mb-2">
         <input
           type="url"
           id="image_url"
           name="image_url"
           value={formData.image_url}
           onChange={handleChange}
-          className="input-field mt-1"
+          className="form-control form-control-sm"
           placeholder="https://example.com/image.jpg"
         />
+        <label htmlFor="image_url">Image URL</label>
         {formData.image_url && (
           <div className="mt-2">
             <img 

@@ -362,7 +362,7 @@ export default function Clients() {
               <select
                 value={tierFilter}
                 onChange={(e) => setTierFilter(e.target.value)}
-                className="form-select"
+                className="form-select form-select-sm"
                 style={{ maxWidth: '160px' }}
               >
                 <option value="all">All Tiers</option>

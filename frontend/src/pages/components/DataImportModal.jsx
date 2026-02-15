@@ -255,7 +255,7 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
           </div>
 
           {/* Modal footer - icon-only buttons with tooltips */}
-          <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 flex justify-end gap-2">
+          <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2 sm:px-6 flex justify-end gap-2">
             <IconButton
               icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
               label={uploading ? 'Importing...' : 'Import Data'}

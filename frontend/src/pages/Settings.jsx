@@ -402,29 +402,27 @@ export default function Settings() {
                   <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Start of Day
-                      <HelpIcon id="start-of-day" text="Earliest time shown on the schedule calendar" />
-                    </label>
+                  <div className="form-floating">
                     <input
                       type="time"
+                      id="start_of_day"
                       value={scheduleSettings.start_of_day}
                       onChange={(e) => handleScheduleSettingsChange('start_of_day', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                      className="form-control form-control-sm"
+                      placeholder="Start of Day"
                     />
+                    <label htmlFor="start_of_day">Start of Day</label>
                   </div>
-                  <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      End of Day
-                      <HelpIcon id="end-of-day" text="Latest time shown on the schedule calendar" />
-                    </label>
+                  <div className="form-floating">
                     <input
                       type="time"
+                      id="end_of_day"
                       value={scheduleSettings.end_of_day}
                       onChange={(e) => handleScheduleSettingsChange('end_of_day', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                      className="form-control form-control-sm"
+                      placeholder="End of Day"
                     />
+                    <label htmlFor="end_of_day">End of Day</label>
                   </div>
                 </div>
               </div>
@@ -488,7 +486,7 @@ export default function Settings() {
               <button
                 onClick={handleSaveScheduleSettings}
                 disabled={scheduleLoading}
-                className="w-full sm:w-auto px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed text-sm sm:text-base"
+                className="w-full sm:w-auto px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-full transition-colors disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {scheduleLoading ? 'Saving...' : 'Save'}
               </button>
@@ -526,7 +524,7 @@ export default function Settings() {
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleAccordion('application')}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full"
                 >
                   <div className="flex items-center gap-2">
                     <InformationCircleIcon className="h-5 w-5 text-primary-500" />
@@ -556,7 +554,7 @@ export default function Settings() {
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleAccordion('branding')}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full"
                 >
                   <div className="flex items-center gap-2">
                     <SwatchIcon className="h-5 w-5 text-purple-500" />
@@ -569,47 +567,41 @@ export default function Settings() {
                     <div className="space-y-4">
                       {/* Company Name & Tagline */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Company Name
-                            <HelpIcon id="company-name" text="Displayed in the header and login page" />
-                          </label>
+                        <div className="form-floating">
                           <input
                             type="text"
+                            id="companyName"
                             value={localBranding.companyName}
                             onChange={(e) => handleBrandingChange('companyName', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
-                            placeholder="Your Company Name"
+                            className="form-control form-control-sm"
+                            placeholder="Company Name"
                           />
+                          <label htmlFor="companyName">Company Name</label>
                         </div>
-                        <div>
-                          <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Tagline
-                            <HelpIcon id="tagline" text="Optional subtitle for your company" />
-                          </label>
+                        <div className="form-floating">
                           <input
                             type="text"
+                            id="tagline"
                             value={localBranding.tagline}
                             onChange={(e) => handleBrandingChange('tagline', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
-                            placeholder="Your company tagline"
+                            className="form-control form-control-sm"
+                            placeholder="Tagline"
                           />
+                          <label htmlFor="tagline">Tagline</label>
                         </div>
                       </div>
 
                       {/* Logo URL */}
-                      <div>
-                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Logo URL
-                          <HelpIcon id="logo-url" text="URL to your company logo image" />
-                        </label>
+                      <div className="form-floating">
                         <input
                           type="url"
+                          id="logoUrl"
                           value={localBranding.logoUrl}
                           onChange={(e) => handleBrandingChange('logoUrl', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
-                          placeholder="https://example.com/logo.png"
+                          className="form-control form-control-sm"
+                          placeholder="Logo URL"
                         />
+                        <label htmlFor="logoUrl">Logo URL</label>
                       </div>
 
                       {/* Color Pickers - Responsive Grid */}
@@ -682,19 +674,19 @@ export default function Settings() {
                         <div className="flex flex-wrap gap-2">
                           <button
                             style={{ backgroundColor: localBranding.primaryColor }}
-                            className="px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
+                            className="px-4 py-2 text-white rounded-full text-sm font-medium shadow-sm"
                           >
                             Primary Button
                           </button>
                           <button
                             style={{ backgroundColor: localBranding.secondaryColor }}
-                            className="px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
+                            className="px-4 py-2 text-white rounded-full text-sm font-medium shadow-sm"
                           >
                             Secondary Button
                           </button>
                           <button
                             style={{ backgroundColor: localBranding.accentColor }}
-                            className="px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
+                            className="px-4 py-2 text-white rounded-full text-sm font-medium shadow-sm"
                           >
                             Accent Button
                           </button>
@@ -723,7 +715,7 @@ export default function Settings() {
 
                       <button
                         onClick={handleSaveBranding}
-                        className="w-full sm:w-auto px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm"
+                        className="w-full sm:w-auto px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full transition-colors text-sm"
                       >
                         Save Branding
                       </button>
@@ -736,7 +728,7 @@ export default function Settings() {
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleAccordion('notifications')}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full"
                 >
                   <div className="flex items-center gap-2">
                     <BellIcon className="h-5 w-5 text-amber-500" />
@@ -797,7 +789,7 @@ export default function Settings() {
 
                       <button
                         onClick={handleSaveNotifications}
-                        className="w-full sm:w-auto mt-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm"
+                        className="w-full sm:w-auto mt-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full transition-colors text-sm"
                       >
                         Save Notifications
                       </button>
@@ -905,7 +897,7 @@ export default function Settings() {
                       {csvData && (
                         <button
                           onClick={resetImport}
-                          className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg sm:border-0"
+                          className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-full sm:border-0"
                         >
                           Clear
                         </button>
@@ -955,7 +947,7 @@ export default function Settings() {
                   <button
                     onClick={handleImport}
                     disabled={importLoading}
-                    className="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-full transition-colors text-sm flex items-center justify-center gap-2"
                   >
                     <ArrowUpTrayIcon className="h-4 w-4" />
                     {importLoading ? 'Importing...' : `Import ${csvData.length} Records`}
@@ -1033,7 +1025,7 @@ export default function Settings() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center justify-center flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-full transition-colors ${
                   activeTab === tab.id
                     ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'

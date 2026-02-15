@@ -340,7 +340,7 @@ return (
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="form-select w-auto rounded-pill"
+              className="form-select form-select-sm w-auto rounded-pill"
             >
               <option value="all">All Types</option>
               <option value="PRODUCT">Products</option>
@@ -353,7 +353,7 @@ return (
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
-              className="form-select w-auto rounded-pill">
+              className="form-select form-select-sm w-auto rounded-pill">
               <option value="all">All Stock</option>
               <option value="low">Low Stock</option>
               <option value="ok">In Stock</option>

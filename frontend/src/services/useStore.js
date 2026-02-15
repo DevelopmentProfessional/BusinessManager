@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import cacheService from './cacheService';
 
 const useStore = create((set, get) => ({
   // Authentication state
@@ -16,8 +17,11 @@ const useStore = create((set, get) => ({
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('permissions');
     set({ user: null, token: null, permissions: [] });
-    
-    // Clear API cache on logout
+
+    // Clear persistent data cache on logout
+    cacheService.clearAll();
+
+    // Clear in-flight API request dedup
     if (typeof window !== 'undefined' && window.clearApiCache) {
       window.clearApiCache();
     }
