@@ -1348,6 +1348,47 @@ def remove_role_permission(
     return {"message": "Permission removed from role"}
 
 # ============================================================================
+# Signature Endpoints
+# ============================================================================
+
+@router.put("/me/signature")
+def save_my_signature(
+    signature_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Save current user's signature (base64 data URL)"""
+    data = signature_data.get("signature_data")
+    if not data or not isinstance(data, str):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="signature_data is required and must be a base64 data URL string"
+        )
+    if not data.startswith("data:image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="signature_data must be a valid data:image/ URL"
+        )
+    current_user.signature_data = data
+    current_user.updated_at = datetime.utcnow()
+    try:
+        session.commit()
+        session.refresh(current_user)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return {"message": "Signature saved", "signature_data": data}
+
+
+@router.get("/me/signature")
+def get_my_signature(
+    current_user: User = Depends(get_current_user),
+):
+    """Get current user's saved signature"""
+    return {"signature_data": current_user.signature_data}
+
+
+# ============================================================================
 # Database Environment (DEPRECATED)
 # ============================================================================
 # NOTE: Database environment preference is now stored in the user's profile

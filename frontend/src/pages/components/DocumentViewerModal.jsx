@@ -488,7 +488,6 @@ function EditorArea({ document, documentType }) {
 // Main Document Viewer Modal
 export default function DocumentViewerModal({ isOpen, onClose, document, onEdit }) {
   const [mode, setMode] = useState('view'); // 'view' or 'edit'
-  const [showDocxWarning, setShowDocxWarning] = useState(false);
   const [editorDirty, setEditorDirty] = useState(false);
 
   // Reset mode when document changes
@@ -504,22 +503,10 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
 
   const handleToggleEdit = () => {
     if (mode === 'edit') {
-      // Switching back to view mode — no unsaved guard needed here since
-      // the EditorArea uses its own hook and doesn't lose state
       setMode('view');
     } else {
-      // Switching to edit mode
-      if (documentType === 'docx') {
-        setShowDocxWarning(true);
-      } else {
-        setMode('edit');
-      }
+      setMode('edit');
     }
-  };
-
-  const handleConfirmDocxEdit = () => {
-    setShowDocxWarning(false);
-    setMode('edit');
   };
 
   const handleClose = () => {
@@ -564,34 +551,6 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
         className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity"
         onClick={handleClose}
       />
-
-      {/* DOCX Conversion Warning */}
-      {showDocxWarning && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md mx-4">
-            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
-              Edit Document
-            </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              This Word document will be converted to HTML for editing. Some formatting (headers, footers, complex layouts) may be simplified. Once saved, the document will be stored as HTML.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowDocxWarning(false)}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDocxEdit}
-                className="px-4 py-2 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
-              >
-                Continue to Edit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal Content */}
       <div className="fixed inset-4 sm:inset-8 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
@@ -656,6 +615,21 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
               Uploaded: {document.created_at ? new Date(document.created_at).toLocaleDateString() : 'Unknown'}
             </span>
             {document.description && <span>Description: {document.description}</span>}
+            {document.is_signed && (
+              <span className="flex items-center gap-2 ml-auto">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
+                  Signed by {document.signed_by || 'Unknown'}
+                </span>
+                {document.signature_image && (
+                  <img
+                    src={document.signature_image}
+                    alt="Signature"
+                    className="h-5 border rounded"
+                    style={{ maxWidth: '80px' }}
+                  />
+                )}
+              </span>
+            )}
           </div>
         </div>
       </div>

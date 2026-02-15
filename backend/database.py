@@ -165,6 +165,7 @@ def create_db_and_tables():
     _ensure_inventory_image_table_if_needed()
     _ensure_schedule_extra_columns_if_needed()
     _ensure_user_extra_columns_if_needed()
+    _ensure_signature_columns_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -517,3 +518,67 @@ def _ensure_user_extra_columns_if_needed():
             for col, col_type in new_cols.items():
                 if col not in col_names:
                     conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+
+
+def _ensure_signature_columns_if_needed():
+    """Ensure signature-related columns exist on user and document tables.
+
+    user.signature_data - base64 PNG signature data
+    document.signature_image - base64 PNG of signer's signature
+    document.signed_by_user_id - FK to user who signed
+    """
+    user_cols = {
+        "signature_data": ("TEXT", "TEXT"),
+    }
+    doc_cols = {
+        "signature_image": ("TEXT", "TEXT"),
+        "signed_by_user_id": ("TEXT", "UUID"),
+    }
+
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            # User table
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+            )).fetchone()
+            if tbl_exists:
+                cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
+                col_names = {row[1] for row in cols}
+                for col, (sqlite_type, _) in user_cols.items():
+                    if col not in col_names:
+                        conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {sqlite_type}"))
+
+            # Document table
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
+            )).fetchone()
+            if tbl_exists:
+                cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
+                col_names = {row[1] for row in cols}
+                for col, (sqlite_type, _) in doc_cols.items():
+                    if col not in col_names:
+                        conn.execute(text(f"ALTER TABLE document ADD COLUMN {col} {sqlite_type}"))
+    else:
+        # PostgreSQL
+        with engine.begin() as conn:
+            # User table
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, (_, pg_type) in user_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                    print(f"  + Added column user.{col} ({pg_type})")
+
+            # Document table
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='document'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, (_, pg_type) in doc_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
+                    print(f"  + Added column document.{col} ({pg_type})")
