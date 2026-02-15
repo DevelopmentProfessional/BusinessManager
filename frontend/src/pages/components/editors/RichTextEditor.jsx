@@ -4,6 +4,12 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
+import { TextStyle, Color, FontFamily, FontSize, LineHeight } from '@tiptap/extension-text-style';
+import { Highlight } from '@tiptap/extension-highlight';
+import { Superscript } from '@tiptap/extension-superscript';
+import { Subscript } from '@tiptap/extension-subscript';
+import { Indent } from './extensions/Indent';
+import { SearchAndReplace } from './extensions/SearchAndReplace';
 
 const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange }, ref) {
   const editor = useEditor({
@@ -14,10 +20,21 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
       Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify'],
       }),
       Placeholder.configure({
         placeholder: 'Start typing...',
       }),
+      TextStyle,
+      Color,
+      FontFamily,
+      FontSize,
+      LineHeight,
+      Highlight.configure({ multicolor: true }),
+      Superscript,
+      Subscript,
+      Indent,
+      SearchAndReplace,
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
@@ -91,6 +108,17 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
           padding: 0;
           color: inherit;
         }
+        .tiptap-editor .tiptap hr {
+          border: none;
+          border-top: 2px solid #d1d5db;
+          margin: 1.5rem 0;
+        }
+        .tiptap-editor .tiptap mark {
+          border-radius: 0.15rem;
+          padding: 0.05rem 0.15rem;
+        }
+        .tiptap-editor .tiptap sup { font-size: 0.75em; }
+        .tiptap-editor .tiptap sub { font-size: 0.75em; }
         .tiptap-editor .tiptap .is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -98,8 +126,22 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
           pointer-events: none;
           height: 0;
         }
+        /* Search result highlights */
+        .tiptap-editor .tiptap .search-result {
+          background-color: #fef08a;
+          border-radius: 2px;
+        }
+        .tiptap-editor .tiptap .search-result-active {
+          background-color: #f97316;
+          color: white;
+          border-radius: 2px;
+        }
+        /* Dark mode */
         .dark .tiptap-editor .tiptap code { background: #374151; }
         .dark .tiptap-editor .tiptap blockquote { border-left-color: #4b5563; color: #9ca3af; }
+        .dark .tiptap-editor .tiptap hr { border-top-color: #4b5563; }
+        .dark .tiptap-editor .tiptap .search-result { background-color: #854d0e; color: #fef3c7; }
+        .dark .tiptap-editor .tiptap .search-result-active { background-color: #ea580c; color: white; }
       `}</style>
     </div>
   );
