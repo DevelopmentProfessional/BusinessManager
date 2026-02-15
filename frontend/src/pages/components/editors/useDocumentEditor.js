@@ -68,10 +68,20 @@ export function useDocumentEditor(documentId, documentType, filename) {
     setSaveStatus('saving');
 
     try {
-      // Determine content type for saving
-      let contentType;
       if (documentType === 'docx') {
-        contentType = 'text/html';
+        // Convert HTML back to DOCX binary and save
+        try {
+          const { asBlob } = await import('html-docx-js-typescript');
+          const docxBlob = asBlob(content);
+          await documentsAPI.saveBinary(
+            documentId,
+            docxBlob,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          );
+        } catch (docxErr) {
+          console.warn('DOCX generation failed, falling back to HTML save:', docxErr);
+          await documentsAPI.saveContent(documentId, content, 'text/html');
+        }
       } else {
         const ext = (filename || '').split('.').pop().toLowerCase();
         const mimeMap = {
@@ -82,10 +92,10 @@ export function useDocumentEditor(documentId, documentType, filename) {
           csv: 'text/csv', py: 'text/x-python',
           sql: 'text/x-sql',
         };
-        contentType = mimeMap[ext] || 'text/plain';
+        const contentType = mimeMap[ext] || 'text/plain';
+        await documentsAPI.saveContent(documentId, content, contentType);
       }
 
-      await documentsAPI.saveContent(documentId, content, contentType);
       setOriginalContent(content);
       setSaveStatus('saved');
 

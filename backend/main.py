@@ -460,6 +460,56 @@ async def document_save_content(
     return {"success": True, "file_size": file_size, "content_type": doc.content_type}
 
 
+@app.put("/api/v1/documents/{document_id}/binary", tags=["documents"])
+async def document_save_binary(
+    document_id: UUID,
+    file: UploadFile = File(...),
+    content_type: Optional[str] = Form(None),
+    session=Depends(get_session),
+):
+    """Save binary file content back to an existing document record (DOCX, XLSX, etc.)."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    contents = await file.read()
+    file_size = len(contents)
+
+    # Save to disk (best-effort)
+    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
+    try:
+        os.makedirs(os.path.dirname(path) or _UPLOAD_DIR, exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(contents)
+    except OSError:
+        pass
+
+    # Update document metadata
+    doc.file_size = file_size
+    if content_type:
+        doc.content_type = content_type
+
+    # Update or create DocumentBlob
+    blob = session.exec(
+        sql_select(DocumentBlob).where(DocumentBlob.document_id == document_id)
+    ).first()
+    if blob:
+        blob.data = contents
+        session.add(blob)
+    else:
+        blob = DocumentBlob(document_id=document_id, data=contents)
+        session.add(blob)
+
+    try:
+        session.add(doc)
+        session.commit()
+        session.refresh(doc)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return {"success": True, "file_size": file_size, "content_type": doc.content_type}
+
+
 @app.get("/api/v1/documents/{document_id}/onlyoffice-config", tags=["documents"])
 async def document_onlyoffice_config(
     document_id: UUID,

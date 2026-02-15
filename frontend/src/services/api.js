@@ -544,6 +544,13 @@ export const documentsAPI = {
     clearCache('documents');
     return api.put(`/documents/${id}/content`, { content, content_type: contentType });
   },
+  saveBinary: (id, blob, contentType) => {
+    clearCache('documents');
+    const formData = new FormData();
+    formData.append('file', blob, 'document');
+    if (contentType) formData.append('content_type', contentType);
+    return api.put(`/documents/${id}/binary`, formData);
+  },
 };
 
 // Document categories: full CRUD via isud (table document_category).
