@@ -8,7 +8,6 @@ import {
   PencilIcon,
   CheckIcon,
   ClockIcon,
-  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { documentsAPI, documentCategoriesAPI } from '../services/api';
@@ -304,6 +303,12 @@ export default function Documents() {
     }
   };
 
+  // Handle sign from viewer modal
+  const handleSignFromViewer = (doc) => {
+    setIsViewerOpen(false);
+    handleOpenSign(doc);
+  };
+
   // Save edited document
   const handleSaveEdit = (updatedDoc) => {
     setDocuments((prev) =>
@@ -531,12 +536,8 @@ export default function Documents() {
           {documents.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
-                <col style={{ width: '60px' }} />
                 <col />
-                <col style={{ width: '100px' }} />
-                <col style={{ width: '80px' }} />
                 <col style={{ width: '60px' }} />
-                <col style={{ width: '180px' }} />
               </colgroup>
               <tbody>
                 {documents.map((doc, index) => (
@@ -545,19 +546,6 @@ export default function Documents() {
                     className="align-middle border-bottom"
                     style={{ height: '56px' }}
                   >
-                    {/* Delete */}
-                    <td className="text-center px-2">
-                      <PermissionGate page="documents" permission="delete">
-                        <button
-                          onClick={() => handleDeleteDocument(doc.id)}
-                          className="btn btn-sm btn-outline-danger border-0 p-1"
-                          title="Delete"
-                        >
-                          ×
-                        </button>
-                      </PermissionGate>
-                    </td>
-
                     {/* File Name */}
                     <td className="px-3">
                       <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
@@ -565,35 +553,6 @@ export default function Documents() {
                       </div>
                       <div className="small text-muted text-truncate">
                         {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
-                      </div>
-                    </td>
-
-                    {/* File Size */}
-                    <td className="px-3 text-muted">
-                      <div className="text-truncate" style={{ maxWidth: '100%' }}>
-                        {formatFileSize(doc.file_size)}
-                      </div>
-                    </td>
-
-                    {/* Signed Status */}
-                    <td className="text-center px-3">
-                      <div className="d-flex flex-column align-items-center gap-1">
-                        <span className={`badge rounded-pill ${
-                          doc.is_signed
-                            ? 'bg-success'
-                            : 'bg-secondary'
-                        }`}>
-                          {doc.is_signed ? 'Signed' : 'Unsigned'}
-                        </span>
-                        {doc.is_signed && doc.signature_image && (
-                          <img
-                            src={doc.signature_image}
-                            alt="Signature"
-                            className="border rounded"
-                            style={{ maxWidth: '60px', maxHeight: '20px', opacity: 0.8 }}
-                            title={`Signed by ${doc.signed_by || 'Unknown'}`}
-                          />
-                        )}
                       </div>
                     </td>
 
@@ -606,40 +565,6 @@ export default function Documents() {
                       >
                         👁
                       </button>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="text-center px-2">
-                      <div className="d-flex gap-1 justify-content-center">
-                        <a
-                          href={documentsAPI.fileUrl(doc.id, { download: true })}
-                          className="btn btn-sm btn-outline-info border-0 p-1"
-                          title="Download"
-                        >
-                          <ArrowDownTrayIcon className="h-4 w-4" />
-                        </a>
-                        <button
-                          onClick={() => handleOpenEdit(doc)}
-                          className="btn btn-sm btn-outline-secondary border-0 p-1"
-                          title="Edit"
-                        >
-                          ✎
-                        </button>
-                        <button
-                          onClick={() => handleOpenHistory(doc)}
-                          className="btn btn-sm btn-outline-warning border-0 p-1"
-                          title="History"
-                        >
-                          🕒
-                        </button>
-                        <button
-                          onClick={() => handleOpenSign(doc)}
-                          className="btn btn-sm btn-outline-success border-0 p-1"
-                          title="Sign"
-                        >
-                          ✓
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -657,21 +582,13 @@ export default function Documents() {
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
-              <col style={{ width: '60px' }} />
               <col />
-              <col style={{ width: '100px' }} />
-              <col style={{ width: '80px' }} />
               <col style={{ width: '60px' }} />
-              <col style={{ width: '180px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="text-center"></th>
                 <th>Document</th>
-                <th>Size</th>
-                <th className="text-center">Status</th>
                 <th className="text-center">View</th>
-                <th className="text-center">Actions</th>
               </tr>
             </tfoot>
           </table>
@@ -723,6 +640,7 @@ export default function Documents() {
         onClose={() => setIsViewerOpen(false)}
         document={viewerDoc}
         onEdit={handleEditFromViewer}
+        onSign={handleSignFromViewer}
       />
 
       {/* Document Edit Modal */}
