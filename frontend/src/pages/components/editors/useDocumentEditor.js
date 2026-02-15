@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import mammoth from 'mammoth';
 import { documentsAPI } from '../../../services/api';
 
 /**
@@ -25,13 +24,15 @@ export function useDocumentEditor(documentId, documentType, filename) {
 
     try {
       if (documentType === 'docx') {
-        // Fetch binary and convert with mammoth
+        // Fetch binary and convert DOCX → HTML via mammoth (dynamic import)
         const res = await fetch(documentsAPI.fileUrl(documentId));
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const arrayBuffer = await res.arrayBuffer();
+        const mammoth = await import('mammoth');
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        setContentState(result.value);
-        setOriginalContent(result.value);
+        const html = result.value || '';
+        setContentState(html);
+        setOriginalContent(html);
       } else {
         // Fetch text content via API
         const res = await documentsAPI.getContent(documentId);
@@ -69,19 +70,14 @@ export function useDocumentEditor(documentId, documentType, filename) {
 
     try {
       if (documentType === 'docx') {
-        // Convert HTML back to DOCX binary and save
-        try {
-          const { asBlob } = await import('html-docx-js-typescript');
-          const docxBlob = asBlob(content);
-          await documentsAPI.saveBinary(
-            documentId,
-            docxBlob,
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-          );
-        } catch (docxErr) {
-          console.warn('DOCX generation failed, falling back to HTML save:', docxErr);
-          await documentsAPI.saveContent(documentId, content, 'text/html');
-        }
+        // Convert HTML → DOCX binary via html-docx-js-typescript (dynamic import)
+        const htmlDocx = await import('html-docx-js-typescript');
+        const docxBlob = htmlDocx.asBlob(content);
+        await documentsAPI.saveBinary(
+          documentId,
+          docxBlob,
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        );
       } else {
         const ext = (filename || '').split('.').pop().toLowerCase();
         const mimeMap = {

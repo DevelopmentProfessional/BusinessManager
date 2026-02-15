@@ -421,7 +421,7 @@ function EditorArea({ document, documentType }) {
       <div className="flex flex-col items-center justify-center h-full gap-3">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {documentType === 'docx' ? 'Converting document for editing...' : 'Loading content...'}
+          Loading content...
         </p>
       </div>
     );
@@ -486,7 +486,7 @@ function EditorArea({ document, documentType }) {
 }
 
 // Main Document Viewer Modal
-export default function DocumentViewerModal({ isOpen, onClose, document, onEdit }) {
+export default function DocumentViewerModal({ isOpen, onClose, document, onEdit, onSign }) {
   const [mode, setMode] = useState('view'); // 'view' or 'edit'
   const [editorDirty, setEditorDirty] = useState(false);
 
@@ -575,6 +575,19 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit 
               >
                 <PencilIcon className="h-4 w-4" />
                 {mode === 'edit' ? 'Editing' : 'Edit'}
+              </button>
+            )}
+            {/* Sign / Signed badge */}
+            {document.is_signed ? (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium">
+                Signed
+              </span>
+            ) : onSign && (
+              <button
+                onClick={() => onSign(document)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Sign
               </button>
             )}
             <a

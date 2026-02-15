@@ -27,7 +27,7 @@ const LANGUAGE_MAP = {
  * Check if a document type supports in-browser editing.
  */
 export function isEditableType(documentType) {
-  return documentType === 'docx' || documentType === 'text';
+  return documentType === 'text' || documentType === 'docx';
 }
 
 /**
