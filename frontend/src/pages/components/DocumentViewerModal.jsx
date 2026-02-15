@@ -185,10 +185,22 @@ function DocxViewer({ document, onEdit }) {
         if (canceled) return;
 
         containerRef.current.innerHTML = '';
-        await renderAsync(ab, containerRef.current, undefined, {
-          className: 'docx',
-          inWrapper: false,
-        });
+        try {
+          await renderAsync(ab, containerRef.current, undefined, {
+            className: 'docx',
+            inWrapper: false,
+          });
+        } catch {
+          // renderAsync failed — file may contain HTML from a previous edit/save.
+          // Fall back to rendering content as HTML.
+          const decoder = new TextDecoder('utf-8');
+          const html = decoder.decode(ab);
+          if (html.trim().startsWith('<') || html.includes('<p') || html.includes('<div')) {
+            containerRef.current.innerHTML = html;
+          } else {
+            throw new Error('Not a valid DOCX or HTML file');
+          }
+        }
         setLoading(false);
       } catch (err) {
         console.error('Failed to render DOCX', err);

@@ -80,7 +80,7 @@ export function useDocumentEditor(documentId, documentType, filename) {
       if (documentType === 'docx') {
         // Convert HTML → DOCX binary via html-docx-js-typescript (dynamic import)
         const htmlDocx = await import('html-docx-js-typescript');
-        const docxBlob = htmlDocx.asBlob(content);
+        const docxBlob = await htmlDocx.asBlob(content);
         await documentsAPI.saveBinary(
           documentId,
           docxBlob,
