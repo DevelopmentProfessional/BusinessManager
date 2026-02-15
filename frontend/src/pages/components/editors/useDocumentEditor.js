@@ -78,14 +78,12 @@ export function useDocumentEditor(documentId, documentType, filename) {
 
     try {
       if (documentType === 'docx') {
-        // Convert HTML → DOCX binary via html-docx-js-typescript (dynamic import)
-        const htmlDocx = await import('html-docx-js-typescript');
-        const docxBlob = await htmlDocx.asBlob(content);
-        await documentsAPI.saveBinary(
-          documentId,
-          docxBlob,
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        );
+        // Save edited DOCX content as HTML text.
+        // html-docx-js produces DOCX files that neither mammoth nor docx-preview
+        // can reliably read back, so we store the HTML directly. The editor and
+        // viewer both have HTML fallback paths that handle this correctly.
+        // Word can also open HTML files if the user downloads.
+        await documentsAPI.saveContent(documentId, content, 'text/html');
       } else {
         const ext = (filename || '').split('.').pop().toLowerCase();
         const mimeMap = {
