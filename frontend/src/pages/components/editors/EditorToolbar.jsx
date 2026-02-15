@@ -130,6 +130,10 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
   const currentFontSize = editor.getAttributes('textStyle').fontSize || '';
   const currentColor = editor.getAttributes('textStyle').color || '#000000';
   const currentHighlight = editor.getAttributes('highlight').color || '#ffff00';
+  // Read current line-height from the active block node (paragraph or heading)
+  const currentLineHeight = editor.getAttributes('paragraph').lineHeight
+    || editor.getAttributes('heading').lineHeight
+    || '';
 
   return (
     <div className="flex flex-col gap-1">
@@ -397,7 +401,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
         {/* Line Spacing */}
         <select
           className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-[55px]"
-          value=""
+          value={currentLineHeight}
           onChange={(e) => {
             if (e.target.value) {
               editor.chain().focus().setLineHeight(e.target.value).run();
@@ -571,25 +575,27 @@ function DesignTab({ editor }) {
   if (!editor) return null;
 
   const applyTheme = (theme) => {
-    // Select all content
-    editor.commands.selectAll();
+    // Build a single chain: select all, apply font + color, then collapse cursor
+    const chain = editor.chain().focus().selectAll();
 
-    // Apply font family
+    // Font family
     if (theme.font) {
-      editor.chain().setFontFamily(theme.font).run();
+      chain.setFontFamily(theme.font);
     } else {
-      editor.chain().unsetFontFamily().run();
+      chain.unsetFontFamily();
     }
 
-    // Apply color
+    // Color
     if (theme.color) {
-      editor.chain().selectAll().setColor(theme.color).run();
+      chain.setColor(theme.color);
     } else {
-      editor.chain().selectAll().unsetColor().run();
+      chain.unsetColor();
     }
 
-    // Deselect
-    editor.commands.setTextSelection(0);
+    chain.run();
+
+    // Collapse selection to start of document (position 1 = inside first node)
+    editor.commands.setTextSelection(1);
   };
 
   return (
