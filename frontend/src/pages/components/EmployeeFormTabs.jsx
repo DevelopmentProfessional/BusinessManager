@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { rolesAPI, isudAPI } from '../../services/api';
 import api from '../../services/api';
+import SignaturePad from './SignaturePad';
 
 const PAGES = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
 const PERMISSION_TYPES = ['read', 'write', 'admin'];
@@ -24,6 +25,12 @@ export default function EmployeeFormTabs({
   const [newPermission, setNewPermission] = useState({ page: '', permission: '' });
   const [permError, setPermError] = useState('');
   const [permSuccess, setPermSuccess] = useState('');
+
+  // Signature state
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [savedSignature, setSavedSignature] = useState(null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  const [signatureMessage, setSignatureMessage] = useState('');
 
   const [formData, setFormData] = useState({
     // Details
@@ -121,6 +128,41 @@ export default function EmployeeFormTabs({
       fetchUserPermissions(employee.id);
     }
   }, [activeTab, employee?.id]);
+
+  // Load signature when switching to signature tab
+  useEffect(() => {
+    if (activeTab === 'signature' && employee?.id) {
+      const loadSignature = async () => {
+        setSignatureLoading(true);
+        try {
+          const res = await api.get('/auth/me/signature');
+          setSavedSignature(res.data?.signature_data || null);
+        } catch (err) {
+          // If the user is viewing another employee (admin), try loading from employee data
+          setSavedSignature(employee.signature_data || null);
+        } finally {
+          setSignatureLoading(false);
+        }
+      };
+      loadSignature();
+    }
+  }, [activeTab, employee?.id]);
+
+  const handleSaveSignature = async (dataUrl) => {
+    setSignatureLoading(true);
+    setSignatureMessage('');
+    try {
+      await api.put('/auth/me/signature', { signature_data: dataUrl });
+      setSavedSignature(dataUrl);
+      setShowSignaturePad(false);
+      setSignatureMessage('Signature saved successfully');
+      setTimeout(() => setSignatureMessage(''), 3000);
+    } catch (err) {
+      setSignatureMessage('Failed to save signature: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setSignatureLoading(false);
+    }
+  };
 
   const fetchUserPermissions = async (userId) => {
     try {
@@ -235,6 +277,7 @@ export default function EmployeeFormTabs({
   const tabs = [
     { key: 'details', label: 'Details' },
     { key: 'benefits', label: 'Benefits' },
+    { key: 'signature', label: 'Signature', disabled: !employee },
     { key: 'permissions', label: 'Permissions', disabled: !employee },
     { key: 'performance', label: 'Performance', disabled: !employee },
   ];
@@ -513,6 +556,82 @@ export default function EmployeeFormTabs({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ===== SIGNATURE TAB ===== */}
+        {activeTab === 'signature' && (
+          <div className="tab-pane">
+            {employee ? (
+              <div className="row g-3">
+                <div className="col-12">
+                  <h6 className="text-muted text-uppercase small mb-0">Employee Signature</h6>
+                  <hr className="mt-1 mb-2" />
+                </div>
+
+                {signatureMessage && (
+                  <div className="col-12">
+                    <div className={`alert py-2 small ${signatureMessage.includes('Failed') ? 'alert-danger' : 'alert-success'}`}>
+                      {signatureMessage}
+                    </div>
+                  </div>
+                )}
+
+                {signatureLoading ? (
+                  <div className="col-12 text-center py-4">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                ) : showSignaturePad ? (
+                  <div className="col-12">
+                    <SignaturePad
+                      onSave={handleSaveSignature}
+                      onCancel={() => setShowSignaturePad(false)}
+                      initialSignature={savedSignature}
+                    />
+                  </div>
+                ) : (
+                  <div className="col-12">
+                    {savedSignature ? (
+                      <div className="text-center">
+                        <div className="border rounded p-3 bg-white d-inline-block mb-3">
+                          <img
+                            src={savedSignature}
+                            alt="Saved signature"
+                            style={{ maxWidth: '400px', maxHeight: '150px' }}
+                          />
+                        </div>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setShowSignaturePad(true)}
+                            className="btn btn-outline-primary btn-sm"
+                          >
+                            Replace Signature
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted mb-3">No signature saved yet.</p>
+                        <button
+                          type="button"
+                          onClick={() => setShowSignaturePad(true)}
+                          className="btn btn-primary"
+                        >
+                          Create Signature
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-4">
+                <p className="text-muted">Create the employee first, then add a signature.</p>
+              </div>
+            )}
           </div>
         )}
 

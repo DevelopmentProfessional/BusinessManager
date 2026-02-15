@@ -106,6 +106,9 @@ class User(BaseModel, table=True):
     iod_number: Optional[str] = Field(default=None)
     location: Optional[str] = Field(default=None)
 
+    # Signature (base64 PNG data URL)
+    signature_data: Optional[str] = Field(default=None)
+
     # Benefits / Compensation
     salary: Optional[float] = Field(default=None)
     pay_frequency: Optional[str] = Field(default=None)  # weekly, biweekly, monthly
@@ -327,6 +330,8 @@ class Document(BaseModel, table=True):
     is_signed: bool = Field(default=False)
     signed_by: Optional[str] = Field(default=None)
     signed_at: Optional[datetime] = Field(default=None)
+    signature_image: Optional[str] = Field(default=None)  # base64 PNG of the signature
+    signed_by_user_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
     # ownership / review / category
     owner_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     review_date: Optional[datetime] = Field(default=None)
@@ -361,6 +366,8 @@ class DocumentRead(SQLModel):
     is_signed: bool = False
     signed_by: Optional[str] = None
     signed_at: Optional[datetime] = None
+    signature_image: Optional[str] = None
+    signed_by_user_id: Optional[UUID] = None
     owner_id: Optional[UUID] = None
     review_date: Optional[datetime] = None
     category_id: Optional[UUID] = None
@@ -607,6 +614,7 @@ class UserUpdate(SQLModel):
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: Optional[bool] = None
     db_environment: Optional[str] = None  # User's preferred database environment
+    signature_data: Optional[str] = None
     iod_number: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None
@@ -635,6 +643,7 @@ class UserRead(SQLModel):
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: bool = False
     db_environment: str = "development"  # User's preferred database environment
+    signature_data: Optional[str] = None
     iod_number: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None

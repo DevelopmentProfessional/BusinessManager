@@ -11,7 +11,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { documentsAPI, documentCategoriesAPI } from '../services/api';
+import api, { documentsAPI, documentCategoriesAPI } from '../services/api';
 import Modal from './components/Modal';
 import MobileTable from './components/MobileTable';
 import MobileAddButton from './components/MobileAddButton';
@@ -175,6 +175,7 @@ function formatFileSize(bytes) {
 export default function Documents() {
   const navigate = useNavigate();
   const {
+    user,
     loading,
     setLoading,
     error,
@@ -210,7 +211,8 @@ export default function Documents() {
   // Sign modal state
   const [signDoc, setSignDoc] = useState(null);
   const [isSignOpen, setIsSignOpen] = useState(false);
-  const [signerName, setSignerName] = useState('');
+  const [signaturePreview, setSignaturePreview] = useState(null);
+  const [signLoading, setSignLoading] = useState(false);
 
   // History modal state
   const [historyDoc, setHistoryDoc] = useState(null);
@@ -319,27 +321,43 @@ export default function Documents() {
   };
 
   // Sign document
-  const handleOpenSign = (doc) => {
+  const handleOpenSign = async (doc) => {
     setSignDoc(doc);
-    setSignerName('');
+    setSignaturePreview(null);
     setIsSignOpen(true);
+    // Load user's signature
+    try {
+      const res = await api.get('/auth/me/signature');
+      setSignaturePreview(res.data?.signature_data || null);
+    } catch (err) {
+      setSignaturePreview(null);
+    }
   };
 
-  const handleSubmitSign = async (e) => {
-    e.preventDefault();
-    if (!signDoc || !signerName.trim()) return;
+  const handleSubmitSign = async () => {
+    if (!signDoc) return;
+    setSignLoading(true);
     try {
-      const res = await documentsAPI.sign(signDoc.id, signerName.trim());
+      const res = await documentsAPI.sign(signDoc.id);
+      const signData = res.data;
+      // Update the document in the list with sign info
       setDocuments((prev) =>
-        prev.map((d) => (d.id === signDoc.id ? res.data : d))
+        prev.map((d) => (d.id === signDoc.id ? {
+          ...d,
+          is_signed: true,
+          signed_by: signData.signed_by,
+          signed_at: signData.signed_at,
+          signature_image: signData.signature_image,
+        } : d))
       );
       setIsSignOpen(false);
       setSignDoc(null);
-      setSignerName('');
       clearError();
     } catch (err) {
-      setError('Failed to sign document');
+      setError(err.response?.data?.detail || 'Failed to sign document');
       console.error(err);
+    } finally {
+      setSignLoading(false);
     }
   };
 
@@ -559,13 +577,24 @@ export default function Documents() {
 
                     {/* Signed Status */}
                     <td className="text-center px-3">
-                      <span className={`badge rounded-pill ${
-                        doc.is_signed 
-                          ? 'bg-success' 
-                          : 'bg-secondary'
-                      }`}>
-                        {doc.is_signed ? 'Signed' : 'Unsigned'}
-                      </span>
+                      <div className="d-flex flex-column align-items-center gap-1">
+                        <span className={`badge rounded-pill ${
+                          doc.is_signed
+                            ? 'bg-success'
+                            : 'bg-secondary'
+                        }`}>
+                          {doc.is_signed ? 'Signed' : 'Unsigned'}
+                        </span>
+                        {doc.is_signed && doc.signature_image && (
+                          <img
+                            src={doc.signature_image}
+                            alt="Signature"
+                            className="border rounded"
+                            style={{ maxWidth: '60px', maxHeight: '20px', opacity: 0.8 }}
+                            title={`Signed by ${doc.signed_by || 'Unknown'}`}
+                          />
+                        )}
+                      </div>
                     </td>
 
                     {/* View */}
@@ -791,38 +820,76 @@ export default function Documents() {
       {/* Sign Document Modal */}
       <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)}>
         {isSignOpen && signDoc && (
-          <form onSubmit={handleSubmitSign} className="space-y-4">
+          <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Sign Document
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {signDoc.original_filename}
             </p>
-            <div className="form-floating mb-2">
-              <input
-                type="text"
-                id="signerName"
-                required
-                className="form-control form-control-sm"
-                value={signerName}
-                onChange={(e) => setSignerName(e.target.value)}
-                placeholder="Signer Name"
-              />
-              <label htmlFor="signerName">Signer Name *</label>
-            </div>
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsSignOpen(false)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn-primary">
-                Sign
-              </button>
-            </div>
-          </form>
+
+            {signaturePreview ? (
+              <>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Your signature:
+                  </p>
+                  <div className="inline-block border rounded p-3 bg-white">
+                    <img
+                      src={signaturePreview}
+                      alt="Your signature"
+                      style={{ maxWidth: '300px', maxHeight: '100px' }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Signing as: {user?.first_name} {user?.last_name}
+                  </p>
+                </div>
+                <div className="flex justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsSignOpen(false)}
+                    className="btn-secondary"
+                    disabled={signLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmitSign}
+                    className="btn-primary"
+                    disabled={signLoading}
+                  >
+                    {signLoading ? 'Signing...' : 'Apply Signature'}
+                  </button>
+                </div>
+              </>
+            ) : signaturePreview === null && !signDoc ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+              </div>
+            ) : (
+              <>
+                <div className="text-center py-4">
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    No signature saved yet.
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500">
+                    Go to Employees &gt; Edit your profile &gt; Signature tab to create your signature.
+                  </p>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsSignOpen(false)}
+                    className="btn-secondary"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </Modal>
 

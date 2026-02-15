@@ -517,12 +517,10 @@ export const documentsAPI = {
     clearCache('documents');
     return api.put(`/isud/documents/${id}`, data);
   },
-  sign: (id, signerName) =>
-    api.put(`/isud/documents/${id}`, {
-      is_signed: true,
-      signed_by: signerName,
-      signed_at: new Date().toISOString(),
-    }),
+  sign: (id) => {
+    clearCache('documents');
+    return api.put(`/documents/${id}/sign`);
+  },
   fileUrl: (id, { download = false } = {}) =>
     `${api.defaults.baseURL}/documents/${id}/${download ? 'download' : 'file'}`,
   historyFileUrl: (historyId, { download = true } = {}) =>

@@ -22,6 +22,7 @@ _SQLALCHEMY_LOGGERS_TO_DISABLE = (
 for _logger_name in _SQLALCHEMY_LOGGERS_TO_DISABLE:
     logging.getLogger(_logger_name).disabled = True
 
+from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -508,6 +509,46 @@ async def document_save_binary(
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     return {"success": True, "file_size": file_size, "content_type": doc.content_type}
+
+
+@app.put("/api/v1/documents/{document_id}/sign", tags=["documents"])
+async def document_sign(
+    document_id: UUID,
+    session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Sign a document using the authenticated user's saved signature."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not current_user.signature_data:
+        raise HTTPException(
+            status_code=400,
+            detail="No signature saved. Please create a signature in your employee profile first."
+        )
+
+    doc.is_signed = True
+    doc.signed_by = f"{current_user.first_name} {current_user.last_name}"
+    doc.signed_at = datetime.utcnow()
+    doc.signature_image = current_user.signature_data
+    doc.signed_by_user_id = current_user.id
+    doc.updated_at = datetime.utcnow()
+
+    try:
+        session.add(doc)
+        session.commit()
+        session.refresh(doc)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    return {
+        "success": True,
+        "signed_by": doc.signed_by,
+        "signed_at": str(doc.signed_at),
+        "signature_image": doc.signature_image,
+    }
 
 
 @app.get("/api/v1/documents/{document_id}/onlyoffice-config", tags=["documents"])
