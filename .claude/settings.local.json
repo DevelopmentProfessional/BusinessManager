@@ -36,7 +36,9 @@
       "Bash(sqlite3:*)",
       "Bash(python3:*)",
       "Bash(pip show:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git commit:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

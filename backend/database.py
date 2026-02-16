@@ -166,6 +166,7 @@ def create_db_and_tables():
     _ensure_schedule_extra_columns_if_needed()
     _ensure_user_extra_columns_if_needed()
     _ensure_signature_columns_if_needed()
+    _seed_user_colors_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -487,6 +488,7 @@ def _ensure_schedule_extra_columns_if_needed():
 def _ensure_user_extra_columns_if_needed():
     """Ensure user table has employee detail/benefit columns."""
     new_cols = {
+        "color": "VARCHAR",
         "iod_number": "VARCHAR",
         "location": "VARCHAR",
         "salary": "FLOAT",
@@ -518,6 +520,98 @@ def _ensure_user_extra_columns_if_needed():
             for col, col_type in new_cols.items():
                 if col not in col_names:
                     conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+
+
+def _seed_user_colors_if_needed():
+    """Assign unique colors to users that do not have one."""
+    def _hsl_to_hex(h: float, s: float, l: float) -> str:
+        c = (1 - abs(2 * l - 1)) * s
+        x = c * (1 - abs((h / 60) % 2 - 1))
+        m = l - c / 2
+        if 0 <= h < 60:
+            r, g, b = c, x, 0
+        elif 60 <= h < 120:
+            r, g, b = x, c, 0
+        elif 120 <= h < 180:
+            r, g, b = 0, c, x
+        elif 180 <= h < 240:
+            r, g, b = 0, x, c
+        elif 240 <= h < 300:
+            r, g, b = x, 0, c
+        else:
+            r, g, b = c, 0, x
+        to_hex = lambda v: f"{int((v + m) * 255):02x}"
+        return f"#{to_hex(r)}{to_hex(g)}{to_hex(b)}"
+
+    palette = [
+        "#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0d9488",
+        "#ea580c", "#0891b2", "#b91c1c", "#4f46e5", "#65a30d", "#d97706",
+        "#0f766e", "#be123c", "#9333ea", "#15803d", "#c2410c", "#0e7490",
+    ]
+
+    if DATABASE_URL.startswith("sqlite"):
+        user_table = "user"
+        id_col = "id"
+        color_col = "color"
+    else:
+        user_table = '"user"'
+        id_col = "id"
+        color_col = "color"
+
+    with engine.begin() as conn:
+        # Ensure column exists before seeding
+        try:
+            existing = conn.execute(text(f"SELECT {id_col}, {color_col} FROM {user_table}"))
+        except Exception:
+            return
+
+        rows = existing.fetchall()
+        if not rows:
+            return
+
+        used_colors = set()
+        available = [c for c in palette]
+
+        updates = []
+        color_index = 0
+        hue = 0.0
+        hue_step = 37.0
+
+        for user_id, color in rows:
+            normalized = color.lower() if color else None
+            if normalized and normalized not in used_colors:
+                used_colors.add(normalized)
+                continue
+
+            if color_index < len(available):
+                while color_index < len(available) and available[color_index].lower() in used_colors:
+                    color_index += 1
+                if color_index < len(available):
+                    chosen = available[color_index]
+                    color_index += 1
+                else:
+                    chosen = None
+            else:
+                chosen = None
+
+            if chosen is None:
+                # Generate additional distinct colors if palette is exhausted
+                while True:
+                    generated = _hsl_to_hex(hue % 360, 0.72, 0.5)
+                    hue += hue_step
+                    if generated.lower() not in used_colors:
+                        chosen = generated
+                        break
+
+            used_colors.add(chosen.lower())
+            updates.append((str(user_id), chosen))
+
+        if updates:
+            for user_id, color in updates:
+                conn.execute(
+                    text(f"UPDATE {user_table} SET {color_col} = :color WHERE {id_col} = :id"),
+                    {"color": color, "id": user_id}
+                )
 
 
 def _ensure_signature_columns_if_needed():

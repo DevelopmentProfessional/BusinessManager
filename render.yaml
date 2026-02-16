@@ -21,11 +21,23 @@ services:
   # Frontend Service
   - type: static
     name: BusinessManager_Reference
-    buildCommand: cd frontend && VITE_API_URL=https://businessmanager-reference-api.onrender.com/api/v1 npm install && npm run build
+    buildCommand: cd frontend && VITE_API_URL=https://businessmanager-reference-api.onrender.com/api/v1 VITE_ONLYOFFICE_URL=https://businessmanager-onlyoffice.onrender.com npm install && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_URL
         value: https://businessmanager-reference-api.onrender.com/api/v1
+      - key: VITE_ONLYOFFICE_URL
+        value: https://businessmanager-onlyoffice.onrender.com
+
+  # OnlyOffice Document Server (Community Edition)
+  - type: web
+    name: BusinessManager_OnlyOffice
+    env: docker
+    plan: starter
+    dockerImage: onlyoffice/documentserver
+    envVars:
+      - key: JWT_ENABLED
+        value: "false"
 
 databases:
   - name: dd_reference_temp

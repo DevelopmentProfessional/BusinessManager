@@ -328,25 +328,187 @@ textarea.form-control {
     @apply min-h-0 flex-1 overflow-y-auto overflow-x-auto;
   }
 
-  /* DOCX Preview container styles */
+  /* DOCX Preview container styles - FULLY RESPONSIVE */
   .docx-preview-container {
-    @apply bg-white dark:bg-gray-100 p-4 rounded shadow-inner;
-    max-width: 100%;
-    overflow-x: auto;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    box-sizing: border-box;
   }
 
+  @media (prefers-color-scheme: dark) {
+    .docx-preview-container {
+      background-color: #1F2937;
+    }
+  }
+
+  /* Root docx wrapper */
   .docx-preview-container .docx {
     @apply text-gray-900;
     font-family: 'Calibri', 'Arial', sans-serif;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    display: block !important;
   }
 
+  /* Section element (main document container) */
+  .docx-preview-container section {
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* Article element (content wrapper) */
+  .docx-preview-container article {
+    width: 100% !important;
+    height: auto !important;
+    padding: 0.5rem !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* All paragraphs and text blocks */
+  .docx-preview-container p {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* All divs inside docx-preview */
+  .docx-preview-container div {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+  }
+
+  /* Headings */
+  .docx-preview-container h1,
+  .docx-preview-container h2,
+  .docx-preview-container h3,
+  .docx-preview-container h4,
+  .docx-preview-container h5,
+  .docx-preview-container h6 {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.75rem 0 0.5rem 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Lists */
+  .docx-preview-container ul,
+  .docx-preview-container ol {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0 1.5rem !important;
+  }
+
+  .docx-preview-container li {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Tables - fully responsive */
   .docx-preview-container table {
     @apply border-collapse border border-gray-300;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    table-layout: auto !important;
   }
 
   .docx-preview-container table td,
   .docx-preview-container table th {
     @apply border border-gray-300 p-2;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  /* Images - responsive */
+  .docx-preview-container img {
+    max-width: 100% !important;
+    height: auto !important;
+    width: auto !important;
+    display: block !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  /* Spans and inline elements */
+  .docx-preview-container span {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Blockquotes */
+  .docx-preview-container blockquote {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.75rem 1rem !important;
+    border-left: 3px solid #d1d5db !important;
+  }
+
+  /* Code blocks */
+  .docx-preview-container pre {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    box-sizing: border-box !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.75rem !important;
+  }
+
+  .docx-preview-container code {
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Horizontal rules */
+  .docx-preview-container hr {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 1rem 0 !important;
+    border: none !important;
+    border-top: 1px solid #d1d5db !important;
+  }
+
+  /* Ensure all elements respect 100% width */
+  .docx-preview-container > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 

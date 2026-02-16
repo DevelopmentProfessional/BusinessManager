@@ -84,6 +84,7 @@ class User(BaseModel, table=True):
     password_hash: str
     first_name: str
     last_name: str
+    color: Optional[str] = Field(default=None, index=True)
     phone: Optional[str] = Field(default=None)
     role: UserRole = Field(default=UserRole.EMPLOYEE)  # Default to EMPLOYEE
     hire_date: datetime = Field(default_factory=datetime.utcnow)
@@ -584,6 +585,7 @@ class UserCreate(SQLModel):
     password: str
     first_name: str
     last_name: str
+    color: Optional[str] = None
     phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
     reports_to: Optional[UUID] = None
@@ -605,6 +607,7 @@ class UserUpdate(SQLModel):
     password: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    color: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
@@ -632,6 +635,7 @@ class UserRead(SQLModel):
     email: Optional[str] = None
     first_name: str
     last_name: str
+    color: Optional[str] = None
     phone: Optional[str] = None
     role: UserRole
     hire_date: datetime

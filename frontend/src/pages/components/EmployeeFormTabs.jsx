@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { rolesAPI, isudAPI } from '../../services/api';
+import { rolesAPI, isudAPI, employeesAPI } from '../../services/api';
 import api from '../../services/api';
 import SignaturePad from './SignaturePad';
 
@@ -135,10 +135,6 @@ export default function EmployeeFormTabs({
       const loadSignature = async () => {
         setSignatureLoading(true);
         try {
-          const res = await api.get('/auth/me/signature');
-          setSavedSignature(res.data?.signature_data || null);
-        } catch (err) {
-          // If the user is viewing another employee (admin), try loading from employee data
           setSavedSignature(employee.signature_data || null);
         } finally {
           setSignatureLoading(false);
@@ -152,7 +148,10 @@ export default function EmployeeFormTabs({
     setSignatureLoading(true);
     setSignatureMessage('');
     try {
-      await api.put('/auth/me/signature', { signature_data: dataUrl });
+      if (!employee?.id) {
+        throw new Error('Employee record is required to save a signature.');
+      }
+      await employeesAPI.updateUser(employee.id, { signature_data: dataUrl });
       setSavedSignature(dataUrl);
       setShowSignaturePad(false);
       setSignatureMessage('Signature saved successfully');

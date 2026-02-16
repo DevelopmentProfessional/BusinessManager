@@ -1,15 +1,29 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import { scheduleAPI, settingsAPI, isudAPI } from '../services/api';
+import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
 import Modal from './components/Modal';
 import ScheduleForm from './components/ScheduleForm';
 import PermissionGate from './components/PermissionGate';
 import AttendanceWidget from './components/AttendanceWidget';
 import useDarkMode from '../services/useDarkMode';
+import ScheduleFilterModal from './components/ScheduleFilterModal';
 
 export default function Schedule() {
-  const { appointments, clients, services, employees, loading, setAppointments, hasPermission, isAuthenticated, user } = useStore();
+  const {
+    appointments,
+    clients,
+    services,
+    employees,
+    loading,
+    setAppointments,
+    setClients,
+    setServices,
+    setEmployees,
+    hasPermission,
+    isAuthenticated,
+    user,
+  } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Use the permission refresh hook
@@ -31,6 +45,14 @@ export default function Schedule() {
   const [draggedAppointment, setDraggedAppointment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    employeeIds: [],
+    clientIds: [],
+    serviceIds: [],
+    startDate: '',
+    endDate: '',
+  });
   const hasFetched = useRef(false);
   const calendarGridRef = useRef(null);
 
@@ -57,7 +79,7 @@ export default function Schedule() {
     sunday_enabled: true
   });
 
-  // Load ONLY schedule data on mount - services, employees, clients loaded on-demand in ScheduleForm
+  // Load schedule data and supporting lookups
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -87,13 +109,33 @@ export default function Schedule() {
           });
         }
 
-        // Only load schedule/appointments - other data loads on-demand in form
-        const scheduleResponse = await scheduleAPI.getAll();
+        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse] = await Promise.all([
+          scheduleAPI.getAll(),
+          clientsAPI.getAll(),
+          servicesAPI.getAll(),
+          employeesAPI.getAll(),
+        ]);
+
         const scheduleData = scheduleResponse?.data ?? scheduleResponse;
         if (Array.isArray(scheduleData)) {
           setAppointments(scheduleData);
         } else {
           console.error('Invalid schedule data format:', scheduleData);
+        }
+
+        const clientsData = clientsResponse?.data ?? clientsResponse;
+        if (Array.isArray(clientsData)) {
+          setClients(clientsData);
+        }
+
+        const servicesData = servicesResponse?.data ?? servicesResponse;
+        if (Array.isArray(servicesData)) {
+          setServices(servicesData);
+        }
+
+        const employeesData = employeesResponse?.data ?? employeesResponse;
+        if (Array.isArray(employeesData)) {
+          setEmployees(employeesData);
         }
       } catch (error) {
         console.error('Error loading schedule:', error);
@@ -104,7 +146,49 @@ export default function Schedule() {
     };
 
     loadSchedule();
-  }, [setAppointments, isAuthenticated]);
+  }, [setAppointments, setClients, setServices, setEmployees, isAuthenticated]);
+
+  const employeeColorMap = useMemo(() => {
+    const entries = employees.map((employee) => [employee.id, employee.color]);
+    return new Map(entries);
+  }, [employees]);
+
+  const filteredAppointments = useMemo(() => {
+    const hasEmployeeFilter = filters.employeeIds.length > 0;
+    const hasClientFilter = filters.clientIds.length > 0;
+    const hasServiceFilter = filters.serviceIds.length > 0;
+    const hasStartDate = Boolean(filters.startDate);
+    const hasEndDate = Boolean(filters.endDate);
+
+    const startDate = hasStartDate ? new Date(filters.startDate) : null;
+    const endDate = hasEndDate ? new Date(filters.endDate) : null;
+    if (startDate) {
+      startDate.setHours(0, 0, 0, 0);
+    }
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    return appointments.filter((appointment) => {
+      if (hasEmployeeFilter && !filters.employeeIds.includes(appointment.employee_id)) {
+        return false;
+      }
+      if (hasClientFilter && (!appointment.client_id || !filters.clientIds.includes(appointment.client_id))) {
+        return false;
+      }
+      if (hasServiceFilter && (!appointment.service_id || !filters.serviceIds.includes(appointment.service_id))) {
+        return false;
+      }
+
+      if (startDate || endDate) {
+        const appointmentDate = new Date(appointment.appointment_date);
+        if (startDate && appointmentDate < startDate) return false;
+        if (endDate && appointmentDate > endDate) return false;
+      }
+
+      return true;
+    });
+  }, [appointments, filters]);
 
   // Get calendar data based on current view
   // Helper to check if a day is enabled based on settings
@@ -461,7 +545,7 @@ export default function Schedule() {
   };
 
   const getAppointmentsForDate = (date) => {
-    const appointmentsForDate = appointments.filter(appointment => {
+    const appointmentsForDate = filteredAppointments.filter(appointment => {
       const appointmentDate = new Date(appointment.appointment_date);
       return appointmentDate.toDateString() === date.toDateString();
     });
@@ -586,11 +670,14 @@ export default function Schedule() {
                             hour12: false 
                           });
                           
+                          const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
+
                           return (
                             <div 
                               key={appointment.id} 
                               className="appointment-dot" 
                               title={`${clientName} - ${serviceName} at ${timeString}`}
+                              style={{ backgroundColor: employeeColor }}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
@@ -659,12 +746,15 @@ export default function Schedule() {
                           minute: '2-digit',
                           hour12: false 
                         });
+
+                        const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
                         
                         return (
                           <div 
                             key={appointment.id} 
                             className="appointment-dot" 
                             title={`${clientName} - ${serviceName} at ${timeString}`}
+                            style={{ backgroundColor: employeeColor }}
                             draggable={true}
                             onDragStart={(e) => handleDragStart(e, appointment)}
                             onDragEnd={handleDragEnd}
@@ -676,6 +766,7 @@ export default function Schedule() {
                             }}
                           >
                             <div className="appointment-time">{timeString}</div>
+                            <div className="appointment-service">{serviceName}</div>
                             <div className="appointment-client">{clientName}</div>
                           </div>
                         );
@@ -712,7 +803,7 @@ export default function Schedule() {
                     <div className="date-number">{date.getDate()}</div>
                     {appointmentsForDate.length > 0 && (
                       <div className="appointments">
-                        {appointmentsForDate.slice(0, 2).map(appointment => {
+                        {appointmentsForDate.map(appointment => {
                           // Get client name
                           const client = clients.find(c => c.id === appointment.client_id);
                           const clientName = client ? client.name : 'Unknown Client';
@@ -729,11 +820,14 @@ export default function Schedule() {
                             hour12: false 
                           });
                           
+                          const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
+
                           return (
                             <div 
                               key={appointment.id} 
                               className="appointment-dot" 
                               title={`${clientName} - ${serviceName} at ${timeString}`}
+                              style={{ backgroundColor: employeeColor }}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
@@ -748,9 +842,6 @@ export default function Schedule() {
                             </div>
                           );
                         })}
-                        {appointmentsForDate.length > 2 && (
-                          <div className="more-appointments">+{appointmentsForDate.length - 2}</div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -862,6 +953,15 @@ export default function Schedule() {
                 <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">{new Date().getDate()}</text>
               </svg>
             </button>
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(true)}
+              className="btn btn-sm btn-outline-secondary"
+              style={{ height: '36px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Filter"
+            >
+              Filter
+            </button>
           </div>
         </div>
 
@@ -873,6 +973,23 @@ export default function Schedule() {
             onDelete={handleDeleteAppointment}
           />
         </Modal>
+
+        <ScheduleFilterModal
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          employees={employees}
+          clients={clients}
+          services={services}
+          filters={filters}
+          onApply={(nextFilters) => setFilters(nextFilters)}
+          onClear={() => setFilters({
+            employeeIds: [],
+            clientIds: [],
+            serviceIds: [],
+            startDate: '',
+            endDate: '',
+          })}
+        />
       </PermissionGate>
 
       <style>{`
@@ -1016,7 +1133,7 @@ export default function Schedule() {
           padding: 2px;
           min-width: 0;
           min-height: 0;
-          grid-auto-rows: 60px;
+          grid-auto-rows: minmax(36px, 1fr);
         }
 
         .calendar-grid.week-view .time-label-cell {
@@ -1032,8 +1149,9 @@ export default function Schedule() {
           overflow: hidden;
           gap: 0;
           min-height: 0;
-          grid-auto-rows: 60px;
+          grid-auto-rows: minmax(36px, 1fr);
         }
+
 
         .calendar-cell.time-label-cell {
           background: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
@@ -1063,6 +1181,7 @@ export default function Schedule() {
           border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
           height: 100%;
         }
+
 
         .calendar-cell.time-slot {
           box-sizing: border-box;
@@ -1178,7 +1297,7 @@ export default function Schedule() {
           }
           .calendar-grid.week-view,
           .calendar-grid.day-view {
-            grid-auto-rows: 20px;
+            grid-auto-rows: minmax(20px, 1fr);
           }
           .calendar-cell.time-label-cell {
             font-size: 10px;
@@ -1189,6 +1308,9 @@ export default function Schedule() {
             padding: 3px 4px;
           }
           .appointment-time {
+            font-size: 8px;
+          }
+          .appointment-service {
             font-size: 8px;
           }
           .appointment-client {
@@ -1209,7 +1331,7 @@ export default function Schedule() {
           }
           .calendar-grid.week-view,
           .calendar-grid.day-view {
-            grid-auto-rows: 45px;
+            grid-auto-rows: minmax(28px, 1fr);
           }
           .calendar-cell.time-label-cell {
             font-size: 9px;
@@ -1228,6 +1350,11 @@ export default function Schedule() {
         .appointment-time {
           font-weight: bold;
           font-size: 9px;
+        }
+
+        .appointment-service {
+          font-size: 9px;
+          font-weight: 600;
         }
         
         .appointment-client {
