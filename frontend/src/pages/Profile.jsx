@@ -240,8 +240,8 @@ const Profile = () => {
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center gap-1">
                 {isDarkMode 
-                ? (<MoonIcon className="h-6 w-6 text-primary" />) 
-                : (<SunIcon className="h-6 w-6 text-warning" />)}                  
+                ? (🌚) 
+                : (🌞)}                  
                 <div className="form-check form-switch">                      
                   <input
                     className="form-check-input"
@@ -260,17 +260,14 @@ const Profile = () => {
                   className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
                   title="Add app to home screen"
                 >
-                  <ArrowDownTrayIcon className="h-4 w-4" />
-                  Add to Home Screen
+                  🏠
                 </button>
                 <button 
                   onClick={handleLogout} 
                   className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" 
                   title="Log out"
-                >
-                  <ArrowRightOnRectangleIcon className="h-4 w-4" />
-                  🚪
-                  Logout
+                > 
+                  🚪 
                 </button>
               </div>
             </div>
