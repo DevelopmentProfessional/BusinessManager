@@ -269,6 +269,7 @@ const Profile = () => {
                   title="Log out"
                 >
                   <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                  🚪
                   Logout
                 </button>
               </div>
