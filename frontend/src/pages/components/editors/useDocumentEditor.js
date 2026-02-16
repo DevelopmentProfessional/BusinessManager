@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { documentsAPI } from '../../../services/api';
+import { extractHtmlFromMhtml } from './documentEditorUtils';
 
 /**
  * Custom hook for managing document editor state:
@@ -33,18 +34,22 @@ export function useDocumentEditor(documentId, documentType, filename) {
           const mammoth = await import('mammoth');
           const result = await mammoth.convertToHtml({ arrayBuffer });
           html = result.value || '';
-        } catch {
-          // Mammoth failed — file may have been previously saved as HTML text.
-          // Fall back to treating the bytes as UTF-8 text.
+          console.log('DOCX converted via mammoth:', { length: html.length, preview: html.substring(0, 100) });
+        } catch (mammothErr) {
+          // Mammoth failed — file may have been previously saved as HTML or MHTML.
+          // Fall back to treating the bytes as UTF-8 text, stripping MHTML headers.
+          console.warn('Mammoth failed, trying HTML fallback:', mammothErr);
           const decoder = new TextDecoder('utf-8');
-          html = decoder.decode(arrayBuffer);
+          html = extractHtmlFromMhtml(decoder.decode(arrayBuffer));
+          console.log('HTML fallback extracted:', { length: html.length, preview: html.substring(0, 100) });
         }
         setContentState(html);
         setOriginalContent(html);
       } else {
         // Fetch text content via API
         const res = await documentsAPI.getContent(documentId);
-        const text = res.data.content || '';
+        const text = res.data?.content || res.data || '';
+        console.log('Text content loaded:', { length: text.length, preview: text.substring(0, 100) });
         setContentState(text);
         setOriginalContent(text);
       }

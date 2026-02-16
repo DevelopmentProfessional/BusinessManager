@@ -53,7 +53,7 @@ const CodeEditor = forwardRef(function CodeEditor({ content, onChange, language 
   }, [onChange]);
 
   return (
-    <div className="h-full overflow-hidden code-editor-wrapper">
+    <div className="h-full min-h-0 overflow-hidden code-editor-wrapper">
       <CodeMirror
         ref={viewRef}
         value={content || ''}
@@ -61,7 +61,7 @@ const CodeEditor = forwardRef(function CodeEditor({ content, onChange, language 
         extensions={extensions}
         theme={isDark ? oneDark : 'light'}
         height="100%"
-        style={{ height: '100%' }}
+        style={{ height: '100%', width: '100%' }}
         basicSetup={{
           lineNumbers: true,
           highlightActiveLineGutter: true,
@@ -74,8 +74,8 @@ const CodeEditor = forwardRef(function CodeEditor({ content, onChange, language 
         }}
       />
       <style>{`
-        .code-editor-wrapper { height: 100%; }
-        .code-editor-wrapper .cm-editor { height: 100%; }
+        .code-editor-wrapper { height: 100%; width: 100%; box-sizing: border-box; }
+        .code-editor-wrapper .cm-editor { height: 100%; width: 100%; }
         .code-editor-wrapper .cm-scroller { overflow: auto; }
       `}</style>
     </div>

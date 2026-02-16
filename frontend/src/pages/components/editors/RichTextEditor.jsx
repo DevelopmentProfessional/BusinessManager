@@ -1,4 +1,4 @@
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -12,6 +12,11 @@ import { Indent } from './extensions/Indent';
 import { SearchAndReplace } from './extensions/SearchAndReplace';
 
 const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange }, ref) {
+  const contentRef = useRef(content);
+  
+  // Keep track of initial mount
+  const isInitialMount = useRef(true);
+  
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -36,7 +41,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
       Indent,
       SearchAndReplace,
     ],
-    content: content || '',
+    content: '',
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },
@@ -46,8 +51,18 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
 
   // Update content when prop changes (e.g., initial load)
   useEffect(() => {
-    if (editor && content !== undefined && content !== editor.getHTML()) {
-      editor.commands.setContent(content || '', false);
+    if (!editor) return;
+    
+    // Only update if content actually changed
+    if (contentRef.current !== content) {
+      contentRef.current = content;
+      const newContent = content || '';
+      console.log('Setting editor content:', { 
+        hasContent: !!newContent, 
+        length: newContent.length,
+        preview: newContent.substring(0, 100) 
+      });
+      editor.commands.setContent(newContent, false);
     }
   }, [content, editor]);
 
@@ -63,7 +78,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
     <div className="h-full flex flex-col overflow-hidden">
       <EditorContent
         editor={editor}
-        className="flex-1 overflow-auto tiptap-editor"
+        className="flex-1 min-h-0 overflow-auto tiptap-editor"
       />
       <style>{`
         .tiptap-editor .tiptap {
@@ -74,6 +89,8 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
           font-size: 1rem;
           line-height: 1.75;
           color: inherit;
+          width: 100%;
+          box-sizing: border-box;
         }
         .tiptap-editor .tiptap h1 { font-size: 2rem; font-weight: 700; margin: 1rem 0 0.5rem; }
         .tiptap-editor .tiptap h2 { font-size: 1.5rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }

@@ -196,9 +196,10 @@ app.include_router(database_connections.router, prefix="/api/v1", tags=["databas
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).
 import shutil
 import uuid as _uuid
+import urllib.request
 from uuid import UUID
 from typing import Optional
-from fastapi import Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
 
 from sqlmodel import select as sql_select
@@ -338,8 +339,12 @@ async def _serve_document_file(
     except OSError:
         pass  # Disk restore failed; serve from memory
 
-    return StarletteResponse(
-        content=blob.data,
+    # Use StreamingResponse for proper binary data handling
+    from starlette.responses import StreamingResponse
+    import io
+    
+    return StreamingResponse(
+        iter([blob.data]),
         media_type=doc.content_type or "application/octet-stream",
         headers={
             "Content-Disposition": f'{disposition}; filename="{doc.original_filename}"',
@@ -554,14 +559,112 @@ async def document_sign(
 @app.get("/api/v1/documents/{document_id}/onlyoffice-config", tags=["documents"])
 async def document_onlyoffice_config(
     document_id: UUID,
+    request: Request,
     session=Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Stub for document editor component; real config/connection lives in the editor."""
+    """Return OnlyOffice editor config for a document."""
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    return {"documentType": None, "notConfigured": True, "document": {"title": doc.original_filename}}
+
+    base_url = str(request.base_url).rstrip("/")
+    file_url = f"{base_url}/api/v1/documents/{document_id}/file"
+    callback_url = f"{base_url}/api/v1/documents/{document_id}/onlyoffice-callback"
+
+    ext = os.path.splitext(doc.original_filename or "")[1].lstrip(".").lower()
+    if ext in ("xlsx", "xls", "csv"):
+        document_type = "cell"
+    elif ext in ("pptx", "ppt"):
+        document_type = "slide"
+    else:
+        document_type = "word"
+
+    key_parts = [
+        str(doc.id),
+        (doc.updated_at or doc.created_at).isoformat() if (doc.updated_at or doc.created_at) else "0",
+        str(doc.file_size or 0),
+    ]
+    doc_key = "-".join(key_parts)
+
+    return {
+        "documentType": document_type,
+        "document": {
+            "title": doc.original_filename,
+            "url": file_url,
+            "fileType": ext or "docx",
+            "key": doc_key,
+        },
+        "editorConfig": {
+            "mode": "edit",
+            "callbackUrl": callback_url,
+            "user": {
+                "id": str(current_user.id),
+                "name": f"{current_user.first_name} {current_user.last_name}",
+            },
+        },
+    }
+
+
+@app.post("/api/v1/documents/{document_id}/onlyoffice-callback", tags=["documents"])
+async def document_onlyoffice_callback(
+    document_id: UUID,
+    request: Request,
+    session=Depends(get_session),
+):
+    """OnlyOffice callback to persist edited content."""
+    payload = await request.json()
+    status = payload.get("status")
+
+    # 2 = ready for saving, 6 = force save
+    if status not in (2, 6):
+        return {"error": 0}
+
+    file_url = payload.get("url")
+    if not file_url:
+        return {"error": 1}
+
+    doc = session.get(Document, document_id)
+    if not doc:
+        return {"error": 1}
+
+    try:
+        with urllib.request.urlopen(file_url) as response:
+            data = response.read()
+    except Exception:
+        return {"error": 1}
+
+    # Save to disk (best-effort)
+    path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
+    try:
+        os.makedirs(os.path.dirname(path) or _UPLOAD_DIR, exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(data)
+    except OSError:
+        pass
+
+    # Update document metadata and blob
+    doc.file_size = len(data)
+    doc.updated_at = datetime.utcnow()
+
+    blob = session.exec(
+        sql_select(DocumentBlob).where(DocumentBlob.document_id == document_id)
+    ).first()
+    if blob:
+        blob.data = data
+        session.add(blob)
+    else:
+        blob = DocumentBlob(document_id=document_id, data=data)
+        session.add(blob)
+
+    try:
+        session.add(doc)
+        session.commit()
+    except Exception:
+        session.rollback()
+        return {"error": 1}
+
+    return {"error": 0}
 
 
 # --- Document Assignment Endpoints ---

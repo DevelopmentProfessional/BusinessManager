@@ -309,6 +309,14 @@ export default function Documents() {
     handleOpenSign(doc);
   };
 
+  // Handle delete from viewer modal
+  const handleDeleteFromViewer = async (doc) => {
+    setIsViewerOpen(false);
+    if (doc?.id) {
+      await handleDeleteDocument(doc.id);
+    }
+  };
+
   // Save edited document
   const handleSaveEdit = (updatedDoc) => {
     setDocuments((prev) =>
@@ -641,6 +649,7 @@ export default function Documents() {
         document={viewerDoc}
         onEdit={handleEditFromViewer}
         onSign={handleSignFromViewer}
+        onDelete={handleDeleteFromViewer}
       />
 
       {/* Document Edit Modal */}

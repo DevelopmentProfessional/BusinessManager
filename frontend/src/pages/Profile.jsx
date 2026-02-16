@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
@@ -19,6 +19,8 @@ import {
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
+import api from '../services/api';
+import SignaturePad from './components/SignaturePad';
 
 // Available database environments - shows what's possible
 const DB_ENVIRONMENTS = {
@@ -44,6 +46,10 @@ const Profile = () => {
   const [dbError, setDbError] = useState('');
   const [installMessage, setInstallMessage] = useState('');
   const [installError, setInstallError] = useState('');
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [savedSignature, setSavedSignature] = useState(null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  const [signatureMessage, setSignatureMessage] = useState('');
 
   const handleSwitchEnvironment = async (env) => {
     if (env === currentDbEnvironment || !user?.id) return;
@@ -107,6 +113,39 @@ const Profile = () => {
       }
     } catch (error) {
       setInstallError('Unable to open install prompt. Please use your browser menu to add to home screen.');
+    }
+  };
+
+  useEffect(() => {
+    const loadSignature = async () => {
+      if (!user?.id) return;
+      setSignatureLoading(true);
+      try {
+        const res = await api.get('/auth/me/signature');
+        setSavedSignature(res.data?.signature_data || null);
+      } catch (error) {
+        setSavedSignature(null);
+      } finally {
+        setSignatureLoading(false);
+      }
+    };
+    loadSignature();
+  }, [user?.id]);
+
+  const handleSaveSignature = async (dataUrl) => {
+    setSignatureLoading(true);
+    setSignatureMessage('');
+    try {
+      await api.put('/auth/me/signature', { signature_data: dataUrl });
+      setSavedSignature(dataUrl);
+      setShowSignaturePad(false);
+      setSignatureMessage('Signature saved successfully');
+      setTimeout(() => setSignatureMessage(''), 3000);
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || 'Failed to save signature';
+      setSignatureMessage(detail);
+    } finally {
+      setSignatureLoading(false);
     }
   };
 
@@ -305,6 +344,51 @@ const Profile = () => {
             Your database environment preference is stored in your profile.
           </div>
  
+        </div>
+      </div>
+      {/* Signature */}
+      <div className="card mb-1 p-2">
+        <div className="card-header bg-transparent">
+          <h2 className="flex wrap h5 mb-1 gap-1">
+            Signature
+          </h2>
+        </div>
+        <div className="card-body">
+          {signatureMessage && (
+            <div className={`alert py-2 small ${signatureMessage.includes('Failed') ? 'alert-danger' : 'alert-success'}`}>
+              {signatureMessage}
+            </div>
+          )}
+
+          {signatureLoading ? (
+            <div className="text-muted">Loading signature...</div>
+          ) : showSignaturePad ? (
+            <SignaturePad
+              onSave={handleSaveSignature}
+              onCancel={() => setShowSignaturePad(false)}
+              initialSignature={savedSignature}
+              width={500}
+              height={200}
+            />
+          ) : savedSignature ? (
+            <div className="d-flex flex-column gap-2">
+              <img
+                src={savedSignature}
+                alt="Saved signature"
+                style={{ maxWidth: '100%', height: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+              />
+              <button type="button" className="btn btn-outline-secondary" onClick={() => setShowSignaturePad(true)}>
+                Replace Signature
+              </button>
+            </div>
+          ) : (
+            <div className="d-flex flex-column gap-2">
+              <p className="text-muted mb-0">No signature saved yet.</p>
+              <button type="button" className="btn btn-outline-primary" onClick={() => setShowSignaturePad(true)}>
+                Create Signature
+              </button>
+            </div>
+          )}
         </div>
       </div>
       </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../../services/api';
 import { renderAsync } from 'docx-preview';
-import { isEditableType, getEditorConfig } from './editors/documentEditorUtils';
+import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from './editors/documentEditorUtils';
 import { useDocumentEditor } from './editors/useDocumentEditor';
 import EditorToolbar from './editors/EditorToolbar';
+import OnlyOfficeEditor from './OnlyOfficeEditor';
 
 // Lazy-load editor components to reduce initial bundle
 const RichTextEditor = lazy(() => import('./editors/RichTextEditor'));
@@ -127,7 +128,7 @@ function ImageViewer({ document, onEdit }) {
       </div>
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-move"
+        className="flex-1 min-h-0 overflow-hidden bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-move w-full"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -185,20 +186,38 @@ function DocxViewer({ document, onEdit }) {
         if (canceled) return;
 
         containerRef.current.innerHTML = '';
+        
         try {
           await renderAsync(ab, containerRef.current, undefined, {
             className: 'docx',
             inWrapper: false,
           });
-        } catch {
-          // renderAsync failed — file may contain HTML from a previous edit/save.
-          // Fall back to rendering content as HTML.
+          
+          // Comprehensive CSS rules now handle all responsive styling
+          // Just ensure container has proper dimensions
+          setLoading(false);
+        } catch (renderErr) {
+          // renderAsync failed — file may contain HTML or MHTML from a previous edit/save.
+          // Extract HTML (stripping MHTML headers if present) and render it.
+          console.warn('DOCX rendering failed, attempting HTML fallback:', renderErr);
           const decoder = new TextDecoder('utf-8');
-          const html = decoder.decode(ab);
-          if (html.trim().startsWith('<') || html.includes('<p') || html.includes('<div')) {
-            containerRef.current.innerHTML = html;
+          const raw = decoder.decode(ab);
+          const html = extractHtmlFromMhtml(raw);
+          
+          if (html && html.trim().length > 0 && html.includes('<')) {
+            // Successfully extracted HTML from MHTML
+            try {
+              containerRef.current.innerHTML = html;
+            } catch (innerErr) {
+              console.error('Failed to set HTML content:', innerErr);
+              throw new Error('Unable to render HTML content');
+            }
+          } else if (!html || html.trim().length === 0) {
+            // Extraction returned empty — likely corrupted file
+            throw new Error('Document content appears corrupted or unrecognizable');
           } else {
-            throw new Error('Not a valid DOCX or HTML file');
+            // HTML extraction returned something but doesn't look like HTML
+            throw new Error('Document format not supported for preview');
           }
         }
         setLoading(false);
@@ -237,16 +256,23 @@ function DocxViewer({ document, onEdit }) {
           )}
         </div>
       </div>
-      <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-gray-900 w-full">
         {loading && (
-          <div className="flex items-center justify-center h-32">
+          <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         )}
         {error && (
-          <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded">{error}</div>
+          <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded m-4">{error}</div>
         )}
-        <div ref={containerRef} className="docx-preview-container" />
+        <div 
+          ref={containerRef} 
+          className="docx-preview-container w-full h-full"
+          style={{
+            width: '100%',
+            height: '100%'
+          }}
+        />
       </div>
     </div>
   );
@@ -342,17 +368,17 @@ function TextViewer({ document, onEdit }) {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-gray-900 w-full">
         {loading && (
-          <div className="flex items-center justify-center h-32">
+          <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         )}
         {error && (
-          <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded">{error}</div>
+          <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded m-4">{error}</div>
         )}
         {!loading && !error && (
-          <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 dark:text-gray-200">
+          <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 dark:text-gray-200 w-full" style={{ margin: 0, padding: '1rem', boxSizing: 'border-box', height: '100%', overflowY: 'auto' }}>
             {content}
           </pre>
         )}
@@ -400,6 +426,14 @@ function UnknownViewer({ document, onEdit }) {
 
 // Editor Area Component — renders the appropriate editor based on document type
 function EditorArea({ document, documentType }) {
+  if (documentType === 'docx') {
+    return (
+      <div className="flex flex-col h-full">
+        <OnlyOfficeEditor documentId={document.id} />
+      </div>
+    );
+  }
+
   const editorRef = useRef(null);
   // Track when the editor instance becomes available so toolbar re-renders with controls
   const [editorInstance, setEditorInstance] = useState(null);
@@ -518,7 +552,7 @@ function EditorArea({ document, documentType }) {
 }
 
 // Main Document Viewer Modal
-export default function DocumentViewerModal({ isOpen, onClose, document, onEdit, onSign }) {
+export default function DocumentViewerModal({ isOpen, onClose, document, onEdit, onSign, onDelete }) {
   const [mode, setMode] = useState('view'); // 'view' or 'edit'
   const [editorDirty, setEditorDirty] = useState(false);
 
@@ -585,7 +619,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit,
       />
 
       {/* Modal Content */}
-      <div className="fixed inset-4 sm:inset-8 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+      <div className="fixed inset-0 m-2 sm:m-4 lg:m-6 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-3 min-w-0">
@@ -622,6 +656,15 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit,
                 Sign
               </button>
             )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(document)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded hover:bg-red-200 dark:hover:bg-red-900/50"
+              >
+                <TrashIcon className="h-4 w-4" />
+                Delete
+              </button>
+            )}
             <a
               href={documentsAPI.fileUrl(document.id, { download: true })}
               download
@@ -641,7 +684,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit,
         </div>
 
         {/* Content: Editor or Viewer */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {mode === 'edit' ? (
             <EditorArea document={document} documentType={documentType} />
           ) : (
