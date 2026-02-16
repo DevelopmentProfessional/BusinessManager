@@ -68,7 +68,7 @@
 
 **Profile:**
 - Float the cards to the bottom of the page.
-- in the settings section, add a color picker for the employee, that color corelated to thier color on the calendar. It can be a calendar icon 📅
+- in the settings section, add a color picker for the employee, that color corelated to thier color on the calendar.
 - the database enviornment section can be more like just in the settings and make it more like a dropdown than its own section. 
 
 **Reports:**
