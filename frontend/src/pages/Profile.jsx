@@ -240,8 +240,8 @@ const Profile = () => {
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center gap-1">
                 {isDarkMode 
-                ? (🌚) 
-                : (🌞)}                  
+                ? (<span>🌚</span>) 
+                : (<span>🌞</span>)}                  
                 <div className="form-check form-switch">                      
                   <input
                     className="form-check-input"
