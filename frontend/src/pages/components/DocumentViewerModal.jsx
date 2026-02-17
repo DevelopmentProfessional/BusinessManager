@@ -5,7 +5,7 @@ import { renderAsync } from 'docx-preview';
 import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from './editors/documentEditorUtils';
 import { useDocumentEditor } from './editors/useDocumentEditor';
 import EditorToolbar from './editors/EditorToolbar';
-import OnlyOfficeEditor from './OnlyOfficeEditor';
+
 
 // Lazy-load editor components to reduce initial bundle
 const RichTextEditor = lazy(() => import('./editors/RichTextEditor'));
@@ -426,14 +426,6 @@ function UnknownViewer({ document, onEdit }) {
 
 // Editor Area Component — renders the appropriate editor based on document type
 function EditorArea({ document, documentType }) {
-  if (documentType === 'docx') {
-    return (
-      <div className="flex flex-col h-full">
-        <OnlyOfficeEditor documentId={document.id} />
-      </div>
-    );
-  }
-
   const editorRef = useRef(null);
   // Track when the editor instance becomes available so toolbar re-renders with controls
   const [editorInstance, setEditorInstance] = useState(null);
