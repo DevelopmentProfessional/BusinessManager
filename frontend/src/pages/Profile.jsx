@@ -257,17 +257,17 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={handleAddToHomeScreen}
-                  className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                  className="btn d-flex align-items-center gap-1 p-0 border-0"
                   title="Add app to home screen"
                 >
-                  🏠
+                  <span style={{ fontSize: '1.75rem' }}>🏠</span>
                 </button>
-                <button 
-                  onClick={handleLogout} 
-                  className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" 
+                <button
+                  onClick={handleLogout}
+                  className="btn d-flex align-items-center gap-1 p-0 border-0"
                   title="Log out"
-                > 
-                  🚪 
+                >
+                  <span style={{ fontSize: '1.75rem' }}>🚪</span>
                 </button>
               </div>
             </div>
