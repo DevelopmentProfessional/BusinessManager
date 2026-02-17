@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { preloadMajorTables } from '../services/api';
+import { startPerformanceSession } from '../services/performanceTracker';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -145,6 +146,9 @@ const Login = () => {
     setError('');
     setSuccess('');
     setValidationErrors({});
+    
+    // Start performance tracking
+    startPerformanceSession();
     
     // Validate form before submission
     if (!validateForm()) {
