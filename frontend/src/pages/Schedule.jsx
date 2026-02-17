@@ -971,6 +971,9 @@ export default function Schedule() {
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
             onDelete={handleDeleteAppointment}
+            clients={clients}
+            services={services}
+            employees={employees}
           />
         </Modal>
 
