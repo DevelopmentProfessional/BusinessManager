@@ -163,6 +163,7 @@ def create_db_and_tables():
     _ensure_employee_user_id_column_if_needed()
     _normalize_item_types_if_needed()
     _ensure_inventory_image_table_if_needed()
+    _ensure_service_duration_column_if_needed()
     _ensure_schedule_extra_columns_if_needed()
     _ensure_user_extra_columns_if_needed()
     _ensure_signature_columns_if_needed()
@@ -457,6 +458,29 @@ def _ensure_inventory_image_table_if_needed():
                 """))
                 
                 print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")
+
+
+def _ensure_service_duration_column_if_needed():
+    """Ensure service table has duration_minutes column."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='service'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('service')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "duration_minutes" not in col_names:
+                conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name='service'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "duration_minutes" not in col_names:
+                conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
 
 
 def _ensure_schedule_extra_columns_if_needed():

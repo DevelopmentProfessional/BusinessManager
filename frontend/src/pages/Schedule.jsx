@@ -447,6 +447,7 @@ export default function Schedule() {
     };
     delete schedulePayload.employee_ids;
     delete schedulePayload.client_ids;
+    delete schedulePayload.recurrence_frequency;
 
     let savedRecord;
     if (editingAppointment && editingAppointment.id) {
@@ -525,7 +526,9 @@ export default function Schedule() {
       employee_id: draggedAppointment.employee_id,
       appointment_date: newDate.toISOString(),
       status: draggedAppointment.status || 'scheduled',
-      notes: draggedAppointment.notes || null
+      notes: draggedAppointment.notes || null,
+      appointment_type: draggedAppointment.appointment_type || 'one_time',
+      duration_minutes: draggedAppointment.duration_minutes || 60,
     };
     
     await scheduleAPI.update(draggedAppointment.id, updatedAppointment);
