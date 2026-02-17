@@ -13,7 +13,8 @@ export default function EmployeeFormTabs({
   onDelete,
   onManagePermissions,
   employees: employeesProp = [],
-  canDelete = false
+  canDelete = false,
+  selfEdit = false
 }) {
   const [activeTab, setActiveTab] = useState('details');
   const [roles, setRoles] = useState([]);
@@ -284,7 +285,7 @@ export default function EmployeeFormTabs({
   return (
     <div className="p-0">
       <h3 className="mb-4 fw-bold">
-        {employee ? 'Edit Employee' : 'Add New Employee'}
+        {selfEdit ? 'My Profile' : employee ? 'Edit Employee' : 'Add New Employee'}
       </h3>
 
       {/* Tab Navigation */}
@@ -351,6 +352,8 @@ export default function EmployeeFormTabs({
                   <label htmlFor="phone">Phone</label>
                 </div>
               </div>
+              {!selfEdit && (
+              <>
               <div className="col-md-6">
                 <div className="form-floating">
                   <select id="role" name="role" value={formData.role} onChange={handleInputChange} className="form-select form-select-sm">
@@ -444,6 +447,8 @@ export default function EmployeeFormTabs({
                   <label className="form-check-label" htmlFor="is_active">Active Employee</label>
                 </div>
               </div>
+              </>
+              )}
             </div>
           </div>
         )}

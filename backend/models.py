@@ -110,6 +110,9 @@ class User(BaseModel, table=True):
     # Signature (base64 PNG data URL)
     signature_data: Optional[str] = Field(default=None)
 
+    # Profile picture (file path or URL)
+    profile_picture: Optional[str] = Field(default=None)
+
     # Benefits / Compensation
     salary: Optional[float] = Field(default=None)
     pay_frequency: Optional[str] = Field(default=None)  # weekly, biweekly, monthly
@@ -618,6 +621,7 @@ class UserUpdate(SQLModel):
     dark_mode: Optional[bool] = None
     db_environment: Optional[str] = None  # User's preferred database environment
     signature_data: Optional[str] = None
+    profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None
@@ -648,6 +652,7 @@ class UserRead(SQLModel):
     dark_mode: bool = False
     db_environment: str = "development"  # User's preferred database environment
     signature_data: Optional[str] = None
+    profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None

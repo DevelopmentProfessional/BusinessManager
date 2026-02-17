@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from sqlalchemy import text
 from datetime import datetime, timedelta
@@ -7,6 +8,7 @@ from typing import List, Optional
 from uuid import UUID
 import jwt
 import os
+import uuid as uuid_mod
 import bcrypt
 from backend.database import get_session
 from backend.models import (
@@ -1386,6 +1388,103 @@ def get_my_signature(
 ):
     """Get current user's saved signature"""
     return {"signature_data": current_user.signature_data}
+
+
+# ============================================================================
+# Profile Self-Update & Profile Picture
+# ============================================================================
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+@router.put("/me/profile", response_model=UserRead)
+def update_my_profile(
+    user_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Update current user's own profile (limited fields)."""
+    allowed_fields = {
+        "first_name", "last_name", "email", "phone",
+        "profile_picture", "signature_data", "password"
+    }
+    for field, value in user_data.items():
+        if field not in allowed_fields:
+            continue
+        if field == "password":
+            if value:
+                current_user.password_hash = User.hash_password(value)
+        else:
+            setattr(current_user, field, value)
+
+    current_user.updated_at = datetime.utcnow()
+    try:
+        session.commit()
+        session.refresh(current_user)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return UserRead.from_orm(current_user)
+
+
+@router.put("/me/profile-picture")
+def upload_my_profile_picture(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Upload profile picture for current user."""
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: JPEG, PNG, GIF, WebP"
+        )
+
+    contents = file.file.read()
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
+
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "jpg"
+    unique_filename = f"profile_{current_user.id}_{uuid_mod.uuid4().hex[:8]}.{ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    # Delete old profile picture file if it exists
+    if current_user.profile_picture:
+        old_path = os.path.join(UPLOAD_DIR, current_user.profile_picture)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    current_user.profile_picture = unique_filename
+    current_user.updated_at = datetime.utcnow()
+    session.commit()
+    session.refresh(current_user)
+
+    return {"message": "Profile picture uploaded", "profile_picture": unique_filename}
+
+
+@router.get("/users/{user_id}/profile-picture")
+def get_user_profile_picture(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Serve a user's profile picture file."""
+    user = session.get(User, user_id)
+    if not user or not user.profile_picture:
+        raise HTTPException(status_code=404, detail="Profile picture not found")
+
+    file_path = os.path.join(UPLOAD_DIR, user.profile_picture)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Profile picture file not found")
+
+    return FileResponse(file_path)
 
 
 # ============================================================================
