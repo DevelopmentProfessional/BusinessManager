@@ -266,10 +266,10 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
   // Contextual titles and descriptions per type
   const typeLabels = {
-    one_time: { title: appointment ? 'Edit Appointment' : 'New Appointment', subtitle: 'Schedule a client appointment with service' },
-    series: { title: appointment ? 'Edit Recurring' : 'New Recurring Appointment', subtitle: 'Set up a repeating appointment' },
-    meeting: { title: appointment ? 'Edit Meeting' : 'New Meeting', subtitle: 'Schedule an internal meeting' },
-    task: { title: appointment ? 'Edit Task' : 'New Task', subtitle: 'Create a personal task or reminder' },
+    one_time: { title: appointment ? 'Edit' : 'New', subtitle: '' },
+    series: { title: appointment ? 'Edit' : 'New', subtitle: '' },
+    meeting: { title: appointment ? 'Edit' : 'New', subtitle: '' },
+    task: { title: appointment ? 'Edit' : 'New', subtitle: '' },
   };
   const currentLabels = typeLabels[formData.appointment_type] || typeLabels.one_time;
 
@@ -337,25 +337,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       {/* Client Selection - only for appointments/series */}
       {typeConfig.needsClient && (
         <div className="input-group">
-          <span className="input-group-text p-0 bg-transparent border-0">
-            <PermissionGate page="clients" permission="write">
-              <button
-                type="button"
-                onClick={() => openAddClientModal((newClient) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    client_ids: Array.from(new Set([...(prev.client_ids || []), newClient.id]))
-                  }));
-                  setClients(prev => [...prev, newClient]);
-                })}
-                className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-                title="Add new client"
-                aria-label="Add new client"
-              >
-                <PlusIcon className="h-5 w-5" />
-              </button>
-            </PermissionGate>
-          </span>
+         
           <CustomDropdown
             name="client_id"
             value={typeConfig.clientMultiple ? formData.client_ids : (formData.client_ids[0] || '')}
@@ -377,20 +359,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
       {/* Service Selection - only for appointments/series */}
       {typeConfig.needsService && (
-        <div className="input-group">
-          <span className="input-group-text p-0 bg-transparent border-0">
-            <PermissionGate page="services" permission="write">
-              <button
-                type="button"
-                onClick={() => { closeModal(); navigate('/sales?new=1'); }}
-                className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-                title="Add new service"
-                aria-label="Add new service"
-              >
-                <PlusIcon className="h-5 w-5" />
-              </button>
-            </PermissionGate>
-          </span>
+ 
           <CustomDropdown
             name="service_id"
             value={formData.service_id}
@@ -403,27 +372,13 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
             required
             className="flex-1"
             searchable={true}
-          />
-        </div>
+          /> 
       )}
 
       {/* Employee Selection */}
       {typeConfig.needsEmployee && (
         <div>
-          <div className="input-group">
-            <span className="input-group-text p-0 bg-transparent border-0">
-              <PermissionGate page="employees" permission="write">
-                <button
-                  type="button"
-                  onClick={() => { closeModal(); navigate('/employees?new=1'); }}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
-                  title="Add new employee"
-                  aria-label="Add new employee"
-                >
-                  <PlusIcon className="h-5 w-5" />
-                </button>
-              </PermissionGate>
-            </span>
+       
             <CustomDropdown
               name="employee_id"
               value={typeConfig.employeeMultiple ? formData.employee_ids : (formData.employee_ids[0] || '')}
@@ -444,8 +399,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
               searchable={true}
               disabled={isWriteOnly}
               multiSelect={typeConfig.employeeMultiple}
-            />
-          </div>
+            /> 
           {(isWriteOnly || employees.length === 1) && (
             <p className="text-xs text-gray-500 mt-1">
               You can only schedule for yourself
@@ -501,9 +455,6 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           <label htmlFor="appointment_date">Date</label>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Time
-          </label>
           <div className="input-group mt-1">
             <CustomDropdown
               name="appointment_hour"
