@@ -602,7 +602,7 @@ export default function Documents() {
           </table>
 
           {/* Controls */}
-          <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="py-3 px-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Action buttons */}
             <PermissionGate page="documents" permission="write">
               <div className="d-flex gap-2 w-100">
