@@ -42,8 +42,24 @@ READ_SCHEMA_MAP = {
     'users': UserRead,
     'schedule': ScheduleRead,
     'schedules': ScheduleRead,
+    'schedule_attendee': ScheduleAttendeeRead,
+    'schedule_attendees': ScheduleAttendeeRead,
     'document': DocumentRead,
     'documents': DocumentRead,
+    'role': RoleRead,
+    'roles': RoleRead,
+    'role_permission': RolePermissionRead,
+    'role_permissions': RolePermissionRead,
+    'user_permission': UserPermissionRead,
+    'user_permissions': UserPermissionRead,
+    'app_settings': AppSettingsRead,
+    'inventory_image': InventoryImageRead,
+    'inventory_images': InventoryImageRead,
+    'database_connection': DatabaseConnectionRead,
+    'database_connections': DatabaseConnectionRead,
+    'supplier': SupplierRead,
+    'suppliers': SupplierRead,
+    'attendance': AttendanceRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):
@@ -311,7 +327,11 @@ async def insert(
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
 
     session.add(record)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
     return _serialize_record(record, table_name)
 

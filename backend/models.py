@@ -766,6 +766,19 @@ class ScheduleRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class ScheduleAttendeeRead(SQLModel):
+    """Schema for reading schedule attendee records"""
+    id: UUID
+    schedule_id: UUID
+    user_id: Optional[UUID] = None
+    client_id: Optional[UUID] = None
+    attendance_status: str = "pending"
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class ScheduleAttendeeCreate(SQLModel):
     user_id: Optional[UUID] = None
     client_id: Optional[UUID] = None
