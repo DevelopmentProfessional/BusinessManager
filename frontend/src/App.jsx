@@ -4,6 +4,7 @@ import Layout from './pages/components/Layout';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
+import { preloadMajorTables } from './services/api';
 import useDarkMode from './services/useDarkMode';
 import useBranding from './services/useBranding';
 import GlobalClientModal from './pages/components/GlobalClientModal';
@@ -89,8 +90,11 @@ function App() {
           setToken(token);
           setUser(user);
           setPermissions(permissions);
+
+          // Preload major tables in background for returning users
+          preloadMajorTables();
         }
-        
+
         // Load persisted filters
         loadPersistedFilters();
       } catch (error) {

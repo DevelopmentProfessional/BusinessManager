@@ -245,6 +245,44 @@ if (typeof window !== 'undefined') {
   };
 }
 
+/**
+ * Preload major tables into localStorage cache after login.
+ * Fire-and-forget — call without await. Errors are silently swallowed.
+ *
+ * Skips tables already cached or with in-flight requests.
+ * Fetches sequentially with a 300ms stagger to avoid server burst.
+ */
+let preloadRunning = false;
+
+export const preloadMajorTables = async () => {
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!token || preloadRunning) return;
+  preloadRunning = true;
+
+  const tables = [
+    ['clients',   () => api.get('/isud/clients')],
+    ['services',  () => api.get('/isud/services')],
+    ['employees', () => api.get('/isud/users')],
+    ['inventory', () => api.get('/isud/inventory')],
+    ['schedule',  () => api.get('/isud/schedules')],
+  ];
+
+  try {
+    for (const [key, fetchFn] of tables) {
+      if (cacheService.getRows(key).length > 0) {
+        backgroundSync(key, fetchFn);
+        continue;
+      }
+      if (inFlightRequests.has(key)) continue;
+      try {
+        await getCachedOrFetch(key, fetchFn);
+      } catch { /* individual failure won't abort preload */ }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  } catch { /* silently degrade */ }
+  finally { preloadRunning = false; }
+};
+
 // API endpoints for all entities
 export const clientsAPI = {
   getAll: () => getCachedOrFetch('clients', () => api.get('/isud/clients')),
