@@ -11,13 +11,7 @@ import {
   PhoneIcon,
   BriefcaseIcon,
   CalendarDaysIcon,
-  SunIcon,
-  MoonIcon,
   ClockIcon,
-  CircleStackIcon,
-  CheckCircleIcon,
-  ArrowDownTrayIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
 import api from '../services/api';
@@ -284,13 +278,13 @@ const Profile = () => {
             <CogIcon className="h-5 w-5 me-2" /> Settings
           </h2>
         </div>
-        <div className="card-body"> 
+        <div className="card-body">
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center gap-1">
-                {isDarkMode 
-                ? (<span>🌚</span>) 
-                : (<span>🌞</span>)}                  
-                <div className="form-check form-switch">                      
+                {isDarkMode
+                ? (<span>🌚</span>)
+                : (<span>🌞</span>)}
+                <div className="form-check form-switch">
                   <input
                     className="form-check-input"
                     type="checkbox"
@@ -299,7 +293,7 @@ const Profile = () => {
                     checked={isDarkMode}
                     onChange={toggleDarkMode}
                     style={{ width: '3rem', height: '1.5rem' }}/>
-                </div> 
+                </div>
               </div>
               <div className="d-flex align-items-center gap-2">
                 <button
@@ -321,75 +315,45 @@ const Profile = () => {
             </div>
             {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
             {installError && <div className="small text-danger mt-2">{installError}</div>}
-        </div>
-      </div>
 
-      {/* Database Environment Preference */}
-      <div className="card mb-1 p-2">
-        <div className="card-header bg-transparent">
-          <h2 className="flex wrap h5 mb-1 gap-1">
-            <CircleStackIcon className="h-5 w-5 me-2" /> Database Environment
-          </h2>
-        </div>
-        <div className="card-body">
-          
-          {dbMessage && (
-            <div className="alert alert-success d-flex align-items-center mb-2 py-2" role="alert">
-              <CheckCircleIcon className="h-5 w-5 me-2" />
-              <div>{dbMessage}</div>
-            </div>
-          )}
-          
-          {dbError && (
-            <div className="alert alert-danger d-flex align-items-center mb-2 py-2" role="alert">
-              <div>{dbError}</div>
-            </div>
-          )}
-
-          <div className="row g-2">
-            {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
-              const isCurrent = key === currentDbEnvironment;
-              return (
-                <div key={key} className="col-md-4">
-                  <div 
-                    className={`p-2 border rounded text-center transition ${
-                      isCurrent 
-                        ? 'border-primary bg-primary bg-opacity-10' 
-                        : 'hover-shadow cursor-pointer'
+            {/* Database Environment */}
+            <hr className="my-2" />
+            <div className="d-flex align-items-center flex-wrap gap-2">
+              <span className="text-muted small me-1">Environment</span>
+              {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
+                const isCurrent = key === currentDbEnvironment;
+                return (
+                  <span
+                    key={key}
+                    role="radio"
+                    aria-checked={isCurrent}
+                    tabIndex={0}
+                    className={`badge rounded-pill px-3 py-2 ${
+                      isCurrent
+                        ? 'bg-primary text-white'
+                        : 'bg-transparent text-secondary border'
                     }`}
-                    style={{ cursor: isCurrent ? 'default' : 'pointer' }}
+                    style={{
+                      cursor: isCurrent || dbLoading ? 'default' : 'pointer',
+                      fontSize: '0.8rem',
+                      transition: 'all 0.15s ease',
+                      userSelect: 'none',
+                    }}
                     onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isCurrent && !dbLoading && handleSwitchEnvironment(key); }}}
                   >
-                    <CircleStackIcon className={`h-6 w-6 mx-auto mb-1 ${
-                      isCurrent ? 'text-primary' : 'text-secondary'
-                    }`} />
-                    <div className="fw-medium">{env.name}</div>
-                    <div className="small">
-                      {isCurrent ? (
-                        <span className="badge bg-primary">Selected</span>
-                      ) : (
-                        <span className="text-muted">{env.description}</span>
-                      )}
-                    </div>
-                  </div>
+                    {env.name}
+                  </span>
+                );
+              })}
+              {dbLoading && (
+                <div className="spinner-border spinner-border-sm text-primary" role="status">
+                  <span className="visually-hidden">Updating...</span>
                 </div>
-              );
-            })}
-          </div>
-
-          {dbLoading && (
-            <div className="text-center mt-2">
-              <div className="spinner-border spinner-border-sm text-primary" role="status">
-                <span className="visually-hidden">Updating...</span>
-              </div>
-              <span className="ms-2 text-muted">Updating preference...</span>
+              )}
             </div>
-          )}
-          
-          <div className="text-muted small mt-2">
-            Your database environment preference is stored in your profile.
-          </div>
- 
+            {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
+            {dbError && <div className="small text-danger mt-1">{dbError}</div>}
         </div>
       </div>
       {/* Signature */}

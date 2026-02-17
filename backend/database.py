@@ -167,6 +167,7 @@ def create_db_and_tables():
     _ensure_schedule_extra_columns_if_needed()
     _ensure_user_extra_columns_if_needed()
     _ensure_signature_columns_if_needed()
+    _ensure_user_profile_picture_if_needed()
     _seed_user_colors_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
@@ -544,6 +545,29 @@ def _ensure_user_extra_columns_if_needed():
             for col, col_type in new_cols.items():
                 if col not in col_names:
                     conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+
+
+def _ensure_user_profile_picture_if_needed():
+    """Ensure user table has profile_picture column."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "profile_picture" not in col_names:
+                conn.execute(text("ALTER TABLE user ADD COLUMN profile_picture VARCHAR"))
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "profile_picture" not in col_names:
+                conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_picture VARCHAR'))
 
 
 def _seed_user_colors_if_needed():

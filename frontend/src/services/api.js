@@ -430,6 +430,18 @@ export const employeesAPI = {
   },
 };
 
+export const profileAPI = {
+  updateMyProfile: (data) => api.put('/auth/me/profile', data),
+  uploadProfilePicture: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.put('/auth/me/profile-picture', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getProfilePictureUrl: (userId) => `${api.defaults.baseURL}/auth/users/${userId}/profile-picture`,
+};
+
 export const rolesAPI = {
   getAll: () => getCachedOrFetch('roles', () => api.get('/auth/roles')),
   getById: (id) => api.get(`/auth/roles/${id}`),
