@@ -12,11 +12,10 @@ import { Indent } from './extensions/Indent';
 import { SearchAndReplace } from './extensions/SearchAndReplace';
 
 const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange }, ref) {
-  const contentRef = useRef(content);
-  
-  // Keep track of initial mount
-  const isInitialMount = useRef(true);
-  
+  // Track what the editor currently contains so we can distinguish
+  // external content changes (reload) from internal ones (user typing)
+  const editorContentRef = useRef(content);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -41,29 +40,24 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
       Indent,
       SearchAndReplace,
     ],
-    content: '',
+    content: content || '',
     onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML());
+      const html = editor.getHTML();
+      editorContentRef.current = html;
+      onChange?.(html);
     },
   });
 
   useImperativeHandle(ref, () => editor, [editor]);
 
-  // Update content when prop changes (e.g., initial load)
+  // Sync external content changes to editor (e.g., document reload).
+  // Skips when the change came from user typing (onUpdate → onChange → content prop)
+  // because editorContentRef already matches the new content.
   useEffect(() => {
     if (!editor) return;
-    
-    // Only update if content actually changed
-    if (contentRef.current !== content) {
-      contentRef.current = content;
-      const newContent = content || '';
-      console.log('Setting editor content:', { 
-        hasContent: !!newContent, 
-        length: newContent.length,
-        preview: newContent.substring(0, 100) 
-      });
-      editor.commands.setContent(newContent, false);
-    }
+    if (content === editorContentRef.current) return;
+    editorContentRef.current = content;
+    editor.commands.setContent(content || '', false);
   }, [content, editor]);
 
   if (!editor) {
