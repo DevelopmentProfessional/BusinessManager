@@ -38,6 +38,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
   const [timeError, setTimeError] = useState('');
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsLoaded, setClientsLoaded] = useState(false);
+  const [durationError, setDurationError] = useState('');
   const navigate = useNavigate();
 
   // Load services and employees if not provided as props (clients loaded on-demand)
@@ -141,7 +142,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
         notes: appointment.notes || '',
         appointment_type: appointment.appointment_type || 'one_time',
         recurrence_frequency: appointment.recurrence_frequency || '',
-        duration_minutes: appointment.duration_minutes || 60
+        duration_minutes: appointment.duration_minutes || ''
       };
     }
     return {
@@ -154,11 +155,13 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       notes: '',
       appointment_type: 'one_time',
       recurrence_frequency: '',
-      duration_minutes: 60
+      duration_minutes: ''
     };
   };
 
   const [formData, setFormData] = useState(getInitialFormData);
+  // Track whether duration was manually changed (independent of service)
+  const [durationManuallySet, setDurationManuallySet] = useState(false);
 
   useEffect(() => {
     setFormData(getInitialFormData());
@@ -186,6 +189,33 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       ...prev,
       [name]: value
     }));
+    if (name === 'duration_minutes') {
+      setDurationError('');
+    }
+  };
+
+  const handleServiceChange = (e) => {
+    const { value } = e.target;
+    const selectedService = services.find(s => s.id === value);
+    setFormData(prev => ({
+      ...prev,
+      service_id: value,
+      duration_minutes: selectedService?.duration_minutes ? selectedService.duration_minutes : prev.duration_minutes
+    }));
+    setDurationManuallySet(false);
+    if (selectedService?.duration_minutes) {
+      setDurationError('');
+    }
+  };
+
+  const handleDurationChange = (e) => {
+    const { value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      duration_minutes: value
+    }));
+    setDurationManuallySet(true);
+    setDurationError('');
   };
 
   const handleClientChange = (e) => {
@@ -229,6 +259,11 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
     }
     setTimeError('');
 
+    if (!formData.duration_minutes) {
+      setDurationError('Please set a duration for this event');
+      return;
+    }
+
     // Submit a naive local ISO string (no timezone) to avoid shifts server-side
     const timeText = `${hourText}:${minuteText}`;
     const appointmentDateStr = `${dateText}T${timeText}:00`;
@@ -246,7 +281,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       notes: formData.notes,
       appointment_type: formData.appointment_type,
       recurrence_frequency: formData.appointment_type === 'series' ? formData.recurrence_frequency : null,
-      duration_minutes: parseInt(formData.duration_minutes) || 60
+      duration_minutes: parseInt(formData.duration_minutes)
     };
 
     // Only include client_id and service_id if needed for this type
@@ -363,7 +398,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           <CustomDropdown
             name="service_id"
             value={formData.service_id}
-            onChange={handleChange}
+            onChange={handleServiceChange}
             options={services.map((service) => ({
               value: service.id,
               label: `${service.name} - $${service.price}`
@@ -429,15 +464,17 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       <div>
         <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
           <ClockIcon className="h-4 w-4 inline mr-1" />
-          Duration
+          Duration (minutes)
         </label>
         <CustomDropdown
           name="duration_minutes"
-          value={formData.duration_minutes?.toString() || '60'}
-          onChange={handleChange}
-          options={[15, 30, 45, 60, 90, 120, 180].map(m => ({ value: m.toString(), label: `${m} min` }))}
-          placeholder="Duration"
+          value={formData.duration_minutes?.toString() || ''}
+          onChange={handleDurationChange}
+          options={[10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240].map(m => ({ value: m.toString(), label: `${m} min` }))}
+          placeholder="Select duration"
+          required
         />
+        {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
