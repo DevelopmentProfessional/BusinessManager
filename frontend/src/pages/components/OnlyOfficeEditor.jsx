@@ -222,17 +222,18 @@ export default function OnlyOfficeEditor({ documentId }) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col bg-white">
       {error ? (
-        <div className="p-4 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded">
+        <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
           <strong>Editor Error:</strong> {error}
         </div>
       ) : null}
       {loading && !error ? (
-        <div className="p-3 text-sm text-gray-600 dark:text-gray-400">Loading editor…</div>
+        <div className="p-3 text-sm text-gray-600">Loading editor…</div>
       ) : null}
-      <div id={containerId} className="flex-1 min-h-0" style={{ width: '100%', height: '100%' }} />
-      {/* Footer: icon-only buttons with tooltips on hover/long-press */}
+      {/* Document container - always white background, document should not inherit dark mode */}
+      <div id={containerId} className="flex-1 min-h-0 bg-white" style={{ width: '100%', height: '100%' }} />
+      {/* Footer: icon-only buttons with tooltips on hover/long-press - can have dark mode */}
       <footer className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-2 flex items-center gap-1 flex-wrap shrink-0" role="toolbar" aria-label="Editor actions">
         {/* Text Formatting */}
         <div className="flex items-center gap-1">
