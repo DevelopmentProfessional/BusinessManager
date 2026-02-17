@@ -441,13 +441,15 @@ export default function Schedule() {
     const primaryClientId = clientIds[0] || appointmentData.client_id;
 
     const schedulePayload = {
-      ...appointmentData,
       employee_id: primaryEmployeeId,
-      client_id: primaryClientId,
+      appointment_date: appointmentData.appointment_date,
+      appointment_type: appointmentData.appointment_type || 'one_time',
+      duration_minutes: parseInt(appointmentData.duration_minutes) || 60,
+      notes: appointmentData.notes || null,
+      status: appointmentData.status || 'scheduled',
     };
-    delete schedulePayload.employee_ids;
-    delete schedulePayload.client_ids;
-    delete schedulePayload.recurrence_frequency;
+    if (primaryClientId) schedulePayload.client_id = primaryClientId;
+    if (appointmentData.service_id) schedulePayload.service_id = appointmentData.service_id;
 
     let savedRecord;
     if (editingAppointment && editingAppointment.id) {
