@@ -357,7 +357,7 @@ export default function XlsxViewer({ document, onEdit }) {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-gray-900" ref={tableRef}>
+      <div className="flex-1 overflow-auto bg-white" ref={tableRef}>
         {loading && (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -425,9 +425,9 @@ export default function XlsxViewer({ document, onEdit }) {
                     return (
                       <td
                         key={colIdx}
-                        className={`px-3 py-1 border border-gray-200 dark:border-gray-700 whitespace-nowrap ${
+                        className={`px-3 py-1 border border-gray-200 bg-white whitespace-nowrap ${
                           isEditing ? 'cursor-cell' : ''
-                        } ${isEditingThis ? 'p-0' : 'text-gray-800 dark:text-gray-200'}`}
+                        } ${isEditingThis ? 'p-0' : 'text-gray-800'}`}
                         title={isEditing ? 'Double-click to edit' : display}
                         onDoubleClick={() => handleCellDoubleClick(rowIdx, colIdx)}
                       >
@@ -439,7 +439,7 @@ export default function XlsxViewer({ document, onEdit }) {
                             onChange={(e) => setEditValue(e.target.value)}
                             onBlur={commitEdit}
                             onKeyDown={handleCellKeyDown}
-                            className="w-full h-full px-2 py-1 text-sm border-2 border-primary-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            className="w-full h-full px-2 py-1 text-sm border-2 border-primary-500 outline-none bg-white text-gray-900"
                           />
                         ) : (
                           display

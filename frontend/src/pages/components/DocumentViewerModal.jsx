@@ -128,7 +128,7 @@ function ImageViewer({ document, onEdit }) {
       </div>
       <div
         ref={containerRef}
-        className="flex-1 min-h-0 overflow-hidden bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-move w-full"
+        className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center cursor-move w-full"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -256,7 +256,7 @@ function DocxViewer({ document, onEdit }) {
           )}
         </div>
       </div>
-      <div className="flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-gray-900 w-full">
+      <div className="flex-1 min-h-0 overflow-auto bg-white w-full">
         {loading && (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -301,7 +301,7 @@ function OfficeViewer({ document, documentType, onEdit }) {
           </button>
         )}
       </div>
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-white">
         <div className="text-center p-8">
           <DocumentIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -368,7 +368,7 @@ function TextViewer({ document, onEdit }) {
           </button>
         )}
       </div>
-      <div className="flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-gray-900 w-full">
+      <div className="flex-1 min-h-0 overflow-auto bg-white w-full">
         {loading && (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -403,7 +403,7 @@ function UnknownViewer({ document, onEdit }) {
           </button>
         )}
       </div>
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-white">
         <div className="text-center p-8">
           <DocumentIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400 mb-2">{document.original_filename}</p>

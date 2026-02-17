@@ -176,7 +176,7 @@ export default function PDFViewer({ document, onEdit }) {
       {/* PDF Content */}
       <div
         ref={measuredRef}
-        className="flex-1 overflow-auto bg-gray-200 dark:bg-gray-900 flex justify-center p-4"
+        className="flex-1 overflow-auto bg-white flex justify-center p-4"
       >
         <Document
           file={fileUrl}
