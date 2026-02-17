@@ -59,7 +59,13 @@ export default function Schedule() {
   const calendarContainerRef = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
+  const lastSwipeTime = useRef(0);
   const MIN_SWIPE_DISTANCE = 50; // Minimum distance to trigger swipe (in pixels)
+  const SWIPE_COOLDOWN = 300; // Cooldown period in milliseconds
+  const MIN_DATE = new Date(1900, 0, 1); // January 1, 1900
+  const MAX_DATE = new Date(2100, 11, 31); // December 31, 2100
+  const [swipeOffset, setSwipeOffset] = useState(0); // For visual feedback during swipe
 
   // Update clock every minute
   useEffect(() => {
@@ -550,35 +556,83 @@ export default function Schedule() {
     setEditingAppointment(null);
   }, []);
 
-  // Navigation handlers for swipe gestures
+  // Navigation handlers for swipe gestures with date bounds validation
   const handleNavigatePrevious = useCallback(() => {
     const newDate = new Date(currentDate);
+    
     if (currentView === 'day') {
       newDate.setDate(newDate.getDate() - 1);
     } else if (currentView === 'week') {
       newDate.setDate(newDate.getDate() - 7);
     } else {
+      // Month view: navigate to previous month
+      const currentDay = newDate.getDate();
       newDate.setMonth(newDate.getMonth() - 1);
+      
+      // Edge case: If current day doesn't exist in previous month (e.g., March 31 → Feb 31)
+      // JavaScript automatically adjusts, but we want to set to last day of that month
+      const maxDayInNewMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
+      if (currentDay > maxDayInNewMonth) {
+        newDate.setDate(maxDayInNewMonth);
+      }
     }
+    
+    // Validate date bounds
+    if (newDate < MIN_DATE) {
+      console.warn('Cannot navigate before', MIN_DATE.toLocaleDateString());
+      return;
+    }
+    
     setCurrentDate(newDate);
   }, [currentDate, currentView]);
 
   const handleNavigateNext = useCallback(() => {
     const newDate = new Date(currentDate);
+    
     if (currentView === 'day') {
       newDate.setDate(newDate.getDate() + 1);
     } else if (currentView === 'week') {
       newDate.setDate(newDate.getDate() + 7);
     } else {
+      // Month view: navigate to next month
+      const currentDay = newDate.getDate();
       newDate.setMonth(newDate.getMonth() + 1);
+      
+      // Edge case: If current day doesn't exist in next month (e.g., Jan 31 → Feb 31)
+      // JavaScript automatically adjusts, but we want to set to last day of that month
+      const maxDayInNewMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
+      if (currentDay > maxDayInNewMonth) {
+        newDate.setDate(maxDayInNewMonth);
+      }
     }
+    
+    // Validate date bounds
+    if (newDate > MAX_DATE) {
+      console.warn('Cannot navigate beyond', MAX_DATE.toLocaleDateString());
+      return;
+    }
+    
     setCurrentDate(newDate);
   }, [currentDate, currentView]);
 
-  // Touch handlers for swipe navigation on mobile
+  // Touch handlers for swipe navigation on mobile with visual feedback
   const handleTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+    setSwipeOffset(0);
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!touchStartX.current) return;
+    
+    const currentX = e.touches[0].clientX;
+    const deltaX = currentX - touchStartX.current;
+    
+    // Show visual feedback (limit to prevent excessive drag)
+    const maxOffset = 100;
+    const constrainedOffset = Math.max(-maxOffset, Math.min(maxOffset, deltaX * 0.3));
+    setSwipeOffset(constrainedOffset);
   }, []);
 
   const handleTouchEnd = useCallback((e) => {
@@ -586,9 +640,14 @@ export default function Schedule() {
 
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
+    const touchEndTime = Date.now();
     
     const distanceX = touchStartX.current - touchEndX;
     const distanceY = touchStartY.current - touchEndY;
+    const swipeDuration = touchEndTime - touchStartTime.current;
+
+    // Reset visual feedback
+    setSwipeOffset(0);
 
     // Only trigger if vertical movement is minimal (user is swiping horizontally)
     if (Math.abs(distanceY) > Math.abs(distanceX)) {
@@ -597,14 +656,24 @@ export default function Schedule() {
       return; // Vertical scroll, not a horizontal swipe
     }
 
-    // Check if swipe distance is significant
-    if (Math.abs(distanceX) > MIN_SWIPE_DISTANCE) {
+    // Check cooldown period to prevent rapid multiple swipes
+    const timeSinceLastSwipe = touchEndTime - lastSwipeTime.current;
+    if (timeSinceLastSwipe < SWIPE_COOLDOWN) {
+      touchStartX.current = 0;
+      touchStartY.current = 0;
+      return;
+    }
+
+    // Check if swipe distance is significant and swipe was reasonably fast
+    if (Math.abs(distanceX) > MIN_SWIPE_DISTANCE && swipeDuration < 500) {
       if (distanceX > 0) {
         // Swiped left → go to next
         handleNavigateNext();
+        lastSwipeTime.current = touchEndTime;
       } else {
         // Swiped right → go to previous
         handleNavigatePrevious();
+        lastSwipeTime.current = touchEndTime;
       }
     }
 
@@ -660,8 +729,13 @@ export default function Schedule() {
           <div 
             ref={calendarContainerRef}
             className="calendar-container" 
-            style={{ '--schedule-grid-cols': gridColumns }}
+            style={{ 
+              '--schedule-grid-cols': gridColumns,
+              transform: `translateX(${swipeOffset}px)`,
+              transition: swipeOffset === 0 ? 'transform 0.3s ease-out, opacity 0.3s ease-out' : 'none'
+            }}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
           {/* Week day headers - same column template as grid so widths match */}
@@ -1301,6 +1375,10 @@ export default function Schedule() {
           display: flex;
           flex-direction: column;
           overflow: visible;
+          touch-action: pan-y; /* Allow vertical scrolling but enable horizontal swipe detection */
+          user-select: none; /* Prevent text selection during swipe */
+          -webkit-user-select: none;
+          will-change: transform; /* Optimize for animations */
         }
         
         .calendar-header {

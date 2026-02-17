@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mobile Calendar with Swipe Navigation</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f5f5;
+      overflow-x: hidden;
+    }
+
+    .calendar-app {
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .calendar-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .calendar-header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .view-selector {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .view-button {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .view-button.active {
+      background: white;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .month-year-display {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 10px 0;
+    }
+
+    .navigation-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .nav-button {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .nav-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .swipe-hint {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    .calendar-container {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+      will-change: transform;
+      transition: opacity 0.3s ease-out;
+    }
+
+    .calendar-container.swiping {
+      transition: none;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .calendar-day-header {
+      text-align: center;
+      font-weight: 600;
+      color: #667eea;
+      font-size: 12px;
+      padding: 8px 0;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9f9f9;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+      position: relative;
+    }
+
+    .calendar-day:hover {
+      background: #e9e9ff;
+      transform: scale(1.05);
+    }
+
+    .calendar-day.other-month {
+      color: #ccc;
+    }
+
+    .calendar-day.today {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+    }
+
+    .calendar-day.has-event::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      width: 4px;
+      height: 4px;
+      background: #ff6b6b;
+      border-radius: 50%;
+    }
+
+    .week-view,
+    .day-view {
+      margin-top: 10px;
+    }
+
+    .week-day {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+
+    .week-day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .week-day-name {
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .event-item {
+      background: white;
+      border-left: 3px solid #667eea;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .event-time {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 5px;
+    }
+
+    .event-title {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .footer {
+      background: #f9f9f9;
+      padding: 15px;
+      text-align: center;
+      border-top: 1px solid #eee;
+      font-size: 12px;
+      color: #999;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .calendar-container {
+      animation: fadeIn 0.3s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar-app">
+    <div class="calendar-header">
+      <h1>📅 Mobile Calendar</h1>
+      
+      <div class="view-selector">
+        <button class="view-button active" data-view="month">Month</button>
+        <button class="view-button" data-view="week">Week</button>
+        <button class="view-button" data-view="day">Day</button>
+      </div>
+
+      <div class="month-year-display" id="month-year-display">
+        <!-- Populated by JavaScript -->
+      </div>
+
+      <div class="navigation-buttons">
+        <button class="nav-button" id="prev-button">← Previous</button>
+        <button class="nav-button" id="today-button">Today</button>
+        <button class="nav-button" id="next-button">Next →</button>
+      </div>
+
+      <div class="swipe-hint">👆 Swipe left/right to navigate</div>
+    </div>
+
+    <div class="calendar-container" id="calendar-container">
+      <!-- Calendar content populated by JavaScript -->
+    </div>
+
+    <div class="footer">
+      Swipe Calendar Navigation Demo<br>
+      Touch Events API • Date Bounds Validation • Visual Feedback
+    </div>
+  </div>
+
+  <script type="module">
+    // Calendar App State
+    const state = {
+      currentDate: new Date(),
+      currentView: 'month',
+      events: generateSampleEvents(),
+      minDate: new Date(1900, 0, 1),
+      maxDate: new Date(2100, 11, 31)
+    };
+
+    // Touch tracking
+    const touch = {
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      lastSwipeTime: 0,
+      MIN_SWIPE_DISTANCE: 50,
+      MAX_SWIPE_DURATION: 500,
+      SWIPE_COOLDOWN: 300
+    };
+
+    // DOM elements
+    const container = document.getElementById('calendar-container');
+    const monthYearDisplay = document.getElementById('month-year-display');
+    const viewButtons = document.querySelectorAll('.view-button');
+    const prevButton = document.getElementById('prev-button');
+    const todayButton = document.getElementById('today-button');
+    const nextButton = document.getElementById('next-button');
+
+    // Initialize
+    init();
+
+    function init() {
+      renderCalendar();
+      attachEventListeners();
+      updateHeader();
+    }
+
+    function attachEventListeners() {
+      // Touch events for swipe navigation
+      container.addEventListener('touchstart', handleTouchStart, { passive: true });
+      container.addEventListener('touchmove', handleTouchMove, { passive: true });
+      container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      // View buttons
+      viewButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.currentView = btn.dataset.view;
+          viewButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderCalendar();
+        });
+      });
+
+      // Navigation buttons
+      prevButton.addEventListener('click', navigatePrevious);
+      todayButton.addEventListener('click', navigateToday);
+      nextButton.addEventListener('click', navigateNext);
+    }
+
+    function handleTouchStart(e) {
+      touch.startX = e.touches[0].clientX;
+      touch.startY = e.touches[0].clientY;
+      touch.startTime = Date.now();
+      container.classList.add('swiping');
+    }
+
+    function handleTouchMove(e) {
+      const currentX = e.touches[0].clientX;
+      const deltaX = currentX - touch.startX;
+      
+      // Visual feedback
+      const constrainedOffset = Math.max(-100, Math.min(100, deltaX * 0.3));
+      container.style.transform = `translateX(${constrainedOffset}px)`;
+      container.style.opacity = 1 - Math.abs(constrainedOffset) / 200;
+    }
+
+    function handleTouchEnd(e) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const touchEndTime = Date.now();
+
+      const distanceX = touch.startX - touchEndX;
+      const distanceY = touch.startY - touchEndY;
+      const swipeDuration = touchEndTime - touch.startTime;
+      const timeSinceLastSwipe = touchEndTime - touch.lastSwipeTime;
+
+      // Reset transform
+      container.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+      container.style.transform = 'translateX(0)';
+      container.style.opacity = '1';
+      
+      setTimeout(() => {
+        container.classList.remove('swiping');
+        container.style.transition = '';
+      }, 300);
+
+      // Check swipe validity
+      if (Math.abs(distanceY) > Math.abs(distanceX)) return; // Vertical
+      if (Math.abs(distanceX) < touch.MIN_SWIPE_DISTANCE) return; // Too short
+      if (swipeDuration > touch.MAX_SWIPE_DURATION) return; // Too slow
+      if (timeSinceLastSwipe < touch.SWIPE_COOLDOWN) return; // Cooldown
+
+      // Execute navigation
+      if (distanceX > 0) {
+        navigateNext();
+      } else {
+        navigatePrevious();
+      }
+
+      touch.lastSwipeTime = touchEndTime;
+    }
+
+    function navigatePrevious() {
+      const newDate = new Date(state.currentDate);
+
+      if (state.currentView === 'day') {
+        newDate.setDate(newDate.getDate() - 1);
+      } else if (state.currentView === 'week') {
+        newDate.setDate(newDate.getDate() - 7);
+      } else {
+        const currentDay = newDate.getDate();
+        newDate.setMonth(newDate.getMonth() - 1);
+        
+        // Handle month boundary edge case
+        const maxDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
+        if (currentDay > maxDay) {
+          newDate.setDate(maxDay);
+        }
+      }
+
+      if (newDate < state.minDate) {
+        alert('Cannot navigate before ' + state.minDate.toLocaleDateString());
+        return;
+      }
+
+      state.currentDate = newDate;
+      renderCalendar();
+      updateHeader();
+    }
+
+    function navigateNext() {
+      const newDate = new Date(state.currentDate);
+
+      if (state.currentView === 'day') {
+        newDate.setDate(newDate.getDate() + 1);
+      } else if (state.currentView === 'week') {
+        newDate.setDate(newDate.getDate() + 7);
+      } else {
+        const currentDay = newDate.getDate();
+        newDate.setMonth(newDate.getMonth() + 1);
+        
+        // Handle month boundary edge case
+        const maxDay = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
+        if (currentDay > maxDay) {
+          newDate.setDate(maxDay);
+        }
+      }
+
+      if (newDate > state.maxDate) {
+        alert('Cannot navigate beyond ' + state.maxDate.toLocaleDateString());
+        return;
+      }
+
+      state.currentDate = newDate;
+      renderCalendar();
+      updateHeader();
+    }
+
+    function navigateToday() {
+      state.currentDate = new Date();
+      renderCalendar();
+      updateHeader();
+    }
+
+    function updateHeader() {
+      if (state.currentView === 'month') {
+        monthYearDisplay.textContent = state.currentDate.toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric'
+        });
+      } else if (state.currentView === 'week') {
+        const weekStart = new Date(state.currentDate);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        monthYearDisplay.textContent = 'Week of ' + weekStart.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+      } else {
+        monthYearDisplay.textContent = state.currentDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        });
+      }
+    }
+
+    function renderCalendar() {
+      if (state.currentView === 'month') {
+        renderMonthView();
+      } else if (state.currentView === 'week') {
+        renderWeekView();
+      } else {
+        renderDayView();
+      }
+    }
+
+    function renderMonthView() {
+      const year = state.currentDate.getFullYear();
+      const month = state.currentDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+
+      let html = '<div class="calendar-grid">';
+      
+      // Headers
+      ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+        html += `<div class="calendar-day-header">${day}</div>`;
+      });
+
+      // Previous month days
+      const prevMonthDays = new Date(year, month, 0).getDate();
+      for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevMonthDays - i;
+        html += `<div class="calendar-day other-month">${day}</div>`;
+      }
+
+      // Current month days
+      const today = new Date();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const isToday = date.toDateString() === today.toDateString();
+        const hasEvent = hasEventOnDate(date);
+        
+        html += `<div class="calendar-day ${isToday ? 'today' : ''} ${hasEvent ? 'has-event' : ''}">${day}</div>`;
+      }
+
+      // Next month days
+      const remainingCells = 42 - (startDay + daysInMonth);
+      for (let day = 1; day <= remainingCells; day++) {
+        html += `<div class="calendar-day other-month">${day}</div>`;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function renderWeekView() {
+      const weekStart = new Date(state.currentDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+      let html = '<div class="week-view">';
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + i);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+        const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const events = getEventsForDate(date);
+
+        html += `
+          <div class="week-day">
+            <div class="week-day-header">
+              <span class="week-day-name">${dayName}</span>
+              <span>${dayDate}</span>
+            </div>
+            ${events.length > 0 ? events.map(e => `
+              <div class="event-item">
+                <div class="event-time">${e.time}</div>
+                <div class="event-title">${e.title}</div>
+              </div>
+            `).join('') : '<div style="color: #999; font-size: 14px;">No events</div>'}
+          </div>
+        `;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function renderDayView() {
+      const date = state.currentDate;
+      const events = getEventsForDate(date);
+
+      let html = '<div class="day-view">';
+      html += `
+        <div class="week-day">
+          <div class="week-day-header">
+            <span class="week-day-name">${date.toLocaleDateString('en-US', { weekday: 'long' })}</span>
+            <span>${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
+          </div>
+          ${events.length > 0 ? events.map(e => `
+            <div class="event-item">
+              <div class="event-time">${e.time}</div>
+              <div class="event-title">${e.title}</div>
+            </div>
+          `).join('') : '<div style="color: #999; font-size: 14px; text-align: center; padding: 20px;">No events scheduled</div>'}
+        </div>
+      `;
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function hasEventOnDate(date) {
+      return state.events.some(e => e.date.toDateString() === date.toDateString());
+    }
+
+    function getEventsForDate(date) {
+      return state.events.filter(e => e.date.toDateString() === date.toDateString());
+    }
+
+    function generateSampleEvents() {
+      const events = [];
+      const today = new Date();
+      
+      // Add some sample events
+      events.push({ date: new Date(today), time: '9:00 AM', title: 'Team Meeting' });
+      events.push({ date: new Date(today), time: '2:00 PM', title: 'Client Call' });
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      events.push({ date: tomorrow, time: '10:00 AM', title: 'Project Review' });
+      
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      events.push({ date: nextWeek, time: '3:00 PM', title: 'Planning Session' });
+      
+      return events;
+    }
+  </script>
+</body>
+</html>
