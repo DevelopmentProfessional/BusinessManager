@@ -56,6 +56,10 @@ export default function Schedule() {
   });
   const hasFetched = useRef(false);
   const calendarGridRef = useRef(null);
+  const calendarContainerRef = useRef(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const MIN_SWIPE_DISTANCE = 50; // Minimum distance to trigger swipe (in pixels)
 
   // Update clock every minute
   useEffect(() => {
@@ -546,6 +550,68 @@ export default function Schedule() {
     setEditingAppointment(null);
   }, []);
 
+  // Navigation handlers for swipe gestures
+  const handleNavigatePrevious = useCallback(() => {
+    const newDate = new Date(currentDate);
+    if (currentView === 'day') {
+      newDate.setDate(newDate.getDate() - 1);
+    } else if (currentView === 'week') {
+      newDate.setDate(newDate.getDate() - 7);
+    } else {
+      newDate.setMonth(newDate.getMonth() - 1);
+    }
+    setCurrentDate(newDate);
+  }, [currentDate, currentView]);
+
+  const handleNavigateNext = useCallback(() => {
+    const newDate = new Date(currentDate);
+    if (currentView === 'day') {
+      newDate.setDate(newDate.getDate() + 1);
+    } else if (currentView === 'week') {
+      newDate.setDate(newDate.getDate() + 7);
+    } else {
+      newDate.setMonth(newDate.getMonth() + 1);
+    }
+    setCurrentDate(newDate);
+  }, [currentDate, currentView]);
+
+  // Touch handlers for swipe navigation on mobile
+  const handleTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (!touchStartX.current) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const distanceX = touchStartX.current - touchEndX;
+    const distanceY = touchStartY.current - touchEndY;
+
+    // Only trigger if vertical movement is minimal (user is swiping horizontally)
+    if (Math.abs(distanceY) > Math.abs(distanceX)) {
+      touchStartX.current = 0;
+      touchStartY.current = 0;
+      return; // Vertical scroll, not a horizontal swipe
+    }
+
+    // Check if swipe distance is significant
+    if (Math.abs(distanceX) > MIN_SWIPE_DISTANCE) {
+      if (distanceX > 0) {
+        // Swiped left → go to next
+        handleNavigateNext();
+      } else {
+        // Swiped right → go to previous
+        handleNavigatePrevious();
+      }
+    }
+
+    touchStartX.current = 0;
+    touchStartY.current = 0;
+  }, [handleNavigateNext, handleNavigatePrevious]);
+
   const isCurrentMonth = (date) => {
     return date.getMonth() === currentDate.getMonth();
   };
@@ -591,7 +657,13 @@ export default function Schedule() {
         </div>
 
         <div className="schedule-body">
-          <div className="calendar-container" style={{ '--schedule-grid-cols': gridColumns }}>
+          <div 
+            ref={calendarContainerRef}
+            className="calendar-container" 
+            style={{ '--schedule-grid-cols': gridColumns }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
           {/* Week day headers - same column template as grid so widths match */}
           <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
             {currentView === 'day' ? (
@@ -989,17 +1061,7 @@ export default function Schedule() {
             {/* Previous */}
             <button
               type="button"
-              onClick={() => {
-                const newDate = new Date(currentDate);
-                if (currentView === 'day') {
-                  newDate.setDate(newDate.getDate() - 1);
-                } else if (currentView === 'week') {
-                  newDate.setDate(newDate.getDate() - 7);
-                } else {
-                  newDate.setMonth(newDate.getMonth() - 1);
-                }
-                setCurrentDate(newDate);
-              }}
+              onClick={handleNavigatePrevious}
               className="btn btn-sm btn-outline-secondary"
               style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Previous"
@@ -1011,17 +1073,7 @@ export default function Schedule() {
             {/* Next */}
             <button
               type="button"
-              onClick={() => {
-                const newDate = new Date(currentDate);
-                if (currentView === 'day') {
-                  newDate.setDate(newDate.getDate() + 1);
-                } else if (currentView === 'week') {
-                  newDate.setDate(newDate.getDate() + 7);
-                } else {
-                  newDate.setMonth(newDate.getMonth() + 1);
-                }
-                setCurrentDate(newDate);
-              }}
+              onClick={handleNavigateNext}
               className="btn btn-sm btn-outline-secondary"
               style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Next"

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
 import { getMobileEnvironment } from '../services/mobileEnvironment';
+import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from '../services/performanceTracker';
 import {
   UserIcon,
   CogIcon,
@@ -33,6 +34,13 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+
+  // Log Profile component mount if performance session is active
+  useEffect(() => {
+    if (getPerformanceSessionActive()) {
+      logComponentLoad('Profile Component');
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -131,6 +139,46 @@ const Profile = () => {
     };
     loadSignature();
   }, [user?.id]);
+
+  // Finalize performance report when Profile is fully loaded
+  useEffect(() => {
+    if (getPerformanceSessionActive()) {
+      // Log key sections as they render
+      const trackedSections = [
+        'Employee Information Section',
+        'Theme Settings Section',
+        'Database Environment Section',
+        'Signature Pad Section',
+        'Install App Section',
+        'Access Token Section'
+      ];
+
+      // Check and log sections that have rendered
+      const checkSections = () => {
+        const checkInterval = setInterval(() => {
+          let allLoaded = true;
+          trackedSections.forEach(section => {
+            // Simple check if we've attempted to find the section
+            if (getPerformanceSessionActive()) {
+              logComponentLoad(section);
+            }
+          });
+          clearInterval(checkInterval);
+        }, 100);
+      };
+
+      checkSections();
+
+      // Use requestAnimationFrame to ensure DOM is fully rendered before finalizing
+      const rafId = requestAnimationFrame(() => {
+        // Add a small delay to account for any async operations that might still be pending
+        setTimeout(() => {
+          finalizePerformanceReport();
+        }, 300);
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, [user]); // Run when user data is available
 
   const handleSaveSignature = async (dataUrl) => {
     setSignatureLoading(true);
