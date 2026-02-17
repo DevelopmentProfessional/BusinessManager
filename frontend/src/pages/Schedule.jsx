@@ -46,6 +46,7 @@ export default function Schedule() {
   const [dragOverCell, setDragOverCell] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [overlapEvents, setOverlapEvents] = useState(null);
   const [filters, setFilters] = useState({
     employeeIds: [],
     clientIds: [],
@@ -658,32 +659,81 @@ export default function Schedule() {
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, date, hour)}
                       >
-                        {appointmentsForTimeSlot.map(appointment => {
+                        {appointmentsForTimeSlot.length > 1 ? (
+                          // Overlap: render grey aggregated bar
+                          (() => {
+                            const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
+                              return new Date(event.appointment_date) < new Date(earliest.appointment_date) ? event : earliest;
+                            });
+                            const longestDuration = Math.max(...appointmentsForTimeSlot.map(e => e.duration_minutes || 60));
+                            const earliestTime = new Date(earliestEvent.appointment_date);
+                            const minutesPastHour = earliestTime.getMinutes();
+                            const topOffset = (minutesPastHour / 60) * 100;
+                            const heightPercent = (longestDuration / 60) * 100;
+
+                            return (
+                              <div
+                                key={`overlap-${hour}-${dayIndex}`}
+                                className="overlap-grey-bar"
+                                title={`${appointmentsForTimeSlot.length} overlapping events`}
+                                style={{
+                                  position: 'absolute',
+                                  top: `${topOffset}%`,
+                                  height: `${heightPercent}%`,
+                                  width: '95%',
+                                  zIndex: 11441,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOverlapEvents([...appointmentsForTimeSlot]);
+                                }}
+                              >
+                                <span className="overlap-count">{appointmentsForTimeSlot.length}</span>
+                                <div className="overlap-dots">
+                                  {appointmentsForTimeSlot.map(appt => (
+                                    <span key={appt.id} className="dot" style={{ color: employeeColorMap.get(appt.employee_id) || '#2563eb' }}>&bull;</span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()
+                        ) : appointmentsForTimeSlot.map(appointment => {
                           const client = clients.find(c => c.id === appointment.client_id);
                           const clientName = client ? client.name : 'Unknown Client';
                           const service = services.find(s => s.id === appointment.service_id);
                           const serviceName = service ? service.name : 'Unknown Service';
                           const appointmentTime = new Date(appointment.appointment_date);
-                          const timeString = appointmentTime.toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
+                          const timeString = appointmentTime.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
                             minute: '2-digit',
-                            hour12: false 
+                            hour12: false
                           });
-                          
+
                           const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
+                          const minutesPastHour = appointmentTime.getMinutes();
+                          const topOffset = (minutesPastHour / 60) * 100;
+                          const duration = appointment.duration_minutes || 60;
+                          const heightPercent = (duration / 60) * 100;
+                          const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
 
                           return (
-                            <div 
-                              key={appointment.id} 
-                              className="appointment-dot" 
+                            <div
+                              key={appointment.id}
+                              className="appointment-event"
                               title={`${clientName} - ${serviceName} at ${timeString}`}
-                              style={{ backgroundColor: employeeColor }}
+                              style={{
+                                backgroundColor: employeeColor,
+                                position: 'absolute',
+                                top: `${topOffset}%`,
+                                height: `${heightPercent}%`,
+                                width: '95%',
+                                zIndex: 10000 + minutesFromMidnight,
+                              }}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Page-level permission gating for editing
                                 if (!canEditAppointment(appointment)) return;
                                 setEditingAppointment(appointment);
                                 setIsModalOpen(true);
@@ -695,7 +745,7 @@ export default function Schedule() {
                         })}
                         {/* Current time indicator line */}
                         {isCurrentHour && (
-                          <div 
+                          <div
                             className="current-time-indicator"
                             style={{ top: `${currentMinutePercent}%` }}
                           >
@@ -717,7 +767,7 @@ export default function Schedule() {
                 });
                 const isCurrentHour = currentTime.getHours() === hour && days[0].toDateString() === new Date().toDateString();
                 const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
-                
+
                 return (
                   <React.Fragment key={hour}>
                     <div className="calendar-cell time-slot time-label-cell" data-hour={hour}>
@@ -735,26 +785,76 @@ export default function Schedule() {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, days[0], hour)}
                     >
-                      {appointmentsForTimeSlot.map(appointment => {
+                      {appointmentsForTimeSlot.length > 1 ? (
+                        // Overlap: render grey aggregated bar
+                        (() => {
+                          const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
+                            return new Date(event.appointment_date) < new Date(earliest.appointment_date) ? event : earliest;
+                          });
+                          const longestDuration = Math.max(...appointmentsForTimeSlot.map(e => e.duration_minutes || 60));
+                          const earliestTime = new Date(earliestEvent.appointment_date);
+                          const minutesPastHour = earliestTime.getMinutes();
+                          const topOffset = (minutesPastHour / 60) * 100;
+                          const heightPercent = (longestDuration / 60) * 100;
+
+                          return (
+                            <div
+                              key={`overlap-${hour}`}
+                              className="overlap-grey-bar"
+                              title={`${appointmentsForTimeSlot.length} overlapping events`}
+                              style={{
+                                position: 'absolute',
+                                top: `${topOffset}%`,
+                                height: `${heightPercent}%`,
+                                width: '95%',
+                                zIndex: 11441,
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOverlapEvents([...appointmentsForTimeSlot]);
+                              }}
+                            >
+                              <span className="overlap-count">{appointmentsForTimeSlot.length}</span>
+                              <div className="overlap-dots">
+                                {appointmentsForTimeSlot.map(appt => (
+                                  <span key={appt.id} className="dot" style={{ color: employeeColorMap.get(appt.employee_id) || '#2563eb' }}>&bull;</span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : appointmentsForTimeSlot.map(appointment => {
                         const client = clients.find(c => c.id === appointment.client_id);
                         const clientName = client ? client.name : 'Unknown Client';
                         const service = services.find(s => s.id === appointment.service_id);
                         const serviceName = service ? service.name : 'Unknown Service';
                         const appointmentTime = new Date(appointment.appointment_date);
-                        const timeString = appointmentTime.toLocaleTimeString('en-US', { 
-                          hour: '2-digit', 
+                        const timeString = appointmentTime.toLocaleTimeString('en-US', {
+                          hour: '2-digit',
                           minute: '2-digit',
-                          hour12: false 
+                          hour12: false
                         });
 
                         const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
-                        
+                        const minutesPastHour = appointmentTime.getMinutes();
+                        const topOffset = (minutesPastHour / 60) * 100;
+                        const duration = appointment.duration_minutes || 60;
+                        const heightPercent = (duration / 60) * 100;
+                        const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
+
                         return (
-                          <div 
-                            key={appointment.id} 
-                            className="appointment-dot" 
+                          <div
+                            key={appointment.id}
+                            className="appointment-event"
                             title={`${clientName} - ${serviceName} at ${timeString}`}
-                            style={{ backgroundColor: employeeColor }}
+                            style={{
+                              backgroundColor: employeeColor,
+                              position: 'absolute',
+                              top: `${topOffset}%`,
+                              height: `${heightPercent}%`,
+                              width: '95%',
+                              zIndex: 10000 + minutesFromMidnight,
+                            }}
                             draggable={true}
                             onDragStart={(e) => handleDragStart(e, appointment)}
                             onDragEnd={handleDragEnd}
@@ -773,7 +873,7 @@ export default function Schedule() {
                       })}
                       {/* Current time indicator line */}
                       {isCurrentHour && (
-                        <div 
+                        <div
                           className="current-time-indicator"
                           style={{ top: `${currentMinutePercent}%` }}
                         >
@@ -995,6 +1095,74 @@ export default function Schedule() {
         />
       </PermissionGate>
 
+      {/* Overlap bottom modal */}
+      {overlapEvents && (
+        <>
+          <div className="overlap-modal-backdrop" onClick={() => setOverlapEvents(null)} />
+          <div className="overlap-bottom-modal">
+            <div className="overlap-modal-header">
+              <span className="overlap-modal-title">{overlapEvents.length} Overlapping Events</span>
+              <button className="overlap-modal-close" onClick={() => setOverlapEvents(null)}>&times;</button>
+            </div>
+            <div className="overlap-event-list">
+              {[...overlapEvents]
+                .sort((a, b) => {
+                  const timeA = new Date(a.appointment_date);
+                  const timeB = new Date(b.appointment_date);
+                  if (timeA < timeB) return -1;
+                  if (timeA > timeB) return 1;
+                  const empA = employees.find(e => e.id === a.employee_id);
+                  const empB = employees.find(e => e.id === b.employee_id);
+                  const nameA = empA ? `${empA.first_name} ${empA.last_name}`.toLowerCase() : '';
+                  const nameB = empB ? `${empB.first_name} ${empB.last_name}`.toLowerCase() : '';
+                  return nameA.localeCompare(nameB);
+                })
+                .map(appt => {
+                  const client = clients.find(c => c.id === appt.client_id);
+                  const clientName = client ? client.name : '';
+                  const service = services.find(s => s.id === appt.service_id);
+                  const serviceName = service ? service.name : '';
+                  const emp = employees.find(e => e.id === appt.employee_id);
+                  const empName = emp ? `${emp.first_name} ${emp.last_name}` : '';
+                  const apptTime = new Date(appt.appointment_date);
+                  const timeStr = apptTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                  const empColor = employeeColorMap.get(appt.employee_id) || '#2563eb';
+                  const duration = appt.duration_minutes || 60;
+                  const label = appt.appointment_type === 'meeting' ? (appt.notes || 'Meeting')
+                    : appt.appointment_type === 'task' ? (appt.notes || 'Task')
+                    : serviceName || 'Appointment';
+
+                  return (
+                    <div
+                      key={appt.id}
+                      className="overlap-event-item"
+                      onClick={() => {
+                        if (!canEditAppointment(appt)) return;
+                        setOverlapEvents(null);
+                        setEditingAppointment(appt);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <span className="overlap-emp-dot" style={{ backgroundColor: empColor }} />
+                      <div className="overlap-event-info">
+                        <div className="overlap-event-primary">
+                          <span className="overlap-event-time">{timeStr}</span>
+                          <span className="overlap-event-label">{label}</span>
+                          {clientName && <span className="overlap-event-client">{clientName}</span>}
+                        </div>
+                        <div className="overlap-event-secondary">
+                          {empName && <span>{empName}</span>}
+                          <span>{duration} min</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </>
+      )}
+
       <style>{`
         /* Schedule Clock */
         .schedule-page {
@@ -1189,6 +1357,7 @@ export default function Schedule() {
         .calendar-cell.time-slot {
           box-sizing: border-box;
           height: 100%;
+          overflow: visible;
         }
         
         .calendar-cell:hover {
@@ -1285,7 +1454,195 @@ export default function Schedule() {
         .appointment-dot:hover {
           background: #0056b3;
         }
-        
+
+        .appointment-event {
+          color: white;
+          border-radius: 4px;
+          padding: 2px 4px;
+          overflow: hidden;
+          cursor: pointer;
+          font-size: 10px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          min-width: 0;
+          box-sizing: border-box;
+          left: 0;
+          transition: opacity 0.2s;
+        }
+
+        .appointment-event:hover {
+          opacity: 0.85;
+        }
+
+        .overlap-grey-bar {
+          background: repeating-linear-gradient(
+            45deg,
+            #cccccc,
+            #cccccc 10px,
+            #dddddd 10px,
+            #dddddd 20px
+          );
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 6px;
+          cursor: pointer;
+          overflow: hidden;
+          opacity: 0.85;
+          border: 1px solid #bbbbbb;
+          box-sizing: border-box;
+          left: 0;
+        }
+
+        .overlap-count {
+          font-weight: bold;
+          font-size: 12px;
+          color: #333;
+          flex-shrink: 0;
+        }
+
+        .overlap-dots {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px;
+        }
+
+        .overlap-dots .dot {
+          font-size: 14px;
+          line-height: 1;
+        }
+
+        .overlap-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.3);
+          z-index: 11999;
+        }
+
+        .overlap-bottom-modal {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: ${isDarkMode ? '#2d3748' : 'white'};
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
+          box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+          max-height: 60vh;
+          overflow-y: auto;
+          animation: slideUp 0.3s ease-out;
+          z-index: 12000;
+        }
+
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+
+        .overlap-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          border-bottom: 1px solid ${isDarkMode ? '#4a5568' : '#eee'};
+          position: sticky;
+          top: 0;
+          background: ${isDarkMode ? '#2d3748' : 'white'};
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
+          z-index: 1;
+        }
+
+        .overlap-modal-title {
+          font-weight: 600;
+          font-size: 14px;
+          color: ${isDarkMode ? '#e2e8f0' : '#333'};
+        }
+
+        .overlap-modal-close {
+          background: none;
+          border: none;
+          font-size: 22px;
+          cursor: pointer;
+          color: ${isDarkMode ? '#9ca3af' : '#666'};
+          line-height: 1;
+          padding: 0 4px;
+        }
+
+        .overlap-modal-close:hover {
+          color: ${isDarkMode ? '#e2e8f0' : '#333'};
+        }
+
+        .overlap-event-list {
+          padding: 4px 0;
+        }
+
+        .overlap-event-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 16px;
+          border-bottom: 1px solid ${isDarkMode ? '#4a5568' : '#eee'};
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .overlap-event-item:hover {
+          background: ${isDarkMode ? '#4a5568' : '#f5f5f5'};
+        }
+
+        .overlap-event-item:last-child {
+          border-bottom: none;
+        }
+
+        .overlap-emp-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .overlap-event-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .overlap-event-primary {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: ${isDarkMode ? '#e2e8f0' : '#333'};
+        }
+
+        .overlap-event-time {
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        .overlap-event-label {
+          font-weight: 500;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .overlap-event-client {
+          color: ${isDarkMode ? '#9ca3af' : '#666'};
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .overlap-event-secondary {
+          display: flex;
+          gap: 12px;
+          font-size: 11px;
+          color: ${isDarkMode ? '#9ca3af' : '#888'};
+          margin-top: 2px;
+        }
+
         /* Responsive Styles */
         @media (max-width: 768px) {
           .calendar-header-cell {
@@ -1310,6 +1667,10 @@ export default function Schedule() {
             font-size: 9px;
             padding: 3px 4px;
           }
+          .appointment-event {
+            font-size: 8px;
+            padding: 1px 3px;
+          }
           .appointment-time {
             font-size: 8px;
           }
@@ -1320,7 +1681,7 @@ export default function Schedule() {
             font-size: 9px;
           }
         }
-        
+
         @media (max-width: 480px) {
           .calendar-header-cell {
             padding: 4px 1px;
@@ -1342,6 +1703,10 @@ export default function Schedule() {
           .appointment-dot {
             font-size: 8px;
             padding: 2px 3px;
+          }
+          .appointment-event {
+            font-size: 7px;
+            padding: 1px 2px;
           }
         }
         

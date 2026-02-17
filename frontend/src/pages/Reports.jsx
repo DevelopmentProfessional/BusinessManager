@@ -12,12 +12,7 @@ import {
   ClockIcon,
   EyeIcon,
   FunnelIcon,
-  ArrowPathIcon,
-  PlusIcon,
-  TrashIcon,
-  PencilIcon,
-  TableCellsIcon,
-  LinkIcon
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { reportsAPI } from '../services/api';
@@ -403,72 +398,70 @@ export default function Reports() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-1">
+    <div className="h-full flex flex-col p-4">
       {/* Header */}
-      <div className="mb-1">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Reports & Analytics</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
         <p className="text-gray-600">
           Generate insights from your business data with interactive charts and reports.
         </p>
       </div>
 
       {error && (
-        <div className="mb-1 bg-red-50 border border-red-200 text-red-700 px-1 py-1 rounded">
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
-      <div className="mt-auto">
-        {/* Report Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-          {accessibleReports.map((report) => (
-            <div
-              key={report.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => handleReportSelect(report)}
-            >
-              <div className="p-1">
-                <div className="flex items-center justify-between mb-1">
-                  <div className={`p-3 rounded-lg bg-${report.color}-100`}>
-                    <report.icon className={`h-6 w-6 text-${report.color}-600`} />
-                  </div>
-                  <EyeIcon className="h-5 w-5 text-gray-400" />
+      {/* Report Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {accessibleReports.map((report) => (
+          <div
+            key={report.id}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleReportSelect(report)}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg bg-${report.color}-100`}>
+                  <report.icon className={`h-6 w-6 text-${report.color}-600`} />
                 </div>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {report.title}
-                </h3>
-                
-                <p className="text-sm text-gray-600 mb-1">
-                  {report.description}
-                </p>
-                
-                <div className="flex flex-wrap gap-1">
-                  {report.tables.map((table) => (
-                    <span
-                      key={table}
-                      className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
-                    >
-                      {table}
-                    </span>
-                  ))}
-                </div>
+                <EyeIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {report.title}
+              </h3>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                {report.description}
+              </p>
+              
+              <div className="flex flex-wrap gap-1">
+                {report.tables.map((table) => (
+                  <span
+                    key={table}
+                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                  >
+                    {table}
+                  </span>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {accessibleReports.length === 0 && (
-          <div className="text-center py-1">
-            <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              You don't have permissions to view any reports.
-            </p>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Empty State */}
+      {accessibleReports.length === 0 && (
+        <div className="text-center py-12">
+          <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            You don't have permissions to view any reports.
+          </p>
+        </div>
+      )}
 
       {/* Report Modal */}
       <Modal 
@@ -480,10 +473,10 @@ export default function Reports() {
         }}
       >
         {selectedReport && (
-          <div className="p-1">
+          <div className="p-6">
             {/* Modal Header */}
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
                 <div className={`p-2 rounded-lg bg-${selectedReport.color}-100`}>
                   <selectedReport.icon className={`h-5 w-5 text-${selectedReport.color}-600`} />
                 </div>
@@ -513,7 +506,7 @@ export default function Reports() {
             />
 
             {/* Chart */}
-            <div className="mt-1 h-96">
+            <div className="mt-6 h-96">
               {reportData ? (
                 <ReportChart
                   data={reportData}
