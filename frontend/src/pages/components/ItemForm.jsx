@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import BarcodeScanner from './BarcodeScanner';
+import ActionFooter from './ActionFooter';
+import IconButton from './IconButton';
 import cacheService from '../../services/cacheService';
 
 export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
@@ -418,40 +420,15 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="btn btn-outline-secondary rounded-pill flex"
-              >
-                Cancel
-              </button>
-              <button
+            <ActionFooter className="justify-center">
+              <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
+              <IconButton
+                icon={CheckIcon}
+                label={item ? 'Save' : 'Create'}
                 type="submit"
-                className={`btn rounded-pill flex text-white justify-center ${
-                  formData.type === 'PRODUCT' 
-                    ? 'btn-success' 
-                    : formData.type === 'RESOURCE'
-                      ? 'btn-primary'
-                      : formData.type === 'ASSET'
-                        ? ''
-                        : formData.type === 'LOCATION'
-                          ? 'btn-info'
-                          : ''
-                }`}
-                style={
-                  formData.type === 'ASSET' 
-                    ? { backgroundColor: '#8b5cf6' }
-                    : formData.type === 'ITEM'
-                      ? { backgroundColor: '#f97316' }
-                      : {}
-                }
-              >
-                <CheckIcon className="w-6 me-1" />
-                {item ? 'Save' : 'Create'}
-              </button>
-            </div>
+                variant="primary"
+              />
+            </ActionFooter>
           </form>
         </div>
       </div>

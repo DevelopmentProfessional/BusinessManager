@@ -12,7 +12,6 @@ import {
   BriefcaseIcon,
   CalendarDaysIcon,
   ClockIcon,
-  PaintBrushIcon,
 } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
 import api from '../services/api';
@@ -54,6 +53,8 @@ const Profile = () => {
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState('');
   const [employeeColor, setEmployeeColor] = useState(user?.color || '#3B82F6');
+  const [pendingColor, setPendingColor] = useState(user?.color || '#3B82F6');
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorUpdating, setColorUpdating] = useState(false);
   const [colorMessage, setColorMessage] = useState('');
 
@@ -138,6 +139,7 @@ const Profile = () => {
       
       // Clear message after 2 seconds
       setTimeout(() => setColorMessage(''), 2000);
+      return true;
     } catch (error) {
       const detail = error?.response?.data?.detail || error?.message || 'Failed to update color';
       setColorMessage(detail);
@@ -145,8 +147,16 @@ const Profile = () => {
       setEmployeeColor(user?.color || '#3B82F6');
       // Clear message after 3 seconds
       setTimeout(() => setColorMessage(''), 3000);
+      return false;
     } finally {
       setColorUpdating(false);
+    }
+  };
+
+  const handleColorSave = async () => {
+    const ok = await handleColorChange(pendingColor);
+    if (ok) {
+      setColorPickerOpen(false);
     }
   };
 
@@ -303,6 +313,73 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Employee Details & Benefits */}
+      <div className="card mb-1 p-2">
+        <div className="card-body">
+          <details className="mb-2">
+            <summary className="fw-semibold">Employee Details</summary>
+            <div className="row g-2 mt-2">
+              <div className="col-sm-6">
+                <div className="text-muted small">Username</div>
+                <div className="fw-medium">{user.username || 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Employee ID</div>
+                <div className="fw-medium">{user.id || 'N/A'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Location</div>
+                <div className="fw-medium">{user.location || 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">IOD Number</div>
+                <div className="fw-medium">{user.iod_number || 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Supervisor</div>
+                <div className="fw-medium">{user.reports_to_name || user.reports_to || 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Active</div>
+                <div className="fw-medium">{user.is_active === false ? 'No' : 'Yes'}</div>
+              </div>
+            </div>
+          </details>
+
+          <details>
+            <summary className="fw-semibold">Benefits</summary>
+            <div className="row g-2 mt-2">
+              <div className="col-sm-6">
+                <div className="text-muted small">Salary</div>
+                <div className="fw-medium">{user.salary != null ? `$${user.salary}` : 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Pay Frequency</div>
+                <div className="fw-medium">{user.pay_frequency || 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Insurance Plan</div>
+                <div className="fw-medium">{user.insurance_plan || 'Not set'}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Vacation Days</div>
+                <div className="fw-medium">
+                  {user.vacation_days != null ? user.vacation_days : 'Not set'}
+                  {user.vacation_days_used != null ? ` (Used ${user.vacation_days_used})` : ''}
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Sick Days</div>
+                <div className="fw-medium">
+                  {user.sick_days != null ? user.sick_days : 'Not set'}
+                  {user.sick_days_used != null ? ` (Used ${user.sick_days_used})` : ''}
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
       {/* Personal Settings */}
       <div className="card mb-1 p-2">
         <div className="card-header bg-transparent">
@@ -328,23 +405,65 @@ const Profile = () => {
                       style={{ width: '3rem', height: '1.5rem' }}/>
                   </div>
                 </div>
-                <div className="d-flex align-items-center gap-2">
-                  <PaintBrushIcon className="w-5 h-5" style={{ minWidth: '1.25rem' }} />
-                  <input
-                    type="color"
-                    value={employeeColor}
-                    onChange={(e) => handleColorChange(e.target.value)}
-                    disabled={colorUpdating}
-                    className="form-control form-control-sm"
-                    style={{
-                      width: '50px',
-                      height: '38px',
-                      padding: '4px',
-                      cursor: colorUpdating ? 'not-allowed' : 'pointer',
-                      opacity: colorUpdating ? 0.6 : 1
+                <div className="position-relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingColor(employeeColor);
+                      setColorPickerOpen((prev) => !prev);
                     }}
+                    className="btn d-flex align-items-center gap-1 p-0 border-0"
                     title="Calendar color"
-                  />
+                    aria-expanded={colorPickerOpen}
+                    disabled={colorUpdating}
+                  >
+                    <span style={{ fontSize: '1.5rem' }}>🎨</span>
+                  </button>
+                  {colorPickerOpen && (
+                    <div
+                      className="position-absolute end-0 mt-2 p-2 border rounded bg-white shadow-sm"
+                      style={{ minWidth: '210px', zIndex: 10 }}
+                    >
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <input
+                          type="color"
+                          value={pendingColor}
+                          onChange={(e) => setPendingColor(e.target.value)}
+                          className="form-control form-control-sm"
+                          style={{
+                            width: '50px',
+                            height: '38px',
+                            padding: '4px',
+                            cursor: colorUpdating ? 'not-allowed' : 'pointer',
+                            opacity: colorUpdating ? 0.6 : 1
+                          }}
+                          disabled={colorUpdating}
+                        />
+                        <span className="small text-muted">{pendingColor.toUpperCase()}</span>
+                      </div>
+                      <div className="d-flex gap-2 justify-content-end">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => {
+                            setPendingColor(employeeColor);
+                            setColorPickerOpen(false);
+                          }}
+                          disabled={colorUpdating}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          onClick={handleColorSave}
+                          disabled={colorUpdating}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="d-flex align-items-center gap-2">

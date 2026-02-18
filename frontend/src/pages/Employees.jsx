@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
@@ -6,8 +6,6 @@ import api, { employeesAPI, adminAPI, rolesAPI } from '../services/api';
 import Modal from './components/Modal';
 import EmployeeFormTabs from './components/EmployeeFormTabs';
 import CustomDropdown from './components/CustomDropdown';
-import DataImportModal from './components/DataImportModal';
-import CSVImportButton from './components/CSVImportButton';
 import PermissionGate from './components/PermissionGate';
 import useDarkMode from '../services/useDarkMode';
 
@@ -30,7 +28,6 @@ export default function Employees() {
   const [success, setSuccess] = useState('');
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
-  const [showDataImport, setShowDataImport] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [showRolesModal, setShowRolesModal] = useState(false);
@@ -45,6 +42,9 @@ export default function Employees() {
     last_name: '',
     role: 'employee'
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -167,33 +167,35 @@ export default function Employees() {
     openModal('employee-form');
   };
 
-  const handleCSVImportEmployees = async (records) => {
-    let success = 0;
-    let failed = 0;
-    const errors = [];
+  const roleOptions = useMemo(() => {
+    const roles = employees.map((employee) => employee.role).filter(Boolean);
+    return Array.from(new Set(roles)).sort();
+  }, [employees]);
 
-    for (const record of records) {
-      try {
-        const employeeData = {
-          username: record.username || record.email?.split('@')[0] || `user_${Date.now()}`,
-          email: record.email || '',
-          password: record.password || 'TempPass123!',
-          first_name: record.first_name || record.firstname || '',
-          last_name: record.last_name || record.lastname || '',
-          role: record.role || 'employee',
-        };
-        
-        await employeesAPI.create(employeeData);
-        success++;
-      } catch (err) {
-        failed++;
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
-        errors.push(`Row ${success + failed}: ${record.first_name || record.email || 'Unknown'} - ${detail}`);
-      }
-    }
+  const filteredEmployees = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
 
-    return { success, failed, errors };
-  };
+    return employees.filter((employee) => {
+      if (roleFilter !== 'all' && employee.role !== roleFilter) return false;
+      if (statusFilter === 'active' && !employee.is_active) return false;
+      if (statusFilter === 'inactive' && employee.is_active) return false;
+
+      if (!term) return true;
+
+      const haystack = [
+        employee.first_name,
+        employee.last_name,
+        employee.email,
+        employee.username,
+        employee.role,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [employees, searchTerm, roleFilter, statusFilter]);
 
   const handleEdit = (employee) => {
     console.log('handleEdit called with:', employee);
@@ -558,14 +560,14 @@ export default function Employees() {
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
           style={{ background: 'var(--bs-body-bg)' }}
         >
-          {employees.length > 0 ? (
+          {filteredEmployees.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
                 <col />
                 <col style={{ width: '120px' }} />
               </colgroup>
               <tbody>
-                {employees.map((employee, index) => (
+                {filteredEmployees.map((employee, index) => (
                   <tr
                     key={employee.id || index}
                     className="align-middle border-bottom"
@@ -627,43 +629,60 @@ export default function Employees() {
           </table>
 
           {/* Controls */}
-          <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Action buttons */}
-            <PermissionGate page="employees" permission="write">
-              <div className="d-flex gap-2 flex-wrap">
-                <div className="btn-group">
-                  <CSVImportButton
-                    entityName="Employees"
-                    onImport={handleCSVImportEmployees}
-                    onComplete={loadEmployees}
-                    requiredFields={['email']}
-                    fieldMapping={{
-                      'first name': 'first_name',
-                      'firstname': 'first_name',
-                      'last name': 'last_name',
-                      'lastname': 'last_name',
-                      'user name': 'username',
-                      'user': 'username',
-                      'email address': 'email',
-                    }}
-                    className="btn btn-outline-secondary"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreate}
-                    className="btn btn-primary"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                    </svg>
-                    Add
-                  </button>
-                </div>
-                <span className="text-muted small ms-auto align-self-center">
-                  {employees.length} employee(s)
-                </span>
-              </div>
-            </PermissionGate>
+          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="position-relative w-100 mb-2">
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name, email, or role..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control ps-5 w-100 rounded-pill"
+              />
+            </div>
+
+            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <PermissionGate page="employees" permission="write">
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Add employee"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                </button>
+              </PermissionGate>
+
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content', minWidth: '120px' }}
+              >
+                <option value="all">Roles</option>
+                {roleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content', minWidth: '120px' }}
+              >
+                <option value="all">Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -1145,16 +1164,6 @@ export default function Employees() {
           )}
         </div>
       )}
-
-      {/* Data Import Modal */}
-      <DataImportModal
-        isOpen={showDataImport}
-        onClose={() => setShowDataImport(false)}
-        onImportComplete={() => {
-          console.log('Data import completed');
-          loadEmployees();
-        }}
-      />
 
     </div>
   );

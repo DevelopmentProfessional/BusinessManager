@@ -284,15 +284,17 @@ export default function EmployeeFormTabs({
 
   return (
     <div className="p-0">
-      <h3 className="mb-4 fw-bold">
-        {selfEdit ? 'My Profile' : employee ? 'Edit Employee' : 'Add New Employee'}
-      </h3>
+      <form onSubmit={handleSubmit} className="d-flex flex-column" style={{ maxHeight: '70vh' }}>
+        <div className="pb-2 border-bottom bg-white dark:bg-gray-800">
+          <h3 className="mb-0 fw-bold">
+            {selfEdit ? 'My Profile' : employee ? 'Edit Employee' : 'Add New Employee'}
+          </h3>
+        </div>
 
-      {/* Tab Content - Main Area */}
-      <form onSubmit={handleSubmit}>
-        {/* ===== DETAILS TAB ===== */}
-        {activeTab === 'details' && (
-          <div className="tab-pane">
+        <div className="flex-grow-1 overflow-auto pe-1 pt-3">
+          {/* ===== DETAILS TAB ===== */}
+          {activeTab === 'details' && (
+            <div className="tab-pane">
             <div className="row g-3">
               <div className="col-md-6">
                 <div className="form-floating">
@@ -434,6 +436,8 @@ export default function EmployeeFormTabs({
               </div>
               </>
               )}
+            </div>
+          </div>
             </div>
           </div>
         )}
@@ -785,9 +789,10 @@ export default function EmployeeFormTabs({
             )}
           </div>
         )}
+        </div>
 
-        {/* Form Actions */}
-        <div className="mt-4">
+        {/* Fixed Footer */}
+        <div className="mt-2 pt-2 border-top bg-white dark:bg-gray-800">
           {/* Tab Navigation at Bottom */}
           <ul className="nav nav-tabs mb-3">
             {tabs.map(tab => (
@@ -803,7 +808,7 @@ export default function EmployeeFormTabs({
               </li>
             ))}
           </ul>
-          
+
           {/* Action Buttons */}
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex gap-2">
