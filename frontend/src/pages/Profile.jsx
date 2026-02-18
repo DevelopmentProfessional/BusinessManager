@@ -15,7 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
 import api from '../services/api';
-import SignaturePad from './components/SignaturePad';
+import SignatureModal from './components/SignatureModal';
 
 // Available database environments - shows what's possible
 const DB_ENVIRONMENTS = {
@@ -48,15 +48,13 @@ const Profile = () => {
   const [dbError, setDbError] = useState('');
   const [installMessage, setInstallMessage] = useState('');
   const [installError, setInstallError] = useState('');
-  const [showSignaturePad, setShowSignaturePad] = useState(false);
-  const [savedSignature, setSavedSignature] = useState(null);
-  const [signatureLoading, setSignatureLoading] = useState(false);
-  const [signatureMessage, setSignatureMessage] = useState('');
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [employeeColor, setEmployeeColor] = useState(user?.color || '#3B82F6');
   const [pendingColor, setPendingColor] = useState(user?.color || '#3B82F6');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorUpdating, setColorUpdating] = useState(false);
   const [colorMessage, setColorMessage] = useState('');
+  const [openAccordion, setOpenAccordion] = useState('settings'); // Default to settings
 
   const handleSwitchEnvironment = async (env) => {
     if (env === currentDbEnvironment || !user?.id) return;
@@ -160,21 +158,7 @@ const Profile = () => {
     }
   };
 
-  useEffect(() => {
-    const loadSignature = async () => {
-      if (!user?.id) return;
-      setSignatureLoading(true);
-      try {
-        const res = await api.get('/auth/me/signature');
-        setSavedSignature(res.data?.signature_data || null);
-      } catch (error) {
-        setSavedSignature(null);
-      } finally {
-        setSignatureLoading(false);
-      }
-    };
-    loadSignature();
-  }, [user?.id]);
+
 
   // Finalize performance report when Profile is fully loaded
   useEffect(() => {
@@ -184,7 +168,6 @@ const Profile = () => {
         'Employee Information Section',
         'Theme Settings Section',
         'Database Environment Section',
-        'Signature Pad Section',
         'Install App Section',
         'Access Token Section'
       ];
@@ -216,22 +199,7 @@ const Profile = () => {
     }
   }, [user]); // Run when user data is available
 
-  const handleSaveSignature = async (dataUrl) => {
-    setSignatureLoading(true);
-    setSignatureMessage('');
-    try {
-      await api.put('/auth/me/signature', { signature_data: dataUrl });
-      setSavedSignature(dataUrl);
-      setShowSignaturePad(false);
-      setSignatureMessage('Signature saved successfully');
-      setTimeout(() => setSignatureMessage(''), 3000);
-    } catch (error) {
-      const detail = error?.response?.data?.detail || error?.message || 'Failed to save signature';
-      setSignatureMessage(detail);
-    } finally {
-      setSignatureLoading(false);
-    }
-  };
+
 
   if (!user) {
     return (
@@ -271,123 +239,148 @@ const Profile = () => {
   };
 
   return (
-    <div className="container-fluid py-1 d-flex flex-column min-vh-100">
-      <div className="mt-auto">
-      {/* Employee Information */}
-      <div className="card mb-1 p-2">
-        <div className="card-body">
-          <div className="row g-1">
-            <div className="col-sm-6">
-              <div className="flex wrap mb-1">
-                <UserIcon className=" w-4" /> <div className="fw-medium p-1">{user.first_name} {user.last_name}</div>
-              </div>
-            </div>
-            <div className="col-sm-6">
-              <div className="flex wrap mb-1">
-                <BriefcaseIcon className="w-4" /><span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>
-                {user.role || 'Employee'}
-              </span>
-              </div>
-            </div>
-            <div className="col-sm-6">
-              <div className="flex wrap mb-1">
-                <EnvelopeIcon className="w-4" /><div className="fw-medium p-1">{user.email || 'Not set'}</div>
-              </div>
-            </div>
-            <div className="col-sm-6">
-              <div className="flex wrap mb-1">
-                <PhoneIcon className="w-4" /><div className="fw-medium p-1">{user.phone || 'Not set'}</div>
-              </div>
-            </div>
-            <div className="col-sm-6">
-              <div className="flex wrap mb-1">
-                <CalendarDaysIcon className="w-4" /><div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
-              </div>
-            </div>
-            <div className="col-sm-6">
-              <div className="flex wrap mb-1">
-                <ClockIcon className="w-4" /><div className="fw-medium p-1">{formatDate(user.last_login)}</div>
-              </div>
-            </div>
+    <div className="container-fluid d-flex flex-column" style={{ height: 'calc(100vh - 60px)' }}>
+      <div className="mt-auto d-flex flex-column gap-2">
+        
+        {/* Profile Accordion */}
+        <div className="card">
+          <div 
+            className="card-header bg-transparent cursor-pointer d-flex justify-content-between align-items-center p-1"
+            onClick={() => setOpenAccordion(openAccordion === 'profile' ? '' : 'profile')}
+            style={{ cursor: 'pointer' }}
+          >
+            <h5 className="mb-0 fw-semibold d-flex align-items-center gap-2">
+              <UserIcon className="h-5 w-5" /> Profile
+            </h5>
+            {openAccordion === 'profile' && <span>▼</span>}
           </div>
-        </div>
-      </div>
-
-      {/* Employee Details & Benefits */}
-      <div className="card mb-1 p-2">
-        <div className="card-body">
-          <details className="mb-2">
-            <summary className="fw-semibold">Employee Details</summary>
-            <div className="row g-2 mt-2">
-              <div className="col-sm-6">
-                <div className="text-muted small">Username</div>
-                <div className="fw-medium">{user.username || 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Employee ID</div>
-                <div className="fw-medium">{user.id || 'N/A'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Location</div>
-                <div className="fw-medium">{user.location || 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">IOD Number</div>
-                <div className="fw-medium">{user.iod_number || 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Supervisor</div>
-                <div className="fw-medium">{user.reports_to_name || user.reports_to || 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Active</div>
-                <div className="fw-medium">{user.is_active === false ? 'No' : 'Yes'}</div>
-              </div>
-            </div>
-          </details>
-
-          <details>
-            <summary className="fw-semibold">Benefits</summary>
-            <div className="row g-2 mt-2">
-              <div className="col-sm-6">
-                <div className="text-muted small">Salary</div>
-                <div className="fw-medium">{user.salary != null ? `$${user.salary}` : 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Pay Frequency</div>
-                <div className="fw-medium">{user.pay_frequency || 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Insurance Plan</div>
-                <div className="fw-medium">{user.insurance_plan || 'Not set'}</div>
-              </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Vacation Days</div>
-                <div className="fw-medium">
-                  {user.vacation_days != null ? user.vacation_days : 'Not set'}
-                  {user.vacation_days_used != null ? ` (Used ${user.vacation_days_used})` : ''}
+          {openAccordion === 'profile' && (
+            <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+              <div className="row g-1">
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <UserIcon className="w-4" /> <div className="fw-medium p-1">{user.first_name} {user.last_name}</div>
+                  </div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <BriefcaseIcon className="w-4" /><span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>
+                    {user.role || 'Employee'}
+                  </span>
+                  </div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <EnvelopeIcon className="w-4" /><div className="fw-medium p-1">{user.email || 'Not set'}</div>
+                  </div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <PhoneIcon className="w-4" /><div className="fw-medium p-1">{user.phone || 'Not set'}</div>
+                  </div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <CalendarDaysIcon className="w-4" /><div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
+                  </div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="flex wrap mb-1">
+                    <ClockIcon className="w-4" /><div className="fw-medium p-1">{formatDate(user.last_login)}</div>
+                  </div>
                 </div>
               </div>
-              <div className="col-sm-6">
-                <div className="text-muted small">Sick Days</div>
-                <div className="fw-medium">
-                  {user.sick_days != null ? user.sick_days : 'Not set'}
-                  {user.sick_days_used != null ? ` (Used ${user.sick_days_used})` : ''}
+
+              <hr className="my-2" />
+              <h6 className="fw-semibold mb-2">Details</h6>
+              <div className="row g-2">
+                <div className="col-sm-6">
+                  <div className="text-muted small">Username</div>
+                  <div className="fw-medium">{user.username || 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Employee ID</div>
+                  <div className="fw-medium">{user.id || 'N/A'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Location</div>
+                  <div className="fw-medium">{user.location || 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">IOD Number</div>
+                  <div className="fw-medium">{user.iod_number || 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Supervisor</div>
+                  <div className="fw-medium">{user.reports_to_name || user.reports_to || 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Active</div>
+                  <div className="fw-medium">{user.is_active === false ? 'No' : 'Yes'}</div>
                 </div>
               </div>
             </div>
-          </details>
+          )}
         </div>
-      </div>
 
-      {/* Personal Settings */}
-      <div className="card mb-1 p-2">
-        <div className="card-header bg-transparent">
-          <h2 className="flex wrap h5 mb-1">
-            <CogIcon className="h-5 w-5 me-2" /> Settings
-          </h2>
+        {/* Benefits Accordion */}
+        <div className="card">
+          <div 
+            className="card-header bg-transparent cursor-pointer d-flex justify-content-between align-items-center p-1"
+            onClick={() => setOpenAccordion(openAccordion === 'benefits' ? '' : 'benefits')}
+            style={{ cursor: 'pointer' }}
+          >
+            <h5 className="mb-0 fw-semibold">Benefits</h5>
+            {openAccordion === 'benefits' && <span>▼</span>}
+          </div>
+          {openAccordion === 'benefits' && (
+            <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+              <div className="row g-2">
+                <div className="col-sm-6">
+                  <div className="text-muted small">Salary</div>
+                  <div className="fw-medium">{user.salary != null ? `$${user.salary}` : 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Pay Frequency</div>
+                  <div className="fw-medium">{user.pay_frequency || 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Insurance Plan</div>
+                  <div className="fw-medium">{user.insurance_plan || 'Not set'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Vacation Days</div>
+                  <div className="fw-medium">
+                    {user.vacation_days != null ? user.vacation_days : 'Not set'}
+                    {user.vacation_days_used != null ? ` (Used ${user.vacation_days_used})` : ''}
+                  </div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small">Sick Days</div>
+                  <div className="fw-medium">
+                    {user.sick_days != null ? user.sick_days : 'Not set'}
+                    {user.sick_days_used != null ? ` (Used ${user.sick_days_used})` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="card-body">
+
+        {/* Settings Accordion */}
+        <div className={`card ${openAccordion === 'settings' ? 'flex-grow-1' : ''}`}>
+          <div 
+            className="card-header bg-transparent cursor-pointer d-flex justify-content-between align-items-center p-1"
+            onClick={() => setOpenAccordion(openAccordion === 'settings' ? '' : 'settings')}
+            style={{ cursor: 'pointer' }}
+          >
+            <h5 className="mb-0 fw-semibold d-flex align-items-center gap-2">
+              <CogIcon className="h-5 w-5" /> Settings
+            </h5>
+            {openAccordion === 'settings' && <span>▼</span>}
+          </div>
+          {openAccordion === 'settings' && (
+            <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
             <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div className="d-flex align-items-center gap-3">
                 <div className="d-flex align-items-center gap-1">
@@ -469,6 +462,14 @@ const Profile = () => {
               <div className="d-flex align-items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setSignatureModalOpen(true)}
+                  className="btn d-flex align-items-center gap-1 p-0 border-0"
+                  title="Manage signature"
+                >
+                  <span style={{ fontSize: '1.75rem' }}>📝</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleAddToHomeScreen}
                   className="btn d-flex align-items-center gap-1 p-0 border-0"
                   title="Add app to home screen"
@@ -526,54 +527,17 @@ const Profile = () => {
             </div>
             {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
             {dbError && <div className="small text-danger mt-1">{dbError}</div>}
-        </div>
-      </div>
-      {/* Signature */}
-      <div className="card mb-1 p-2">
-        <div className="card-header bg-transparent">
-          <h2 className="flex wrap h5 mb-1 gap-1">
-            Signature
-          </h2>
-        </div>
-        <div className="card-body">
-          {signatureMessage && (
-            <div className={`alert py-2 small ${signatureMessage.includes('Failed') ? 'alert-danger' : 'alert-success'}`}>
-              {signatureMessage}
             </div>
           )}
+        </div>
+      </div>
 
-          {signatureLoading ? (
-            <div className="text-muted">Loading signature...</div>
-          ) : showSignaturePad ? (
-            <SignaturePad
-              onSave={handleSaveSignature}
-              onCancel={() => setShowSignaturePad(false)}
-              initialSignature={savedSignature}
-              width={500}
-              height={200}
-            />
-          ) : savedSignature ? (
-            <div className="d-flex flex-column gap-2">
-              <img
-                src={savedSignature}
-                alt="Saved signature"
-                style={{ maxWidth: '100%', height: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px' }}
-              />
-              <button type="button" className="btn btn-outline-secondary" onClick={() => setShowSignaturePad(true)}>
-                Replace Signature
-              </button>
-            </div>
-          ) : (
-            <div className="d-flex flex-column gap-2">
-              <p className="text-muted mb-0">No signature saved yet.</p>
-              <button type="button" className="btn btn-outline-primary" onClick={() => setShowSignaturePad(true)}>
-                Create Signature
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-      </div>
+      {/* Signature Modal */}
+      <SignatureModal 
+        isOpen={signatureModalOpen}
+        onClose={() => setSignatureModalOpen(false)}
+        userId={user?.id}
+      />
     </div>
   );
 };

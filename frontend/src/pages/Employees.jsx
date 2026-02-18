@@ -707,16 +707,15 @@ export default function Employees() {
       </Modal>
 
       {/* Create User Modal */}
-      {showCreateUser && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Create New User</h5>
-                <button type="button" className="btn-close" onClick={() => setShowCreateUser(false)}></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={handleCreateUser}>
+      <Modal 
+        isOpen={showCreateUser} 
+        onClose={() => setShowCreateUser(false)}
+        title="Create New User"
+        noPadding={true}
+      >
+        <form onSubmit={handleCreateUser} className="d-flex flex-column h-100">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
                   <div className="form-floating mb-3">
                     <input
                       type="text"
@@ -790,38 +789,42 @@ export default function Employees() {
                     </select>
                     <label htmlFor="createUserRole">Role</label>
                   </div>
-                  <div className="d-flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="btn btn-primary flex-grow-1"
-                    >
-                      {loading ? 'Creating...' : 'Create User'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowCreateUser(false)}
-                      className="btn btn-secondary flex-grow-1"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="border-top bg-white dark:bg-gray-800 p-3">
+            <div className="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCreateUser(false)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary"
+              >
+                {loading ? 'Creating...' : 'Create User'}
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Permissions Management Modal */}
-      <Modal isOpen={permissionsModalOpen} onClose={() => setPermissionsModalOpen(false)}>
-        <div className={`p-4 ${isDarkMode ? 'bg-dark' : 'bg-white'}`}>
-          <h3 className={`mb-4 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
-            Manage Permissions - {selectedUser?.first_name} {selectedUser?.last_name}
-          </h3>
-
-          {/* Add New Permission Form */}
-          <form onSubmit={handleCreatePermission} className="mb-4 p-3 border rounded">
+      <Modal 
+        isOpen={permissionsModalOpen} 
+        onClose={() => setPermissionsModalOpen(false)}
+        title={`Manage Permissions - ${selectedUser?.first_name} ${selectedUser?.last_name}`}
+        noPadding={true}
+      >
+        <div className="d-flex flex-column h-100">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
+            {/* Add New Permission Form */}
+            <form onSubmit={handleCreatePermission} className="mb-4 p-3 border rounded">
             <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Add New Permission</h5>
             <div className="row g-3">
               <div className="col-md-6">
@@ -950,27 +953,35 @@ export default function Employees() {
               </table>
             </div>
           </div>
+          </div>
 
-          <div className="d-flex justify-content-end mt-4">
-            <button
-              onClick={() => setPermissionsModalOpen(false)}
-              className="btn btn-secondary"
-            >
-              <i className="bi bi-x-circle me-2"></i>
-              Close
-            </button>
+          {/* Fixed Footer */}
+          <div className="border-top bg-white dark:bg-gray-800 p-3">
+            <div className="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPermissionsModalOpen(false)}
+                className="btn btn-secondary"
+              >
+                <i className="bi bi-x-circle me-2"></i>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
 
       {/* Roles Management Modal */}
-      <Modal isOpen={showRolesModal} onClose={() => setShowRolesModal(false)}>
-        <div className={`p-4 ${isDarkMode ? 'bg-dark' : 'bg-white'}`}>
-          <h3 className={`text-lg font-medium mb-4 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
-            Manage Roles
-          </h3>
-
-          {error && (
+      <Modal 
+        isOpen={showRolesModal} 
+        onClose={() => setShowRolesModal(false)}
+        title="Manage Roles"
+        noPadding={true}
+      >
+        <div className="d-flex flex-column h-100">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
+            {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
               <div className="text-sm text-red-700">{error}</div>
             </div>
@@ -1112,14 +1123,19 @@ export default function Employees() {
               </div>
             )}
           </div>
+          </div>
 
-          <div className="d-flex justify-content-end mt-4">
-            <button
-              onClick={() => setShowRolesModal(false)}
-              className="btn btn-secondary"
-            >
-              Close
-            </button>
+          {/* Fixed Footer */}
+          <div className="border-top bg-white dark:bg-gray-800 p-3">
+            <div className="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRolesModal(false)}
+                className="btn btn-secondary"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
