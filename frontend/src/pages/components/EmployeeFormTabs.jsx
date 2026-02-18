@@ -438,8 +438,6 @@ export default function EmployeeFormTabs({
               )}
             </div>
           </div>
-            </div>
-          </div>
         )}
 
         {/* ===== BENEFITS TAB ===== */}
