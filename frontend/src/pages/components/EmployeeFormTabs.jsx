@@ -288,22 +288,7 @@ export default function EmployeeFormTabs({
         {selfEdit ? 'My Profile' : employee ? 'Edit Employee' : 'Add New Employee'}
       </h3>
 
-      {/* Tab Navigation */}
-      <ul className="nav nav-tabs mb-4">
-        {tabs.map(tab => (
-          <li key={tab.key} className="nav-item">
-            <button
-              className={`nav-link ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
-              type="button"
-              disabled={tab.disabled}
-            >
-              {tab.label} {tab.disabled && !employee && '(Save first)'}
-            </button>
-          </li>
-        ))}
-      </ul>
-
+      {/* Tab Content - Main Area */}
       <form onSubmit={handleSubmit}>
         {/* ===== DETAILS TAB ===== */}
         {activeTab === 'details' && (
@@ -802,23 +787,42 @@ export default function EmployeeFormTabs({
         )}
 
         {/* Form Actions */}
-        <div className="d-flex justify-content-between align-items-center mt-4">
-          <div className="d-flex gap-2">
-            {employee && canDelete && (
-              <button type="button" onClick={() => {
-                if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
-              }} className="btn btn-outline-danger">
-                Delete Employee
-              </button>
-            )}
-          </div>
-          <div className="d-flex gap-2">
-            <button type="button" onClick={onCancel} className="btn btn-outline-secondary">Cancel</button>
-            {(activeTab === 'details' || activeTab === 'benefits') && (
-              <button type="submit" className="btn btn-primary">
-                {employee ? 'Update Employee' : 'Create Employee'}
-              </button>
-            )}
+        <div className="mt-4">
+          {/* Tab Navigation at Bottom */}
+          <ul className="nav nav-tabs mb-3">
+            {tabs.map(tab => (
+              <li key={tab.key} className="nav-item">
+                <button
+                  className={`nav-link ${activeTab === tab.key ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}
+                  type="button"
+                  disabled={tab.disabled}
+                >
+                  {tab.label} {tab.disabled && !employee && '(Save first)'}
+                </button>
+              </li>
+            ))}
+          </ul>
+          
+          {/* Action Buttons */}
+          <div className="d-flex justify-content-between align-items-center">
+            <div className="d-flex gap-2">
+              {employee && canDelete && (
+                <button type="button" onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
+                }} className="btn btn-outline-danger">
+                  Delete Employee
+                </button>
+              )}
+            </div>
+            <div className="d-flex gap-2">
+              <button type="button" onClick={onCancel} className="btn btn-outline-secondary">Cancel</button>
+              {(activeTab === 'details' || activeTab === 'benefits') && (
+                <button type="submit" className="btn btn-primary">
+                  {employee ? 'Update Employee' : 'Create Employee'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </form>

@@ -413,8 +413,9 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Report Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Report Cards Grid - Float to bottom */}
+      <div className="mt-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {accessibleReports.map((report) => (
           <div
             key={report.id}
@@ -450,6 +451,7 @@ export default function Reports() {
             </div>
           </div>
         ))}
+        </div>
       </div>
 
       {/* Empty State */}
