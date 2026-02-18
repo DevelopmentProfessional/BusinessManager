@@ -9,7 +9,7 @@ This README is organized by pages/modules. Each section is independent and can b
 ### TO REVIEW
 
 - [ ] Verify all functionality works as expected
-- [ ] 
+- [ ]
 
 ### TO CODE
 
@@ -45,10 +45,10 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [x] Use EmployeeFormTabs.jsx as a template for all input fields (DONE)
-- [x] All TEXT INPUT and number inputs should have floating labels (DONE)
-- [x] Update all dropdowns with floating label design (DONE)
-- [x] Move tabs to the bottom of the modal (DONE - tabs now at bottom)
+- [X] Use EmployeeFormTabs.jsx as a template for all input fields (DONE)
+- [X] All TEXT INPUT and number inputs should have floating labels (DONE)
+- [X] Update all dropdowns with floating label design (DONE)
+- [X] Move tabs to the bottom of the modal (DONE - tabs now at bottom)
 
 ### TO CODE
 
@@ -65,13 +65,13 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [x] Top header title fixed at top on mobile (DONE)
-- [x] Minimize "All Types" and "All Stock" components to text width (DONE)
-- [x] "Add new item" and "edit" item designed like sales cards (DONE)
-- [x] Remove the (x) button from edit item modal (DONE)
-- [x] Change "Edit Item" title to just "Edit" (DONE)
-- [x] The inventory add new format matches edit item format (DONE)
-- [ ] Remove the count label (e.g., "84/48") - verify if this exists
+- [X] Top header title fixed at top on mobile (DONE)
+- [X] Minimize "All Types" and "All Stock" components to text width (DONE)
+- [X] "Add new item" and "edit" item designed like sales cards (DONE)
+- [X] Remove the (x) button from edit item modal (DONE)
+- [X] Change "Edit Item" title to just "Edit" (DONE)
+- [X] The inventory add new format matches edit item format (DONE)
+- [X] Remove the count label (e.g., "84/48") - verify if this exists
 - [ ] Remove count/total indicator next to "All Stock" input - verify if this exists
 
 ### TO CODE
@@ -112,7 +112,7 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [x] Float reports to the bottom of the page (DONE)
+- [X] Float reports to the bottom of the page (DONE)
 
 ### TO CODE
 
@@ -124,11 +124,12 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [x] Add sales history section to sales page (DONE - placeholder added)
+- [X] Add sales history section to sales page (DONE - placeholder added)
+- [ ] For the sales history, it should open as a modal
 
 ### TO CODE
 
-- [x] Customer search: Add "+" button to create new client (DONE - already implemented)
+- [X] Customer search: Add "+" button to create new client (DONE - already implemented)
 
 ---
 
@@ -235,8 +236,8 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [x] Float cards to the bottom of the page (DONE)
-- [ ] Move database environment section to Settings as a dropdown (PENDING)
+- [X] Float cards to the bottom of the page (DONE)
+- [X] Move database environment section to Settings as a dropdown (PENDING)
 
 ### TO CODE
 
@@ -244,21 +245,9 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ---
 
-## Suppliers
-
-### TO REVIEW
-
-- [ ] Verify all functionality works as expected
-
-### TO CODE
-
-- [ ] Initial implementation pending
-
----
-
 ## Global Components
 
 ### TO REVIEW
 
-- [x] All buttons positioned in bottom left within footer section (DONE)
-- [x] Button width based on text length (DONE)
+- [X] All buttons positioned in bottom left within footer section (DONE)
+- [X] Button width based on text length (DONE)

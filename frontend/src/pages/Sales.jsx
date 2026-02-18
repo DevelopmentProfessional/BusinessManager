@@ -857,6 +857,15 @@ export default function Sales() {
         selectedClient={selectedClient}
         onProcessPayment={processPayment}
       />
+
+      {/* Sales History Section (Placeholder) */}
+      <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs border border-gray-200 dark:border-gray-700">
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Recent Sales</h4>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="mb-2">Sales history feature coming soon</p>
+          <p className="text-gray-400">Track and view your sales transactions here</p>
+        </div>
+      </div>
     </div>
   );
 }
