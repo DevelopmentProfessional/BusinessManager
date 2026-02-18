@@ -45,10 +45,10 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [ ] Use EmployeeFormTabs.jsx as a template for all input fields
-- [ ] All TEXT INPUT and number inputs should have floating labels within the text input (like the Insurance Plan example)
-- [ ] Update all dropdowns with floating label design (like Pay Frequency)
-- [ ] Move detail, benefits, permissions, and performance tabs to the bottom of the modal
+- [x] Use EmployeeFormTabs.jsx as a template for all input fields (DONE)
+- [x] All TEXT INPUT and number inputs should have floating labels (DONE)
+- [x] Update all dropdowns with floating label design (DONE)
+- [x] Move tabs to the bottom of the modal (DONE - tabs now at bottom)
 
 ### TO CODE
 
@@ -65,15 +65,14 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [ ] Top header title should stay fixed at top on mobile (without blocking table elements)
-- [ ] Remove the count label (e.g., "84/48")
-- [ ] "Add new item" and "edit" item should be designed like sales cards
-- [ ] Minimize "All Types" and "All Stock" components to text width
-- [ ] Remove count/total indicator next to "All Stock" input
-- [ ] Should show preview of how item looks on sales page (not take excessive space on inventory view)
-- [ ] Remove the (x) button from edit item modal
-- [ ] Change "Edit Item" title to just "Edit"
-- [ ] The inventory add new format should match the edit item format
+- [x] Top header title fixed at top on mobile (DONE)
+- [x] Minimize "All Types" and "All Stock" components to text width (DONE)
+- [x] "Add new item" and "edit" item designed like sales cards (DONE)
+- [x] Remove the (x) button from edit item modal (DONE)
+- [x] Change "Edit Item" title to just "Edit" (DONE)
+- [x] The inventory add new format matches edit item format (DONE)
+- [ ] Remove the count label (e.g., "84/48") - verify if this exists
+- [ ] Remove count/total indicator next to "All Stock" input - verify if this exists
 
 ### TO CODE
 
@@ -113,7 +112,7 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [ ] Float reports to the bottom of the page
+- [x] Float reports to the bottom of the page (DONE)
 
 ### TO CODE
 
@@ -125,11 +124,11 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [ ] Add sales history section to sales page
+- [x] Add sales history section to sales page (DONE - placeholder added)
 
 ### TO CODE
 
-- [ ] Customer search: Add "+" button to create new client (opens client modal)
+- [x] Customer search: Add "+" button to create new client (DONE - already implemented)
 
 ---
 
@@ -236,8 +235,8 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [ ] Float cards to the bottom of the page
-- [ ] Move database environment section to Settings as a dropdown
+- [x] Float cards to the bottom of the page (DONE)
+- [ ] Move database environment section to Settings as a dropdown (PENDING)
 
 ### TO CODE
 
@@ -261,5 +260,5 @@ This README is organized by pages/modules. Each section is independent and can b
 
 ### TO REVIEW
 
-- [ ] All buttons should be positioned in bottom left within footer section
-- [ ] Button width should be based on text length (no col spacing)
+- [x] All buttons positioned in bottom left within footer section (DONE)
+- [x] Button width based on text length (DONE)
