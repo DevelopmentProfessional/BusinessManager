@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { rolesAPI, isudAPI, employeesAPI } from '../../services/api';
 import api from '../../services/api';
 import SignaturePad from './SignaturePad';
@@ -285,12 +286,6 @@ export default function EmployeeFormTabs({
   return (
     <div className="p-0">
       <form onSubmit={handleSubmit} className="d-flex flex-column" style={{ maxHeight: '70vh' }}>
-        <div className="pb-2 border-bottom bg-white dark:bg-gray-800">
-          <h3 className="mb-0 fw-bold">
-            {selfEdit ? 'My Profile' : employee ? 'Edit Employee' : 'Add New Employee'}
-          </h3>
-        </div>
-
         <div className="flex-grow-1 overflow-auto pe-1 pt-3">
           {/* ===== DETAILS TAB ===== */}
           {activeTab === 'details' && (
@@ -796,12 +791,13 @@ export default function EmployeeFormTabs({
             {tabs.map(tab => (
               <li key={tab.key} className="nav-item">
                 <button
-                  className={`nav-link ${activeTab === tab.key ? 'active' : ''}`}
+                  className={`nav-link ${activeTab === tab.key ? 'active' : ''} px-2 py-1 px-md-3 py-md-2`}
                   onClick={() => setActiveTab(tab.key)}
                   type="button"
                   disabled={tab.disabled}
+                  style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}
                 >
-                  {tab.label} {tab.disabled && !employee && '(Save first)'}
+                  {tab.label}
                 </button>
               </li>
             ))}
@@ -811,18 +807,25 @@ export default function EmployeeFormTabs({
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex gap-2">
               {employee && canDelete && (
-                <button type="button" onClick={() => {
-                  if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
-                }} className="btn btn-outline-danger">
-                  Delete Employee
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
+                  }} 
+                  className="btn btn-outline-danger p-2"
+                  title="Delete Employee"
+                >
+                  <TrashIcon className="h-5 w-5" />
                 </button>
               )}
             </div>
-            <div className="d-flex gap-2">
-              <button type="button" onClick={onCancel} className="btn btn-outline-secondary">Cancel</button>
+            <div className="d-flex gap-2 position-absolute start-50 translate-middle-x">
+              <button type="button" onClick={onCancel} className="btn btn-outline-secondary p-2" title="Cancel">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
               {(activeTab === 'details' || activeTab === 'benefits') && (
-                <button type="submit" className="btn btn-primary">
-                  {employee ? 'Update Employee' : 'Create Employee'}
+                <button type="submit" className="btn btn-primary p-2" title={employee ? 'Update Employee' : 'Create Employee'}>
+                  <CheckIcon className="h-5 w-5" />
                 </button>
               )}
             </div>

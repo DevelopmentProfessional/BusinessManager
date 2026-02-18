@@ -116,130 +116,125 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden" style={{ maxHeight: '90vh' }}>
-      {/* Two-column layout */}
-      <div className="d-flex flex-column flex-md-row" style={{ height: '100%' }}>
-        
-        {/* Left Section - POS Card Preview (30% height on mobile, side column on desktop) */}
-        <div className="flex-shrink-0 p-2 d-flex flex-column align-items-center justify-content-center bg-gray-100 dark:bg-gray-900" 
-             style={{ height: '30%', minHeight: '120px', maxHeight: '150px' }}>
-          <p className="text-xs text-muted mb-2 text-center">POS Preview</p>
-          
-          {/* Full-size POS Card matching Sales page */}
-          <div 
-            className={`relative flex flex-col bg-white dark:bg-gray-800 rounded-xl border-2 overflow-hidden ${
-              formData.type === 'PRODUCT' 
-                ? 'border-emerald-400' 
-                : formData.type === 'RESOURCE'
-                  ? 'border-blue-400'
-                  : formData.type === 'ASSET'
-                    ? 'border-purple-400'
-                    : formData.type === 'LOCATION'
-                      ? 'border-cyan-400'
-                      : 'border-orange-400'
-            }`}
-            style={{ width: '160px', height: '160px' }}
-          >
-            {/* Background with gradient or image */}
-            <div className={`absolute inset-0 ${
-              formData.type === 'PRODUCT' 
-                ? 'bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800' 
-                : formData.type === 'RESOURCE'
-                  ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800'
-                  : formData.type === 'ASSET'
-                    ? 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800'
-                    : formData.type === 'LOCATION'
-                      ? 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900 dark:to-cyan-800'
-                      : 'bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800'
-            }`}>
-              {formData.image_url ? (
-                <img 
-                  src={formData.image_url} 
-                  alt="Preview" 
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <PhotoIcon className={`h-12 w-12 ${
-                    formData.type === 'PRODUCT' 
-                      ? 'text-emerald-400/50' 
-                      : formData.type === 'RESOURCE'
-                        ? 'text-blue-400/50'
-                        : formData.type === 'ASSET'
-                          ? 'text-purple-400/50'
-                          : formData.type === 'LOCATION'
-                            ? 'text-cyan-400/50'
-                            : 'text-orange-400/50'
-                  }`} />
-                </div>
-              )}
-            </div>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden d-flex flex-column" style={{ maxHeight: '90vh' }}>
+      <form onSubmit={handleSubmit} className="d-flex flex-column h-100">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 p-3 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <h5 className="mb-0 fw-semibold">
+            {item ? 'Edit' : 'Add New Item'}
+          </h5>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto p-3" style={{ maxHeight: 'calc(80vh - 120px)' }}>
+          {/* POS Card Preview */}
+          <div className="mb-3 d-flex flex-column align-items-center">
+            <p className="text-xs text-muted mb-2 text-center">POS Preview</p>
             
-            {/* Gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            
-            {/* Item Name - Top Left */}
-            <div className="absolute top-2 left-2 right-2">
-              <div className={`inline-block px-2 py-1 rounded-lg backdrop-blur-sm ${
+            <div 
+              className={`relative flex flex-col bg-white dark:bg-gray-800 rounded-xl border-2 overflow-hidden ${
                 formData.type === 'PRODUCT' 
-                  ? 'bg-emerald-600/90' 
+                  ? 'border-emerald-400' 
                   : formData.type === 'RESOURCE'
-                    ? 'bg-blue-600/90'
+                    ? 'border-blue-400'
                     : formData.type === 'ASSET'
-                      ? 'bg-purple-600/90'
+                      ? 'border-purple-400'
                       : formData.type === 'LOCATION'
-                        ? 'bg-cyan-600/90'
-                        : 'bg-orange-600/90'
+                        ? 'border-cyan-400'
+                        : 'border-orange-400'
+              }`}
+              style={{ width: '160px', height: '160px' }}
+            >
+              {/* Background with gradient or image */}
+              <div className={`absolute inset-0 ${
+                formData.type === 'PRODUCT' 
+                  ? 'bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800' 
+                  : formData.type === 'RESOURCE'
+                    ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800'
+                    : formData.type === 'ASSET'
+                      ? 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800'
+                      : formData.type === 'LOCATION'
+                        ? 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900 dark:to-cyan-800'
+                        : 'bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800'
               }`}>
-                <span className="font-semibold text-white text-sm line-clamp-1">
-                  {formData.name || 'Item Name'}
+                {formData.image_url ? (
+                  <img 
+                    src={formData.image_url} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <PhotoIcon className={`h-12 w-12 ${
+                      formData.type === 'PRODUCT' 
+                        ? 'text-emerald-400/50' 
+                        : formData.type === 'RESOURCE'
+                          ? 'text-blue-400/50'
+                          : formData.type === 'ASSET'
+                            ? 'text-purple-400/50'
+                            : formData.type === 'LOCATION'
+                              ? 'text-cyan-400/50'
+                              : 'text-orange-400/50'
+                    }`} />
+                  </div>
+                )}
+              </div>
+              
+              {/* Gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              
+              {/* Item Name - Top Left */}
+              <div className="absolute top-2 left-2 right-2">
+                <div className={`inline-block px-2 py-1 rounded-lg backdrop-blur-sm ${
+                  formData.type === 'PRODUCT' 
+                    ? 'bg-emerald-600/90' 
+                    : formData.type === 'RESOURCE'
+                      ? 'bg-blue-600/90'
+                      : formData.type === 'ASSET'
+                        ? 'bg-purple-600/90'
+                        : formData.type === 'LOCATION'
+                          ? 'bg-cyan-600/90'
+                          : 'bg-orange-600/90'
+                }`}>
+                  <span className="font-semibold text-white text-sm line-clamp-1">
+                    {formData.name || 'Item Name'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Price Badge - Bottom Left */}
+              <div className="absolute bottom-2 left-2">
+                <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${
+                  formData.type === 'PRODUCT' 
+                    ? 'bg-emerald-700/90' 
+                    : formData.type === 'RESOURCE'
+                      ? 'bg-blue-700/90'
+                      : formData.type === 'ASSET'
+                        ? 'bg-purple-700/90'
+                        : formData.type === 'LOCATION'
+                          ? 'bg-cyan-700/90'
+                          : 'bg-orange-700/90'
+                }`}>
+                  ${formData.price ? parseFloat(formData.price).toFixed(2) : '0.00'}
                 </span>
               </div>
             </div>
-            
-            {/* Price Badge - Bottom Left */}
-            <div className="absolute bottom-2 left-2">
-              <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${
-                formData.type === 'PRODUCT' 
-                  ? 'bg-emerald-700/90' 
-                  : formData.type === 'RESOURCE'
-                    ? 'bg-blue-700/90'
-                    : formData.type === 'ASSET'
-                      ? 'bg-purple-700/90'
-                      : formData.type === 'LOCATION'
-                        ? 'bg-cyan-700/90'
-                        : 'bg-orange-700/90'
-              }`}>
-                ${formData.price ? parseFloat(formData.price).toFixed(2) : '0.00'}
-              </span>
-            </div>
           </div>
-          
-          {/* Image URL below preview */}
-          <div className="w-100 mt-2 px-1">
-            <div className="form-floating">
-              <input
-                type="url"
-                id="image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={handleChange}
-                className="form-control form-control-sm"
-                placeholder="Image URL"
-              />
-              <label htmlFor="image_url">Image URL</label>
-            </div>
-          </div>
-        </div>
 
-        {/* Right Half - Scrollable Form Inputs */}
-        <div className="flex-grow-1 overflow-auto" style={{ maxHeight: '80vh' }}>
-          <form onSubmit={handleSubmit} className="p-2">
-            {/* Header */}
-            <h5 className="mb-2 fw-semibold">
-              {item ? 'Edit' : 'Add New Item'}
-            </h5>
+          {/* Image URL */}
+          <div className="form-floating mb-3">
+            <input
+              type="url"
+              id="image_url"
+              name="image_url"
+              value={formData.image_url}
+              onChange={handleChange}
+              className="form-control form-control-sm"
+              placeholder="Image URL"
+            />
+            <label htmlFor="image_url">Image URL</label>
+          </div>
 
             {/* Item Type Selection */}
             <div className="mb-2">
@@ -419,7 +414,10 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                 <label htmlFor="new_location">New Location</label>
               </div>
             )}
+          </div>
 
+          {/* Fixed Footer */}
+          <div className="border-top bg-white dark:bg-gray-800 p-3">
             <ActionFooter className="justify-center">
               <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
               <IconButton
@@ -429,9 +427,8 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                 variant="primary"
               />
             </ActionFooter>
-          </form>
-        </div>
-      </div>
+          </div>
+      </form>
 
       {/* Barcode Scanner Modal */}
       {isScannerOpen && (
