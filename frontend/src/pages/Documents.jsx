@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
@@ -198,6 +198,10 @@ export default function Documents() {
   }
 
   const [documents, setDocuments] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   // Viewer modal state
   const [viewerDoc, setViewerDoc] = useState(null);
@@ -226,6 +230,46 @@ export default function Documents() {
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingCatName, setEditingCatName] = useState('');
   const [editingCatDesc, setEditingCatDesc] = useState('');
+
+  const categoryNameById = useMemo(() => {
+    return new Map(categories.map((cat) => [String(cat.id), cat.name]));
+  }, [categories]);
+
+  const entityTypeOptions = useMemo(() => {
+    const types = documents
+      .map((doc) => doc.entity_type)
+      .filter(Boolean);
+    return Array.from(new Set(types)).sort();
+  }, [documents]);
+
+  const filteredDocuments = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return documents.filter((doc) => {
+      const categoryId = doc.category_id ?? doc.category?.id;
+      const categoryName = categoryId != null ? categoryNameById.get(String(categoryId)) || '' : '';
+      const docType = doc.entity_type || 'document';
+
+      if (categoryFilter !== 'all' && String(categoryId || '') !== categoryFilter) return false;
+      if (statusFilter === 'signed' && !doc.is_signed) return false;
+      if (statusFilter === 'unsigned' && doc.is_signed) return false;
+      if (typeFilter !== 'all' && docType !== typeFilter) return false;
+
+      if (!term) return true;
+
+      const haystack = [
+        doc.original_filename,
+        doc.description,
+        doc.entity_type,
+        categoryName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById]);
 
   // Ref to prevent double fetching in StrictMode
   const hasFetched = useRef(false);
@@ -516,8 +560,17 @@ export default function Documents() {
     <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
 
       {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-3">
+      <div className="flex-shrink-0 border-bottom p-3 d-flex align-items-center justify-content-between">
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Documents</h1>
+        <button
+          type="button"
+          onClick={() => setIsCategoriesOpen(true)}
+          className="btn d-flex align-items-center gap-1 p-0 border-0"
+          title="Manage categories"
+          aria-label="Manage categories"
+        >
+          <span style={{ fontSize: '1.5rem' }}>🗄️</span>
+        </button>
       </div>
 
       {/* Error Alert */}
@@ -541,14 +594,14 @@ export default function Documents() {
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
           style={{ background: 'var(--bs-body-bg)' }}
         >
-          {documents.length > 0 ? (
+          {filteredDocuments.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
                 <col />
                 <col style={{ width: '60px' }} />
               </colgroup>
               <tbody>
-                {documents.map((doc, index) => (
+                {filteredDocuments.map((doc, index) => (
                   <tr
                     key={doc.id || index}
                     className="align-middle border-bottom"
@@ -602,29 +655,75 @@ export default function Documents() {
           </table>
 
           {/* Controls */}
-          <div className="py-3 px-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Action buttons */}
-            <PermissionGate page="documents" permission="write">
-              <div className="d-flex gap-2 w-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCategoriesOpen(true)}
-                  className="btn btn-outline-secondary"
-                >
-                  Categories
-                </button>
+          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="position-relative w-100 mb-2">
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name, type, or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control ps-5 w-100 rounded-pill"
+              />
+            </div>
+
+            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <PermissionGate page="documents" permission="write">
                 <button
                   type="button"
                   onClick={handleUploadDocument}
-                  className="btn btn-primary flex"
+                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Upload document"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                  </svg>
-                  Upload
+                  <PlusIcon className="h-5 w-5" />
                 </button>
-              </div>
-            </PermissionGate>
+              </PermissionGate>
+
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content', minWidth: '120px' }}
+              >
+                <option value="all">Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={String(cat.id)}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content', minWidth: '100px' }}
+              >
+                <option value="all">Status</option>
+                <option value="signed">Signed</option>
+                <option value="unsigned">Unsigned</option>
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content', minWidth: '100px' }}
+              >
+                <option value="all">Types</option>
+                {entityTypeOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+
+            </div>
           </div>
         </div>
       </div>
