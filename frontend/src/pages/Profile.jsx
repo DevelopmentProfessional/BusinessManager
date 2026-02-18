@@ -12,6 +12,7 @@ import {
   BriefcaseIcon,
   CalendarDaysIcon,
   ClockIcon,
+  PaintBrushIcon,
 } from '@heroicons/react/24/outline';
 import { employeesAPI } from '../services/api';
 import api from '../services/api';
@@ -52,6 +53,9 @@ const Profile = () => {
   const [savedSignature, setSavedSignature] = useState(null);
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState('');
+  const [employeeColor, setEmployeeColor] = useState(user?.color || '#3B82F6');
+  const [colorUpdating, setColorUpdating] = useState(false);
+  const [colorMessage, setColorMessage] = useState('');
 
   const handleSwitchEnvironment = async (env) => {
     if (env === currentDbEnvironment || !user?.id) return;
@@ -115,6 +119,34 @@ const Profile = () => {
       }
     } catch (error) {
       setInstallError('Unable to open install prompt. Please use your browser menu to add to home screen.');
+    }
+  };
+
+  const handleColorChange = async (newColor) => {
+    setEmployeeColor(newColor);
+    setColorUpdating(true);
+    setColorMessage('');
+    
+    try {
+      // Update the user's profile with the new color
+      await employeesAPI.updateUser(user.id, { color: newColor });
+      
+      // Update local user state
+      setUser({ ...user, color: newColor });
+      
+      setColorMessage('Calendar color updated!');
+      
+      // Clear message after 2 seconds
+      setTimeout(() => setColorMessage(''), 2000);
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || 'Failed to update color';
+      setColorMessage(detail);
+      // Revert the color on error
+      setEmployeeColor(user?.color || '#3B82F6');
+      // Clear message after 3 seconds
+      setTimeout(() => setColorMessage(''), 3000);
+    } finally {
+      setColorUpdating(false);
     }
   };
 
@@ -279,20 +311,40 @@ const Profile = () => {
           </h2>
         </div>
         <div className="card-body">
-            <div className="d-flex align-items-center justify-content-between">
-              <div className="d-flex align-items-center gap-1">
-                {isDarkMode
-                ? (<span>🌚</span>)
-                : (<span>🌞</span>)}
-                <div className="form-check form-switch">
+            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div className="d-flex align-items-center gap-3">
+                <div className="d-flex align-items-center gap-1">
+                  {isDarkMode
+                  ? (<span>🌚</span>)
+                  : (<span>🌞</span>)}
+                  <div className="form-check form-switch">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      id="darkModeSwitch"
+                      checked={isDarkMode}
+                      onChange={toggleDarkMode}
+                      style={{ width: '3rem', height: '1.5rem' }}/>
+                  </div>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <PaintBrushIcon className="w-5 h-5" style={{ minWidth: '1.25rem' }} />
                   <input
-                    className="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="darkModeSwitch"
-                    checked={isDarkMode}
-                    onChange={toggleDarkMode}
-                    style={{ width: '3rem', height: '1.5rem' }}/>
+                    type="color"
+                    value={employeeColor}
+                    onChange={(e) => handleColorChange(e.target.value)}
+                    disabled={colorUpdating}
+                    className="form-control form-control-sm"
+                    style={{
+                      width: '50px',
+                      height: '38px',
+                      padding: '4px',
+                      cursor: colorUpdating ? 'not-allowed' : 'pointer',
+                      opacity: colorUpdating ? 0.6 : 1
+                    }}
+                    title="Calendar color"
+                  />
                 </div>
               </div>
               <div className="d-flex align-items-center gap-2">
@@ -315,6 +367,7 @@ const Profile = () => {
             </div>
             {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
             {installError && <div className="small text-danger mt-2">{installError}</div>}
+            {colorMessage && <div className={`small mt-2 ${colorMessage.includes('Failed') || colorMessage.includes('Error') ? 'text-danger' : 'text-success'}`}>{colorMessage}</div>}
 
             {/* Database Environment */}
             <hr className="my-2" />
