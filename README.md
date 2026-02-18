@@ -1,288 +1,265 @@
-# Business Manager - Feature List
+# Business Manager - Feature Documentation
 
+This README is organized by pages/modules. Each section is independent and can be worked on separately.
 
+---
 
+## Attendance
 
-Use the EmployeeFormTabs.jsx as an example and make all input fields like those. They should be floating labels within the text input. The Insurance Plan text box is the perfect example. ALL TEXT INPUT, and number inputs as well.... Then look at the Pay Frequency, UIp[date all dropdowns to look like that with the floating label inside the dropdown at the top. 
+### TO REVIEW
 
-The meployee edit tab has tabs at the top of i, instead of at  the top  ,,, put th34e detail the benefits signature, permissiopns and performance tabs at the bottom of the modal. 
+- [ ] Verify all functionality works as expected
+- [ ] 
 
+### TO CODE
 
+- [ ] Initial implementation pending
 
+---
 
-ORIGINAL REQUEST (Reconstructed from Implementation)
-User Request: Implement swipe-based navigation for a mobile web-based scheduling calendar application with the following comprehensive requirements:
+## Clients
 
-Core Requirements:
-Touch Gesture Support - Use Touch Events API (touchstart, touchmove, touchend) for mobile phones
-Three Views - Support month view (full month grid), week view (week's days), and day view (single day timeline/list)
-Swipe Detection - Horizontal swipes with minimum 50px distance threshold
-Gesture Validation - Ignore vertical swipes to avoid scroll conflicts
-Navigation Logic:
-Right-to-left swipe (→) = advance forward one period
-Left-to-right swipe (←) = navigate backward one period
-Apply to all views while preserving view type
-Advanced Requirements:
-Edge Case Handling:
+### TO REVIEW
 
-Date bounds validation (Jan 1, 1900 to Dec 31, 2100)
-Month boundary adjustments (e.g., Jan 31 → Feb 28, not March 3)
-Smooth CSS transitions with fade/slide animations
-Performance Optimizations:
+- [ ] Verify all functionality works as expected
 
-Avoid conflicts with browser native gestures
-Use {passive: true} for touchmove
-Attach to calendar container DIV specifically
-User Experience Enhancements:
+### TO CODE
 
-Visual feedback during swipe (subtle drag animation)
-Cooldown period (300ms) to prevent rapid multiple swipes
-Update dependent UI elements (header, month/year display)
-Reload events for new date range after navigation
-Deliverables:
+- [ ] Initial implementation pending
 
-Complete JavaScript code snippet with event handlers
-Integration example showing how to attach to element
-Test for responsiveness on Chrome (Android) and Safari (iOS)
-Optional: Reusable utility class/module
-✅ WHAT WAS IMPLEMENTED
-1. Enhanced Schedule.jsx (88 lines modified)
-Located: Schedule.jsx
+---
 
-Added State & Refs:
+## Documents
 
-Implemented Touch Handlers:
+### TO REVIEW
 
-✅ handleTouchStart() - Captures initial touch position and timestamp
-✅ handleTouchMove() - Provides real-time visual feedback (translateX with constrained offset)
-✅ handleTouchEnd() - Validates swipe and executes navigation with multiple checks:
-Vertical vs horizontal direction detection
-Distance threshold validation (50px minimum)
-Duration check (< 500ms for fast swipes)
-Cooldown enforcement (300ms between swipes)
-Enhanced Navigation Functions:
+- [ ] Verify all functionality works as expected
 
-✅ handleNavigatePrevious() - Now includes:
+### TO CODE
 
-Day/week/month logic
-Month boundary edge case handling
-Date bounds validation (won't go before 1900)
-✅ handleNavigateNext() - Now includes:
+- [ ] Initial implementation pending
 
-Day/week/month logic
-Month boundary edge case handling
-Date bounds validation (won't go after 2100)
-CSS Enhancements:
+---
 
-Visual Feedback:
+## Employees
 
-2. Reusable Utility Class (370 lines created)
-Located: swipeCalendarNavigation.js
+### TO REVIEW
 
-Created: Complete ES6 class SwipeCalendarNavigation with:
+- [ ] Use EmployeeFormTabs.jsx as a template for all input fields
+- [ ] All TEXT INPUT and number inputs should have floating labels within the text input (like the Insurance Plan example)
+- [ ] Update all dropdowns with floating label design (like Pay Frequency)
+- [ ] Move detail, benefits, permissions, and performance tabs to the bottom of the modal
 
-✅ Configurable constructor (container, date, view, callbacks, thresholds)
-✅ Event listener attachment/detachment methods
-✅ Full touch event handling (start/move/end)
-✅ Navigation logic for all three views
-✅ Date bounds validation
-✅ Edge case handling (month boundaries)
-✅ Callback hooks (onNavigate, onSwipeStart, onSwipeProgress, onSwipeEnd)
-✅ Complete JSDoc documentation
-Features:
+### TO CODE
 
-3. Standalone Demo (608 lines created)
-Located: swipe_calendar_demo.html
+- [ ] Add to database: "supervisor" column on employee table
+- [ ] Restructure employee edit modal with tabs (Details, Benefits, Permissions, Performance)
+- [ ] Details tab: personal details, supervisor, direct reports, ID number, hire date, location
+- [ ] Benefits tab: pay, insurance, vacation, and deductions
+- [ ] Permissions tab: granting/denying access to specific pages
+- [ ] Performance tab: reviews log, goals, feedbacks, completed/pending tasks stats
 
-Created: Complete HTML demo featuring:
+---
 
-✅ Month/week/day view selector
-✅ Visual calendar UI with gradient header
-✅ Full swipe navigation implementation
-✅ Sample events display
-✅ Navigation buttons (Previous/Today/Next)
-✅ Visual feedback animations
-✅ CSS transitions and mobile-optimized styling
-✅ Responsive design (max-width: 480px)
-✅ Touch-optimized UX
-✅ Instructions: "👆 Swipe left/right to navigate"
-Includes:
+## Inventory
 
-Edge case demonstrations
-Date boundary handling
-Event generation examples
-Mobile viewport configuration
-🔄 WHAT REMAINS TO BE DONE
-High Priority (Testing & Validation):
-Physical Device Testing
+### TO REVIEW
 
- Test on actual Android devices (Chrome browser)
- Test on actual iOS devices (Safari browser)
- Verify swipe gesture sensitivity feels natural
- Confirm no conflicts with browser back/forward swipes
-Edge Case Verification
+- [ ] Top header title should stay fixed at top on mobile (without blocking table elements)
+- [ ] Remove the count label (e.g., "84/48")
+- [ ] "Add new item" and "edit" item should be designed like sales cards
+- [ ] Minimize "All Types" and "All Stock" components to text width
+- [ ] Remove count/total indicator next to "All Stock" input
+- [ ] Should show preview of how item looks on sales page (not take excessive space on inventory view)
+- [ ] Remove the (x) button from edit item modal
+- [ ] Change "Edit Item" title to just "Edit"
+- [ ] The inventory add new format should match the edit item format
 
- Test month transitions: Jan 31 → Feb 28/29 (leap year)
- Test date boundary alerts (1900 and 2100 limits)
- Verify cooldown prevents accidental double-swipes
- Test rapid swipe attempts (should be blocked)
-Cross-Browser Testing
+### TO CODE
 
- Chrome on Android (multiple versions)
- Safari on iOS (multiple versions)
- Samsung Internet browser
- Firefox Mobile
-Performance Validation
+- [ ] Add procurement management fields to item edit:
+  - Unit Cost
+  - Weight
+  - Length
+  - Height
+  - Pattern
+  - Manufacture Date
+  - Expiration Date
+- [ ] CSV Import: Display which columns are being imported under "Import Items from CSV" popup
+- [ ] The import should match header fields with column headers dynamically
+- [ ] Demand Forecasting:
+  - Use historical records to forecast next month/year
+  - Link to RSS feeds for topic interpolation
+  - Analyze historical data from previous year, quarter, and month
+  - Generate supply trend recommendations
+- [ ] Dynamic Stock Thresholds:
+  - Min stock order and max threshold calculated based on sales rate
+  - Lower thresholds when sales slow down
+  - Increase thresholds when sales accelerate
+- [ ] Location Capacity Management:
+  - Add capacity volume to locations
+  - Add to Products database: selectable measure unit (sq ft, sq m, sq yd)
+  - Add product size field (how much of product fits per unit)
+  - Alert user when location nears capacity
+- [ ] Location Types:
+  - Storage locations: capacity-based
+  - Operation locations: asset/people assignment-based
+  - Relationships: 1 Employee → Many Assets, 1 Location → Many Assets, 1 Location → Many Employees, 1 Asset → Many Employees
+  - Assets can be shareable between employees
 
- Verify smooth 60fps transitions
- Check for memory leaks during repeated swipes
- Confirm no lag on lower-end devices
- Test with large event datasets
-Medium Priority (Enhancements):
-Accessibility Improvements
+---
 
- Add ARIA live regions for screen readers
- Announce date changes to assistive technology
- Provide keyboard navigation as alternative
- Test with VoiceOver/TalkBack
-User Feedback Refinements
+## Reports
 
- Consider haptic feedback on iOS (vibration API)
- Add loading state during event fetch after swipe
- Show skeleton screens during calendar transition
- Add undo functionality for accidental swipes
-Low Priority (Nice-to-Have):
-Advanced Features
+### TO REVIEW
 
- Add swipe velocity detection (faster swipe = quicker transition)
- Implement rubber-band effect at date boundaries
- Add multi-touch gesture support (pinch to change view)
- Create swipe tutorial overlay for first-time users
-Analytics & Monitoring
+- [ ] Float reports to the bottom of the page
 
- Track swipe usage vs button navigation
- Monitor swipe success/failure rates
- Log performance metrics (response time)
- A/B test different swipe thresholds
-Documentation
+### TO CODE
 
- Create developer documentation
- Add inline code examples
- Write integration guide for other components
- Document browser compatibility matrix
-📊 IMPLEMENTATION SUMMARY
-Files Modified:
+- [ ] Initial implementation pending
 
-✅ Schedule.jsx (+88 lines)
-✅ swipeCalendarNavigation.js (+370 lines, NEW)
-✅ swipe_calendar_demo.html (+608 lines, NEW)
-Total Lines Added: 1,061 lines
+---
 
-Commit: b0537d2 - dp - swipe chec k 2
+## Sales
 
-Status: ✅ FEATURE COMPLETE - Implementation phase finished, testing phase required
+### TO REVIEW
 
-🎯 IMMEDIATE NEXT STEPS
-Open demo on mobile device: swipe_calendar_demo.html
-Test swipe gestures in all three views (month/week/day)
-Verify edge cases (month boundaries, date limits)
-Report any issues for refinement
+- [ ] Add sales history section to sales page
 
+### TO CODE
 
-## CHECK THESE
+- [ ] Customer search: Add "+" button to create new client (opens client modal)
 
-**Inventory:** 
-- The Top header title of the page is hidden on mobile devices once scrolling starts, it should stay at the top of the screen but should not be above the table such that it would not be possible for elements to hide behind it such as the table.
-- Remove the 84/48 label that shows the amount of products
-- The way how the import should work is that it looks for the header fields and matches them with the column headers of the corresponding table requesting the insert. So the upload process should display which columns are to be imported underneath the "Import Items from CSV" popup.
-- The "add new item" and "edit" item should be designed like the sales card
-- The all types and All stock components should be minimized to their text width.
-- Remove the count/total indicator next to the all stock input.
-- There should be a reasonable sized representation of what the item will look like on the sales page, but it should not take up so much space on the inventory view or the edit component overall, because on thinner screens, the inputs are not easily visible. It should be a preview of the item on the POS PAGE instead of an image.
-- Remove the (x) button from the edit item
-- Change the (edit Item) on the edit item modal to just (edit)
-- incorporate demand forcasting there the system takes the hisotircal records and uses that to format the next month and next year based on that. The application should be able to link to RSS feeds to interpolate data on topicsa and extrapolate the numbers to either get one fact, a set of facts, or a table of data in which it can analize and make marketing trends on the amount of supply that will be needed or the amount of products htat wqill be needed. But most of the predictive data will come from the historical data on the previous ytear and the previous quarter and the previous month.
-- The minimum stock order qwuantity and the maximum threshold should be a calculation based on how much sales are happening to accomodate the rate of change, so when sales are slowing down, the system should lower the amount of capqacity and lower the min order threshold, however, when sales are going up, the capacity should also increase to match.
-- Locations need to have a capacity number on it in terms of volume that it can hold, it can be a formula or it can be calculated by the person in terms of how much of somthing can fit into that area. for instnnace, products have various sizes, so some of those sizes would take up less or more space, without going into major detail about how much space somthing takes up for instance a chair verse a popsicle, The Product column will need a new column, add this column to the database where there is square foot, square meter, square yard, that will be one column with those valuews are selectable for that column. Then there is another number that says how muchj of the product is able to fit into that measurement, essentially, a location could said to have a certain amount of meters like 20 squar emeters, So if a chair takes up 1 square meter, then the facility can cap out at 20 chairs. and when there is a capacity reached at a location, then the  system will let the user know that the locatiopn is near capacity.
-- There shoul/d be two styles of locations, 1 location is storage, the other location is operation, In operation, locations can be assinged to poeple, so those locations is less about the matching of square capacity and more about the assets that can go into that location. Some assets can belong to one or more person, and one person can have one or more assets assigned ot them.
-- 1 Employee to many asset
-- 1 location to many asset
-- 1 location to many employee
-- 1 asset to many employee
-- considering a location is more of a building or a worksite, it should contain many assets and employtess there, and the employees would each have thier own assets, but some assets shouuld be shareable
-- The inventory add new inventory item format should look the same as the edit item format. 
+---
 
-**Schedule:**
-- Based on the type of appointment, the layout of adding the event should change
-- Move the checkbox
-- When nothing is in the timeslot for the day, then that cell should be the height of the time.
-- When someone goes to the time section of the day, it should navigate to the current time to put it at the top.
-- somtimes popele want ot confirm thier appointment is correct, so update the event modal to show the selected items from the dropdown
-- on the edit appoiuntment moda, add in a buitton o the right of the dropdown that does nothing but it looks like a checkbox. if it needs to do somthing then it can render the slece3teed item from the dreoip0down and displaye then in the dropdown at the toip instead of putting the count and the people like 3 people it would say the first name of the client or employee on those dropdwns
-- expand the width of the employeedrodpown to be w-1200 so that it is responsivle and is able to show all the names
-- if possible, make the dropdown in the edit appointment whjere there is the client and employee beiong displayed ina horizontal list, make that list scroilalble to the right if th34e dropdown is too small for the interfgace
-- it seems at 100% the scroll bars appear, there can even be some flexing vertivally to almost adjust the schedule on a single row text level so that the scrolling doesnt show up when its not needed for the cells on the schedule
-- when the event on the schedule is selected, it should open the edit for that appointment
-  
-**History:**
-- Add sales history section on the sales page.
+## Schedule
 
-## CODE THESE 
+### TO REVIEW
 
-**Inventory:** 
-- companies want to manage procurements. 
-- Add these to the item edit component. 
-      unit cost 
-      weight 
-      length 
-      height 
-      pattern 
-      manufactur date 
-      expiration date 
+- [ ] Swipe navigation is COMPLETE (see Schedule Swipe Implementation section below)
+- [ ] Based on appointment type, the layout should change
+- [ ] Move checkbox position
+- [ ] Empty timeslots should be cell height of the time
+- [ ] Auto-navigate to current time when opening day view
+- [ ] Update event modal to show selected dropdown items
+- [ ] Add checkbox-like button on edit appointment modal to right of dropdown (renders selected items instead of count)
+- [ ] Display client/employee names instead of "3 people" on dropdowns
+- [ ] Expand employee dropdown width to w-1200 for responsiveness
+- [ ] Make horizontal dropdown lists scrollable right when needed
+- [ ] Prevent scrollbars at 100% - flex vertically to fit on single row
+- [ ] Clicking event on schedule should open edit modal
 
-**Employee:**
-- Add to the database for the employee table a "supervisor" column
-- When selecting to edit the employee, the modal should have some tabs on it, each tab can be a unique component. (Details, benefits, permissions, Performance)
-- On the details component have their personal details as well as their supervisor and direct reports, their ID number and other information like hire date and location.
-- On the benefits component have all the benefits and deductions like their pay, insurance, vacation, and other like information
-- On the permissions page should be specific to granting/denying access to pages
-- Performance page needs log of reviews, goals, feedbacks, completed and pending tasks stats.
+### TO CODE
 
-**Sales:**
-- On the customer search, add an "+" button to create a new client. Opens the new client modal
+- [ ] None pending
 
-**Components:**
-- All the buttons should be on the bottom left within the footer section
-- The width should be based on the length of the text within it, no col spacing
+### Schedule Swipe Implementation (COMPLETED)
 
-**Profile:**
-- Float the cards to the bottom of the page.
-- in the settings section, add a color picker for the employee, that color corelated to thier color on the calendar.
-- the database enviornment section can be more like just in the settings and make it more like a dropdown than its own section. 
+**Status:** ✅ Feature Complete - Testing phase required
 
-**Reports:**
-- Float the reports to the bottom of the page.
+**What was implemented:**
 
-**Settings:**
-- Float the settings cards to the bottom of the page
-- Add settings for the global settings of the scheduling application. The initial settings will be the start of the day, end of the day, attendance check in required (when selected, it will show the attendance input on the schedules, otherwise not)
-- Move the left most menu to the bottom footer of the page that is fixed to the bottom of the page, remove the text, and only keep the icons
-- Remove account and API&Debug.
-- Move branding and notification inside General
-- In the database section, add an import feature there where it should be possible to select the database table, and it will show the table columns in it after selecting the Table from a list. So when the user imports the data via csv format which will be the method of importing. The first top column will be the header column, and the function that processes the import should look at that header column and then dynamically match that column against the column in the datatable to construct the insert query dynamically and insert the records into the database. But before it does the insert, it should look in the code for characters like ' or that would break the insert and replace them with `
-- The settings are too text heavy on the surface, I think instead of that, add a question mark icon with a color that blends into the dark/light theme. When selected, it will show the context of the element in question.
+- Enhanced Schedule.jsx with touch handlers (handleTouchStart, handleTouchMove, handleTouchEnd)
+- Swipe detection with 50px minimum distance, 500ms duration check
+- 300ms cooldown between swipes
+- Date bounds validation (1900-2100)
+- Month boundary edge case handling
+- Reusable SwipeCalendarNavigation.js utility class (370 lines)
+- Standalone demo: swipe_calendar_demo.html (608 lines)
 
-**General Settings:**
-- For the logo, make there also be an image upload that would save to the branding settings in the database.
+**What remains (Testing & Validation):**
 
-**Branding Settings:**
-- Brand Name — The official name of the company (e.g., Nike, Apple, Coca-Cola).
-- Logo — The main symbol or design that represents the company (the picture or icon people see everywhere).
-- Slogan / Tagline — A short, catchy phrase that sums up what the company stands for (e.g., "Just Do It" or "Think Different").
-- Color Palette — The specific set of colors the company always uses (e.g., McDonald's red and yellow, Tiffany's blue).
-- Typography / Fonts — The style of lettering used in the logo, website, ads, etc. (the fonts make everything look consistent).
-- Imagery / Photography Style — The kind of photos, illustrations, or visuals the company chooses (e.g., bright and fun, dark and serious, minimal).
-- Brand Voice / Tone — How the company "talks" in messages, social media, ads (friendly, professional, funny, bold, etc.).
-- Shape / Icons / Symbols — Any repeating shapes or small icons used in designs (besides the main logo).
-- Packaging / Design Style — How products look when wrapped or displayed (boxes, labels, bottles, etc.).
-- Brand Story / Mission / Values — The background story, purpose, or beliefs the company shares (often used in about pages or ads).
+- [ ] Physical device testing on Android (Chrome)
+- [ ] Physical device testing on iOS (Safari)
+- [ ] Cross-browser testing (Samsung Internet, Firefox Mobile)
+- [ ] Edge case verification (Jan 31 → Feb 28/29 transitions, boundary alerts)
+- [ ] Performance validation (60fps, memory leaks, large datasets)
+- [ ] Accessibility improvements (ARIA, screen reader support)
+- [ ] Optional enhancements (haptic feedback, loading states, undo)
+
+---
+
+## Services
+
+### TO REVIEW
+
+- [ ] Verify all functionality works as expected
+
+### TO CODE
+
+- [ ] Initial implementation pending
+
+---
+
+## Settings
+
+### TO REVIEW
+
+- [ ] Float settings cards to the bottom of the page
+- [ ] Settings are too text-heavy: add question mark icon (blends with theme) for context help
+
+### TO CODE
+
+- [ ] Add global scheduling settings:
+  - Start of day
+  - End of day
+  - Attendance check-in required (show attendance input on schedule when enabled)
+- [ ] Restructure left menu:
+  - Move to bottom footer (fixed)
+  - Show icons only (remove text)
+  - Remove "Account" section
+  - Remove "API & Debug" section
+- [ ] Move "Branding" and "Notification" inside "General" section
+- [ ] Database section: Add dynamic import feature
+  - Select database table from dropdown
+  - Show table columns after selection
+  - CSV import with header row matching
+  - Dynamically construct INSERT query based on column matching
+  - Escape special characters (') before insert to prevent SQL injection
+- [ ] General Settings: Add logo image upload (saves to branding database)
+- [ ] Branding Settings: Include the following fields
+  - Brand Name
+  - Logo (with image upload)
+  - Slogan / Tagline
+  - Color Palette
+  - Typography / Fonts
+  - Imagery / Photography Style
+  - Brand Voice / Tone
+  - Shape / Icons / Symbols
+  - Packaging / Design Style
+  - Brand Story / Mission / Values
+
+---
+
+## Profile
+
+### TO REVIEW
+
+- [ ] Float cards to the bottom of the page
+- [ ] Move database environment section to Settings as a dropdown
+
+### TO CODE
+
+- [ ] Add color picker in settings (color correlates to employee's calendar color)
+
+---
+
+## Suppliers
+
+### TO REVIEW
+
+- [ ] Verify all functionality works as expected
+
+### TO CODE
+
+- [ ] Initial implementation pending
+
+---
+
+## Global Components
+
+### TO REVIEW
+
+- [ ] All buttons should be positioned in bottom left within footer section
+- [ ] Button width should be based on text length (no col spacing)

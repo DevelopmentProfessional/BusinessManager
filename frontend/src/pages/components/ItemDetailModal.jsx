@@ -337,6 +337,11 @@ export default function ItemDetailModal({
         ) : (
           /* Inventory Mode - Image + Stock fields at top, form fields below */
           <form onSubmit={handleUpdateInventory}>
+            {/* Modal Header */}
+            <div className="flex-shrink-0 p-3 border-bottom border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+              <h5 className="mb-0 fw-semibold">Edit</h5>
+            </div>
+            
             {/* Top Section: Image (left) + Stock fields (right) */}
             <div className="d-flex gap-3" style={{ minHeight: '200px' }}>
               {/* Image */}
@@ -552,15 +557,6 @@ export default function ItemDetailModal({
                 <TrashIcon className="h-5 w-5" />
               </button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-secondary rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '40px', height: '40px' }}
-              title="Cancel"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
             <button
               type="button"
               onClick={handleUpdateInventory}
