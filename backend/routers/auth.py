@@ -259,6 +259,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
         is_locked=user.is_locked,
         force_password_reset=user.force_password_reset,
         last_login=user.last_login,
+        supervisor=user.supervisor,
         created_at=user.created_at,
         updated_at=user.updated_at
     )
@@ -377,7 +378,8 @@ def create_user(
         password_hash=User.hash_password(user_data.password),
         first_name=user_data.first_name,
         last_name=user_data.last_name,
-        role=user_data.role
+        role=user_data.role,
+        supervisor=user_data.supervisor
     )
     
     session.add(user)

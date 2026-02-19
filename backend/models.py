@@ -105,6 +105,7 @@ class User(BaseModel, table=True):
 
     # Details
     iod_number: Optional[str] = Field(default=None)
+    supervisor: Optional[str] = Field(default=None)
     location: Optional[str] = Field(default=None)
 
     # Signature (base64 PNG data URL)
@@ -594,6 +595,7 @@ class UserCreate(SQLModel):
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     iod_number: Optional[str] = None
+    supervisor: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None
     pay_frequency: Optional[str] = None
@@ -623,6 +625,7 @@ class UserUpdate(SQLModel):
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
+    supervisor: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None
     pay_frequency: Optional[str] = None
@@ -654,6 +657,7 @@ class UserRead(SQLModel):
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
+    supervisor: Optional[str] = None
     location: Optional[str] = None
     salary: Optional[float] = None
     pay_frequency: Optional[str] = None
