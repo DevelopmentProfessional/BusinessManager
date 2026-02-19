@@ -207,7 +207,7 @@ export default function ItemDetailModal({
       className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
     >
-      <div className="d-flex flex-column bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" style={{ maxHeight: '100%' }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 h-100" style={{ maxHeight: '100%' }}>
 
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
@@ -556,27 +556,40 @@ export default function ItemDetailModal({
       {/* Fixed Footer with Action Buttons */}
       <div className="flex-shrink-0 p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         {!isSalesMode ? (
-          <div className="d-flex gap-3 justify-content-center align-items-center">
-            {canDelete && (
+          <div className="d-flex align-items-center">
+            <div>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
+                  style={{ width: '40px', height: '40px' }}
+                  title="Delete Item"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+            <div className="flex-grow-1 d-flex gap-3 justify-content-center">
               <button
                 type="button"
-                onClick={handleDelete}
-                className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
+                onClick={onClose}
+                className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
                 style={{ width: '40px', height: '40px' }}
-                title="Delete Item"
+                title="Cancel"
               >
-                <TrashIcon className="h-5 w-5" />
+                <XMarkIcon className="h-5 w-5" />
               </button>
-            )}
-            <button
-              type="button"
-              onClick={handleUpdateInventory}
-              className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '40px', height: '40px' }}
-              title="Save Changes"
-            >
-              <CheckIcon className="h-5 w-5" />
-            </button>
+              <button
+                type="button"
+                onClick={handleUpdateInventory}
+                className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                style={{ width: '40px', height: '40px' }}
+                title="Save Changes"
+              >
+                <CheckIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         ) : null}
       </div>

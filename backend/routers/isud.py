@@ -60,6 +60,10 @@ READ_SCHEMA_MAP = {
     'supplier': SupplierRead,
     'suppliers': SupplierRead,
     'attendance': AttendanceRead,
+    'insurance_plan': InsurancePlanRead,
+    'insurance_plans': InsurancePlanRead,
+    'leave_request': LeaveRequestRead,
+    'leave_requests': LeaveRequestRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):

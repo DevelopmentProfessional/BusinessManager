@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { rolesAPI, isudAPI, employeesAPI } from '../../services/api';
+import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI } from '../../services/api';
 import api from '../../services/api';
 import SignaturePad from './SignaturePad';
 
@@ -21,6 +21,7 @@ export default function EmployeeFormTabs({
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [employeesList, setEmployeesList] = useState(employeesProp);
+  const [insurancePlans, setInsurancePlans] = useState([]);
 
   // Permissions state
   const [userPermissions, setUserPermissions] = useState([]);
@@ -74,6 +75,20 @@ export default function EmployeeFormTabs({
       }
     };
     loadRoles();
+  }, []);
+
+  // Load insurance plans
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const response = await insurancePlansAPI.getAll();
+        const data = response?.data ?? response;
+        if (Array.isArray(data)) setInsurancePlans(data.filter(p => p.is_active));
+      } catch (err) {
+        console.error('Failed to load insurance plans:', err);
+      }
+    };
+    loadPlans();
   }, []);
 
   // Load employees list
@@ -219,7 +234,7 @@ export default function EmployeeFormTabs({
     if (!submitData.iod_number.trim()) submitData.iod_number = null;
     if (!submitData.location.trim()) submitData.location = null;
     if (!submitData.pay_frequency) submitData.pay_frequency = null;
-    if (!submitData.insurance_plan.trim()) submitData.insurance_plan = null;
+    if (!submitData.insurance_plan) submitData.insurance_plan = null;
     // Convert numeric fields
     submitData.salary = submitData.salary !== '' ? parseFloat(submitData.salary) : null;
     submitData.vacation_days = submitData.vacation_days !== '' ? parseInt(submitData.vacation_days) : null;
@@ -474,8 +489,13 @@ export default function EmployeeFormTabs({
               </div>
               <div className="col-md-6">
                 <div className="form-floating">
-                  <input type="text" id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange}
-                    className="form-control form-control-sm" placeholder="Insurance Plan" />
+                  <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange}
+                    className="form-select form-select-sm">
+                    <option value="">No Plan Selected</option>
+                    {insurancePlans.map(plan => (
+                      <option key={plan.id} value={plan.name}>{plan.name}</option>
+                    ))}
+                  </select>
                   <label htmlFor="insurance_plan">Insurance Plan</label>
                 </div>
               </div>
