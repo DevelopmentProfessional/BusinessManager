@@ -319,9 +319,6 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
       {/* Appointment Type - FIRST so it controls what fields show */}
       <div className="mb-3">
-        <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-          Event Type
-        </label>
         <CustomDropdown
           name="appointment_type"
           value={formData.appointment_type}
@@ -332,6 +329,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           }))}
           placeholder="Select event type"
           required
+          label="Event Type"
         />
       </div>
 
@@ -461,18 +459,18 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       )}
 
       {/* Duration */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-          <ClockIcon className="h-4 w-4 inline mr-1" />
-          Duration (minutes)
-        </label>
+      <div className="mb-3">
         <CustomDropdown
           name="duration_minutes"
-          value={formData.duration_minutes?.toString() || ''}
-          onChange={handleDurationChange}
-          options={[10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240].map(m => ({ value: m.toString(), label: `${m} min` }))}
+          value={formData.duration_minutes}
+          onChange={handleChange}
+          options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
+            value: mins.toString(),
+            label: `${mins} min`
+          }))}
           placeholder="Select duration"
           required
+          label="Duration"
         />
         {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
       </div>

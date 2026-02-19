@@ -209,6 +209,22 @@ export default function ItemDetailModal({
     >
       <div className="d-flex flex-column bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" style={{ maxHeight: '100%' }}>
 
+      {/* Header for Inventory Mode - Fixed at top */}
+      {!isSalesMode && (
+        <div className="flex-shrink-0 p-3 border-bottom border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 d-flex justify-content-between align-items-center">
+          <h5 className="mb-0 fw-semibold">Edit Item</h5>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-link text-gray-900 dark:text-gray-100 p-0"
+            style={{ width: '28px', height: '28px' }}
+            title="Close"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+
       {/* Sales Mode: Full-width image header */}
       {isSalesMode && (
         <div className="flex-shrink-0 position-relative">
@@ -337,13 +353,8 @@ export default function ItemDetailModal({
         ) : (
           /* Inventory Mode - Image + Stock fields at top, form fields below */
           <form onSubmit={handleUpdateInventory}>
-            {/* Modal Header */}
-            <div className="flex-shrink-0 p-3 border-bottom border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-              <h5 className="mb-0 fw-semibold">Edit</h5>
-            </div>
-            
             {/* Top Section: Image (left) + Stock fields (right) */}
-            <div className="d-flex gap-3" style={{ minHeight: '200px' }}>
+            <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
               {/* Image */}
               <div className="flex-shrink-0" style={{ width: '45%' }}>
                 {renderImage({ width: '100%', aspectRatio: '1' })}

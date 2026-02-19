@@ -381,42 +381,36 @@ const Profile = () => {
           </div>
           {openAccordion === 'settings' && (
             <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <div className="d-flex align-items-center gap-3">
-                <div className="d-flex align-items-center gap-1">
-                  {isDarkMode
-                  ? (<span>🌚</span>)
-                  : (<span>🌞</span>)}
-                  <div className="form-check form-switch">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      role="switch"
-                      id="darkModeSwitch"
-                      checked={isDarkMode}
-                      onChange={toggleDarkMode}
-                      style={{ width: '3rem', height: '1.5rem' }}/>
-                  </div>
-                </div>
-                <div className="position-relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingColor(employeeColor);
-                      setColorPickerOpen((prev) => !prev);
-                    }}
-                    className="btn d-flex align-items-center gap-1 p-0 border-0"
-                    title="Calendar color"
-                    aria-expanded={colorPickerOpen}
-                    disabled={colorUpdating}
+            <div className="d-flex align-items-center justify-content-start flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                className="btn d-flex align-items-center gap-1 p-0 border-0"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                <span style={{ fontSize: '1.5rem' }}>
+                  {isDarkMode ? '🌚' : '🌞'}
+                </span>
+              </button>
+              <div className="position-relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingColor(employeeColor);
+                    setColorPickerOpen((prev) => !prev);
+                  }}
+                  className="btn d-flex align-items-center gap-1 p-0 border-0"
+                  title="Calendar color"
+                  aria-expanded={colorPickerOpen}
+                  disabled={colorUpdating}
+                >
+                  <span style={{ fontSize: '1.5rem' }}>🎨</span>
+                </button>
+                {colorPickerOpen && (
+                  <div
+                    className="position-absolute end-0 mt-2 p-2 border rounded bg-white shadow-sm"
+                    style={{ minWidth: '210px', zIndex: 10 }}
                   >
-                    <span style={{ fontSize: '1.5rem' }}>🎨</span>
-                  </button>
-                  {colorPickerOpen && (
-                    <div
-                      className="position-absolute end-0 mt-2 p-2 border rounded bg-white shadow-sm"
-                      style={{ minWidth: '210px', zIndex: 10 }}
-                    >
                       <div className="d-flex align-items-center gap-2 mb-2">
                         <input
                           type="color"
@@ -458,32 +452,29 @@ const Profile = () => {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSignatureModalOpen(true)}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
-                  title="Manage signature"
-                >
-                  <span style={{ fontSize: '1.75rem' }}>📝</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddToHomeScreen}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
-                  title="Add app to home screen"
-                >
-                  <span style={{ fontSize: '1.75rem' }}>🏠</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
-                  title="Log out"
-                >
-                  <span style={{ fontSize: '1.75rem' }}>🚪</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSignatureModalOpen(true)}
+                className="btn d-flex align-items-center gap-1 p-0 border-0"
+                title="Manage signature"
+              >
+                <span style={{ fontSize: '1.5rem' }}>📝</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAddToHomeScreen}
+                className="btn d-flex align-items-center gap-1 p-0 border-0"
+                title="Add app to home screen"
+              >
+                <span style={{ fontSize: '1.5rem' }}>🏠</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="btn d-flex align-items-center gap-1 p-0 border-0"
+                title="Log out"
+              >
+                <span style={{ fontSize: '1.5rem' }}>🚪</span>
+              </button>
             </div>
             {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
             {installError && <div className="small text-danger mt-2">{installError}</div>}
