@@ -206,21 +206,26 @@ export default function ItemDetailModal({
     <div
       className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="d-flex flex-column bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 h-100" style={{ maxHeight: '100%' }}>
+      <div
+        className="d-flex flex-column bg-white"
+        style={{ maxHeight: '95vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
 
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
-        <div className="flex-shrink-0 p-3 border-bottom border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 d-flex justify-content-between align-items-center">
-          <h5 className="mb-0 fw-semibold">Edit Item</h5>
+        <div className="flex-shrink-0 p-2 border-bottom d-flex justify-content-between align-items-center">
+          <h6 className="mb-0 fw-semibold">Edit Item</h6>
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-link text-gray-900 dark:text-gray-100 p-0"
-            style={{ width: '28px', height: '28px' }}
+            className="btn btn-link text-dark p-0"
+            style={{ lineHeight: 1 }}
             title="Close"
           >
-            <XMarkIcon className="h-6 w-6" />
+            <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
       )}
@@ -280,7 +285,7 @@ export default function ItemDetailModal({
       )}
 
       {/* Scrollable Content Area */}
-      <div className="flex-grow-1 overflow-auto p-3">
+      <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2">
         {isSalesMode ? (
           /* Sales Mode - Display only */
           <div>
@@ -554,7 +559,7 @@ export default function ItemDetailModal({
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top bg-white">
         {!isSalesMode ? (
           <div className="d-flex align-items-center">
             <div>
