@@ -618,6 +618,34 @@ export const documentCategoriesAPI = {
   },
 };
 
+export const leaveRequestsAPI = {
+  getByUser: (userId, leaveType) => {
+    const params = leaveType
+      ? `/isud/leave_request?user_id=${userId}&leave_type=${leaveType}`
+      : `/isud/leave_request?user_id=${userId}`;
+    return api.get(params);
+  },
+  create: (data) => api.post('/isud/leave_request', data),
+  update: (id, data) => api.put(`/isud/leave_request/${id}`, data),
+  delete: (id) => api.delete(`/isud/leave_request/${id}`),
+};
+
+export const insurancePlansAPI = {
+  getAll: () => getCachedOrFetch('insurance-plans', () => api.get('/isud/insurance_plan')),
+  create: (data) => {
+    clearCache('insurance-plans');
+    return api.post('/isud/insurance_plan', data);
+  },
+  update: (id, data) => {
+    clearCache('insurance-plans');
+    return api.put(`/isud/insurance_plan/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache('insurance-plans');
+    return api.delete(`/isud/insurance_plan/${id}`);
+  },
+};
+
 export const adminAPI = {
   importData: (formData) => {
     clearCache('clients');

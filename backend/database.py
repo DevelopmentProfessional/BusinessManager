@@ -170,6 +170,7 @@ def create_db_and_tables():
     _ensure_signature_columns_if_needed()
     _ensure_user_profile_picture_if_needed()
     _seed_user_colors_if_needed()
+    _seed_insurance_plans_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -756,3 +757,60 @@ def _ensure_signature_columns_if_needed():
                 if col not in col_names:
                     conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
                     print(f"  + Added column document.{col} ({pg_type})")
+
+
+def _seed_insurance_plans_if_needed():
+    """Seed the insurance_plan table with default plans if it is empty."""
+    default_plans = [
+        ("Basic Health Plan", "Entry-level coverage for individuals"),
+        ("Standard Health Plan", "Comprehensive coverage for employees and dependents"),
+        ("Premium Health Plan", "Full-coverage plan with low deductibles"),
+        ("Dental & Vision Basic", "Basic dental and vision coverage"),
+        ("Dental & Vision Plus", "Enhanced dental and vision with orthodontics"),
+        ("Life Insurance - Basic", "Basic term life insurance"),
+        ("Life Insurance - Enhanced", "Enhanced life insurance with supplemental benefits"),
+        ("Short-Term Disability", "Income protection for short-term disability"),
+        ("Long-Term Disability", "Income protection for long-term disability"),
+        ("No Coverage", "Employee opted out of insurance coverage"),
+    ]
+
+    table = "insurance_plan"
+    if DATABASE_URL.startswith("sqlite"):
+        quoted_table = table
+    else:
+        quoted_table = table  # PostgreSQL table name as-is
+
+    with engine.begin() as conn:
+        # Check if table exists (SQLModel.metadata.create_all should have created it)
+        if DATABASE_URL.startswith("sqlite"):
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=:tbl"
+            ), {"tbl": table}).fetchone()
+        else:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name=:tbl)"
+            ), {"tbl": table}).scalar()
+
+        if not tbl_exists:
+            return
+
+        count = conn.execute(text(f"SELECT COUNT(*) FROM {quoted_table}")).scalar()
+        if count and count > 0:
+            return  # Already seeded
+
+        import uuid as _uuid
+        from datetime import datetime as _dt
+        now = _dt.utcnow().isoformat()
+        for name, description in default_plans:
+            conn.execute(text(
+                f"INSERT INTO {quoted_table} (id, name, description, is_active, created_at) "
+                "VALUES (:id, :name, :description, :is_active, :created_at)"
+            ), {
+                "id": str(_uuid.uuid4()),
+                "name": name,
+                "description": description,
+                "is_active": True,
+                "created_at": now,
+            })
+        print(f"✓ Seeded {len(default_plans)} insurance plans")

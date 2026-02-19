@@ -60,7 +60,7 @@ export default function ScheduleFilterModal({
       onClose={onClose}
       title="Filter Schedule"
       footer={
-        <div className="d-flex justify-content-end gap-2">
+        <div className="d-flex justify-content-start gap-2">
           <button type="button" className="btn btn-outline-secondary" onClick={handleClear}>
             Clear
           </button>

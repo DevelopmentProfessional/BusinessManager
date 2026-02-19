@@ -1022,3 +1022,47 @@ class TaskLinkRead(SQLModel):
     source_task_title: Optional[str] = None
     target_task_title: Optional[str] = None
     link_type: Optional[str] = None
+
+
+# Leave request model
+class LeaveRequest(BaseModel, table=True):
+    __tablename__ = "leave_request"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    leave_type: str  # "vacation" or "sick"
+    start_date: str  # ISO date string YYYY-MM-DD
+    end_date: str    # ISO date string YYYY-MM-DD
+    days_requested: Optional[float] = Field(default=None)
+    status: str = Field(default="pending")  # pending, approved, denied
+    notes: Optional[str] = Field(default=None)
+
+
+class LeaveRequestRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    leave_type: str
+    start_date: str
+    end_date: str
+    days_requested: Optional[float] = None
+    status: str = "pending"
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Insurance plan reference table
+class InsurancePlan(BaseModel, table=True):
+    __tablename__ = "insurance_plan"
+    name: str = Field(unique=True, index=True)
+    description: Optional[str] = Field(default=None)
+    is_active: bool = Field(default=True)
+
+
+class InsurancePlanRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

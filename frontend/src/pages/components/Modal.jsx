@@ -53,24 +53,20 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="flex items-end justify-center min-h-screen">
         {Overlay}
 
-        <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-y-auto">
-          <div className={`bg-white dark:bg-gray-800 ${noPadding ? '' : 'px-2 pt-4 pb-3'}`}>
-            <div className="w-full">
-              <div className="w-full">
-                {title && (
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{title}</h3>
-                    <button type="button" onClick={onClose} title="Close" aria-label="Close" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                      <XMarkIcon className="h-6 w-6" />
-                    </button>
-                  </div>
-                )}
-                <div className={`${noPadding ? '' : 'mt-2'} text-gray-900 dark:text-gray-100`}>{children}</div>
-              </div>
+        <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[80vh] flex flex-col">
+          {title && (
+            <div className="flex justify-between items-center px-2 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{title}</h3>
+              <button type="button" onClick={onClose} title="Close" aria-label="Close" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <XMarkIcon className="h-6 w-6" />
+              </button>
             </div>
+          )}
+          <div className={`flex-1 overflow-y-auto bg-white dark:bg-gray-800 ${noPadding ? '' : 'px-2 py-3'}`}>
+            <div className="text-gray-900 dark:text-gray-100">{children}</div>
           </div>
           {footer && (
-            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 flex-shrink-0">
               {footer}
             </div>
           )}
