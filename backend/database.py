@@ -161,6 +161,7 @@ def create_db_and_tables():
     _migrate_documents_table_if_needed()
     _ensure_document_extra_columns_if_needed()
     _ensure_employee_user_id_column_if_needed()
+    _ensure_employee_supervisor_column_if_needed()
     _normalize_item_types_if_needed()
     _ensure_inventory_image_table_if_needed()
     _ensure_service_duration_column_if_needed()
@@ -369,6 +370,36 @@ def _ensure_employee_user_id_column_if_needed():
             conn.execute(text("ALTER TABLE employee ADD COLUMN user_id TEXT"))
 
 
+def _ensure_employee_supervisor_column_if_needed():
+    """Ensure the 'employee' table has a 'supervisor' column."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='employee'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('employee')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "supervisor" not in col_names:
+                conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor TEXT"))
+    else:
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='employee')"
+            )).scalar()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='employee'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "supervisor" not in col_names:
+                conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor VARCHAR"))
+
+
 def _ensure_inventory_image_table_if_needed():
     """Ensure InventoryImage table exists and has proper structure."""
     if DATABASE_URL.startswith("sqlite"):
@@ -515,6 +546,7 @@ def _ensure_user_extra_columns_if_needed():
     new_cols = {
         "color": "VARCHAR",
         "iod_number": "VARCHAR",
+        "supervisor": "VARCHAR",
         "location": "VARCHAR",
         "salary": "FLOAT",
         "pay_frequency": "VARCHAR",
