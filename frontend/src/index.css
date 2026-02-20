@@ -47,6 +47,9 @@
   --color-primary: rgb(var(--color-primary-500));
   --color-secondary: rgb(var(--color-secondary-500));
   --color-accent: rgb(var(--color-accent-500));
+
+  /* Mobile keyboard offset (px) used to keep search inputs visible */
+  --keyboard-offset: 0px;
 }
 
 
@@ -64,6 +67,18 @@ body,
 
 .app-shell-main {
   padding-top: env(safe-area-inset-top);
+}
+
+@media (max-width: 1024px) {
+  html.search-focus .app-footer-search {
+    transform: translateY(calc(-1 * var(--keyboard-offset)));
+    transition: transform 160ms ease-out;
+    will-change: transform;
+  }
+
+  .app-search-input {
+    scroll-margin-bottom: calc(var(--keyboard-offset) + 2rem);
+  }
 }
 
 [data-bs-theme="dark"] .bg-light {

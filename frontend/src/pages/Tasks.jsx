@@ -361,10 +361,10 @@ export default function Tasks() {
             <span className="input-group-text"><FunnelIcon style={{ width: 12, height: 12 }} /></span>
             <input
               type="text"
-              className="form-control form-control-sm"
               placeholder="Search tasks..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              className="form-control form-control-sm app-search-input"
             />
           </div>
           <select

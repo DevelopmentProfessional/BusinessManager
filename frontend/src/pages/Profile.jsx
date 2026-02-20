@@ -14,7 +14,7 @@ import {
   ClockIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline';
-import { employeesAPI, leaveRequestsAPI } from '../services/api';
+import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
 import api from '../services/api';
 import SignatureModal from './components/SignatureModal';
 
@@ -150,45 +150,65 @@ const Profile = () => {
     setLeaveSubmitting(true);
     setLeaveError('');
     try {
-      const start = new Date(leaveForm.start_date);
-      const end = new Date(leaveForm.end_date);
-      if (end < start) {
-        setLeaveError('End date must be on or after start date.');
-        setLeaveSubmitting(false);
-        return;
-      }
-      const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      const isLeave = leaveModalType === 'vacation' || leaveModalType === 'sick';
 
-      // Validate against remaining days
-      if (leaveModalType === 'vacation') {
-        const remaining = Math.max(0, (user.vacation_days ?? 0) - (user.vacation_days_used ?? 0));
-        if (daysRequested > remaining) {
-          setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
+      if (isLeave) {
+        const start = new Date(leaveForm.start_date);
+        const end = new Date(leaveForm.end_date);
+        if (end < start) {
+          setLeaveError('End date must be on or after start date.');
           setLeaveSubmitting(false);
           return;
         }
-      } else if (leaveModalType === 'sick') {
-        const remaining = Math.max(0, (user.sick_days ?? 0) - (user.sick_days_used ?? 0));
-        if (daysRequested > remaining) {
-          setLeaveError(`You only have ${remaining} sick day(s) remaining.`);
-          setLeaveSubmitting(false);
-          return;
+        const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+        if (leaveModalType === 'vacation') {
+          const remaining = Math.max(0, (user.vacation_days ?? 0) - (user.vacation_days_used ?? 0));
+          if (daysRequested > remaining) {
+            setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
+            setLeaveSubmitting(false);
+            return;
+          }
+        } else {
+          const remaining = Math.max(0, (user.sick_days ?? 0) - (user.sick_days_used ?? 0));
+          if (daysRequested > remaining) {
+            setLeaveError(`You only have ${remaining} sick day(s) remaining.`);
+            setLeaveSubmitting(false);
+            return;
+          }
         }
+
+        await leaveRequestsAPI.create({
+          user_id: user.id,
+          supervisor_id: user.reports_to || null,
+          leave_type: leaveModalType,
+          start_date: leaveForm.start_date,
+          end_date: leaveForm.end_date,
+          days_requested: daysRequested,
+          notes: leaveForm.notes || null,
+          status: 'pending',
+        });
+        await refreshLeaveRequests();
+      } else if (leaveModalType === 'onboarding') {
+        await onboardingRequestsAPI.create({
+          user_id: user.id,
+          supervisor_id: user.reports_to || null,
+          request_date: leaveForm.start_date || null,
+          notes: leaveForm.notes || null,
+          status: 'pending',
+        });
+      } else if (leaveModalType === 'offboarding') {
+        await offboardingRequestsAPI.create({
+          user_id: user.id,
+          supervisor_id: user.reports_to || null,
+          request_date: leaveForm.start_date || null,
+          notes: leaveForm.notes || null,
+          status: 'pending',
+        });
       }
 
-      await leaveRequestsAPI.create({
-        user_id: user.id,
-        supervisor_id: user.reports_to || null,
-        leave_type: leaveModalType,
-        start_date: leaveForm.start_date,
-        end_date: leaveForm.end_date,
-        days_requested: daysRequested,
-        notes: leaveForm.notes || null,
-        status: 'pending',
-      });
       setShowLeaveModal(false);
       setLeaveForm({ start_date: '', end_date: '', notes: '' });
-      await refreshLeaveRequests();
     } catch (err) {
       setLeaveError(err?.response?.data?.detail || 'Failed to submit request.');
     } finally {
@@ -845,7 +865,7 @@ const Profile = () => {
         userId={user?.id}
       />
 
-      {/* Leave Request Modal */}
+      {/* Request Modal */}
       {showLeaveModal && (
         <div
           className="modal d-block"
@@ -856,9 +876,7 @@ const Profile = () => {
           <div className="modal-dialog modal-sm modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">
-                  Request {leaveModalType === 'vacation' ? 'Vacation' : 'Sick'} Leave
-                </h6>
+                <h6 className="modal-title mb-0">New Request</h6>
                 <button
                   type="button"
                   className="btn-close"
@@ -871,26 +889,57 @@ const Profile = () => {
                     <div className="alert alert-danger py-1 small mb-2">{leaveError}</div>
                   )}
                   <div className="mb-2">
-                    <label className="form-label small mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={leaveForm.start_date}
-                      onChange={e => setLeaveForm(f => ({ ...f, start_date: e.target.value }))}
-                      required
-                    />
+                    <label className="form-label small mb-1">Request Type</label>
+                    <select
+                      className="form-select form-select-sm"
+                      value={leaveModalType}
+                      onChange={e => {
+                        setLeaveModalType(e.target.value);
+                        setLeaveForm({ start_date: '', end_date: '', notes: '' });
+                        setLeaveError('');
+                      }}
+                    >
+                      <option value="vacation">Vacation Leave</option>
+                      <option value="sick">Sick Leave</option>
+                      <option value="onboarding">Onboarding</option>
+                      <option value="offboarding">Offboarding</option>
+                    </select>
                   </div>
-                  <div className="mb-2">
-                    <label className="form-label small mb-1">End Date</label>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={leaveForm.end_date}
-                      min={leaveForm.start_date || undefined}
-                      onChange={e => setLeaveForm(f => ({ ...f, end_date: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  {(leaveModalType === 'vacation' || leaveModalType === 'sick') ? (
+                    <>
+                      <div className="mb-2">
+                        <label className="form-label small mb-1">Start Date</label>
+                        <input
+                          type="date"
+                          className="form-control form-control-sm"
+                          value={leaveForm.start_date}
+                          onChange={e => setLeaveForm(f => ({ ...f, start_date: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="mb-2">
+                        <label className="form-label small mb-1">End Date</label>
+                        <input
+                          type="date"
+                          className="form-control form-control-sm"
+                          value={leaveForm.end_date}
+                          min={leaveForm.start_date || undefined}
+                          onChange={e => setLeaveForm(f => ({ ...f, end_date: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mb-2">
+                      <label className="form-label small mb-1">Requested Date (optional)</label>
+                      <input
+                        type="date"
+                        className="form-control form-control-sm"
+                        value={leaveForm.start_date}
+                        onChange={e => setLeaveForm(f => ({ ...f, start_date: e.target.value }))}
+                      />
+                    </div>
+                  )}
                   <div className="mb-0">
                     <label className="form-label small mb-1">Notes (optional)</label>
                     <textarea

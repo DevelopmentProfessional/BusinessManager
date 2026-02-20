@@ -1052,6 +1052,48 @@ class LeaveRequestRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class OnboardingRequest(BaseModel, table=True):
+    __tablename__ = "onboarding_request"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    supervisor_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    request_date: Optional[str] = Field(default=None)
+    status: str = Field(default="pending")
+    notes: Optional[str] = Field(default=None)
+
+
+class OnboardingRequestRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    supervisor_id: Optional[UUID] = None
+    request_date: Optional[str] = None
+    status: str = "pending"
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class OffboardingRequest(BaseModel, table=True):
+    __tablename__ = "offboarding_request"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    supervisor_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    request_date: Optional[str] = Field(default=None)
+    status: str = Field(default="pending")
+    notes: Optional[str] = Field(default=None)
+
+
+class OffboardingRequestRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    supervisor_id: Optional[UUID] = None
+    request_date: Optional[str] = None
+    status: str = "pending"
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 # Insurance plan reference table
 class InsurancePlan(BaseModel, table=True):
     __tablename__ = "insurance_plan"
