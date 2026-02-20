@@ -484,7 +484,7 @@ const Profile = () => {
               {/* ── Vacation Days nested accordion ── */}
               <div className="border rounded mb-2" style={{ position: 'relative' }}>
                 <div
-                  className="d-flex justify-content-between align-items-center px-3 py-2"
+                  className="d-flex justify-content-between align-items-center"
                   onClick={() => setOpenVacationAccordion(v => !v)}
                   style={{ cursor: 'pointer', userSelect: 'none' }}
                 >
@@ -514,17 +514,7 @@ const Profile = () => {
                   >
                     <div className="card rounded-0 border-0 shadow-sm">
                       <div className="card-body p-0 d-flex flex-column">
-                        {/* + button row */}
-                        <div className="d-flex justify-content-end px-2 pt-2">
-                          <button
-                            type="button"
-                            className="btn btn-link p-0 text-primary"
-                            title="Request vacation"
-                            onClick={() => openLeaveModal('vacation')}
-                          >
-                            <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
-                          </button>
-                        </div>
+                      
                         {/* Scrollable table area */}
                         <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
                           {leaveRequestsLoading ? (
@@ -563,6 +553,17 @@ const Profile = () => {
                       </div>
                       <div className="card-footer py-2 px-3 small text-muted">
                         {vacUsed} used &bull; {vacRemaining} remaining of {vacTotal} total
+                          {/* + button row */}
+                        <div className="d-flex justify-content-end px-2 pt-2">
+                          <button
+                            type="button"
+                            className="btn btn-link p-0 text-primary"
+                            title="Request vacation"
+                            onClick={() => openLeaveModal('vacation')}
+                          >
+                            <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -572,7 +573,7 @@ const Profile = () => {
               {/* ── Sick Days nested accordion ── */}
               <div className="border rounded" style={{ position: 'relative' }}>
                 <div
-                  className="d-flex justify-content-between align-items-center px-3 py-2"
+                  className="d-flex justify-content-between align-items-center"
                   onClick={() => setOpenSickAccordion(v => !v)}
                   style={{ cursor: 'pointer', userSelect: 'none' }}
                 >
@@ -602,17 +603,7 @@ const Profile = () => {
                   >
                     <div className="card rounded-0 border-0 shadow-sm">
                       <div className="card-body p-0 d-flex flex-column">
-                        {/* + button row */}
-                        <div className="d-flex justify-content-end px-2 pt-2">
-                          <button
-                            type="button"
-                            className="btn btn-link p-0 text-warning"
-                            title="Request sick leave"
-                            onClick={() => openLeaveModal('sick')}
-                          >
-                            <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
-                          </button>
-                        </div>
+                       
                         {/* Scrollable table area */}
                         <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
                           {leaveRequestsLoading ? (
@@ -620,7 +611,7 @@ const Profile = () => {
                               <div className="spinner-border spinner-border-sm text-warning" role="status" />
                             </div>
                           ) : sickRequests.length > 0 ? (
-                            <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                            <table className="table table-sm table-hover mb-0 mx-0" style={{ fontSize: '0.8rem' }}>
                               <thead className="table-light sticky-top">
                                 <tr>
                                   <th>From</th>
@@ -651,6 +642,18 @@ const Profile = () => {
                       </div>
                       <div className="card-footer py-2 px-3 small text-muted">
                         {sickUsed} used &bull; {sickRemaining} remaining of {sickTotal} total
+                   {/* + button row */}
+                        <div className="d-flex justify-content-end ">
+                          <button
+                            type="button"
+                            className="btn btn-link p-0 text-warning"
+                            title="Request sick leave"
+                            onClick={() => openLeaveModal('sick')}
+                          >
+                            <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
+                          </button>
+                        </div>
+                  
                       </div>
                     </div>
                   </div>
