@@ -356,11 +356,11 @@ const Profile = () => {
           className="accordion-popup" 
           style={{ 
             position: 'fixed',
-            bottom: '60px',
+            bottom: '84px',
             left: 0,
             right: 0,
             width: '100%',
-            maxHeight: 'calc(100vh - 140px)',
+            maxHeight: 'calc(100vh - 164px)',
             overflowY: 'auto',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
@@ -800,7 +800,10 @@ const Profile = () => {
         )}
 
       {/* Footer Tabs */}
-      <div className="d-flex gap-1 p-1 bg-body border-top position-fixed bottom-0 start-0 end-0" style={{ zIndex: 100 }}>
+      <div
+        className="d-flex gap-1 p-2 bg-body border-top position-fixed bottom-0 start-0 end-0"
+        style={{ zIndex: 100, minHeight: '84px', paddingRight: '5rem', alignItems: 'center' }}
+      >
         {/* Profile Tab */}
         <button
           className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
