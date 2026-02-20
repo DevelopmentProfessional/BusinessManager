@@ -18,6 +18,34 @@ import { employeesAPI, leaveRequestsAPI } from '../services/api';
 import api from '../services/api';
 import SignatureModal from './components/SignatureModal';
 
+// CSS for accordion pop-up animation
+const accordionStyles = `
+  @keyframes popUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .accordion-popup {
+    animation: popUp 0.3s ease-out;
+  }
+`;
+
+// Add styles to document
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = accordionStyles;
+  if (!document.head.querySelector('style[data-accordion-popup]')) {
+    styleSheet.setAttribute('data-accordion-popup', 'true');
+    document.head.appendChild(styleSheet);
+  }
+}
+
 // Available database environments - shows what's possible
 const DB_ENVIRONMENTS = {
   development: { name: 'Development', description: 'Development database' },
@@ -297,24 +325,35 @@ const Profile = () => {
   };
 
   return (
-    <div className="container-fluid d-flex flex-column min-h-screen">
-      <div className="d-flex flex-column justify-content-end gap-2 overflow-auto flex-grow-1">
+    <div className="d-flex flex-column min-h-screen">
+      
+      {/* Main Content Area */}
+      <div className="flex-grow-1"></div>
 
-        {/* Profile Accordion */}
-        <div className="card">
-          <div
-            className="card-header bg-transparent d-flex justify-content-between align-items-center p-1"
-            onClick={() => setOpenAccordion(openAccordion === 'profile' ? '' : 'profile')}
-            style={{ cursor: 'pointer' }}
-          >
-            <h5 className="mb-0 fw-semibold d-flex align-items-center gap-2">
-              <UserIcon className="h-5 w-5" /> Profile
-            </h5>
-            {openAccordion === 'profile' && <span>▼</span>}
-          </div>
-          {openAccordion === 'profile' && (
-            <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-              <div className="row g-1">
+      {/* Floating Content Panels */}
+      {/* Profile Content */}
+      {openAccordion === 'profile' && (
+        <div 
+          className="accordion-popup" 
+          style={{ 
+            position: 'fixed',
+            bottom: '60px',
+            left: 0,
+            right: 0,
+            width: '100%',
+            maxHeight: 'calc(100vh - 140px)',
+            overflowY: 'auto',
+            backgroundColor: 'var(--bs-card-bg, white)',
+            zIndex: 1000,
+            padding: '1rem',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+            border: '1px solid var(--bs-card-border-color, #dee2e6)',
+            borderBottom: 'none',
+            borderTopLeftRadius: '0.375rem',
+            borderTopRightRadius: '0.375rem'
+          }}
+        >
+              <div className="row">
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
                     <UserIcon className="w-4" /> <div className="fw-medium p-1">{user.first_name} {user.last_name}</div>
@@ -378,23 +417,30 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+        )}
 
-        {/* Benefits Accordion */}
-        <div className="card">
-          <div
-            className="card-header bg-transparent d-flex justify-content-between align-items-center p-1"
-            onClick={() => setOpenAccordion(openAccordion === 'benefits' ? '' : 'benefits')}
-            style={{ cursor: 'pointer' }}
-          >
-            <h5 className="mb-0 fw-semibold d-flex align-items-center gap-2">
-              <i className="bi bi-bag-heart"></i> Benefits
-            </h5>
-            {openAccordion === 'benefits' && <span>▼</span>}
-          </div>
-          {openAccordion === 'benefits' && (
-            <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+      {/* Benefits Content */}
+      {openAccordion === 'benefits' && (
+        <div 
+          className="accordion-popup" 
+          style={{ 
+            position: 'fixed',
+            bottom: '60px',
+            left: 0,
+            right: 0,
+            width: '100%',
+            maxHeight: 'calc(100vh - 140px)',
+            overflowY: 'auto',
+            backgroundColor: 'var(--bs-card-bg, white)',
+            zIndex: 1000,
+            padding: '1rem',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+            border: '1px solid var(--bs-card-border-color, #dee2e6)',
+            borderBottom: 'none',
+            borderTopLeftRadius: '0.375rem',
+            borderTopRightRadius: '0.375rem'
+          }}
+        >
 
               {/* Salary / Pay / Insurance */}
               <div className="row g-2 mb-3">
@@ -417,7 +463,7 @@ const Profile = () => {
               </div>
 
               {/* ── Vacation Days nested accordion ── */}
-              <div className="border rounded mb-2">
+              <div className="border rounded mb-2" style={{ position: 'relative' }}>
                 <div
                   className="d-flex justify-content-between align-items-center px-3 py-2"
                   onClick={() => setOpenVacationAccordion(v => !v)}
@@ -428,7 +474,25 @@ const Profile = () => {
                 </div>
 
                 {openVacationAccordion && (
-                  <div className="border-top">
+                  <div 
+                    className="accordion-popup"
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      right: 0,
+                      width: '100%',
+                      maxHeight: 'calc(100vh - 200px)',
+                      overflowY: 'auto',
+                      backgroundColor: 'var(--bs-card-bg, white)',
+                      borderRadius: 'var(--bs-border-radius, 0.375rem)',
+                      zIndex: 1000,
+                      padding: '0',
+                      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+                      border: '1px solid var(--bs-card-border-color, #dee2e6)',
+                      marginTop: '1px'
+                    }}
+                  >
                     <div className="card rounded-0 border-0 shadow-sm">
                       <div className="card-body p-0 d-flex flex-column">
                         {/* + button row */}
@@ -487,7 +551,7 @@ const Profile = () => {
               </div>
 
               {/* ── Sick Days nested accordion ── */}
-              <div className="border rounded">
+              <div className="border rounded" style={{ position: 'relative' }}>
                 <div
                   className="d-flex justify-content-between align-items-center px-3 py-2"
                   onClick={() => setOpenSickAccordion(v => !v)}
@@ -498,7 +562,25 @@ const Profile = () => {
                 </div>
 
                 {openSickAccordion && (
-                  <div className="border-top">
+                  <div 
+                    className="accordion-popup"
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      right: 0,
+                      width: '100%',
+                      maxHeight: 'calc(100vh - 200px)',
+                      overflowY: 'auto',
+                      backgroundColor: 'var(--bs-card-bg, white)',
+                      borderRadius: 'var(--bs-border-radius, 0.375rem)',
+                      zIndex: 1000,
+                      padding: '0',
+                      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+                      border: '1px solid var(--bs-card-border-color, #dee2e6)',
+                      marginTop: '1px'
+                    }}
+                  >
                     <div className="card rounded-0 border-0 shadow-sm">
                       <div className="card-body p-0 d-flex flex-column">
                         {/* + button row */}
@@ -557,24 +639,31 @@ const Profile = () => {
               </div>
 
             </div>
-          )}
-        </div>
+        )}
 
-        {/* Settings Accordion */}
-        <div className={`card ${openAccordion === 'settings' ? 'flex-grow-1' : ''}`}>
-          <div
-            className="card-header bg-transparent d-flex justify-content-between align-items-center p-1"
-            onClick={() => setOpenAccordion(openAccordion === 'settings' ? '' : 'settings')}
-            style={{ cursor: 'pointer' }}
-          >
-            <h5 className="mb-0 fw-semibold d-flex align-items-center gap-2">
-              <CogIcon className="h-5 w-5" /> Settings
-            </h5>
-            {openAccordion === 'settings' && <span>▼</span>}
-          </div>
-          {openAccordion === 'settings' && (
-            <div className="card-body overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-              <div className="d-flex align-items-center justify-content-start flex-wrap gap-3">
+      {/* Settings Content */}
+      {openAccordion === 'settings' && (
+        <div 
+          className="accordion-popup" 
+          style={{ 
+            position: 'fixed',
+            bottom: '60px',
+            left: 0,
+            right: 0,
+            width: '100%',
+            maxHeight: 'calc(100vh - 140px)',
+            overflowY: 'auto',
+            backgroundColor: 'var(--bs-card-bg, white)',
+            zIndex: 1000,
+            padding: '1rem',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+            border: '1px solid var(--bs-card-border-color, #dee2e6)',
+            borderBottom: 'none',
+            borderTopLeftRadius: '0.375rem',
+            borderTopRightRadius: '0.375rem'
+          }}
+        >
+          <div className="d-flex align-items-center justify-content-start flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={toggleDarkMode}
@@ -689,8 +778,39 @@ const Profile = () => {
               {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
               {dbError && <div className="small text-danger mt-1">{dbError}</div>}
             </div>
-          )}
-        </div>
+        )}
+
+      {/* Footer Tabs */}
+      <div className="d-flex gap-1 p-1 bg-body border-top position-fixed bottom-0 start-0 end-0" style={{ zIndex: 100 }}>
+        {/* Profile Tab */}
+        <button
+          className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+          onClick={() => setOpenAccordion(openAccordion === 'profile' ? '' : 'profile')}
+        >
+          <UserIcon className="h-4 w-4" />
+          <span className="small">Profile</span>
+        </button>
+
+        {/* Benefits Tab */}
+        <button
+          className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'benefits' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+          onClick={() => setOpenAccordion(openAccordion === 'benefits' ? '' : 'benefits')}
+        >
+          <i className="bi bi-bag-heart"></i>
+          <span className="small">Benefits</span>
+        </button>
+
+        {/* Settings Tab */}
+        <button
+          className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'settings' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+          onClick={() => setOpenAccordion(openAccordion === 'settings' ? '' : 'settings')}
+        >
+          <CogIcon className="h-4 w-4" />
+          <span className="small">Settings</span>
+        </button>
       </div>
 
       {/* Signature Modal */}
@@ -774,6 +894,8 @@ const Profile = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };
