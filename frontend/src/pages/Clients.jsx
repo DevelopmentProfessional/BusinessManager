@@ -5,7 +5,7 @@ import { clientsAPI } from '../services/api';
 import Modal from './components/Modal';
 import ClientForm from './components/ClientForm';
 import PermissionGate from './components/PermissionGate';
-import CSVImportButton from './components/CSVImportButton';
+import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default function Clients() {
   const { 
@@ -124,34 +124,6 @@ export default function Clients() {
       setError(errorMsg);
       console.error(err);
     }
-  };
-
-  const handleCSVImport = async (records) => {
-    let success = 0;
-    let failed = 0;
-    const errors = [];
-
-    for (const record of records) {
-      try {
-        const clientData = {
-          name: record.name,
-          email: record.email || null,
-          phone: record.phone || null,
-          address: record.address || null,
-          notes: record.notes || null,
-          membership_tier: (record.membership_tier || 'NONE').toUpperCase(),
-        };
-        
-        await clientsAPI.create(clientData);
-        success++;
-      } catch (err) {
-        failed++;
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
-        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
-      }
-    }
-
-    return { success, failed, errors };
   };
 
   // Get membership tier badge color
@@ -317,7 +289,7 @@ export default function Clients() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
@@ -341,29 +313,42 @@ export default function Clients() {
           </table>
 
           {/* Controls */}
-          <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Filters row */}
-            <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
-              <div className="flex-grow-1 position-relative" style={{ minWidth: '180px' }}>
-                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or phone..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="form-control ps-5"
-                />
-              </div>
+          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            {/* Search row */}
+            <div className="position-relative w-100 mb-2">
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="app-search-input form-control ps-5 w-100 rounded-pill"
+              />
+            </div>
+
+            {/* Controls row - Add, Tier */}
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <PermissionGate page="clients" permission="write">
+                <button
+                  type="button"
+                  onClick={handleCreateClient}
+                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Add client"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                </button>
+              </PermissionGate>
 
               <select
                 value={tierFilter}
                 onChange={(e) => setTierFilter(e.target.value)}
-                className="form-select form-select-sm"
-                style={{ maxWidth: '160px' }}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content', minWidth: '140px' }}
               >
                 <option value="all">All Tiers</option>
                 <option value="NONE">No Membership</option>
@@ -372,45 +357,7 @@ export default function Clients() {
                 <option value="GOLD">Gold</option>
                 <option value="PLATINUM">Platinum</option>
               </select>
-
-              <span className="text-muted small ms-2">
-                {filteredClients.length} / {clients.length}
-              </span>
             </div>
-
-            {/* Action buttons */}
-            <PermissionGate page="clients" permission="write">
-              <div className="d-flex gap-2">
-                <div className="btn-group">
-                  <CSVImportButton
-                    entityName="Clients"
-                    onImport={handleCSVImport}
-                    onComplete={loadClients}
-                    requiredFields={['name']}
-                    fieldMapping={{
-                      'client name': 'name',
-                      'full name': 'name',
-                      'client': 'name',
-                      'email address': 'email',
-                      'phone number': 'phone',
-                      'tier': 'membership_tier',
-                      'membership': 'membership_tier',
-                    }}
-                    className="btn btn-outline-secondary"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateClient}
-                    className="btn btn-primary"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                    </svg>
-                    Add
-                  </button>
-                </div>
-              </div>
-            </PermissionGate>
           </div>
         </div>
       </div>

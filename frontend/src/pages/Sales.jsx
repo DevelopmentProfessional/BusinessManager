@@ -5,7 +5,7 @@ import {
   UserIcon, CreditCardIcon, ClockIcon,
   PlusIcon, MinusIcon,
   MagnifyingGlassIcon, SparklesIcon, CubeIcon,
-  ChevronDownIcon, ChevronUpIcon
+  ChevronDownIcon, ChevronUpIcon, FunnelIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI } from '../services/api';
@@ -266,7 +266,16 @@ export default function Sales() {
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showHistoryFilters, setShowHistoryFilters] = useState(false);
+  const [historyFilters, setHistoryFilters] = useState({
+    showServices: true,
+    showProducts: true,
+    minPrice: '',
+    maxPrice: '',
+    startDate: '',
+    endDate: ''
+  });
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -482,6 +491,28 @@ export default function Sales() {
     return cart.some(c => c.cartKey === `${itemType}-${itemId}`);
   };
 
+  const filteredHistory = salesHistory.filter((sale) => {
+    const minPrice = historyFilters.minPrice ? Number(historyFilters.minPrice) : null;
+    const maxPrice = historyFilters.maxPrice ? Number(historyFilters.maxPrice) : null;
+    const startDate = historyFilters.startDate ? new Date(`${historyFilters.startDate}T00:00:00`) : null;
+    const endDate = historyFilters.endDate ? new Date(`${historyFilters.endDate}T23:59:59`) : null;
+    const saleDate = new Date(sale.date);
+
+    if (Number.isFinite(minPrice) && sale.total < minPrice) return false;
+    if (Number.isFinite(maxPrice) && sale.total > maxPrice) return false;
+    if (startDate && saleDate < startDate) return false;
+    if (endDate && saleDate > endDate) return false;
+
+    if (!historyFilters.showServices && !historyFilters.showProducts) return false;
+    if (historyFilters.showServices && historyFilters.showProducts) return true;
+
+    const hasService = sale.items?.some((item) => item.itemType === 'service');
+    const hasProduct = sale.items?.some((item) => item.itemType === 'product');
+    if (historyFilters.showServices && hasService) return true;
+    if (historyFilters.showProducts && hasProduct) return true;
+    return false;
+  });
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -504,52 +535,6 @@ export default function Sales() {
           </div>
         )}
       </div>
-
-      {/* Sales History Section */}
-      {salesHistory.length > 0 && (
-        <div className="flex-shrink-0">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
-          >
-            <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-300">
-              <ClockIcon className="h-4 w-4" />
-              Sales History ({salesHistory.length})
-            </span>
-            {showHistory
-              ? <ChevronUpIcon className="h-4 w-4 text-gray-500" />
-              : <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-            }
-          </button>
-          {showHistory && (
-            <div className="max-h-60 overflow-y-auto border-b border-gray-200 dark:border-gray-700">
-              {salesHistory.map(sale => (
-                <div key={sale.id} className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700/50 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">
-                        {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {' '}
-                        {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      {sale.client && (
-                        <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                      {sale.items.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ''}`).join(', ')}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 text-right ml-3">
-                    <span className="font-semibold text-gray-900 dark:text-white">${sale.total.toFixed(2)}</span>
-                    <div className="text-xs text-gray-400 capitalize">{sale.paymentMethod}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Main Body - Items Grid */}
       <div className="flex-1 overflow-y-auto pb-40">
@@ -620,7 +605,7 @@ export default function Sales() {
         </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="flex-shrink-0 fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 md:ml-64">
+      <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pr-16 md:ml-64">
         {/* Search Row */}
         <div className="mb-2">
           <div className="relative">
@@ -630,7 +615,7 @@ export default function Sales() {
               placeholder="Search products and services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="app-search-input w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -648,6 +633,16 @@ export default function Sales() {
                 {cartItemCount}
               </span>
             )}
+          </button>
+
+          {/* Sales History Button */}
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:shadow-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+            title="Sales history"
+            aria-label="Open sales history"
+          >
+            <span className="text-2xl leading-none" role="img" aria-hidden="true">📈</span>
           </button>
 
           {/* Service Toggle Button */}
@@ -766,7 +761,7 @@ export default function Sales() {
                             setShowClientDropdown(true);
                           }}
                           onFocus={() => { loadClients(); setShowClientDropdown(true); }}
-                          className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          className="app-search-input flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                         <button
                           type="button"
@@ -893,13 +888,153 @@ export default function Sales() {
       />
 
       {/* Sales History Section (Placeholder) */}
-      <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs border border-gray-200 dark:border-gray-700">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Recent Sales</h4>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          <p className="mb-2">Sales history feature coming soon</p>
-          <p className="text-gray-400">Track and view your sales transactions here</p>
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900">
+          <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ClockIcon className="h-5 w-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales History</h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400">({filteredHistory.length})</span>
+            </div>
+            <button
+              onClick={() => setShowHistoryModal(false)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Close sales history"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {filteredHistory.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6">
+                <ClockIcon className="h-12 w-12 text-gray-300 dark:text-gray-700 mb-3" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">No transactions</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Try adjusting filters or complete a sale.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredHistory.map((sale) => (
+                  <div key={sale.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {' '}
+                          {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {sale.client && (
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                        {sale.items.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ''}`).join(', ')}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">${sale.total.toFixed(2)}</div>
+                      <div className="text-xs text-gray-400 capitalize">{sale.paymentMethod}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {showHistoryFilters && (
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
+                  aria-pressed={historyFilters.showServices}
+                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                    historyFilters.showServices
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  Services
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
+                  aria-pressed={historyFilters.showProducts}
+                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                    historyFilters.showProducts
+                      ? 'bg-secondary-600 text-white border-secondary-600'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  Products
+                </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={historyFilters.minPrice}
+                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
+                    placeholder="Min $"
+                    className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={historyFilters.maxPrice}
+                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
+                    placeholder="Max $"
+                    className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={historyFilters.startDate}
+                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                  />
+                  <input
+                    type="date"
+                    value={historyFilters.endDate}
+                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowHistoryModal(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => setHistoryFilters({ showServices: true, showProducts: true, minPrice: '', maxPrice: '', startDate: '', endDate: '' })}
+                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              </div>
+              <button
+                onClick={() => setShowHistoryFilters((prev) => !prev)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white transition-colors"
+                aria-expanded={showHistoryFilters}
+              >
+                <FunnelIcon className="h-4 w-4" />
+                Filters
+                {showHistoryFilters ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronUpIcon className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

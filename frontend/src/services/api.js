@@ -633,6 +633,26 @@ export const leaveRequestsAPI = {
   action: (id, action) => api.put(`/leave-requests/${id}/action`, { action }),
 };
 
+export const onboardingRequestsAPI = {
+  getAll: () => api.get('/isud/onboarding_request'),
+  getBySupervisor: (supervisorId) => api.get(`/isud/onboarding_request?supervisor_id=${supervisorId}`),
+  getByUser: (userId) => api.get(`/isud/onboarding_request?user_id=${userId}`),
+  create: (data) => api.post('/isud/onboarding_request', data),
+  update: (id, data) => api.put(`/isud/onboarding_request/${id}`, data),
+  delete: (id) => api.delete(`/isud/onboarding_request/${id}`),
+  action: (id, action) => api.put(`/onboarding-requests/${id}/action`, { action }),
+};
+
+export const offboardingRequestsAPI = {
+  getAll: () => api.get('/isud/offboarding_request'),
+  getBySupervisor: (supervisorId) => api.get(`/isud/offboarding_request?supervisor_id=${supervisorId}`),
+  getByUser: (userId) => api.get(`/isud/offboarding_request?user_id=${userId}`),
+  create: (data) => api.post('/isud/offboarding_request', data),
+  update: (id, data) => api.put(`/isud/offboarding_request/${id}`, data),
+  delete: (id) => api.delete(`/isud/offboarding_request/${id}`),
+  action: (id, action) => api.put(`/offboarding-requests/${id}/action`, { action }),
+};
+
 export const saleTransactionsAPI = {
   getAll: () => getCachedOrFetch('sale-transactions', () => api.get('/isud/sale_transaction')),
   create: (data) => {

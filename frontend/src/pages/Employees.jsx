@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
 import Modal from './components/Modal';
 import EmployeeFormTabs from './components/EmployeeFormTabs';
 import CustomDropdown from './components/CustomDropdown';
@@ -31,9 +31,10 @@ export default function Employees() {
   const [systemInfo, setSystemInfo] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [showRolesModal, setShowRolesModal] = useState(false);
-  const [showLeaveRequestsModal, setShowLeaveRequestsModal] = useState(false);
-  const [leaveRequests, setLeaveRequests] = useState([]);
-  const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [allRequests, setAllRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestTypeFilter, setRequestTypeFilter] = useState('all');
   const [editingRole, setEditingRole] = useState(null);
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [newRolePermission, setNewRolePermission] = useState({ page: '', permission: '' });
@@ -519,35 +520,89 @@ export default function Employees() {
     }
   };
 
-  const loadLeaveRequests = async () => {
-    setLeaveRequestsLoading(true);
+  const loadRequests = async (typeFilter = requestTypeFilter) => {
+    setRequestsLoading(true);
     try {
-      let response;
       const isAdmin = currentUser?.role === 'admin';
-      if (isAdmin) {
-        // Admins see all requests that have no supervisor (routed to admin) OR all requests
-        response = await leaveRequestsAPI.getAll();
-      } else {
-        // Supervisors only see requests routed to them
-        response = await leaveRequestsAPI.getBySupervisor(currentUser?.id);
+      const supervisorId = currentUser?.id;
+
+      const fetchLeave = async () => {
+        const res = isAdmin
+          ? await leaveRequestsAPI.getAll()
+          : await leaveRequestsAPI.getBySupervisor(supervisorId);
+        const rows = res?.data ?? res ?? [];
+        return rows.map(r => ({
+          ...r,
+          _requestType: r.leave_type === 'vacation' ? 'leave_vacation' : 'leave_sick',
+          _typeLabel: r.leave_type === 'vacation' ? 'Leave (Vacation)' : 'Leave (Sick)',
+          _dateInfo: `${r.start_date} → ${r.end_date}${r.days_requested ? ` (${r.days_requested}d)` : ''}`,
+        }));
+      };
+
+      const fetchOnboarding = async () => {
+        const res = isAdmin
+          ? await onboardingRequestsAPI.getAll()
+          : await onboardingRequestsAPI.getBySupervisor(supervisorId);
+        const rows = res?.data ?? res ?? [];
+        return rows.map(r => ({
+          ...r,
+          _requestType: 'onboarding',
+          _typeLabel: 'Onboarding',
+          _dateInfo: r.request_date || '—',
+        }));
+      };
+
+      const fetchOffboarding = async () => {
+        const res = isAdmin
+          ? await offboardingRequestsAPI.getAll()
+          : await offboardingRequestsAPI.getBySupervisor(supervisorId);
+        const rows = res?.data ?? res ?? [];
+        return rows.map(r => ({
+          ...r,
+          _requestType: 'offboarding',
+          _typeLabel: 'Offboarding',
+          _dateInfo: r.request_date || '—',
+        }));
+      };
+
+      let combined = [];
+      if (typeFilter === 'all') {
+        const [leave, onboarding, offboarding] = await Promise.all([fetchLeave(), fetchOnboarding(), fetchOffboarding()]);
+        combined = [...leave, ...onboarding, ...offboarding];
+      } else if (typeFilter === 'leave_vacation' || typeFilter === 'leave_sick') {
+        combined = await fetchLeave();
+        if (typeFilter === 'leave_vacation') combined = combined.filter(r => r._requestType === 'leave_vacation');
+        else combined = combined.filter(r => r._requestType === 'leave_sick');
+      } else if (typeFilter === 'onboarding') {
+        combined = await fetchOnboarding();
+      } else if (typeFilter === 'offboarding') {
+        combined = await fetchOffboarding();
       }
-      setLeaveRequests(response?.data ?? response ?? []);
+
+      combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      setAllRequests(combined);
     } catch (err) {
-      setError('Failed to load leave requests');
+      setError('Failed to load requests');
     } finally {
-      setLeaveRequestsLoading(false);
+      setRequestsLoading(false);
     }
   };
 
-  const handleOpenLeaveRequests = () => {
-    setShowLeaveRequestsModal(true);
-    loadLeaveRequests();
+  const handleOpenRequests = () => {
+    setShowRequestsModal(true);
+    loadRequests(requestTypeFilter);
   };
 
-  const handleLeaveAction = async (requestId, newStatus) => {
+  const handleRequestAction = async (req, newStatus) => {
     try {
-      await leaveRequestsAPI.action(requestId, newStatus);
-      setLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
+      if (req._requestType === 'onboarding') {
+        await onboardingRequestsAPI.action(req.id, newStatus);
+      } else if (req._requestType === 'offboarding') {
+        await offboardingRequestsAPI.action(req.id, newStatus);
+      } else {
+        await leaveRequestsAPI.action(req.id, newStatus);
+      }
+      setAllRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
     } catch (err) {
       setError(`Failed to ${newStatus === 'approved' ? 'approve' : 'deny'} request`);
     }
@@ -650,7 +705,7 @@ export default function Employees() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
@@ -678,7 +733,7 @@ export default function Employees() {
                 placeholder="Search by name, email, or role..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-control ps-5 w-100 rounded-pill"
+                className="app-search-input form-control ps-5 w-100 rounded-pill"
               />
             </div>
 
@@ -697,13 +752,13 @@ export default function Employees() {
               {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
                 <button
                   type="button"
-                  onClick={handleOpenLeaveRequests}
+                  onClick={handleOpenRequests}
                   className="btn btn-sm btn-outline-warning rounded-pill"
-                  title="Review leave requests"
+                  title="Review requests"
                 >
-                  Leave Requests
-                  {leaveRequests.filter(r => r.status === 'pending').length > 0 && (
-                    <span className="badge bg-danger ms-1">{leaveRequests.filter(r => r.status === 'pending').length}</span>
+                  Requests
+                  {allRequests.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="badge bg-danger ms-1">{allRequests.filter(r => r.status === 'pending').length}</span>
                   )}
                 </button>
               )}
@@ -1190,25 +1245,46 @@ export default function Employees() {
         </div>
       </Modal>
 
-      {/* Leave Requests Modal */}
+      {/* Requests Modal */}
       <Modal
-        isOpen={showLeaveRequestsModal}
-        onClose={() => setShowLeaveRequestsModal(false)}
-        title={currentUser?.role === 'admin' ? 'Leave Requests (All)' : 'Leave Requests (Your Team)'}
+        isOpen={showRequestsModal}
+        onClose={() => setShowRequestsModal(false)}
+        title={currentUser?.role === 'admin' ? 'Requests (All)' : 'Requests (Your Team)'}
         noPadding={true}
       >
         <div className="d-flex flex-column h-100">
-          <div className="flex-1 overflow-auto p-3" style={{ maxHeight: 'calc(80vh - 120px)' }}>
-            {leaveRequestsLoading ? (
+          {/* Type filter pills */}
+          <div className="px-3 pt-3 pb-2 border-bottom d-flex flex-wrap gap-1">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'leave_vacation', label: 'Leave (Vacation)' },
+              { key: 'leave_sick', label: 'Leave (Sick)' },
+              { key: 'onboarding', label: 'Onboarding' },
+              { key: 'offboarding', label: 'Offboarding' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? 'btn-warning' : 'btn-outline-secondary'}`}
+                onClick={() => {
+                  setRequestTypeFilter(key);
+                  loadRequests(key);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 overflow-auto p-3" style={{ maxHeight: 'calc(80vh - 170px)' }}>
+            {requestsLoading ? (
               <div className="text-center py-4">
                 <div className="spinner-border text-primary" role="status" />
               </div>
-            ) : leaveRequests.length === 0 ? (
-              <p className="text-muted text-center py-4">No leave requests found.</p>
+            ) : allRequests.length === 0 ? (
+              <p className="text-muted text-center py-4">No requests found.</p>
             ) : (
               <div className="d-flex flex-column gap-2">
                 {['pending', 'approved', 'denied'].map(statusGroup => {
-                  const grouped = leaveRequests.filter(r => r.status === statusGroup);
+                  const grouped = allRequests.filter(r => r.status === statusGroup);
                   if (grouped.length === 0) return null;
                   return (
                     <div key={statusGroup}>
@@ -1224,9 +1300,8 @@ export default function Employees() {
                                 <div>
                                   <div className="fw-semibold">{emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown Employee'}</div>
                                   <div className="small text-muted">
-                                    <span className="badge bg-secondary me-1">{req.leave_type}</span>
-                                    {req.start_date} → {req.end_date}
-                                    {req.days_requested && ` (${req.days_requested} days)`}
+                                    <span className="badge bg-secondary me-1">{req._typeLabel}</span>
+                                    {req._dateInfo}
                                   </div>
                                   {req.notes && <div className="small text-muted fst-italic">{req.notes}</div>}
                                 </div>
@@ -1234,13 +1309,13 @@ export default function Employees() {
                                   <div className="d-flex gap-1">
                                     <button
                                       className="btn btn-sm btn-success"
-                                      onClick={() => handleLeaveAction(req.id, 'approved')}
+                                      onClick={() => handleRequestAction(req, 'approved')}
                                     >
                                       Approve
                                     </button>
                                     <button
                                       className="btn btn-sm btn-danger"
-                                      onClick={() => handleLeaveAction(req.id, 'denied')}
+                                      onClick={() => handleRequestAction(req, 'denied')}
                                     >
                                       Deny
                                     </button>
@@ -1263,7 +1338,7 @@ export default function Employees() {
             )}
           </div>
           <div className="border-top p-3">
-            <button className="btn btn-secondary" onClick={() => setShowLeaveRequestsModal(false)}>Close</button>
+            <button className="btn btn-secondary" onClick={() => setShowRequestsModal(false)}>Close</button>
           </div>
         </div>
       </Modal>

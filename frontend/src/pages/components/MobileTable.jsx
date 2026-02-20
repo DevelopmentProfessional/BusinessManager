@@ -142,7 +142,7 @@ export default function MobileTable({
       </div>
 
       {/* Table footer controls - fixed at bottom, does not scroll */}
-      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
+      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
           {columns.map((column) => (
             <div key={column.key} className="min-w-0">
@@ -162,7 +162,7 @@ export default function MobileTable({
                     placeholder={`Search ${column.title.toLowerCase()}...`}
                     value={searchTerms[column.key] || ''}
                     onChange={(e) => handleSearch(column.key, e.target.value)}
-                    className="w-full pl-8 pr-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="app-search-input w-full pl-8 pr-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     autoFocus
                   />
                   <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-4 w-4 text-gray-400" />

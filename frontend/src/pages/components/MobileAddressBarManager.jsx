@@ -8,6 +8,68 @@ export default function MobileAddressBarManager() {
   const isAuthenticated = useStore((state) => state.isAuthenticated);
 
   useEffect(() => {
+    const root = document.documentElement;
+    let focusActive = false;
+
+    const updateKeyboardOffset = () => {
+      if (!focusActive) {
+        root.style.setProperty('--keyboard-offset', '0px');
+        root.classList.remove('keyboard-open');
+        return;
+      }
+
+      const viewport = window.visualViewport;
+      const viewportHeight = viewport?.height || window.innerHeight;
+      const offsetTop = viewport?.offsetTop || 0;
+      const offset = Math.max(0, Math.round(window.innerHeight - viewportHeight - offsetTop));
+
+      root.style.setProperty('--keyboard-offset', `${offset}px`);
+      root.classList.toggle('keyboard-open', offset > 0);
+    };
+
+    const onFocusIn = (event) => {
+      const target = event.target;
+      if (target && target.classList?.contains('app-search-input')) {
+        focusActive = true;
+        root.classList.add('search-focus');
+        updateKeyboardOffset();
+        window.setTimeout(updateKeyboardOffset, 0);
+      }
+    };
+
+    const onFocusOut = (event) => {
+      const target = event.target;
+      if (target && target.classList?.contains('app-search-input')) {
+        focusActive = false;
+        root.classList.remove('search-focus');
+        updateKeyboardOffset();
+      }
+    };
+
+    const onViewportChange = () => {
+      if (focusActive) {
+        updateKeyboardOffset();
+      }
+    };
+
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    window.addEventListener('resize', onViewportChange, { passive: true });
+    window.visualViewport?.addEventListener('resize', onViewportChange, { passive: true });
+    window.visualViewport?.addEventListener('scroll', onViewportChange, { passive: true });
+
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+      window.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('scroll', onViewportChange);
+      root.style.setProperty('--keyboard-offset', '0px');
+      root.classList.remove('keyboard-open', 'search-focus');
+    };
+  }, []);
+
+  useEffect(() => {
     const shouldHideAddressBar = isAuthenticated() && location.pathname !== '/login';
     const root = document.documentElement;
 
