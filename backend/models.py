@@ -1028,6 +1028,7 @@ class TaskLinkRead(SQLModel):
 class LeaveRequest(BaseModel, table=True):
     __tablename__ = "leave_request"
     user_id: UUID = Field(foreign_key="user.id", index=True)
+    supervisor_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
     leave_type: str  # "vacation" or "sick"
     start_date: str  # ISO date string YYYY-MM-DD
     end_date: str    # ISO date string YYYY-MM-DD
@@ -1039,6 +1040,7 @@ class LeaveRequest(BaseModel, table=True):
 class LeaveRequestRead(SQLModel):
     id: UUID
     user_id: UUID
+    supervisor_id: Optional[UUID] = None
     leave_type: str
     start_date: str
     end_date: str
@@ -1066,3 +1068,72 @@ class InsurancePlanRead(SQLModel):
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# Sale transaction models
+class SaleTransaction(BaseModel, table=True):
+    __tablename__ = "sale_transaction"
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    employee_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    subtotal: float = Field(default=0)
+    tax_amount: float = Field(default=0)
+    total: float = Field(default=0)
+    payment_method: str = Field(default="cash")  # "card" or "cash"
+
+
+class SaleTransactionItem(BaseModel, table=True):
+    __tablename__ = "sale_transaction_item"
+    sale_transaction_id: UUID = Field(foreign_key="sale_transaction.id", index=True)
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str  # "product" or "service"
+    item_name: str   # snapshot of name at time of sale
+    unit_price: float = Field(default=0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0)
+
+
+class SaleTransactionRead(SQLModel):
+    id: UUID
+    client_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    subtotal: float
+    tax_amount: float
+    total: float
+    payment_method: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SaleTransactionCreate(SQLModel):
+    client_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    subtotal: float = 0
+    tax_amount: float = 0
+    total: float = 0
+    payment_method: str = "cash"
+
+
+class SaleTransactionItemRead(SQLModel):
+    id: UUID
+    sale_transaction_id: UUID
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SaleTransactionItemCreate(SQLModel):
+    sale_transaction_id: UUID
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float = 0
+    quantity: int = 1
+    line_total: float = 0

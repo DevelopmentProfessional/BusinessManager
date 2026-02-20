@@ -619,6 +619,8 @@ export const documentCategoriesAPI = {
 };
 
 export const leaveRequestsAPI = {
+  getAll: () => api.get('/isud/leave_request'),
+  getBySupervisor: (supervisorId) => api.get(`/isud/leave_request?supervisor_id=${supervisorId}`),
   getByUser: (userId, leaveType) => {
     const params = leaveType
       ? `/isud/leave_request?user_id=${userId}&leave_type=${leaveType}`
@@ -628,6 +630,17 @@ export const leaveRequestsAPI = {
   create: (data) => api.post('/isud/leave_request', data),
   update: (id, data) => api.put(`/isud/leave_request/${id}`, data),
   delete: (id) => api.delete(`/isud/leave_request/${id}`),
+  action: (id, action) => api.put(`/leave-requests/${id}/action`, { action }),
+};
+
+export const saleTransactionsAPI = {
+  getAll: () => getCachedOrFetch('sale-transactions', () => api.get('/isud/sale_transaction')),
+  create: (data) => {
+    clearCache('sale-transactions');
+    return api.post('/isud/sale_transaction', data);
+  },
+  createItem: (data) => api.post('/isud/sale_transaction_item', data),
+  getItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
 };
 
 export const insurancePlansAPI = {

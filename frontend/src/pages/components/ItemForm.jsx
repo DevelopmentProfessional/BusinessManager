@@ -4,6 +4,7 @@ import BarcodeScanner from './BarcodeScanner';
 import ActionFooter from './ActionFooter';
 import IconButton from './IconButton';
 import cacheService from '../../services/cacheService';
+import { servicesAPI } from '../../services/api';
 
 export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
   const [formData, setFormData] = useState({
@@ -15,11 +16,13 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     type: 'PRODUCT',
     image_url: '',
     location: '',
+    service_id: '',
   });
   const [initialQuantity, setInitialQuantity] = useState('0');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
   const [availableLocations, setAvailableLocations] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
   
   useEffect(() => {
     if (item) {
@@ -36,6 +39,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
           : 'PRODUCT'),
         image_url: item.image_url || '',
         location: item.location || '',
+        service_id: item.service_id || '',
       });
     } else if (initialSku) {
       setFormData(prev => ({ ...prev, sku: initialSku }));
@@ -45,6 +49,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
   // Derive locations from cached inventory data (no extra API call)
   useEffect(() => {
     setAvailableLocations(cacheService.getLocations());
+    // Load services for the service_id dropdown
+    servicesAPI.getAll().then(res => {
+      const data = res?.data ?? res;
+      if (Array.isArray(data)) setAvailableServices(data);
+    }).catch(() => {});
   }, []);
 
   const handleChange = (e) => {
@@ -99,6 +108,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       type,
       image_url: image_url || undefined,
       location: (location && location !== '[NEW]') ? location : undefined,
+      service_id: formData.service_id || undefined,
     };
     const qty = parseInt(String(initialQuantity || '0'), 10);
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
@@ -412,6 +422,27 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                   placeholder="Enter new location"
                 />
                 <label htmlFor="new_location">New Location</label>
+              </div>
+            )}
+
+            {/* Linked Service - only for RESOURCE or ASSET types */}
+            {(formData.type === 'RESOURCE' || formData.type === 'ASSET') && (
+              <div className="form-floating mb-2">
+                <select
+                  id="service_id"
+                  name="service_id"
+                  value={formData.service_id}
+                  onChange={handleChange}
+                  className="form-select form-select-sm"
+                >
+                  <option value="">No linked service</option>
+                  {availableServices.map(service => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="service_id">Linked Service (optional)</label>
               </div>
             )}
           </div>

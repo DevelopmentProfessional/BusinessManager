@@ -24,6 +24,7 @@ const DocumentEditor = lazy(() => import('./pages/DocumentEditor'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Tasks = lazy(() => import('./pages/Tasks'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -206,6 +207,13 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Settings />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/tasks" element={
+            <ProtectedRoute>
+              <Layout>
+                <Tasks />
               </Layout>
             </ProtectedRoute>
           } />

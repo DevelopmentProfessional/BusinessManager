@@ -12,9 +12,14 @@ import {
   TableCellsIcon,
   DocumentTextIcon,
   ChevronDownIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ShieldCheckIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { settingsAPI, schemaAPI } from '../services/api';
+import { settingsAPI, schemaAPI, insurancePlansAPI } from '../services/api';
 import DatabaseConnectionManager from './components/DatabaseConnectionManager';
 import useBranding from '../services/useBranding';
 
@@ -56,6 +61,12 @@ export default function Settings() {
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
+
+  // Insurance Plans state
+  const [insurancePlans, setInsurancePlans] = useState([]);
+  const [insurancePlansLoading, setInsurancePlansLoading] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [newPlan, setNewPlan] = useState({ name: '', description: '', is_active: true });
 
   // Accordion state for General settings sections
   const [openAccordions, setOpenAccordions] = useState({
@@ -374,10 +385,68 @@ export default function Settings() {
     }
   };
 
+  const loadInsurancePlans = async () => {
+    setInsurancePlansLoading(true);
+    try {
+      const res = await insurancePlansAPI.getAll();
+      setInsurancePlans(res?.data ?? res ?? []);
+    } catch (err) {
+      setError('Failed to load insurance plans');
+    } finally {
+      setInsurancePlansLoading(false);
+    }
+  };
+
+  const handleInsurancePlanSave = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingPlan?.id) {
+        const res = await insurancePlansAPI.update(editingPlan.id, editingPlan);
+        setInsurancePlans(prev => prev.map(p => p.id === editingPlan.id ? (res?.data ?? res) : p));
+        setEditingPlan(null);
+      } else {
+        const res = await insurancePlansAPI.create(newPlan);
+        setInsurancePlans(prev => [...prev, res?.data ?? res]);
+        setNewPlan({ name: '', description: '', is_active: true });
+      }
+      setSuccess('Insurance plan saved');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to save plan');
+    }
+  };
+
+  const handleInsurancePlanDelete = async (id) => {
+    if (!window.confirm('Delete this insurance plan?')) return;
+    try {
+      await insurancePlansAPI.delete(id);
+      setInsurancePlans(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      setError('Failed to delete plan');
+    }
+  };
+
+  const handleInsurancePlanToggle = async (plan) => {
+    try {
+      const res = await insurancePlansAPI.update(plan.id, { is_active: !plan.is_active });
+      setInsurancePlans(prev => prev.map(p => p.id === plan.id ? (res?.data ?? res) : p));
+    } catch (err) {
+      setError('Failed to update plan');
+    }
+  };
+
+  // Load insurance plans when tab becomes active
+  useEffect(() => {
+    if (activeTab === 'insurance' && insurancePlans.length === 0) {
+      loadInsurancePlans();
+    }
+  }, [activeTab]);
+
   const tabs = [
     { id: 'schedule', name: 'Schedule', icon: ClockIcon },
     { id: 'general', name: 'General', icon: CogIcon },
     { id: 'database', name: 'Database', icon: CircleStackIcon },
+    { id: 'insurance', name: 'Insurance', icon: ShieldCheckIcon },
   ];
 
   return (
@@ -1007,6 +1076,121 @@ export default function Settings() {
                     <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0" />
                     <span className="text-sm">{error}</span>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Insurance Plans */}
+          {activeTab === 'insurance' && (
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <ShieldCheckIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                Insurance Plans
+              </h2>
+
+              {success && (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-300 text-sm">
+                  {success}
+                </div>
+              )}
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-800 dark:text-red-300 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Add new plan form */}
+              <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  {editingPlan ? 'Edit Plan' : 'Add New Plan'}
+                </h3>
+                <form onSubmit={handleInsurancePlanSave} className="flex flex-col gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="form-floating">
+                      <input
+                        type="text"
+                        id="planName"
+                        className="form-control form-control-sm"
+                        placeholder="Plan name"
+                        value={editingPlan ? editingPlan.name : newPlan.name}
+                        onChange={e => editingPlan
+                          ? setEditingPlan(prev => ({ ...prev, name: e.target.value }))
+                          : setNewPlan(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                      />
+                      <label htmlFor="planName">Plan Name</label>
+                    </div>
+                    <div className="form-floating">
+                      <input
+                        type="text"
+                        id="planDescription"
+                        className="form-control form-control-sm"
+                        placeholder="Description"
+                        value={editingPlan ? (editingPlan.description || '') : newPlan.description}
+                        onChange={e => editingPlan
+                          ? setEditingPlan(prev => ({ ...prev, description: e.target.value }))
+                          : setNewPlan(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                      <label htmlFor="planDescription">Description (optional)</label>
+                    </div>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button type="submit" className="btn btn-sm btn-primary d-flex align-items-center gap-1">
+                      <PlusIcon style={{ width: 14, height: 14 }} />
+                      {editingPlan ? 'Update Plan' : 'Add Plan'}
+                    </button>
+                    {editingPlan && (
+                      <button type="button" className="btn btn-sm btn-secondary d-flex align-items-center gap-1" onClick={() => setEditingPlan(null)}>
+                        <XMarkIcon style={{ width: 14, height: 14 }} />
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Plans list */}
+              {insurancePlansLoading ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border text-primary" role="status" />
+                </div>
+              ) : insurancePlans.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
+                  No insurance plans yet. Add one above.
+                </p>
+              ) : (
+                <div className="d-flex flex-column gap-2">
+                  {insurancePlans.map(plan => (
+                    <div key={plan.id} className={`d-flex align-items-center justify-content-between p-3 border rounded-lg ${plan.is_active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}>
+                      <div>
+                        <div className="fw-semibold text-gray-900 dark:text-white d-flex align-items-center gap-2">
+                          {plan.name}
+                          <span className={`badge ${plan.is_active ? 'bg-success' : 'bg-secondary'} text-white`}>
+                            {plan.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        {plan.description && (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{plan.description}</div>
+                        )}
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button
+                          className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
+                          title={plan.is_active ? 'Deactivate' : 'Activate'}
+                          onClick={() => handleInsurancePlanToggle(plan)}
+                        >
+                          {plan.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setEditingPlan({ ...plan })}>
+                          <PencilIcon style={{ width: 14, height: 14 }} />
+                        </button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleInsurancePlanDelete(plan.id)}>
+                          <TrashIcon style={{ width: 14, height: 14 }} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

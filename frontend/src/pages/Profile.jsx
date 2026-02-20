@@ -158,8 +158,27 @@ const Profile = () => {
         return;
       }
       const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+      // Validate against remaining days
+      if (leaveModalType === 'vacation') {
+        const remaining = Math.max(0, (user.vacation_days ?? 0) - (user.vacation_days_used ?? 0));
+        if (daysRequested > remaining) {
+          setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
+          setLeaveSubmitting(false);
+          return;
+        }
+      } else if (leaveModalType === 'sick') {
+        const remaining = Math.max(0, (user.sick_days ?? 0) - (user.sick_days_used ?? 0));
+        if (daysRequested > remaining) {
+          setLeaveError(`You only have ${remaining} sick day(s) remaining.`);
+          setLeaveSubmitting(false);
+          return;
+        }
+      }
+
       await leaveRequestsAPI.create({
         user_id: user.id,
+        supervisor_id: user.reports_to || null,
         leave_type: leaveModalType,
         start_date: leaveForm.start_date,
         end_date: leaveForm.end_date,
