@@ -716,23 +716,23 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={toggleDarkMode}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
                   title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
                   <span style={{ fontSize: '1.5rem' }}>{isDarkMode ? '🌚' : '🌞'}</span>
-                  <span className="small fw-medium">{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
+                  <span className="small fw-medium text-body-emphasis">{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
                 </button>
                 <div className="position-relative">
                   <button
                     type="button"
                     onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
-                    className="btn d-flex align-items-center gap-2 p-0 border-0"
+                    className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
                     title="Calendar color"
                     aria-expanded={colorPickerOpen}
                     disabled={colorUpdating}
                   >
                     <span style={{ fontSize: '1.5rem' }}>🎨</span>
-                    <span className="small fw-medium">Calendar Color</span>
+                    <span className="small fw-medium text-body-emphasis">Calendar Color</span>
                   </button>
                   {colorPickerOpen && (
                     <div
@@ -770,28 +770,28 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={() => setSignatureModalOpen(true)}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
                   title="Manage signature"
                 >
                   <span style={{ fontSize: '1.5rem' }}>📝</span>
-                  <span className="small fw-medium">Signature</span>
+                  <span className="small fw-medium text-body-emphasis">Signature</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleAddToHomeScreen}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
                   title="Add app to home screen"
                 >
                   <span style={{ fontSize: '1.5rem' }}>🏠</span>
-                  <span className="small fw-medium">Download</span>
+                  <span className="small fw-medium text-body-emphasis">Download</span>
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
                   title="Log out"
                 >
                   <span style={{ fontSize: '1.5rem' }}>🚪</span>
-                  <span className="small fw-medium">Logout</span>
+                  <span className="small fw-medium text-body-emphasis">Logout</span>
                 </button>
               </div>
               {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
