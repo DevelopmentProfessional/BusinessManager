@@ -503,13 +503,13 @@ const Profile = () => {
 
               {/* ── Vacation Days nested accordion ── */}
               <div className="border rounded mb-2" style={{ position: 'relative' }}>
-                <div
-                  className="d-flex justify-content-between align-items-center"
+                <div 
+                  className="d-flex justify-content-between align-items-center py-2 px-3  "
                   onClick={() => setOpenVacationAccordion(v => !v)}
                   style={{ cursor: 'pointer', userSelect: 'none' }}
                 >
                   <span className="fw-semibold small">Vacation Days</span>
-                  <span className="fw-bold text-primary small">{vacTotal} days</span>
+                  <span className="fw-bold text-primary small">{vacUsed} / {vacTotal} used</span>
                 </div>
 
                 {openVacationAccordion && (
@@ -532,7 +532,7 @@ const Profile = () => {
                       marginTop: '1px'
                     }}
                   >
-                    <div className="card rounded-0 border-0 shadow-sm">
+                    <div className="card rounded-0 border-0 shadow-sm px-0">
                       <div className="card-body p-0 d-flex flex-column">
                       
                         {/* Scrollable table area */}
@@ -572,8 +572,12 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="card-footer py-2 px-3 small text-muted">
+                        <div className="progress mb-1" style={{ height: '6px' }}>
+                          <div className="progress-bar bg-primary" style={{
+                            width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`
+                          }} />
+                        </div>
                         {vacUsed} used &bull; {vacRemaining} remaining of {vacTotal} total
-                          {/* + button row */}
                         <div className="d-flex justify-content-end px-2 pt-2">
                           <button
                             type="button"
@@ -593,12 +597,12 @@ const Profile = () => {
               {/* ── Sick Days nested accordion ── */}
               <div className="border rounded" style={{ position: 'relative' }}>
                 <div
-                  className="d-flex justify-content-between align-items-center"
+                  className="d-flex justify-content-between align-items-center py-2 px-3"
                   onClick={() => setOpenSickAccordion(v => !v)}
                   style={{ cursor: 'pointer', userSelect: 'none' }}
                 >
                   <span className="fw-semibold small">Sick Days</span>
-                  <span className="fw-bold text-warning small">{sickTotal} days</span>
+                  <span className="fw-bold text-warning small">{sickUsed} / {sickTotal} used</span>
                 </div>
 
                 {openSickAccordion && (
@@ -621,7 +625,7 @@ const Profile = () => {
                       marginTop: '1px'
                     }}
                   >
-                    <div className="card rounded-0 border-0 shadow-sm">
+                    <div className="card rounded-0 border-0 shadow-sm px-0">
                       <div className="card-body p-0 d-flex flex-column">
                        
                         {/* Scrollable table area */}
@@ -661,9 +665,13 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="card-footer py-2 px-3 small text-muted">
+                        <div className="progress mb-1" style={{ height: '6px' }}>
+                          <div className="progress-bar bg-warning" style={{
+                            width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`
+                          }} />
+                        </div>
                         {sickUsed} used &bull; {sickRemaining} remaining of {sickTotal} total
-                   {/* + button row */}
-                        <div className="d-flex justify-content-end ">
+                        <div className="d-flex justify-content-end">
                           <button
                             type="button"
                             className="btn btn-link p-0 text-warning"
@@ -673,7 +681,6 @@ const Profile = () => {
                             <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
                           </button>
                         </div>
-                  
                       </div>
                     </div>
                   </div>
@@ -709,21 +716,23 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={toggleDarkMode}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0"
                   title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
                   <span style={{ fontSize: '1.5rem' }}>{isDarkMode ? '🌚' : '🌞'}</span>
+                  <span className="small fw-medium">{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
                 </button>
                 <div className="position-relative">
                   <button
                     type="button"
                     onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
-                    className="btn d-flex align-items-center gap-1 p-0 border-0"
+                    className="btn d-flex align-items-center gap-2 p-0 border-0"
                     title="Calendar color"
                     aria-expanded={colorPickerOpen}
                     disabled={colorUpdating}
                   >
                     <span style={{ fontSize: '1.5rem' }}>🎨</span>
+                    <span className="small fw-medium">Calendar Color</span>
                   </button>
                   {colorPickerOpen && (
                     <div
@@ -761,25 +770,28 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={() => setSignatureModalOpen(true)}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0"
                   title="Manage signature"
                 >
                   <span style={{ fontSize: '1.5rem' }}>📝</span>
+                  <span className="small fw-medium">Signature</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleAddToHomeScreen}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0"
                   title="Add app to home screen"
                 >
                   <span style={{ fontSize: '1.5rem' }}>🏠</span>
+                  <span className="small fw-medium">Download</span>
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="btn d-flex align-items-center gap-1 p-0 border-0"
+                  className="btn d-flex align-items-center gap-2 p-0 border-0"
                   title="Log out"
                 >
                   <span style={{ fontSize: '1.5rem' }}>🚪</span>
+                  <span className="small fw-medium">Logout</span>
                 </button>
               </div>
               {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
