@@ -8,7 +8,7 @@ import {
   ChevronDownIcon, ChevronUpIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { servicesAPI, clientsAPI, inventoryAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI } from '../services/api';
 import PermissionGate from './components/PermissionGate';
 import ItemDetailModal from './components/ItemDetailModal';
 import CheckoutModal from './components/CheckoutModal';
@@ -228,7 +228,7 @@ export default function Sales() {
   const {
     services, setServices,
     loading, setLoading, error, setError, clearError,
-    hasPermission, openAddClientModal
+    hasPermission, openAddClientModal, user
   } = useStore();
 
   // Check permissions at page level
@@ -381,20 +381,54 @@ export default function Sales() {
     setShowCheckout(true);
   };
 
-  const processPayment = (paymentMethod) => {
+  const processPayment = async (paymentMethod) => {
+    const tax = cartTotal * 0.08;
+    const total = cartTotal + tax;
+
+    // Build local sale record for immediate UI update
     const sale = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       client: selectedClient ? { name: selectedClient.name, email: selectedClient.email } : null,
       items: cart.map(item => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
       subtotal: cartTotal,
-      tax: cartTotal * 0.08,
-      total: cartTotal * 1.08,
+      tax,
+      total,
       paymentMethod,
     };
-    const updated = [sale, ...salesHistory].slice(0, 50); // Keep last 50
+    const updated = [sale, ...salesHistory].slice(0, 50);
     setSalesHistory(updated);
     try { localStorage.setItem('salesHistory', JSON.stringify(updated)); } catch {}
+
+    // Persist to database
+    try {
+      const txData = {
+        client_id: selectedClient?.id || null,
+        employee_id: user?.id || null,
+        subtotal: cartTotal,
+        tax_amount: tax,
+        total,
+        payment_method: paymentMethod,
+      };
+      const txResponse = await saleTransactionsAPI.create(txData);
+      const txId = txResponse?.data?.id || txResponse?.id;
+      if (txId) {
+        await Promise.all(cart.map(item =>
+          saleTransactionsAPI.createItem({
+            sale_transaction_id: txId,
+            item_id: item.id || null,
+            item_type: item.itemType || 'product',
+            item_name: item.name,
+            unit_price: item.price,
+            quantity: item.quantity,
+            line_total: item.price * item.quantity,
+          })
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to persist sale transaction:', err);
+      // Continue — local sale record is already saved
+    }
 
     setCart([]);
     setSelectedClient(null);

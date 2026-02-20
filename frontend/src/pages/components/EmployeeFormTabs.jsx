@@ -47,6 +47,7 @@ export default function EmployeeFormTabs({
     hire_date: new Date().toISOString().split('T')[0],
     is_active: true,
     reports_to: '',
+    supervisor: '',
     role_id: '',
     iod_number: '',
     location: '',
@@ -125,6 +126,7 @@ export default function EmployeeFormTabs({
         hire_date: employee.hire_date ? employee.hire_date.split('T')[0] : new Date().toISOString().split('T')[0],
         is_active: employee.is_active !== undefined ? employee.is_active : true,
         reports_to: employee.reports_to || '',
+        supervisor: employee.supervisor || '',
         role_id: employee.role_id || '',
         iod_number: employee.iod_number || '',
         location: employee.location || '',
@@ -190,8 +192,23 @@ export default function EmployeeFormTabs({
     }
   };
 
-  // Filter out current employee from manager options
-  const managerOptions = employeesList.filter(e => e.id !== employee?.id);
+  // Filter out current employee from potential supervisors.
+  // Also enforce one-supervisoree constraint: exclude employees who already have someone
+  // else reporting to them (they can't take on another supervisee).
+  const managerOptions = useMemo(() => {
+    // Build a set of employee IDs that already have at least one supervisee,
+    // but exclude any supervisor who is ALREADY assigned to the current employee.
+    const alreadySupervisingOther = new Set(
+      employeesList
+        .filter(e => e.reports_to && e.id !== employee?.id && e.reports_to !== employee?.id)
+        .map(e => e.reports_to)
+    );
+    return employeesList.filter(e => {
+      if (e.id === employee?.id) return false; // can't supervise yourself
+      if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
+      return true;
+    });
+  }, [employeesList, employee?.id]);
 
   // Direct reports for this employee
   const directReports = useMemo(() => {
@@ -201,10 +218,21 @@ export default function EmployeeFormTabs({
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    if (name === 'reports_to') {
+      // Auto-sync supervisor text field with the selected person's name
+      const selected = employeesList.find(emp => emp.id === value);
+      const supervisorName = selected ? `${selected.first_name} ${selected.last_name}` : '';
+      setFormData(prev => ({
+        ...prev,
+        reports_to: value,
+        supervisor: supervisorName,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    }
   };
 
   const handleSubmit = (e) => {

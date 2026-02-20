@@ -30,11 +30,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections"}:
-        from routers import auth, isud, settings, database_connections  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests"}:
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests  # type: ignore
     else:
         raise
 
@@ -191,6 +191,9 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
 app.include_router(database_connections.router, prefix="/api/v1", tags=["database-connections"])
+app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
+app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
+app.include_router(leave_requests.router, prefix="/api/v1", tags=["leave-requests"])
 
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).

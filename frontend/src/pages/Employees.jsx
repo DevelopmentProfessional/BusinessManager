@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { employeesAPI, adminAPI, rolesAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI } from '../services/api';
 import Modal from './components/Modal';
 import EmployeeFormTabs from './components/EmployeeFormTabs';
 import CustomDropdown from './components/CustomDropdown';
@@ -31,6 +31,9 @@ export default function Employees() {
   const [systemInfo, setSystemInfo] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [showRolesModal, setShowRolesModal] = useState(false);
+  const [showLeaveRequestsModal, setShowLeaveRequestsModal] = useState(false);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [newRolePermission, setNewRolePermission] = useState({ page: '', permission: '' });
@@ -516,6 +519,40 @@ export default function Employees() {
     }
   };
 
+  const loadLeaveRequests = async () => {
+    setLeaveRequestsLoading(true);
+    try {
+      let response;
+      const isAdmin = currentUser?.role === 'admin';
+      if (isAdmin) {
+        // Admins see all requests that have no supervisor (routed to admin) OR all requests
+        response = await leaveRequestsAPI.getAll();
+      } else {
+        // Supervisors only see requests routed to them
+        response = await leaveRequestsAPI.getBySupervisor(currentUser?.id);
+      }
+      setLeaveRequests(response?.data ?? response ?? []);
+    } catch (err) {
+      setError('Failed to load leave requests');
+    } finally {
+      setLeaveRequestsLoading(false);
+    }
+  };
+
+  const handleOpenLeaveRequests = () => {
+    setShowLeaveRequestsModal(true);
+    loadLeaveRequests();
+  };
+
+  const handleLeaveAction = async (requestId, newStatus) => {
+    try {
+      await leaveRequestsAPI.action(requestId, newStatus);
+      setLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
+    } catch (err) {
+      setError(`Failed to ${newStatus === 'approved' ? 'approve' : 'deny'} request`);
+    }
+  };
+
   const pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
   const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
@@ -657,6 +694,19 @@ export default function Employees() {
                   <PlusIcon className="h-5 w-5" />
                 </button>
               </PermissionGate>
+              {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
+                <button
+                  type="button"
+                  onClick={handleOpenLeaveRequests}
+                  className="btn btn-sm btn-outline-warning rounded-pill"
+                  title="Review leave requests"
+                >
+                  Leave Requests
+                  {leaveRequests.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="badge bg-danger ms-1">{leaveRequests.filter(r => r.status === 'pending').length}</span>
+                  )}
+                </button>
+              )}
 
               <select
                 value={roleFilter}
@@ -1136,6 +1186,84 @@ export default function Employees() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Leave Requests Modal */}
+      <Modal
+        isOpen={showLeaveRequestsModal}
+        onClose={() => setShowLeaveRequestsModal(false)}
+        title={currentUser?.role === 'admin' ? 'Leave Requests (All)' : 'Leave Requests (Your Team)'}
+        noPadding={true}
+      >
+        <div className="d-flex flex-column h-100">
+          <div className="flex-1 overflow-auto p-3" style={{ maxHeight: 'calc(80vh - 120px)' }}>
+            {leaveRequestsLoading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border text-primary" role="status" />
+              </div>
+            ) : leaveRequests.length === 0 ? (
+              <p className="text-muted text-center py-4">No leave requests found.</p>
+            ) : (
+              <div className="d-flex flex-column gap-2">
+                {['pending', 'approved', 'denied'].map(statusGroup => {
+                  const grouped = leaveRequests.filter(r => r.status === statusGroup);
+                  if (grouped.length === 0) return null;
+                  return (
+                    <div key={statusGroup}>
+                      <h6 className={`text-capitalize mb-2 ${statusGroup === 'pending' ? 'text-warning' : statusGroup === 'approved' ? 'text-success' : 'text-danger'}`}>
+                        {statusGroup} ({grouped.length})
+                      </h6>
+                      {grouped.map(req => {
+                        const emp = employees.find(e => e.id === req.user_id);
+                        return (
+                          <div key={req.id} className="card mb-2">
+                            <div className="card-body py-2 px-3">
+                              <div className="d-flex justify-content-between align-items-start">
+                                <div>
+                                  <div className="fw-semibold">{emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown Employee'}</div>
+                                  <div className="small text-muted">
+                                    <span className="badge bg-secondary me-1">{req.leave_type}</span>
+                                    {req.start_date} → {req.end_date}
+                                    {req.days_requested && ` (${req.days_requested} days)`}
+                                  </div>
+                                  {req.notes && <div className="small text-muted fst-italic">{req.notes}</div>}
+                                </div>
+                                {req.status === 'pending' && (
+                                  <div className="d-flex gap-1">
+                                    <button
+                                      className="btn btn-sm btn-success"
+                                      onClick={() => handleLeaveAction(req.id, 'approved')}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => handleLeaveAction(req.id, 'denied')}
+                                    >
+                                      Deny
+                                    </button>
+                                  </div>
+                                )}
+                                {req.status !== 'pending' && (
+                                  <span className={`badge ${req.status === 'approved' ? 'bg-success' : 'bg-danger'}`}>
+                                    {req.status}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="border-top p-3">
+            <button className="btn btn-secondary" onClick={() => setShowLeaveRequestsModal(false)}>Close</button>
           </div>
         </div>
       </Modal>

@@ -171,6 +171,7 @@ def create_db_and_tables():
     _ensure_user_profile_picture_if_needed()
     _seed_user_colors_if_needed()
     _seed_insurance_plans_if_needed()
+    _ensure_leave_request_supervisor_id_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -814,3 +815,29 @@ def _seed_insurance_plans_if_needed():
                 "created_at": now,
             })
         print(f"✓ Seeded {len(default_plans)} insurance plans")
+
+
+def _ensure_leave_request_supervisor_id_if_needed():
+    """Ensure leave_request table has a supervisor_id column."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='leave_request'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('leave_request')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "supervisor_id" not in col_names:
+                conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id TEXT"))
+                print("✓ Added leave_request.supervisor_id (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='leave_request'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "supervisor_id" not in col_names:
+                conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id UUID"))
+                print("✓ Added leave_request.supervisor_id (PostgreSQL)")
