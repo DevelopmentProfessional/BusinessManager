@@ -267,7 +267,6 @@ export default function Sales() {
     } catch { return []; }
   });
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showHistoryFilters, setShowHistoryFilters] = useState(false);
   const [historyFilters, setHistoryFilters] = useState({
     showServices: true,
     showProducts: true,
@@ -605,7 +604,7 @@ export default function Sales() {
         </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pr-16 md:ml-64">
+      <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 w-100 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pr-16 md:ml-64">
         {/* Search Row */}
         <div className="mb-2">
           <div className="relative">
@@ -889,23 +888,86 @@ export default function Sales() {
 
       {/* Sales History Section (Placeholder) */}
       {showHistoryModal && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900">
-          <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClockIcon className="h-5 w-5 text-gray-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales History</h2>
-              <span className="text-sm text-gray-500 dark:text-gray-400">({filteredHistory.length})</span>
+        <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-white dark:bg-gray-900">
+          <div className="w-full md:w-72 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FunnelIcon className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Filters</span>
             </div>
-            <button
-              onClick={() => setShowHistoryModal(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="Close sales history"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
+                  aria-pressed={historyFilters.showServices}
+                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                    historyFilters.showServices
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  Services
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
+                  aria-pressed={historyFilters.showProducts}
+                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                    historyFilters.showProducts
+                      ? 'bg-secondary-600 text-white border-secondary-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  Products
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={historyFilters.minPrice}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
+                  placeholder="Min $"
+                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={historyFilters.maxPrice}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
+                  placeholder="Max $"
+                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={historyFilters.startDate}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+                <input
+                  type="date"
+                  value={historyFilters.endDate}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col">
+            <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ClockIcon className="h-5 w-5 text-gray-500" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales History</h2>
+                <span className="text-sm text-gray-500 dark:text-gray-400">({filteredHistory.length})</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
             {filteredHistory.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-6">
                 <ClockIcon className="h-12 w-12 text-gray-300 dark:text-gray-700 mb-3" />
@@ -939,75 +1001,9 @@ export default function Sales() {
                 ))}
               </div>
             )}
-          </div>
-
-          {showHistoryFilters && (
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
-                  aria-pressed={historyFilters.showServices}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
-                    historyFilters.showServices
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  Services
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
-                  aria-pressed={historyFilters.showProducts}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
-                    historyFilters.showProducts
-                      ? 'bg-secondary-600 text-white border-secondary-600'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  Products
-                </button>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={historyFilters.minPrice}
-                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
-                    placeholder="Min $"
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={historyFilters.maxPrice}
-                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
-                    placeholder="Max $"
-                    className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={historyFilters.startDate}
-                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                  />
-                  <input
-                    type="date"
-                    value={historyFilters.endDate}
-                    onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                  />
-                </div>
-              </div>
             </div>
-          )}
 
-          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="flex items-center justify-between">
+            <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowHistoryModal(false)}
@@ -1022,15 +1018,6 @@ export default function Sales() {
                   Clear Filters
                 </button>
               </div>
-              <button
-                onClick={() => setShowHistoryFilters((prev) => !prev)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white transition-colors"
-                aria-expanded={showHistoryFilters}
-              >
-                <FunnelIcon className="h-4 w-4" />
-                Filters
-                {showHistoryFilters ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronUpIcon className="h-4 w-4" />}
-              </button>
             </div>
           </div>
         </div>
