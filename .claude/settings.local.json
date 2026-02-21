@@ -38,7 +38,8 @@
       "Bash(pip show:*)",
       "Bash(pkill:*)",
       "Bash(git commit:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

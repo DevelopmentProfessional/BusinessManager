@@ -90,10 +90,9 @@ const Profile = () => {
   const [colorUpdating, setColorUpdating] = useState(false);
   const [colorMessage, setColorMessage] = useState('');
   const [openAccordion, setOpenAccordion] = useState('settings');
+  const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
 
   // Leave request state
-  const [openVacationAccordion, setOpenVacationAccordion] = useState(false);
-  const [openSickAccordion, setOpenSickAccordion] = useState(false);
   const [vacationRequests, setVacationRequests] = useState([]);
   const [sickRequests, setSickRequests] = useState([]);
   const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
@@ -103,9 +102,9 @@ const Profile = () => {
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveError, setLeaveError] = useState('');
 
-  // Load leave requests whenever benefits accordion opens
+  // Load leave requests whenever benefits accordion opens or Leave Management modal opens
   useEffect(() => {
-    if (openAccordion !== 'benefits' || !user?.id) return;
+    if ((openAccordion !== 'benefits' && !leaveManagementOpen) || !user?.id) return;
     let cancelled = false;
     const load = async () => {
       setLeaveRequestsLoading(true);
@@ -125,7 +124,7 @@ const Profile = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [openAccordion, user?.id]);
+  }, [openAccordion, leaveManagementOpen, user?.id]);
 
   const refreshLeaveRequests = async () => {
     if (!user?.id) return;
@@ -447,7 +446,7 @@ const Profile = () => {
                   <div className="fw-medium">{user.iod_number || 'Not set'}</div>
                 </div>
                 <div className="col-sm-6">
-                  <div className="text-muted small">Supervisor</div>
+                  <div className="text-muted small">Reports To</div>
                   <div className="fw-medium">{user.reports_to_name || user.reports_to || 'Not set'}</div>
                 </div>
                 <div className="col-sm-6">
@@ -501,59 +500,67 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* ── Vacation Days nested accordion ── */}
-              <div className="border rounded mb-2" style={{ position: 'relative' }}>
-                <div 
-                  className="d-flex justify-content-between align-items-center py-2 px-3  "
-                  onClick={() => setOpenVacationAccordion(v => !v)}
-                  style={{ cursor: 'pointer', userSelect: 'none' }}
-                >
-                  <span className="fw-semibold small">Vacation Days</span>
-                  <span className="fw-bold text-primary small">{vacUsed} / {vacTotal} used</span>
-                </div>
+              {/* Leave Management */}
+              <div className="border-top pt-3">
+                <h6 className="fw-semibold mb-3">Leave Management</h6>
+                
+                {leaveRequestsLoading ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Leave Summary */}
+                    <div className="row g-2 mb-3">
+                      <div className="col-6">
+                        <div className="bg-light rounded p-2 small">
+                          <div className="fw-semibold text-primary">Vacation Days</div>
+                          <div className="text-muted small mb-1">{vacUsed} / {vacTotal} used</div>
+                          <div className="progress" style={{ height: '4px' }}>
+                            <div className="progress-bar bg-primary" style={{
+                              width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`
+                            }} />
+                          </div>
+                          <div className="text-muted small mt-1">{vacRemaining} remaining</div>
+                        </div>
+                      </div>
+                      <div className="col-6">
+                        <div className="bg-light rounded p-2 small">
+                          <div className="fw-semibold text-warning">Sick Days</div>
+                          <div className="text-muted small mb-1">{sickUsed} / {sickTotal} used</div>
+                          <div className="progress" style={{ height: '4px' }}>
+                            <div className="progress-bar bg-warning" style={{
+                              width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`
+                            }} />
+                          </div>
+                          <div className="text-muted small mt-1">{sickRemaining} remaining</div>
+                        </div>
+                      </div>
+                    </div>
 
-                {openVacationAccordion && (
-                  <div 
-                    className="accordion-popup"
-                    style={{
-                      position: 'absolute',
-                      bottom: '100%',
-                      left: 0,
-                      right: 0,
-                      width: '100%',
-                      maxHeight: 'calc(100vh - 200px)',
-                      overflowY: 'auto',
-                      backgroundColor: 'var(--bs-card-bg, white)',
-                      borderRadius: 'var(--bs-border-radius, 0.375rem)',
-                      zIndex: 1000,
-                      padding: '0',
-                      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-                      border: '1px solid var(--bs-card-border-color, #dee2e6)',
-                      marginTop: '1px'
-                    }}
-                  >
-                    <div className="card rounded-0 border-0 shadow-sm px-0">
-                      <div className="card-body p-0 d-flex flex-column">
-                      
-                        {/* Scrollable table area */}
-                        <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
-                          {leaveRequestsLoading ? (
-                            <div className="text-center py-3">
-                              <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                            </div>
-                          ) : vacationRequests.length > 0 ? (
-                            <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
-                              <thead className="table-light sticky-top">
-                                <tr>
-                                  <th>From</th>
-                                  <th>To</th>
-                                  <th>Days</th>
-                                  <th>Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {vacationRequests.map(req => (
+                    {/* Pending Requests Table */}
+                    <div className="mb-3">
+                      <h6 className="small fw-semibold mb-2">Pending Requests</h6>
+                      {vacationRequests.filter(r => r.status === 'pending').length === 0 && sickRequests.filter(r => r.status === 'pending').length === 0 ? (
+                        <p className="text-muted small mb-0">No pending requests</p>
+                      ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                            <thead className="table-light">
+                              <tr>
+                                <th>Type</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Days</th>
+                                <th>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[...vacationRequests, ...sickRequests]
+                                .filter(r => r.status === 'pending')
+                                .map(req => (
                                   <tr key={req.id}>
+                                    <td>{req.type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
                                     <td>{req.start_date}</td>
                                     <td>{req.end_date}</td>
                                     <td>{req.days_requested ?? '—'}</td>
@@ -563,127 +570,24 @@ const Profile = () => {
                                       </span>
                                     </td>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          ) : (
-                            <p className="text-muted text-center small mb-0 py-2 px-3">No vacation requests yet.</p>
-                          )}
+                                ))
+                              }
+                            </tbody>
+                          </table>
                         </div>
-                      </div>
-                      <div className="card-footer py-2 px-3 small text-muted">
-                        <div className="progress mb-1" style={{ height: '6px' }}>
-                          <div className="progress-bar bg-primary" style={{
-                            width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`
-                          }} />
-                        </div>
-                        {vacUsed} used &bull; {vacRemaining} remaining of {vacTotal} total
-                        <div className="d-flex justify-content-end px-2 pt-2">
-                          <button
-                            type="button"
-                            className="btn btn-link p-0 text-primary"
-                            title="Request vacation"
-                            onClick={() => openLeaveModal('vacation')}
-                          >
-                            <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
-                          </button>
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
 
-              {/* ── Sick Days nested accordion ── */}
-              <div className="border rounded" style={{ position: 'relative' }}>
-                <div
-                  className="d-flex justify-content-between align-items-center py-2 px-3"
-                  onClick={() => setOpenSickAccordion(v => !v)}
-                  style={{ cursor: 'pointer', userSelect: 'none' }}
-                >
-                  <span className="fw-semibold small">Sick Days</span>
-                  <span className="fw-bold text-warning small">{sickUsed} / {sickTotal} used</span>
-                </div>
-
-                {openSickAccordion && (
-                  <div 
-                    className="accordion-popup"
-                    style={{
-                      position: 'absolute',
-                      bottom: '100%',
-                      left: 0,
-                      right: 0,
-                      width: '100%',
-                      maxHeight: 'calc(100vh - 200px)',
-                      overflowY: 'auto',
-                      backgroundColor: 'var(--bs-card-bg, white)',
-                      borderRadius: 'var(--bs-border-radius, 0.375rem)',
-                      zIndex: 1000,
-                      padding: '0',
-                      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-                      border: '1px solid var(--bs-card-border-color, #dee2e6)',
-                      marginTop: '1px'
-                    }}
-                  >
-                    <div className="card rounded-0 border-0 shadow-sm px-0">
-                      <div className="card-body p-0 d-flex flex-column">
-                       
-                        {/* Scrollable table area */}
-                        <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
-                          {leaveRequestsLoading ? (
-                            <div className="text-center py-3">
-                              <div className="spinner-border spinner-border-sm text-warning" role="status" />
-                            </div>
-                          ) : sickRequests.length > 0 ? (
-                            <table className="table table-sm table-hover mb-0 mx-0" style={{ fontSize: '0.8rem' }}>
-                              <thead className="table-light sticky-top">
-                                <tr>
-                                  <th>From</th>
-                                  <th>To</th>
-                                  <th>Days</th>
-                                  <th>Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {sickRequests.map(req => (
-                                  <tr key={req.id}>
-                                    <td>{req.start_date}</td>
-                                    <td>{req.end_date}</td>
-                                    <td>{req.days_requested ?? '—'}</td>
-                                    <td>
-                                      <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: '0.7rem' }}>
-                                        {req.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          ) : (
-                            <p className="text-muted text-center small mb-0 py-2 px-3">No sick day requests yet.</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="card-footer py-2 px-3 small text-muted">
-                        <div className="progress mb-1" style={{ height: '6px' }}>
-                          <div className="progress-bar bg-warning" style={{
-                            width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`
-                          }} />
-                        </div>
-                        {sickUsed} used &bull; {sickRemaining} remaining of {sickTotal} total
-                        <div className="d-flex justify-content-end">
-                          <button
-                            type="button"
-                            className="btn btn-link p-0 text-warning"
-                            title="Request sick leave"
-                            onClick={() => openLeaveModal('sick')}
-                          >
-                            <PlusCircleIcon style={{ width: '26px', height: '26px' }} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    {/* Action Button */}
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm w-100"
+                      onClick={() => openLeaveModal('vacation')}
+                    >
+                      <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: 'inline' }} />
+                      Request Leave
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -833,6 +737,128 @@ const Profile = () => {
               {dbError && <div className="small text-danger mt-1">{dbError}</div>}
             </div>
         )}
+
+      {/* Leave Management Panel */}
+      {leaveManagementOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '60px',
+            left: 0,
+            right: 0,
+            maxHeight: 'calc(100vh - 164px)',
+            overflowY: 'auto',
+            backgroundColor: 'var(--bs-card-bg, white)',
+            borderTop: '1px solid var(--bs-card-border-color, #dee2e6)',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+            zIndex: 50,
+            borderTopLeftRadius: 'var(--bs-border-radius, 0.375rem)',
+            borderTopRightRadius: 'var(--bs-border-radius, 0.375rem)',
+          }}
+          className="accordion-popup"
+        >
+          <div className="card border-0 rounded-0" style={{ minHeight: '200px' }}>
+            <div className="card-body">
+              <h6 className="card-title mb-3">Leave Management</h6>
+              
+              {leaveRequestsLoading ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                </div>
+              ) : (
+                <>
+                  {/* Leave Summary */}
+                  <div className="row g-2 mb-3">
+                    <div className="col-6">
+                      <div className="bg-light rounded p-2 small">
+                        <div className="fw-semibold text-primary">Vacation Days</div>
+                        <div className="text-muted small mb-1">{vacUsed} / {vacTotal} used</div>
+                        <div className="progress" style={{ height: '4px' }}>
+                          <div className="progress-bar bg-primary" style={{
+                            width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`
+                          }} />
+                        </div>
+                        <div className="text-muted small mt-1">{vacRemaining} remaining</div>
+                      </div>
+                    </div>
+                    <div className="col-6">
+                      <div className="bg-light rounded p-2 small">
+                        <div className="fw-semibold text-warning">Sick Days</div>
+                        <div className="text-muted small mb-1">{sickUsed} / {sickTotal} used</div>
+                        <div className="progress" style={{ height: '4px' }}>
+                          <div className="progress-bar bg-warning" style={{
+                            width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`
+                          }} />
+                        </div>
+                        <div className="text-muted small mt-1">{sickRemaining} remaining</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pending Requests Table */}
+                  <div className="mb-3">
+                    <h6 className="small fw-semibold mb-2">Pending Requests</h6>
+                    {vacationRequests.filter(r => r.status === 'pending').length === 0 && sickRequests.filter(r => r.status === 'pending').length === 0 ? (
+                      <p className="text-muted small mb-0">No pending requests</p>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>Type</th>
+                              <th>From</th>
+                              <th>To</th>
+                              <th>Days</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...vacationRequests, ...sickRequests]
+                              .filter(r => r.status === 'pending')
+                              .map(req => (
+                                <tr key={req.id}>
+                                  <td>{req.type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
+                                  <td>{req.start_date}</td>
+                                  <td>{req.end_date}</td>
+                                  <td>{req.days_requested ?? '—'}</td>
+                                  <td>
+                                    <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: '0.7rem' }}>
+                                      {req.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm flex-grow-1"
+                      onClick={() => openLeaveModal('vacation')}
+                    >
+                      <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: 'inline' }} />
+                      Request Leave
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => setLeaveManagementOpen(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Tabs */}
       <div
