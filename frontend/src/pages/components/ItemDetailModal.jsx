@@ -9,6 +9,8 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import { inventoryAPI } from '../../services/api';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
+import BarcodeScanner from './BarcodeScanner';
+import CameraCapture from './CameraCapture';
 
 /**
  * ItemDetailModal - Full screen modal for viewing/editing items
@@ -23,12 +25,19 @@ export default function ItemDetailModal({
   onUpdateInventory,
   onDelete,
   canDelete = false,
-  cartQuantity = 0
+  cartQuantity = 0,
+  existingSkus = []
 }) {
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [availableLocations, setAvailableLocations] = useState([]);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [imageError, setImageError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -94,10 +103,80 @@ export default function ItemDetailModal({
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
+    const nextValue = type === 'number' ? (parseFloat(value) || 0) : value;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? (parseFloat(value) || 0) : value
+      [name]: nextValue
     }));
+    if (name === 'sku' && scanError) {
+      setScanError(isDuplicateSku(nextValue) ? scanError : '');
+    }
+  };
+
+  const handleOpenScanner = () => {
+    if (isSalesMode) return;
+    setIsScannerOpen(true);
+  };
+
+  const isDuplicateSku = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (!normalized) return false;
+    const currentSku = String(item?.sku || '').trim().toLowerCase();
+    return normalized !== currentSku && existingSkus.some(sku => String(sku || '').trim().toLowerCase() === normalized);
+  };
+
+  const handleBarcodeDetected = (code) => {
+    const scanned = String(code || '').trim();
+    if (!scanned) {
+      setScanError('No barcode detected. Please try again.');
+      return;
+    }
+    if (isDuplicateSku(scanned)) {
+      setScanError(`Item with SKU "${scanned}" already exists.`);
+      return;
+    }
+    setScanError('');
+    setFormData(prev => ({ ...prev, sku: scanned }));
+    setIsScannerOpen(false);
+  };
+
+  const handleAddImageUrl = async () => {
+    const url = newImageUrl.trim();
+    if (!url) return;
+    setImageError('');
+    try {
+      await inventoryAPI.addImageUrl(item.id, { image_url: url, is_primary: images.length === 0 });
+      setNewImageUrl('');
+      setAddImageMode(null);
+      await loadImages(item.id);
+    } catch {
+      setImageError('Failed to add image URL.');
+    }
+  };
+
+  const handlePhotoCapture = async (blob) => {
+    setIsCameraOpen(false);
+    setAddImageMode(null);
+    setImageError('');
+    try {
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
+      await loadImages(item.id);
+    } catch {
+      setImageError('Failed to upload photo.');
+    }
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('Delete this image?')) return;
+    setImageError('');
+    try {
+      await inventoryAPI.deleteImage(imageId);
+      setCurrentImageIndex(prev => Math.max(0, prev - 1));
+      await loadImages(item.id);
+    } catch {
+      setImageError('Failed to delete image.');
+    }
   };
 
   const handleAddToCart = () => {
@@ -107,6 +186,10 @@ export default function ItemDetailModal({
 
   const handleUpdateInventory = (e) => {
     e.preventDefault();
+    if (isDuplicateSku(formData.sku)) {
+      setScanError(`Item with SKU "${formData.sku}" already exists.`);
+      return;
+    }
     onUpdateInventory?.(item.id, {
       name: formData.name,
       sku: formData.sku,
@@ -142,7 +225,7 @@ export default function ItemDetailModal({
 
   // Reusable image display with navigation
   const renderImage = (containerStyle = {}) => (
-    <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: '#f0f0f0', ...containerStyle }}>
+    <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: 'var(--bs-secondary-bg)', ...containerStyle }}>
       {displayImage ? (
         <img
           src={displayImage}
@@ -209,19 +292,19 @@ export default function ItemDetailModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="d-flex flex-column bg-white"
+        className="d-flex flex-column bg-white dark:bg-gray-900"
         style={{ maxHeight: '95vh' }}
         onClick={(e) => e.stopPropagation()}
       >
 
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
-        <div className="flex-shrink-0 p-2 border-bottom d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 fw-semibold">Edit Item</h6>
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Edit Item</h6>
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-link text-dark p-0"
+            className="btn btn-link text-dark dark:text-gray-200 p-0"
             style={{ lineHeight: 1 }}
             title="Close"
           >
@@ -363,6 +446,69 @@ export default function ItemDetailModal({
               {/* Image */}
               <div className="flex-shrink-0" style={{ width: '45%' }}>
                 {renderImage({ width: '100%', aspectRatio: '1' })}
+              {/* Add image panel */}
+              {addImageMode !== null && (
+                <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <div className="btn-group btn-group-sm">
+                      <button
+                        type="button"
+                        className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setAddImageMode('camera')}
+                        style={{ fontSize: '0.72rem', padding: '2px 10px' }}
+                      >Camera</button>
+                      <button
+                        type="button"
+                        className={`btn ${addImageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setAddImageMode('url')}
+                        style={{ fontSize: '0.72rem', padding: '2px 10px' }}
+                      >URL</button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setAddImageMode(null); setNewImageUrl(''); setImageError(''); }}
+                      className="btn btn-link btn-sm p-0 ms-auto"
+                      style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}
+                    >✕</button>
+                  </div>
+
+                  {addImageMode === 'camera' && (
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraOpen(true)}
+                      className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                        <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                      </svg>
+                      Open Camera
+                    </button>
+                  )}
+
+                  {addImageMode === 'url' && (
+                    <div className="d-flex gap-1">
+                      <input
+                        type="url"
+                        value={newImageUrl}
+                        onChange={e => setNewImageUrl(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAddImageUrl()}
+                        placeholder="https://..."
+                        className="form-control form-control-sm"
+                        style={{ fontSize: '0.8rem' }}
+                      />
+                      <button type="button" onClick={handleAddImageUrl} className="btn btn-primary btn-sm flex-shrink-0">Add</button>
+                    </div>
+                  )}
+
+                  {imageError && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
+                  )}
+                </div>
+              )}
+
+                
               </div>
 
               {/* Stock fields stacked on the right */}
@@ -445,6 +591,60 @@ export default function ItemDetailModal({
               </div>
             </div>
 
+            {/* Photo management strip */}
+            <div className="mb-2">
+              <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: '44px' }}>
+                {images.map((img, idx) => (
+                  <div key={img.id} style={{ position: 'relative', flexShrink: 0 }}>
+                    <img
+                      src={getImageSrc(img)}
+                      alt=""
+                      style={{
+                        width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px',
+                        cursor: 'pointer',
+                        border: idx === currentImageIndex ? '2px solid var(--bs-primary)' : '2px solid #dee2e6'
+                      }}
+                      onClick={() => setCurrentImageIndex(idx)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(img.id)}
+                      style={{
+                        position: 'absolute', top: '-5px', right: '-5px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        background: '#dc3545', color: '#fff', border: 'none',
+                        padding: 0, fontSize: '10px', lineHeight: 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer'
+                      }}
+                    >×</button>
+                  </div>
+                ))}
+
+                {/* Add photo button */}
+                {addImageMode === null && (
+                  <button
+                    type="button"
+                    onClick={() => setAddImageMode('camera')}
+                    className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0"
+                    style={{ width: '40px', height: '40px', borderRadius: '4px' }}
+                    title="Add photo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                      <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+
+
+              {imageError && addImageMode === null && (
+                <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
+              )}
+            </div>
+
             {/* Full-width form fields below */}
             <div className="form-floating mb-2">
               <input
@@ -492,17 +692,37 @@ export default function ItemDetailModal({
               <label htmlFor="detail_description">Description</label>
             </div>
 
-            <div className="form-floating mb-2">
-              <input
-                type="text"
-                id="detail_sku"
-                name="sku"
-                value={formData.sku}
-                onChange={handleChange}
-                className="form-control form-control-sm"
-                placeholder="SKU"
-              />
-              <label htmlFor="detail_sku">SKU</label>
+            <div className="mb-2">
+              <div className="form-floating position-relative">
+                <input
+                  type="text"
+                  id="detail_sku"
+                  name="sku"
+                  value={formData.sku}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="SKU"
+                  style={!isSalesMode ? { paddingRight: '3.25rem' } : undefined}
+                />
+                <label htmlFor="detail_sku">SKU</label>
+                {!isSalesMode && (
+                  <button
+                    type="button"
+                    onClick={handleOpenScanner}
+                    className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y"
+                    style={{ right: '0.5rem' }}
+                    title="Scan Barcode"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
+                      <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {scanError && (
+                <div className="alert alert-danger py-1 small mt-2 mb-0">{scanError}</div>
+              )}
             </div>
 
             <div className="form-floating mb-2">
@@ -542,24 +762,12 @@ export default function ItemDetailModal({
               </div>
             )}
 
-            <div className="form-floating mb-2">
-              <input
-                type="url"
-                id="detail_image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={handleChange}
-                className="form-control form-control-sm"
-                placeholder="Image URL"
-              />
-              <label htmlFor="detail_image_url">Image URL</label>
-            </div>
           </form>
         )}
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top bg-white">
+      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         {!isSalesMode ? (
           <div className="d-flex align-items-center">
             <div>
@@ -599,6 +807,38 @@ export default function ItemDetailModal({
         ) : null}
       </div>
       </div>
+
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="p-4 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 text-gray-900 dark:text-gray-100">Scan Barcode</h5>
+            </div>
+            <div className="p-4">
+              <BarcodeScanner
+                onDetected={handleBarcodeDetected}
+                onCancel={() => setIsScannerOpen(false)}
+              />
+            </div>
+            <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 d-flex justify-content-end">
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(false)}
+                className="btn btn-outline-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCameraOpen && (
+        <CameraCapture
+          onCapture={handlePhotoCapture}
+          onCancel={() => setIsCameraOpen(false)}
+        />
+      )}
     </div>
   );
 }

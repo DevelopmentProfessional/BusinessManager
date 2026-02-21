@@ -102,6 +102,26 @@ const Profile = () => {
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveError, setLeaveError] = useState('');
 
+  const toNumber = (value) => {
+    const parsed = Number(value ?? 0);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const syncCurrentUser = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await employeesAPI.getUserData(user.id);
+      const refreshedUser = response?.data ?? response;
+      if (!refreshedUser || typeof refreshedUser !== 'object') return;
+      const mergedUser = { ...user, ...refreshedUser };
+      setUser(mergedUser);
+      if (localStorage.getItem('user')) localStorage.setItem('user', JSON.stringify(mergedUser));
+      if (sessionStorage.getItem('user')) sessionStorage.setItem('user', JSON.stringify(mergedUser));
+    } catch {
+      // silently degrade
+    }
+  };
+
   // Load leave requests whenever benefits accordion opens or Leave Management modal opens
   useEffect(() => {
     if ((openAccordion !== 'benefits' && !leaveManagementOpen) || !user?.id) return;
@@ -109,6 +129,7 @@ const Profile = () => {
     const load = async () => {
       setLeaveRequestsLoading(true);
       try {
+        await syncCurrentUser();
         const [vacRes, sickRes] = await Promise.all([
           leaveRequestsAPI.getByUser(user.id, 'vacation'),
           leaveRequestsAPI.getByUser(user.id, 'sick'),
@@ -162,14 +183,14 @@ const Profile = () => {
         const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
         if (leaveModalType === 'vacation') {
-          const remaining = Math.max(0, (user.vacation_days ?? 0) - (user.vacation_days_used ?? 0));
+          const remaining = Math.max(0, toNumber(user.vacation_days) - toNumber(user.vacation_days_used));
           if (daysRequested > remaining) {
             setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
             setLeaveSubmitting(false);
             return;
           }
         } else {
-          const remaining = Math.max(0, (user.sick_days ?? 0) - (user.sick_days_used ?? 0));
+          const remaining = Math.max(0, toNumber(user.sick_days) - toNumber(user.sick_days_used));
           if (daysRequested > remaining) {
             setLeaveError(`You only have ${remaining} sick day(s) remaining.`);
             setLeaveSubmitting(false);
@@ -348,15 +369,16 @@ const Profile = () => {
     }
   };
 
-  const vacTotal = user.vacation_days ?? 0;
-  const vacUsed = user.vacation_days_used ?? 0;
+  const vacTotal = toNumber(user.vacation_days);
+  const vacUsed = toNumber(user.vacation_days_used);
   const vacRemaining = Math.max(0, vacTotal - vacUsed);
-  const sickTotal = user.sick_days ?? 0;
-  const sickUsed = user.sick_days_used ?? 0;
+  const sickTotal = toNumber(user.sick_days);
+  const sickUsed = toNumber(user.sick_days_used);
   const sickRemaining = Math.max(0, sickTotal - sickUsed);
 
   const openLeaveModal = (type) => {
-    setLeaveModalType(type);
+    const defaultType = type || (vacRemaining > 0 ? 'vacation' : (sickRemaining > 0 ? 'sick' : 'onboarding'));
+    setLeaveModalType(defaultType);
     setLeaveForm({ start_date: '', end_date: '', notes: '' });
     setLeaveError('');
     setShowLeaveModal(true);
@@ -560,7 +582,7 @@ const Profile = () => {
                                 .filter(r => r.status === 'pending')
                                 .map(req => (
                                   <tr key={req.id}>
-                                    <td>{req.type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
+                                    <td>{req.leave_type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
                                     <td>{req.start_date}</td>
                                     <td>{req.end_date}</td>
                                     <td>{req.days_requested ?? '—'}</td>
@@ -582,7 +604,7 @@ const Profile = () => {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm w-100"
-                      onClick={() => openLeaveModal('vacation')}
+                      onClick={() => openLeaveModal()}
                     >
                       <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: 'inline' }} />
                       Request Leave
@@ -817,7 +839,7 @@ const Profile = () => {
                               .filter(r => r.status === 'pending')
                               .map(req => (
                                 <tr key={req.id}>
-                                  <td>{req.type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
+                                  <td>{req.leave_type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
                                   <td>{req.start_date}</td>
                                   <td>{req.end_date}</td>
                                   <td>{req.days_requested ?? '—'}</td>
@@ -840,7 +862,7 @@ const Profile = () => {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm flex-grow-1"
-                      onClick={() => openLeaveModal('vacation')}
+                      onClick={() => openLeaveModal()}
                     >
                       <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: 'inline' }} />
                       Request Leave

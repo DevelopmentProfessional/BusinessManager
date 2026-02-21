@@ -13,7 +13,6 @@ import {
   ChartBarIcon,
   ShoppingCartIcon,
   SparklesIcon,
-  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 
@@ -29,7 +28,6 @@ const allNavigation = [
   { name: 'Sales', href: '/sales', icon: ShoppingCartIcon, permission: 'services:read' },
   { name: 'Services', href: '/services', icon: SparklesIcon, permission: 'services:read' },
   { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
-  { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentListIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 

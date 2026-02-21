@@ -94,24 +94,24 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleClose}></div>
 
         {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="sm:flex sm:items-start">
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
                     Import Data from CSV Files
                   </h3>
                   <button
                     onClick={handleClose}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
 
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500 mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                     Upload CSV files to import clients, services, and appointments. 
                     You can upload one, two, or all three files at once.
                   </p>
@@ -120,17 +120,17 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
                   <div className="space-y-4">
                     {/* Clients Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Clients CSV
                       </label>
                       <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                           <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                            <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500" />
-                            <p className="text-xs text-gray-500">
+                            <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               <span className="font-semibold">Click to upload</span> clients.csv
                             </p>
-                            <p className="text-xs text-gray-500">CSV files only (.csv)</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only (.csv)</p>
                           </div>
                           <input 
                             id="clients-upload"
@@ -142,10 +142,10 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
                         </label>
                       </div>
                       {files.clients && (
-                        <div className="flex items-center justify-between p-2 mt-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between p-2 mt-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                           <div className="flex items-center">
                             <DocumentArrowUpIcon className="w-4 h-4 text-green-600 mr-2" />
-                            <span className="text-xs text-green-800">{files.clients.name}</span>
+                            <span className="text-xs text-green-800 dark:text-green-300">{files.clients.name}</span>
                           </div>
                           <button
                             onClick={() => setFiles(prev => ({ ...prev, clients: null }))}
@@ -159,17 +159,17 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
 
                     {/* Services Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Services CSV
                       </label>
                       <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                           <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                            <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500" />
-                            <p className="text-xs text-gray-500">
+                            <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               <span className="font-semibold">Click to upload</span> services.csv
                             </p>
-                            <p className="text-xs text-gray-500">CSV files only (.csv)</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only (.csv)</p>
                           </div>
                           <input 
                             id="services-upload"
@@ -181,10 +181,10 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
                         </label>
                       </div>
                       {files.services && (
-                        <div className="flex items-center justify-between p-2 mt-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between p-2 mt-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                           <div className="flex items-center">
                             <DocumentArrowUpIcon className="w-4 h-4 text-green-600 mr-2" />
-                            <span className="text-xs text-green-800">{files.services.name}</span>
+                            <span className="text-xs text-green-800 dark:text-green-300">{files.services.name}</span>
                           </div>
                           <button
                             onClick={() => setFiles(prev => ({ ...prev, services: null }))}
@@ -198,17 +198,17 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
 
                     {/* Appointments Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Appointments CSV
                       </label>
                       <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                           <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                            <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500" />
-                            <p className="text-xs text-gray-500">
+                            <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               <span className="font-semibold">Click to upload</span> appointments.csv
                             </p>
-                            <p className="text-xs text-gray-500">CSV files only (.csv)</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only (.csv)</p>
                           </div>
                           <input 
                             id="appointments-upload"
@@ -220,10 +220,10 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
                         </label>
                       </div>
                       {files.appointments && (
-                        <div className="flex items-center justify-between p-2 mt-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between p-2 mt-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                           <div className="flex items-center">
                             <DocumentArrowUpIcon className="w-4 h-4 text-green-600 mr-2" />
-                            <span className="text-xs text-green-800">{files.appointments.name}</span>
+                            <span className="text-xs text-green-800 dark:text-green-300">{files.appointments.name}</span>
                           </div>
                           <button
                             onClick={() => setFiles(prev => ({ ...prev, appointments: null }))}
@@ -237,15 +237,15 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
 
                     {/* Error message */}
                     {error && (
-                      <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <span className="text-sm text-red-800">{error}</span>
+                      <div className="flex items-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <span className="text-sm text-red-800 dark:text-red-300">{error}</span>
                       </div>
                     )}
 
                     {/* Success message */}
                     {success && (
-                      <div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <span className="text-sm text-green-800">{success}</span>
+                      <div className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <span className="text-sm text-green-800 dark:text-green-300">{success}</span>
                       </div>
                     )}
                   </div>

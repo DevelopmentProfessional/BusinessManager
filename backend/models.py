@@ -245,9 +245,42 @@ class Service(BaseModel, table=True):
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
     image_url: Optional[str] = Field(default=None)  # URL or path to service image
-    
+
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="service")
+
+
+class ServiceResource(BaseModel, table=True):
+    """Consumable inventory items (resources) used during a service (e.g. shampoo, conditioner)."""
+    __tablename__ = "service_resource"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    quantity: float = Field(default=1.0, ge=0)
+    notes: Optional[str] = Field(default=None)
+
+
+class ServiceAsset(BaseModel, table=True):
+    """Assets (equipment) reserved for the full duration of a service (e.g. hair dryer, sink)."""
+    __tablename__ = "service_asset"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    notes: Optional[str] = Field(default=None)
+
+
+class ServiceEmployee(BaseModel, table=True):
+    """Employees capable of performing a service."""
+    __tablename__ = "service_employee"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    notes: Optional[str] = Field(default=None)
+
+
+class ServiceLocation(BaseModel, table=True):
+    """Locations (inventory items of type 'location') where a service is offered."""
+    __tablename__ = "service_location"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    notes: Optional[str] = Field(default=None)
 
 
 # Employee model
@@ -493,6 +526,55 @@ class ServiceRead(SQLModel):
     price: float
     duration_minutes: int
     image_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceResourceRead(SQLModel):
+    """Schema for reading service resource links."""
+    id: UUID
+    service_id: UUID
+    inventory_id: UUID
+    quantity: float
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceAssetRead(SQLModel):
+    """Schema for reading service asset links."""
+    id: UUID
+    service_id: UUID
+    inventory_id: UUID
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceEmployeeRead(SQLModel):
+    """Schema for reading service employee capability links."""
+    id: UUID
+    service_id: UUID
+    user_id: UUID
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceLocationRead(SQLModel):
+    """Schema for reading service location links."""
+    id: UUID
+    service_id: UUID
+    inventory_id: UUID
+    notes: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

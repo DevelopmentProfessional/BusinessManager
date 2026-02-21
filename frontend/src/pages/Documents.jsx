@@ -688,7 +688,7 @@ export default function Documents() {
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content', minWidth: '120px' }}
+                style={{ width: 'fit-content' }}
               >
                 <option value="all">Categories</option>
                 {categories.map((cat) => (
@@ -702,7 +702,7 @@ export default function Documents() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content', minWidth: '100px' }}
+                style={{ width: 'fit-content'  }}
               >
                 <option value="all">Status</option>
                 <option value="signed">Signed</option>
@@ -713,7 +713,7 @@ export default function Documents() {
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content', minWidth: '100px' }}
+                style={{ width: 'fit-content'  }}
               >
                 <option value="all">Types</option>
                 {entityTypeOptions.map((type) => (

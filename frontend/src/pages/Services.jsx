@@ -94,11 +94,14 @@ export default function Services() {
       if (editingService) {
         const response = await servicesAPI.update(editingService.id, serviceData);
         updateService(editingService.id, response.data);
+        closeModal();
       } else {
+        // After creating, stay open in edit mode so relations can be managed
         const response = await servicesAPI.create(serviceData);
-        addService(response.data);
+        const newService = response.data;
+        addService(newService);
+        setEditingService(newService);
       }
-      closeModal();
       clearError();
     } catch (err) {
       setError('Failed to save service');
@@ -346,10 +349,11 @@ export default function Services() {
       </div>
 
       {/* Service Form Modal */}
-      <Modal 
-        isOpen={isModalOpen && modalContent === 'service-form'} 
+      <Modal
+        isOpen={isModalOpen && modalContent === 'service-form'}
         onClose={closeModal}
-        title={editingService ? 'Edit Service' : 'Add Service'}
+        title={editingService ? `Edit: ${editingService.name}` : 'Add Service'}
+        noPadding={true}
       >
         {isModalOpen && modalContent === 'service-form' && (
           <ServiceForm

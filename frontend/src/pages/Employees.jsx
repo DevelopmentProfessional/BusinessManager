@@ -14,7 +14,7 @@ export default function Employees() {
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal,
-    user: currentUser, hasPermission
+    user: currentUser, setUser, hasPermission
   } = useStore();
 
   const { isDarkMode } = useDarkMode();
@@ -233,7 +233,15 @@ export default function Employees() {
     try {
       if (editingEmployee) {
         const response = await employeesAPI.update(editingEmployee.id, employeeData);
-        updateEmployee(response.data);
+        const updatedEmployee = response?.data ?? response;
+        updateEmployee(editingEmployee.id, updatedEmployee);
+
+        if (currentUser?.id === editingEmployee.id) {
+          const mergedCurrentUser = { ...currentUser, ...updatedEmployee };
+          setUser(mergedCurrentUser);
+          if (localStorage.getItem('user')) localStorage.setItem('user', JSON.stringify(mergedCurrentUser));
+          if (sessionStorage.getItem('user')) sessionStorage.setItem('user', JSON.stringify(mergedCurrentUser));
+        }
       } else {
         const response = await employeesAPI.create(employeeData);
         addEmployee(response.data);
@@ -767,7 +775,7 @@ export default function Employees() {
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content', minWidth: '120px' }}
+                style={{ width: 'fit-content'  }}
               >
                 <option value="all">Roles</option>
                 {roleOptions.map((role) => (
@@ -781,7 +789,7 @@ export default function Employees() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content', minWidth: '120px' }}
+                style={{ width: 'fit-content'  }}
               >
                 <option value="all">Status</option>
                 <option value="active">Active</option>
