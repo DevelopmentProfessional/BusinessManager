@@ -382,6 +382,33 @@ export const servicesAPI = {
   },
 };
 
+export const serviceRelationsAPI = {
+  // Consumable resources linked to a service
+  getResources: (serviceId) => api.get(`/isud/service_resource?service_id=${serviceId}`),
+  addResource: (serviceId, inventoryId, quantity) =>
+    api.post('/isud/service_resource', { service_id: serviceId, inventory_id: inventoryId, quantity }),
+  updateResource: (id, quantity) => api.put(`/isud/service_resource/${id}`, { quantity }),
+  removeResource: (id) => api.delete(`/isud/service_resource/${id}`),
+
+  // Assets reserved for the full duration of a service
+  getAssets: (serviceId) => api.get(`/isud/service_asset?service_id=${serviceId}`),
+  addAsset: (serviceId, inventoryId) =>
+    api.post('/isud/service_asset', { service_id: serviceId, inventory_id: inventoryId }),
+  removeAsset: (id) => api.delete(`/isud/service_asset/${id}`),
+
+  // Employees capable of performing a service
+  getEmployees: (serviceId) => api.get(`/isud/service_employee?service_id=${serviceId}`),
+  addEmployee: (serviceId, userId) =>
+    api.post('/isud/service_employee', { service_id: serviceId, user_id: userId }),
+  removeEmployee: (id) => api.delete(`/isud/service_employee/${id}`),
+
+  // Locations where the service is offered
+  getLocations: (serviceId) => api.get(`/isud/service_location?service_id=${serviceId}`),
+  addLocation: (serviceId, inventoryId) =>
+    api.post('/isud/service_location', { service_id: serviceId, inventory_id: inventoryId }),
+  removeLocation: (id) => api.delete(`/isud/service_location/${id}`),
+};
+
 export const suppliersAPI = {
   getAll: () => getCachedOrFetch('suppliers', () => api.get('/isud/suppliers')),
   getById: (id) => api.get(`/isud/suppliers/${id}`),

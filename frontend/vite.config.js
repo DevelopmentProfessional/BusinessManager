@@ -5,7 +5,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
-  const enableHttps = process.env.VITE_HTTPS === 'true'
+  // Always enable HTTPS in dev so phones on the LAN can use the camera (requires secure context)
+  const isDev = command === 'serve'
 
   const plugins = [
     react(),
@@ -35,15 +36,15 @@ export default defineConfig(({ command, mode }) => {
     })
   ]
 
-  if (enableHttps) {
+  if (isDev) {
     plugins.push(basicSsl())
   }
 
   return {
     plugins,
     server: {
-      // Use HTTP by default for easier mobile LAN access; enable HTTPS with VITE_HTTPS=true
-      https: enableHttps,
+      // HTTPS always enabled in dev so phones on the LAN can access the camera (secure context required)
+      https: isDev,
       // Allow override via env var VITE_PORT; default to 5173
       port: Number(process.env.VITE_PORT || 5173),
       host: true,

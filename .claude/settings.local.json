@@ -39,7 +39,8 @@
       "Bash(pkill:*)",
       "Bash(git commit:*)",
       "Bash(node -e:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(cd C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager:*)"
     ]
   }
 }

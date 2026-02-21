@@ -94,14 +94,20 @@ export default function Inventory() {
     }
   };
 
-  const handleSubmitNewItem = async (itemData, { initialQuantity }) => {
+  const handleSubmitNewItem = async (itemData, { initialQuantity, pendingPhoto = null }) => {
     try {
       // Create inventory item directly (inventory now contains all product fields)
       const inventoryData = {
         ...itemData,
         quantity: Number.isFinite(initialQuantity) ? initialQuantity : 0,
       };
-      await inventoryAPI.create(inventoryData);
+      const result = await inventoryAPI.create(inventoryData);
+      // Upload captured photo if one was taken
+      const newItemId = result?.data?.id;
+      if (pendingPhoto && newItemId) {
+        const file = new File([pendingPhoto], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        await inventoryAPI.uploadImageFile(newItemId, file, true);
+      }
       await loadInventoryData();
       closeModal();
       clearError();
@@ -375,6 +381,7 @@ return (
       onUpdateInventory={handleSubmitUpdate}
       onDelete={handleDeleteItem}
       canDelete={hasPermission('inventory', 'delete')}
+      existingSkus={inventory.map(i => i.sku).filter(Boolean)}
     />
 
     <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>

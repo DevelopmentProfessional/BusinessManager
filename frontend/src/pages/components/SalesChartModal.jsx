@@ -108,7 +108,7 @@ const styles = {
     zIndex: 1000,
   },
   modal: {
-    backgroundColor: 'white',
+    backgroundColor: 'var(--bs-body-bg)',
     padding: '20px',
     width: '100%',
     height: '100%',

@@ -21,7 +21,7 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
           }
         } catch (permErr) {
           // If permission denied, surface a clear error and stop.
-          throw new Error('Camera permission denied. Please allow camera access and try again.');
+          throw new Error('The phone says camera permissions denied, please allow camera access and try again.');
         }
 
         let devices = [];
@@ -72,9 +72,6 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
           {error}
         </div>
       )}
-      <div className="flex justify-end">
-        <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
-      </div>
     </div>
   );
 }

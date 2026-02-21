@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import BarcodeScanner from './BarcodeScanner';
+import CameraCapture from './CameraCapture';
 import cacheService from '../../services/cacheService';
 import { servicesAPI } from '../../services/api';
 
@@ -24,6 +25,10 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
   });
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
+  const [imageMode, setImageMode] = useState('url'); // 'url' | 'camera'
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
 
@@ -57,6 +62,18 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       if (Array.isArray(data)) setAvailableServices(data);
     }).catch(() => {});
   }, []);
+
+  // Clean up object URL on unmount
+  useEffect(() => {
+    return () => { if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl); };
+  }, []);
+
+  const handlePhotoCapture = (blob) => {
+    setIsCameraOpen(false);
+    if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+    setPendingPhoto(blob);
+    setPendingPhotoUrl(URL.createObjectURL(blob));
+  };
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -92,7 +109,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
     }
     const type = typeof formData.type === 'string' ? formData.type.toUpperCase() : 'PRODUCT';
     const description = (formData.description || '').trim();
-    const image_url = (formData.image_url || '').trim();
+    const image_url = imageMode === 'url' ? (formData.image_url || '').trim() : '';
     const location = (formData.location || '').trim();
     const payload = {
       name,
@@ -110,7 +127,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
 
     try {
       if (onSubmitWithExtras) {
-        onSubmitWithExtras(payload, { initialQuantity: safeQty });
+        onSubmitWithExtras(payload, { initialQuantity: safeQty, pendingPhoto: imageMode === 'camera' ? pendingPhoto : null });
       } else {
         onSubmit(payload);
       }
@@ -136,16 +153,16 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
 
   return (
     <div
-      className="d-flex flex-column bg-white"
+      className="d-flex flex-column bg-white dark:bg-gray-900"
       style={{ maxHeight: '95vh' }}
     >
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom d-flex justify-content-between align-items-center">
-        <h6 className="mb-0 fw-semibold">{item ? 'Edit' : 'Add New Item'}</h6>
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? 'Edit' : 'Add New Item'}</h6>
         <button
           type="button"
           onClick={onCancel}
-          className="btn btn-link text-dark p-0"
+          className="btn btn-link text-dark dark:text-gray-200 p-0"
           style={{ lineHeight: 1 }}
           title="Close"
         >
@@ -158,24 +175,27 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
-            {/* Image placeholder */}
-            <div className="flex-shrink-0" style={{ width: '45%' }}>
-              <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: '#f0f0f0', width: '100%', aspectRatio: '1' }}>
-                {formData.image_url ? (
+            {/* Image area with URL/Camera toggle */}
+            <div className="flex-shrink-0 d-flex flex-column gap-1" style={{ width: '45%' }}>
+              {/* Preview */}
+              <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: 'var(--bs-secondary-bg)', width: '100%', aspectRatio: '1' }}>
+                {imageMode === 'camera' && pendingPhotoUrl ? (
+                  <img
+                    src={pendingPhotoUrl}
+                    alt="Captured"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                ) : imageMode === 'url' && formData.image_url ? (
                   <img
                     src={formData.image_url}
                     alt={formData.name}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      const placeholder = e.target.nextElementSibling;
-                      if (placeholder) placeholder.style.display = 'flex';
-                    }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 ) : null}
                 <div
                   style={{
-                    display: formData.image_url ? 'none' : 'flex',
+                    display: (imageMode === 'camera' && pendingPhotoUrl) || (imageMode === 'url' && formData.image_url) ? 'none' : 'flex',
                     width: '100%', height: '100%',
                     alignItems: 'center', justifyContent: 'center',
                     color: '#adb5bd', position: 'absolute', top: 0, left: 0
@@ -184,6 +204,51 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                   {getTypeIcon()}
                 </div>
               </div>
+
+              {/* Mode toggle */}
+              <div className="btn-group btn-group-sm w-100">
+                <button
+                  type="button"
+                  className={`btn ${imageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setImageMode('url')}
+                  style={{ fontSize: '0.7rem' }}
+                >URL</button>
+                <button
+                  type="button"
+                  className={`btn ${imageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setImageMode('camera')}
+                  style={{ fontSize: '0.7rem' }}
+                >Camera</button>
+              </div>
+
+              {/* URL input */}
+              {imageMode === 'url' && (
+                <input
+                  type="url"
+                  name="image_url"
+                  value={formData.image_url}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="https://..."
+                  style={{ fontSize: '0.75rem' }}
+                />
+              )}
+
+              {/* Camera button */}
+              {imageMode === 'camera' && (
+                <button
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                    <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                  </svg>
+                  {pendingPhotoUrl ? 'Retake Photo' : 'Take Photo'}
+                </button>
+              )}
             </div>
 
             {/* Stock fields stacked on the right */}
@@ -311,34 +376,35 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
             <label htmlFor="description">Description</label>
           </div>
 
-          <div className="form-floating mb-2">
-            <input
-              type="text"
-              id="sku"
-              name="sku"
-              value={formData.sku}
-              onChange={handleChange}
-              className="form-control form-control-sm"
-              placeholder="SKU"
-            />
-            <label htmlFor="sku">SKU</label>
-          </div>
-          {showScanner && (
-            <div className="mb-2">
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(true)}
-                className="btn btn-outline-secondary btn-sm"
-                title="Scan Barcode"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                  <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
-                  <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
-                </svg>
-                Scan
-              </button>
+          <div className="mb-2">
+            <div className="form-floating position-relative">
+              <input
+                type="text"
+                id="sku"
+                name="sku"
+                value={formData.sku}
+                onChange={handleChange}
+                className="form-control form-control-sm"
+                placeholder="SKU"
+                style={showScanner ? { paddingRight: '3.25rem' } : undefined}
+              />
+              <label htmlFor="sku">SKU</label>
+              {showScanner && (
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y"
+                  style={{ right: '0.5rem' }}
+                  title="Scan Barcode"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
+                    <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
+                  </svg>
+                </button>
+              )}
             </div>
-          )}
+          </div>
           {scanError && (
             <div className="alert alert-danger py-1 small mb-2">{scanError}</div>
           )}
@@ -400,23 +466,11 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
             </div>
           )}
 
-          <div className="form-floating mb-2">
-            <input
-              type="url"
-              id="image_url"
-              name="image_url"
-              value={formData.image_url}
-              onChange={handleChange}
-              className="form-control form-control-sm"
-              placeholder="Image URL"
-            />
-            <label htmlFor="image_url">Image URL</label>
-          </div>
         </form>
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top bg-white">
+      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="d-flex align-items-center">
           <div></div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center">
@@ -442,25 +496,34 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         </div>
       </div>
 
+      {isCameraOpen && (
+        <CameraCapture
+          onCapture={handlePhotoCapture}
+          onCancel={() => setIsCameraOpen(false)}
+        />
+      )}
+
       {/* Barcode Scanner Modal */}
       {isScannerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-            <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Scan Barcode</h5>
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(false)}
-                className="btn btn-sm btn-outline-secondary"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
+            <div className="p-4 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 text-gray-900 dark:text-gray-100">Scan Barcode</h5>
             </div>
             <div className="p-4">
               <BarcodeScanner
                 onDetected={handleBarcodeDetected}
                 onCancel={() => setIsScannerOpen(false)}
               />
+            </div>
+            <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 d-flex justify-content-end">
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(false)}
+                className="btn btn-outline-secondary"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

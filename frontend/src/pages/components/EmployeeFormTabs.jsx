@@ -424,7 +424,7 @@ export default function EmployeeFormTabs({
                   <label htmlFor="role_id">Assigned Role</label>
                 </div>
                 {formData.role_id && roles.find(r => r.id === formData.role_id)?.role_permissions?.length > 0 && (
-                  <div className="mt-2 p-2 border rounded bg-light" style={{ fontSize: '0.8rem' }}>
+                  <div className="mt-2 p-2 border rounded bg-body-secondary" style={{ fontSize: '0.8rem' }}>
                     <strong>Role Permissions:</strong>
                     <div className="d-flex flex-wrap gap-1 mt-1">
                       {roles.find(r => r.id === formData.role_id)?.role_permissions?.map(perm => (
@@ -457,7 +457,7 @@ export default function EmployeeFormTabs({
                   <label className="form-label">Direct Reports</label>
                   <div className="d-flex flex-wrap gap-1">
                     {directReports.map(dr => (
-                      <span key={dr.id} className="badge bg-info text-dark">
+                      <span key={dr.id} className="badge bg-info text-white">
                         {dr.first_name} {dr.last_name}
                       </span>
                     ))}
@@ -629,7 +629,7 @@ export default function EmployeeFormTabs({
                   <div className="col-12">
                     {savedSignature ? (
                       <div className="text-center">
-                        <div className="border rounded p-3 bg-white d-inline-block mb-3">
+                        <div className="border rounded p-3 bg-body d-inline-block mb-3">
                           <img
                             src={savedSignature}
                             alt="Saved signature"

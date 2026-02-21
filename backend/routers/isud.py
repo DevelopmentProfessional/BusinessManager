@@ -72,6 +72,14 @@ READ_SCHEMA_MAP = {
     'sale_transactions': SaleTransactionRead,
     'sale_transaction_item': SaleTransactionItemRead,
     'sale_transaction_items': SaleTransactionItemRead,
+    'service_resource': ServiceResourceRead,
+    'service_resources': ServiceResourceRead,
+    'service_asset': ServiceAssetRead,
+    'service_assets': ServiceAssetRead,
+    'service_employee': ServiceEmployeeRead,
+    'service_employees': ServiceEmployeeRead,
+    'service_location': ServiceLocationRead,
+    'service_locations': ServiceLocationRead,
 }
 
 def _serialize_record(record, table_name: str, session=None):

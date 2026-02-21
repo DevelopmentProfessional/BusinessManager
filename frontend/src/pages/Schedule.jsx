@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI } from '../services/api';
+import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from '../services/api';
 import Modal from './components/Modal';
 import ScheduleForm from './components/ScheduleForm';
 import PermissionGate from './components/PermissionGate';
@@ -53,7 +53,10 @@ export default function Schedule() {
     serviceIds: [],
     startDate: '',
     endDate: '',
+    showOutOfOffice: false,
+    oooEmployeeIds: [],
   });
+  const [approvedLeaves, setApprovedLeaves] = useState([]);
   const hasFetched = useRef(false);
   const calendarGridRef = useRef(null);
   const calendarContainerRef = useRef(null);
@@ -120,11 +123,12 @@ export default function Schedule() {
           });
         }
 
-        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse] = await Promise.all([
+        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse, leavesResponse] = await Promise.all([
           scheduleAPI.getAll(),
           clientsAPI.getAll(),
           servicesAPI.getAll(),
           employeesAPI.getAll(),
+          leaveRequestsAPI.getAll(),
         ]);
 
         const scheduleData = scheduleResponse?.data ?? scheduleResponse;
@@ -148,6 +152,11 @@ export default function Schedule() {
         if (Array.isArray(employeesData)) {
           setEmployees(employeesData);
         }
+
+        const leavesData = leavesResponse?.data ?? leavesResponse;
+        if (Array.isArray(leavesData)) {
+          setApprovedLeaves(leavesData.filter(l => l.status === 'approved'));
+        }
       } catch (error) {
         console.error('Error loading schedule:', error);
         if (error.response?.status === 401 || error.response?.status === 403) {
@@ -163,6 +172,15 @@ export default function Schedule() {
     const entries = employees.map((employee) => [employee.id, employee.color]);
     return new Map(entries);
   }, [employees]);
+
+  const getOutOfOfficeForDate = useCallback((date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return approvedLeaves.filter(leave => {
+      const start = (leave.start_date || '').split('T')[0];
+      const end = (leave.end_date || '').split('T')[0];
+      return start && end && dateStr >= start && dateStr <= end;
+    });
+  }, [approvedLeaves]);
 
   const filteredAppointments = useMemo(() => {
     const hasEmployeeFilter = filters.employeeIds.length > 0;
@@ -316,10 +334,10 @@ export default function Schedule() {
   const numEnabledDays = currentView === 'week' || currentView === 'month' 
     ? days.slice(0, 7).length 
     : 7;
-  const gridColumns = currentView === 'week' 
-    ? `60px repeat(${numEnabledDays}, minmax(0, 1fr))` 
+  const gridColumns = currentView === 'week'
+    ? `max-content repeat(${numEnabledDays}, minmax(0, 1fr))`
     : currentView === 'day'
-      ? '60px minmax(0, 1fr)'
+      ? 'max-content minmax(0, 1fr)'
       : `repeat(${numEnabledDays}, minmax(0, 1fr))`;
 
   // Auto-scroll to current time when switching to day or week view
@@ -709,12 +727,12 @@ export default function Schedule() {
         )}
 
         {/* Header with clock */}
-        <div className="schedule-header-bar d-flex justify-content-between align-items-center px-3 mb-2">
+        <div className="schedule-header-bar d-flex justify-content-between align-items-center p-1 mb-2">
           <div className="schedule-clock">
             <span className="clock-time">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
             <span className="clock-date">{currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
           </div>
-          <h4 className="text-center mb-0">
+          <h4 className="text-center mb-0 ms-auto">
             {currentView === 'day'
               ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
               : currentView === 'week'
@@ -722,8 +740,7 @@ export default function Schedule() {
               : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
             }
           </h4>
-          <div style={{ width: '100px' }}></div> {/* Spacer for balance */}
-        </div>
+         </div>
 
         <div className="schedule-body">
           <div 
@@ -1052,31 +1069,31 @@ export default function Schedule() {
                     onDrop={(e) => handleDrop(e, date)}
                   >
                     <div className="date-number">{date.getDate()}</div>
-                    {appointmentsForDate.length > 0 && (
+                    {!filters.showOutOfOffice && appointmentsForDate.length > 0 && (
                       <div className="appointments">
                         {appointmentsForDate.map(appointment => {
                           // Get client name
                           const client = clients.find(c => c.id === appointment.client_id);
                           const clientName = client ? client.name : 'Unknown Client';
-                          
+
                           // Get service name
                           const service = services.find(s => s.id === appointment.service_id);
                           const serviceName = service ? service.name : 'Unknown Service';
-                          
+
                           // Get time
                           const appointmentTime = new Date(appointment.appointment_date);
-                          const timeString = appointmentTime.toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
+                          const timeString = appointmentTime.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
                             minute: '2-digit',
-                            hour12: false 
+                            hour12: false
                           });
-                          
+
                           const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
 
                           return (
-                            <div 
-                              key={appointment.id} 
-                              className="appointment-dot" 
+                            <div
+                              key={appointment.id}
+                              className="appointment-dot"
                               title={`${clientName} - ${serviceName} at ${timeString}`}
                               style={{ backgroundColor: employeeColor }}
                               draggable={true}
@@ -1095,6 +1112,51 @@ export default function Schedule() {
                         })}
                       </div>
                     )}
+                    {/* Out of Office: show events when filter ON, thin line when OFF */}
+                    {(() => {
+                      let oooForDate = getOutOfOfficeForDate(date);
+                      if (filters.showOutOfOffice) {
+                        if (filters.oooEmployeeIds.length > 0) {
+                          oooForDate = oooForDate.filter(l => filters.oooEmployeeIds.includes(l.user_id));
+                        }
+                        if (oooForDate.length === 0) return null;
+                        return (
+                          <div className="ooo-events">
+                            {oooForDate.map(leave => {
+                              const emp = employees.find(e => e.id === leave.user_id);
+                              const empName = emp ? `${emp.first_name} ${emp.last_name}` : 'Employee';
+                              const empColor = emp?.color || '#6b7280';
+                              return (
+                                <div
+                                  key={leave.id}
+                                  className="appointment-dot ooo-event"
+                                  style={{ backgroundColor: empColor }}
+                                  title={`${empName} - Out of Office`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="appointment-service">{empName}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      } else {
+                        if (oooForDate.length === 0) return null;
+                        const oooNames = oooForDate
+                          .map(l => {
+                            const emp = employees.find(e => e.id === l.user_id);
+                            return emp ? `${emp.first_name} ${emp.last_name}` : 'Employee';
+                          })
+                          .join(', ');
+                        return (
+                          <div
+                            className="ooo-indicator-line"
+                            title={`Out of office: ${oooNames}`}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        );
+                      }
+                    })()}
                   </div>
                 );
               })
@@ -1104,9 +1166,9 @@ export default function Schedule() {
         </div>
 
         <div className="schedule-footer px-2 py-1 border-top">
-          {/* Row 1: Month, Week, Previous, Next */}
+          {/* Row 1: Month, Week, Day, Previous, Next */}
           <div className="d-flex gap-1 mb-1">
-            {/* Month View - Calendar Grid Icon */}
+            {/* Month View */}
             <button
               type="button"
               onClick={() => setCurrentView('month')}
@@ -1119,7 +1181,7 @@ export default function Schedule() {
                 <path d="M2.5 7a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 9a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 11a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
               </svg>
             </button>
-            {/* Week View - Calendar Week Icon */}
+            {/* Week View */}
             <button
               type="button"
               onClick={() => setCurrentView('week')}
@@ -1130,6 +1192,18 @@ export default function Schedule() {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+              </svg>
+            </button>
+            {/* Day View */}
+            <button
+              type="button"
+              onClick={() => setCurrentView('day')}
+              className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Day View"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
               </svg>
             </button>
             {/* Previous */}
@@ -1157,21 +1231,9 @@ export default function Schedule() {
               </svg>
             </button>
           </div>
-          {/* Row 2: Day, Today */}
+          {/* Row 2: Today, Filter */}
           <div className="d-flex gap-1">
-            {/* Day View - Single Day Icon */}
-            <button
-              type="button"
-              onClick={() => setCurrentView('day')}
-              className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Day View"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
-              </svg>
-            </button>
-            {/* Today - Calendar with day number */}
+            {/* Today */}
             <button
               type="button"
               onClick={() => setCurrentDate(new Date())}
@@ -1184,14 +1246,24 @@ export default function Schedule() {
                 <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">{new Date().getDate()}</text>
               </svg>
             </button>
+            {/* Filter */}
             <button
               type="button"
               onClick={() => setIsFilterOpen(true)}
-              className="btn btn-sm btn-outline-secondary"
+              className={`btn btn-sm ${
+                filters.employeeIds.length > 0 ||
+                filters.clientIds.length > 0 ||
+                filters.serviceIds.length > 0 ||
+                filters.startDate ||
+                filters.endDate ||
+                filters.showOutOfOffice
+                  ? 'btn-primary'
+                  : 'btn-outline-secondary'
+              }`}
               style={{ height: '36px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Filter"
             >
-              Filter
+              Filter{filters.showOutOfOffice ? ' · OOO' : ''}
             </button>
           </div>
         </div>
@@ -1215,6 +1287,7 @@ export default function Schedule() {
           clients={clients}
           services={services}
           filters={filters}
+          approvedLeaves={approvedLeaves}
           onApply={(nextFilters) => setFilters(nextFilters)}
           onClear={() => setFilters({
             employeeIds: [],
@@ -1222,6 +1295,8 @@ export default function Schedule() {
             serviceIds: [],
             startDate: '',
             endDate: '',
+            showOutOfOffice: false,
+            oooEmployeeIds: [],
           })}
         />
       </PermissionGate>
@@ -1431,15 +1506,23 @@ export default function Schedule() {
         }
 
         .calendar-grid.week-view {
-          grid-template-columns: 60px repeat(7, minmax(0, 1fr));
+          grid-template-columns: max-content repeat(7, minmax(0, 1fr));
           flex: 1;
           overflow: hidden;
-          gap: 2px;
-          background: ${isDarkMode ? '#6b7280' : '#dee2e6'};
-          padding: 2px;
+          gap: 0;
+          background: transparent;
+          border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
+          padding: 0;
           min-width: 0;
           min-height: 0;
           grid-auto-rows: minmax(36px, 1fr);
+        }
+
+        .calendar-grid.week-view .calendar-cell {
+          border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
+          box-shadow: none;
+          margin-top: -1px;
+          margin-left: -1px;
         }
 
         .calendar-grid.week-view .time-label-cell {
@@ -1450,7 +1533,7 @@ export default function Schedule() {
         }
 
         .calendar-grid.day-view {
-          grid-template-columns: 60px 1fr;
+          grid-template-columns: max-content 1fr;
           flex: 1;
           overflow: hidden;
           gap: 0;
@@ -1468,6 +1551,8 @@ export default function Schedule() {
           display: flex;
           align-items: center;
           justify-content: center;
+          padding: 4px;
+          white-space: nowrap;
           box-sizing: border-box;
           min-width: 0;
           height: 100%;
@@ -1498,9 +1583,7 @@ export default function Schedule() {
         .calendar-cell:hover {
           background-color: ${isDarkMode ? '#4a5568' : '#f8f9fa'};
         }
-        
-
-        
+         
         .other-month {
           background-color: ${isDarkMode ? '#1a202c' : '#f8f9fa'};
           color: ${isDarkMode ? '#718096' : '#6c757d'};
@@ -1515,12 +1598,12 @@ export default function Schedule() {
           background-color: ${isDarkMode ? '#2563eb' : '#2196f3'};
           color: white;
           border-radius: 50%;
-          width: 28px;
-          height: 28px;
+          width: 21px;
+          height: 21px;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 2px auto 4px auto;
+          margin: 0px auto 1px auto;
         }
         
         .today-header {
@@ -1534,7 +1617,7 @@ export default function Schedule() {
         }
         
         .today-header .day-date {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: bold;
         }
         
@@ -1542,12 +1625,12 @@ export default function Schedule() {
           background-color: white;
           color: ${isDarkMode ? '#2563eb' : '#2196f3'};
           border-radius: 50%;
-          width: 28px;
-          height: 28px;
+          width: 21px;
+          height: 21px;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 2px auto 0;
+          margin: 0px auto 0;
         }
         
         .today-column {
@@ -1561,7 +1644,7 @@ export default function Schedule() {
         .date-number {
           font-size: 14px;
           font-weight: 500;
-          margin-bottom: 4px;
+          margin-bottom: 1px;
           display: block;
           width: 100%;
           box-sizing: border-box;
@@ -1588,6 +1671,31 @@ export default function Schedule() {
         
         .appointment-dot:hover {
           background: #0056b3;
+        }
+
+        .ooo-indicator-line {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: #f97316;
+          border-radius: 0 0 4px 4px;
+          pointer-events: none;
+        }
+
+        .ooo-indicator-line[title] {
+          pointer-events: auto;
+          cursor: default;
+        }
+
+        .ooo-events {
+          margin-top: 2px;
+        }
+
+        .ooo-event {
+          opacity: 0.85;
+          border-left: 3px solid rgba(0,0,0,0.25);
         }
 
         .appointment-event {
@@ -1833,7 +1941,7 @@ export default function Schedule() {
             grid-auto-rows: minmax(28px, 1fr);
           }
           .calendar-cell.time-label-cell {
-            font-size: 9px;
+            font-size: 9px; 
           }
           .appointment-dot {
             font-size: 8px;
