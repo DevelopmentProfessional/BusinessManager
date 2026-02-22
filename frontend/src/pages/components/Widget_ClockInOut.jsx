@@ -3,7 +3,7 @@ import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import { attendanceAPI } from '../../services/api';
 
-export default function ClockInOut() {
+export default function Widget_ClockInOut() {
   const { user, setError, clearError } = useStore();
   const [currentRecord, setCurrentRecord] = useState(null);
   const [loading, setLoading] = useState(false);

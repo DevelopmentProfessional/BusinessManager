@@ -4,9 +4,9 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
 import Modal from './components/Modal';
-import EmployeeFormTabs from './components/EmployeeFormTabs';
-import CustomDropdown from './components/CustomDropdown';
-import PermissionGate from './components/PermissionGate';
+import Form_Employee from './components/Form_Employee';
+import Dropdown_Custom from './components/Dropdown_Custom';
+import Gate_Permission from './components/Gate_Permission';
 import useDarkMode from '../services/useDarkMode';
 
 export default function Employees() {
@@ -655,7 +655,7 @@ export default function Employees() {
       {/* Main upside-down table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        {/* Scrollable rows – grow upwards from bottom */}
+        {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
           style={{ background: 'var(--bs-body-bg)' }}
@@ -746,7 +746,7 @@ export default function Employees() {
             </div>
 
             <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-              <PermissionGate page="employees" permission="write">
+              <Gate_Permission page="employees" permission="write">
                 <button
                   type="button"
                   onClick={handleCreate}
@@ -756,7 +756,7 @@ export default function Employees() {
                 >
                   <PlusIcon className="h-5 w-5" />
                 </button>
-              </PermissionGate>
+              </Gate_Permission>
               {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
                 <button
                   type="button"
@@ -807,7 +807,7 @@ export default function Employees() {
         title={editingEmployee ? 'Edit Employee' : 'Add Employee'}
       >
         {isModalOpen && modalContent === 'employee-form' && (
-          <EmployeeFormTabs
+          <Form_Employee
             employee={editingEmployee}
             onSubmit={handleSubmit}
             onCancel={closeModal}
@@ -827,7 +827,7 @@ export default function Employees() {
         noPadding={true}
       >
         <form onSubmit={handleCreateUser} className="d-flex flex-column h-100">
-          {/* Scrollable Content */}
+          {/* Container_Scrollable Content */}
           <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
                   <div className="form-floating mb-3">
                     <input
@@ -934,7 +934,7 @@ export default function Employees() {
         noPadding={true}
       >
         <div className="d-flex flex-column h-100">
-          {/* Scrollable Content */}
+          {/* Container_Scrollable Content */}
           <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
             {/* Add New Permission Form */}
             <form onSubmit={handleCreatePermission} className="mb-4 p-3 border rounded">
@@ -1092,7 +1092,7 @@ export default function Employees() {
         noPadding={true}
       >
         <div className="d-flex flex-column h-100">
-          {/* Scrollable Content */}
+          {/* Container_Scrollable Content */}
           <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
             {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">

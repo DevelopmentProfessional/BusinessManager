@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 import { documentsAPI, documentCategoriesAPI, employeesAPI } from '../../services/api';
-import CustomDropdown from './CustomDropdown';
+import Dropdown_Custom from './Dropdown_Custom';
+import Modal from './Modal';
 
-export default function DocumentEditModal({ isOpen, onClose, document, onSave }) {
+export default function Modal_Edit_Document({ isOpen, onClose, document, onSave }) {
   const [description, setDescription] = useState('');
   const [ownerId, setOwnerId] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -117,36 +117,23 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
     }
   };
 
-  if (!isOpen || !document) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Overlay */}
-        <div
-          className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity"
-          onClick={onClose}
-        />
-
-        {/* Modal */}
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <form onSubmit={handleSubmit}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                Edit Document
-              </h3>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-4 py-4 space-y-4">
+    <Modal
+      isOpen={isOpen && !!document}
+      onClose={onClose}
+      title="Edit Document"
+      centered={true}
+      footer={
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+          <button type="submit" form="doc-edit-form" className="btn-primary" disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      }
+    >
+      <form id="doc-edit-form" onSubmit={handleSubmit}>
+        <div className="space-y-4">
               {error && (
                 <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm">
                   {error}
@@ -179,7 +166,7 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Owner
                   </label>
-                  <CustomDropdown
+                  <Dropdown_Custom
                     value={ownerId || ''}
                     onChange={(e) => setOwnerId(e.target.value)}
                     options={[
@@ -211,7 +198,7 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Category
                 </label>
-                <CustomDropdown
+                <Dropdown_Custom
                   value={categoryId || ''}
                   onChange={(e) => setCategoryId(e.target.value)}
                   options={[
@@ -260,7 +247,7 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
                   })}
                 </div>
                 <div className="flex gap-2">
-                  <CustomDropdown
+                  <Dropdown_Custom
                     value={assignEmployeeId}
                     onChange={(e) => setAssignEmployeeId(e.target.value)}
                     options={employees.map((emp) => ({
@@ -281,20 +268,8 @@ export default function DocumentEditModal({ isOpen, onClose, document, onSave })
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-              <button type="button" onClick={onClose} className="btn-secondary">
-                Cancel
-              </button>
-              <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

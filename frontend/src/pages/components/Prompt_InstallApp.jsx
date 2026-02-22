@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import useStore from '../../services/useStore';
 
-export default function InstallAppPrompt() {
+export default function Prompt_InstallApp() {
   const location = useLocation();
   const isAuthenticated = useStore((state) => state.isAuthenticated);
 

@@ -11,7 +11,7 @@ const EMPTY_FILTERS = {
   oooEmployeeIds: [],
 };
 
-export default function ScheduleFilterModal({
+export default function Modal_Filter_Schedule({
   isOpen,
   onClose,
   employees,

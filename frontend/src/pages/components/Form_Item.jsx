@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import Modal from './Modal';
 import {
   XMarkIcon, CheckIcon,
   SparklesIcon, CubeIcon,
   WrenchScrewdriverIcon, BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
-import BarcodeScanner from './BarcodeScanner';
-import CameraCapture from './CameraCapture';
+import Scanner_Barcode from './Scanner_Barcode';
+import Widget_Camera from './Widget_Camera';
 import cacheService from '../../services/cacheService';
 import { servicesAPI } from '../../services/api';
 
-export default function ItemForm({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
+export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
   const [formData, setFormData] = useState({
     name: '',
     sku: initialSku || '',
@@ -170,8 +171,8 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
         </button>
       </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2">
+      {/* Container_Scrollable Content Area */}
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 pe-2">
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
@@ -211,7 +212,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                   type="button"
                   className={`btn ${imageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`}
                   onClick={() => setImageMode('url')}
-                  style={{ fontSize: '0.7rem' }}
+                  style={{ fontSize: '0.7rem'}}
                 >URL</button>
                 <button
                   type="button"
@@ -281,7 +282,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
                       value={0}
                       className="form-control form-control-sm bg-light dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                       placeholder="Min Count"
-                      min="0"
+                      min="0" 
                     />
                     <label htmlFor="min_count">Min Count</label>
                   </div>
@@ -470,15 +471,15 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 mt-2 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="d-flex align-items-center">
           <div></div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+          <div className="flex-grow-1 d-flex gap-5 justify-content-center">
             <button
               type="button"
               onClick={onCancel}
               className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '40px', height: '40px' }}
+              style={{ width: '3rem', height: '3rem' }}
               title="Cancel"
             >
               <XMarkIcon className="h-5 w-5" />
@@ -487,7 +488,7 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
               type="submit"
               form="item-form"
               className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '40px', height: '40px' }}
+              style={{ width: '3rem', height: '3rem' }}
               title={item ? 'Save Changes' : 'Create Item'}
             >
               <CheckIcon className="h-5 w-5" />
@@ -497,37 +498,19 @@ export default function ItemForm({ onSubmit, onCancel, item = null, initialSku =
       </div>
 
       {isCameraOpen && (
-        <CameraCapture
+        <Widget_Camera
           onCapture={handlePhotoCapture}
           onCancel={() => setIsCameraOpen(false)}
         />
       )}
 
       {/* Barcode Scanner Modal */}
-      {isScannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-            <div className="p-4 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 text-gray-900 dark:text-gray-100">Scan Barcode</h5>
-            </div>
-            <div className="p-4">
-              <BarcodeScanner
-                onDetected={handleBarcodeDetected}
-                onCancel={() => setIsScannerOpen(false)}
-              />
-            </div>
-            <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 d-flex justify-content-end">
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(false)}
-                className="btn btn-outline-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
+        <Scanner_Barcode
+          onDetected={handleBarcodeDetected}
+          onCancel={() => setIsScannerOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

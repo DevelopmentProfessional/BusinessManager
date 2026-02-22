@@ -3,9 +3,9 @@ import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
-import ServiceForm from './components/ServiceForm';
-import PermissionGate from './components/PermissionGate';
-import CSVImportButton from './components/CSVImportButton';
+import Form_Service from './components/Form_Service';
+import Gate_Permission from './components/Gate_Permission';
+import Button_ImportCSV from './components/Button_ImportCSV';
 
 export default function Services() {
   const {
@@ -196,7 +196,7 @@ export default function Services() {
       {/* Main table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        {/* Scrollable rows – grow upwards from bottom */}
+        {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
@@ -314,9 +314,9 @@ export default function Services() {
             </div>
 
             {/* Action buttons */}
-            <PermissionGate page="services" permission="write">
+            <Gate_Permission page="services" permission="write">
               <div className="d-flex gap-2 w-100">
-                <CSVImportButton
+                <Button_ImportCSV
                   entityName="Services"
                   onImport={handleCSVImport}
                   onComplete={loadServices}
@@ -343,7 +343,7 @@ export default function Services() {
                   Add
                 </button>
               </div>
-            </PermissionGate>
+            </Gate_Permission>
           </div>
         </div>
       </div>
@@ -356,7 +356,7 @@ export default function Services() {
         noPadding={true}
       >
         {isModalOpen && modalContent === 'service-form' && (
-          <ServiceForm
+          <Form_Service
             service={editingService}
             onSubmit={handleSubmitService}
             onCancel={closeModal}

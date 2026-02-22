@@ -73,7 +73,7 @@ const chartOptions = {
   }
 };
 
-const SalesChartModal = ({ isOpen, onClose }) => {
+const Modal_Chart_Sales = ({ isOpen, onClose }) => {
   if (!isOpen) {
     return null;
   }
@@ -134,4 +134,4 @@ const styles = {
   },
 };
 
-export default SalesChartModal;
+export default Modal_Chart_Sales;

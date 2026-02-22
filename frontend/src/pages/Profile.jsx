@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
 import api from '../services/api';
-import SignatureModal from './components/SignatureModal';
+import Modal_Signature from './components/Modal_Signature';
 
 // CSS for accordion pop-up animation
 const accordionStyles = `
@@ -919,7 +919,7 @@ const Profile = () => {
       </div>
 
       {/* Signature Modal */}
-      <SignatureModal
+      <Modal_Signature
         isOpen={signatureModalOpen}
         onClose={() => setSignatureModalOpen(false)}
         userId={user?.id}

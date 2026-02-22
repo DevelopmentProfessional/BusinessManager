@@ -22,7 +22,7 @@ function loadOnlyOfficeScript(onlyofficeUrl) {
   });
 }
 
-export default function OnlyOfficeEditor({ documentId }) {
+export default function Editor_OnlyOffice({ documentId }) {
   const containerId = useMemo(() => `onlyoffice-editor-${documentId}-${Math.random().toString(36).slice(2)}`, [documentId]);
   const editorRef = useRef(null);
   const connectorRef = useRef(null);

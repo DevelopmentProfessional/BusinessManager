@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import useStore from '../../services/useStore';
 
 /**
- * PermissionGate component for conditional rendering based on permissions
+ * Gate_Permission component for conditional rendering based on permissions
  * 
  * @param {string} page - The page/module name (e.g., 'clients', 'inventory')
  * @param {string} permission - The permission type (e.g., 'read', 'write', 'delete', 'admin')
@@ -10,7 +10,7 @@ import useStore from '../../services/useStore';
  * @param {React.ReactNode} fallback - Optional fallback content to render if permission is denied
  * @param {boolean} hide - If true, renders nothing when permission is denied (default: true)
  */
-const PermissionGate = ({ 
+const Gate_Permission = ({ 
   page, 
   permission, 
   children, 
@@ -50,4 +50,4 @@ const PermissionGate = ({
   return null;
 };
 
-export default PermissionGate;
+export default Gate_Permission;

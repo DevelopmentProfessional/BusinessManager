@@ -7,9 +7,9 @@ import useStore from './services/useStore';
 import { preloadMajorTables } from './services/api';
 import useDarkMode from './services/useDarkMode';
 import useBranding from './services/useBranding';
-import GlobalClientModal from './pages/components/GlobalClientModal';
-import MobileAddressBarManager from './pages/components/MobileAddressBarManager';
-import InstallAppPrompt from './pages/components/InstallAppPrompt';
+import Modal_Client from './pages/components/Modal_Client';
+import Manager_MobileAddressBar from './pages/components/Manager_MobileAddressBar';
+import Prompt_InstallApp from './pages/components/Prompt_InstallApp';
 
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import('./pages/Clients'));
@@ -113,8 +113,8 @@ function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ClearErrorOnNavigate />
-      <MobileAddressBarManager />
-      <InstallAppPrompt />
+      <Manager_MobileAddressBar />
+      <Prompt_InstallApp />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -213,7 +213,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-      <GlobalClientModal />
+      <Modal_Client />
     </Router>
   );
 }

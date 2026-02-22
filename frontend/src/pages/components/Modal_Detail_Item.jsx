@@ -7,15 +7,16 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import { inventoryAPI } from '../../services/api';
+import Modal from './Modal';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
-import BarcodeScanner from './BarcodeScanner';
-import CameraCapture from './CameraCapture';
+import Scanner_Barcode from './Scanner_Barcode';
+import Widget_Camera from './Widget_Camera';
 
 /**
- * ItemDetailModal - Full screen modal for viewing/editing items
+ * Modal_Detail_Item - Full screen modal for viewing/editing items
  */
-export default function ItemDetailModal({
+export default function Modal_Detail_Item({
   isOpen,
   onClose,
   item,
@@ -99,7 +100,6 @@ export default function ItemDetailModal({
     }
   };
 
-  if (!isOpen || !item) return null;
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -286,16 +286,8 @@ export default function ItemDetailModal({
   );
 
   return (
-    <div
-      className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="d-flex flex-column bg-white dark:bg-gray-900"
-        style={{ maxHeight: '95vh' }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen={isOpen && !!item} onClose={onClose} noPadding={true}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
 
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
@@ -367,7 +359,7 @@ export default function ItemDetailModal({
         </div>
       )}
 
-      {/* Scrollable Content Area */}
+      {/* Container_Scrollable Content Area */}
       <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2">
         {isSalesMode ? (
           /* Sales Mode - Display only */
@@ -808,37 +800,19 @@ export default function ItemDetailModal({
       </div>
       </div>
 
-      {isScannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-            <div className="p-4 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-              <h5 className="mb-0 text-gray-900 dark:text-gray-100">Scan Barcode</h5>
-            </div>
-            <div className="p-4">
-              <BarcodeScanner
-                onDetected={handleBarcodeDetected}
-                onCancel={() => setIsScannerOpen(false)}
-              />
-            </div>
-            <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 d-flex justify-content-end">
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(false)}
-                className="btn btn-outline-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
+        <Scanner_Barcode
+          onDetected={handleBarcodeDetected}
+          onCancel={() => setIsScannerOpen(false)}
+        />
+      </Modal>
 
       {isCameraOpen && (
-        <CameraCapture
+        <Widget_Camera
           onCapture={handlePhotoCapture}
           onCancel={() => setIsCameraOpen(false)}
         />
       )}
-    </div>
+    </Modal>
   );
 }

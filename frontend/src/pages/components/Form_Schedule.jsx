@@ -3,10 +3,10 @@ import useStore from '../../services/useStore';
 import { isudAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, CalendarDaysIcon, ClockIcon, XMarkIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
-import PermissionGate from './PermissionGate';
-import CustomDropdown from './CustomDropdown';
-import IconButton from './IconButton';
-import ActionFooter from './ActionFooter';
+import Gate_Permission from './Gate_Permission';
+import Dropdown_Custom from './Dropdown_Custom';
+import Button_Icon from './Button_Icon';
+import Footer_Action from './Footer_Action';
 
 const APPOINTMENT_TYPES = [
   { value: 'one_time', label: 'Appointment', description: 'Client appointment with service' },
@@ -30,7 +30,7 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' }
 ];
 
-export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp }) {
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -89,7 +89,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
             }
           }
         } catch (err) {
-          if (!cancelled) console.error('ScheduleForm failed to load services/employees', err);
+          if (!cancelled) console.error('Form_Schedule failed to load services/employees', err);
         }
       };
       load();
@@ -319,7 +319,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
       {/* Appointment Type - FIRST so it controls what fields show */}
       <div className="mb-3">
-        <CustomDropdown
+        <Dropdown_Custom
           name="appointment_type"
           value={formData.appointment_type}
           onChange={handleChange}
@@ -371,7 +371,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       {typeConfig.needsClient && (
         <div className="input-group">
          
-          <CustomDropdown
+          <Dropdown_Custom
             name="client_id"
             value={typeConfig.clientMultiple ? formData.client_ids : (formData.client_ids[0] || '')}
             onChange={handleClientChange}
@@ -393,7 +393,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       {/* Service Selection - only for appointments/series */}
       {typeConfig.needsService && (
  
-          <CustomDropdown
+          <Dropdown_Custom
             name="service_id"
             value={formData.service_id}
             onChange={handleServiceChange}
@@ -412,7 +412,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
       {typeConfig.needsEmployee && (
         <div>
        
-            <CustomDropdown
+            <Dropdown_Custom
               name="employee_id"
               value={typeConfig.employeeMultiple ? formData.employee_ids : (formData.employee_ids[0] || '')}
               onChange={handleEmployeeChange}
@@ -447,7 +447,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
             Recurrence Frequency
           </label>
-          <CustomDropdown
+          <Dropdown_Custom
             name="recurrence_frequency"
             value={formData.recurrence_frequency}
             onChange={handleChange}
@@ -460,7 +460,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
 
       {/* Duration */}
       <div className="mb-3">
-        <CustomDropdown
+        <Dropdown_Custom
           name="duration_minutes"
           value={formData.duration_minutes}
           onChange={handleChange}
@@ -491,7 +491,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
         </div>
         <div>
           <div className="input-group mt-1">
-            <CustomDropdown
+            <Dropdown_Custom
               name="appointment_hour"
               value={formData.appointment_hour || ''}
               onChange={handleChange}
@@ -504,7 +504,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
               className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
             />
             <span className="input-group-text">:</span>
-            <CustomDropdown
+            <Dropdown_Custom
               name="appointment_minute"
               value={formData.appointment_minute || ''}
               onChange={handleChange}
@@ -537,12 +537,12 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
         </div>
       )}
 
-      <ActionFooter className="justify-center">
+      <Footer_Action className="justify-center">
         {appointment?.id && onDelete && (
-          <IconButton icon={TrashIcon} label="Delete" onClick={onDelete} variant="danger" />
+          <Button_Icon icon={TrashIcon} label="Delete" onClick={onDelete} variant="danger" />
         )}
-        <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
-        <IconButton
+        <Button_Icon icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
+        <Button_Icon
           icon={CheckIcon}
           label={appointment
             ? `Update ${formData.appointment_type === 'meeting' ? 'Meeting' : formData.appointment_type === 'task' ? 'Task' : 'Appointment'}`
@@ -553,7 +553,7 @@ export default function ScheduleForm({ appointment, onSubmit, onCancel, onDelete
           type="submit"
           variant="primary"
         />
-      </ActionFooter>
+      </Footer_Action>
     </form>
   );
 }

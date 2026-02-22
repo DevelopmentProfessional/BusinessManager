@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 
-export default function BarcodeScanner({ onDetected, onCancel }) {
+export default function Scanner_Barcode({ onDetected, onCancel }) {
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const mediaStreamRef = useRef(null);

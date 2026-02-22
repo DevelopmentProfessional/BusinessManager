@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
-import IconButton from './IconButton';
-import ActionFooter from './ActionFooter';
+import Button_Icon from './Button_Icon';
+import Footer_Action from './Footer_Action';
 
 const MEMBERSHIP_TIERS = [
   { value: 'none', label: 'None' },
@@ -11,7 +11,7 @@ const MEMBERSHIP_TIERS = [
   { value: 'platinum', label: 'Platinum' }
 ];
 
-export default function ClientForm({ client, onSubmit, onCancel, error = null }) {
+export default function Form_Client({ client, onSubmit, onCancel, error = null }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -219,10 +219,10 @@ export default function ClientForm({ client, onSubmit, onCancel, error = null })
         </div>
       </div>
 
-      <ActionFooter>
-        <IconButton icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
-        <IconButton icon={CheckIcon} label={client ? 'Update Client' : 'Create Client'} type="submit" variant="primary" />
-      </ActionFooter>
+      <Footer_Action>
+        <Button_Icon icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
+        <Button_Icon icon={CheckIcon} label={client ? 'Update Client' : 'Create Client'} type="submit" variant="primary" />
+      </Footer_Action>
     </form>
   );
 }

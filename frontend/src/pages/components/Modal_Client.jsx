@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import useStore from '../../services/useStore';
 import { clientsAPI } from '../../services/api';
 import Modal from './Modal';
-import ClientForm from './ClientForm';
+import Form_Client from './Form_Client';
 
-export default function GlobalClientModal() {
+export default function Modal_Client() {
   const { 
     isAddClientModalOpen, 
     closeAddClientModal, 
@@ -46,7 +46,7 @@ export default function GlobalClientModal() {
   return (
     <Modal isOpen={isAddClientModalOpen} onClose={handleCancel}>
       {isAddClientModalOpen && (
-        <ClientForm
+        <Form_Client
           client={null}
           onSubmit={handleSubmit}
           onCancel={handleCancel}

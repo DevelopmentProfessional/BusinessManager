@@ -4,7 +4,7 @@ import React from 'react';
  * Icon-only button with tooltip on hover and long-press.
  * Use title and aria-label so the button's purpose is shown when hovering or focusing.
  */
-export default function IconButton({
+export default function Button_Icon({
   icon: Icon,
   label,
   onClick,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
-export default function MobileAddButton({ onClick, label = "Add", className = "" }) {
+export default function Button_Add_Mobile({ onClick, label = "Add", className = "" }) {
   return (
     <button
       onClick={onClick}

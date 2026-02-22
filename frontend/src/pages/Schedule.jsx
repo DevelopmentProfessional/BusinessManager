@@ -3,11 +3,11 @@ import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from '../services/api';
 import Modal from './components/Modal';
-import ScheduleForm from './components/ScheduleForm';
-import PermissionGate from './components/PermissionGate';
-import AttendanceWidget from './components/AttendanceWidget';
+import Form_Schedule from './components/Form_Schedule';
+import Gate_Permission from './components/Gate_Permission';
+import Widget_Attendance from './components/Widget_Attendance';
 import useDarkMode from '../services/useDarkMode';
-import ScheduleFilterModal from './components/ScheduleFilterModal';
+import Modal_Filter_Schedule from './components/Modal_Filter_Schedule';
 
 export default function Schedule() {
   const {
@@ -718,11 +718,11 @@ export default function Schedule() {
 
   return (
     <div className="schedule-page h-100 d-flex flex-column">
-      <PermissionGate page="schedule" permission="read">
+      <Gate_Permission page="schedule" permission="read">
         {/* Attendance Widget - Clock In/Out (conditionally rendered based on settings) */}
         {scheduleSettings.attendance_check_in_required && (
           <div className="mb-3 px-2">
-            <AttendanceWidget compact={true} />
+            <Widget_Attendance compact={true} />
           </div>
         )}
 
@@ -1260,16 +1260,19 @@ export default function Schedule() {
                   ? 'btn-primary'
                   : 'btn-outline-secondary'
               }`}
-              style={{ height: '36px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ height: '36px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
               title="Filter"
             >
-              Filter{filters.showOutOfOffice ? ' · OOO' : ''}
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/>
+              </svg>
+              {filters.showOutOfOffice && <span>OOO</span>}
             </button>
           </div>
         </div>
 
         <Modal isOpen={isModalOpen} onClose={closeModal}>
-          <ScheduleForm
+          <Form_Schedule
             appointment={editingAppointment}
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
@@ -1280,7 +1283,7 @@ export default function Schedule() {
           />
         </Modal>
 
-        <ScheduleFilterModal
+        <Modal_Filter_Schedule
           isOpen={isFilterOpen}
           onClose={() => setIsFilterOpen(false)}
           employees={employees}
@@ -1299,19 +1302,13 @@ export default function Schedule() {
             oooEmployeeIds: [],
           })}
         />
-      </PermissionGate>
+      </Gate_Permission>
 
       {/* Overlap bottom modal */}
-      {overlapEvents && (
-        <>
-          <div className="overlap-modal-backdrop" onClick={() => setOverlapEvents(null)} />
-          <div className="overlap-bottom-modal">
-            <div className="overlap-modal-header">
-              <span className="overlap-modal-title">{overlapEvents.length} Overlapping Events</span>
-              <button className="overlap-modal-close" onClick={() => setOverlapEvents(null)}>&times;</button>
-            </div>
+      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} title={overlapEvents ? `${overlapEvents.length} Overlapping Events` : ''} noPadding={true}>
+        <div>
             <div className="overlap-event-list">
-              {[...overlapEvents]
+              {[...(overlapEvents || [])]
                 .sort((a, b) => {
                   const timeA = new Date(a.appointment_date);
                   const timeB = new Date(b.appointment_date);
@@ -1366,8 +1363,7 @@ export default function Schedule() {
                 })}
             </div>
           </div>
-        </>
-      )}
+      </Modal>
 
       <style>{`
         /* Schedule Clock */

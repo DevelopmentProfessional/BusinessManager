@@ -9,7 +9,7 @@ import {
   DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../services/api';
-import OnlyOfficeEditor from './components/OnlyOfficeEditor';
+import Editor_OnlyOffice from './components/Editor_OnlyOffice';
 import useStore from '../services/useStore';
 
 export default function DocumentEditor() {
@@ -229,7 +229,7 @@ export default function DocumentEditor() {
             })()}
           </div>
         ) : (
-          <OnlyOfficeEditor documentId={document.id} />
+          <Editor_OnlyOffice documentId={document.id} />
         )}
       </div>
     </div>

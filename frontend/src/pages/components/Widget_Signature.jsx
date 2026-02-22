@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-export default function SignaturePad({ onSave, onCancel, initialSignature, width = 500, height = 200 }) {
+export default function Widget_Signature({ onSave, onCancel, initialSignature, width = 500, height = 200 }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
