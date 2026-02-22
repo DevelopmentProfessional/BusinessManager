@@ -25,7 +25,7 @@ const CHART_TYPE_ICONS = {
   area: '📊'
 };
 
-const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
+const Filter_Report = ({ filters, availableChartTypes, onFilterChange }) => {
   const handleFilterUpdate = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     onFilterChange(newFilters);
@@ -205,4 +205,4 @@ const ReportFilter = ({ filters, availableChartTypes, onFilterChange }) => {
   );
 };
 
-export default ReportFilter;
+export default Filter_Report;

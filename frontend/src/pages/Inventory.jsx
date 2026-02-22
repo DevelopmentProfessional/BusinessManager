@@ -4,9 +4,9 @@ import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon } fr
 import useStore from '../services/useStore';
 import { inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
-import ItemForm from './components/ItemForm';
-import ItemDetailModal from './components/ItemDetailModal';
-import PermissionGate from './components/PermissionGate';
+import Form_Item from './components/Form_Item';
+import Modal_Detail_Item from './components/Modal_Detail_Item';
+import Gate_Permission from './components/Gate_Permission';
 
 export default function Inventory() {
   const { 
@@ -241,10 +241,10 @@ return (
     {/* Main upside-down table container */}
     <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-      {/* Scrollable rows – grow upwards from bottom */}
+      {/* Container_Scrollable rows – grow upwards from bottom */}
       <div
         ref={scrollRef}
-        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white no-scrollbar"
         style={{ background: 'var(--bs-body-bg)' }}
       >
         {filteredInventory.length > 0 ? (
@@ -331,7 +331,7 @@ return (
 
           {/* Controls row - Add, Type, Stock */}
           <div className="d-flex align-items-center gap-2 mb-1">
-            <PermissionGate page="inventory" permission="write">
+            <Gate_Permission page="inventory" permission="write">
               <button
                 type="button"
                 onClick={handleCreateItem}
@@ -341,7 +341,7 @@ return (
               >
                 <PlusIcon className="h-5 w-5" />
               </button>
-            </PermissionGate>
+            </Gate_Permission>
 
             <select
               value={typeFilter}
@@ -372,7 +372,7 @@ return (
     </div>
 
     {/* Modals remain unchanged */}
-    <ItemDetailModal
+    <Modal_Detail_Item
       isOpen={isModalOpen && modalContent === 'inventory-form'}
       onClose={closeModal}
       item={editingInventory}
@@ -386,7 +386,7 @@ return (
 
     <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
       {isModalOpen && modalContent === 'item-form' && (
-        <ItemForm
+        <Form_Item
           showInitialQuantity
           onSubmitWithExtras={handleSubmitNewItem}
           onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}

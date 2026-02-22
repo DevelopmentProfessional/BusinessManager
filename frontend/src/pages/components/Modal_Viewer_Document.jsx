@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import Modal from './Modal';
 import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../../services/api';
 import { renderAsync } from 'docx-preview';
@@ -544,7 +545,7 @@ function EditorArea({ document, documentType }) {
 }
 
 // Main Document Viewer Modal
-export default function DocumentViewerModal({ isOpen, onClose, document, onEdit, onSign, onDelete }) {
+export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdit, onSign, onDelete }) {
   const [mode, setMode] = useState('view'); // 'view' or 'edit'
   const [editorDirty, setEditorDirty] = useState(false);
 
@@ -554,7 +555,6 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit,
     setEditorDirty(false);
   }, [document?.id]);
 
-  if (!isOpen || !document) return null;
 
   const documentType = getDocumentType(document);
   const editable = isEditableType(documentType);
@@ -603,15 +603,8 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit,
   };
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity"
-        onClick={handleClose}
-      />
-
-      {/* Modal Content */}
-      <div className="fixed inset-0 m-2 sm:m-4 lg:m-6 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+    <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} fullScreen={true}>
+      <div className="absolute inset-0 m-2 sm:m-4 lg:m-6 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-3 min-w-0">
@@ -713,7 +706,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document, onEdit,
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

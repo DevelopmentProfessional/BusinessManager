@@ -35,7 +35,7 @@ const defaultOptions = {
   },
 };
 
-const ReportChart = ({ data, type, title, loading }) => {
+const Chart_Report = ({ data, type, title, loading }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -115,4 +115,4 @@ const ReportChart = ({ data, type, title, loading }) => {
   }
 };
 
-export default ReportChart;
+export default Chart_Report;

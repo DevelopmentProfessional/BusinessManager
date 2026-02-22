@@ -4,9 +4,9 @@ import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { suppliersAPI } from '../services/api';
 import Modal from './components/Modal';
-import MobileTable from './components/MobileTable';
-import MobileAddButton from './components/MobileAddButton';
-import PermissionGate from './components/PermissionGate';
+import Table_Mobile from './components/Table_Mobile';
+import Button_Add_Mobile from './components/Button_Add_Mobile';
+import Gate_Permission from './components/Gate_Permission';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Suppliers() {
@@ -139,7 +139,7 @@ export default function Suppliers() {
           <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <PermissionGate page="suppliers" permission="write">
+          <Gate_Permission page="suppliers" permission="write">
             <button
               type="button"
               onClick={handleCreateSupplier}
@@ -148,7 +148,7 @@ export default function Suppliers() {
               <PlusIcon className="h-5 w-5 mr-2" />
               Add Supplier
             </button>
-          </PermissionGate>
+          </Gate_Permission>
         </div>
       </div>
 
@@ -160,7 +160,7 @@ export default function Suppliers() {
 
       {/* Mobile view - fills space, table scrolls inside */}
       <div className="mt-4 md:hidden flex-1 min-h-0 flex flex-col">
-        <MobileTable
+        <Table_Mobile
           data={suppliers}
           columns={[
             { key: 'name', title: 'Name' },
@@ -173,9 +173,9 @@ export default function Suppliers() {
           deletePermission={{ page: 'suppliers', permission: 'delete' }}
           emptyMessage="No suppliers found"
         />
-        <PermissionGate page="suppliers" permission="write">
-          <MobileAddButton onClick={handleCreateSupplier} label="Add" />
-        </PermissionGate>
+        <Gate_Permission page="suppliers" permission="write">
+          <Button_Add_Mobile onClick={handleCreateSupplier} label="Add" />
+        </Gate_Permission>
       </div>
 
       {/* Desktop table - scrolls inside, page does not */}
@@ -219,7 +219,7 @@ export default function Suppliers() {
                         {supplier.address || '-'}
                       </td>
                       <td className="px-1 py-1 whitespace-nowrap text-right text-sm font-medium space-x-1">
-                        <PermissionGate page="suppliers" permission="delete">
+                        <Gate_Permission page="suppliers" permission="delete">
                           <button
                             onClick={() => handleDeleteSupplier(supplier.id)}
                             className="text-red-600 hover:text-red-900"
@@ -227,8 +227,8 @@ export default function Suppliers() {
                           >
                             <TrashIcon className="h-5 w-5" />
                           </button>
-                        </PermissionGate>
-                        <PermissionGate page="suppliers" permission="write">
+                        </Gate_Permission>
+                        <Gate_Permission page="suppliers" permission="write">
                           <button
                             onClick={() => handleEditSupplier(supplier)}
                             className="text-indigo-600 hover:text-indigo-900"
@@ -236,7 +236,7 @@ export default function Suppliers() {
                           >
                             <PencilIcon className="h-5 w-5" />
                           </button>
-                        </PermissionGate>
+                        </Gate_Permission>
                       </td>
                     </tr>
                   ))}

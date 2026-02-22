@@ -40,7 +40,11 @@
       "Bash(git commit:*)",
       "Bash(node -e:*)",
       "Bash(git checkout:*)",
-      "Bash(cd C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager:*)"
+      "Bash(cd C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager:*)",
+      "Bash(cd:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(git:*)"
     ]
   }
 }

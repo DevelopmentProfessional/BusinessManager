@@ -16,10 +16,10 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { reportsAPI } from '../services/api';
-import PermissionGate from './components/PermissionGate';
+import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
-import ReportChart from './components/ReportChart';
-import ReportFilter from './components/ReportFilter';
+import Chart_Report from './components/Chart_Report';
+import Filter_Report from './components/Filter_Report';
 
 const AVAILABLE_REPORTS = [
   {
@@ -501,7 +501,7 @@ export default function Reports() {
             </div>
 
             {/* Filters */}
-            <ReportFilter
+            <Filter_Report
               filters={reportFilters}
               availableChartTypes={selectedReport.chartTypes}
               onFilterChange={handleFilterChange}
@@ -510,7 +510,7 @@ export default function Reports() {
             {/* Chart */}
             <div className="mt-6 h-96">
               {reportData ? (
-                <ReportChart
+                <Chart_Report
                   data={reportData}
                   type={reportFilters.chartType}
                   title={selectedReport.title}

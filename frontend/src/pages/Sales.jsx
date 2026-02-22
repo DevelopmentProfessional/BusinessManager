@@ -9,9 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI } from '../services/api';
-import PermissionGate from './components/PermissionGate';
-import ItemDetailModal from './components/ItemDetailModal';
-import CheckoutModal from './components/CheckoutModal';
+import Gate_Permission from './components/Gate_Permission';
+import Modal from './components/Modal';
+import Modal_Detail_Item from './components/Modal_Detail_Item';
+import Modal_Checkout_Sales from './components/Modal_Checkout_Sales';
 import { getDisplayImageUrl } from './components/imageUtils';
 
 // Unified Product/Service Card Component
@@ -677,16 +678,8 @@ export default function Sales() {
       </div>
 
       {/* Cart Modal */}
-      {showCartModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowCartModal(false)}
-          />
-          
-          {/* Modal Content */}
-          <div className="relative w-full sm:w-[480px] max-h-[90vh] bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+      <Modal isOpen={showCartModal} onClose={() => setShowCartModal(false)} noPadding={true}>
+        <div className="flex flex-col max-h-[90vh]">
             {/* Cart Header */}
             <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
@@ -847,7 +840,7 @@ export default function Sales() {
             )}
           </div>
         </div>
-      )}
+      </Modal>
 
       <style>{`
         @keyframes slide-up {
@@ -866,7 +859,7 @@ export default function Sales() {
       `}</style>
 
       {/* Item Detail Modal - Sales Mode */}
-      <ItemDetailModal
+      <Modal_Detail_Item
         isOpen={showProductModal}
         onClose={() => setShowProductModal(false)}
         item={selectedItem}
@@ -877,7 +870,7 @@ export default function Sales() {
       />
 
       {/* Checkout Modal */}
-      <CheckoutModal
+      <Modal_Checkout_Sales
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
         cart={cart}
@@ -886,9 +879,9 @@ export default function Sales() {
         onProcessPayment={processPayment}
       />
 
-      {/* Sales History Section (Placeholder) */}
-      {showHistoryModal && (
-        <div className="fixed inset-0 z-50 flex flex-col md:flex-row bg-white dark:bg-gray-900">
+      {/* Sales History */}
+      <Modal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} noPadding={true} fullScreen={true}>
+        <div className="flex flex-col md:flex-row h-full bg-white dark:bg-gray-900">
           <div className="w-full md:w-72 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4">
             <div className="flex items-center gap-2 mb-3">
               <FunnelIcon className="h-4 w-4 text-gray-500" />
@@ -1021,7 +1014,7 @@ export default function Sales() {
             </div>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

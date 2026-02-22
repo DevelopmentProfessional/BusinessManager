@@ -5,7 +5,7 @@ import api from '../../services/api.js';
  * API Debug Info component to display API configuration and test connectivity
  * Can be used in Settings page or other pages that need API debugging info
  */
-export default function ApiDebugInfo() {
+export default function Debug_ApiInfo() {
   const [apiStatus, setApiStatus] = useState('unknown');
   const [testResult, setTestResult] = useState(null);
 

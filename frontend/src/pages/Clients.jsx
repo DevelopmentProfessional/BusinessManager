@@ -3,8 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import { clientsAPI } from '../services/api';
 import Modal from './components/Modal';
-import ClientForm from './components/ClientForm';
-import PermissionGate from './components/PermissionGate';
+import Form_Client from './components/Form_Client';
+import Gate_Permission from './components/Gate_Permission';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default function Clients() {
@@ -198,7 +198,7 @@ export default function Clients() {
       {/* Main table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        {/* Scrollable rows – grow upwards from bottom */}
+        {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
@@ -223,7 +223,7 @@ export default function Clients() {
                   >
                     {/* Delete */}
                     <td className="text-center px-2">
-                      <PermissionGate page="clients" permission="delete">
+                      <Gate_Permission page="clients" permission="delete">
                         <button
                           onClick={() => handleDeleteClient(client.id)}
                           className="btn btn-sm btn-outline-danger border-0 p-1"
@@ -231,7 +231,7 @@ export default function Clients() {
                         >
                           ×
                         </button>
-                      </PermissionGate>
+                      </Gate_Permission>
                     </td>
 
                     {/* Name */}
@@ -267,7 +267,7 @@ export default function Clients() {
 
                     {/* Edit */}
                     <td className="text-center px-2">
-                      <PermissionGate page="clients" permission="write">
+                      <Gate_Permission page="clients" permission="write">
                         <button
                           onClick={() => handleEditClient(client)}
                           className="btn btn-sm btn-outline-primary border-0 p-1"
@@ -275,7 +275,7 @@ export default function Clients() {
                         >
                           ✎
                         </button>
-                      </PermissionGate>
+                      </Gate_Permission>
                     </td>
                   </tr>
                 ))}
@@ -332,7 +332,7 @@ export default function Clients() {
 
             {/* Controls row - Add, Tier */}
             <div className="d-flex align-items-center gap-2 mb-1">
-              <PermissionGate page="clients" permission="write">
+              <Gate_Permission page="clients" permission="write">
                 <button
                   type="button"
                   onClick={handleCreateClient}
@@ -342,7 +342,7 @@ export default function Clients() {
                 >
                   <PlusIcon className="h-5 w-5" />
                 </button>
-              </PermissionGate>
+              </Gate_Permission>
 
               <select
                 value={tierFilter}
@@ -365,7 +365,7 @@ export default function Clients() {
       {/* Modal for Client Form */}
       <Modal isOpen={isModalOpen && modalContent === 'client-form'} onClose={closeModal}>
         {isModalOpen && modalContent === 'client-form' && (
-          <ClientForm
+          <Form_Client
             client={editingClient}
             onSubmit={handleSubmitClient}
             onCancel={closeModal}

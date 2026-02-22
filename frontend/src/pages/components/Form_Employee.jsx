@@ -2,12 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI } from '../../services/api';
 import api from '../../services/api';
-import SignaturePad from './SignaturePad';
+import Widget_Signature from './Widget_Signature';
 
 const PAGES = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
 const PERMISSION_TYPES = ['read', 'write', 'admin'];
 
-export default function EmployeeFormTabs({
+export default function Form_Employee({
   employee,
   onSubmit,
   onCancel,
@@ -105,7 +105,7 @@ export default function EmployeeFormTabs({
         const data = response?.data ?? response;
         if (!cancelled && Array.isArray(data)) setEmployeesList(data);
       } catch (err) {
-        if (!cancelled) console.error('EmployeeFormTabs failed to load employees', err);
+        if (!cancelled) console.error('Form_Employee failed to load employees', err);
       }
     };
     load();
@@ -619,7 +619,7 @@ export default function EmployeeFormTabs({
                   </div>
                 ) : showSignaturePad ? (
                   <div className="col-12">
-                    <SignaturePad
+                    <Widget_Signature
                       onSave={handleSaveSignature}
                       onCancel={() => setShowSignaturePad(false)}
                       initialSignature={savedSignature}

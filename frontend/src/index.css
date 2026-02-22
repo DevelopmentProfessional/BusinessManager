@@ -65,6 +65,15 @@ body,
   overflow: hidden;
 }
 
+/* Hide scrollbar while preserving scroll behaviour */
+.no-scrollbar {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE / Edge legacy */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;               /* Chrome / Safari / Opera */
+}
+
 .app-shell-main {
   padding-top: env(safe-area-inset-top);
 }

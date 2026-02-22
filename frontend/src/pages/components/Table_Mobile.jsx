@@ -6,10 +6,10 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
-import PermissionGate from './PermissionGate';
-import IconButton from './IconButton';
+import Gate_Permission from './Gate_Permission';
+import Button_Icon from './Button_Icon';
 
-export default function MobileTable({ 
+export default function Table_Mobile({ 
   data = [], 
   columns = [], 
   onEdit, 
@@ -92,19 +92,19 @@ export default function MobileTable({
               >
                 {/* Delete button - leftmost (optional) */}
                 {onDelete && (
-                  <PermissionGate 
+                  <Gate_Permission 
                     page={deletePermission?.page} 
                     permission={deletePermission?.permission}
                     hide={!deletePermission}
                   >
-                    <IconButton
+                    <Button_Icon
                       icon={TrashIcon}
                       label="Delete"
                       onClick={() => onDelete(item)}
                       variant="danger"
                       className="flex-shrink-0 !p-2"
                     />
-                  </PermissionGate>
+                  </Gate_Permission>
                 )}
 
                 {/* Content area - flexible */}
@@ -120,19 +120,19 @@ export default function MobileTable({
 
                 {/* Right actions: Edit (optional) + custom */}
                 {onEdit && (
-                  <PermissionGate 
+                  <Gate_Permission 
                     page={editPermission?.page} 
                     permission={editPermission?.permission}
                     hide={!editPermission}
                   >
-                    <IconButton
+                    <Button_Icon
                       icon={PencilIcon}
                       label="Edit"
                       onClick={() => onEdit(item)}
                       variant="ghost"
                       className="flex-shrink-0 !p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                     />
-                  </PermissionGate>
+                  </Gate_Permission>
                 )}
                 {typeof rightActions === 'function' ? rightActions(item) : null}
               </div>

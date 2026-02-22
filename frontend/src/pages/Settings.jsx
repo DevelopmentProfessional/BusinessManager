@@ -20,7 +20,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { settingsAPI, schemaAPI, insurancePlansAPI } from '../services/api';
-import DatabaseConnectionManager from './components/DatabaseConnectionManager';
+import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
 import useBranding from '../services/useBranding';
 
 export default function Settings() {
@@ -889,7 +889,7 @@ export default function Settings() {
 
               {/* Database Connection Manager */}
               <div className="mb-6 sm:mb-8">
-                <DatabaseConnectionManager />
+                <Manager_DatabaseConnection />
               </div>
 
               {/* Data Import Section */}

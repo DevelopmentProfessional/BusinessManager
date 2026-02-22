@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * SquareImage - A responsive square image component with center cropping
+ * Image_Square - A responsive square image component with center cropping
  * 
  * @param {string} src - Image source URL
  * @param {string} alt - Alt text for the image
@@ -11,7 +11,7 @@ import React from 'react';
  * @param {function} onError - Callback when image fails to load (optional)
  * @param {string} size - Predefined sizes: 'sm' (80px), 'md' (120px), 'lg' (200px), 'xl' (300px) or 'full' for responsive
  */
-export default function SquareImage({ 
+export default function Image_Square({ 
   src, 
   alt = '', 
   fallbackContent = null,

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import SignaturePad from './SignaturePad';
+import Widget_Signature from './Widget_Signature';
 import api from '../../services/api';
 
-export default function SignatureModal({ isOpen, onClose, userId }) {
+export default function Modal_Signature({ isOpen, onClose, userId }) {
   const [savedSignature, setSavedSignature] = useState(null);
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState('');
@@ -64,7 +64,7 @@ export default function SignatureModal({ isOpen, onClose, userId }) {
       noPadding={true}
     >
       <div className="d-flex flex-column h-100">
-        {/* Scrollable Content */}
+        {/* Container_Scrollable Content */}
         <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
           {signatureMessage && (
             <div className={`alert py-2 small mb-3 ${signatureMessage.includes('Failed') ? 'alert-danger' : 'alert-success'}`}>
@@ -80,7 +80,7 @@ export default function SignatureModal({ isOpen, onClose, userId }) {
               <div className="text-muted">Loading signature...</div>
             </div>
           ) : showSignaturePad ? (
-            <SignaturePad
+            <Widget_Signature
               onSave={handleSaveSignature}
               onCancel={handleCancel}
               initialSignature={savedSignature}

@@ -3,7 +3,7 @@ import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import { attendanceAPI } from '../../services/api';
 
-export default function AttendanceWidget({ compact = false }) {
+export default function Widget_Attendance({ compact = false }) {
   const { user, hasPermission } = useStore();
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);

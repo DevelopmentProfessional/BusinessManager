@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import useStore from '../../services/useStore';
 import { getMobileEnvironment } from '../../services/mobileEnvironment';
 
-export default function MobileAddressBarManager() {
+export default function Manager_MobileAddressBar() {
   const location = useLocation();
   const isAuthenticated = useStore((state) => state.isAuthenticated);
 

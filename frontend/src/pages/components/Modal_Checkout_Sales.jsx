@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Modal from './Modal';
 import { 
   XMarkIcon, CreditCardIcon, BanknotesIcon, 
   CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon,
@@ -7,10 +8,10 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
 /**
- * CheckoutModal - A reusable checkout/payment modal component
+ * Modal_Checkout_Sales - A reusable checkout/payment modal component
  * Handles card and cash payments with validation and processing animation
  */
-export default function CheckoutModal({ 
+export default function Modal_Checkout_Sales({ 
   isOpen, 
   onClose, 
   cart = [], 
@@ -107,17 +108,9 @@ export default function CheckoutModal({
     }
   };
   
-  if (!isOpen) return null;
-  
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={handleClose}
-    >
-      <div 
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true}>
+      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
           <div className="flex items-center gap-1">
@@ -344,6 +337,6 @@ export default function CheckoutModal({
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

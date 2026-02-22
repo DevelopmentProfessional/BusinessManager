@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 
-export default function DatabaseConnectionManager() {
+export default function Manager_DatabaseConnection() {
   const [connections, setConnections] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);

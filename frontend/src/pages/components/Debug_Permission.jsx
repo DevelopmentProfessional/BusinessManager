@@ -5,7 +5,7 @@ import useStore from '../../services/useStore';
  * Debug component to show current user permissions
  * This is for testing purposes only
  */
-const PermissionDebug = () => {
+const Debug_Permission = () => {
   const { user, hasPermission } = useStore();
   const [permissions, setPermissions] = useState({});
 
@@ -49,4 +49,4 @@ const PermissionDebug = () => {
   );
 };
 
-export default PermissionDebug;
+export default Debug_Permission;

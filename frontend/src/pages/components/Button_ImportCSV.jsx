@@ -13,7 +13,7 @@ import Modal from './Modal';
  * - requiredFields: array - list of required field names
  * - className: string - additional CSS classes for the button
  */
-export default function CSVImportButton({
+export default function Button_ImportCSV({
   onImport,
   onComplete,
   entityName = 'Records',

@@ -12,11 +12,11 @@ import {
 import useStore from '../services/useStore';
 import api, { documentsAPI, documentCategoriesAPI } from '../services/api';
 import Modal from './components/Modal';
-import MobileTable from './components/MobileTable';
-import MobileAddButton from './components/MobileAddButton';
-import PermissionGate from './components/PermissionGate';
-import DocumentViewerModal from './components/DocumentViewerModal';
-import DocumentEditModal from './components/DocumentEditModal';
+import Table_Mobile from './components/Table_Mobile';
+import Button_Add_Mobile from './components/Button_Add_Mobile';
+import Gate_Permission from './components/Gate_Permission';
+import Modal_Viewer_Document from './components/Modal_Viewer_Document';
+import Modal_Edit_Document from './components/Modal_Edit_Document';
 
 function DocumentUploadForm({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -589,7 +589,7 @@ export default function Documents() {
       {/* Main table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        {/* Scrollable rows – grow upwards from bottom */}
+        {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
           style={{ background: 'var(--bs-body-bg)' }}
@@ -672,7 +672,7 @@ export default function Documents() {
             </div>
 
             <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-              <PermissionGate page="documents" permission="write">
+              <Gate_Permission page="documents" permission="write">
                 <button
                   type="button"
                   onClick={handleUploadDocument}
@@ -682,7 +682,7 @@ export default function Documents() {
                 >
                   <PlusIcon className="h-5 w-5" />
                 </button>
-              </PermissionGate>
+              </Gate_Permission>
 
               <select
                 value={categoryFilter}
@@ -742,7 +742,7 @@ export default function Documents() {
       </Modal>
 
       {/* Document Viewer Modal */}
-      <DocumentViewerModal
+      <Modal_Viewer_Document
         isOpen={isViewerOpen}
         onClose={() => setIsViewerOpen(false)}
         document={viewerDoc}
@@ -752,7 +752,7 @@ export default function Documents() {
       />
 
       {/* Document Edit Modal */}
-      <DocumentEditModal
+      <Modal_Edit_Document
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         document={editDoc}
@@ -927,7 +927,7 @@ export default function Documents() {
               Manage Categories
             </h3>
 
-            {/* Scrollable content area */}
+            {/* Container_Scrollable content area */}
             <div className="flex-1 overflow-y-auto min-h-0">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">

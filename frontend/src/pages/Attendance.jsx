@@ -4,9 +4,9 @@ import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { attendanceAPI, employeesAPI } from '../services/api';
 import Modal from './components/Modal';
-import MobileTable from './components/MobileTable';
-import CustomDropdown from './components/CustomDropdown';
-import PermissionGate from './components/PermissionGate';
+import Table_Mobile from './components/Table_Mobile';
+import Dropdown_Custom from './components/Dropdown_Custom';
+import Gate_Permission from './components/Gate_Permission';
 
 function AttendanceForm({ onSubmit, onCancel }) {
   const { employees } = useStore();
@@ -45,7 +45,7 @@ function AttendanceForm({ onSubmit, onCancel }) {
         <label htmlFor="employee_id" className="block text-sm font-medium text-gray-700">
           Employee *
         </label>
-        <CustomDropdown
+        <Dropdown_Custom
           name="employee_id"
           value={formData.employee_id}
           onChange={handleChange}
@@ -349,7 +349,7 @@ export default function Attendance() {
 
       {/* Attendance Records */}
       <div className="mt-6 flex-1">
-        <MobileTable
+        <Table_Mobile
           data={attendanceRecords}
           columns={[
             { key: 'employee', title: 'Employee', render: (_, r) => getEmployeeName(r.user_id || r.employee_id) },
@@ -364,7 +364,7 @@ export default function Attendance() {
       </div>
 
       {/* Check In/Out Button - Bottom Center */}
-      <PermissionGate page="attendance" permission="write">
+      <Gate_Permission page="attendance" permission="write">
         <button
           onClick={handleCheckInOut}
           disabled={clockActionLoading || !user?.id}
@@ -398,7 +398,7 @@ export default function Attendance() {
             </>
           )}
         </button>
-      </PermissionGate>
+      </Gate_Permission>
 
       {/* Modal for Attendance Form */}
       <Modal isOpen={isModalOpen && modalContent === 'attendance-form'} onClose={closeModal}>

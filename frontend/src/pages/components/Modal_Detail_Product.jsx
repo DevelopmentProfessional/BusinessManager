@@ -1,16 +1,17 @@
 import React from 'react';
-import { 
+import {
   XMarkIcon, ShoppingCartIcon, ClockIcon, TagIcon,
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import { getDisplayImageUrl } from './imageUtils';
+import Modal from './Modal';
 
 /**
- * ProductDetailModal - A reusable modal for displaying product/service details
+ * Modal_Detail_Product - A reusable modal for displaying product/service details
  * Opens when a card is selected, allows adding to cart with quantity selection
  */
-export default function ProductDetailModal({ 
+export default function Modal_Detail_Product({ 
   isOpen, 
   onClose, 
   item, 
@@ -31,8 +32,6 @@ export default function ProductDetailModal({
     }
   }, [isOpen, item?.id, cartQuantity]);
 
-  if (!isOpen || !item) return null;
-
   const handleAddToCart = () => {
     onAddToCart(item, itemType, quantity);
     onClose();
@@ -42,14 +41,8 @@ export default function ProductDetailModal({
   const decrementQuantity = () => setQuantity(q => Math.max(1, q - 1));
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div 
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen={isOpen && !!item} onClose={onClose} noPadding={true} centered={true}>
+      <div className="bg-white dark:bg-gray-900 w-full overflow-hidden">
         {/* Image Header */}
         <div className={`relative h-56 w-full overflow-hidden ${hasImage ? '' : 'bg-gradient-to-br'} ${
           isService 
@@ -196,6 +189,6 @@ export default function ProductDetailModal({
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

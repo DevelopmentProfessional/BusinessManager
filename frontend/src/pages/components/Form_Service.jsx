@@ -4,7 +4,7 @@ import { inventoryAPI, employeesAPI, serviceRelationsAPI } from '../../services/
 
 const TABS = ['details', 'resources', 'assets', 'employees', 'locations'];
 
-export default function ServiceForm({ service, onSubmit, onCancel, onDelete, canDelete }) {
+export default function Form_Service({ service, onSubmit, onCancel, onDelete, canDelete }) {
   const [activeTab, setActiveTab] = useState('details');
 
   // ── Basic form fields ────────────────────────────────────────────
@@ -64,7 +64,7 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
           setEmployees(empRes?.data ?? empRes ?? []);
         }
       } catch (err) {
-        console.error('ServiceForm: failed to load lookups', err);
+        console.error('Form_Service: failed to load lookups', err);
       } finally {
         if (!cancelled) setLookupLoading(false);
       }
@@ -93,7 +93,7 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
           setLocations(locRes?.data ?? locRes ?? []);
         }
       } catch (err) {
-        console.error('ServiceForm: failed to load relations', err);
+        console.error('Form_Service: failed to load relations', err);
       } finally {
         if (!cancelled) setRelLoading(false);
       }
@@ -199,7 +199,7 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
 
-      {/* ── Scrollable tab content ──────────────────────────────── */}
+      {/* ── Container_Scrollable tab content ──────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 4px' }}>
 
         {/* Tab error */}
@@ -280,10 +280,16 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
                   <div className="text-muted small fst-italic mb-3">No resources linked yet.</div>
                 ) : (
                   <table className="table table-sm mb-3">
-                    <thead><tr><th>Item</th><th style={{ width: 96 }}>Qty</th><th style={{ width: 36 }}></th></tr></thead>
+                    <thead><tr><th style={{ width: 36 }}></th><th>Item</th><th style={{ width: 96 }}>Qty</th></tr></thead>
                     <tbody>
                       {resources.map(r => (
                         <tr key={r.id} className="align-middle">
+                          <td>
+                            <button type="button" className="btn btn-outline-danger btn-sm p-1"
+                              onClick={() => handleRemoveResource(r.id)}>
+                              <TrashIcon style={{ width: 13, height: 13 }} />
+                            </button>
+                          </td>
                           <td className="text-truncate" style={{ maxWidth: 160 }}>{inventoryName(r.inventory_id)}</td>
                           <td>
                             <input type="number" min="0" step="0.01"
@@ -292,12 +298,7 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
                               onBlur={e => handleUpdateResourceQty(r.id, e.target.value)}
                               style={{ width: 80 }} />
                           </td>
-                          <td>
-                            <button type="button" className="btn btn-outline-danger btn-sm p-1"
-                              onClick={() => handleRemoveResource(r.id)}>
-                              <TrashIcon style={{ width: 13, height: 13 }} />
-                            </button>
-                          </td>
+                          
                         </tr>
                       ))}
                     </tbody>
@@ -345,11 +346,12 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
                   <ul className="list-group list-group-flush mb-3">
                     {assets.map(a => (
                       <li key={a.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span className="text-truncate" style={{ maxWidth: 220 }}>{inventoryName(a.inventory_id)}</span>
                         <button type="button" className="btn btn-outline-danger btn-sm p-1"
                           onClick={() => handleRemoveAsset(a.id)}>
                           <TrashIcon style={{ width: 13, height: 13 }} />
                         </button>
+                        <span className="text-truncate" style={{ maxWidth: 220 }}>{inventoryName(a.inventory_id)}</span>
+                        
                       </li>
                     ))}
                   </ul>
@@ -391,15 +393,16 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
                   <ul className="list-group list-group-flush mb-3">
                     {svcEmployees.map(se => (
                       <li key={se.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <button type="button" className="btn btn-outline-danger btn-sm p-1"
+                          onClick={() => handleRemoveEmployee(se.id)}>
+                          <TrashIcon style={{ width: 13, height: 13 }} />
+                        </button>
                         <span className="d-flex align-items-center gap-2">
                           <span className="rounded-circle flex-shrink-0"
                             style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: 'inline-block' }} />
                           {employeeName(se.user_id)}
                         </span>
-                        <button type="button" className="btn btn-outline-danger btn-sm p-1"
-                          onClick={() => handleRemoveEmployee(se.id)}>
-                          <TrashIcon style={{ width: 13, height: 13 }} />
-                        </button>
+                        
                       </li>
                     ))}
                   </ul>
@@ -441,13 +444,14 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
                   <ul className="list-group list-group-flush mb-3">
                     {locations.map(loc => (
                       <li key={loc.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span className="text-truncate" style={{ maxWidth: 220 }}>
-                          {inventoryName(loc.inventory_id)}
-                        </span>
                         <button type="button" className="btn btn-outline-danger btn-sm p-1"
                           onClick={() => handleRemoveLocation(loc.id)}>
                           <TrashIcon style={{ width: 13, height: 13 }} />
                         </button>
+                        <span className="text-truncate" style={{ maxWidth: 220 }}>
+                          {inventoryName(loc.inventory_id)}
+                        </span>
+                        
                       </li>
                     ))}
                   </ul>
@@ -530,10 +534,10 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
           </div>
 
           {/* Center: Cancel + Save */}
-          <div className="flex-grow-1 d-flex justify-content-center gap-3">
+          <div className="flex-grow-1 d-flex justify-content-center">
             <button
               type="button"
-              className="btn btn-outline-secondary btn-sm p-1"
+              className="btn btn-outline-secondary btn-sm"
               title="Cancel"
               style={{ width: 36, height: 36 }}
               onClick={onCancel}
@@ -546,7 +550,7 @@ export default function ServiceForm({ service, onSubmit, onCancel, onDelete, can
               <button
                 type="submit"
                 form="service-details-form"
-                className="btn btn-primary btn-sm p-1"
+                className="btn btn-primary btn-sm"
                 title={service ? 'Update service' : 'Create service'}
                 style={{ width: 36, height: 36 }}
               >

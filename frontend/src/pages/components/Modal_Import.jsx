@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { DocumentArrowUpIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { adminAPI } from '../../services/api';
-import IconButton from './IconButton';
-import ActionFooter from './ActionFooter';
+import Button_Icon from './Button_Icon';
+import Footer_Action from './Footer_Action';
+import Modal from './Modal';
 
-export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
+export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
   const [files, setFiles] = useState({
     clients: null,
     services: null,
@@ -85,39 +86,32 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleClose}></div>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Import Data from CSV Files"
+      centered={true}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button_Icon
+            icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
+            label={uploading ? 'Importing...' : 'Import Data'}
+            onClick={handleUpload}
+            disabled={!Object.values(files).some(file => file !== null) || uploading}
+            variant="primary"
+            className={uploading ? 'animate-spin' : ''}
+          />
+          <Button_Icon icon={XMarkIcon} label="Cancel" onClick={handleClose} variant="secondary" />
+        </div>
+      }
+    >
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        Upload CSV files to import clients, services, and appointments.
+        You can upload one, two, or all three files at once.
+      </p>
 
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                    Import Data from CSV Files
-                  </h3>
-                  <button
-                    onClick={handleClose}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                  >
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
-                </div>
-
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Upload CSV files to import clients, services, and appointments. 
-                    You can upload one, two, or all three files at once.
-                  </p>
-
-                  {/* File upload areas */}
-                  <div className="space-y-4">
+      <div className="space-y-4">
                     {/* Clients Upload */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -248,26 +242,7 @@ export default function DataImportModal({ isOpen, onClose, onImportComplete }) {
                         <span className="text-sm text-green-800 dark:text-green-300">{success}</span>
                       </div>
                     )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Modal footer - icon-only buttons with tooltips */}
-          <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2 sm:px-6 flex justify-end gap-2">
-            <IconButton
-              icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
-              label={uploading ? 'Importing...' : 'Import Data'}
-              onClick={handleUpload}
-              disabled={!Object.values(files).some(file => file !== null) || uploading}
-              variant="primary"
-              className={uploading ? 'animate-spin' : ''}
-            />
-            <IconButton icon={XMarkIcon} label="Cancel" onClick={handleClose} variant="secondary" />
-          </div>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
