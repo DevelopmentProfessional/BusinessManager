@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Service from './components/Form_Service';
 import Gate_Permission from './components/Gate_Permission';
-import Button_ImportCSV from './components/Button_ImportCSV';
 
 export default function Services() {
   const {
@@ -43,12 +43,10 @@ export default function Services() {
         setServices(servicesData);
         clearError();
       } else {
-        console.error('Invalid services data format:', servicesData);
         setServices([]);
       }
     } catch (err) {
       setError('Failed to load services');
-      console.error('Error loading services:', err);
       setServices([]);
     } finally {
       setLoading(false);
@@ -96,7 +94,6 @@ export default function Services() {
         updateService(editingService.id, response.data);
         closeModal();
       } else {
-        // After creating, stay open in edit mode so relations can be managed
         const response = await servicesAPI.create(serviceData);
         const newService = response.data;
         addService(newService);
@@ -105,33 +102,7 @@ export default function Services() {
       clearError();
     } catch (err) {
       setError('Failed to save service');
-      console.error(err);
     }
-  };
-
-  const handleCSVImport = async (records) => {
-    let success = 0;
-    let failed = 0;
-    const errors = [];
-
-    for (const record of records) {
-      try {
-        const serviceData = {
-          name: record.name,
-          description: record.description || '',
-          price: parseFloat(record.price) || 0,
-          duration_minutes: parseInt(record.duration_minutes) || parseInt(record.duration) || 30,
-          category: record.category || '',
-        };
-        await servicesAPI.create(serviceData);
-        success++;
-      } catch (err) {
-        failed++;
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error';
-        errors.push(`Row ${success + failed}: ${record.name || 'Unknown'} - ${detail}`);
-      }
-    }
-    return { success, failed, errors };
   };
 
   // Get unique categories for filter
@@ -140,23 +111,18 @@ export default function Services() {
     return ['all', ...Array.from(cats)];
   }, [services]);
 
-  // Filtered services based on search and category
+  // Filtered services
   const filteredServices = useMemo(() => {
     return services.filter((svc) => {
-      // Search filter
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
-        const matchesName = (svc.name || '').toLowerCase().includes(term);
-        const matchesDesc = (svc.description || '').toLowerCase().includes(term);
-        const matchesCat = (svc.category || '').toLowerCase().includes(term);
-        if (!matchesName && !matchesDesc && !matchesCat) return false;
+        if (
+          !(svc.name || '').toLowerCase().includes(term) &&
+          !(svc.description || '').toLowerCase().includes(term) &&
+          !(svc.category || '').toLowerCase().includes(term)
+        ) return false;
       }
-
-      // Category filter
-      if (categoryFilter !== 'all') {
-        if ((svc.category || '') !== categoryFilter) return false;
-      }
-
+      if (categoryFilter !== 'all' && (svc.category || '') !== categoryFilter) return false;
       return true;
     });
   }, [services, searchTerm, categoryFilter]);
@@ -170,19 +136,17 @@ export default function Services() {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '16rem' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+    <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-3">
+      <div className="flex-shrink-0 border-bottom p-2 bg-body" style={{ zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Services</h1>
       </div>
 
@@ -196,19 +160,18 @@ export default function Services() {
       {/* Main table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        {/* Container_Scrollable rows – grow upwards from bottom */}
+        {/* Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
-          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white no-scrollbar"
           style={{ background: 'var(--bs-body-bg)' }}
         >
           {filteredServices.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
                 <col />
-                <col style={{ width: '100px' }} />
                 <col style={{ width: '80px' }} />
-                <col style={{ width: '80px' }} />
+                <col style={{ width: '70px' }} />
               </colgroup>
               <tbody>
                 {filteredServices.map((service, index) => (
@@ -218,31 +181,32 @@ export default function Services() {
                     style={{ height: '56px', cursor: 'pointer' }}
                     onClick={() => handleEditService(service)}
                   >
-                    {/* Service Name */}
-                    <td className="px-3">
-                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                    {/* Name + Category stacked */}
+                    <td className="px-1">
+                      <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
                         {service.name}
                       </div>
-                    </td>
-
-                    {/* Category */}
-                    <td className="px-3">
-                      <span className="badge bg-secondary-subtle text-secondary rounded-pill">
-                        {service.category || 'General'}
-                      </span>
+                      {service.category && (
+                        <span
+                          className="badge bg-secondary-subtle text-secondary rounded-pill"
+                          style={{ fontSize: '0.68rem', width: 'fit-content' }}
+                        >
+                          {service.category}
+                        </span>
+                      )}
                     </td>
 
                     {/* Price */}
-                    <td className="text-center px-3">
+                    <td className="text-center px-1">
                       <span className="fw-medium">
                         ${(service.price || 0).toFixed(2)}
                       </span>
                     </td>
 
                     {/* Duration */}
-                    <td className="text-center px-3">
-                      <span className="badge bg-info text-white rounded-pill">
-                        {service.duration_minutes || 30}min
+                    <td className="text-center px-1">
+                      <span className="badge bg-info-subtle text-info rounded-pill">
+                        {service.duration_minutes || 30}m
                       </span>
                     </td>
                   </tr>
@@ -251,25 +215,23 @@ export default function Services() {
             </table>
           ) : (
             <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
-              {searchTerm || categoryFilter !== 'all' ? 'No services found matching filters' : 'No services found'}
+              {searchTerm || categoryFilter !== 'all' ? 'No services match filters' : 'No services found'}
             </div>
           )}
         </div>
 
-        {/* Fixed bottom – headers + controls */}
+        {/* Fixed footer – headers + controls */}
         <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
               <col />
-              <col style={{ width: '100px' }} />
               <col style={{ width: '80px' }} />
-              <col style={{ width: '80px' }} />
+              <col style={{ width: '70px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
                 <th>Service</th>
-                <th>Category</th>
                 <th className="text-center">Price</th>
                 <th className="text-center">Duration</th>
               </tr>
@@ -277,8 +239,8 @@ export default function Services() {
           </table>
 
           {/* Controls */}
-          <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Search row */}
+          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            {/* Search */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -290,16 +252,29 @@ export default function Services() {
                 placeholder="Search services..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="app-search-input form-control ps-5 w-100"
+                className="app-search-input form-control ps-5 w-100 rounded-pill"
               />
             </div>
 
-            {/* Filters row */}
-            <div className="d-flex gap-2 mb-2">
+            {/* Add button + category filter */}
+            <div className="d-flex align-items-center gap-1 pb-2">
+              <Gate_Permission page="services" permission="write">
+                <button
+                  type="button"
+                  onClick={handleCreateService}
+                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Add service"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                </button>
+              </Gate_Permission>
+
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="form-select form-select-sm"
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content' }}
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>
@@ -307,43 +282,7 @@ export default function Services() {
                   </option>
                 ))}
               </select>
-
-              <span className="text-muted small text-nowrap">
-                {filteredServices.length} / {services.length}
-              </span>
             </div>
-
-            {/* Action buttons */}
-            <Gate_Permission page="services" permission="write">
-              <div className="d-flex gap-2 w-100">
-                <Button_ImportCSV
-                  entityName="Services"
-                  onImport={handleCSVImport}
-                  onComplete={loadServices}
-                  requiredFields={['name']}
-                  fieldMapping={{
-                    'service name': 'name',
-                    'service': 'name',
-                    'cost': 'price',
-                    'rate': 'price',
-                    'time': 'duration_minutes',
-                    'duration': 'duration_minutes',
-                    'type': 'category',
-                  }}
-                  className="btn btn-outline-secondary"
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateService}
-                  className="btn btn-primary"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="me-1">
-                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                  </svg>
-                  Add
-                </button>
-              </div>
-            </Gate_Permission>
           </div>
         </div>
       </div>
