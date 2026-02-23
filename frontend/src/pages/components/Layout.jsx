@@ -116,7 +116,7 @@ export default function Layout({ children }) {
           width: '3rem', 
           height: '3rem', 
           zIndex: 1040, 
-          bottom: '1rem', 
+          bottom: '1.5rem', 
           right: '1rem' 
         }}
       >

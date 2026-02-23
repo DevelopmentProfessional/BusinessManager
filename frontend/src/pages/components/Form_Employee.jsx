@@ -327,9 +327,21 @@ export default function Form_Employee({
   ];
 
   return (
-    <div className="p-0">
-      <form onSubmit={handleSubmit} className="d-flex flex-column" style={{ maxHeight: '70vh' }}>
-        <div className="flex-grow-1 overflow-auto pe-1 pt-3">
+    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+
+      {/* Header */}
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
+          {employee ? 'Edit Employee' : 'Add Employee'}
+        </h6>
+        <button type="button" onClick={onCancel} className="btn btn-link p-0 text-muted">
+          <XMarkIcon style={{ width: 20, height: 20 }} />
+        </button>
+      </div>
+
+      {/* Scrollable Body */}
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+        <form id="employee-form" onSubmit={handleSubmit}>
           {/* ===== DETAILS TAB ===== */}
           {activeTab === 'details' && (
             <div className="tab-pane">
@@ -830,56 +842,70 @@ export default function Form_Employee({
             )}
           </div>
         )}
-        </div>
+        </form>
+      </div>
 
-        {/* Fixed Footer */}
-        <div className="mt-2 pt-2 border-top bg-white dark:bg-gray-800">
-          {/* Tab Navigation at Bottom */}
-          <ul className="nav nav-tabs mb-3">
-            {tabs.map(tab => (
-              <li key={tab.key} className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === tab.key ? 'active' : ''} px-2 py-1 px-md-3 py-md-2`}
-                  onClick={() => setActiveTab(tab.key)}
-                  type="button"
-                  disabled={tab.disabled}
-                  style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}
-                >
-                  {tab.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {/* Action Buttons */}
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="d-flex gap-2">
-              {employee && canDelete && (
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
-                  }} 
-                  className="btn btn-outline-danger p-2"
-                  title="Delete Employee"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-            <div className="d-flex gap-2 position-absolute start-50 translate-middle-x">
-              <button type="button" onClick={onCancel} className="btn btn-outline-secondary p-2" title="Cancel">
-                <XMarkIcon className="h-5 w-5" />
+      {/* Footer */}
+      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        {/* Tab Navigation */}
+        <ul className="nav nav-tabs mb-2">
+          {tabs.map(tab => (
+            <li key={tab.key} className="nav-item">
+              <button
+                className={`nav-link ${activeTab === tab.key ? 'active' : ''} px-2 py-1 px-md-3 py-md-2`}
+                onClick={() => setActiveTab(tab.key)}
+                type="button"
+                disabled={tab.disabled}
+                style={{ fontSize: 'clamp(0.75rem, 2vw, 1rem)' }}
+              >
+                {tab.label}
               </button>
-              {(activeTab === 'details' || activeTab === 'benefits') && (
-                <button type="submit" className="btn btn-primary p-2" title={employee ? 'Update Employee' : 'Create Employee'}>
-                  <CheckIcon className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* Action Buttons */}
+        <div className="d-flex align-items-center">
+          <div style={{ width: 40 }} className="d-flex align-items-center">
+            {employee && canDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
+                }}
+                className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center rounded-circle"
+                style={{ width: '2rem', height: '2rem' }}
+                title="Delete Employee"
+              >
+                <TrashIcon style={{ width: 14, height: 14 }} />
+              </button>
+            )}
           </div>
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+              style={{ width: '3rem', height: '3rem' }}
+              title="Cancel"
+            >
+              <XMarkIcon style={{ width: 18, height: 18 }} />
+            </button>
+            {(activeTab === 'details' || activeTab === 'benefits') && (
+              <button
+                type="submit"
+                form="employee-form"
+                className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+                style={{ width: '3rem', height: '3rem' }}
+                title={employee ? 'Update Employee' : 'Create Employee'}
+              >
+                <CheckIcon style={{ width: 18, height: 18 }} />
+              </button>
+            )}
+          </div>
+          <div style={{ width: 40 }} />
         </div>
-      </form>
+      </div>
     </div>
   );
 }

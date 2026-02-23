@@ -152,27 +152,16 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     return <CubeIcon className="h-16 w-16" />;
   };
 
-  return (
-    <div
-      className="d-flex flex-column bg-white dark:bg-gray-900"
-      style={{ maxHeight: '95vh' }}
-    >
+  return (    
+    <div className="d-flex flex-column bg-white dark:bg-gray-900"      style={{ height: '100%' }}  >
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? 'Edit' : 'Add New Item'}</h6>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn btn-link text-dark dark:text-gray-200 p-0"
-          style={{ lineHeight: 1 }}
-          title="Close"
-        >
-          <XMarkIcon className="h-5 w-5" />
-        </button>
+        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? 'Edit' : 'Add Item'}</h6>
+        
       </div>
 
       {/* Container_Scrollable Content Area */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 pe-2">
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
@@ -364,19 +353,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
             <label htmlFor="type">Type</label>
           </div>
 
-          <div className="form-floating mb-2">
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="form-control form-control-sm"
-              placeholder="Description"
-              style={{ height: '80px' }}
-            />
-            <label htmlFor="description">Description</label>
-          </div>
-
           <div className="mb-2">
             <div className="form-floating position-relative">
               <input
@@ -467,33 +443,48 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
             </div>
           )}
 
+          <hr className="my-2" />
+          <div className="form-floating mb-2 border-0">
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="form-control form-control-sm"
+              placeholder="Description"
+              style={{ height: '80px' }}
+            />
+            <label htmlFor="description">Description</label>
+          </div>
+
         </form>
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 mt-2 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="d-flex align-items-center">
-          <div></div>
-          <div className="flex-grow-1 d-flex gap-5 justify-content-center">
+          <div style={{ width: 40 }} />
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
             <button
               type="button"
               onClick={onCancel}
-              className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
+              className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
               style={{ width: '3rem', height: '3rem' }}
               title="Cancel"
             >
-              <XMarkIcon className="h-5 w-5" />
+              <XMarkIcon style={{ width: 18, height: 18 }} />
             </button>
             <button
               type="submit"
               form="item-form"
-              className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+              className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
               style={{ width: '3rem', height: '3rem' }}
               title={item ? 'Save Changes' : 'Create Item'}
             >
-              <CheckIcon className="h-5 w-5" />
+              <CheckIcon style={{ width: 18, height: 18 }} />
             </button>
           </div>
+          <div style={{ width: 40 }} />
         </div>
       </div>
 

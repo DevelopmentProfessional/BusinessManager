@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import {
   ShoppingCartIcon, XMarkIcon,
   UserIcon, CreditCardIcon, ClockIcon,
   PlusIcon, MinusIcon,
   MagnifyingGlassIcon, SparklesIcon, CubeIcon,
-  ChevronDownIcon, ChevronUpIcon, FunnelIcon
+  ChevronDownIcon, ChevronUpIcon, FunnelIcon,
+  UserCircleIcon, ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI } from '../services/api';
@@ -231,11 +232,12 @@ export default function Sales() {
     loading, setLoading, error, setError, clearError,
     hasPermission, openAddClientModal, user
   } = useStore();
+  const location = useLocation();
 
   // Check permissions at page level
-  if (!hasPermission('services', 'read') && 
-      !hasPermission('services', 'write') && 
-      !hasPermission('services', 'delete') && 
+  if (!hasPermission('services', 'read') &&
+      !hasPermission('services', 'write') &&
+      !hasPermission('services', 'delete') &&
       !hasPermission('services', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
@@ -253,6 +255,9 @@ export default function Sales() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
   const [products, setProducts] = useState([]);
+  const [showClientPanel, setShowClientPanel] = useState(false);
+  const [clientPanelSearch, setClientPanelSearch] = useState('');
+  const [showClientPanelDropdown, setShowClientPanelDropdown] = useState(false);
   
   // Product Detail Modal State
   const [selectedItem, setSelectedItem] = useState(null);
@@ -284,6 +289,35 @@ export default function Sales() {
     loadProducts();
   }, []);
 
+  // Auto-select client (and optionally pre-load their cart) when navigated from Clients page
+  useEffect(() => {
+    const { preSelectedClient, preloadCart } = location.state || {};
+    if (preSelectedClient) {
+      setSelectedClient(preSelectedClient);
+      if (Array.isArray(preloadCart) && preloadCart.length > 0) {
+        setCart(preloadCart);
+      } else {
+        // Load their saved cart from localStorage
+        try {
+          const saved = localStorage.getItem(`client_cart_${preSelectedClient.id}`);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) setCart(parsed);
+          }
+        } catch {}
+      }
+    }
+  }, [location.state?.preSelectedClient]);
+
+  // Sync cart to client's localStorage whenever cart or selected client changes
+  useEffect(() => {
+    if (selectedClient?.id) {
+      try {
+        localStorage.setItem(`client_cart_${selectedClient.id}`, JSON.stringify(cart));
+      } catch {}
+    }
+  }, [cart, selectedClient?.id]);
+
   const loadClients = async () => {
     if (clientsLoaded) return; // Already loaded, skip
     try {
@@ -296,6 +330,20 @@ export default function Sales() {
     } catch (err) {
       console.error('Failed to load clients for POS:', err);
     }
+  };
+
+  // Select a client and load their saved cart
+  const handleSelectClient = (client) => {
+    setSelectedClient(client);
+    try {
+      const saved = localStorage.getItem(`client_cart_${client.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCart(parsed);
+        }
+      }
+    } catch {}
   };
 
   const loadProducts = async () => {
@@ -606,6 +654,101 @@ export default function Sales() {
 
       {/* Fixed Footer - Search, Toggles, Cart */}
       <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 w-100 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pr-16 md:ml-64">
+       
+               {/* Client Selection Panel - shown when account icon is active */}
+        {showClientPanel && (
+          <div className="mb-2 relative">
+            {selectedClient ? (
+              <div className="flex items-center justify-between px-3 py-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl">
+                <div className="flex items-center gap-2 min-w-0">
+                  <UserCircleIcon className="h-5 w-5 text-primary-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{selectedClient.name}</p>
+                    {selectedClient.email && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedClient.email}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedClient(null)}
+                  className="flex-shrink-0 p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors ml-2"
+                  title="Remove client"
+                >
+                  <XMarkIcon className="h-4 w-4 text-gray-500" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search clients..."
+                    value={clientPanelSearch}
+                    onChange={(e) => { setClientPanelSearch(e.target.value); setShowClientPanelDropdown(true); }}
+                    onFocus={() => { loadClients(); setShowClientPanelDropdown(true); }}
+                    className="app-search-input w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    autoFocus
+                  />
+                  {showClientPanelDropdown && clientPanelSearch && (
+                    <div className="absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-50">
+                      {clients.filter(c =>
+                        c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) ||
+                        c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())
+                      ).slice(0, 6).map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            handleSelectClient(c);
+                            setClientPanelSearch('');
+                            setShowClientPanelDropdown(false);
+                            setShowClientPanel(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                        >
+                          <p className="font-medium">{c.name}</p>
+                          {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
+                        </button>
+                      ))}
+                      {clients.filter(c =>
+                        c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) ||
+                        c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())
+                      ).length === 0 && (
+                        <button
+                          onClick={() => openAddClientModal((newClient) => {
+                            handleSelectClient(newClient);
+                            setClientsLocal(prev => [...prev, newClient]);
+                            setClientPanelSearch('');
+                            setShowClientPanelDropdown(false);
+                            setShowClientPanel(false);
+                          })}
+                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
+                        >
+                          <PlusIcon className="h-4 w-4" />
+                          Create new client
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAddClientModal((newClient) => {
+                    handleSelectClient(newClient);
+                    setClientsLocal(prev => [...prev, newClient]);
+                    setClientPanelSearch('');
+                    setShowClientPanelDropdown(false);
+                    setShowClientPanel(false);
+                  })}
+                  className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                  title="Add new client"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+       
         {/* Search Row */}
         <div className="mb-2">
           <div className="relative">
@@ -620,14 +763,34 @@ export default function Sales() {
           </div>
         </div>
 
+
+
         {/* Controls Row - left-aligned, content-width */}
         <div className="flex items-center gap-3">
+          {/* Account / Client Icon */}
+          <button
+            type="button"
+            onClick={() => { setShowClientPanel(p => !p); if (!showClientPanel) { loadClients(); } }}
+            className={`relative flex-shrink-0 w-12 h-12 flex items-center justify-content-center rounded-full shadow-lg transition-all ${
+              selectedClient
+                ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+            title={selectedClient ? `Client: ${selectedClient.name}` : 'Select client'}
+            aria-label="Select client"
+          >
+            <UserCircleIcon className="h-6 w-6" style={{ margin: 'auto', display: 'block' }} />
+            {selectedClient && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-800" />
+            )}
+          </button>
+
           {/* Circular Cart Button */}
           <button
             onClick={() => setShowCartModal(true)}
             className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary-600 hover:bg-secondary-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
           >
-            <ShoppingCartIcon className="h-5 w-5" />
+            <ShoppingCartIcon style={{ width: 24, height: 24 }} />
             {cartItemCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                 {cartItemCount}
@@ -642,7 +805,7 @@ export default function Sales() {
             title="Sales history"
             aria-label="Open sales history"
           >
-            <span className="text-2xl leading-none" role="img" aria-hidden="true">📈</span>
+            <ArrowTrendingUpIcon style={{ width: 24, height: 24 }} />
           </button>
 
           {/* Service Toggle Button */}
@@ -650,14 +813,14 @@ export default function Sales() {
             type="button"
             onClick={() => setShowServices((prev) => !prev)}
             aria-pressed={showServices}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-full border transition-colors ${
+            title="Toggle Services"
+            className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all ${
               showServices
-                ? 'bg-primary-600 text-white border-primary-600'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                ? 'bg-primary-600 hover:bg-primary-700'
+                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 opacity-50'
             }`}
           >
-            <SparklesIcon className={`h-4 w-4 ${showServices ? 'text-white' : 'text-primary-500'}`} />
-            <span className="text-sm font-medium">Services</span>
+            <SparklesIcon style={{ width: 24, height: 24 }} />
           </button>
 
           {/* Product Toggle Button */}
@@ -665,14 +828,14 @@ export default function Sales() {
             type="button"
             onClick={() => setShowProducts((prev) => !prev)}
             aria-pressed={showProducts}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-full border transition-colors ${
+            title="Toggle Products"
+            className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all ${
               showProducts
-                ? 'bg-secondary-600 text-white border-secondary-600'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                ? 'bg-secondary-600 hover:bg-secondary-700'
+                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 opacity-50'
             }`}
           >
-            <CubeIcon className={`h-4 w-4 ${showProducts ? 'text-white' : 'text-secondary-500'}`} />
-            <span className="text-sm font-medium">Products</span>
+            <CubeIcon style={{ width: 24, height: 24 }} />
           </button>
         </div>
       </div>
@@ -758,7 +921,7 @@ export default function Sales() {
                         <button
                           type="button"
                           onClick={() => openAddClientModal((newClient) => {
-                            setSelectedClient(newClient);
+                            handleSelectClient(newClient);
                             setClientsLocal(prev => [...prev, newClient]);
                             setClientSearch('');
                             setShowClientDropdown(false);
@@ -775,7 +938,7 @@ export default function Sales() {
                             <button
                               key={c.id}
                               onClick={() => {
-                                setSelectedClient(c);
+                                handleSelectClient(c);
                                 setClientSearch('');
                                 setShowClientDropdown(false);
                               }}
@@ -788,7 +951,7 @@ export default function Sales() {
                           {filteredClients.length === 0 && (
                             <button
                               onClick={() => openAddClientModal((newClient) => {
-                                setSelectedClient(newClient);
+                                handleSelectClient(newClient);
                                 setClientsLocal(prev => [...prev, newClient]);
                                 setClientSearch('');
                                 setShowClientDropdown(false);
@@ -839,7 +1002,6 @@ export default function Sales() {
               </>
             )}
           </div>
-        </div>
       </Modal>
 
       <style>{`
@@ -882,74 +1044,7 @@ export default function Sales() {
       {/* Sales History */}
       <Modal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} noPadding={true} fullScreen={true}>
         <div className="flex flex-col md:flex-row h-full bg-white dark:bg-gray-900">
-          <div className="w-full md:w-72 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <FunnelIcon className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Filters</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
-                  aria-pressed={historyFilters.showServices}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
-                    historyFilters.showServices
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  Services
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
-                  aria-pressed={historyFilters.showProducts}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
-                    historyFilters.showProducts
-                      ? 'bg-secondary-600 text-white border-secondary-600'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  Products
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={historyFilters.minPrice}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
-                  placeholder="Min $"
-                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={historyFilters.maxPrice}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
-                  placeholder="Max $"
-                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={historyFilters.startDate}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-                <input
-                  type="date"
-                  value={historyFilters.endDate}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-              </div>
-            </div>
-          </div>
+         
 
           <div className="flex-1 flex flex-col">
             <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -997,6 +1092,71 @@ export default function Sales() {
             </div>
 
             <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+               <div className="w-full md:w-72 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+            
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
+                  aria-pressed={historyFilters.showServices}
+                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                    historyFilters.showServices
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  Services
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
+                  aria-pressed={historyFilters.showProducts}
+                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                    historyFilters.showProducts
+                      ? 'bg-secondary-600 text-white border-secondary-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  Products
+                </button>
+              
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={historyFilters.minPrice}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
+                  placeholder="Min $"
+                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={historyFilters.maxPrice}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
+                  placeholder="Max $"
+                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={historyFilters.startDate}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+                <input
+                  type="date"
+                  value={historyFilters.endDate}
+                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowHistoryModal(false)}

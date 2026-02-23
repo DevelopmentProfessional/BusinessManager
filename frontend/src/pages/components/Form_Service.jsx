@@ -516,30 +516,31 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
         )}
 
         {/* Row 2: Actions */}
-        <div className="px-3 py-2 d-flex align-items-center">
+        <div className="px-3 py-2 pb-4 d-flex align-items-center">
           {/* Left: Delete */}
           <div style={{ width: 40 }}>
             {service && canDelete && (
               <button
                 type="button"
-                className="btn btn-outline-danger btn-sm p-1"
+                style={{ height: '3rem', width: '3rem' }}
+                className="btn btn-outline-danger btn-sm p-1 align-items-center justify-content-center d-flex"
                 title="Delete service"
                 onClick={() => {
                   if (window.confirm('Delete this service?')) onDelete(service.id);
                 }}
               >
-                <TrashIcon style={{ width: 16, height: 16 }} />
+                <TrashIcon style={{ width: 18, height: 18 }} />
               </button>
             )}
           </div>
 
           {/* Center: Cancel + Save */}
-          <div className="flex-grow-1 d-flex justify-content-center">
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
             <button
               type="button"
-              className="btn btn-outline-secondary btn-sm"
+              style={{ height: '3rem', width: '3rem' }}
+              className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
               title="Cancel"
-              style={{ width: 36, height: 36 }}
               onClick={onCancel}
             >
               <XMarkIcon style={{ width: 18, height: 18 }} />
@@ -550,9 +551,9 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
               <button
                 type="submit"
                 form="service-details-form"
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
                 title={service ? 'Update service' : 'Create service'}
-                style={{ width: 36, height: 36 }}
+                style={{ height: '3rem', width: '3rem' }}
               >
                 <CheckIcon style={{ width: 18, height: 18 }} />
               </button>

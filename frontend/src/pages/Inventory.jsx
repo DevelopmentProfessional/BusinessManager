@@ -215,7 +215,7 @@ return (
   <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
 
     {/* Header - always visible via flex-shrink-0 */}
-    <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ zIndex: 5 }}>
+    <div className="flex-shrink-0 border-bottom p-2 bg-body" style={{ zIndex: 5 }}>
       <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Inventory</h1>
     </div>
 
@@ -227,7 +227,7 @@ return (
     )}
 
     {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length > 0 && (
-      <div className="flex-shrink-0 alert alert-warning border-0 rounded-0 m-0 d-flex align-items-center gap-2">
+      <div className="flex-shrink-0 p-1 alert alert-warning border-0 rounded-0 m-0 d-flex align-items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
           <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
           <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
@@ -330,7 +330,7 @@ return (
           </div>
 
           {/* Controls row - Add, Type, Stock */}
-          <div className="d-flex align-items-center gap-2 mb-1">
+          <div className="d-flex align-items-center gap-1 pb-2 ">
             <Gate_Permission page="inventory" permission="write">
               <button
                 type="button"
@@ -345,9 +345,10 @@ return (
 
             <select
               value={typeFilter}
+              
               onChange={(e) => setTypeFilter(e.target.value)}
               className="form-select form-select-sm rounded-pill"
-              style={{ width: 'fit-content', minWidth: '100px' }}
+              style={{ width: 'fit-content' }}
             >
               <option value="all">Types</option>
               <option value="PRODUCT">Products</option>
@@ -361,7 +362,7 @@ return (
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
               className="form-select form-select-sm rounded-pill"
-              style={{ width: 'fit-content', minWidth: '100px' }}>
+              style={{ width: 'fit-content' }}>
               <option value="all">Stock</option>
               <option value="low">Low Stock</option>
               <option value="ok">In Stock</option>
@@ -384,7 +385,7 @@ return (
       existingSkus={inventory.map(i => i.sku).filter(Boolean)}
     />
 
-    <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
+    <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal} noPadding={true} fullScreen={true}>
       {isModalOpen && modalContent === 'item-form' && (
         <Form_Item
           showInitialQuantity

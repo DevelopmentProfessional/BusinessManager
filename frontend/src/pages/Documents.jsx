@@ -732,6 +732,8 @@ export default function Documents() {
       <Modal
         isOpen={isModalOpen && modalContent === 'document-form'}
         onClose={closeModal}
+        noPadding={true}
+        fullScreen={true}
       >
         {isModalOpen && modalContent === 'document-form' && (
           <DocumentUploadForm
@@ -760,7 +762,7 @@ export default function Documents() {
       />
 
       {/* History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)}>
+      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} noPadding={true} fullScreen={true}>
         {isHistoryOpen && historyDoc && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -844,7 +846,7 @@ export default function Documents() {
       </Modal>
 
       {/* Sign Document Modal */}
-      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)}>
+      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} noPadding={true} fullScreen={true}>
         {isSignOpen && signDoc && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -920,7 +922,7 @@ export default function Documents() {
       </Modal>
 
       {/* Categories Management Modal */}
-      <Modal isOpen={isCategoriesOpen} onClose={() => setIsCategoriesOpen(false)}>
+      <Modal isOpen={isCategoriesOpen} onClose={() => setIsCategoriesOpen(false)} noPadding={true} fullScreen={true}>
         {isCategoriesOpen && (
           <div className="flex flex-col max-h-[70vh]">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">

@@ -110,7 +110,7 @@ export default function Modal_Checkout_Sales({
   
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true}>
-      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 w-full h-full  max-w-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
           <div className="flex items-center gap-1">

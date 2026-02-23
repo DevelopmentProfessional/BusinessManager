@@ -1165,7 +1165,7 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className="schedule-footer px-2 py-1 border-top">
+        <div className="schedule-footer px-2 py-1 border-top pb-4">
           {/* Row 1: Month, Week, Day, Previous, Next */}
           <div className="d-flex gap-1 mb-1">
             {/* Month View */}
@@ -1271,7 +1271,7 @@ export default function Schedule() {
           </div>
         </div>
 
-        <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <Modal isOpen={isModalOpen} onClose={closeModal} noPadding={true} fullScreen={true}>
           <Form_Schedule
             appointment={editingAppointment}
             onSubmit={handleSubmitAppointment}
@@ -1305,7 +1305,7 @@ export default function Schedule() {
       </Gate_Permission>
 
       {/* Overlap bottom modal */}
-      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} title={overlapEvents ? `${overlapEvents.length} Overlapping Events` : ''} noPadding={true}>
+      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true}>
         <div>
             <div className="overlap-event-list">
               {[...(overlapEvents || [])]
@@ -1565,8 +1565,14 @@ export default function Schedule() {
           text-align: center;
           padding: 1px;
           overflow: auto;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
           border: 1px solid ${isDarkMode ? '#6b7280' : '#dee2e6'};
           height: 100%;
+        }
+
+        .calendar-cell::-webkit-scrollbar {
+          display: none;
         }
 
 
