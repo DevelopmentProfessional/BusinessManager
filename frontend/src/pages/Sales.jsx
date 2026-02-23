@@ -763,10 +763,8 @@ export default function Sales() {
           </div>
         </div>
 
-
-
         {/* Controls Row - left-aligned, content-width */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pb-2">
           {/* Account / Client Icon */}
           <button
             type="button"
