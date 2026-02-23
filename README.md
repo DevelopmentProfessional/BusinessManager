@@ -19,3 +19,22 @@ Employees:
 		Permission: the add permissions inpout should be fixed to the bottom, the table of permissions should float to the bottom, the delete button on the left . 
 
 		
+Documents: Page not opening up. 
+
+Sales: 
+	cart: Chanhge the proceed to checkout button to roiunded pill and the contionue shopping to a rounded pill also, horizontal . move the customer selection in the firtst two, the4 other buttons in the second row, total section remove padding for the HR my-3 line, move the clear all button to the bottom left in the second row fotter
+	Transaction History: the transaction history doesnt seem to be showing up even though there are trransactions, Fix the footer 
+	
+
+Services: 
+	Edit Services: Move the contents to the bottom of the page. float them to the bottom. the image options should be like the inventryo configuration and the layout should look the same as well. Move th3e desription to the bottom like the inventory Edit Item. float the list of items to the bottom for the connected reousrfecs, assetr,s employees, and locations, remove the top right close button on the modal. 
+	Add Service: Add the iamqge configuration like the add Item conrfiguration 
+
+Schedule: 
+	Edit appointment Modal: Make it like the edit item modal 
+	Filter Schedule: make the body scrollable no scro9llbar. move the out of office to the bottom and set it as a toggle button. move the date range to the bottom, make the other filters like employee, clients, services all accordions, the header of the accordion should have4 a clear button on the right of the accordion header. in the footer, there should be a clear button on the left most. then cancel button and the apply button in the center that looks like the inventory edit item, footer. 
+
+Settings: 
+	Format the footer and make the height of the buttons match the height of the shared menu, align horizointally. 
+	General : remove the border around the accordions. the accordions should ffloat upwards not downwards, instead of a normal accordiuon, it should be like the profile page. 
+	Insurance Plans. Move this to the Employee footer nextr to the requests called insuirance. The add new plan should be in the footer of the modal that op-ens up. the list of plans above it. employees should be able to have more than one plan since insurance companies usually include a previous tier with thier subscriptions. 
