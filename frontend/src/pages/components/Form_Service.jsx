@@ -197,295 +197,277 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
   // ── Layout: flex column filling the modal body ───────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
-      {/* ── Container_Scrollable tab content ──────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 4px' }}>
+      {/* Header */}
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
+          {service ? 'Edit Service' : 'Add Service'}
+        </h6>
+        <button type="button" onClick={onCancel} className="btn btn-link p-0 text-muted">
+          <XMarkIcon style={{ width: 20, height: 20 }} />
+        </button>
+      </div>
+
+      {/* ── Tab content area – no scroll here, each tab manages its own ── */}
+      <div className="flex-grow-1 overflow-hidden d-flex flex-column">
 
         {/* Tab error */}
         {tabError && (
-          <div className="alert alert-danger py-1 px-2 mb-2 small">{tabError}</div>
+          <div className="alert alert-danger py-1 px-2 mx-3 mt-2 mb-0 small flex-shrink-0">{tabError}</div>
         )}
 
         {/* ── Details ── */}
         {activeTab === 'details' && (
-          <form id="service-details-form" onSubmit={handleSubmit}>
-            <div className="form-floating mb-2">
-              <input type="text" id="name" name="name" required
-                value={formData.name} onChange={handleChange}
-                className="form-control form-control-sm" placeholder="Service Name" />
-              <label htmlFor="name">Service Name *</label>
-            </div>
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+            <form id="service-details-form" onSubmit={handleSubmit}>
+              <div className="form-floating mb-2">
+                <input type="text" id="name" name="name" required
+                  value={formData.name} onChange={handleChange}
+                  className="form-control form-control-sm" placeholder="Service Name" />
+                <label htmlFor="name">Service Name *</label>
+              </div>
 
-            <div className="form-floating mb-2">
-              <input type="text" id="category" name="category"
-                value={formData.category} onChange={handleChange}
-                className="form-control form-control-sm" placeholder="Category" />
-              <label htmlFor="category">Category</label>
-            </div>
+              <div className="form-floating mb-2">
+                <input type="text" id="category" name="category"
+                  value={formData.category} onChange={handleChange}
+                  className="form-control form-control-sm" placeholder="Category" />
+                <label htmlFor="category">Category</label>
+              </div>
 
-            <div className="form-floating mb-2">
-              <textarea id="description" name="description"
-                value={formData.description} onChange={handleChange}
-                className="form-control form-control-sm" placeholder="Description"
-                style={{ height: '72px' }} />
-              <label htmlFor="description">Description</label>
-            </div>
+              <div className="form-floating mb-2">
+                <textarea id="description" name="description"
+                  value={formData.description} onChange={handleChange}
+                  className="form-control form-control-sm" placeholder="Description"
+                  style={{ height: '72px' }} />
+                <label htmlFor="description">Description</label>
+              </div>
 
-            <div className="row g-2 mb-2">
-              <div className="col-6">
-                <div className="form-floating">
-                  <input type="number" id="price" name="price" required min="0" step="0.01"
-                    value={formData.price} onChange={handleChange}
-                    className="form-control form-control-sm" placeholder="0.00" />
-                  <label htmlFor="price">Price *</label>
+              <div className="row g-2 mb-2">
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="number" id="price" name="price" required min="0" step="0.01"
+                      value={formData.price} onChange={handleChange}
+                      className="form-control form-control-sm" placeholder="0.00" />
+                    <label htmlFor="price">Price *</label>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="number" id="duration_minutes" name="duration_minutes" required min="1"
+                      value={formData.duration_minutes} onChange={handleChange}
+                      className="form-control form-control-sm" placeholder="60" />
+                    <label htmlFor="duration_minutes">Duration (min) *</label>
+                  </div>
                 </div>
               </div>
-              <div className="col-6">
-                <div className="form-floating">
-                  <input type="number" id="duration_minutes" name="duration_minutes" required min="1"
-                    value={formData.duration_minutes} onChange={handleChange}
-                    className="form-control form-control-sm" placeholder="60" />
-                  <label htmlFor="duration_minutes">Duration (min) *</label>
-                </div>
-              </div>
-            </div>
 
-            <div className="form-floating mb-1">
-              <input type="url" id="image_url" name="image_url"
-                value={formData.image_url} onChange={handleChange}
-                className="form-control form-control-sm" placeholder="https://..." />
-              <label htmlFor="image_url">Image URL</label>
-              {formData.image_url && (
-                <img src={formData.image_url} alt="Preview"
-                  className="mt-2 rounded border"
-                  style={{ height: 56, width: 56, objectFit: 'cover' }}
-                  onError={e => { e.target.style.display = 'none'; }} />
-              )}
-            </div>
-          </form>
+              <div className="form-floating mb-1">
+                <input type="url" id="image_url" name="image_url"
+                  value={formData.image_url} onChange={handleChange}
+                  className="form-control form-control-sm" placeholder="https://..." />
+                <label htmlFor="image_url">Image URL</label>
+                {formData.image_url && (
+                  <img src={formData.image_url} alt="Preview"
+                    className="mt-2 rounded border"
+                    style={{ height: 56, width: 56, objectFit: 'cover' }}
+                    onError={e => { e.target.style.display = 'none'; }} />
+                )}
+              </div>
+            </form>
+          </div>
         )}
 
         {/* ── Resources ── */}
         {activeTab === 'resources' && service && (
-          <div>
-            <p className="text-muted small mb-2">
-              Consumable items used during this service (e.g. shampoo, conditioner).
-            </p>
-            {relLoading ? (
-              <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
-            ) : (
-              <>
-                {resources.length === 0 ? (
-                  <div className="text-muted small fst-italic mb-3">No resources linked yet.</div>
-                ) : (
-                  <table className="table table-sm mb-3">
-                    <thead><tr><th style={{ width: 36 }}></th><th>Item</th><th style={{ width: 96 }}>Qty</th></tr></thead>
-                    <tbody>
-                      {resources.map(r => (
-                        <tr key={r.id} className="align-middle">
-                          <td>
-                            <button type="button" className="btn btn-outline-danger btn-sm p-1"
-                              onClick={() => handleRemoveResource(r.id)}>
-                              <TrashIcon style={{ width: 13, height: 13 }} />
-                            </button>
-                          </td>
-                          <td className="text-truncate" style={{ maxWidth: 160 }}>{inventoryName(r.inventory_id)}</td>
-                          <td>
-                            <input type="number" min="0" step="0.01"
-                              className="form-control form-control-sm"
-                              defaultValue={r.quantity}
-                              onBlur={e => handleUpdateResourceQty(r.id, e.target.value)}
-                              style={{ width: 80 }} />
-                          </td>
-                          
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-                <div className="d-flex gap-2 align-items-center">
-                  <select className="form-select form-select-sm flex-grow-1"
-                    value={newResource.inventory_id}
-                    onChange={e => setNewResource(prev => ({ ...prev, inventory_id: e.target.value }))}>
-                    <option value="">— Select item —</option>
-                    {resourceItems.filter(i => !linkedResourceIds.has(i.id)).map(i => (
-                      <option key={i.id} value={i.id}>{i.name}</option>
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+            {/* Scrollable list */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+              {relLoading ? (
+                <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
+              ) : resources.length === 0 ? (
+                <div className="text-muted small fst-italic py-2">No resources linked yet.</div>
+              ) : (
+                <table className="table table-sm mb-0">
+                  <thead><tr><th style={{ width: 36 }}></th><th>Item</th><th style={{ width: 96 }}>Qty</th></tr></thead>
+                  <tbody>
+                    {resources.map(r => (
+                      <tr key={r.id} className="align-middle">
+                        <td>
+                          <button type="button" className="btn btn-outline-danger btn-sm p-1"
+                            onClick={() => handleRemoveResource(r.id)}>
+                            <TrashIcon style={{ width: 13, height: 13 }} />
+                          </button>
+                        </td>
+                        <td className="text-truncate" style={{ maxWidth: 160 }}>{inventoryName(r.inventory_id)}</td>
+                        <td>
+                          <input type="number" min="0" step="0.01"
+                            className="form-control form-control-sm"
+                            defaultValue={r.quantity}
+                            onBlur={e => handleUpdateResourceQty(r.id, e.target.value)}
+                            style={{ width: 80 }} />
+                        </td>
+                      </tr>
                     ))}
-                  </select>
-                  <input type="number" min="0.01" step="0.01"
-                    className="form-control form-control-sm" style={{ width: 72 }}
-                    value={newResource.quantity}
-                    onChange={e => setNewResource(prev => ({ ...prev, quantity: e.target.value }))}
-                    placeholder="Qty" />
-                  <button type="button" className="btn btn-primary btn-sm" onClick={handleAddResource}>
-                    <PlusIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                </div>
-                {resourceItems.length === 0 && (
-                  <div className="text-muted small fst-italic mt-1">No resource/product items in inventory.</div>
-                )}
-              </>
-            )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            {/* Sticky add row */}
+            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
+              <div className="d-flex gap-2 align-items-center">
+                <select className="form-select form-select-sm flex-grow-1"
+                  value={newResource.inventory_id}
+                  onChange={e => setNewResource(prev => ({ ...prev, inventory_id: e.target.value }))}>
+                  <option value="">— Select item —</option>
+                  {resourceItems.filter(i => !linkedResourceIds.has(i.id)).map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+                <input type="number" min="0.01" step="0.01"
+                  className="form-control form-control-sm" style={{ width: 72 }}
+                  value={newResource.quantity}
+                  onChange={e => setNewResource(prev => ({ ...prev, quantity: e.target.value }))}
+                  placeholder="Qty" />
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddResource}>
+                  <PlusIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
         {/* ── Assets ── */}
         {activeTab === 'assets' && service && (
-          <div>
-            <p className="text-muted small mb-2">
-              Equipment reserved for the full duration of this service (e.g. hair dryer, sink).
-            </p>
-            {relLoading ? (
-              <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
-            ) : (
-              <>
-                {assets.length === 0 ? (
-                  <div className="text-muted small fst-italic mb-3">No assets linked yet.</div>
-                ) : (
-                  <ul className="list-group list-group-flush mb-3">
-                    {assets.map(a => (
-                      <li key={a.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <button type="button" className="btn btn-outline-danger btn-sm p-1"
-                          onClick={() => handleRemoveAsset(a.id)}>
-                          <TrashIcon style={{ width: 13, height: 13 }} />
-                        </button>
-                        <span className="text-truncate" style={{ maxWidth: 220 }}>{inventoryName(a.inventory_id)}</span>
-                        
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="d-flex gap-2 align-items-center">
-                  <select className="form-select form-select-sm flex-grow-1"
-                    value={newAsset.inventory_id}
-                    onChange={e => setNewAsset({ inventory_id: e.target.value })}>
-                    <option value="">— Select asset —</option>
-                    {assetItems.filter(i => !linkedAssetIds.has(i.id)).map(i => (
-                      <option key={i.id} value={i.id}>{i.name}</option>
-                    ))}
-                  </select>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={handleAddAsset}>
-                    <PlusIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                </div>
-                {assetItems.length === 0 && (
-                  <div className="text-muted small fst-italic mt-1">No asset-type items in inventory.</div>
-                )}
-              </>
-            )}
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+            {/* Scrollable list */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+              {relLoading ? (
+                <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
+              ) : assets.length === 0 ? (
+                <div className="text-muted small fst-italic py-2">No assets linked yet.</div>
+              ) : (
+                <ul className="list-group list-group-flush mb-0">
+                  {assets.map(a => (
+                    <li key={a.id} className="list-group-item d-flex align-items-center gap-2 px-0">
+                      <button type="button" className="btn btn-outline-danger btn-sm p-1 flex-shrink-0"
+                        onClick={() => handleRemoveAsset(a.id)}>
+                        <TrashIcon style={{ width: 13, height: 13 }} />
+                      </button>
+                      <span className="text-truncate">{inventoryName(a.inventory_id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {/* Sticky add row */}
+            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
+              <div className="d-flex gap-2 align-items-center">
+                <select className="form-select form-select-sm flex-grow-1"
+                  value={newAsset.inventory_id}
+                  onChange={e => setNewAsset({ inventory_id: e.target.value })}>
+                  <option value="">— Select asset —</option>
+                  {assetItems.filter(i => !linkedAssetIds.has(i.id)).map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddAsset}>
+                  <PlusIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
         {/* ── Employees ── */}
         {activeTab === 'employees' && service && (
-          <div>
-            <p className="text-muted small mb-2">
-              Employees capable of performing this service.
-            </p>
-            {relLoading ? (
-              <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
-            ) : (
-              <>
-                {svcEmployees.length === 0 ? (
-                  <div className="text-muted small fst-italic mb-3">No employees linked yet.</div>
-                ) : (
-                  <ul className="list-group list-group-flush mb-3">
-                    {svcEmployees.map(se => (
-                      <li key={se.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <button type="button" className="btn btn-outline-danger btn-sm p-1"
-                          onClick={() => handleRemoveEmployee(se.id)}>
-                          <TrashIcon style={{ width: 13, height: 13 }} />
-                        </button>
-                        <span className="d-flex align-items-center gap-2">
-                          <span className="rounded-circle flex-shrink-0"
-                            style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: 'inline-block' }} />
-                          {employeeName(se.user_id)}
-                        </span>
-                        
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="d-flex gap-2 align-items-center">
-                  <select className="form-select form-select-sm flex-grow-1"
-                    value={newEmployee.user_id}
-                    onChange={e => setNewEmployee({ user_id: e.target.value })}>
-                    <option value="">— Select employee —</option>
-                    {employees.filter(e => e.is_active && !linkedEmployeeIds.has(e.id)).map(e => (
-                      <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
-                    ))}
-                  </select>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={handleAddEmployee}>
-                    <PlusIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                </div>
-                {employees.filter(e => e.is_active).length === 0 && (
-                  <div className="text-muted small fst-italic mt-1">No active employees found.</div>
-                )}
-              </>
-            )}
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+            {/* Scrollable list */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+              {relLoading ? (
+                <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
+              ) : svcEmployees.length === 0 ? (
+                <div className="text-muted small fst-italic py-2">No employees linked yet.</div>
+              ) : (
+                <ul className="list-group list-group-flush mb-0">
+                  {svcEmployees.map(se => (
+                    <li key={se.id} className="list-group-item d-flex align-items-center gap-2 px-0">
+                      <button type="button" className="btn btn-outline-danger btn-sm p-1 flex-shrink-0"
+                        onClick={() => handleRemoveEmployee(se.id)}>
+                        <TrashIcon style={{ width: 13, height: 13 }} />
+                      </button>
+                      <span className="rounded-circle flex-shrink-0"
+                        style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: 'inline-block' }} />
+                      <span className="text-truncate">{employeeName(se.user_id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {/* Sticky add row */}
+            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
+              <div className="d-flex gap-2 align-items-center">
+                <select className="form-select form-select-sm flex-grow-1"
+                  value={newEmployee.user_id}
+                  onChange={e => setNewEmployee({ user_id: e.target.value })}>
+                  <option value="">— Select employee —</option>
+                  {employees.filter(e => e.is_active && !linkedEmployeeIds.has(e.id)).map(e => (
+                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
+                  ))}
+                </select>
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddEmployee}>
+                  <PlusIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
         {/* ── Locations ── */}
         {activeTab === 'locations' && service && (
-          <div>
-            <p className="text-muted small mb-2">
-              Locations where this service is offered (e.g. franchise branches).
-            </p>
-            {relLoading ? (
-              <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
-            ) : (
-              <>
-                {locations.length === 0 ? (
-                  <div className="text-muted small fst-italic mb-3">No locations linked yet.</div>
-                ) : (
-                  <ul className="list-group list-group-flush mb-3">
-                    {locations.map(loc => (
-                      <li key={loc.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <button type="button" className="btn btn-outline-danger btn-sm p-1"
-                          onClick={() => handleRemoveLocation(loc.id)}>
-                          <TrashIcon style={{ width: 13, height: 13 }} />
-                        </button>
-                        <span className="text-truncate" style={{ maxWidth: 220 }}>
-                          {inventoryName(loc.inventory_id)}
-                        </span>
-                        
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="d-flex gap-2 align-items-center">
-                  <select className="form-select form-select-sm flex-grow-1"
-                    value={newLocation.inventory_id}
-                    onChange={e => setNewLocation({ inventory_id: e.target.value })}>
-                    <option value="">— Select location —</option>
-                    {locationItems.filter(i => !linkedLocationIds.has(i.id)).map(i => (
-                      <option key={i.id} value={i.id}>{i.name}</option>
-                    ))}
-                  </select>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={handleAddLocation}>
-                    <PlusIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                </div>
-                {locationItems.length === 0 && (
-                  <div className="text-muted small fst-italic mt-1">
-                    No locations found. Add items with type "location" in Inventory.
-                  </div>
-                )}
-              </>
-            )}
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+            {/* Scrollable list */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+              {relLoading ? (
+                <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
+              ) : locations.length === 0 ? (
+                <div className="text-muted small fst-italic py-2">No locations linked yet.</div>
+              ) : (
+                <ul className="list-group list-group-flush mb-0">
+                  {locations.map(loc => (
+                    <li key={loc.id} className="list-group-item d-flex align-items-center gap-2 px-0">
+                      <button type="button" className="btn btn-outline-danger btn-sm p-1 flex-shrink-0"
+                        onClick={() => handleRemoveLocation(loc.id)}>
+                        <TrashIcon style={{ width: 13, height: 13 }} />
+                      </button>
+                      <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {/* Sticky add row */}
+            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
+              <div className="d-flex gap-2 align-items-center">
+                <select className="form-select form-select-sm flex-grow-1"
+                  value={newLocation.inventory_id}
+                  onChange={e => setNewLocation({ inventory_id: e.target.value })}>
+                  <option value="">— Select location —</option>
+                  {locationItems.filter(i => !linkedLocationIds.has(i.id)).map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddLocation}>
+                  <PlusIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {/* ── Footer (sticky, always visible) ──────────────────────── */}
-      <div style={{
-        flexShrink: 0,
-        borderTop: '1px solid var(--bs-border-color)',
-        background: 'var(--bs-body-bg)',
-      }}>
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         {/* Row 1: Tab navigation — only when editing */}
         {service && (
           <div className="px-2 pt-2 pb-1 d-flex gap-1 overflow-auto flex-nowrap">
