@@ -39,6 +39,8 @@ export default function Modal_Detail_Item({
   const [newImageUrl, setNewImageUrl] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [imageError, setImageError] = useState('');
+  const [editingImageId, setEditingImageId] = useState(null);
+  const [editingImageUrl, setEditingImageUrl] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -172,10 +174,25 @@ export default function Modal_Detail_Item({
     setImageError('');
     try {
       await inventoryAPI.deleteImage(imageId);
+      if (editingImageId === imageId) { setEditingImageId(null); setEditingImageUrl(''); }
       setCurrentImageIndex(prev => Math.max(0, prev - 1));
       await loadImages(item.id);
     } catch {
       setImageError('Failed to delete image.');
+    }
+  };
+
+  const handleSaveEditImageUrl = async () => {
+    const url = editingImageUrl.trim();
+    if (!url) return;
+    setImageError('');
+    try {
+      await inventoryAPI.updateImage(editingImageId, { image_url: url });
+      setEditingImageId(null);
+      setEditingImageUrl('');
+      await loadImages(item.id);
+    } catch {
+      setImageError('Failed to update image URL.');
     }
   };
 
@@ -285,23 +302,17 @@ export default function Modal_Detail_Item({
     </div>
   );
 
+  if (!item) return null;
+
   return (
-    <Modal isOpen={isOpen && !!item} onClose={onClose} noPadding={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Edit Item</h6>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-link text-dark dark:text-gray-200 p-0"
-            style={{ lineHeight: 1 }}
-            title="Close"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+           
         </div>
       )}
 
@@ -360,7 +371,7 @@ export default function Modal_Detail_Item({
       )}
 
       {/* Container_Scrollable Content Area */}
-      <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2">
+      <div className="overflow-auto px-3 pt-3 no-scrollbar" style={{ flexGrow: 1 }}>
         {isSalesMode ? (
           /* Sales Mode - Display only */
           <div>
@@ -594,10 +605,15 @@ export default function Modal_Detail_Item({
                       style={{
                         width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px',
                         cursor: 'pointer',
-                        border: idx === currentImageIndex ? '2px solid var(--bs-primary)' : '2px solid #dee2e6'
+                        border: editingImageId === img.id
+                          ? '2px solid var(--bs-warning)'
+                          : idx === currentImageIndex
+                            ? '2px solid var(--bs-primary)'
+                            : '2px solid #dee2e6'
                       }}
                       onClick={() => setCurrentImageIndex(idx)}
                     />
+                    {/* Delete button — top right */}
                     <button
                       type="button"
                       onClick={() => handleDeleteImage(img.id)}
@@ -610,6 +626,32 @@ export default function Modal_Detail_Item({
                         cursor: 'pointer'
                       }}
                     >×</button>
+                    {/* Edit URL button — bottom left (only for URL-based images) */}
+                    {img.image_url && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddImageMode(null);
+                          if (editingImageId === img.id) {
+                            setEditingImageId(null);
+                            setEditingImageUrl('');
+                          } else {
+                            setEditingImageId(img.id);
+                            setEditingImageUrl(img.image_url);
+                          }
+                        }}
+                        title="Edit image URL"
+                        style={{
+                          position: 'absolute', bottom: '-5px', left: '-5px',
+                          width: '16px', height: '16px', borderRadius: '50%',
+                          background: editingImageId === img.id ? '#ffc107' : '#6c757d',
+                          color: '#fff', border: 'none',
+                          padding: 0, fontSize: '9px', lineHeight: 1,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >✎</button>
+                    )}
                   </div>
                 ))}
 
@@ -632,7 +674,44 @@ export default function Modal_Detail_Item({
 
 
 
-              {imageError && addImageMode === null && (
+              {/* Edit existing image URL panel */}
+              {editingImageId !== null && (
+                <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Edit Image URL</span>
+                    <button
+                      type="button"
+                      onClick={() => { setEditingImageId(null); setEditingImageUrl(''); setImageError(''); }}
+                      className="btn btn-link btn-sm p-0 ms-auto"
+                      style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}
+                    >✕</button>
+                  </div>
+                  <div className="d-flex gap-1">
+                    <input
+                      type="url"
+                      value={editingImageUrl}
+                      onChange={e => setEditingImageUrl(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSaveEditImageUrl()}
+                      placeholder="https://..."
+                      className="form-control form-control-sm"
+                      style={{ fontSize: '0.8rem' }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveEditImageUrl}
+                      className="btn btn-warning btn-sm flex-shrink-0"
+                    >
+                      Save
+                    </button>
+                  </div>
+                  {imageError && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
+                  )}
+                </div>
+              )}
+
+              {imageError && addImageMode === null && editingImageId === null && (
                 <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
               )}
             </div>
@@ -671,18 +750,7 @@ export default function Modal_Detail_Item({
               <label htmlFor="detail_type">Type</label>
             </div>
 
-            <div className="form-floating mb-2">
-              <textarea
-                id="detail_description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="form-control form-control-sm"
-                placeholder="Description"
-                style={{ height: '80px' }}
-              />
-              <label htmlFor="detail_description">Description</label>
-            </div>
+
 
             <div className="mb-2">
               <div className="form-floating position-relative">
@@ -736,6 +804,20 @@ export default function Modal_Detail_Item({
               <label htmlFor="detail_location">Location</label>
             </div>
 
+             <hr className="my-2" />   
+            <div className="form-floating mb-2 border-0">
+              <textarea
+                id="detail_description"
+                name="description" 
+                value={formData.description}
+                onChange={handleChange}
+                className="form-control form-control-sm border-0"
+                placeholder="Description"
+                style={{ height: '400px' }}
+              />
+              <label htmlFor="detail_description">Description</label>
+            </div>
+
             {formData.location === '[NEW]' && (
               <div className="form-floating mb-2">
                 <input
@@ -759,7 +841,7 @@ export default function Modal_Detail_Item({
       </div>
 
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 mt-2 pt-2 pb-3 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         {!isSalesMode ? (
           <div className="d-flex align-items-center">
             <div>
@@ -768,10 +850,10 @@ export default function Modal_Detail_Item({
                   type="button"
                   onClick={handleDelete}
                   className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                  style={{ width: '40px', height: '40px' }}
+                  style={{ width: '3rem', height: '3rem' }}
                   title="Delete Item"
                 >
-                  <TrashIcon className="h-5 w-5" />
+                  <TrashIcon style={{ width: 18, height: 18 }} />
                 </button>
               )}
             </div>
@@ -779,22 +861,24 @@ export default function Modal_Detail_Item({
               <button
                 type="button"
                 onClick={onClose}
-                className="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '40px', height: '40px' }}
+                className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
+                style={{ width: '3rem', height: '3rem' }}
                 title="Cancel"
               >
-                <XMarkIcon className="h-5 w-5" />
+                <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
               <button
                 type="button"
                 onClick={handleUpdateInventory}
-                className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '40px', height: '40px' }}
+                className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
+                style={{ width: '3rem', height: '3rem' }}
                 title="Save Changes"
               >
-                <CheckIcon className="h-5 w-5" />
+                <CheckIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>
+                {/* Right spacer to balance delete */}
+          <div style={{ width: 40 }} />
           </div>
         ) : null}
       </div>

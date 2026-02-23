@@ -307,6 +307,9 @@ export const clientsAPI = {
       },
     });
   },
+  getSchedules: (clientId) => api.get(`/isud/schedules?client_id=${clientId}`),
+  getTransactions: (clientId) => api.get(`/isud/sale_transaction?client_id=${clientId}`),
+  getTransactionItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
 };
 
 // Inventory API (replaces both items and inventory APIs)

@@ -254,7 +254,7 @@ export default function Suppliers() {
       </div>
 
       {/* Modal for Supplier Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'supplier-form'} onClose={closeModal}>
+      <Modal isOpen={isModalOpen && modalContent === 'supplier-form'} onClose={closeModal} noPadding={true} fullScreen={true}>
         {isModalOpen && modalContent === 'supplier-form' && (
           <SupplierForm
             supplier={editingSupplier}

@@ -352,8 +352,8 @@ export default function Services() {
       <Modal
         isOpen={isModalOpen && modalContent === 'service-form'}
         onClose={closeModal}
-        title={editingService ? `Edit: ${editingService.name}` : 'Add Service'}
         noPadding={true}
+        fullScreen={true}
       >
         {isModalOpen && modalContent === 'service-form' && (
           <Form_Service

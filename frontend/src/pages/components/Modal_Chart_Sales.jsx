@@ -83,7 +83,7 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        <div style={styles.chartContainer}>
+        <div className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white no-scrollbar" style={styles.chartContainer}>
           <Line data={chartData} options={chartOptions} />
         </div>
         <div style={styles.buttonContainer}>
@@ -103,7 +103,7 @@ const styles = {
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     zIndex: 1000,
   },
@@ -111,13 +111,15 @@ const styles = {
     backgroundColor: 'var(--bs-body-bg)',
     padding: '20px',
     width: '100%',
-    height: '100%',
+    maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    borderRadius: '12px 12px 0 0',
   },
   chartContainer: {
     flex: 1,
+    overflow: 'auto',
   },
   buttonContainer: {
     position: 'absolute',

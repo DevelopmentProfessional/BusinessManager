@@ -44,7 +44,9 @@
       "Bash(cd:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(cd \"C:/Users/dpint/Documents/Development/BusinessManager/frontend\" && node --input-type=module <<'EOF'\n// Quick syntax check - just try to parse the files\nimport { readFileSync } from 'fs';\nconst files = [\n  'src/pages/Clients.jsx',\n  'src/pages/components/Modal_Detail_Client.jsx',\n  'src/services/api.js',\n];\nfor \\(const f of files\\) {\n  try {\n    const content = readFileSync\\(f, 'utf8'\\);\n    console.log\\(`✓ ${f} \\(${content.length} chars\\)`\\);\n  } catch \\(e\\) {\n    console.log\\(`✗ ${f}: ${e.message}`\\);\n  }\n}\nEOF)",
+      "Read(//c/Users/dpint/.claude/projects/c--Users-dpint-Documents-Development-BusinessManager/e39ef214-8aad-4099-bdc3-75385e0728c7/tool-results/**)"
     ]
   }
 }

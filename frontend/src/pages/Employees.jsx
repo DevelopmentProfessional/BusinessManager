@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -635,8 +635,9 @@ export default function Employees() {
     <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
 
       {/* Header - sticky on mobile */}
-      <div className="flex-shrink-0 border-bottom p-3 bg-body" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
+      <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex justify-content-between" style={{ position: 'sticky', top: 0, zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
+       
       </div>
 
       {/* Error / Success Alerts */}
@@ -729,35 +730,11 @@ export default function Employees() {
           </table>
 
           {/* Controls */}
-          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="position-relative w-100 mb-2">
-              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Search by name, email, or role..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="app-search-input form-control ps-5 w-100 rounded-pill"
-              />
-            </div>
+          <div className="border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
 
-            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-              <Gate_Permission page="employees" permission="write">
-                <button
-                  type="button"
-                  onClick={handleCreate}
-                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Add employee"
-                >
-                  <PlusIcon className="h-5 w-5" />
-                </button>
-              </Gate_Permission>
-              {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
+            {/* Row 1 – Requests */}
+            {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
+              <div className="px-3 pt-2  dark:border-gray-700">
                 <button
                   type="button"
                   onClick={handleOpenRequests}
@@ -769,42 +746,76 @@ export default function Employees() {
                     <span className="badge bg-danger ms-1">{allRequests.filter(r => r.status === 'pending').length}</span>
                   )}
                 </button>
-              )}
+              </div>
+            )}
 
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content'  }}
-              >
-                <option value="all">Roles</option>
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
+            {/* Row 2 – Search + Add + Filters */}
+            <div className="p-3 pt-2">
+              <div className="position-relative w-100 mb-2">
+                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or role..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="app-search-input form-control ps-5 w-100 rounded-pill"
+                />
+              </div>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content'  }}
-              >
-                <option value="all">Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <div className="d-flex align-items-center gap-1 flex-wrap pb-1">
+                <Gate_Permission page="employees" permission="write">
+                  <button
+                    type="button"
+                    onClick={handleCreate}
+                    className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="Add employee"
+                  >
+                    <PlusIcon className="h-5 w-5" />
+                  </button>
+                </Gate_Permission>
+
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="form-select form-select-sm rounded-pill"
+                  style={{ width: 'fit-content' }}
+                >
+                  <option value="all">Roles</option>
+                  {roleOptions.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="form-select form-select-sm rounded-pill"
+                  style={{ width: 'fit-content' }}
+                >
+                  <option value="all">Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
 
       {/* Employee Form Modal */}
-      <Modal 
-        isOpen={isModalOpen && modalContent === 'employee-form'} 
+      <Modal
+        isOpen={isModalOpen && modalContent === 'employee-form'}
         onClose={closeModal}
-        title={editingEmployee ? 'Edit Employee' : 'Add Employee'}
+        noPadding={true}
+        fullScreen={true}
       >
         {isModalOpen && modalContent === 'employee-form' && (
           <Form_Employee
@@ -820,122 +831,149 @@ export default function Employees() {
       </Modal>
 
       {/* Create User Modal */}
-      <Modal 
-        isOpen={showCreateUser} 
+      <Modal
+        isOpen={showCreateUser}
         onClose={() => setShowCreateUser(false)}
-        title="Create New User"
         noPadding={true}
+        fullScreen={true}
       >
-        <form onSubmit={handleCreateUser} className="d-flex flex-column h-100">
-          {/* Container_Scrollable Content */}
-          <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
-                  <div className="form-floating mb-3">
-                    <input
-                      type="text"
-                      id="createUserUsername"
-                      value={newUser.username}
-                      onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                      className="form-control"
-                      placeholder="Username"
-                      required
-                    />
-                    <label htmlFor="createUserUsername">Username</label>
-                  </div>
-                  <div className="form-floating mb-3">
-                    <input
-                      type="email"
-                      id="createUserEmail"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                      className="form-control"
-                      placeholder="Email"
-                      required
-                    />
-                    <label htmlFor="createUserEmail">Email</label>
-                  </div>
-                  <div className="form-floating mb-3">
-                    <input
-                      type="password"
-                      id="createUserPassword"
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      className="form-control"
-                      placeholder="Password"
-                      required
-                    />
-                    <label htmlFor="createUserPassword">Password</label>
-                  </div>
-                  <div className="form-floating mb-3">
-                    <input
-                      type="text"
-                      id="createUserFirstName"
-                      value={newUser.first_name}
-                      onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                      className="form-control"
-                      placeholder="First Name"
-                      required
-                    />
-                    <label htmlFor="createUserFirstName">First Name</label>
-                  </div>
-                  <div className="form-floating mb-3">
-                    <input
-                      type="text"
-                      id="createUserLastName"
-                      value={newUser.last_name}
-                      onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                      className="form-control"
-                      placeholder="Last Name"
-                      required
-                    />
-                    <label htmlFor="createUserLastName">Last Name</label>
-                  </div>
-                  <div className="form-floating mb-3">
-                    <select
-                      id="createUserRole"
-                      value={newUser.role}
-                      onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                      className="form-select form-select-sm"
-                    >
-                      {roles.map(role => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                    <label htmlFor="createUserRole">Role</label>
-                  </div>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+          {/* Header */}
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Create User</h6>
+            <button type="button" onClick={() => setShowCreateUser(false)} className="btn btn-link p-0 text-muted">
+              <XMarkIcon style={{ width: 20, height: 20 }} />
+            </button>
           </div>
 
-          {/* Fixed Footer */}
-          <div className="border-top bg-white dark:bg-gray-800 p-3">
-            <div className="d-flex justify-content-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowCreateUser(false)}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? 'Creating...' : 'Create User'}
-              </button>
+          {/* Scrollable Body */}
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+            <form id="create-user-form" onSubmit={handleCreateUser}>
+              <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  id="createUserUsername"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                  className="form-control"
+                  placeholder="Username"
+                  required
+                />
+                <label htmlFor="createUserUsername">Username</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input
+                  type="email"
+                  id="createUserEmail"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  className="form-control"
+                  placeholder="Email"
+                  required
+                />
+                <label htmlFor="createUserEmail">Email</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input
+                  type="password"
+                  id="createUserPassword"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  className="form-control"
+                  placeholder="Password"
+                  required
+                />
+                <label htmlFor="createUserPassword">Password</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  id="createUserFirstName"
+                  value={newUser.first_name}
+                  onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
+                  className="form-control"
+                  placeholder="First Name"
+                  required
+                />
+                <label htmlFor="createUserFirstName">First Name</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  id="createUserLastName"
+                  value={newUser.last_name}
+                  onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
+                  className="form-control"
+                  placeholder="Last Name"
+                  required
+                />
+                <label htmlFor="createUserLastName">Last Name</label>
+              </div>
+              <div className="form-floating mb-3">
+                <select
+                  id="createUserRole"
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                  className="form-select form-select-sm"
+                >
+                  {roles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+                <label htmlFor="createUserRole">Role</label>
+              </div>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="d-flex align-items-center">
+              <div style={{ width: 40 }} />
+              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateUser(false)}
+                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Cancel"
+                >
+                  <XMarkIcon style={{ width: 18, height: 18 }} />
+                </button>
+                <button
+                  type="submit"
+                  form="create-user-form"
+                  disabled={loading}
+                  className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Create User"
+                >
+                  <CheckIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+              <div style={{ width: 40 }} />
             </div>
           </div>
-        </form>
+        </div>
       </Modal>
 
       {/* Permissions Management Modal */}
-      <Modal 
-        isOpen={permissionsModalOpen} 
+      <Modal
+        isOpen={permissionsModalOpen}
         onClose={() => setPermissionsModalOpen(false)}
-        title={`Manage Permissions - ${selectedUser?.first_name} ${selectedUser?.last_name}`}
         noPadding={true}
+        fullScreen={true}
       >
-        <div className="d-flex flex-column h-100">
-          {/* Container_Scrollable Content */}
-          <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+          {/* Header */}
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Permissions</h6>
+            <button type="button" onClick={() => setPermissionsModalOpen(false)} className="btn btn-link p-0 text-muted">
+              <XMarkIcon style={{ width: 20, height: 20 }} />
+            </button>
+          </div>
+
+          {/* Scrollable Body */}
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
             {/* Add New Permission Form */}
             <form onSubmit={handleCreatePermission} className="mb-4 p-3 border rounded">
             <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Add New Permission</h5>
@@ -1068,32 +1106,45 @@ export default function Employees() {
           </div>
           </div>
 
-          {/* Fixed Footer */}
-          <div className="border-top bg-white dark:bg-gray-800 p-3">
-            <div className="d-flex justify-content-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPermissionsModalOpen(false)}
-                className="btn btn-secondary"
-              >
-                <i className="bi bi-x-circle me-2"></i>
-                Close
-              </button>
+          {/* Footer */}
+          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="d-flex align-items-center">
+              <div style={{ width: 40 }} />
+              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+                <button
+                  type="button"
+                  onClick={() => setPermissionsModalOpen(false)}
+                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Close"
+                >
+                  <XMarkIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+              <div style={{ width: 40 }} />
             </div>
           </div>
         </div>
       </Modal>
 
       {/* Roles Management Modal */}
-      <Modal 
-        isOpen={showRolesModal} 
+      <Modal
+        isOpen={showRolesModal}
         onClose={() => setShowRolesModal(false)}
-        title="Manage Roles"
         noPadding={true}
+        fullScreen={true}
       >
-        <div className="d-flex flex-column h-100">
-          {/* Container_Scrollable Content */}
-          <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+          {/* Header */}
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Roles</h6>
+            <button type="button" onClick={() => setShowRolesModal(false)} className="btn btn-link p-0 text-muted">
+              <XMarkIcon style={{ width: 20, height: 20 }} />
+            </button>
+          </div>
+
+          {/* Scrollable Body */}
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
             {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
               <div className="text-sm text-red-700">{error}</div>
@@ -1238,16 +1289,22 @@ export default function Employees() {
           </div>
           </div>
 
-          {/* Fixed Footer */}
-          <div className="border-top bg-white dark:bg-gray-800 p-3">
-            <div className="d-flex justify-content-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowRolesModal(false)}
-                className="btn btn-secondary"
-              >
-                Close
-              </button>
+          {/* Footer */}
+          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="d-flex align-items-center">
+              <div style={{ width: 40 }} />
+              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+                <button
+                  type="button"
+                  onClick={() => setShowRolesModal(false)}
+                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Close"
+                >
+                  <XMarkIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+              <div style={{ width: 40 }} />
             </div>
           </div>
         </div>
@@ -1257,12 +1314,20 @@ export default function Employees() {
       <Modal
         isOpen={showRequestsModal}
         onClose={() => setShowRequestsModal(false)}
-        title={currentUser?.role === 'admin' ? 'Requests (All)' : 'Requests (Your Team)'}
         noPadding={true}
+        fullScreen={true}
       >
-        <div className="d-flex flex-column h-100">
+        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+          {/* Header */}
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Requests</h6>
+            <button type="button" onClick={() => setShowRequestsModal(false)} className="btn btn-link p-0 text-muted">
+              <XMarkIcon style={{ width: 20, height: 20 }} />
+            </button>
+          </div>
+
           {/* Type filter pills */}
-          <div className="px-3 pt-3 pb-2 border-bottom d-flex flex-wrap gap-1">
+          <div className="flex-shrink-0 px-3 pt-2 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex flex-wrap gap-1">
             {[
               { key: 'all', label: 'All' },
               { key: 'leave_vacation', label: 'Leave (Vacation)' },
@@ -1282,7 +1347,8 @@ export default function Employees() {
               </button>
             ))}
           </div>
-          <div className="flex-1 overflow-auto p-3" style={{ maxHeight: 'calc(80vh - 170px)' }}>
+
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
             {requestsLoading ? (
               <div className="text-center py-4">
                 <div className="spinner-border text-primary" role="status" />
@@ -1345,8 +1411,23 @@ export default function Employees() {
               </div>
             )}
           </div>
-          <div className="border-top p-3">
-            <button className="btn btn-secondary" onClick={() => setShowRequestsModal(false)}>Close</button>
+          {/* Footer */}
+          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="d-flex align-items-center">
+              <div style={{ width: 40 }} />
+              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+                <button
+                  type="button"
+                  onClick={() => setShowRequestsModal(false)}
+                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Close"
+                >
+                  <XMarkIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+              <div style={{ width: 40 }} />
+            </div>
           </div>
         </div>
       </Modal>

@@ -401,7 +401,7 @@ export default function Attendance() {
       </Gate_Permission>
 
       {/* Modal for Attendance Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'attendance-form'} onClose={closeModal}>
+      <Modal isOpen={isModalOpen && modalContent === 'attendance-form'} onClose={closeModal} noPadding={true} fullScreen={true}>
         {isModalOpen && modalContent === 'attendance-form' && (
           <AttendanceForm
             onSubmit={handleSubmitRecord}

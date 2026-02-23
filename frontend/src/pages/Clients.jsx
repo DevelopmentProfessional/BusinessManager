@@ -4,20 +4,21 @@ import useStore from '../services/useStore';
 import { clientsAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Client from './components/Form_Client';
+import Modal_Detail_Client from './components/Modal_Detail_Client';
 import Gate_Permission from './components/Gate_Permission';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default function Clients() {
-  const { 
+  const {
     clients, setClients, addClient, updateClient, removeClient,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
   // Check permissions at page level
-  if (!hasPermission('clients', 'read') && 
-      !hasPermission('clients', 'write') && 
-      !hasPermission('clients', 'delete') && 
+  if (!hasPermission('clients', 'read') &&
+      !hasPermission('clients', 'write') &&
+      !hasPermission('clients', 'delete') &&
       !hasPermission('clients', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
@@ -78,13 +79,9 @@ export default function Clients() {
     openModal('client-form');
   };
 
-  const handleEditClient = (client) => {
-    if (!hasPermission('clients', 'write')) {
-      setError('You do not have permission to edit clients');
-      return;
-    }
+  const handleOpenClient = (client) => {
     setEditingClient(client);
-    openModal('client-form');
+    openModal('client-detail');
   };
 
   const handleDeleteClient = async (clientId) => {
@@ -92,12 +89,10 @@ export default function Clients() {
       setError('You do not have permission to delete clients');
       return;
     }
-    
-    if (!window.confirm('Are you sure you want to delete this client?')) return;
-
     try {
       await clientsAPI.delete(clientId);
       removeClient(clientId);
+      closeModal();
       clearError();
     } catch (err) {
       const errorMsg = err?.response?.data?.detail || 'Failed to delete client';
@@ -106,21 +101,29 @@ export default function Clients() {
     }
   };
 
-  const handleSubmitClient = async (clientData) => {
+  const handleSubmitCreate = async (clientData) => {
     try {
-      if (editingClient) {
-        const response = await clientsAPI.update(editingClient.id, clientData);
-        const updatedClient = response?.data ?? response;
-        updateClient(editingClient.id, updatedClient);
-      } else {
-        const response = await clientsAPI.create(clientData);
-        const newClient = response?.data ?? response;
-        addClient(newClient);
-      }
+      const response = await clientsAPI.create(clientData);
+      const newClient = response?.data ?? response;
+      addClient(newClient);
       closeModal();
       clearError();
     } catch (err) {
-      const errorMsg = err?.response?.data?.detail || 'Failed to save client';
+      const errorMsg = err?.response?.data?.detail || 'Failed to create client';
+      setError(errorMsg);
+      console.error(err);
+    }
+  };
+
+  const handleUpdateClient = async (clientId, clientData) => {
+    try {
+      const response = await clientsAPI.update(clientId, clientData);
+      const updatedClient = response?.data ?? response;
+      updateClient(clientId, updatedClient);
+      closeModal();
+      clearError();
+    } catch (err) {
+      const errorMsg = err?.response?.data?.detail || 'Failed to update client';
       setError(errorMsg);
       console.error(err);
     }
@@ -181,10 +184,10 @@ export default function Clients() {
   }
 
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+    <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-3">
+      <div className="flex-shrink-0 border-bottom p-2 bg-body" style={{ zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Clients</h1>
       </div>
 
@@ -201,81 +204,36 @@ export default function Clients() {
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
-          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white no-scrollbar"
           style={{ background: 'var(--bs-body-bg)' }}
         >
           {filteredClients.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
-                <col style={{ width: '50px' }} />
                 <col />
-                <col style={{ width: '180px' }} />
-                <col style={{ width: '140px' }} />
-                <col style={{ width: '100px' }} />
-                <col style={{ width: '50px' }} />
+                <col style={{ width: '110px' }} />
               </colgroup>
               <tbody>
                 {filteredClients.map((client, index) => (
                   <tr
                     key={client.id || index}
                     className="align-middle border-bottom"
-                    style={{ height: '56px' }}
+                    style={{ height: '56px', cursor: 'pointer' }}
+                    onClick={() => handleOpenClient(client)}
                   >
-                    {/* Delete */}
-                    <td className="text-center px-2">
-                      <Gate_Permission page="clients" permission="delete">
-                        <button
-                          onClick={() => handleDeleteClient(client.id)}
-                          className="btn btn-sm btn-outline-danger border-0 p-1"
-                          title="Delete"
-                        >
-                          ×
-                        </button>
-                      </Gate_Permission>
-                    </td>
-
-                    {/* Name */}
+                    {/* Name + contact */}
                     <td className="px-3">
-                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
-                        {client.name}
-                      </div>
+                      <div className="fw-medium text-truncate">{client.name}</div>
                       <div className="small text-muted text-truncate">
                         {client.email || client.phone || 'No contact'}
                       </div>
                     </td>
 
-                    {/* Phone */}
-                    <td className="px-3 text-muted">
-                      <div className="text-truncate" style={{ maxWidth: '100%' }}>
-                        {client.phone || '-'}
-                      </div>
-                    </td>
-
                     {/* Membership */}
-                    <td className="px-3">
+                    <td className="px-2">
                       <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>
                         {getTierLabel(client.membership_tier)}
                       </span>
-                    </td>
-
-                    {/* Points */}
-                    <td className="text-center px-3">
-                      <span className="badge bg-secondary-subtle text-secondary">
-                        {client.membership_points || 0} pts
-                      </span>
-                    </td>
-
-                    {/* Edit */}
-                    <td className="text-center px-2">
-                      <Gate_Permission page="clients" permission="write">
-                        <button
-                          onClick={() => handleEditClient(client)}
-                          className="btn btn-sm btn-outline-primary border-0 p-1"
-                          title="Edit"
-                        >
-                          ✎
-                        </button>
-                      </Gate_Permission>
                     </td>
                   </tr>
                 ))}
@@ -293,27 +251,19 @@ export default function Clients() {
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
-              <col style={{ width: '50px' }} />
               <col />
-              <col style={{ width: '180px' }} />
-              <col style={{ width: '140px' }} />
-              <col style={{ width: '100px' }} />
-              <col style={{ width: '50px' }} />
+              <col style={{ width: '110px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="text-center"></th>
                 <th>Client</th>
-                <th>Phone</th>
                 <th>Membership</th>
-                <th className="text-center">Points</th>
-                <th className="text-center"></th>
               </tr>
             </tfoot>
           </table>
 
           {/* Controls */}
-          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ">
             {/* Search row */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -331,7 +281,7 @@ export default function Clients() {
             </div>
 
             {/* Controls row - Add, Tier */}
-            <div className="d-flex align-items-center gap-2 mb-1">
+            <div className="d-flex align-items-center gap-1 pb-2">
               <Gate_Permission page="clients" permission="write">
                 <button
                   type="button"
@@ -348,7 +298,7 @@ export default function Clients() {
                 value={tierFilter}
                 onChange={(e) => setTierFilter(e.target.value)}
                 className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content', minWidth: '140px' }}
+                style={{ width: 'fit-content'  }}
               >
                 <option value="all">All Tiers</option>
                 <option value="NONE">No Membership</option>
@@ -362,12 +312,22 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* Modal for Client Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'client-form'} onClose={closeModal}>
+      {/* Client Detail Modal (for viewing/editing) */}
+      <Modal_Detail_Client
+        isOpen={isModalOpen && modalContent === 'client-detail'}
+        onClose={closeModal}
+        client={editingClient}
+        onUpdate={handleUpdateClient}
+        onDelete={handleDeleteClient}
+        canDelete={hasPermission('clients', 'delete')}
+      />
+
+      {/* Create Client Modal (bottom-sheet form) */}
+      <Modal isOpen={isModalOpen && modalContent === 'client-form'} onClose={closeModal} noPadding={true} fullScreen={true}>
         {isModalOpen && modalContent === 'client-form' && (
           <Form_Client
-            client={editingClient}
-            onSubmit={handleSubmitClient}
+            client={null}
+            onSubmit={handleSubmitCreate}
             onCancel={closeModal}
             error={error}
           />
