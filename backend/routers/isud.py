@@ -373,8 +373,16 @@ async def update_by_id(
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
             setattr(record, key, value)
 
+    if hasattr(record, "updated_at"):
+        from datetime import datetime
+        record.updated_at = datetime.utcnow()
+
     session.add(record)
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
     return _serialize_record(record, table_name, session)
 

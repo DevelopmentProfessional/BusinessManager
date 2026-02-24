@@ -556,6 +556,8 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
   }, [document?.id]);
 
 
+  if (!document) return null;
+
   const documentType = getDocumentType(document);
   const editable = isEditableType(documentType);
 

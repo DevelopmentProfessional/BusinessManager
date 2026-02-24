@@ -117,6 +117,8 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     }
   };
 
+  if (!document) return null;
+
   return (
     <Modal
       isOpen={isOpen && !!document}
