@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
 import { isudAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, CalendarDaysIcon, ClockIcon, XMarkIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Gate_Permission from './Gate_Permission';
 import Dropdown_Custom from './Dropdown_Custom';
-import Button_Icon from './Button_Icon';
-import Footer_Action from './Footer_Action';
 
 const APPOINTMENT_TYPES = [
   { value: 'one_time', label: 'Appointment', description: 'Client appointment with service' },
@@ -299,261 +297,277 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   // Get config for current appointment type
   const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
 
-  // Contextual titles and descriptions per type
-  const typeLabels = {
-    one_time: { title: appointment ? 'Edit' : 'New', subtitle: '' },
-    series: { title: appointment ? 'Edit' : 'New', subtitle: '' },
-    meeting: { title: appointment ? 'Edit' : 'New', subtitle: '' },
-    task: { title: appointment ? 'Edit' : 'New', subtitle: '' },
-  };
-  const currentLabels = typeLabels[formData.appointment_type] || typeLabels.one_time;
+  const formTitle = appointment
+    ? (formData.appointment_type === 'meeting' ? 'Edit Meeting'
+      : formData.appointment_type === 'task' ? 'Edit Task'
+      : 'Edit Appointment')
+    : (formData.appointment_type === 'meeting' ? 'New Meeting'
+      : formData.appointment_type === 'task' ? 'New Task'
+      : 'New Appointment');
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-1">
-      <div className="mb-1">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-0">
-          {currentLabels.title}
-        </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{currentLabels.subtitle}</p>
+    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+
+      {/* Header */}
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
+        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{formTitle}</h6>
       </div>
 
-      {/* Appointment Type - FIRST so it controls what fields show */}
-      <div className="mb-3">
-        <Dropdown_Custom
-          name="appointment_type"
-          value={formData.appointment_type}
-          onChange={handleChange}
-          options={APPOINTMENT_TYPES.map((type) => ({
-            value: type.value,
-            label: type.label
-          }))}
-          placeholder="Select event type"
-          required
-          label="Event Type"
-        />
-      </div>
+      {/* Scrollable body */}
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+        <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2">
 
-      {/* Meeting Title - shown first for meetings */}
-      {formData.appointment_type === 'meeting' && (
-        <div className="form-floating mb-2">
-          <input
-            type="text"
-            id="meeting_title"
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="Meeting Title"
-            className="form-control form-control-sm"
-            required
-          />
-          <label htmlFor="meeting_title">Meeting Title</label>
-        </div>
-      )}
-
-      {/* Task Description - shown first for tasks */}
-      {formData.appointment_type === 'task' && (
-        <div className="form-floating mb-2">
-          <input
-            type="text"
-            id="task_description"
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="Task Description"
-            className="form-control form-control-sm"
-            required
-          />
-          <label htmlFor="task_description">Task Description</label>
-        </div>
-      )}
-
-      {/* Client Selection - only for appointments/series */}
-      {typeConfig.needsClient && (
-        <div className="input-group">
-         
+          {/* Appointment Type */}
           <Dropdown_Custom
-            name="client_id"
-            value={typeConfig.clientMultiple ? formData.client_ids : (formData.client_ids[0] || '')}
-            onChange={handleClientChange}
-            options={clients.map((client) => ({
-              value: client.id,
-              label: client.name
+            name="appointment_type"
+            value={formData.appointment_type}
+            onChange={handleChange}
+            options={APPOINTMENT_TYPES.map((type) => ({
+              value: type.value,
+              label: type.label
             }))}
-            placeholder={typeConfig.clientMultiple ? 'Select clients' : 'Select a client'}
+            placeholder="Select event type"
             required
-            className="flex-1"
-            searchable={true}
-            onOpen={handleClientDropdownOpen}
-            loading={clientsLoading}
-            multiSelect={typeConfig.clientMultiple}
+            label="Event Type"
           />
-        </div>
-      )}
 
-      {/* Service Selection - only for appointments/series */}
-      {typeConfig.needsService && (
- 
-          <Dropdown_Custom
-            name="service_id"
-            value={formData.service_id}
-            onChange={handleServiceChange}
-            options={services.map((service) => ({
-              value: service.id,
-              label: `${service.name} - $${service.price}`
-            }))}
-            placeholder="Select a service"
-            required
-            className="flex-1"
-            searchable={true}
-          /> 
-      )}
+          {/* Meeting Title */}
+          {formData.appointment_type === 'meeting' && (
+            <div className="form-floating">
+              <input
+                type="text"
+                id="meeting_title"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Meeting Title"
+                className="form-control form-control-sm"
+                required
+              />
+              <label htmlFor="meeting_title">Meeting Title</label>
+            </div>
+          )}
 
-      {/* Employee Selection */}
-      {typeConfig.needsEmployee && (
-        <div>
-       
+          {/* Task Description */}
+          {formData.appointment_type === 'task' && (
+            <div className="form-floating">
+              <input
+                type="text"
+                id="task_description"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Task Description"
+                className="form-control form-control-sm"
+                required
+              />
+              <label htmlFor="task_description">Task Description</label>
+            </div>
+          )}
+
+          {/* Client Selection */}
+          {typeConfig.needsClient && (
             <Dropdown_Custom
-              name="employee_id"
-              value={typeConfig.employeeMultiple ? formData.employee_ids : (formData.employee_ids[0] || '')}
-              onChange={handleEmployeeChange}
-              options={((isWriteOnly && user)
-                ? employees.filter(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase())
-                : employees
-              ).map((employee) => ({
-                value: employee.id,
-                label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ''}`
+              name="client_id"
+              value={typeConfig.clientMultiple ? formData.client_ids : (formData.client_ids[0] || '')}
+              onChange={handleClientChange}
+              options={clients.map((client) => ({
+                value: client.id,
+                label: client.name
               }))}
-              placeholder={
-                formData.appointment_type === 'meeting' ? 'Select attendees'
-                : formData.appointment_type === 'task' ? 'Assign to'
-                : typeConfig.employeeMultiple ? 'Select employees' : 'Select employee'
-              }
+              placeholder={typeConfig.clientMultiple ? 'Select clients' : 'Select a client'}
               required
               searchable={true}
-              disabled={isWriteOnly}
-              multiSelect={typeConfig.employeeMultiple}
-            /> 
-          {(isWriteOnly || employees.length === 1) && (
-            <p className="text-xs text-gray-500 mt-1">
-              You can only schedule for yourself
-            </p>
+              onOpen={handleClientDropdownOpen}
+              loading={clientsLoading}
+              multiSelect={typeConfig.clientMultiple}
+            />
           )}
-        </div>
-      )}
 
-      {/* Recurrence (only for series) */}
-      {formData.appointment_type === 'series' && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-            Recurrence Frequency
-          </label>
-          <Dropdown_Custom
-            name="recurrence_frequency"
-            value={formData.recurrence_frequency}
-            onChange={handleChange}
-            options={RECURRENCE_OPTIONS}
-            placeholder="Select frequency"
-            required
-          />
-        </div>
-      )}
-
-      {/* Duration */}
-      <div className="mb-3">
-        <Dropdown_Custom
-          name="duration_minutes"
-          value={formData.duration_minutes}
-          onChange={handleChange}
-          options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
-            value: mins.toString(),
-            label: `${mins} min`
-          }))}
-          placeholder="Select duration"
-          required
-          label="Duration"
-        />
-        {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="form-floating">
-          <input
-            type="date"
-            id="appointment_date"
-            name="appointment_date"
-            required
-            value={formData.appointment_date}
-            onChange={handleChange}
-            className="form-control form-control-sm"
-            placeholder="Date"
-          />
-          <label htmlFor="appointment_date">Date</label>
-        </div>
-        <div>
-          <div className="input-group mt-1">
+          {/* Service Selection */}
+          {typeConfig.needsService && (
             <Dropdown_Custom
-              name="appointment_hour"
-              value={formData.appointment_hour || ''}
-              onChange={handleChange}
-              options={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => ({
-                value: hour.toString().padStart(2, '0'),
-                label: hour.toString().padStart(2, '0')
+              name="service_id"
+              value={formData.service_id}
+              onChange={handleServiceChange}
+              options={services.map((service) => ({
+                value: service.id,
+                label: `${service.name} - $${service.price}`
               }))}
-              placeholder="Hour"
+              placeholder="Select a service"
               required
-              className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
+              searchable={true}
             />
-            <span className="input-group-text">:</span>
+          )}
+
+          {/* Employee Selection */}
+          {typeConfig.needsEmployee && (
+            <div>
+              <Dropdown_Custom
+                name="employee_id"
+                value={typeConfig.employeeMultiple ? formData.employee_ids : (formData.employee_ids[0] || '')}
+                onChange={handleEmployeeChange}
+                options={((isWriteOnly && user)
+                  ? employees.filter(e => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase())
+                  : employees
+                ).map((employee) => ({
+                  value: employee.id,
+                  label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ''}`
+                }))}
+                placeholder={
+                  formData.appointment_type === 'meeting' ? 'Select attendees'
+                  : formData.appointment_type === 'task' ? 'Assign to'
+                  : typeConfig.employeeMultiple ? 'Select employees' : 'Select employee'
+                }
+                required
+                searchable={true}
+                disabled={isWriteOnly}
+                multiSelect={typeConfig.employeeMultiple}
+              />
+              {(isWriteOnly || employees.length === 1) && (
+                <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>
+              )}
+            </div>
+          )}
+
+          {/* Recurrence */}
+          {formData.appointment_type === 'series' && (
             <Dropdown_Custom
-              name="appointment_minute"
-              value={formData.appointment_minute || ''}
+              name="recurrence_frequency"
+              value={formData.recurrence_frequency}
               onChange={handleChange}
-              options={[0, 15, 30, 45].map(minute => ({
-                value: minute.toString().padStart(2, '0'),
-                label: minute.toString().padStart(2, '0')
-              }))}
-              placeholder="Minute"
+              options={RECURRENCE_OPTIONS}
+              placeholder="Select frequency"
               required
-              className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
+              label="Recurrence"
             />
+          )}
+
+          {/* Duration */}
+          <div>
+            <Dropdown_Custom
+              name="duration_minutes"
+              value={formData.duration_minutes}
+              onChange={handleChange}
+              options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
+                value: mins.toString(),
+                label: `${mins} min`
+              }))}
+              placeholder="Select duration"
+              required
+              label="Duration"
+            />
+            {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
           </div>
+
+          {/* Date + Time */}
+          <div className="row g-2">
+            <div className="col-6">
+              <div className="form-floating">
+                <input
+                  type="date"
+                  id="appointment_date"
+                  name="appointment_date"
+                  required
+                  value={formData.appointment_date}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="Date"
+                />
+                <label htmlFor="appointment_date">Date</label>
+              </div>
+            </div>
+            <div className="col-6">
+              <div className="input-group">
+                <Dropdown_Custom
+                  name="appointment_hour"
+                  value={formData.appointment_hour || ''}
+                  onChange={handleChange}
+                  options={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(hour => ({
+                    value: hour.toString().padStart(2, '0'),
+                    label: hour.toString().padStart(2, '0')
+                  }))}
+                  placeholder="Hr"
+                  required
+                  className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
+                />
+                <span className="input-group-text">:</span>
+                <Dropdown_Custom
+                  name="appointment_minute"
+                  value={formData.appointment_minute || ''}
+                  onChange={handleChange}
+                  options={[0, 15, 30, 45].map(minute => ({
+                    value: minute.toString().padStart(2, '0'),
+                    label: minute.toString().padStart(2, '0')
+                  }))}
+                  placeholder="Min"
+                  required
+                  className={`flex-1 ${timeError ? 'border-red-500' : ''}`}
+                />
+              </div>
+            </div>
+          </div>
+          {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+
+          {/* Notes */}
+          {(formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && (
+            <div className="form-floating">
+              <textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                className="form-control form-control-sm border-0"
+                placeholder="Notes"
+                style={{ height: '60px' }}
+              />
+              <label htmlFor="notes">Notes (optional)</label>
+            </div>
+          )}
+
+        </form>
+      </div>
+
+      {/* Footer */}
+      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="d-flex align-items-center">
+          <div style={{ width: 40 }}>
+            {appointment?.id && onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center"
+                style={{ width: '2.5rem', height: '2.5rem' }}
+                title="Delete"
+              >
+                <TrashIcon style={{ width: 16, height: 16 }} />
+              </button>
+            )}
+          </div>
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+              style={{ width: '3rem', height: '3rem' }}
+              title="Cancel"
+            >
+              <XMarkIcon style={{ width: 18, height: 18 }} />
+            </button>
+            <button
+              type="submit"
+              form="schedule-form"
+              className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+              style={{ width: '3rem', height: '3rem' }}
+              title={appointment ? 'Save Changes' : 'Book'}
+            >
+              <CheckIcon style={{ width: 18, height: 18 }} />
+            </button>
+          </div>
+          <div style={{ width: 40 }} />
         </div>
       </div>
-      {timeError && <p className="text-red-500 text-xs mt-1">{timeError}</p>}
 
-      {/* Notes - only for appointments/series (meetings/tasks use notes for title) */}
-      {(formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && (
-        <div className="form-floating mb-2">
-          <textarea
-            id="notes"
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            className="form-control form-control-sm"
-            placeholder="Notes"
-            style={{ height: '60px' }}
-          />
-          <label htmlFor="notes">Notes (optional)</label>
-        </div>
-      )}
-
-      <Footer_Action className="justify-center">
-        {appointment?.id && onDelete && (
-          <Button_Icon icon={TrashIcon} label="Delete" onClick={onDelete} variant="danger" />
-        )}
-        <Button_Icon icon={XMarkIcon} label="Cancel" onClick={onCancel} variant="secondary" />
-        <Button_Icon
-          icon={CheckIcon}
-          label={appointment
-            ? `Update ${formData.appointment_type === 'meeting' ? 'Meeting' : formData.appointment_type === 'task' ? 'Task' : 'Appointment'}`
-            : formData.appointment_type === 'meeting' ? 'Schedule Meeting'
-            : formData.appointment_type === 'task' ? 'Create Task'
-            : 'Book Appointment'
-          }
-          type="submit"
-          variant="primary"
-        />
-      </Footer_Action>
-    </form>
+    </div>
   );
 }

@@ -300,12 +300,12 @@ export default function Clients() {
                 className="form-select form-select-sm rounded-pill"
                 style={{ width: 'fit-content'  }}
               >
-                <option value="all">All Tiers</option>
-                <option value="NONE">No Membership</option>
-                <option value="BRONZE">Bronze</option>
-                <option value="SILVER">Silver</option>
-                <option value="GOLD">Gold</option>
-                <option value="PLATINUM">Platinum</option>
+                <option value="all">All Tiers ({clients.length})</option>
+                <option value="NONE">No Membership ({clients.filter(c => (c.membership_tier || 'NONE').toUpperCase() === 'NONE').length})</option>
+                <option value="BRONZE">Bronze ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'BRONZE').length})</option>
+                <option value="SILVER">Silver ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'SILVER').length})</option>
+                <option value="GOLD">Gold ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'GOLD').length})</option>
+                <option value="PLATINUM">Platinum ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'PLATINUM').length})</option>
               </select>
             </div>
           </div>

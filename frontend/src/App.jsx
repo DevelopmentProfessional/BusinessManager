@@ -175,7 +175,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/documents" element={
-            <ProtectedRoute requiredPermission="documents:read">
+            <ProtectedRoute>
               <Layout>
                 <Documents />
               </Layout>

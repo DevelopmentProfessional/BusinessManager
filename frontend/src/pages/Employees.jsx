@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
@@ -33,8 +33,15 @@ export default function Employees() {
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [allRequests, setAllRequests] = useState([]);
+  const [showInsuranceModal, setShowInsuranceModal] = useState(false);
+  const [insurancePlans, setInsurancePlans] = useState([]);
+  const [insurancePlansLoading, setInsurancePlansLoading] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [newPlan, setNewPlan] = useState({ name: '', description: '', is_active: true });
+  const [insuranceError, setInsuranceError] = useState('');
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestTypeFilter, setRequestTypeFilter] = useState('all');
+  const [requestTimeFilter, setRequestTimeFilter] = useState('all');
   const [editingRole, setEditingRole] = useState(null);
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [newRolePermission, setNewRolePermission] = useState({ page: '', permission: '' });
@@ -601,6 +608,58 @@ export default function Employees() {
     loadRequests(requestTypeFilter);
   };
 
+  const handleOpenInsurance = async () => {
+    setShowInsuranceModal(true);
+    if (insurancePlans.length === 0) {
+      setInsurancePlansLoading(true);
+      try {
+        const res = await insurancePlansAPI.getAll();
+        setInsurancePlans(res?.data ?? res ?? []);
+      } catch (err) {
+        setInsuranceError('Failed to load insurance plans');
+      } finally {
+        setInsurancePlansLoading(false);
+      }
+    }
+  };
+
+  const handleInsurancePlanSave = async (e) => {
+    e.preventDefault();
+    setInsuranceError('');
+    try {
+      if (editingPlan?.id) {
+        const res = await insurancePlansAPI.update(editingPlan.id, editingPlan);
+        setInsurancePlans(prev => prev.map(p => p.id === editingPlan.id ? (res?.data ?? res) : p));
+        setEditingPlan(null);
+      } else {
+        const res = await insurancePlansAPI.create(newPlan);
+        setInsurancePlans(prev => [...prev, res?.data ?? res]);
+        setNewPlan({ name: '', description: '', is_active: true });
+      }
+    } catch (err) {
+      setInsuranceError(err.response?.data?.detail || 'Failed to save plan');
+    }
+  };
+
+  const handleInsurancePlanDelete = async (id) => {
+    if (!window.confirm('Delete this insurance plan?')) return;
+    try {
+      await insurancePlansAPI.delete(id);
+      setInsurancePlans(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      setInsuranceError('Failed to delete plan');
+    }
+  };
+
+  const handleInsurancePlanToggle = async (plan) => {
+    try {
+      const res = await insurancePlansAPI.update(plan.id, { is_active: !plan.is_active });
+      setInsurancePlans(prev => prev.map(p => p.id === plan.id ? (res?.data ?? res) : p));
+    } catch (err) {
+      setInsuranceError('Failed to update plan');
+    }
+  };
+
   const handleRequestAction = async (req, newStatus) => {
     try {
       if (req._requestType === 'onboarding') {
@@ -732,9 +791,9 @@ export default function Employees() {
           {/* Controls */}
           <div className="border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
 
-            {/* Row 1 – Requests */}
+            {/* Row 1 – Requests + Insurance */}
             {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
-              <div className="px-3 pt-2  dark:border-gray-700">
+              <div className="px-3 pt-2 d-flex gap-2 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={handleOpenRequests}
@@ -745,6 +804,14 @@ export default function Employees() {
                   {allRequests.filter(r => r.status === 'pending').length > 0 && (
                     <span className="badge bg-danger ms-1">{allRequests.filter(r => r.status === 'pending').length}</span>
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenInsurance}
+                  className="btn btn-sm btn-outline-primary rounded-pill"
+                  title="Manage insurance plans"
+                >
+                  Insurance
                 </button>
               </div>
             )}
@@ -1326,28 +1393,6 @@ export default function Employees() {
             </button>
           </div>
 
-          {/* Type filter pills */}
-          <div className="flex-shrink-0 px-3 pt-2 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex flex-wrap gap-1">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'leave_vacation', label: 'Leave (Vacation)' },
-              { key: 'leave_sick', label: 'Leave (Sick)' },
-              { key: 'onboarding', label: 'Onboarding' },
-              { key: 'offboarding', label: 'Offboarding' },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? 'btn-warning' : 'btn-outline-secondary'}`}
-                onClick={() => {
-                  setRequestTypeFilter(key);
-                  loadRequests(key);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
             {requestsLoading ? (
               <div className="text-center py-4">
@@ -1357,8 +1402,18 @@ export default function Employees() {
               <p className="text-muted text-center py-4">No requests found.</p>
             ) : (
               <div className="d-flex flex-column gap-2">
-                {['pending', 'approved', 'denied'].map(statusGroup => {
-                  const grouped = allRequests.filter(r => r.status === statusGroup);
+                {['approved', 'denied', 'pending'].map(statusGroup => {
+                  const now = new Date();
+                  const timeFiltered = allRequests.filter(r => {
+                    if (requestTimeFilter === 'all') return true;
+                    if (!r.created_at) return true;
+                    const diffDays = (now - new Date(r.created_at)) / (1000 * 60 * 60 * 24);
+                    if (requestTimeFilter === '7d') return diffDays <= 7;
+                    if (requestTimeFilter === '30d') return diffDays <= 30;
+                    if (requestTimeFilter === '90d') return diffDays <= 90;
+                    return true;
+                  });
+                  const grouped = timeFiltered.filter(r => r.status === statusGroup);
                   if (grouped.length === 0) return null;
                   return (
                     <div key={statusGroup}>
@@ -1413,8 +1468,40 @@ export default function Employees() {
           </div>
           {/* Footer */}
           <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="d-flex align-items-center">
-              <div style={{ width: 40 }} />
+            {/* Row 1: Type filter pills */}
+            <div className="d-flex flex-wrap gap-1 mb-2">
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'leave_vacation', label: 'Vacation' },
+                { key: 'leave_sick', label: 'Sick' },
+                { key: 'onboarding', label: 'Onboarding' },
+                { key: 'offboarding', label: 'Offboarding' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? 'btn-warning' : 'btn-outline-secondary'}`}
+                  onClick={() => {
+                    setRequestTypeFilter(key);
+                    loadRequests(key);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Row 2: Time filter + Close */}
+            <div className="d-flex align-items-center gap-2">
+              <select
+                value={requestTimeFilter}
+                onChange={e => setRequestTimeFilter(e.target.value)}
+                className="form-select form-select-sm rounded-pill"
+                style={{ width: 'fit-content' }}
+              >
+                <option value="all">All Time</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="90d">Last 90 Days</option>
+              </select>
               <div className="flex-grow-1 d-flex gap-3 justify-content-center">
                 <button
                   type="button"
@@ -1472,6 +1559,145 @@ export default function Employees() {
           )}
         </div>
       )}
+
+      {/* Insurance Plans Modal */}
+      <Modal
+        isOpen={showInsuranceModal}
+        onClose={() => { setShowInsuranceModal(false); setEditingPlan(null); setInsuranceError(''); }}
+        noPadding={true}
+        fullScreen={true}
+      >
+        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+          {/* Header */}
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Insurance Plans</h6>
+          </div>
+
+          {/* Scrollable list */}
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+            {insuranceError && (
+              <div className="alert alert-danger alert-sm py-2 px-3 mb-2" style={{ fontSize: '0.8rem' }}>{insuranceError}</div>
+            )}
+            {insurancePlansLoading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border spinner-border-sm text-primary" role="status" />
+              </div>
+            ) : insurancePlans.length === 0 ? (
+              <p className="text-muted small text-center py-4">No insurance plans yet. Add one below.</p>
+            ) : (
+              <div className="d-flex flex-column gap-2 pb-2">
+                {insurancePlans.map(plan => (
+                  <div key={plan.id} className={`d-flex align-items-center justify-content-between p-2 border rounded ${!plan.is_active ? 'opacity-60' : ''}`}>
+                    <div>
+                      <div className="fw-semibold d-flex align-items-center gap-2" style={{ fontSize: '0.875rem' }}>
+                        {plan.name}
+                        <span className={`badge ${plan.is_active ? 'bg-success' : 'bg-secondary'}`} style={{ fontSize: '0.65rem' }}>
+                          {plan.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      {plan.description && (
+                        <div className="text-muted" style={{ fontSize: '0.78rem' }}>{plan.description}</div>
+                      )}
+                    </div>
+                    <div className="d-flex gap-1">
+                      <button
+                        className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
+                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                        onClick={() => handleInsurancePlanToggle(plan)}
+                        title={plan.is_active ? 'Deactivate' : 'Activate'}
+                      >
+                        {plan.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
+                        onClick={() => setEditingPlan({ ...plan })}
+                        title="Edit"
+                      >
+                        <PlusIcon style={{ width: 12, height: 12 }} />
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
+                        onClick={() => handleInsurancePlanDelete(plan.id)}
+                        title="Delete"
+                      >
+                        <XMarkIcon style={{ width: 12, height: 12 }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer – Add / Edit Plan form */}
+          <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 pt-2 pb-4">
+            <form onSubmit={handleInsurancePlanSave} className="d-flex flex-column gap-2">
+              <div className="small fw-semibold text-muted">{editingPlan ? 'Edit Plan' : 'New Plan'}</div>
+              <div className="row g-2">
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input
+                      type="text"
+                      id="ins_plan_name"
+                      className="form-control form-control-sm"
+                      placeholder="Plan name"
+                      value={editingPlan ? editingPlan.name : newPlan.name}
+                      onChange={e => editingPlan
+                        ? setEditingPlan(prev => ({ ...prev, name: e.target.value }))
+                        : setNewPlan(prev => ({ ...prev, name: e.target.value }))}
+                      required
+                    />
+                    <label htmlFor="ins_plan_name">Plan Name *</label>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input
+                      type="text"
+                      id="ins_plan_desc"
+                      className="form-control form-control-sm"
+                      placeholder="Description"
+                      value={editingPlan ? (editingPlan.description || '') : newPlan.description}
+                      onChange={e => editingPlan
+                        ? setEditingPlan(prev => ({ ...prev, description: e.target.value }))
+                        : setNewPlan(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                    <label htmlFor="ins_plan_desc">Description</label>
+                  </div>
+                </div>
+              </div>
+              <div className="d-flex align-items-center">
+                <div style={{ width: 40 }}>
+                  {editingPlan && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingPlan(null)}
+                      className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                      style={{ width: '2.5rem', height: '2.5rem' }}
+                      title="Cancel edit"
+                    >
+                      <XMarkIcon style={{ width: 14, height: 14 }} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex-grow-1 d-flex justify-content-center">
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    style={{ width: '3rem', height: '3rem' }}
+                    title={editingPlan ? 'Save Changes' : 'Add Plan'}
+                  >
+                    <CheckIcon style={{ width: 18, height: 18 }} />
+                  </button>
+                </div>
+                <div style={{ width: 40 }} />
+              </div>
+            </form>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

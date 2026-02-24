@@ -226,17 +226,6 @@ return (
       </div>
     )}
 
-    {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length > 0 && (
-      <div className="flex-shrink-0 p-1 alert alert-warning border-0 rounded-0 m-0 d-flex align-items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
-          <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-        </svg>
-        <span className="fw-medium">
-          {inventory.filter(item => isLowStock(item) && !isLocationOrAsset(item)).length} item(s) are running low on stock!
-        </span>
-      </div>
-    )}
 
     {/* Main upside-down table container */}
     <div className="flex-grow-1 d-flex flex-column overflow-hidden">
@@ -345,17 +334,17 @@ return (
 
             <select
               value={typeFilter}
-              
+
               onChange={(e) => setTypeFilter(e.target.value)}
               className="form-select form-select-sm rounded-pill"
               style={{ width: 'fit-content' }}
             >
-              <option value="all">Types</option>
-              <option value="PRODUCT">Products</option>
-              <option value="RESOURCE">Resources</option>
-              <option value="ASSET">Assets</option>
-              <option value="LOCATION">Locations</option>
-              <option value="ITEM">Items</option>
+              <option value="all">Types ({inventory.length})</option>
+              <option value="PRODUCT">Products ({inventory.filter(i => (i.type || 'PRODUCT').toUpperCase() === 'PRODUCT').length})</option>
+              <option value="RESOURCE">Resources ({inventory.filter(i => (i.type || '').toUpperCase() === 'RESOURCE').length})</option>
+              <option value="ASSET">Assets ({inventory.filter(i => (i.type || '').toUpperCase() === 'ASSET').length})</option>
+              <option value="LOCATION">Locations ({inventory.filter(i => (i.type || '').toUpperCase() === 'LOCATION').length})</option>
+              <option value="ITEM">Items ({inventory.filter(i => (i.type || '').toUpperCase() === 'ITEM').length})</option>
             </select>
 
             <select
@@ -363,9 +352,9 @@ return (
               onChange={(e) => setStockFilter(e.target.value)}
               className="form-select form-select-sm rounded-pill"
               style={{ width: 'fit-content' }}>
-              <option value="all">Stock</option>
-              <option value="low">Low Stock</option>
-              <option value="ok">In Stock</option>
+              <option value="all">Stock ({inventory.length})</option>
+              <option value="low">Low Stock ({inventory.filter(item => isLowStock(item)).length})</option>
+              <option value="ok">In Stock ({inventory.filter(item => !isLowStock(item)).length})</option>
             </select>
           </div>
         </div>

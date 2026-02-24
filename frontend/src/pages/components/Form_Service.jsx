@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { inventoryAPI, employeesAPI, serviceRelationsAPI } from '../../services/api';
+import Widget_Camera from './Widget_Camera';
 
 const TABS = ['details', 'resources', 'assets', 'employees', 'locations'];
 
@@ -28,6 +29,12 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
   const [svcEmployees, setSvcEmployees] = useState([]);
   const [locations, setLocations] = useState([]);
   const [relLoading, setRelLoading] = useState(false);
+
+  // ── Image state ──────────────────────────────────────────────────
+  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
 
   // ── "Add" row state ──────────────────────────────────────────────
   const [newResource, setNewResource] = useState({ inventory_id: '', quantity: '1' });
@@ -125,6 +132,15 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handlePhotoCapture = (blob) => {
+    setIsCameraOpen(false);
+    setAddImageMode(null);
+    if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+    setPendingPhoto(blob);
+    const url = URL.createObjectURL(blob);
+    setPendingPhotoUrl(url);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const submitData = {
@@ -134,7 +150,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
     };
     if (!submitData.image_url) delete submitData.image_url;
     if (!submitData.category)  delete submitData.category;
-    onSubmit(submitData);
+    onSubmit(submitData, pendingPhoto || null);
   };
 
   const wrap = async (fn) => {
@@ -200,14 +216,19 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
           {service ? 'Edit Service' : 'Add Service'}
         </h6>
-        <button type="button" onClick={onCancel} className="btn btn-link p-0 text-muted">
-          <XMarkIcon style={{ width: 20, height: 20 }} />
-        </button>
       </div>
+
+      {/* Camera modal */}
+      {isCameraOpen && (
+        <Widget_Camera
+          onCapture={handlePhotoCapture}
+          onClose={() => setIsCameraOpen(false)}
+        />
+      )}
 
       {/* ── Tab content area – no scroll here, each tab manages its own ── */}
       <div className="flex-grow-1 overflow-hidden d-flex flex-column">
@@ -219,70 +240,110 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
         {/* ── Details ── */}
         {activeTab === 'details' && (
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
-            <form id="service-details-form" onSubmit={handleSubmit}>
-              <div className="form-floating mb-2">
-                <input type="text" id="name" name="name" required
-                  value={formData.name} onChange={handleChange}
-                  className="form-control form-control-sm" placeholder="Service Name" />
-                <label htmlFor="name">Service Name *</label>
-              </div>
+          <div className="flex-grow-1 overflow-auto no-scrollbar">
+            <div className="px-3 d-flex flex-column" style={{ minHeight: '100%', justifyContent: 'flex-end' }}>
+              <form id="service-details-form" onSubmit={handleSubmit}>
+                {/* Top Section: Image (left) + Core fields (right) */}
+                <div className="d-flex gap-3 mb-2" style={{ minHeight: '180px' }}>
+                  {/* Image area */}
+                  <div className="flex-shrink-0" style={{ width: '45%' }}>
+                    {/* Preview */}
+                    <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: 'var(--bs-secondary-bg)', width: '100%', aspectRatio: '1' }}>
+                      {pendingPhotoUrl ? (
+                        <img src={pendingPhotoUrl} alt="Captured" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      ) : formData.image_url ? (
+                        <img src={formData.image_url} alt={formData.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#adb5bd', position: 'absolute', top: 0, left: 0 }}>
+                          <SparklesIcon className="h-16 w-16" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Camera button */}
+                    <div className="mt-1 d-flex align-items-center gap-1">
+                      {addImageMode === null && (
+                        <button type="button" onClick={() => setAddImageMode('camera')}
+                          className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0"
+                          style={{ width: '40px', height: '40px', borderRadius: '4px' }} title="Add photo">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    {/* Camera/URL panel */}
+                    {addImageMode !== null && (
+                      <div className="mt-1 p-2 border rounded bg-light">
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <div className="btn-group btn-group-sm">
+                            <button type="button" className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('camera')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>Camera</button>
+                            <button type="button" className={`btn ${addImageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('url')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>URL</button>
+                          </div>
+                          <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-link btn-sm p-0 ms-auto" style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}>✕</button>
+                        </div>
+                        {addImageMode === 'camera' && (
+                          <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                            {pendingPhotoUrl ? 'Retake Photo' : 'Open Camera'}
+                          </button>
+                        )}
+                        {addImageMode === 'url' && (
+                          <div className="d-flex gap-1">
+                            <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={e => e.key === 'Enter' && setAddImageMode(null)} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: '0.8rem' }} />
+                            <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">OK</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-              <div className="form-floating mb-2">
-                <input type="text" id="category" name="category"
-                  value={formData.category} onChange={handleChange}
-                  className="form-control form-control-sm" placeholder="Category" />
-                <label htmlFor="category">Category</label>
-              </div>
-
-              <div className="form-floating mb-2">
-                <textarea id="description" name="description"
-                  value={formData.description} onChange={handleChange}
-                  className="form-control form-control-sm" placeholder="Description"
-                  style={{ height: '72px' }} />
-                <label htmlFor="description">Description</label>
-              </div>
-
-              <div className="row g-2 mb-2">
-                <div className="col-6">
-                  <div className="form-floating">
-                    <input type="number" id="price" name="price" required min="0" step="0.01"
-                      value={formData.price} onChange={handleChange}
-                      className="form-control form-control-sm" placeholder="0.00" />
-                    <label htmlFor="price">Price *</label>
+                  {/* Core fields on the right */}
+                  <div className="flex-grow-1 d-flex flex-column gap-1">
+                    <div className="form-floating">
+                      <input type="text" id="name" name="name" required
+                        value={formData.name} onChange={handleChange}
+                        className="form-control form-control-sm" placeholder="Service Name" />
+                      <label htmlFor="name">Name *</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="text" id="category" name="category"
+                        value={formData.category} onChange={handleChange}
+                        className="form-control form-control-sm" placeholder="Category" />
+                      <label htmlFor="category">Category</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="number" id="price" name="price" required min="0" step="0.01"
+                        value={formData.price} onChange={handleChange}
+                        className="form-control form-control-sm" placeholder="0.00" />
+                      <label htmlFor="price">Price *</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="number" id="duration_minutes" name="duration_minutes" required min="1"
+                        value={formData.duration_minutes} onChange={handleChange}
+                        className="form-control form-control-sm" placeholder="60" />
+                      <label htmlFor="duration_minutes">Duration (min) *</label>
+                    </div>
                   </div>
                 </div>
-                <div className="col-6">
-                  <div className="form-floating">
-                    <input type="number" id="duration_minutes" name="duration_minutes" required min="1"
-                      value={formData.duration_minutes} onChange={handleChange}
-                      className="form-control form-control-sm" placeholder="60" />
-                    <label htmlFor="duration_minutes">Duration (min) *</label>
-                  </div>
-                </div>
-              </div>
 
-              <div className="form-floating mb-1">
-                <input type="url" id="image_url" name="image_url"
-                  value={formData.image_url} onChange={handleChange}
-                  className="form-control form-control-sm" placeholder="https://..." />
-                <label htmlFor="image_url">Image URL</label>
-                {formData.image_url && (
-                  <img src={formData.image_url} alt="Preview"
-                    className="mt-2 rounded border"
-                    style={{ height: 56, width: 56, objectFit: 'cover' }}
-                    onError={e => { e.target.style.display = 'none'; }} />
-                )}
-              </div>
-            </form>
+                {/* Description at the bottom */}
+                <div className="form-floating mb-2">
+                  <textarea id="description" name="description"
+                    value={formData.description} onChange={handleChange}
+                    className="form-control form-control-sm border-0" placeholder="Description"
+                    style={{ height: '72px' }} />
+                  <label htmlFor="description">Description</label>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
         {/* ── Resources ── */}
         {activeTab === 'resources' && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden">
-            {/* Scrollable list */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+            {/* Scrollable list - grows upward from bottom */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
                 <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
               ) : resources.length === 0 ? (
@@ -340,8 +401,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
         {/* ── Assets ── */}
         {activeTab === 'assets' && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden">
-            {/* Scrollable list */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+            {/* Scrollable list - grows upward from bottom */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
                 <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
               ) : assets.length === 0 ? (
@@ -382,8 +443,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
         {/* ── Employees ── */}
         {activeTab === 'employees' && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden">
-            {/* Scrollable list */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+            {/* Scrollable list - grows upward from bottom */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
                 <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
               ) : svcEmployees.length === 0 ? (
@@ -426,8 +487,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
         {/* ── Locations ── */}
         {activeTab === 'locations' && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden">
-            {/* Scrollable list */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+            {/* Scrollable list - grows upward from bottom */}
+            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
                 <div className="text-center py-3"><div className="spinner-border spinner-border-sm" /></div>
               ) : locations.length === 0 ? (
