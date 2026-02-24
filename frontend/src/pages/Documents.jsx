@@ -187,16 +187,6 @@ export default function Documents() {
     hasPermission,
   } = useStore();
 
-  // Check permissions at page level
-  if (
-    !hasPermission('documents', 'read') &&
-    !hasPermission('documents', 'write') &&
-    !hasPermission('documents', 'delete') &&
-    !hasPermission('documents', 'admin')
-  ) {
-    return <Navigate to="/profile" replace />;
-  }
-
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -548,6 +538,16 @@ export default function Documents() {
     }
   };
 
+  // Permission check after all hooks
+  if (
+    !hasPermission('documents', 'read') &&
+    !hasPermission('documents', 'write') &&
+    !hasPermission('documents', 'delete') &&
+    !hasPermission('documents', 'admin')
+  ) {
+    return <Navigate to="/profile" replace />;
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -610,7 +610,7 @@ export default function Documents() {
                     {/* File Name */}
                     <td className="px-3">
                       <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
-                        {doc.original_filename}
+                        {doc.original_filename ?? '(unnamed)'}
                       </div>
                       <div className="small text-muted text-truncate">
                         {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
