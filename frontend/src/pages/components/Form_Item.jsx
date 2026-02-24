@@ -26,10 +26,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   });
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
-  const [imageMode, setImageMode] = useState('url'); // 'url' | 'camera'
+  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
+  const [newImageUrl, setNewImageUrl] = useState('');
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
 
@@ -71,6 +72,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
   const handlePhotoCapture = (blob) => {
     setIsCameraOpen(false);
+    setAddImageMode(null);
     if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
     setPendingPhoto(blob);
     setPendingPhotoUrl(URL.createObjectURL(blob));
@@ -110,7 +112,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     }
     const type = typeof formData.type === 'string' ? formData.type.toUpperCase() : 'PRODUCT';
     const description = (formData.description || '').trim();
-    const image_url = imageMode === 'url' ? (formData.image_url || '').trim() : '';
+    const image_url = addImageMode === 'url' || !pendingPhotoUrl ? (formData.image_url || '').trim() : '';
     const location = (formData.location || '').trim();
     const payload = {
       name,
@@ -128,7 +130,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
     try {
       if (onSubmitWithExtras) {
-        onSubmitWithExtras(payload, { initialQuantity: safeQty, pendingPhoto: imageMode === 'camera' ? pendingPhoto : null });
+        onSubmitWithExtras(payload, { initialQuantity: safeQty, pendingPhoto: pendingPhoto || null });
       } else {
         onSubmit(payload);
       }
@@ -165,17 +167,17 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
-            {/* Image area with URL/Camera toggle */}
-            <div className="flex-shrink-0 d-flex flex-column gap-1" style={{ width: '45%' }}>
+            {/* Image area - layout matches Edit Item */}
+            <div className="flex-shrink-0" style={{ width: '45%' }}>
               {/* Preview */}
               <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: 'var(--bs-secondary-bg)', width: '100%', aspectRatio: '1' }}>
-                {imageMode === 'camera' && pendingPhotoUrl ? (
+                {pendingPhotoUrl ? (
                   <img
                     src={pendingPhotoUrl}
                     alt="Captured"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
-                ) : imageMode === 'url' && formData.image_url ? (
+                ) : formData.image_url ? (
                   <img
                     src={formData.image_url}
                     alt={formData.name}
@@ -185,7 +187,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 ) : null}
                 <div
                   style={{
-                    display: (imageMode === 'camera' && pendingPhotoUrl) || (imageMode === 'url' && formData.image_url) ? 'none' : 'flex',
+                    display: pendingPhotoUrl || formData.image_url ? 'none' : 'flex',
                     width: '100%', height: '100%',
                     alignItems: 'center', justifyContent: 'center',
                     color: '#adb5bd', position: 'absolute', top: 0, left: 0
@@ -195,49 +197,50 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 </div>
               </div>
 
-              {/* Mode toggle */}
-              <div className="btn-group btn-group-sm w-100">
-                <button
-                  type="button"
-                  className={`btn ${imageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  onClick={() => setImageMode('url')}
-                  style={{ fontSize: '0.7rem'}}
-                >URL</button>
-                <button
-                  type="button"
-                  className={`btn ${imageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  onClick={() => setImageMode('camera')}
-                  style={{ fontSize: '0.7rem' }}
-                >Camera</button>
+              {/* Add photo button strip */}
+              <div className="mt-1 d-flex align-items-center gap-1">
+                {addImageMode === null && (
+                  <button
+                    type="button"
+                    onClick={() => setAddImageMode('camera')}
+                    className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0"
+                    style={{ width: '40px', height: '40px', borderRadius: '4px' }}
+                    title="Add photo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                      <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                    </svg>
+                  </button>
+                )}
               </div>
 
-              {/* URL input */}
-              {imageMode === 'url' && (
-                <input
-                  type="url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleChange}
-                  className="form-control form-control-sm"
-                  placeholder="https://..."
-                  style={{ fontSize: '0.75rem' }}
-                />
-              )}
-
-              {/* Camera button */}
-              {imageMode === 'camera' && (
-                <button
-                  type="button"
-                  onClick={() => setIsCameraOpen(true)}
-                  className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
-                  style={{ fontSize: '0.75rem' }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
-                    <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
-                  </svg>
-                  {pendingPhotoUrl ? 'Retake Photo' : 'Take Photo'}
-                </button>
+              {/* Camera/URL panel */}
+              {addImageMode !== null && (
+                <div className="mt-1 p-2 border rounded bg-light">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <div className="btn-group btn-group-sm">
+                      <button type="button" className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('camera')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>Camera</button>
+                      <button type="button" className={`btn ${addImageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('url')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>URL</button>
+                    </div>
+                    <button type="button" onClick={() => { setAddImageMode(null); }} className="btn btn-link btn-sm p-0 ms-auto" style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}>✕</button>
+                  </div>
+                  {addImageMode === 'camera' && (
+                    <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                        <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                      </svg>
+                      {pendingPhotoUrl ? 'Retake Photo' : 'Open Camera'}
+                    </button>
+                  )}
+                  {addImageMode === 'url' && (
+                    <div className="d-flex gap-1">
+                      <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={e => e.key === 'Enter' && setAddImageMode(null)} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: '0.8rem' }} />
+                      <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">OK</button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -258,22 +261,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                       value={formData.min_stock_level}
                       onChange={handleChange}
                       className="form-control form-control-sm"
-                      placeholder="Max Count"
+                      placeholder="Min Count"
                       min="0"
                     />
-                    <label htmlFor="min_stock_level">Max Count</label>
-                  </div>
-                  <div className="form-floating">
-                    <input
-                      type="number"
-                      id="min_count"
-                      readOnly
-                      value={0}
-                      className="form-control form-control-sm bg-light dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
-                      placeholder="Min Count"
-                      min="0" 
-                    />
-                    <label htmlFor="min_count">Min Count</label>
+                    <label htmlFor="min_stock_level">Min Count</label>
                   </div>
                   <div className="form-floating">
                     <input
@@ -444,13 +435,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
           )}
 
           <hr className="my-2" />
-          <div className="form-floating mb-2 border-0">
+          <div className="form-floating mb-2">
             <textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className="form-control form-control-sm"
+              className="form-control form-control-sm border-0"
               placeholder="Description"
               style={{ height: '80px' }}
             />

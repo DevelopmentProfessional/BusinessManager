@@ -289,6 +289,34 @@ export default function Sales() {
     loadProducts();
   }, []);
 
+  const loadTransactionHistory = async () => {
+    try {
+      const res = await saleTransactionsAPI.getAll();
+      const txData = res?.data ?? res;
+      if (Array.isArray(txData)) {
+        const clientMap = {};
+        clients.forEach(c => { clientMap[c.id] = c; });
+        const dbHistory = txData.map(tx => ({
+          id: String(tx.id),
+          date: tx.created_at || new Date().toISOString(),
+          client: tx.client_id && clientMap[tx.client_id] ? { name: clientMap[tx.client_id].name, email: clientMap[tx.client_id].email } : null,
+          items: [],
+          subtotal: tx.subtotal || 0,
+          tax: tx.tax_amount || 0,
+          total: tx.total || 0,
+          paymentMethod: tx.payment_method || 'cash',
+        }));
+        const localHistory = (() => { try { return JSON.parse(localStorage.getItem('salesHistory') || '[]'); } catch { return []; } })();
+        const merged = [...dbHistory];
+        localHistory.forEach(local => { if (!merged.find(db => db.id === String(local.id))) merged.push(local); });
+        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setSalesHistory(merged);
+      }
+    } catch (err) {
+      console.error('Failed to load transaction history from DB:', err);
+    }
+  };
+
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients page
   useEffect(() => {
     const { preSelectedClient, preloadCart } = location.state || {};
@@ -551,6 +579,9 @@ export default function Sales() {
     if (startDate && saleDate < startDate) return false;
     if (endDate && saleDate > endDate) return false;
 
+    // If no items loaded (DB records), show them regardless of type filter
+    if (!sale.items || sale.items.length === 0) return true;
+
     if (!historyFilters.showServices && !historyFilters.showProducts) return false;
     if (historyFilters.showServices && historyFilters.showProducts) return true;
 
@@ -732,7 +763,7 @@ export default function Sales() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => openAddClientModal((newClient) => {
+                onClick={() => openAddClientModal((newClient) => {
                     handleSelectClient(newClient);
                     setClientsLocal(prev => [...prev, newClient]);
                     setClientPanelSearch('');
@@ -763,8 +794,8 @@ export default function Sales() {
           </div>
         </div>
 
-        {/* Controls Row - left-aligned, content-width */}
-        <div className="flex items-center gap-3 pb-2">
+        {/* Controls Row 1 - Customer + Cart (first two) */}
+        <div className="flex items-center gap-3 pb-1">
           {/* Account / Client Icon */}
           <button
             type="button"
@@ -795,10 +826,13 @@ export default function Sales() {
               </span>
             )}
           </button>
+        </div>
 
+        {/* Controls Row 2 - History + Toggles */}
+        <div className="flex items-center gap-3 pb-2">
           {/* Sales History Button */}
           <button
-            onClick={() => setShowHistoryModal(true)}
+            onClick={() => { setShowHistoryModal(true); loadTransactionHistory(); }}
             className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:shadow-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
             title="Sales history"
             aria-label="Open sales history"
@@ -843,20 +877,10 @@ export default function Sales() {
         <div className="flex flex-col max-h-[90vh]">
             {/* Cart Header */}
             <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <ShoppingCartIcon className="h-5 w-5" />
-                  Cart ({cartItemCount})
-                </h3>
-                {cart.length > 0 && (
-                  <button
-                    onClick={() => setCart([])}
-                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <ShoppingCartIcon className="h-5 w-5" />
+                Cart ({cartItemCount})
+              </h3>
             </div>
 
             {cart.length === 0 ? (
@@ -869,20 +893,8 @@ export default function Sales() {
               </div>
             ) : (
               <>
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[40vh]">
-                  {cart.map(item => (
-                    <CartItem
-                      key={item.cartKey}
-                      item={item}
-                      onUpdateQuantity={updateCartQuantity}
-                      onRemove={removeFromCart}
-                    />
-                  ))}
-                </div>
-
-                {/* Client Selection */}
-                <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Client Selection - FIRST */}
+                <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     <UserIcon className="h-4 w-4 inline mr-1" />
                     Customer (optional)
@@ -895,8 +907,8 @@ export default function Sales() {
                           <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>
                         )}
                       </div>
-                      <button 
-                        onClick={() => setSelectedClient(null)} 
+                      <button
+                        onClick={() => setSelectedClient(null)}
                         className="p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors"
                       >
                         <XMarkIcon className="h-4 w-4 text-gray-500" />
@@ -909,21 +921,13 @@ export default function Sales() {
                           type="text"
                           placeholder="Search customers..."
                           value={clientSearch}
-                          onChange={(e) => {
-                            setClientSearch(e.target.value);
-                            setShowClientDropdown(true);
-                          }}
+                          onChange={(e) => { setClientSearch(e.target.value); setShowClientDropdown(true); }}
                           onFocus={() => { loadClients(); setShowClientDropdown(true); }}
                           className="app-search-input flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                         <button
                           type="button"
-                          onClick={() => openAddClientModal((newClient) => {
-                            handleSelectClient(newClient);
-                            setClientsLocal(prev => [...prev, newClient]);
-                            setClientSearch('');
-                            setShowClientDropdown(false);
-                          })}
+                          onClick={() => openAddClientModal((newClient) => { handleSelectClient(newClient); setClientsLocal(prev => [...prev, newClient]); setClientSearch(''); setShowClientDropdown(false); })}
                           className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                           title="Add new customer"
                         >
@@ -933,29 +937,13 @@ export default function Sales() {
                       {showClientDropdown && clientSearch && (
                         <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                           {filteredClients.slice(0, 5).map(c => (
-                            <button
-                              key={c.id}
-                              onClick={() => {
-                                handleSelectClient(c);
-                                setClientSearch('');
-                                setShowClientDropdown(false);
-                              }}
-                              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                            >
+                            <button key={c.id} onClick={() => { handleSelectClient(c); setClientSearch(''); setShowClientDropdown(false); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white">
                               <p className="font-medium">{c.name}</p>
                               {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
                             </button>
                           ))}
                           {filteredClients.length === 0 && (
-                            <button
-                              onClick={() => openAddClientModal((newClient) => {
-                                handleSelectClient(newClient);
-                                setClientsLocal(prev => [...prev, newClient]);
-                                setClientSearch('');
-                                setShowClientDropdown(false);
-                              })}
-                              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
-                            >
+                            <button onClick={() => openAddClientModal((newClient) => { handleSelectClient(newClient); setClientsLocal(prev => [...prev, newClient]); setClientSearch(''); setShowClientDropdown(false); })} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2">
                               <PlusIcon className="h-4 w-4" />
                               Create new customer
                             </button>
@@ -966,9 +954,21 @@ export default function Sales() {
                   )}
                 </div>
 
+                {/* Cart Items */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[35vh]">
+                  {cart.map(item => (
+                    <CartItem
+                      key={item.cartKey}
+                      item={item}
+                      onUpdateQuantity={updateCartQuantity}
+                      onRemove={removeFromCart}
+                    />
+                  ))}
+                </div>
+
                 {/* Cart Summary & Checkout */}
                 <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartItemCount} items)</span>
                       <span className="text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
@@ -977,25 +977,40 @@ export default function Sales() {
                       <span className="text-gray-500 dark:text-gray-400">Tax (8%)</span>
                       <span className="text-gray-900 dark:text-white">${(cartTotal * 0.08).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700">
                       <span className="text-gray-900 dark:text-white">Total</span>
                       <span className="text-secondary-600 dark:text-secondary-400">${(cartTotal * 1.08).toFixed(2)}</span>
                     </div>
                   </div>
-                  
-                  <button
-                    onClick={() => { setShowCartModal(false); handleCheckout(); }}
-                    className="w-full py-4 bg-secondary-600 hover:bg-secondary-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-secondary-600/20"
-                  >
-                    <CreditCardIcon className="h-5 w-5" />
-                    Proceed to Checkout
-                  </button>
-                  <button
-                    onClick={() => setShowCartModal(false)}
-                    className="w-full py-2 mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                  >
-                    Continue Shopping
-                  </button>
+
+                  {/* Row 1: Checkout + Continue (horizontal pills) */}
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      onClick={() => { setShowCartModal(false); handleCheckout(); }}
+                      className="flex-1 py-3 bg-secondary-600 hover:bg-secondary-700 text-white rounded-full font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <CreditCardIcon className="h-5 w-5" />
+                      Checkout
+                    </button>
+                    <button
+                      onClick={() => setShowCartModal(false)}
+                      className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
+
+                  {/* Row 2: Clear All (bottom-left) */}
+                  {cart.length > 0 && (
+                    <div className="flex">
+                      <button
+                        onClick={() => setCart([])}
+                        className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}

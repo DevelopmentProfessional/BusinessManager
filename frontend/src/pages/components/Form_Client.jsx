@@ -70,19 +70,10 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
           {client ? 'Edit Client' : 'Add Client'}
         </h6>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn btn-link text-dark dark:text-gray-200 p-0"
-          style={{ lineHeight: 1 }}
-          title="Close"
-        >
-          <XMarkIcon className="h-5 w-5" />
-        </button>
       </div>
 
       {/* Scrollable content */}
@@ -130,19 +121,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
             <label htmlFor="fc_phone">Phone</label>
           </div>
 
-          <div className="form-floating mb-2">
-            <textarea
-              id="fc_address"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className="form-control form-control-sm"
-              placeholder="Address"
-              style={{ height: '60px' }}
-            />
-            <label htmlFor="fc_address">Address</label>
-          </div>
-
+          {/* Membership section - below phone */}
           <hr className="my-2" />
           <div className="small fw-semibold text-muted mb-2">Membership</div>
 
@@ -208,14 +187,28 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
             </div>
           </div>
 
+          {/* Address & Notes - border-top above */}
           <hr className="my-2" />
-          <div className="form-floating mb-2 border-0">
+          <div className="form-floating mb-2">
+            <textarea
+              id="fc_address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className="form-control form-control-sm border-0"
+              placeholder="Address"
+              style={{ height: '60px' }}
+            />
+            <label htmlFor="fc_address">Address</label>
+          </div>
+
+          <div className="form-floating mb-2">
             <textarea
               id="fc_notes"
               name="notes"
               value={formData.notes}
               onChange={handleChange}
-              className="form-control form-control-sm"
+              className="form-control form-control-sm border-0"
               placeholder="Notes"
               style={{ height: '80px' }}
             />

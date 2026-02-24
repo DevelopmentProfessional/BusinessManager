@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI } from '../../services/api';
 import api from '../../services/api';
@@ -34,6 +34,7 @@ export default function Form_Employee({
   const [savedSignature, setSavedSignature] = useState(null);
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState('');
+  const signatureFileRef = useRef(null);
 
   const [formData, setFormData] = useState({
     // Details
@@ -162,6 +163,17 @@ export default function Form_Employee({
       loadSignature();
     }
   }, [activeTab, employee?.id]);
+
+  const handleSignatureUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      handleSaveSignature(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const handleSaveSignature = async (dataUrl) => {
     setSignatureLoading(true);
@@ -345,7 +357,7 @@ export default function Form_Employee({
           {/* ===== DETAILS TAB ===== */}
           {activeTab === 'details' && (
             <div className="tab-pane">
-            <div className="row g-3">
+            <div className="row g-2">
               <div className="col-md-6">
                 <div className="form-floating">
                   <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange}
@@ -478,11 +490,13 @@ export default function Form_Employee({
               )}
 
               <div className="col-12">
-                <div className="form-check">
-                  <input type="checkbox" name="is_active" checked={formData.is_active}
-                    onChange={handleInputChange} className="form-check-input" id="is_active" />
-                  <label className="form-check-label" htmlFor="is_active">Active Employee</label>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
+                  className={`btn btn-sm rounded-pill px-3 ${formData.is_active ? 'btn-success' : 'btn-outline-secondary'}`}
+                >
+                  Active
+                </button>
               </div>
               </>
               )}
@@ -610,11 +624,6 @@ export default function Form_Employee({
           <div className="tab-pane">
             {employee ? (
               <div className="row g-3">
-                <div className="col-12">
-                  <h6 className="text-muted text-uppercase small mb-0">Employee Signature</h6>
-                  <hr className="mt-1 mb-2" />
-                </div>
-
                 {signatureMessage && (
                   <div className="col-12">
                     <div className={`alert py-2 small ${signatureMessage.includes('Failed') ? 'alert-danger' : 'alert-success'}`}>
@@ -637,41 +646,30 @@ export default function Form_Employee({
                       initialSignature={savedSignature}
                     />
                   </div>
+                ) : savedSignature ? (
+                  <div className="col-12 text-center">
+                    <div className="border rounded p-3 bg-body d-inline-block">
+                      <img
+                        src={savedSignature}
+                        alt="Saved signature"
+                        style={{ maxWidth: '400px', maxHeight: '150px' }}
+                      />
+                    </div>
+                  </div>
                 ) : (
-                  <div className="col-12">
-                    {savedSignature ? (
-                      <div className="text-center">
-                        <div className="border rounded p-3 bg-body d-inline-block mb-3">
-                          <img
-                            src={savedSignature}
-                            alt="Saved signature"
-                            style={{ maxWidth: '400px', maxHeight: '150px' }}
-                          />
-                        </div>
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setShowSignaturePad(true)}
-                            className="btn btn-outline-primary btn-sm"
-                          >
-                            Replace Signature
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-muted mb-3">No signature saved yet.</p>
-                        <button
-                          type="button"
-                          onClick={() => setShowSignaturePad(true)}
-                          className="btn btn-primary"
-                        >
-                          Create Signature
-                        </button>
-                      </div>
-                    )}
+                  <div className="col-12 text-center py-4">
+                    <p className="text-muted mb-0">No signature saved yet.</p>
                   </div>
                 )}
+
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={signatureFileRef}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleSignatureUpload}
+                />
               </div>
             ) : (
               <div className="text-center p-4">
@@ -686,75 +684,42 @@ export default function Form_Employee({
           <div className="tab-pane">
             {employee ? (
               <>
-                {permError && <div className="alert alert-danger py-2 small">{permError}</div>}
-                {permSuccess && <div className="alert alert-success py-2 small">{permSuccess}</div>}
-
-                {/* Add Permission */}
-                <div className="mb-3 p-3 border rounded">
-                  <h6 className="mb-2">Add Permission</h6>
-                  <div className="row g-2 align-items-end">
-                    <div className="col">
-                      <select value={newPermission.page}
-                        onChange={e => setNewPermission(p => ({ ...p, page: e.target.value }))}
-                        className="form-select form-select-sm">
-                        <option value="">Select Page</option>
-                        {PAGES.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
-                    <div className="col">
-                      <select value={newPermission.permission}
-                        onChange={e => setNewPermission(p => ({ ...p, permission: e.target.value }))}
-                        className="form-select form-select-sm">
-                        <option value="">Select Permission</option>
-                        {PERMISSION_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-auto">
-                      <button type="button" onClick={handleCreatePermission}
-                        className="btn btn-primary btn-sm"
-                        disabled={!newPermission.page || !newPermission.permission}>
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Current Permissions */}
+                {/* Current Permissions Table */}
                 {userPermissions.length > 0 ? (
                   <div className="table-responsive">
                     <table className="table table-sm mb-0">
                       <thead>
                         <tr>
+                          <th style={{ width: '70px' }}>Actions</th>
                           <th>Page</th>
                           <th>Permission</th>
                           <th>Status</th>
-                          <th style={{ width: '80px' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {userPermissions.map(perm => (
                           <tr key={perm.id}>
+                            <td>
+                              <div className="d-flex gap-1">
+                                <button type="button"
+                                  onClick={() => handleDeletePermission(perm.id)}
+                                  className="btn btn-sm btn-outline-danger p-1" title="Delete">
+                                  <TrashIcon style={{ width: 12, height: 12 }} />
+                                </button>
+                                <button type="button"
+                                  onClick={() => handleTogglePermission(perm.id, !perm.granted)}
+                                  className={`btn btn-sm p-1 ${perm.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
+                                  title={perm.granted ? 'Deny' : 'Grant'}>
+                                  <i className={`bi ${perm.granted ? 'bi-x-circle' : 'bi-check-circle'}`}></i>
+                                </button>
+                              </div>
+                            </td>
                             <td>{perm.page}</td>
                             <td>{perm.permission}</td>
                             <td>
                               <span className={`badge ${perm.granted ? 'bg-success' : 'bg-danger'}`}>
                                 {perm.granted ? 'Granted' : 'Denied'}
                               </span>
-                            </td>
-                            <td>
-                              <div className="btn-group btn-group-sm">
-                                <button type="button"
-                                  onClick={() => handleTogglePermission(perm.id, !perm.granted)}
-                                  className={`btn btn-sm ${perm.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
-                                  title={perm.granted ? 'Deny' : 'Grant'}>
-                                  <i className={`bi ${perm.granted ? 'bi-x-circle' : 'bi-check-circle'}`}></i>
-                                </button>
-                                <button type="button"
-                                  onClick={() => handleDeletePermission(perm.id)}
-                                  className="btn btn-sm btn-outline-danger" title="Delete">
-                                  <i className="bi bi-trash"></i>
-                                </button>
-                              </div>
                             </td>
                           </tr>
                         ))}
@@ -863,6 +828,59 @@ export default function Form_Employee({
             </li>
           ))}
         </ul>
+
+        {/* Signature tab footer controls */}
+        {activeTab === 'signature' && employee && !showSignaturePad && !signatureLoading && (
+          <div className="d-flex gap-2 mb-2 justify-content-center">
+            <button
+              type="button"
+              onClick={() => signatureFileRef.current?.click()}
+              className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+            >
+              Upload Photo
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSignaturePad(true)}
+              className="btn btn-primary btn-sm rounded-pill px-3"
+            >
+              {savedSignature ? 'Replace Signature' : 'Create Signature'}
+            </button>
+          </div>
+        )}
+
+        {/* Permissions tab footer controls */}
+        {activeTab === 'permissions' && employee && (
+          <div className="mb-2">
+            {permError && <div className="alert alert-danger py-1 small mb-2">{permError}</div>}
+            {permSuccess && <div className="alert alert-success py-1 small mb-2">{permSuccess}</div>}
+            <div className="row g-2 align-items-center">
+              <div className="col">
+                <select value={newPermission.page}
+                  onChange={e => setNewPermission(p => ({ ...p, page: e.target.value }))}
+                  className="form-select form-select-sm">
+                  <option value="">Select Page</option>
+                  {PAGES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div className="col">
+                <select value={newPermission.permission}
+                  onChange={e => setNewPermission(p => ({ ...p, permission: e.target.value }))}
+                  className="form-select form-select-sm">
+                  <option value="">Select Permission</option>
+                  {PERMISSION_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div className="col-auto">
+                <button type="button" onClick={handleCreatePermission}
+                  className="btn btn-primary btn-sm"
+                  disabled={!newPermission.page || !newPermission.permission}>
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="d-flex align-items-center">

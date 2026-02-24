@@ -531,22 +531,10 @@ export default function Modal_Detail_Item({
                         value={formData.min_stock_level}
                         onChange={handleChange}
                         className="form-control form-control-sm"
-                        placeholder="Max Count"
-                        min="0"
-                      />
-                      <label htmlFor="min_stock_level">Max Count</label>
-                    </div>
-                    <div className="form-floating">
-                      <input
-                        type="number"
-                        id="min_count"
-                        readOnly
-                        value={0}
-                        className="form-control form-control-sm bg-light dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                         placeholder="Min Count"
                         min="0"
                       />
-                      <label htmlFor="min_count">Min Count</label>
+                      <label htmlFor="min_stock_level">Min Count</label>
                     </div>
                     <div className="form-floating">
                       <input

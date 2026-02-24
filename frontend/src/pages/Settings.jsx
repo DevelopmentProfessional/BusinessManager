@@ -13,13 +13,16 @@ import {
   DocumentTextIcon,
   ChevronDownIcon,
   InformationCircleIcon,
-  ShieldCheckIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { settingsAPI, schemaAPI, insurancePlansAPI } from '../services/api';
+import { settingsAPI, schemaAPI } from '../services/api';
+
+// Accordion pop-up animation (shared with Profile)
+if (typeof document !== 'undefined' && !document.head.querySelector('style[data-accordion-popup]')) {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = `@keyframes popUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .accordion-popup { animation: popUp 0.3s ease-out; }`;
+  styleSheet.setAttribute('data-accordion-popup', 'true');
+  document.head.appendChild(styleSheet);
+}
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
 import useBranding from '../services/useBranding';
 
@@ -61,12 +64,6 @@ export default function Settings() {
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
-
-  // Insurance Plans state
-  const [insurancePlans, setInsurancePlans] = useState([]);
-  const [insurancePlansLoading, setInsurancePlansLoading] = useState(false);
-  const [editingPlan, setEditingPlan] = useState(null);
-  const [newPlan, setNewPlan] = useState({ name: '', description: '', is_active: true });
 
   // Accordion state for General settings sections
   const [openAccordions, setOpenAccordions] = useState({
@@ -385,77 +382,20 @@ export default function Settings() {
     }
   };
 
-  const loadInsurancePlans = async () => {
-    setInsurancePlansLoading(true);
-    try {
-      const res = await insurancePlansAPI.getAll();
-      setInsurancePlans(res?.data ?? res ?? []);
-    } catch (err) {
-      setError('Failed to load insurance plans');
-    } finally {
-      setInsurancePlansLoading(false);
-    }
-  };
-
-  const handleInsurancePlanSave = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingPlan?.id) {
-        const res = await insurancePlansAPI.update(editingPlan.id, editingPlan);
-        setInsurancePlans(prev => prev.map(p => p.id === editingPlan.id ? (res?.data ?? res) : p));
-        setEditingPlan(null);
-      } else {
-        const res = await insurancePlansAPI.create(newPlan);
-        setInsurancePlans(prev => [...prev, res?.data ?? res]);
-        setNewPlan({ name: '', description: '', is_active: true });
-      }
-      setSuccess('Insurance plan saved');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to save plan');
-    }
-  };
-
-  const handleInsurancePlanDelete = async (id) => {
-    if (!window.confirm('Delete this insurance plan?')) return;
-    try {
-      await insurancePlansAPI.delete(id);
-      setInsurancePlans(prev => prev.filter(p => p.id !== id));
-    } catch (err) {
-      setError('Failed to delete plan');
-    }
-  };
-
-  const handleInsurancePlanToggle = async (plan) => {
-    try {
-      const res = await insurancePlansAPI.update(plan.id, { is_active: !plan.is_active });
-      setInsurancePlans(prev => prev.map(p => p.id === plan.id ? (res?.data ?? res) : p));
-    } catch (err) {
-      setError('Failed to update plan');
-    }
-  };
-
-  // Load insurance plans when tab becomes active
-  useEffect(() => {
-    if (activeTab === 'insurance' && insurancePlans.length === 0) {
-      loadInsurancePlans();
-    }
-  }, [activeTab]);
-
   const tabs = [
     { id: 'schedule', name: 'Schedule', icon: ClockIcon },
     { id: 'general', name: 'General', icon: CogIcon },
     { id: 'database', name: 'Database', icon: CircleStackIcon },
-    { id: 'insurance', name: 'Insurance', icon: ShieldCheckIcon },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col pb-20">
-      {/* Main Content Area */}
-      <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4 flex flex-col">
-        <div className="mt-auto w-full">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-100">
-            <div className="w-full max-w-3xl mx-auto">
+    <div className="d-flex flex-column" style={{ minHeight: '100vh' }}>
+      {/* Flex spacer pushes content to bottom */}
+      <div className="flex-grow-1" />
+
+      {/* Scrollable content above fixed footer */}
+      <div className="overflow-auto no-scrollbar px-3 pt-3 pb-3" style={{ maxHeight: 'calc(100vh - 72px)' }}>
+        <div style={{ maxWidth: '672px', margin: '0 auto' }}>
           {/* Schedule Settings */}
           {activeTab === 'schedule' && (
             <div>
@@ -590,29 +530,32 @@ export default function Settings() {
               </h2>
 
               {/* Application Info Accordion */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <div>
                 <button
                   onClick={() => toggleAccordion('application')}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full"
+                  className="w-full d-flex align-items-center justify-content-between py-3 border-bottom bg-transparent text-start"
+                  style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="d-flex align-items-center gap-2">
                     <InformationCircleIcon className="h-5 w-5 text-primary-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Application</span>
+                    <span className="fw-medium">Application</span>
                   </div>
-                  <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${openAccordions.application ? 'rotate-180' : ''}`} />
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: 'transform 0.2s', transform: openAccordions.application ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                 </button>
                 {openAccordions.application && (
-                  <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Version</span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">1.0.0</span>
+                  <div className="accordion-popup py-3">
+                    <div className="row g-2">
+                      <div className="col-6">
+                        <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+                          <span className="small fw-medium">Version</span>
+                          <span className="small text-muted">1.0.0</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Environment</span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {import.meta.env.DEV ? 'Development' : 'Production'}
-                        </span>
+                      <div className="col-6">
+                        <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+                          <span className="small fw-medium">Environment</span>
+                          <span className="small text-muted">{import.meta.env.DEV ? 'Development' : 'Production'}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -620,19 +563,20 @@ export default function Settings() {
               </div>
 
               {/* Branding Accordion */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <div>
                 <button
                   onClick={() => toggleAccordion('branding')}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full"
+                  className="w-full d-flex align-items-center justify-content-between py-3 border-bottom bg-transparent text-start"
+                  style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="d-flex align-items-center gap-2">
                     <SwatchIcon className="h-5 w-5 text-purple-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Branding</span>
+                    <span className="fw-medium">Branding</span>
                   </div>
-                  <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${openAccordions.branding ? 'rotate-180' : ''}`} />
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: 'transform 0.2s', transform: openAccordions.branding ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                 </button>
                 {openAccordions.branding && (
-                  <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                  <div className="accordion-popup py-3">
                     <div className="space-y-4">
                       {/* Company Name & Tagline */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -794,19 +738,20 @@ export default function Settings() {
               </div>
 
               {/* Notifications Accordion */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <div>
                 <button
                   onClick={() => toggleAccordion('notifications')}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full"
+                  className="w-full d-flex align-items-center justify-content-between py-3 border-bottom bg-transparent text-start"
+                  style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="d-flex align-items-center gap-2">
                     <BellIcon className="h-5 w-5 text-amber-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">Notifications</span>
+                    <span className="fw-medium">Notifications</span>
                   </div>
-                  <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${openAccordions.notifications ? 'rotate-180' : ''}`} />
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: 'transform 0.2s', transform: openAccordions.notifications ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                 </button>
                 {openAccordions.notifications && (
-                  <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                  <div className="accordion-popup py-3">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                         <div className="flex items-center min-w-0">
@@ -1081,147 +1026,29 @@ export default function Settings() {
             </div>
           )}
 
-          {/* Insurance Plans */}
-          {activeTab === 'insurance' && (
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <ShieldCheckIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                Insurance Plans
-              </h2>
-
-              {success && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-300 text-sm">
-                  {success}
-                </div>
-              )}
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-800 dark:text-red-300 text-sm">
-                  {error}
-                </div>
-              )}
-
-              {/* Add new plan form */}
-              <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  {editingPlan ? 'Edit Plan' : 'Add New Plan'}
-                </h3>
-                <form onSubmit={handleInsurancePlanSave} className="flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="form-floating">
-                      <input
-                        type="text"
-                        id="planName"
-                        className="form-control form-control-sm"
-                        placeholder="Plan name"
-                        value={editingPlan ? editingPlan.name : newPlan.name}
-                        onChange={e => editingPlan
-                          ? setEditingPlan(prev => ({ ...prev, name: e.target.value }))
-                          : setNewPlan(prev => ({ ...prev, name: e.target.value }))}
-                        required
-                      />
-                      <label htmlFor="planName">Plan Name</label>
-                    </div>
-                    <div className="form-floating">
-                      <input
-                        type="text"
-                        id="planDescription"
-                        className="form-control form-control-sm"
-                        placeholder="Description"
-                        value={editingPlan ? (editingPlan.description || '') : newPlan.description}
-                        onChange={e => editingPlan
-                          ? setEditingPlan(prev => ({ ...prev, description: e.target.value }))
-                          : setNewPlan(prev => ({ ...prev, description: e.target.value }))}
-                      />
-                      <label htmlFor="planDescription">Description (optional)</label>
-                    </div>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button type="submit" className="btn btn-sm btn-primary d-flex align-items-center gap-1">
-                      <PlusIcon style={{ width: 14, height: 14 }} />
-                      {editingPlan ? 'Update Plan' : 'Add Plan'}
-                    </button>
-                    {editingPlan && (
-                      <button type="button" className="btn btn-sm btn-secondary d-flex align-items-center gap-1" onClick={() => setEditingPlan(null)}>
-                        <XMarkIcon style={{ width: 14, height: 14 }} />
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-
-              {/* Plans list */}
-              {insurancePlansLoading ? (
-                <div className="text-center py-4">
-                  <div className="spinner-border text-primary" role="status" />
-                </div>
-              ) : insurancePlans.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-                  No insurance plans yet. Add one above.
-                </p>
-              ) : (
-                <div className="d-flex flex-column gap-2">
-                  {insurancePlans.map(plan => (
-                    <div key={plan.id} className={`d-flex align-items-center justify-content-between p-3 border rounded-lg ${plan.is_active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}>
-                      <div>
-                        <div className="fw-semibold text-gray-900 dark:text-white d-flex align-items-center gap-2">
-                          {plan.name}
-                          <span className={`badge ${plan.is_active ? 'bg-success' : 'bg-secondary'} text-white`}>
-                            {plan.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        {plan.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{plan.description}</div>
-                        )}
-                      </div>
-                      <div className="d-flex gap-2">
-                        <button
-                          className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
-                          title={plan.is_active ? 'Deactivate' : 'Activate'}
-                          onClick={() => handleInsurancePlanToggle(plan)}
-                        >
-                          {plan.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setEditingPlan({ ...plan })}>
-                          <PencilIcon style={{ width: 14, height: 14 }} />
-                        </button>
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleInsurancePlanDelete(plan.id)}>
-                          <TrashIcon style={{ width: 14, height: 14 }} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Bottom Fixed Navigation - Responsive */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40">
-        <nav className="flex justify-center gap-1 py-2 px-2 sm:px-4 max-w-md mx-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center justify-center flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-full transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                title={tab.name}
-              >
-                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                <span className="text-xs mt-1 font-medium">{tab.name}</span>
-              </button>
-            );
-          })}
-        </nav>
+      {/* Fixed Footer - matches Profile page style */}
+      <div
+        className="d-flex gap-1 p-2 bg-body border-top position-fixed bottom-0 start-0 end-0"
+        style={{ zIndex: 100, minHeight: '60px', paddingRight: '5rem', alignItems: 'center' }}
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${activeTab === tab.id ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+              title={tab.name}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="small">{tab.name}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
