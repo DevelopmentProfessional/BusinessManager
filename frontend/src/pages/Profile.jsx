@@ -750,21 +750,19 @@ const Profile = () => {
 
   const canAccessSettings = hasPermission('settings', 'read');
 
-  // Row 2 panels (Schedule, General, Database) clear only Row 2.
-  // Row 1 panels (Profile, Benefits, Settings) clear both rows.
+  // All panels clear the entire footer so every tab row stays visible and tappable.
   const totalFooterHeight = row1Height + row2Height;
-  const row1PanelBottom = totalFooterHeight;  // avoids both rows
-  const row2PanelBottom = row2Height || row1Height; // avoids only the triggering row; fallback to row1Height when Row 2 not present
+  const row1PanelBottom = totalFooterHeight;
 
-  // Shared panel style for Row 2 settings panels
+  // Shared panel style for all settings panels
   const settingsPanelStyle = {
     position: 'fixed',
     top: 0,
-    bottom: `${row2PanelBottom}px`,
+    bottom: `${totalFooterHeight}px`,
     left: 0,
     right: 0,
     width: '100%',
-    height: `calc(100vh - ${row2PanelBottom}px)`,
+    height: `calc(100dvh - ${totalFooterHeight}px)`,
     overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -796,7 +794,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100vh - ${row1PanelBottom}px)`,
+            height: `calc(100dvh - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -890,7 +888,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100vh - ${row1PanelBottom}px)`,
+            height: `calc(100dvh - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1033,7 +1031,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100vh - ${row1PanelBottom}px)`,
+            height: `calc(100dvh - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
