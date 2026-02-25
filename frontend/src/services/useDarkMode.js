@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const applyTheme = (isDark) => {
+  const theme = isDark ? 'dark' : 'light';
+  document.body.setAttribute('data-bs-theme', theme);
+  document.documentElement.setAttribute('data-bs-theme', theme);
+  document.documentElement.classList.toggle('dark', isDark);
+};
+
 const useDarkMode = create(
   persist(
     (set, get) => ({
@@ -9,33 +16,18 @@ const useDarkMode = create(
         const { isDarkMode } = get();
         const newMode = !isDarkMode;
         set({ isDarkMode: newMode });
-        
-        // Update body data attribute for Bootstrap dark mode
-        if (newMode) {
-          document.body.setAttribute('data-bs-theme', 'dark');
-        } else {
-          document.body.setAttribute('data-bs-theme', 'light');
-        }
+
+        applyTheme(newMode);
       },
       setDarkMode: (isDark) => {
         set({ isDarkMode: isDark });
-        
-        // Update body data attribute for Bootstrap dark mode
-        if (isDark) {
-          document.body.setAttribute('data-bs-theme', 'dark');
-        } else {
-          document.body.setAttribute('data-bs-theme', 'light');
-        }
+
+        applyTheme(isDark);
       },
       initializeDarkMode: () => {
         const { isDarkMode } = get();
-        
-        // Set initial theme based on stored preference
-        if (isDarkMode) {
-          document.body.setAttribute('data-bs-theme', 'dark');
-        } else {
-          document.body.setAttribute('data-bs-theme', 'light');
-        }
+
+        applyTheme(isDarkMode);
         
         // Force a re-render of the calendar by triggering a resize event
         setTimeout(() => {
