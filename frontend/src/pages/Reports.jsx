@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { reportsAPI } from '../services/api';
+import useBranding from '../services/useBranding';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Chart_Report from './components/Chart_Report';
@@ -103,6 +104,8 @@ export default function Reports() {
     return <Navigate to="/profile" replace />;
   }
 
+  const { branding } = useBranding();
+
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [reportFilters, setReportFilters] = useState({
@@ -112,6 +115,12 @@ export default function Reports() {
     groupBy: 'day',
     chartType: 'line'
   });
+
+  const handleCloseReport = () => {
+    closeModal();
+    setSelectedReport(null);
+    setReportData(null);
+  };
 
   // Filter available reports based on user permissions
   const accessibleReports = AVAILABLE_REPORTS.filter(report => {
@@ -398,7 +407,11 @@ export default function Reports() {
   }
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div
+      className="h-full flex flex-col p-4 overflow-y-auto reports-page"
+      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+    >
+      <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
@@ -413,8 +426,8 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Report Cards Grid - Float to bottom */}
-      <div className="mt-auto">
+      {/* Report Cards Grid */}
+      <div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {accessibleReports.map((report) => (
           <div
@@ -466,38 +479,44 @@ export default function Reports() {
       )}
 
       {/* Report Modal */}
-      <Modal 
-        isOpen={isModalOpen && modalContent === 'report-view'} 
-        onClose={() => {
-          closeModal();
-          setSelectedReport(null);
-          setReportData(null);
-        }}
+      <Modal
+        isOpen={isModalOpen && modalContent === 'report-view'}
+        onClose={handleCloseReport}
+        footer={selectedReport && (
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={handleCloseReport} className="btn btn-outline-secondary">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => loadReportData(selectedReport.id)}
+              className="btn btn-primary d-flex align-items-center gap-2"
+            >
+              <ArrowPathIcon className="h-4 w-4" />
+              Refresh
+            </button>
+          </div>
+        )}
       >
         {selectedReport && (
-          <div className="p-6">
+          <div
+            className="p-6"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <style>{`.report-modal-inner::-webkit-scrollbar{display:none!important}`}</style>
             {/* Modal Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-2 rounded-lg bg-${selectedReport.color}-100`}>
-                  <selectedReport.icon className={`h-5 w-5 text-${selectedReport.color}-600`} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {selectedReport.title}
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    {selectedReport.description}
-                  </p>
-                </div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`p-2 rounded-lg bg-${selectedReport.color}-100`}>
+                <selectedReport.icon className={`h-5 w-5 text-${selectedReport.color}-600`} />
               </div>
-              <button
-                onClick={() => loadReportData(selectedReport.id)}
-                className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
-                title="Refresh data"
-              >
-                <ArrowPathIcon className="h-5 w-5" />
-              </button>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {selectedReport.title}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {selectedReport.description}
+                </p>
+              </div>
             </div>
 
             {/* Filters */}
@@ -521,6 +540,32 @@ export default function Reports() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                 </div>
               )}
+            </div>
+
+            {/* Report Footer */}
+            <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {branding.logoUrl && (
+                  <img src={branding.logoUrl} alt="logo" style={{ height: '1rem', objectFit: 'contain' }} />
+                )}
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  {branding.companyName || 'Business Manager'}
+                </span>
+                {branding.tagline && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">&mdash; {branding.tagline}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+                <span style={{ textTransform: 'capitalize' }}>
+                  {reportFilters.dateRange === 'custom'
+                    ? `${reportFilters.startDate || ''} – ${reportFilters.endDate || ''}`
+                    : reportFilters.dateRange.replace('last', 'Last ').replace(/(\d)/, ' $1').replace('days', ' Days').replace('months', ' Months').replace('year', ' Year').trim()}
+                </span>
+                <span className="text-gray-300 dark:text-gray-600">|</span>
+                <span>
+                  Generated {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
             </div>
           </div>
         )}
