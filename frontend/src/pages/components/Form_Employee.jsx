@@ -53,7 +53,9 @@ export default function Form_Employee({
     iod_number: '',
     location: '',
     // Benefits
+    employment_type: '',
     salary: '',
+    hourly_rate: '',
     pay_frequency: '',
     insurance_plan: '',
     vacation_days: '',
@@ -131,7 +133,9 @@ export default function Form_Employee({
         role_id: employee.role_id || '',
         iod_number: employee.iod_number || '',
         location: employee.location || '',
+        employment_type: employee.employment_type || '',
         salary: employee.salary ?? '',
+        hourly_rate: employee.hourly_rate ?? '',
         pay_frequency: employee.pay_frequency || '',
         insurance_plan: employee.insurance_plan || '',
         vacation_days: employee.vacation_days ?? '',
@@ -273,10 +277,12 @@ export default function Form_Employee({
     if (!submitData.role_id) submitData.role_id = null;
     if (!submitData.iod_number.trim()) submitData.iod_number = null;
     if (!submitData.location.trim()) submitData.location = null;
+    if (!submitData.employment_type) submitData.employment_type = null;
     if (!submitData.pay_frequency) submitData.pay_frequency = null;
     if (!submitData.insurance_plan) submitData.insurance_plan = null;
     // Convert numeric fields
     submitData.salary = submitData.salary !== '' ? parseFloat(submitData.salary) : null;
+    submitData.hourly_rate = submitData.hourly_rate !== '' ? parseFloat(submitData.hourly_rate) : null;
     submitData.vacation_days = submitData.vacation_days !== '' ? parseInt(submitData.vacation_days) : null;
     submitData.vacation_days_used = submitData.vacation_days_used !== '' ? parseInt(submitData.vacation_days_used) : null;
     submitData.sick_days = submitData.sick_days !== '' ? parseInt(submitData.sick_days) : null;
@@ -514,13 +520,13 @@ export default function Form_Employee({
                 <hr className="mt-1 mb-2" />
               </div>
               <div className="col-md-6">
-                <div className="input-group">
-                  <span className="input-group-text">$</span>
-                  <div className="form-floating">
-                    <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange}
-                      className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
-                    <label htmlFor="salary">Salary</label>
-                  </div>
+                <div className="form-floating">
+                  <select id="employment_type" name="employment_type" value={formData.employment_type} onChange={handleInputChange} className="form-select form-select-sm">
+                    <option value="">Select type</option>
+                    <option value="salary">Salary</option>
+                    <option value="hourly">Hourly</option>
+                  </select>
+                  <label htmlFor="employment_type">Employment Type</label>
                 </div>
               </div>
               <div className="col-md-6">
@@ -535,6 +541,30 @@ export default function Form_Employee({
                   <label htmlFor="pay_frequency">Pay Frequency</label>
                 </div>
               </div>
+              {formData.employment_type !== 'hourly' && (
+                <div className="col-md-6">
+                  <div className="input-group">
+                    <span className="input-group-text">$</span>
+                    <div className="form-floating">
+                      <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange}
+                        className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                      <label htmlFor="salary">Annual Salary</label>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {formData.employment_type === 'hourly' && (
+                <div className="col-md-6">
+                  <div className="input-group">
+                    <span className="input-group-text">$</span>
+                    <div className="form-floating">
+                      <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange}
+                        className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                      <label htmlFor="hourly_rate">Hourly Rate</label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Insurance */}
               <div className="col-12 mt-3">

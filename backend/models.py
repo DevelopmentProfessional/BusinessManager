@@ -116,6 +116,8 @@ class User(BaseModel, table=True):
 
     # Benefits / Compensation
     salary: Optional[float] = Field(default=None)
+    hourly_rate: Optional[float] = Field(default=None)
+    employment_type: Optional[str] = Field(default=None)  # "salary" or "hourly"
     pay_frequency: Optional[str] = Field(default=None)  # weekly, biweekly, monthly
     insurance_plan: Optional[str] = Field(default=None)
     vacation_days: Optional[int] = Field(default=None)
@@ -1203,6 +1205,7 @@ class InsurancePlan(BaseModel, table=True):
     name: str = Field(unique=True, index=True)
     description: Optional[str] = Field(default=None)
     is_active: bool = Field(default=True)
+    monthly_deduction: Optional[float] = Field(default=None)
 
 
 class InsurancePlanRead(SQLModel):
@@ -1210,6 +1213,60 @@ class InsurancePlanRead(SQLModel):
     name: str
     description: Optional[str] = None
     is_active: bool = True
+    monthly_deduction: Optional[float] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Pay slip model
+class PaySlip(BaseModel, table=True):
+    __tablename__ = "pay_slip"
+    employee_id: UUID = Field(foreign_key="user.id", index=True)
+    pay_period_start: datetime
+    pay_period_end: datetime
+    gross_amount: float
+    insurance_deduction: float = Field(default=0.0)
+    other_deductions: float = Field(default=0.0)
+    net_amount: float
+    employment_type: str = Field(default="salary")   # "salary" or "hourly"
+    hours_worked: Optional[float] = Field(default=None)
+    hourly_rate_snapshot: Optional[float] = Field(default=None)
+    salary_snapshot: Optional[float] = Field(default=None)
+    pay_frequency: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    status: str = Field(default="paid")
+    insurance_plan_name: Optional[str] = Field(default=None)
+
+
+class PaySlipCreate(SQLModel):
+    pay_period_start: datetime
+    pay_period_end: datetime
+    gross_amount: Optional[float] = None        # used for salary override
+    other_deductions: float = 0.0
+    employment_type: Optional[str] = None       # overrides employee.employment_type
+    hours_worked: Optional[float] = None        # required for hourly
+    hourly_rate_snapshot: Optional[float] = None  # overrides employee.hourly_rate
+    notes: Optional[str] = None
+
+
+class PaySlipRead(SQLModel):
+    id: UUID
+    employee_id: UUID
+    pay_period_start: datetime
+    pay_period_end: datetime
+    gross_amount: float
+    insurance_deduction: float
+    other_deductions: float
+    net_amount: float
+    employment_type: str
+    hours_worked: Optional[float] = None
+    hourly_rate_snapshot: Optional[float] = None
+    salary_snapshot: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    notes: Optional[str] = None
+    status: str
+    insurance_plan_name: Optional[str] = None
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
