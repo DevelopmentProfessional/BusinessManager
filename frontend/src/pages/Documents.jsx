@@ -606,7 +606,7 @@ export default function Documents() {
 
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
-          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white"
+          className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
           style={{ background: 'var(--bs-body-bg)' }}
         >
           {filteredDocuments.length > 0 ? (

@@ -342,7 +342,7 @@ export default function Form_Employee({
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
           {employee ? 'Edit Employee' : 'Add Employee'}
         </h6>
@@ -352,7 +352,7 @@ export default function Form_Employee({
       </div>
 
       {/* Scrollable Body */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="employee-form" onSubmit={handleSubmit}>
           {/* ===== DETAILS TAB ===== */}
           {activeTab === 'details' && (

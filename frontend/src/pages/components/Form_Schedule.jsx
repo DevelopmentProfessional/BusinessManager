@@ -332,12 +332,12 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{formTitle}</h6>
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2">
 
           {/* Appointment Type */}

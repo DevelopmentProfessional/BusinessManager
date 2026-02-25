@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
@@ -173,8 +173,10 @@ const Profile = () => {
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveError, setLeaveError] = useState('');
 
-  const footerRef = useRef(null);
-  const [footerHeight, setFooterHeight] = useState(80);
+  const row1Ref = useRef(null);
+  const [row1Height, setRow1Height] = useState(80);
+  const [row2Height, setRow2Height] = useState(0);
+  const row2ObsRef = useRef(null);
 
   // ── Settings state ──────────────────────────────────────────────────────────
   const [settingsError, setSettingsError] = useState('');
@@ -228,12 +230,26 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    if (!footerRef.current) return;
-    const updateHeight = () => setFooterHeight(footerRef.current.offsetHeight);
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(footerRef.current);
-    return () => observer.disconnect();
+    if (!row1Ref.current) return;
+    const update = () => setRow1Height(row1Ref.current.offsetHeight);
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(row1Ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Callback ref for Row 2 — sets up/tears down ResizeObserver as Row 2 mounts/unmounts
+  const handleRow2Ref = useCallback((el) => {
+    if (row2ObsRef.current) {
+      row2ObsRef.current.disconnect();
+      row2ObsRef.current = null;
+    }
+    if (!el) { setRow2Height(0); return; }
+    const update = () => setRow2Height(el.offsetHeight);
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(el);
+    row2ObsRef.current = obs;
   }, []);
 
   // Sync local branding when global branding changes
@@ -734,15 +750,21 @@ const Profile = () => {
 
   const canAccessSettings = hasPermission('settings', 'read');
 
-  // Shared panel style for settings panels
+  // Row 2 panels (Schedule, General, Database) clear only Row 2.
+  // Row 1 panels (Profile, Benefits, Settings) clear both rows.
+  const totalFooterHeight = row1Height + row2Height;
+  const row1PanelBottom = totalFooterHeight;  // avoids both rows
+  const row2PanelBottom = row2Height || row1Height; // avoids only the triggering row; fallback to row1Height when Row 2 not present
+
+  // Shared panel style for Row 2 settings panels
   const settingsPanelStyle = {
     position: 'fixed',
     top: 0,
-    bottom: `${footerHeight}px`,
+    bottom: `${row2PanelBottom}px`,
     left: 0,
     right: 0,
     width: '100%',
-    height: `calc(100vh - ${footerHeight}px)`,
+    height: `calc(100vh - ${row2PanelBottom}px)`,
     overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -770,11 +792,11 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: `${footerHeight}px`,
+            bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100vh - ${footerHeight}px)`,
+            height: `calc(100vh - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -864,11 +886,11 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: `${footerHeight}px`,
+            bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100vh - ${footerHeight}px)`,
+            height: `calc(100vh - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1007,11 +1029,11 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: `${footerHeight}px`,
+            bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100vh - ${footerHeight}px)`,
+            height: `calc(100vh - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1583,7 +1605,7 @@ const Profile = () => {
         <div 
           style={{
             position: 'fixed',
-            bottom: `${footerHeight}px`,
+            bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
             maxHeight: 'calc(100vh - 164px)',
@@ -1700,12 +1722,11 @@ const Profile = () => {
 
       {/* Footer Tabs */}
       <div
-        ref={footerRef}
         className="flex-shrink-0 bg-body profile-footer-nav"
         style={{ zIndex: 10 }}
       >
         {/* Row 1 — Personal: Profile, Benefits, Settings */}
-        <div className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2">
+        <div ref={row1Ref} className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2">
           {[
             { id: 'profile',   Icon: UserIcon,  title: 'Profile'   },
             { id: 'benefits',  Icon: HeartIcon, title: 'Benefits'  },
@@ -1727,7 +1748,7 @@ const Profile = () => {
 
         {/* Row 2 — Admin/Settings: Schedule, General, Database */}
         {canAccessSettings && (
-          <div className="d-flex align-items-center gap-1 p-4 ps-3 pe-3 pt-1 
+          <div ref={handleRow2Ref} className="d-flex align-items-center gap-1 p-4 ps-3 pe-3 pt-1
           "
           >
             {[

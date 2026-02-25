@@ -127,7 +127,7 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Service History</h6>
           <button
             type="button"
@@ -141,7 +141,7 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar">
+        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
           {loading && (
             <div className="d-flex justify-content-center py-4">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -250,7 +250,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
           <button
             type="button"
@@ -264,7 +264,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar">
+        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
           {loading && (
             <div className="d-flex justify-content-center py-4">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -434,7 +434,7 @@ export default function Modal_Detail_Client({
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Client Details</h6>
           <button
             type="button"
@@ -448,7 +448,7 @@ export default function Modal_Detail_Client({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2 no-scrollbar">
+        <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
           {/* Avatar + name + tier */}
           <div className="d-flex align-items-center gap-3 mb-3">
