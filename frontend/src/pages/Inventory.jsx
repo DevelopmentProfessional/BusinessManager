@@ -149,6 +149,21 @@ export default function Inventory() {
     return item.quantity <= item.min_stock_level;
   };
 
+  const getTypeFilterButtonClass = () => {
+    if (typeFilter === 'all') return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    if (typeFilter === 'RESOURCE') return 'bg-blue-600 text-white';
+    if (typeFilter === 'ASSET') return 'bg-purple-600 text-white';
+    if (typeFilter === 'LOCATION') return 'bg-teal-600 text-white';
+    if (typeFilter === 'ITEM') return 'bg-orange-500 text-white';
+    return 'bg-gray-600 text-white'; // PRODUCT
+  };
+
+  const getStockFilterButtonClass = () => {
+    if (stockFilter === 'low') return 'bg-orange-700 text-white';
+    if (stockFilter === 'ok') return 'bg-green-600 text-white';
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+  };
+
   // Get stock status color (uses the former status badge colors)
   const getStockColor = (item) => {
     if (isLowStock(item)) {
@@ -355,13 +370,10 @@ return (
               <button
                 type="button"
                 onClick={() => setIsTypeFilterOpen(!isTypeFilterOpen)}
-                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
-                  typeFilter !== 'all'
-                    ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
                 style={{ width: '3rem', height: '3rem' }}
                 title="Filter by type"
+                data-active={typeFilter !== 'all'}
               >
                 <TagIcon className="h-6 w-6" />
               </button>
@@ -412,13 +424,10 @@ return (
               <button
                 type="button"
                 onClick={() => setIsStockFilterOpen(!isStockFilterOpen)}
-                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
-                  stockFilter !== 'all'
-                    ? 'bg-secondary-600 hover:bg-secondary-700 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
                 style={{ width: '3rem', height: '3rem' }}
                 title="Filter by stock"
+                data-active={stockFilter !== 'all'}
               >
                 <CircleStackIcon className="h-6 w-6" />
               </button>

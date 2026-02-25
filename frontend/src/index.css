@@ -78,6 +78,35 @@ body,
   padding-top: env(safe-area-inset-top);
 }
 
+/* Remove border from all footer navigation bars */
+.app-footer-search,
+.schedule-footer {
+  border-top: none !important;
+  border: none !important;
+}
+
+/* Footer nav/filter buttons — scale up icon when active/selected */
+.app-footer-search .btn svg,
+.schedule-footer .btn svg,
+.profile-footer-nav .btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  transition: width 0.15s ease, height 0.15s ease;
+}
+
+.app-footer-search .btn[data-active="true"],
+.schedule-footer .btn[data-active="true"],
+.profile-footer-nav .btn[data-active="true"] {
+  padding: 0 !important;
+}
+
+.app-footer-search .btn[data-active="true"] svg,
+.schedule-footer .btn[data-active="true"] svg,
+.profile-footer-nav .btn[data-active="true"] svg {
+  width: 2.1rem !important;
+  height: 2.1rem !important;
+}
+
 @media (max-width: 1024px) {
   html.search-focus .app-footer-search {
     transform: translateY(calc(-1 * var(--keyboard-offset)));
