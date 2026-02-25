@@ -6,7 +6,7 @@ import Modal from './components/Modal';
 import Form_Client from './components/Form_Client';
 import Modal_Detail_Client from './components/Modal_Detail_Client';
 import Gate_Permission from './components/Gate_Permission';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, StarIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function Clients() {
   const {
@@ -26,6 +26,7 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
+  const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
   const location = useLocation();
@@ -263,7 +264,7 @@ export default function Clients() {
           </table>
 
           {/* Controls */}
-          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ">
+          <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ">
             {/* Search row */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -281,7 +282,7 @@ export default function Clients() {
             </div>
 
             {/* Controls row - Add, Tier */}
-            <div className="d-flex align-items-center gap-1 pb-2">
+            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap">
               <Gate_Permission page="clients" permission="write">
                 <button
                   type="button"
@@ -294,19 +295,75 @@ export default function Clients() {
                 </button>
               </Gate_Permission>
 
-              <select
-                value={tierFilter}
-                onChange={(e) => setTierFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content'  }}
-              >
-                <option value="all">All Tiers ({clients.length})</option>
-                <option value="NONE">No Membership ({clients.filter(c => (c.membership_tier || 'NONE').toUpperCase() === 'NONE').length})</option>
-                <option value="BRONZE">Bronze ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'BRONZE').length})</option>
-                <option value="SILVER">Silver ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'SILVER').length})</option>
-                <option value="GOLD">Gold ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'GOLD').length})</option>
-                <option value="PLATINUM">Platinum ({clients.filter(c => (c.membership_tier || '').toUpperCase() === 'PLATINUM').length})</option>
-              </select>
+              {/* Clear Filters Button */}
+              {tierFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setTierFilter('all')}
+                  className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Clear filter"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              )}
+
+              {/* Tier Filter */}
+              <div className="position-relative">
+                <button
+                  type="button"
+                  onClick={() => setIsTierFilterOpen(!isTierFilterOpen)}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                    tierFilter !== 'all'
+                      ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Filter by tier"
+                >
+                  <StarIcon className="h-6 w-6" />
+                </button>
+                {isTierFilterOpen && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
+                    <button
+                      onClick={() => { setTierFilter('all'); setIsTierFilterOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      All Tiers
+                    </button>
+                    <button
+                      onClick={() => { setTierFilter('NONE'); setIsTierFilterOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'NONE' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      No Membership
+                    </button>
+                    <button
+                      onClick={() => { setTierFilter('BRONZE'); setIsTierFilterOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'BRONZE' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      Bronze
+                    </button>
+                    <button
+                      onClick={() => { setTierFilter('SILVER'); setIsTierFilterOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'SILVER' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      Silver
+                    </button>
+                    <button
+                      onClick={() => { setTierFilter('GOLD'); setIsTierFilterOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'GOLD' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      Gold
+                    </button>
+                    <button
+                      onClick={() => { setTierFilter('PLATINUM'); setIsTierFilterOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${tierFilter === 'PLATINUM' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      Platinum
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

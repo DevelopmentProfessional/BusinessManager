@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -29,6 +29,8 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
+  const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
+  const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
 
@@ -285,7 +287,7 @@ return (
       {/* Fixed bottom – headers + controls */}
       <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         {/* Column Headers */}
-        <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+        <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ">
           <colgroup>
             <col />
             <col style={{ width: '80px' }} />
@@ -301,7 +303,7 @@ return (
         </table>
 
         {/* Controls */}
-        <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           {/* Search row */}
           <div className="position-relative w-100 mb-2">
             <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -332,30 +334,117 @@ return (
               </button>
             </Gate_Permission>
 
-            <select
-              value={typeFilter}
+            {/* Clear Filters Button */}
+            {(typeFilter !== 'all' || stockFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTypeFilter('all');
+                  setStockFilter('all');
+                }}
+                className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                style={{ width: '3rem', height: '3rem' }}
+                title="Clear all filters"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            )}
 
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="form-select form-select-sm rounded-pill"
-              style={{ width: 'fit-content' }}
-            >
-              <option value="all">Types ({inventory.length})</option>
-              <option value="PRODUCT">Products ({inventory.filter(i => (i.type || 'PRODUCT').toUpperCase() === 'PRODUCT').length})</option>
-              <option value="RESOURCE">Resources ({inventory.filter(i => (i.type || '').toUpperCase() === 'RESOURCE').length})</option>
-              <option value="ASSET">Assets ({inventory.filter(i => (i.type || '').toUpperCase() === 'ASSET').length})</option>
-              <option value="LOCATION">Locations ({inventory.filter(i => (i.type || '').toUpperCase() === 'LOCATION').length})</option>
-              <option value="ITEM">Items ({inventory.filter(i => (i.type || '').toUpperCase() === 'ITEM').length})</option>
-            </select>
+            {/* Type Filter */}
+            <div className="position-relative">
+              <button
+                type="button"
+                onClick={() => setIsTypeFilterOpen(!isTypeFilterOpen)}
+                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                  typeFilter !== 'all'
+                    ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                style={{ width: '3rem', height: '3rem' }}
+                title="Filter by type"
+              >
+                <TagIcon className="h-6 w-6" />
+              </button>
+              {isTypeFilterOpen && (
+                <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
+                  <button
+                    onClick={() => { setTypeFilter('all'); setIsTypeFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    All Types
+                  </button>
+                  <button
+                    onClick={() => { setTypeFilter('PRODUCT'); setIsTypeFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === 'PRODUCT' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    Products
+                  </button>
+                  <button
+                    onClick={() => { setTypeFilter('RESOURCE'); setIsTypeFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === 'RESOURCE' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    Resources
+                  </button>
+                  <button
+                    onClick={() => { setTypeFilter('ASSET'); setIsTypeFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === 'ASSET' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    Assets
+                  </button>
+                  <button
+                    onClick={() => { setTypeFilter('LOCATION'); setIsTypeFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === 'LOCATION' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    Locations
+                  </button>
+                  <button
+                    onClick={() => { setTypeFilter('ITEM'); setIsTypeFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${typeFilter === 'ITEM' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    Items
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value)}
-              className="form-select form-select-sm rounded-pill"
-              style={{ width: 'fit-content' }}>
-              <option value="all">Stock ({inventory.length})</option>
-              <option value="low">Low Stock ({inventory.filter(item => isLowStock(item)).length})</option>
-              <option value="ok">In Stock ({inventory.filter(item => !isLowStock(item)).length})</option>
-            </select>
+            {/* Stock Filter */}
+            <div className="position-relative">
+              <button
+                type="button"
+                onClick={() => setIsStockFilterOpen(!isStockFilterOpen)}
+                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                  stockFilter !== 'all'
+                    ? 'bg-secondary-600 hover:bg-secondary-700 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                style={{ width: '3rem', height: '3rem' }}
+                title="Filter by stock"
+              >
+                <CircleStackIcon className="h-6 w-6" />
+              </button>
+              {isStockFilterOpen && (
+                <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+                  <button
+                    onClick={() => { setStockFilter('all'); setIsStockFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${stockFilter === 'all' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    All Stock
+                  </button>
+                  <button
+                    onClick={() => { setStockFilter('low'); setIsStockFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${stockFilter === 'low' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    Low Stock
+                  </button>
+                  <button
+                    onClick={() => { setStockFilter('ok'); setIsStockFilterOpen(false); }}
+                    className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${stockFilter === 'ok' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                  >
+                    In Stock
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

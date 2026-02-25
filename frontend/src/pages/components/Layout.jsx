@@ -71,7 +71,7 @@ export default function Layout({ children }) {
           
           {/* Menu positioned bottom-right */}
           <div 
-            className="position-fixed bg-body rounded-3 shadow-lg border p-2" 
+            className="position-fixed bg-body rounded-3  p-2" 
             style={{ 
               minWidth: '12rem', 
               zIndex: 1051, 

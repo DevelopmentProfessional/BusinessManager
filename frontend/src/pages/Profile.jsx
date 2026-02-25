@@ -13,7 +13,13 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   PlusCircleIcon,
+  HeartIcon,
+  SunIcon,
+  MoonIcon,
+  PencilIcon,
+  ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline';
+import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
 import api from '../services/api';
 import Modal_Signature from './components/Modal_Signature';
@@ -33,6 +39,25 @@ const accordionStyles = `
   
   .accordion-popup {
     animation: popUp 0.3s ease-out;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+  
+  .accordion-popup::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .accordion-popup * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .accordion-popup *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 `;
 
@@ -397,20 +422,19 @@ const Profile = () => {
           className="accordion-popup" 
           style={{ 
             position: 'fixed',
+            top: 0,
             bottom: '84px',
             left: 0,
             right: 0,
             width: '100%',
-            maxHeight: 'calc(100vh - 164px)',
+            height: 'calc(100vh - 60px)',
             overflowY: 'auto',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
-            padding: '1rem',
-            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-            border: '1px solid var(--bs-card-border-color, #dee2e6)',
-            borderBottom: 'none',
-            borderTopLeftRadius: '0.375rem',
-            borderTopRightRadius: '0.375rem'
+            paddingTop: '1rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            paddingBottom: '0.25rem'
           }}
         >
               <div className="row">
@@ -485,20 +509,19 @@ const Profile = () => {
           className="accordion-popup" 
           style={{ 
             position: 'fixed',
+            top: 0,
             bottom: '60px',
             left: 0,
             right: 0,
             width: '100%',
-            maxHeight: 'calc(100vh - 140px)',
+            height: 'calc(100vh - 60px)',
             overflowY: 'auto',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
-            padding: '1rem',
-            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-            border: '1px solid var(--bs-card-border-color, #dee2e6)',
-            borderBottom: 'none',
-            borderTopLeftRadius: '0.375rem',
-            borderTopRightRadius: '0.375rem'
+            paddingTop: '1rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            paddingBottom: '0.25rem' 
           }}
         >
 
@@ -622,142 +645,190 @@ const Profile = () => {
           className="accordion-popup" 
           style={{ 
             position: 'fixed',
+            top: 0,
             bottom: '60px',
             left: 0,
             right: 0,
             width: '100%',
-            maxHeight: 'calc(100vh - 140px)',
+            height: 'calc(100vh - 60px)',
             overflowY: 'auto',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
-            padding: '1rem',
+            paddingTop: '1rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            paddingBottom: '0.25rem',
             boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-            border: '1px solid var(--bs-card-border-color, #dee2e6)',
-            borderBottom: 'none',
-            borderTopLeftRadius: '0.375rem',
-            borderTopRightRadius: '0.375rem'
+            
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          <div className="d-flex align-items-center justify-content-start flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={toggleDarkMode}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
-                  title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  <span style={{ fontSize: '1.5rem' }}>{isDarkMode ? '🌚' : '🌞'}</span>
-                  <span className="small fw-medium text-body-emphasis">{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
-                </button>
-                <div className="position-relative">
-                  <button
-                    type="button"
-                    onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
-                    className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
-                    title="Calendar color"
-                    aria-expanded={colorPickerOpen}
-                    disabled={colorUpdating}
+          {/* Database Environment - Top */}
+          <div>
+            <div className="d-flex align-items-center flex-wrap gap-1 mb-2">
+              <span className="text-muted small me-1">Environment</span>
+              {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
+                const isCurrent = key === currentDbEnvironment;
+                return (
+                  <span
+                    key={key}
+                    role="radio"
+                    aria-checked={isCurrent}
+                    tabIndex={0}
+                    className={`badge rounded-pill px-3 py-2 ${isCurrent ? 'bg-primary text-white' : 'bg-transparent text-secondary border'}`}
+                    style={{ cursor: isCurrent || dbLoading ? 'default' : 'pointer', fontSize: '0.8rem', transition: 'all 0.15s ease', userSelect: 'none' }}
+                    onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isCurrent && !dbLoading && handleSwitchEnvironment(key); } }}
                   >
-                    <span style={{ fontSize: '1.5rem' }}>🎨</span>
-                    <span className="small fw-medium text-body-emphasis">Calendar Color</span>
-                  </button>
-                  {colorPickerOpen && (
-                    <div
-                      className="position-absolute end-0 mt-2 p-2 border rounded bg-white shadow-sm"
-                      style={{ minWidth: '210px', zIndex: 10 }}
-                    >
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <input
-                          type="color"
-                          value={pendingColor}
-                          onChange={(e) => setPendingColor(e.target.value)}
-                          className="form-control form-control-sm"
-                          style={{ width: '50px', height: '38px', padding: '4px', cursor: colorUpdating ? 'not-allowed' : 'pointer', opacity: colorUpdating ? 0.6 : 1 }}
-                          disabled={colorUpdating}
-                        />
-                        <span className="small text-muted">{pendingColor.toUpperCase()}</span>
-                      </div>
-                      <div className="d-flex gap-2 justify-content-end">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(false); }}
-                          disabled={colorUpdating}
-                        >Cancel</button>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-primary"
-                          onClick={handleColorSave}
-                          disabled={colorUpdating}
-                        >Save</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSignatureModalOpen(true)}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
-                  title="Manage signature"
-                >
-                  <span style={{ fontSize: '1.5rem' }}>📝</span>
-                  <span className="small fw-medium text-body-emphasis">Signature</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddToHomeScreen}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
-                  title="Add app to home screen"
-                >
-                  <span style={{ fontSize: '1.5rem' }}>🏠</span>
-                  <span className="small fw-medium text-body-emphasis">Download</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="btn d-flex align-items-center gap-2 p-0 border-0 text-body-emphasis"
-                  title="Log out"
-                >
-                  <span style={{ fontSize: '1.5rem' }}>🚪</span>
-                  <span className="small fw-medium text-body-emphasis">Logout</span>
-                </button>
-              </div>
-              {installMessage && <div className="small text-success mt-2">{installMessage}</div>}
-              {installError && <div className="small text-danger mt-2">{installError}</div>}
-              {colorMessage && (
-                <div className={`small mt-2 ${colorMessage.includes('Failed') || colorMessage.includes('Error') ? 'text-danger' : 'text-success'}`}>
-                  {colorMessage}
+                    {env.name}
+                  </span>
+                );
+              })}
+              {dbLoading && (
+                <div className="spinner-border spinner-border-sm text-primary" role="status">
+                  <span className="visually-hidden">Updating...</span>
                 </div>
               )}
-
-              {/* Database Environment */}
-              <hr className="my-2" />
-              <div className="d-flex align-items-center flex-wrap gap-2">
-                <span className="text-muted small me-1">Environment</span>
-                {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
-                  const isCurrent = key === currentDbEnvironment;
-                  return (
-                    <span
-                      key={key}
-                      role="radio"
-                      aria-checked={isCurrent}
-                      tabIndex={0}
-                      className={`badge rounded-pill px-3 py-2 ${isCurrent ? 'bg-primary text-white' : 'bg-transparent text-secondary border'}`}
-                      style={{ cursor: isCurrent || dbLoading ? 'default' : 'pointer', fontSize: '0.8rem', transition: 'all 0.15s ease', userSelect: 'none' }}
-                      onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isCurrent && !dbLoading && handleSwitchEnvironment(key); } }}
-                    >
-                      {env.name}
-                    </span>
-                  );
-                })}
-                {dbLoading && (
-                  <div className="spinner-border spinner-border-sm text-primary" role="status">
-                    <span className="visually-hidden">Updating...</span>
-                  </div>
-                )}
-              </div>
-              {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
-              {dbError && <div className="small text-danger mt-1">{dbError}</div>}
             </div>
+            {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
+            {dbError && <div className="small text-danger mt-1">{dbError}</div>}
+          </div>
+
+          {/* Spacer */}
+          <div style={{ flexGrow: 1 }}></div>
+
+          {/* Action Buttons - Bottom */}
+          <div className="d-flex align-items-center justify-content-start gap-1 mb-3">
+            {/* Dark Mode Toggle */}
+            <div className="position-relative">
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                className={`btn btn-sm ${isDarkMode ? 'text-white' : ''}`}
+                style={{ 
+                  width: '3rem', 
+                  height: '3rem', 
+                  padding: 0, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B',
+                  border: 'none'
+                }}
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? (
+                  <MoonIcon className="h-5 w-5" />
+                ) : (
+                  <SunIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+
+            {/* Calendar Color */}
+            <div className="position-relative">
+              <button
+                type="button"
+                onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
+                className="btn btn-sm"
+                style={{ 
+                  width: '3rem', 
+                  height: '3rem', 
+                  padding: 0, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  backgroundColor: employeeColor,
+                  border: '2px solid var(--bs-border-color, #dee2e6)'
+                }}
+                title="Calendar color"
+                aria-expanded={colorPickerOpen}
+                disabled={colorUpdating}
+              >
+                <CalendarDaysIcon className="h-5 w-5" style={{ color: 'white', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }} />
+              </button>
+              {colorPickerOpen && (
+                <div
+                  className="position-absolute bottom-100 mb-2 start-0 p-2 border rounded bg-white dark:bg-gray-800 shadow-lg"
+                  style={{ minWidth: '210px', zIndex: 10 }}
+                >
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <input
+                      type="color"
+                      value={pendingColor}
+                      onChange={(e) => setPendingColor(e.target.value)}
+                      className="form-control form-control-sm"
+                      style={{ width: '50px', height: '38px', padding: '4px', cursor: colorUpdating ? 'not-allowed' : 'pointer', opacity: colorUpdating ? 0.6 : 1 }}
+                      disabled={colorUpdating}
+                    />
+                    <span className="small text-muted">{pendingColor.toUpperCase()}</span>
+                  </div>
+                  <div className="d-flex gap-2 justify-content-end">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(false); }}
+                      disabled={colorUpdating}
+                    >Cancel</button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={handleColorSave}
+                      disabled={colorUpdating}
+                    >Save</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Signature */}
+            <button
+              type="button"
+              onClick={() => setSignatureModalOpen(true)}
+              className="btn btn-sm btn-outline-secondary"
+              style={{ 
+                width: '3rem', 
+                height: '3rem', 
+                padding: 0, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center'
+              }}
+              title="Manage signature"
+            >
+              {user?.signature_data || user?.signature_url ? (
+                <PencilSquareIcon className="h-5 w-5" />
+              ) : (
+                <PencilIcon className="h-5 w-5" />
+              )}
+            </button>
+
+            {/* Logout */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="btn btn-sm btn-outline-secondary"
+              style={{ 
+                width: '3rem', 
+                height: '3rem', 
+                padding: 0, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center'
+              }}
+              title="Log out"
+            >
+              <ArrowLeftOnRectangleIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          {colorMessage && (
+            <div className={`small mb-2 ${colorMessage.includes('Failed') || colorMessage.includes('Error') ? 'text-danger' : 'text-success'}`}>
+              {colorMessage}
+            </div>
+          )}
+        </div>
         )}
 
       {/* Leave Management Panel */}
@@ -770,12 +841,8 @@ const Profile = () => {
             right: 0,
             maxHeight: 'calc(100vh - 164px)',
             overflowY: 'auto',
-            backgroundColor: 'var(--bs-card-bg, white)',
-            borderTop: '1px solid var(--bs-card-border-color, #dee2e6)',
-            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-            zIndex: 50,
-            borderTopLeftRadius: 'var(--bs-border-radius, 0.375rem)',
-            borderTopRightRadius: 'var(--bs-border-radius, 0.375rem)',
+            backgroundColor: 'var(--bs-card-bg, white)',  
+            zIndex: 50, 
           }}
           className="accordion-popup"
         >
@@ -884,37 +951,40 @@ const Profile = () => {
 
       {/* Footer Tabs */}
       <div
-        className="d-flex gap-1 p-2 bg-body border-top position-fixed bottom-0 start-0 end-0"
-        style={{ zIndex: 100, minHeight: '84px', paddingRight: '5rem', alignItems: 'center' }}
+        className="d-flex gap-1 bg-body border-top position-fixed bottom-0 start-0 end-0 p-3 pb-2 mb-3 "
+        style={{ zIndex: 100, paddingRight: '5rem', alignItems: 'center' }}
       >
-        {/* Profile Tab */}
-        <button
-          className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+          {/* Profile Tab */}
+          <button
+          type="button"
+          className={`btn btn-sm ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ width: '3rem', height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setOpenAccordion(openAccordion === 'profile' ? '' : 'profile')}
+          title="Profile"
         >
-          <UserIcon className="h-4 w-4" />
-          <span className="small">Profile</span>
+          <UserIcon className="h-5 w-5" />
         </button>
 
         {/* Benefits Tab */}
         <button
-          className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'benefits' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+          type="button"
+          className={`btn btn-sm ${openAccordion === 'benefits' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setOpenAccordion(openAccordion === 'benefits' ? '' : 'benefits')}
+          title="Benefits"
         >
-          <i className="bi bi-bag-heart"></i>
-          <span className="small">Benefits</span>
+          <HeartIcon className="h-5 w-5" />
         </button>
 
         {/* Settings Tab */}
         <button
-          className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${openAccordion === 'settings' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+          type="button"
+          className={`btn btn-sm ${openAccordion === 'settings' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setOpenAccordion(openAccordion === 'settings' ? '' : 'settings')}
+          title="Settings"
         >
-          <CogIcon className="h-4 w-4" />
-          <span className="small">Settings</span>
+          <CogIcon className="h-5 w-5" />
         </button>
       </div>
 

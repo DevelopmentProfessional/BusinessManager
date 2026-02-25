@@ -27,7 +27,7 @@ import Manager_DatabaseConnection from './components/Manager_DatabaseConnection'
 import useBranding from '../services/useBranding';
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState('schedule');
+  const [openAccordion, setOpenAccordion] = useState('schedule');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -167,10 +167,10 @@ export default function Settings() {
 
   // Load available tables when database tab is active
   useEffect(() => {
-    if (activeTab === 'database' && availableTables.length === 0) {
+    if (openAccordion === 'database' && availableTables.length === 0) {
       loadTables();
     }
-  }, [activeTab]);
+  }, [openAccordion]);
 
   // Load table columns when a table is selected
   useEffect(() => {
@@ -388,16 +388,32 @@ export default function Settings() {
     { id: 'database', name: 'Database', icon: CircleStackIcon },
   ];
 
+  const panelStyle = {
+    position: 'fixed',
+    top: 0,
+    bottom: '60px',
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: 'calc(100vh - 60px)',
+    overflowY: 'auto',
+    backgroundColor: 'var(--bs-card-bg, white)',
+    zIndex: 1000,
+    paddingTop: '1rem',
+    paddingLeft: '1rem',
+    paddingRight: '1rem',
+    paddingBottom: '0.25rem',
+  };
+
   return (
-    <div className="d-flex flex-column" style={{ minHeight: '100vh' }}>
-      {/* Flex spacer pushes content to bottom */}
+    <div className="d-flex flex-column min-h-screen">
       <div className="flex-grow-1" />
 
-      {/* Scrollable content above fixed footer */}
-      <div className="overflow-auto no-scrollbar px-3 pt-3 pb-3" style={{ maxHeight: 'calc(100vh - 72px)' }}>
-        <div style={{ maxWidth: '672px', margin: '0 auto' }}>
+      {/* Schedule Panel */}
+      {openAccordion === 'schedule' && (
+        <div className="accordion-popup no-scrollbar" style={panelStyle}>
+          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
           {/* Schedule Settings */}
-          {activeTab === 'schedule' && (
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6 flex items-center gap-2">
                 <ClockIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -519,10 +535,14 @@ export default function Settings() {
                 </div>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* General Settings (includes Branding & Notifications) - Accordion Layout */}
-          {activeTab === 'general' && (
+      {/* General Panel */}
+      {openAccordion === 'general' && (
+        <div className="accordion-popup no-scrollbar" style={panelStyle}>
+          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
             <div className="space-y-4">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <CogIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -822,10 +842,14 @@ export default function Settings() {
                 </div>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* Database Settings */}
-          {activeTab === 'database' && (
+      {/* Database Panel */}
+      {openAccordion === 'database' && (
+        <div className="accordion-popup no-scrollbar" style={panelStyle}>
+          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6 flex items-center gap-2">
                 <CircleStackIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -1024,28 +1048,27 @@ export default function Settings() {
                 </div>
               )}
             </div>
-          )}
-
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Fixed Footer - matches Profile page style */}
+      {/* Fixed Footer */}
       <div
         className="d-flex gap-1 p-2 bg-body border-top position-fixed bottom-0 start-0 end-0"
-        style={{ zIndex: 100, minHeight: '60px', paddingRight: '5rem', alignItems: 'center' }}
+        style={{ zIndex: 1100, minHeight: '60px', paddingRight: '5rem', alignItems: 'center' }}
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`btn flex-shrink-0 d-flex align-items-center gap-1 ${activeTab === tab.id ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
+              type="button"
+              onClick={() => setOpenAccordion(openAccordion === tab.id ? '' : tab.id)}
+              className={`btn btn-sm ${openAccordion === tab.id ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title={tab.name}
             >
-              <Icon className="h-4 w-4" />
-              <span className="small">{tab.name}</span>
+              <Icon className="h-5 w-5" />
             </button>
           );
         })}

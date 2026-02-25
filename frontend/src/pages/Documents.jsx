@@ -8,6 +8,10 @@ import {
   PencilIcon,
   CheckIcon,
   ClockIcon,
+  FolderOpenIcon,
+  CheckCircleIcon,
+  TagIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { documentsAPI, documentCategoriesAPI } from '../services/api';
@@ -220,6 +224,11 @@ export default function Documents() {
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingCatName, setEditingCatName] = useState('');
   const [editingCatDesc, setEditingCatDesc] = useState('');
+  
+  // Filter dropdown state
+  const [isFilterCategoriesOpen, setIsFilterCategoriesOpen] = useState(false);
+  const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
+  const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
 
   const categoryNameById = useMemo(() => {
     return new Map(categories.map((cat) => [String(cat.id), cat.name]));
@@ -655,7 +664,7 @@ export default function Documents() {
           </table>
 
           {/* Controls */}
-          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -671,7 +680,7 @@ export default function Documents() {
               />
             </div>
 
-            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <div className="d-flex align-items-center gap-1 mb-1 flex-wrap pb-1">
               <Gate_Permission page="documents" permission="write">
                 <button
                   type="button"
@@ -684,44 +693,133 @@ export default function Documents() {
                 </button>
               </Gate_Permission>
 
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content' }}
-              >
-                <option value="all">Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={String(cat.id)}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+              {/* Clear Filters Button */}
+              {(categoryFilter !== 'all' || statusFilter !== 'all' || typeFilter !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryFilter('all');
+                    setStatusFilter('all');
+                    setTypeFilter('all');
+                  }}
+                  className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Clear all filters"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              )}
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content'  }}
-              >
-                <option value="all">Status</option>
-                <option value="signed">Signed</option>
-                <option value="unsigned">Unsigned</option>
-              </select>
+              {/* Categories Filter */}
+              <div className="position-relative">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterCategoriesOpen(!isFilterCategoriesOpen)}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                    categoryFilter !== 'all'
+                      ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Filter by categories"
+                >
+                  <FolderOpenIcon className="h-6 w-6" />
+                </button>
+                {isFilterCategoriesOpen && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
+                    <button
+                      onClick={() => { setCategoryFilter('all'); setIsFilterCategoriesOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${categoryFilter === 'all' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                    >
+                      All Categories
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { setCategoryFilter(String(cat.id)); setIsFilterCategoriesOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${categoryFilter === String(cat.id) ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content'  }}
-              >
-                <option value="all">Types</option>
-                {entityTypeOptions.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+              {/* Status Filter */}
+              <div className="position-relative">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterStatusOpen(!isFilterStatusOpen)}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                    statusFilter !== 'all'
+                      ? 'bg-secondary-600 hover:bg-secondary-700 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Filter by status"
+                >
+                  <CheckCircleIcon className="h-6 w-6" />
+                </button>
+                {isFilterStatusOpen && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+                    <button
+                      onClick={() => { setStatusFilter('all'); setIsFilterStatusOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'all' ? 'bg-secondary-50 text-secondary-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                    >
+                      All Statuses
+                    </button>
+                    <button
+                      onClick={() => { setStatusFilter('signed'); setIsFilterStatusOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'signed' ? 'bg-secondary-50 text-secondary-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                    >
+                      Signed
+                    </button>
+                    <button
+                      onClick={() => { setStatusFilter('unsigned'); setIsFilterStatusOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${statusFilter === 'unsigned' ? 'bg-secondary-50 text-secondary-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                    >
+                      Unsigned
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Type Filter */}
+              <div className="position-relative">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterTypeOpen(!isFilterTypeOpen)}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                    typeFilter !== 'all'
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Filter by type"
+                >
+                  <TagIcon className="h-6 w-6" />
+                </button>
+                {isFilterTypeOpen && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px', maxHeight: '300px', overflowY: 'auto' }}>
+                    <button
+                      onClick={() => { setTypeFilter('all'); setIsFilterTypeOpen(false); }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === 'all' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                    >
+                      All Types
+                    </button>
+                    {entityTypeOptions.map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => { setTypeFilter(type); setIsFilterTypeOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${typeFilter === type ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
             </div>
           </div>
