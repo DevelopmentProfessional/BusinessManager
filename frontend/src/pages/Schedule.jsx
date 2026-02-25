@@ -1173,7 +1173,7 @@ export default function Schedule() {
               type="button"
               onClick={() => setCurrentView('month')}
               className={`btn btn-sm ${currentView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Month View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1186,7 +1186,7 @@ export default function Schedule() {
               type="button"
               onClick={() => setCurrentView('week')}
               className={`btn btn-sm ${currentView === 'week' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Week View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1199,7 +1199,7 @@ export default function Schedule() {
               type="button"
               onClick={() => setCurrentView('day')}
               className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Day View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1211,7 +1211,7 @@ export default function Schedule() {
               type="button"
               onClick={handleNavigatePrevious}
               className="btn btn-sm btn-outline-secondary"
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Previous"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1223,7 +1223,7 @@ export default function Schedule() {
               type="button"
               onClick={handleNavigateNext}
               className="btn btn-sm btn-outline-secondary"
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Next"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1238,7 +1238,7 @@ export default function Schedule() {
               type="button"
               onClick={() => setCurrentDate(new Date())}
               className="btn btn-sm btn-outline-secondary"
-              style={{ width: '36px', height: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Today"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1260,7 +1260,7 @@ export default function Schedule() {
                   ? 'btn-primary'
                   : 'btn-outline-secondary'
               }`}
-              style={{ height: '36px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+              style={{ width: '3rem', height: '3rem', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
               title="Filter"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">

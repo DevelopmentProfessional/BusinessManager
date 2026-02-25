@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -8,6 +8,11 @@ import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
 import Gate_Permission from './components/Gate_Permission';
 import useDarkMode from '../services/useDarkMode';
+import Modal_Create_User from './components/Modal_Create_User';
+import Modal_Permissions_User from './components/Modal_Permissions_User';
+import Modal_Manage_Roles from './components/Modal_Manage_Roles';
+import Modal_Requests_Employee from './components/Modal_Requests_Employee';
+import Modal_Insurance_Plans from './components/Modal_Insurance_Plans';
 
 export default function Employees() {
   const { 
@@ -56,6 +61,8 @@ export default function Employees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -833,7 +840,7 @@ export default function Employees() {
                 />
               </div>
 
-              <div className="d-flex align-items-center gap-1 flex-wrap pb-1">
+              <div className="d-flex align-items-center gap-1 flex-wrap pb-2">
                 <Gate_Permission page="employees" permission="write">
                   <button
                     type="button"
@@ -846,30 +853,96 @@ export default function Employees() {
                   </button>
                 </Gate_Permission>
 
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="form-select form-select-sm rounded-pill"
-                  style={{ width: 'fit-content' }}
-                >
-                  <option value="all">Roles</option>
-                  {roleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
+                {/* Clear Filters Button */}
+                {(roleFilter !== 'all' || statusFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoleFilter('all');
+                      setStatusFilter('all');
+                    }}
+                    className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="Clear all filters"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                )}
 
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-select form-select-sm rounded-pill"
-                  style={{ width: 'fit-content' }}
-                >
-                  <option value="all">Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+                {/* Role Filter */}
+                <div className="position-relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsRoleFilterOpen(!isRoleFilterOpen)}
+                    className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                      roleFilter !== 'all'
+                        ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="Filter by role"
+                  >
+                    <UserGroupIcon className="h-6 w-6" />
+                  </button>
+                  {isRoleFilterOpen && (
+                    <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
+                      <button
+                        onClick={() => { setRoleFilter('all'); setIsRoleFilterOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        All Roles
+                      </button>
+                      {roleOptions.map((role) => (
+                        <button
+                          key={role}
+                          onClick={() => { setRoleFilter(role); setIsRoleFilterOpen(false); }}
+                          className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === role ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                        >
+                          {role}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status Filter */}
+                <div className="position-relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
+                    className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                      statusFilter !== 'all'
+                        ? 'bg-secondary-600 hover:bg-secondary-700 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="Filter by status"
+                  >
+                    <CheckCircleIcon className="h-6 w-6" />
+                  </button>
+                  {isStatusFilterOpen && (
+                    <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+                      <button
+                        onClick={() => { setStatusFilter('all'); setIsStatusFilterOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'all' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        All Statuses
+                      </button>
+                      <button
+                        onClick={() => { setStatusFilter('active'); setIsStatusFilterOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'active' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        Active
+                      </button>
+                      <button
+                        onClick={() => { setStatusFilter('inactive'); setIsStatusFilterOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${statusFilter === 'inactive' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        Inactive
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -898,626 +971,69 @@ export default function Employees() {
       </Modal>
 
       {/* Create User Modal */}
-      <Modal
+      <Modal_Create_User
         isOpen={showCreateUser}
         onClose={() => setShowCreateUser(false)}
-        noPadding={true}
-        fullScreen={true}
-      >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-          {/* Header */}
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Create User</h6>
-            <button type="button" onClick={() => setShowCreateUser(false)} className="btn btn-link p-0 text-muted">
-              <XMarkIcon style={{ width: 20, height: 20 }} />
-            </button>
-          </div>
-
-          {/* Scrollable Body */}
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
-            <form id="create-user-form" onSubmit={handleCreateUser}>
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  id="createUserUsername"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                  className="form-control"
-                  placeholder="Username"
-                  required
-                />
-                <label htmlFor="createUserUsername">Username</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input
-                  type="email"
-                  id="createUserEmail"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  className="form-control"
-                  placeholder="Email"
-                  required
-                />
-                <label htmlFor="createUserEmail">Email</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input
-                  type="password"
-                  id="createUserPassword"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  className="form-control"
-                  placeholder="Password"
-                  required
-                />
-                <label htmlFor="createUserPassword">Password</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  id="createUserFirstName"
-                  value={newUser.first_name}
-                  onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                  className="form-control"
-                  placeholder="First Name"
-                  required
-                />
-                <label htmlFor="createUserFirstName">First Name</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  id="createUserLastName"
-                  value={newUser.last_name}
-                  onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                  className="form-control"
-                  placeholder="Last Name"
-                  required
-                />
-                <label htmlFor="createUserLastName">Last Name</label>
-              </div>
-              <div className="form-floating mb-3">
-                <select
-                  id="createUserRole"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                  className="form-select form-select-sm"
-                >
-                  {roles.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-                <label htmlFor="createUserRole">Role</label>
-              </div>
-            </form>
-          </div>
-
-          {/* Footer */}
-          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="d-flex align-items-center">
-              <div style={{ width: 40 }} />
-              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateUser(false)}
-                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Cancel"
-                >
-                  <XMarkIcon style={{ width: 18, height: 18 }} />
-                </button>
-                <button
-                  type="submit"
-                  form="create-user-form"
-                  disabled={loading}
-                  className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Create User"
-                >
-                  <CheckIcon style={{ width: 18, height: 18 }} />
-                </button>
-              </div>
-              <div style={{ width: 40 }} />
-            </div>
-          </div>
-        </div>
-      </Modal>
+        newUser={newUser}
+        setNewUser={setNewUser}
+        onSubmit={handleCreateUser}
+        loading={loading}
+        roles={roles}
+      />
 
       {/* Permissions Management Modal */}
-      <Modal
+      <Modal_Permissions_User
         isOpen={permissionsModalOpen}
         onClose={() => setPermissionsModalOpen(false)}
-        noPadding={true}
-        fullScreen={true}
-      >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-          {/* Header */}
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Permissions</h6>
-            <button type="button" onClick={() => setPermissionsModalOpen(false)} className="btn btn-link p-0 text-muted">
-              <XMarkIcon style={{ width: 20, height: 20 }} />
-            </button>
-          </div>
-
-          {/* Scrollable Body */}
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
-            {/* Add New Permission Form */}
-            <form onSubmit={handleCreatePermission} className="mb-4 p-3 border rounded">
-            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Add New Permission</h5>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <select
-                  value={newPermission.page}
-                  onChange={(e) => setNewPermission({...newPermission, page: e.target.value})}
-                  className="form-select form-select-sm"
-                  required
-                >
-                  <option value="">Select Page</option>
-                  {pages.map(page => (
-                    <option key={page} value={page}>{page}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-md-6">
-                <select
-                  value={newPermission.permission}
-                  onChange={(e) => setNewPermission({...newPermission, permission: e.target.value})}
-                  className="form-select form-select-sm"
-                  required
-                >
-                  <option value="">Select Permission</option>
-                  {permissions.map(permission => (
-                    <option key={permission} value={permission}>{permission}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary mt-3">
-              <i className="bi bi-plus-circle me-2"></i>
-              Add Permission
-            </button>
-          </form>
-
-          {/* Schedule Special Permissions */}
-          {newPermission.page === 'schedule' && (
-            <div className="mt-4 p-3 border rounded-lg bg-light">
-              <h5 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Schedule Special Permissions</h5>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="viewAllSchedules"
-                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'write' && p.granted)}
-                      onChange={(e) => handleScheduleViewAllToggle(e.target.checked)}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="viewAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? 'text-light' : 'text-dark'}`}>
-                      View All Employee Schedules
-                    </label>
-                  </div>
-                  <div className="text-xs text-muted">
-                    Allows viewing schedules of all employees, not just their own
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="writeAllSchedules"
-                      checked={userPermissions.some(p => p.page === 'schedule' && p.permission === 'write' && p.granted)}
-                      onChange={(e) => handleScheduleWriteAllToggle(e.target.checked)}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="writeAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? 'text-light' : 'text-dark'}`}>
-                      Write All Employee Schedules
-                    </label>
-                  </div>
-                  <div className="text-xs text-muted">
-                    Allows creating/editing appointments for any employee, not just themselves
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Current Permissions Table */}
-          <div className="mt-4">
-            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Current Permissions</h5>
-            <div className="table-responsive">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Page</th>
-                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Permission</th>
-                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Status</th>
-                    <th className={isDarkMode ? 'text-light' : 'text-dark'}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {userPermissions.map((permission) => (
-                    <tr key={permission.id}>
-                      <td className={isDarkMode ? 'text-light' : 'text-dark'}>{permission.page}</td>
-                      <td className={isDarkMode ? 'text-light' : 'text-dark'}>{permission.permission}</td>
-                      <td>
-                        <span className={`badge ${permission.granted ? 'bg-success' : 'bg-danger'}`}>
-                          {permission.granted ? 'Granted' : 'Denied'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="btn-group btn-group-sm">
-                          <button
-                            onClick={() => handleUpdatePermission(permission.id, !permission.granted)}
-                            className={`btn btn-sm ${permission.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
-                            title={permission.granted ? 'Deny Permission' : 'Grant Permission'}
-                          >
-                            <i className={`bi ${permission.granted ? 'bi-x-circle' : 'bi-check-circle'}`}></i>
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleDeletePermission(permission.id);
-                            }}
-                            className="btn btn-sm btn-outline-danger hover:bg-red-50"
-                            title="Delete Permission"
-                            type="button"
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="d-flex align-items-center">
-              <div style={{ width: 40 }} />
-              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-                <button
-                  type="button"
-                  onClick={() => setPermissionsModalOpen(false)}
-                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Close"
-                >
-                  <XMarkIcon style={{ width: 18, height: 18 }} />
-                </button>
-              </div>
-              <div style={{ width: 40 }} />
-            </div>
-          </div>
-        </div>
-      </Modal>
+        userPermissions={userPermissions}
+        newPermission={newPermission}
+        setNewPermission={setNewPermission}
+        onCreatePermission={handleCreatePermission}
+        onDeletePermission={handleDeletePermission}
+        onUpdatePermission={handleUpdatePermission}
+        onScheduleViewAllToggle={handleScheduleViewAllToggle}
+        onScheduleWriteAllToggle={handleScheduleWriteAllToggle}
+        pages={pages}
+        permissions={permissions}
+        isDarkMode={isDarkMode}
+      />
 
       {/* Roles Management Modal */}
-      <Modal
+      <Modal_Manage_Roles
         isOpen={showRolesModal}
         onClose={() => setShowRolesModal(false)}
-        noPadding={true}
-        fullScreen={true}
-      >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-          {/* Header */}
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Roles</h6>
-            <button type="button" onClick={() => setShowRolesModal(false)} className="btn btn-link p-0 text-muted">
-              <XMarkIcon style={{ width: 20, height: 20 }} />
-            </button>
-          </div>
-
-          {/* Scrollable Body */}
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
-            {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
-              <div className="text-sm text-green-700">{success}</div>
-            </div>
-          )}
-
-          {/* Create New Role Form */}
-          <form onSubmit={handleCreateRole} className="mb-4 p-3 border rounded">
-            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Create New Role</h5>
-            <div className="row g-3">
-              <div className="col-md-5">
-                <input
-                  type="text"
-                  value={newRole.name}
-                  onChange={(e) => setNewRole({...newRole, name: e.target.value})}
-                  className="form-control"
-                  placeholder="Role Name"
-                  required
-                />
-              </div>
-              <div className="col-md-5">
-                <input
-                  type="text"
-                  value={newRole.description}
-                  onChange={(e) => setNewRole({...newRole, description: e.target.value})}
-                  className="form-control"
-                  placeholder="Description (optional)"
-                />
-              </div>
-              <div className="col-md-2">
-                <button type="submit" className="btn btn-primary w-100">
-                  Create
-                </button>
-              </div>
-            </div>
-          </form>
-
-          {/* Existing Roles List */}
-          <div className="mt-4">
-            <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Existing Roles</h5>
-            {availableRoles.length === 0 ? (
-              <p className="text-muted">No roles defined yet. Create one above.</p>
-            ) : (
-              <div className="space-y-4">
-                {availableRoles.map((role) => (
-                  <div key={role.id} className="border rounded p-3">
-                    <div className="d-flex justify-content-between align-items-start mb-2">
-                      <div>
-                        <h6 className={`mb-1 ${isDarkMode ? 'text-light' : 'text-dark'}`}>
-                          {role.name}
-                          {role.is_system && (
-                            <span className="badge bg-secondary ms-2">System</span>
-                          )}
-                        </h6>
-                        {role.description && (
-                          <small className="text-muted">{role.description}</small>
-                        )}
-                      </div>
-                      {!role.is_system && (
-                        <button
-                          onClick={() => handleDeleteRole(role.id)}
-                          className="btn btn-sm btn-outline-danger"
-                          title="Delete Role"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Role Permissions */}
-                    <div className="mt-2">
-                      <small className={`d-block mb-2 ${isDarkMode ? 'text-light' : 'text-muted'}`}>
-                        <strong>Permissions:</strong>
-                      </small>
-                      <div className="d-flex flex-wrap gap-1 mb-2">
-                        {role.role_permissions?.length > 0 ? (
-                          role.role_permissions.map((perm) => (
-                            <span key={perm.id} className="badge bg-secondary d-flex align-items-center gap-1">
-                              {perm.page}:{perm.permission}
-                              <button
-                                onClick={() => handleRemoveRolePermission(role.id, perm.id)}
-                                className="btn-close btn-close-white ms-1"
-                                style={{ fontSize: '0.5rem' }}
-                                title="Remove permission"
-                              />
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-muted">No permissions assigned</span>
-                        )}
-                      </div>
-
-                      {/* Add Permission to Role */}
-                      <div className="d-flex gap-2 mt-2">
-                        <select
-                          value={editingRole === role.id ? newRolePermission.page : ''}
-                          onChange={(e) => {
-                            setEditingRole(role.id);
-                            setNewRolePermission({...newRolePermission, page: e.target.value});
-                          }}
-                          className="form-select form-select-sm"
-                          style={{ maxWidth: '150px' }}
-                        >
-                          <option value="">Page...</option>
-                          {pages.map(page => (
-                            <option key={page} value={page}>{page}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={editingRole === role.id ? newRolePermission.permission : ''}
-                          onChange={(e) => {
-                            setEditingRole(role.id);
-                            setNewRolePermission({...newRolePermission, permission: e.target.value});
-                          }}
-                          className="form-select form-select-sm"
-                          style={{ maxWidth: '150px' }}
-                        >
-                          <option value="">Permission...</option>
-                          {permissions.map(perm => (
-                            <option key={perm} value={perm}>{perm}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => handleAddRolePermission(role.id)}
-                          className="btn btn-sm btn-outline-primary"
-                          disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="d-flex align-items-center">
-              <div style={{ width: 40 }} />
-              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-                <button
-                  type="button"
-                  onClick={() => setShowRolesModal(false)}
-                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Close"
-                >
-                  <XMarkIcon style={{ width: 18, height: 18 }} />
-                </button>
-              </div>
-              <div style={{ width: 40 }} />
-            </div>
-          </div>
-        </div>
-      </Modal>
+        availableRoles={availableRoles}
+        newRole={newRole}
+        setNewRole={setNewRole}
+        editingRole={editingRole}
+        setEditingRole={setEditingRole}
+        newRolePermission={newRolePermission}
+        setNewRolePermission={setNewRolePermission}
+        onCreateRole={handleCreateRole}
+        onDeleteRole={handleDeleteRole}
+        onAddRolePermission={handleAddRolePermission}
+        onRemoveRolePermission={handleRemoveRolePermission}
+        pages={pages}
+        permissions={permissions}
+        isDarkMode={isDarkMode}
+        error={error}
+        success={success}
+      />
 
       {/* Requests Modal */}
-      <Modal
+      <Modal_Requests_Employee
         isOpen={showRequestsModal}
         onClose={() => setShowRequestsModal(false)}
-        noPadding={true}
-        fullScreen={true}
-      >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-          {/* Header */}
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Requests</h6>
-            <button type="button" onClick={() => setShowRequestsModal(false)} className="btn btn-link p-0 text-muted">
-              <XMarkIcon style={{ width: 20, height: 20 }} />
-            </button>
-          </div>
-
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
-            {requestsLoading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary" role="status" />
-              </div>
-            ) : allRequests.length === 0 ? (
-              <p className="text-muted text-center py-4">No requests found.</p>
-            ) : (
-              <div className="d-flex flex-column gap-2">
-                {['approved', 'denied', 'pending'].map(statusGroup => {
-                  const now = new Date();
-                  const timeFiltered = allRequests.filter(r => {
-                    if (requestTimeFilter === 'all') return true;
-                    if (!r.created_at) return true;
-                    const diffDays = (now - new Date(r.created_at)) / (1000 * 60 * 60 * 24);
-                    if (requestTimeFilter === '7d') return diffDays <= 7;
-                    if (requestTimeFilter === '30d') return diffDays <= 30;
-                    if (requestTimeFilter === '90d') return diffDays <= 90;
-                    return true;
-                  });
-                  const grouped = timeFiltered.filter(r => r.status === statusGroup);
-                  if (grouped.length === 0) return null;
-                  return (
-                    <div key={statusGroup}>
-                      <h6 className={`text-capitalize mb-2 ${statusGroup === 'pending' ? 'text-warning' : statusGroup === 'approved' ? 'text-success' : 'text-danger'}`}>
-                        {statusGroup} ({grouped.length})
-                      </h6>
-                      {grouped.map(req => {
-                        const emp = employees.find(e => e.id === req.user_id);
-                        return (
-                          <div key={req.id} className="card mb-2">
-                            <div className="card-body py-2 px-3">
-                              <div className="d-flex justify-content-between align-items-start">
-                                <div>
-                                  <div className="fw-semibold">{emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown Employee'}</div>
-                                  <div className="small text-muted">
-                                    <span className="badge bg-secondary me-1">{req._typeLabel}</span>
-                                    {req._dateInfo}
-                                  </div>
-                                  {req.notes && <div className="small text-muted fst-italic">{req.notes}</div>}
-                                </div>
-                                {req.status === 'pending' && (
-                                  <div className="d-flex gap-1">
-                                    <button
-                                      className="btn btn-sm btn-success"
-                                      onClick={() => handleRequestAction(req, 'approved')}
-                                    >
-                                      Approve
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-danger"
-                                      onClick={() => handleRequestAction(req, 'denied')}
-                                    >
-                                      Deny
-                                    </button>
-                                  </div>
-                                )}
-                                {req.status !== 'pending' && (
-                                  <span className={`badge ${req.status === 'approved' ? 'bg-success' : 'bg-danger'}`}>
-                                    {req.status}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          {/* Footer */}
-          <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            {/* Row 1: Type filter pills */}
-            <div className="d-flex flex-wrap gap-1 mb-2">
-              {[
-                { key: 'all', label: 'All' },
-                { key: 'leave_vacation', label: 'Vacation' },
-                { key: 'leave_sick', label: 'Sick' },
-                { key: 'onboarding', label: 'Onboarding' },
-                { key: 'offboarding', label: 'Offboarding' },
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? 'btn-warning' : 'btn-outline-secondary'}`}
-                  onClick={() => {
-                    setRequestTypeFilter(key);
-                    loadRequests(key);
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {/* Row 2: Time filter + Close */}
-            <div className="d-flex align-items-center gap-2">
-              <select
-                value={requestTimeFilter}
-                onChange={e => setRequestTimeFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content' }}
-              >
-                <option value="all">All Time</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="90d">Last 90 Days</option>
-              </select>
-              <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-                <button
-                  type="button"
-                  onClick={() => setShowRequestsModal(false)}
-                  className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Close"
-                >
-                  <XMarkIcon style={{ width: 18, height: 18 }} />
-                </button>
-              </div>
-              <div style={{ width: 40 }} />
-            </div>
-          </div>
-        </div>
-      </Modal>
+        allRequests={allRequests}
+        requestTypeFilter={requestTypeFilter}
+        setRequestTypeFilter={setRequestTypeFilter}
+        requestTimeFilter={requestTimeFilter}
+        setRequestTimeFilter={setRequestTimeFilter}
+        requestsLoading={requestsLoading}
+        employees={employees}
+        onRequestAction={handleRequestAction}
+        loadRequests={loadRequests}
+      />
 
       {/* System Info Display */}
       {systemInfo && (
@@ -1561,143 +1077,20 @@ export default function Employees() {
       )}
 
       {/* Insurance Plans Modal */}
-      <Modal
+      <Modal_Insurance_Plans
         isOpen={showInsuranceModal}
-        onClose={() => { setShowInsuranceModal(false); setEditingPlan(null); setInsuranceError(''); }}
-        noPadding={true}
-        fullScreen={true}
-      >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-          {/* Header */}
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Insurance Plans</h6>
-          </div>
-
-          {/* Scrollable list */}
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
-            {insuranceError && (
-              <div className="alert alert-danger alert-sm py-2 px-3 mb-2" style={{ fontSize: '0.8rem' }}>{insuranceError}</div>
-            )}
-            {insurancePlansLoading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border spinner-border-sm text-primary" role="status" />
-              </div>
-            ) : insurancePlans.length === 0 ? (
-              <p className="text-muted small text-center py-4">No insurance plans yet. Add one below.</p>
-            ) : (
-              <div className="d-flex flex-column gap-2 pb-2">
-                {insurancePlans.map(plan => (
-                  <div key={plan.id} className={`d-flex align-items-center justify-content-between p-2 border rounded ${!plan.is_active ? 'opacity-60' : ''}`}>
-                    <div>
-                      <div className="fw-semibold d-flex align-items-center gap-2" style={{ fontSize: '0.875rem' }}>
-                        {plan.name}
-                        <span className={`badge ${plan.is_active ? 'bg-success' : 'bg-secondary'}`} style={{ fontSize: '0.65rem' }}>
-                          {plan.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                      {plan.description && (
-                        <div className="text-muted" style={{ fontSize: '0.78rem' }}>{plan.description}</div>
-                      )}
-                    </div>
-                    <div className="d-flex gap-1">
-                      <button
-                        className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
-                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
-                        onClick={() => handleInsurancePlanToggle(plan)}
-                        title={plan.is_active ? 'Deactivate' : 'Activate'}
-                      >
-                        {plan.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-secondary"
-                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
-                        onClick={() => setEditingPlan({ ...plan })}
-                        title="Edit"
-                      >
-                        <PlusIcon style={{ width: 12, height: 12 }} />
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
-                        onClick={() => handleInsurancePlanDelete(plan.id)}
-                        title="Delete"
-                      >
-                        <XMarkIcon style={{ width: 12, height: 12 }} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer – Add / Edit Plan form */}
-          <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 pt-2 pb-4">
-            <form onSubmit={handleInsurancePlanSave} className="d-flex flex-column gap-2">
-              <div className="small fw-semibold text-muted">{editingPlan ? 'Edit Plan' : 'New Plan'}</div>
-              <div className="row g-2">
-                <div className="col-6">
-                  <div className="form-floating">
-                    <input
-                      type="text"
-                      id="ins_plan_name"
-                      className="form-control form-control-sm"
-                      placeholder="Plan name"
-                      value={editingPlan ? editingPlan.name : newPlan.name}
-                      onChange={e => editingPlan
-                        ? setEditingPlan(prev => ({ ...prev, name: e.target.value }))
-                        : setNewPlan(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                    />
-                    <label htmlFor="ins_plan_name">Plan Name *</label>
-                  </div>
-                </div>
-                <div className="col-6">
-                  <div className="form-floating">
-                    <input
-                      type="text"
-                      id="ins_plan_desc"
-                      className="form-control form-control-sm"
-                      placeholder="Description"
-                      value={editingPlan ? (editingPlan.description || '') : newPlan.description}
-                      onChange={e => editingPlan
-                        ? setEditingPlan(prev => ({ ...prev, description: e.target.value }))
-                        : setNewPlan(prev => ({ ...prev, description: e.target.value }))}
-                    />
-                    <label htmlFor="ins_plan_desc">Description</label>
-                  </div>
-                </div>
-              </div>
-              <div className="d-flex align-items-center">
-                <div style={{ width: 40 }}>
-                  {editingPlan && (
-                    <button
-                      type="button"
-                      onClick={() => setEditingPlan(null)}
-                      className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                      style={{ width: '2.5rem', height: '2.5rem' }}
-                      title="Cancel edit"
-                    >
-                      <XMarkIcon style={{ width: 14, height: 14 }} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex-grow-1 d-flex justify-content-center">
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
-                    style={{ width: '3rem', height: '3rem' }}
-                    title={editingPlan ? 'Save Changes' : 'Add Plan'}
-                  >
-                    <CheckIcon style={{ width: 18, height: 18 }} />
-                  </button>
-                </div>
-                <div style={{ width: 40 }} />
-              </div>
-            </form>
-          </div>
-        </div>
-      </Modal>
+        onClose={() => setShowInsuranceModal(false)}
+        insurancePlans={insurancePlans}
+        editingPlan={editingPlan}
+        setEditingPlan={setEditingPlan}
+        newPlan={newPlan}
+        setNewPlan={setNewPlan}
+        insurancePlansLoading={insurancePlansLoading}
+        insuranceError={insuranceError}
+        onSave={handleInsurancePlanSave}
+        onDelete={handleInsurancePlanDelete}
+        onToggle={handleInsurancePlanToggle}
+      />
 
     </div>
   );

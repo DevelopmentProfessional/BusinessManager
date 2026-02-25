@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -25,6 +25,7 @@ export default function Services() {
   const [editingService, setEditingService] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
 
@@ -239,7 +240,7 @@ export default function Services() {
           </table>
 
           {/* Controls */}
-          <div className="p-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Search */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -257,7 +258,7 @@ export default function Services() {
             </div>
 
             {/* Add button + category filter */}
-            <div className="d-flex align-items-center gap-1 pb-2">
+            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap">
               <Gate_Permission page="services" permission="write">
                 <button
                   type="button"
@@ -270,18 +271,48 @@ export default function Services() {
                 </button>
               </Gate_Permission>
 
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="form-select form-select-sm rounded-pill"
-                style={{ width: 'fit-content' }}
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat === 'all' ? 'All Categories' : cat || 'No Category'}
-                  </option>
-                ))}
-              </select>
+              {/* Clear Filters Button */}
+              {categoryFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('all')}
+                  className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Clear filter"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              )}
+
+              {/* Category Filter */}
+              <div className="position-relative">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                    categoryFilter !== 'all'
+                      ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  style={{ width: '3rem', height: '3rem' }}
+                  title="Filter by category"
+                >
+                  <FolderOpenIcon className="h-6 w-6" />
+                </button>
+                {isCategoryFilterOpen && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
+                    {categories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => { setCategoryFilter(cat); setIsCategoryFilterOpen(false); }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${categoryFilter === cat ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        {cat === 'all' ? 'All Categories' : cat || 'No Category'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

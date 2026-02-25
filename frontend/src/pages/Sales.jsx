@@ -14,6 +14,8 @@ import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
 import Modal_Checkout_Sales from './components/Modal_Checkout_Sales';
+import Modal_Cart_Sales from './components/Modal_Cart_Sales';
+import Modal_History_Sales from './components/Modal_History_Sales';
 import { getDisplayImageUrl } from './components/imageUtils';
 
 // Unified Product/Service Card Component
@@ -117,6 +119,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
                   className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900 text-gray-600 dark:text-gray-300 hover:text-red-600 transition-colors"
                 >
                   <MinusIcon className="h-3.5 w-3.5" />
+                  
                 </button>
                 <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-white">
                   {cartQuantity}
@@ -143,85 +146,6 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       
       {/* Hover Overlay */}
       <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors pointer-events-none" />
-    </div>
-  );
-};
-
-// Cart Item Component
-const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
-  const isService = item.itemType === 'service';
-  const imageUrl = getDisplayImageUrl(item);
-
-  return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      {/* Mini Image/Icon */}
-      <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${
-        isService
-          ? 'bg-primary-100 dark:bg-primary-900'
-          : 'bg-secondary-100 dark:bg-secondary-900'
-      }`}>
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={item.name}
-            className="w-full h-full object-cover object-center"
-            onError={(e) => {
-              e.target.style.display = 'none';
-              const fallback = e.target.nextElementSibling;
-              if (fallback) fallback.style.display = 'flex';
-            }}
-          />
-        ) : null}
-        <div
-          className={`w-full h-full flex items-center justify-center ${
-            imageUrl ? 'hidden' : 'flex'
-          }`}
-        >
-          {isService ? (
-            <SparklesIcon className="h-6 w-6 text-primary-500" />
-          ) : (
-            <CubeIcon className="h-6 w-6 text-secondary-500" />
-          )}
-        </div>
-      </div>
-      
-      {/* Item Info */}
-      <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">{item.name}</h4>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          ${item.price?.toFixed(2)} × {item.quantity}
-        </p>
-      </div>
-      
-      {/* Quantity Controls */}
-      <div className="flex items-center gap-1">
-        <button 
-          onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)}
-          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
-        >
-          <MinusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-        </button>
-        <span className="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">{item.quantity}</span>
-        <button 
-          onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)}
-          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
-        >
-          <PlusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-        </button>
-      </div>
-      
-      {/* Subtotal & Remove */}
-      <div className="text-right">
-        <p className="font-semibold text-sm text-gray-900 dark:text-white">
-          ${(item.price * item.quantity).toFixed(2)}
-        </p>
-        <button 
-          onClick={() => onRemove(item.cartKey)}
-          className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
-        >
-          Remove
-        </button>
-      </div>
     </div>
   );
 };
@@ -684,14 +608,14 @@ export default function Sales() {
         </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 w-100 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pr-16 md:ml-64">
+      <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 w-100 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pt-2 pr-16 md:ml-64">
        
                {/* Client Selection Panel - shown when account icon is active */}
         {showClientPanel && (
           <div className="mb-2 relative">
             {selectedClient ? (
               <div className="flex items-center justify-between px-3 py-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
                   <UserCircleIcon className="h-5 w-5 text-primary-600 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{selectedClient.name}</p>
@@ -709,7 +633,7 @@ export default function Sales() {
                 </button>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -794,32 +718,28 @@ export default function Sales() {
           </div>
         </div>
 
-        {/* Controls Row 1 - Customer + Cart (first two) */}
-        <div className="flex items-center gap-3 pb-1">
-          {/* Account / Client Icon */}
+        {/* Controls Row 1 - History and Cart */}
+        <div className="flex items-center gap-1 pb-2">
+          {/* Sales History Button */}
           <button
             type="button"
-            onClick={() => { setShowClientPanel(p => !p); if (!showClientPanel) { loadClients(); } }}
-            className={`relative flex-shrink-0 w-12 h-12 flex items-center justify-content-center rounded-full shadow-lg transition-all ${
-              selectedClient
-                ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            title={selectedClient ? `Client: ${selectedClient.name}` : 'Select client'}
-            aria-label="Select client"
+            onClick={() => { setShowHistoryModal(true); loadTransactionHistory(); }}
+            className="flex-shrink-0 btn btn-sm btn-outline-secondary"
+            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Sales history"
           >
-            <UserCircleIcon className="h-6 w-6" style={{ margin: 'auto', display: 'block' }} />
-            {selectedClient && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-800" />
-            )}
+            <ArrowTrendingUpIcon className="h-5 w-5" />
           </button>
 
           {/* Circular Cart Button */}
           <button
+            type="button"
             onClick={() => setShowCartModal(true)}
-            className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary-600 hover:bg-secondary-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
+            className="flex-shrink-0 btn btn-sm btn-secondary"
+            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+            title="Cart"
           >
-            <ShoppingCartIcon style={{ width: 24, height: 24 }} />
+            <ShoppingCartIcon className="h-5 w-5" />
             {cartItemCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                 {cartItemCount}
@@ -828,17 +748,41 @@ export default function Sales() {
           </button>
         </div>
 
-        {/* Controls Row 2 - History + Toggles */}
-        <div className="flex items-center gap-3 pb-2">
-          {/* Sales History Button */}
+        {/* Controls Row 2 - Client, Clear, Filters */}
+        <div className="flex items-center gap-1 pb-2">
+          {/* Account / Client Icon */}
           <button
-            onClick={() => { setShowHistoryModal(true); loadTransactionHistory(); }}
-            className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:shadow-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-            title="Sales history"
-            aria-label="Open sales history"
+            type="button"
+            onClick={() => { setShowClientPanel(p => !p); if (!showClientPanel) { loadClients(); } }}
+            className={`flex-shrink-0 btn btn-sm ${
+              selectedClient
+                ? 'btn-success'
+                : 'btn-outline-secondary'
+            }`}
+            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title={selectedClient ? `Client: ${selectedClient.name}` : 'Select client'}
           >
-            <ArrowTrendingUpIcon style={{ width: 24, height: 24 }} />
+            <UserCircleIcon className="h-5 w-5" />
+            {selectedClient && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-800" />
+            )}
           </button>
+
+          {/* Clear Filters Button - Shows when any filter is active */}
+          {(showServices || showProducts) && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowServices(false);
+                setShowProducts(false);
+              }}
+              className="flex-shrink-0 btn btn-sm btn-danger"
+              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Clear filters"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          )}
 
           {/* Service Toggle Button */}
           <button
@@ -846,13 +790,14 @@ export default function Sales() {
             onClick={() => setShowServices((prev) => !prev)}
             aria-pressed={showServices}
             title="Toggle Services"
-            className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all ${
+            className={`flex-shrink-0 btn btn-sm ${
               showServices
-                ? 'bg-primary-600 hover:bg-primary-700'
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 opacity-50'
+                ? 'btn-primary'
+                : 'btn-outline-secondary'
             }`}
+            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: showServices ? 1 : 0.5 }}
           >
-            <SparklesIcon style={{ width: 24, height: 24 }} />
+            <SparklesIcon className="h-5 w-5" />
           </button>
 
           {/* Product Toggle Button */}
@@ -861,161 +806,41 @@ export default function Sales() {
             onClick={() => setShowProducts((prev) => !prev)}
             aria-pressed={showProducts}
             title="Toggle Products"
-            className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all ${
+            className={`flex-shrink-0 btn btn-sm ${
               showProducts
-                ? 'bg-secondary-600 hover:bg-secondary-700'
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 opacity-50'
+                ? 'btn-secondary'
+                : 'btn-outline-secondary'
             }`}
+            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: showProducts ? 1 : 0.5 }}
           >
-            <CubeIcon style={{ width: 24, height: 24 }} />
+            <CubeIcon className="h-5 w-5" />
           </button>
         </div>
       </div>
 
       {/* Cart Modal */}
-      <Modal isOpen={showCartModal} onClose={() => setShowCartModal(false)} noPadding={true}>
-        <div className="flex flex-col max-h-[90vh]">
-            {/* Cart Header */}
-            <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <ShoppingCartIcon className="h-5 w-5" />
-                Cart ({cartItemCount})
-              </h3>
-            </div>
-
-            {cart.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-                  <ShoppingCartIcon className="h-10 w-10 text-gray-400" />
-                </div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-1">Cart is empty</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Add items to get started</p>
-              </div>
-            ) : (
-              <>
-                {/* Client Selection - FIRST */}
-                <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <UserIcon className="h-4 w-4 inline mr-1" />
-                    Customer (optional)
-                  </label>
-                  {selectedClient ? (
-                    <div className="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedClient.name}</p>
-                        {selectedClient.email && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setSelectedClient(null)}
-                        className="p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors"
-                      >
-                        <XMarkIcon className="h-4 w-4 text-gray-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Search customers..."
-                          value={clientSearch}
-                          onChange={(e) => { setClientSearch(e.target.value); setShowClientDropdown(true); }}
-                          onFocus={() => { loadClients(); setShowClientDropdown(true); }}
-                          className="app-search-input flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => openAddClientModal((newClient) => { handleSelectClient(newClient); setClientsLocal(prev => [...prev, newClient]); setClientSearch(''); setShowClientDropdown(false); })}
-                          className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
-                          title="Add new customer"
-                        >
-                          <PlusIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                      {showClientDropdown && clientSearch && (
-                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                          {filteredClients.slice(0, 5).map(c => (
-                            <button key={c.id} onClick={() => { handleSelectClient(c); setClientSearch(''); setShowClientDropdown(false); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white">
-                              <p className="font-medium">{c.name}</p>
-                              {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
-                            </button>
-                          ))}
-                          {filteredClients.length === 0 && (
-                            <button onClick={() => openAddClientModal((newClient) => { handleSelectClient(newClient); setClientsLocal(prev => [...prev, newClient]); setClientSearch(''); setShowClientDropdown(false); })} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2">
-                              <PlusIcon className="h-4 w-4" />
-                              Create new customer
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[35vh]">
-                  {cart.map(item => (
-                    <CartItem
-                      key={item.cartKey}
-                      item={item}
-                      onUpdateQuantity={updateCartQuantity}
-                      onRemove={removeFromCart}
-                    />
-                  ))}
-                </div>
-
-                {/* Cart Summary & Checkout */}
-                <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartItemCount} items)</span>
-                      <span className="text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Tax (8%)</span>
-                      <span className="text-gray-900 dark:text-white">${(cartTotal * 0.08).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700">
-                      <span className="text-gray-900 dark:text-white">Total</span>
-                      <span className="text-secondary-600 dark:text-secondary-400">${(cartTotal * 1.08).toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  {/* Row 1: Checkout + Continue (horizontal pills) */}
-                  <div className="flex gap-2 mb-2">
-                    <button
-                      onClick={() => { setShowCartModal(false); handleCheckout(); }}
-                      className="flex-1 py-3 bg-secondary-600 hover:bg-secondary-700 text-white rounded-full font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
-                    >
-                      <CreditCardIcon className="h-5 w-5" />
-                      Checkout
-                    </button>
-                    <button
-                      onClick={() => setShowCartModal(false)}
-                      className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Continue Shopping
-                    </button>
-                  </div>
-
-                  {/* Row 2: Clear All (bottom-left) */}
-                  {cart.length > 0 && (
-                    <div className="flex">
-                      <button
-                        onClick={() => setCart([])}
-                        className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                      >
-                        Clear all
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-      </Modal>
+      <Modal_Cart_Sales
+        isOpen={showCartModal}
+        onClose={() => setShowCartModal(false)}
+        cart={cart}
+        selectedClient={selectedClient}
+        setSelectedClient={setSelectedClient}
+        clientSearch={clientSearch}
+        setClientSearch={setClientSearch}
+        showClientDropdown={showClientDropdown}
+        setShowClientDropdown={setShowClientDropdown}
+        filteredClients={filteredClients}
+        cartItemCount={cartItemCount}
+        cartTotal={cartTotal}
+        loadClients={loadClients}
+        openAddClientModal={openAddClientModal}
+        handleSelectClient={handleSelectClient}
+        setClientsLocal={setClientsLocal}
+        updateCartQuantity={updateCartQuantity}
+        removeFromCart={removeFromCart}
+        setCart={setCart}
+        handleCheckout={handleCheckout}
+      />
 
       <style>{`
         @keyframes slide-up {
@@ -1055,139 +880,13 @@ export default function Sales() {
       />
 
       {/* Sales History */}
-      <Modal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} noPadding={true} fullScreen={true}>
-        <div className="flex flex-col md:flex-row h-full bg-white dark:bg-gray-900">
-         
-
-          <div className="flex-1 flex flex-col">
-            <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ClockIcon className="h-5 w-5 text-gray-500" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales History</h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">({filteredHistory.length})</span>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-            {filteredHistory.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center px-6">
-                <ClockIcon className="h-12 w-12 text-gray-300 dark:text-gray-700 mb-3" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">No transactions</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Try adjusting filters or complete a sale.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredHistory.map((sale) => (
-                  <div key={sale.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          {' '}
-                          {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {sale.client && (
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                        {sale.items.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ''}`).join(', ')}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">${sale.total.toFixed(2)}</div>
-                      <div className="text-xs text-gray-400 capitalize">{sale.paymentMethod}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            </div>
-
-            <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-               <div className="w-full md:w-72 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-            
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
-                  aria-pressed={historyFilters.showServices}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
-                    historyFilters.showServices
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  Services
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
-                  aria-pressed={historyFilters.showProducts}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
-                    historyFilters.showProducts
-                      ? 'bg-secondary-600 text-white border-secondary-600'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  Products
-                </button>
-              
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={historyFilters.minPrice}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
-                  placeholder="Min $"
-                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={historyFilters.maxPrice}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
-                  placeholder="Max $"
-                  className="w-24 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={historyFilters.startDate}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-                <input
-                  type="date"
-                  value={historyFilters.endDate}
-                  onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowHistoryModal(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => setHistoryFilters({ showServices: true, showProducts: true, minPrice: '', maxPrice: '', startDate: '', endDate: '' })}
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Modal>
+      <Modal_History_Sales
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        filteredHistory={filteredHistory}
+        historyFilters={historyFilters}
+        setHistoryFilters={setHistoryFilters}
+      />
     </div>
   );
 }
