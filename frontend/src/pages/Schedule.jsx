@@ -48,6 +48,7 @@ export default function Schedule() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [overlapEvents, setOverlapEvents] = useState(null);
+  const [selectedAttendees, setSelectedAttendees] = useState([]);
   const [filters, setFilters] = useState({
     employeeIds: [],
     clientIds: [],
@@ -386,6 +387,21 @@ export default function Schedule() {
     return false;
   }, [employees, hasPermission, user]);
 
+  const handleAppointmentClick = useCallback(async (e, appointment) => {
+    e.stopPropagation();
+    if (!canEditAppointment(appointment)) return;
+    setSelectedAttendees([]);
+    setEditingAppointment(appointment);
+    if (appointment.appointment_type === 'meeting' && appointment.id) {
+      try {
+        const res = await isudAPI.scheduleAttendees.getBySchedule(appointment.id);
+        const data = res?.data ?? res;
+        if (Array.isArray(data)) setSelectedAttendees(data);
+      } catch {}
+    }
+    setIsModalOpen(true);
+  }, [canEditAppointment]);
+
   const handleDateClick = useCallback((date) => {
     // UI pre-gate: do not open the create modal without proper permission
     if (!canCreateSchedule()) {
@@ -476,6 +492,10 @@ export default function Schedule() {
       duration_minutes: parseInt(appointmentData.duration_minutes) || 60,
       notes: appointmentData.notes || null,
       status: appointmentData.status || 'scheduled',
+      recurrence_frequency: appointmentData.recurrence_frequency || null,
+      recurrence_end_date: appointmentData.recurrence_end_date || null,
+      recurrence_count: appointmentData.recurrence_count || null,
+      is_recurring_master: appointmentData.is_recurring_master ?? false,
     };
     if (primaryClientId) schedulePayload.client_id = primaryClientId;
     if (appointmentData.service_id) schedulePayload.service_id = appointmentData.service_id;
@@ -494,9 +514,10 @@ export default function Schedule() {
 
     // Refresh schedules - cache will prevent duplicate calls if already in flight
     await refreshSchedules();
-    
+
     setIsModalOpen(false);
     setEditingAppointment(null);
+    setSelectedAttendees([]);
   }, [editingAppointment, normalizeIds, refreshSchedules, syncScheduleAttendees]);
 
   const handleDeleteAppointment = useCallback(async () => {
@@ -507,6 +528,7 @@ export default function Schedule() {
     await refreshSchedules();
     setIsModalOpen(false);
     setEditingAppointment(null);
+    setSelectedAttendees([]);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
 
   // Drag and drop handlers
@@ -885,11 +907,12 @@ export default function Schedule() {
                           const heightPercent = (duration / 60) * 100;
                           const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
 
+                          const isMeeting = appointment.appointment_type === 'meeting';
                           return (
                             <div
                               key={appointment.id}
                               className="appointment-event"
-                              title={`${clientName} - ${serviceName} at ${timeString}`}
+                              title={isMeeting ? `Meeting: ${appointment.notes || ''} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                               style={{
                                 backgroundColor: employeeColor,
                                 position: 'absolute',
@@ -901,14 +924,12 @@ export default function Schedule() {
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!canEditAppointment(appointment)) return;
-                                setEditingAppointment(appointment);
-                                setIsModalOpen(true);
-                              }}
+                              onClick={(e) => handleAppointmentClick(e, appointment)}
                             >
-                              <div className="appointment-service">{serviceName}</div>
+                              {isMeeting
+                                ? <div className="appointment-service">{appointment.notes || 'Meeting'}</div>
+                                : <div className="appointment-service">{serviceName}</div>
+                              }
                             </div>
                           );
                         })}
@@ -1011,11 +1032,12 @@ export default function Schedule() {
                         const heightPercent = (duration / 60) * 100;
                         const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
 
+                        const isMeeting = appointment.appointment_type === 'meeting';
                         return (
                           <div
                             key={appointment.id}
                             className="appointment-event"
-                            title={`${clientName} - ${serviceName} at ${timeString}`}
+                            title={isMeeting ? `Meeting: ${appointment.notes || ''} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                             style={{
                               backgroundColor: employeeColor,
                               position: 'absolute',
@@ -1027,16 +1049,20 @@ export default function Schedule() {
                             draggable={true}
                             onDragStart={(e) => handleDragStart(e, appointment)}
                             onDragEnd={handleDragEnd}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!canEditAppointment(appointment)) return;
-                              setEditingAppointment(appointment);
-                              setIsModalOpen(true);
-                            }}
+                            onClick={(e) => handleAppointmentClick(e, appointment)}
                           >
                             <div className="appointment-time">{timeString}</div>
-                            <div className="appointment-service">{serviceName}</div>
-                            <div className="appointment-client">{clientName}</div>
+                            {isMeeting ? (
+                              <>
+                                <div className="appointment-service">{appointment.notes || 'Meeting'}</div>
+                                <div className="appointment-client" style={{ fontSize: '0.65rem', opacity: 0.85 }}>Meeting</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="appointment-service">{serviceName}</div>
+                                <div className="appointment-client">{clientName}</div>
+                              </>
+                            )}
                           </div>
                         );
                       })}
@@ -1091,23 +1117,21 @@ export default function Schedule() {
 
                           const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
 
+                          const isMeeting = appointment.appointment_type === 'meeting';
                           return (
                             <div
                               key={appointment.id}
                               className="appointment-dot"
-                              title={`${clientName} - ${serviceName} at ${timeString}`}
+                              title={isMeeting ? `Meeting: ${appointment.notes || ''} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                               style={{ backgroundColor: employeeColor }}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent date click
-                                if (!canEditAppointment(appointment)) return;
-                                setEditingAppointment(appointment);
-                                setIsModalOpen(true);
-                              }}
+                              onClick={(e) => handleAppointmentClick(e, appointment)}
                             >
-                              <div className="appointment-service">{serviceName}</div>
+                              <div className="appointment-service">
+                                {isMeeting ? (appointment.notes || 'Meeting') : serviceName}
+                              </div>
                             </div>
                           );
                         })}
@@ -1285,6 +1309,7 @@ export default function Schedule() {
             clients={clients}
             services={services}
             employees={employees}
+            attendees={selectedAttendees}
           />
         </Modal>
 

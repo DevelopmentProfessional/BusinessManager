@@ -28,7 +28,13 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' }
 ];
 
-export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp }) {
+const ATTENDEE_STATUS_STYLE = {
+  pending:  { label: 'Pending',  bg: '#fef3c7', color: '#92400e' },
+  accepted: { label: 'Accepted', bg: '#d1fae5', color: '#065f46' },
+  declined: { label: 'Declined', bg: '#fee2e2', color: '#991b1b' },
+};
+
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -130,6 +136,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     if (appointment && appointment.appointment_date) {
       const { date, time } = extractLocalParts(appointment.appointment_date);
       const [hour, minute] = time.split(':');
+      const recEndDate = appointment.recurrence_end_date
+        ? extractLocalParts(appointment.recurrence_end_date).date
+        : '';
       return {
         client_ids: appointment.client_id ? [appointment.client_id] : [],
         service_id: appointment.service_id || '',
@@ -140,6 +149,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         notes: appointment.notes || '',
         appointment_type: appointment.appointment_type || 'one_time',
         recurrence_frequency: appointment.recurrence_frequency || '',
+        recurrence_end_type: appointment.recurrence_count ? 'count' : 'date',
+        recurrence_end_date: recEndDate,
+        recurrence_count: appointment.recurrence_count || '',
         duration_minutes: appointment.duration_minutes || ''
       };
     }
@@ -153,6 +165,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       notes: '',
       appointment_type: 'one_time',
       recurrence_frequency: '',
+      recurrence_end_type: 'date',
+      recurrence_end_date: '',
+      recurrence_count: '',
       duration_minutes: ''
     };
   };
@@ -272,13 +287,21 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     const employeeIds = Array.isArray(formData.employee_ids) ? formData.employee_ids.filter(Boolean) : [];
     const clientIds = Array.isArray(formData.client_ids) ? formData.client_ids.filter(Boolean) : [];
 
+    const isSeries = formData.appointment_type === 'series';
     const submitData = {
       employee_id: employeeIds[0] || '',
       employee_ids: employeeIds,
       appointment_date: appointmentDateStr,
       notes: formData.notes,
       appointment_type: formData.appointment_type,
-      recurrence_frequency: formData.appointment_type === 'series' ? formData.recurrence_frequency : null,
+      recurrence_frequency: isSeries ? formData.recurrence_frequency : null,
+      recurrence_end_date: (isSeries && formData.recurrence_end_type === 'date' && formData.recurrence_end_date)
+        ? `${formData.recurrence_end_date}T23:59:00`
+        : null,
+      recurrence_count: (isSeries && formData.recurrence_end_type === 'count' && formData.recurrence_count)
+        ? parseInt(formData.recurrence_count)
+        : null,
+      is_recurring_master: isSeries,
       duration_minutes: parseInt(formData.duration_minutes)
     };
 
@@ -432,15 +455,68 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
           {/* Recurrence */}
           {formData.appointment_type === 'series' && (
-            <Dropdown_Custom
-              name="recurrence_frequency"
-              value={formData.recurrence_frequency}
-              onChange={handleChange}
-              options={RECURRENCE_OPTIONS}
-              placeholder="Select frequency"
-              required
-              label="Recurrence"
-            />
+            <>
+              <Dropdown_Custom
+                name="recurrence_frequency"
+                value={formData.recurrence_frequency}
+                onChange={handleChange}
+                options={RECURRENCE_OPTIONS}
+                placeholder="Select frequency"
+                required
+                label="Recurrence"
+              />
+
+              {/* End type toggle */}
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  className={`btn btn-sm flex-1 ${formData.recurrence_end_type === 'date' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, recurrence_end_type: 'date', recurrence_count: '' }))}
+                >
+                  End by date
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm flex-1 ${formData.recurrence_end_type === 'count' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, recurrence_end_type: 'count', recurrence_end_date: '' }))}
+                >
+                  End after N times
+                </button>
+              </div>
+
+              {formData.recurrence_end_type === 'date' && (
+                <div className="form-floating">
+                  <input
+                    type="date"
+                    id="recurrence_end_date"
+                    name="recurrence_end_date"
+                    value={formData.recurrence_end_date}
+                    onChange={handleChange}
+                    className="form-control form-control-sm"
+                    placeholder="End Date"
+                    min={formData.appointment_date || undefined}
+                  />
+                  <label htmlFor="recurrence_end_date">Repeat until</label>
+                </div>
+              )}
+
+              {formData.recurrence_end_type === 'count' && (
+                <div className="form-floating">
+                  <input
+                    type="number"
+                    id="recurrence_count"
+                    name="recurrence_count"
+                    value={formData.recurrence_count}
+                    onChange={handleChange}
+                    className="form-control form-control-sm"
+                    placeholder="Occurrences"
+                    min="1"
+                    max="365"
+                  />
+                  <label htmlFor="recurrence_count">Number of occurrences</label>
+                </div>
+              )}
+            </>
           )}
 
           {/* Duration */}
@@ -508,6 +584,43 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </div>
           </div>
           {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+
+          {/* Attendee status panel — only when editing an existing meeting */}
+          {appointment?.id && formData.appointment_type === 'meeting' && attendees.length > 0 && (
+            <div className="border rounded p-2" style={{ fontSize: '0.8rem' }}>
+              <p className="mb-1 fw-semibold text-gray-700 dark:text-gray-300">Attendees</p>
+              <div className="d-flex flex-column gap-1">
+                {attendees.map((att) => {
+                  const emp = att.user_id ? employees.find(e => e.id === att.user_id) : null;
+                  const cli = att.client_id ? clients.find(c => c.id === att.client_id) : null;
+                  const name = emp
+                    ? `${emp.first_name} ${emp.last_name}`.trim()
+                    : cli
+                    ? cli.name
+                    : 'Unknown';
+                  const style = ATTENDEE_STATUS_STYLE[att.attendance_status] || ATTENDEE_STATUS_STYLE.pending;
+                  return (
+                    <div key={att.id} className="d-flex align-items-center justify-content-between gap-2">
+                      <span className="text-gray-800 dark:text-gray-200">{name}</span>
+                      <span
+                        style={{
+                          backgroundColor: style.bg,
+                          color: style.color,
+                          borderRadius: '9999px',
+                          padding: '1px 8px',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {style.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           {(formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && (
