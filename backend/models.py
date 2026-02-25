@@ -297,6 +297,12 @@ class Schedule(BaseModel, table=True):
     notes: Optional[str] = Field(default=None)
     appointment_type: str = Field(default="one_time")
     duration_minutes: int = Field(default=60)
+    # Recurrence fields
+    recurrence_frequency: Optional[str] = Field(default=None)  # daily/weekly/biweekly/monthly
+    recurrence_end_date: Optional[datetime] = Field(default=None)
+    recurrence_count: Optional[int] = Field(default=None)
+    parent_schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)
+    is_recurring_master: bool = Field(default=False)
 
     # Relationships
     client: Optional[Client] = Relationship(back_populates="schedules")
@@ -827,6 +833,11 @@ class ScheduleCreate(SQLModel):
     notes: Optional[str] = None
     appointment_type: str = "one_time"
     duration_minutes: int = 60
+    recurrence_frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_count: Optional[int] = None
+    parent_schedule_id: Optional[UUID] = None
+    is_recurring_master: bool = False
 
 
 class ScheduleUpdate(SQLModel):
@@ -838,6 +849,11 @@ class ScheduleUpdate(SQLModel):
     notes: Optional[str] = None
     appointment_type: Optional[str] = None
     duration_minutes: Optional[int] = None
+    recurrence_frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_count: Optional[int] = None
+    parent_schedule_id: Optional[UUID] = None
+    is_recurring_master: Optional[bool] = None
 
 
 class ScheduleRead(SQLModel):
@@ -851,6 +867,11 @@ class ScheduleRead(SQLModel):
     notes: Optional[str] = None
     appointment_type: str = "one_time"
     duration_minutes: int = 60
+    recurrence_frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_count: Optional[int] = None
+    parent_schedule_id: Optional[UUID] = None
+    is_recurring_master: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
