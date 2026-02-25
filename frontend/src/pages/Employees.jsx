@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
@@ -65,6 +65,21 @@ export default function Employees() {
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const hasFetched = useRef(false);
 
+  // Payroll state
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payingEmployee, setPayingEmployee] = useState(null);
+  const [payForm, setPayForm] = useState({
+    pay_period_start: '',
+    pay_period_end: '',
+    gross_amount: '',
+    hours_worked: '',
+    other_deductions: '',
+    notes: '',
+  });
+  const [payLoading, setPayLoading] = useState(false);
+  const [payError, setPayError] = useState('');
+  const [paySuccess, setPaySuccess] = useState('');
+
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -88,6 +103,55 @@ export default function Employees() {
     if (!roleId) return '-';
     const role = availableRoles.find(r => r.id === roleId);
     return role ? role.name : '-';
+  };
+
+  const handleOpenPay = (employee, e) => {
+    e.stopPropagation();
+    setPayingEmployee(employee);
+    setPayError('');
+    setPaySuccess('');
+    // Default period to current month
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    setPayForm({
+      pay_period_start: start,
+      pay_period_end: end,
+      gross_amount: employee.salary ? String(employee.salary) : '',
+      hours_worked: '',
+      other_deductions: '',
+      notes: '',
+    });
+    setShowPayModal(true);
+  };
+
+  const handlePaySubmit = async (e) => {
+    e.preventDefault();
+    setPayError('');
+    setPayLoading(true);
+    try {
+      const isHourly = payingEmployee?.employment_type === 'hourly';
+      const payload = {
+        pay_period_start: new Date(payForm.pay_period_start).toISOString(),
+        pay_period_end: new Date(payForm.pay_period_end).toISOString(),
+        other_deductions: payForm.other_deductions !== '' ? parseFloat(payForm.other_deductions) : 0,
+        notes: payForm.notes || null,
+        employment_type: payingEmployee?.employment_type || 'salary',
+      };
+      if (isHourly) {
+        payload.hours_worked = payForm.hours_worked !== '' ? parseFloat(payForm.hours_worked) : 0;
+        payload.hourly_rate_snapshot = payingEmployee?.hourly_rate || 0;
+      } else {
+        payload.gross_amount = payForm.gross_amount !== '' ? parseFloat(payForm.gross_amount) : null;
+      }
+      await payrollAPI.processPayment(payingEmployee.id, payload);
+      setPaySuccess('Payment processed successfully!');
+      setTimeout(() => { setShowPayModal(false); setPaySuccess(''); }, 1500);
+    } catch (err) {
+      setPayError(err.response?.data?.detail || 'Failed to process payment');
+    } finally {
+      setPayLoading(false);
+    }
   };
 
   const handleCreateRole = async (e) => {
@@ -764,15 +828,28 @@ export default function Employees() {
                       </div>
                     </td>
 
-                    {/* Role */}
+                    {/* Role + Pay */}
                     <td className="px-3">
-                      <span className={`badge rounded-pill ${
-                        employee.role === 'admin' ? 'bg-danger' :
-                        employee.role === 'manager' ? 'bg-warning text-dark' :
-                        'bg-primary'
-                      }`}>
-                        {employee.role}
-                      </span>
+                      <div className="d-flex align-items-center gap-1 justify-content-between">
+                        <span className={`badge rounded-pill ${
+                          employee.role === 'admin' ? 'bg-danger' :
+                          employee.role === 'manager' ? 'bg-warning text-dark' :
+                          'bg-primary'
+                        }`}>
+                          {employee.role}
+                        </span>
+                        {hasPermission('employees', 'admin') && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-success py-0 px-1"
+                            style={{ fontSize: '0.7rem' }}
+                            title={`Pay ${employee.first_name}`}
+                            onClick={(e) => handleOpenPay(employee, e)}
+                          >
+                            $
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1077,6 +1154,125 @@ export default function Employees() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Process Pay Modal */}
+      {showPayModal && payingEmployee && (
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowPayModal(false); setPayError(''); } }}
+        >
+          <div className="modal-dialog modal-sm modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header py-2">
+                <h6 className="modal-title mb-0">
+                  Pay {payingEmployee.first_name} {payingEmployee.last_name}
+                </h6>
+                <button type="button" className="btn-close" onClick={() => { setShowPayModal(false); setPayError(''); }} />
+              </div>
+              <form onSubmit={handlePaySubmit}>
+                <div className="modal-body py-3">
+                  {payError && <div className="alert alert-danger py-1 px-2 small mb-2">{payError}</div>}
+                  {paySuccess && <div className="alert alert-success py-1 px-2 small mb-2">{paySuccess}</div>}
+                  <div className="mb-2 small text-muted">
+                    Type: <strong style={{ textTransform: 'capitalize' }}>{payingEmployee.employment_type || 'salary'}</strong>
+                    {payingEmployee.insurance_plan && (
+                      <> &middot; Insurance: <strong>{payingEmployee.insurance_plan}</strong></>
+                    )}
+                  </div>
+                  <div className="mb-2">
+                    <label className="form-label small mb-1">Pay Period Start</label>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={payForm.pay_period_start}
+                      onChange={e => setPayForm(f => ({ ...f, pay_period_start: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="form-label small mb-1">Pay Period End</label>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={payForm.pay_period_end}
+                      min={payForm.pay_period_start || undefined}
+                      onChange={e => setPayForm(f => ({ ...f, pay_period_end: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  {payingEmployee.employment_type === 'hourly' ? (
+                    <div className="mb-2">
+                      <label className="form-label small mb-1">Hours Worked</label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        placeholder="0"
+                        min="0"
+                        step="0.25"
+                        value={payForm.hours_worked}
+                        onChange={e => setPayForm(f => ({ ...f, hours_worked: e.target.value }))}
+                        required
+                      />
+                      {payingEmployee.hourly_rate && (
+                        <div className="text-muted small mt-1">Rate: ${payingEmployee.hourly_rate}/hr</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mb-2">
+                      <label className="form-label small mb-1">Gross Amount ($)</label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        value={payForm.gross_amount}
+                        onChange={e => setPayForm(f => ({ ...f, gross_amount: e.target.value }))}
+                      />
+                      <div className="text-muted small mt-1">Leave blank to use employee salary</div>
+                    </div>
+                  )}
+                  <div className="mb-2">
+                    <label className="form-label small mb-1">Other Deductions ($)</label>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      value={payForm.other_deductions}
+                      onChange={e => setPayForm(f => ({ ...f, other_deductions: e.target.value }))}
+                    />
+                  </div>
+                  <div className="mb-0">
+                    <label className="form-label small mb-1">Notes (optional)</label>
+                    <textarea
+                      className="form-control form-control-sm"
+                      rows="2"
+                      value={payForm.notes}
+                      onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer py-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => { setShowPayModal(false); setPayError(''); }}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-sm btn-success" disabled={payLoading}>
+                    {payLoading ? 'Processing…' : 'Process Payment'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
 

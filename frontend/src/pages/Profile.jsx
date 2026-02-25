@@ -29,9 +29,10 @@ import {
   ChevronDownIcon,
   InformationCircleIcon,
   QuestionMarkCircleIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
-import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI } from '../services/api';
+import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
 import api from '../services/api';
 import Modal_Signature from './components/Modal_Signature';
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
@@ -172,6 +173,11 @@ const Profile = () => {
   const [leaveForm, setLeaveForm] = useState({ start_date: '', end_date: '', notes: '' });
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveError, setLeaveError] = useState('');
+
+  // Wages / payroll state
+  const [paySlips, setPaySlips] = useState([]);
+  const [paySlipsLoading, setPaySlipsLoading] = useState(false);
+  const [selectedSlip, setSelectedSlip] = useState(null);
 
   const row1Ref = useRef(null);
   const [row1Height, setRow1Height] = useState(80);
@@ -486,6 +492,25 @@ const Profile = () => {
     }
   };
 
+  // Load pay slips when wages accordion opens
+  useEffect(() => {
+    if (openAccordion !== 'wages' || !user?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      setPaySlipsLoading(true);
+      try {
+        const res = await payrollAPI.getByEmployee(user.id);
+        if (!cancelled) setPaySlips(Array.isArray(res?.data) ? res.data : []);
+      } catch {
+        // silently degrade
+      } finally {
+        if (!cancelled) setPaySlipsLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [openAccordion, user?.id]);
+
   // Load leave requests whenever benefits accordion opens or Leave Management modal opens
   useEffect(() => {
     if ((openAccordion !== 'benefits' && !leaveManagementOpen) || !user?.id) return;
@@ -766,7 +791,7 @@ const Profile = () => {
     overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-    backgroundColor: 'var(--bs-card-bg, white)',
+    backgroundColor: 'var(--bs-body-bg)',
     zIndex: 1000,
     paddingTop: '1rem',
     paddingLeft: '1rem',
@@ -798,7 +823,7 @@ const Profile = () => {
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-card-bg, white)',
+            backgroundColor: 'var(--bs-body-bg)',
             zIndex: 1000,
             paddingTop: '1rem',
             paddingLeft: '1rem',
@@ -892,7 +917,7 @@ const Profile = () => {
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-card-bg, white)',
+            backgroundColor: 'var(--bs-body-bg)',
             zIndex: 1000,
             paddingTop: '1rem',
             paddingLeft: '1rem',
@@ -1020,6 +1045,79 @@ const Profile = () => {
           </div>
         )}
 
+      {/* Wages Content */}
+      {openAccordion === 'wages' && (
+        <div
+          className="accordion-popup"
+          style={{
+            position: 'fixed',
+            top: 0,
+            bottom: `${row1PanelBottom}px`,
+            left: 0,
+            right: 0,
+            width: '100%',
+            height: `calc(100dvh - ${row1PanelBottom}px)`,
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            backgroundColor: 'var(--bs-body-bg)',
+            zIndex: 1000,
+            paddingTop: '1rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            paddingBottom: '0.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0 }}>
+            <h6 className="fw-semibold mb-3">Wage History</h6>
+            {paySlipsLoading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border spinner-border-sm text-primary" role="status" />
+              </div>
+            ) : paySlips.length === 0 ? (
+              <p className="text-muted small">No pay slips on record.</p>
+            ) : (
+              <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                  <thead className="table-light">
+                    <tr>
+                      <th>Period</th>
+                      <th className="text-end">Gross</th>
+                      <th className="text-end">Deductions</th>
+                      <th className="text-end">Net</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paySlips.map(slip => (
+                      <tr key={slip.id}>
+                        <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : '—'}</td>
+                        <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary py-0 px-1"
+                            style={{ fontSize: '0.7rem' }}
+                            onClick={() => setSelectedSlip(slip)}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Settings Content */}
       {openAccordion === 'settings' && (
         <div 
@@ -1035,7 +1133,7 @@ const Profile = () => {
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-card-bg, white)',
+            backgroundColor: 'var(--bs-body-bg)',
             zIndex: 1000,
             paddingTop: '1rem',
             paddingLeft: '1rem',
@@ -1610,7 +1708,7 @@ const Profile = () => {
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-card-bg, white)',  
+            backgroundColor: 'var(--bs-body-bg)',  
             zIndex: 1000,
           }}
           className="accordion-popup"
@@ -1726,9 +1824,10 @@ const Profile = () => {
         {/* Row 1 — Personal: Profile, Benefits, Settings */}
         <div ref={row1Ref} className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2">
           {[
-            { id: 'profile',   Icon: UserIcon,  title: 'Profile'   },
-            { id: 'benefits',  Icon: HeartIcon, title: 'Benefits'  },
-            { id: 'settings',  Icon: CogIcon,   title: 'Settings'  },
+            { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
+            { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
+            { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
+            { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
           ].map(({ id, Icon, title }) => (
             <button
               key={id}
@@ -1876,6 +1975,89 @@ const Profile = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Slip Detail Modal */}
+      {selectedSlip && (
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 2000 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedSlip(null); }}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-sm">
+            <div className="modal-content" id="pay-slip-print-area">
+              <div className="modal-header py-2">
+                <h6 className="modal-title mb-0">Pay Slip</h6>
+                <button type="button" className="btn-close" onClick={() => setSelectedSlip(null)} />
+              </div>
+              <div className="modal-body" style={{ fontSize: '0.85rem' }}>
+                <div className="text-center mb-3">
+                  <div className="fw-bold fs-6">{user?.first_name} {user?.last_name}</div>
+                  <div className="text-muted small">{user?.role}</div>
+                </div>
+                <hr className="my-2" />
+                <div className="row g-1 mb-2">
+                  <div className="col-6 text-muted">Pay Period</div>
+                  <div className="col-6 text-end">{selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : '—'} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : '—'}</div>
+                  <div className="col-6 text-muted">Type</div>
+                  <div className="col-6 text-end" style={{ textTransform: 'capitalize' }}>{selectedSlip.employment_type || '—'}</div>
+                  {selectedSlip.employment_type === 'hourly' && (
+                    <>
+                      <div className="col-6 text-muted">Hours</div>
+                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? '—'}</div>
+                      <div className="col-6 text-muted">Rate</div>
+                      <div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                    </>
+                  )}
+                  <div className="col-6 text-muted">Pay Frequency</div>
+                  <div className="col-6 text-end" style={{ textTransform: 'capitalize' }}>{selectedSlip.pay_frequency || '—'}</div>
+                </div>
+                <hr className="my-2" />
+                <div className="row g-1">
+                  <div className="col-6 text-muted">Gross Pay</div>
+                  <div className="col-6 text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  {selectedSlip.insurance_plan_name && (
+                    <>
+                      <div className="col-6 text-muted small">Insurance ({selectedSlip.insurance_plan_name})</div>
+                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                    </>
+                  )}
+                  {(selectedSlip.other_deductions ?? 0) > 0 && (
+                    <>
+                      <div className="col-6 text-muted small">Other Deductions</div>
+                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                    </>
+                  )}
+                  <div className="col-6 fw-bold border-top pt-1 mt-1">Net Pay</div>
+                  <div className="col-6 fw-bold text-end border-top pt-1 mt-1 text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </div>
+                {selectedSlip.notes && (
+                  <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>
+                )}
+              </div>
+              <div className="modal-footer py-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => {
+                    const el = document.getElementById('pay-slip-print-area');
+                    if (el) {
+                      const w = window.open('', '_blank');
+                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + '</body></html>');
+                      w.document.close();
+                      w.focus();
+                      setTimeout(() => { w.print(); }, 500);
+                    }
+                  }}
+                >
+                  Print
+                </button>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>Close</button>
+              </div>
             </div>
           </div>
         </div>

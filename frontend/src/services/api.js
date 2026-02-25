@@ -709,6 +709,14 @@ export const insurancePlansAPI = {
   },
 };
 
+export const payrollAPI = {
+  processPayment: (employeeId, data) => api.post(`/payroll/pay/${employeeId}`, data),
+  getByEmployee: (employeeId) => api.get(`/payroll/pay-slips/${employeeId}`),
+  getAll: () => api.get('/payroll/pay-slips'),
+  checkEligibility: (employeeId, periodStart) =>
+    api.get(`/payroll/check/${employeeId}?period_start=${encodeURIComponent(periodStart)}`),
+};
+
 export const adminAPI = {
   importData: (formData) => {
     clearCache('clients');
