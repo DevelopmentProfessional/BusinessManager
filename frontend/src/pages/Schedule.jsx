@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from '../services/api';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import Modal from './components/Modal';
 import Form_Schedule from './components/Form_Schedule';
 import Gate_Permission from './components/Gate_Permission';
@@ -1306,8 +1307,8 @@ export default function Schedule() {
 
       {/* Overlap bottom modal */}
       <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true}>
-        <div>
-            <div className="overlap-event-list">
+        <div className="d-flex flex-column justify-content-end" style={{ height: '100%' }}>
+            <div className="overlap-event-list flex-shrink-0">
               {[...(overlapEvents || [])]
                 .sort((a, b) => {
                   const timeA = new Date(a.appointment_date);
@@ -1361,6 +1362,18 @@ export default function Schedule() {
                     </div>
                   );
                 })}
+            </div>
+            
+            {/* Footer with Cancel button */}
+            <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 ps-3 pt-2 d-flex justify-content-center">
+              <button
+                type="button"
+                className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                style={{ width: '3rem', height: '3rem', padding: 0 }}
+                onClick={() => setOverlapEvents(null)}
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
           </div>
       </Modal>

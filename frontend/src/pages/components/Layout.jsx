@@ -115,7 +115,7 @@ export default function Layout({ children }) {
         style={{ 
           width: '3rem', 
           height: '3rem', 
-          zIndex: 1040, 
+          zIndex: 1100, 
           bottom: '1.5rem', 
           right: '1rem' 
         }}

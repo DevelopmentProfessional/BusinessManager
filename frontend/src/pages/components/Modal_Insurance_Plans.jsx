@@ -137,6 +137,17 @@ export default function Modal_Insurance_Plans({
                     <XMarkIcon style={{ width: 14, height: 14 }} />
                   </button>
                 )}
+                {!editingPlan && (
+                  <button
+                    type="button"
+                    onClick={() => onClose()}
+                    className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    style={{ width: '2.5rem', height: '2.5rem' }}
+                    title="Close modal"
+                  >
+                    <XMarkIcon style={{ width: 14, height: 14 }} />
+                  </button>
+                )}
               </div>
               <div className="flex-grow-1 d-flex justify-content-center">
                 <button
