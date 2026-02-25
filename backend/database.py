@@ -172,6 +172,9 @@ def create_db_and_tables():
     _seed_user_colors_if_needed()
     _seed_insurance_plans_if_needed()
     _ensure_leave_request_supervisor_id_if_needed()
+    _ensure_user_payroll_columns_if_needed()
+    _ensure_insurance_plan_monthly_deduction_if_needed()
+    _ensure_schedule_recurrence_columns_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -815,6 +818,106 @@ def _seed_insurance_plans_if_needed():
                 "created_at": now,
             })
         print(f"✓ Seeded {len(default_plans)} insurance plans")
+
+
+def _ensure_user_payroll_columns_if_needed():
+    """Ensure user table has hourly_rate and employment_type columns for payroll support."""
+    new_cols = {
+        "hourly_rate": ("FLOAT", "FLOAT"),
+        "employment_type": ("VARCHAR", "VARCHAR"),
+    }
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
+            col_names = {row[1] for row in cols}
+            for col, (sqlite_type, _) in new_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {sqlite_type}"))
+                    print(f"✓ Added user.{col} (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, (_, pg_type) in new_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                    print(f"  + Added column user.{col} ({pg_type})")
+
+
+def _ensure_insurance_plan_monthly_deduction_if_needed():
+    """Ensure insurance_plan table has monthly_deduction column."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='insurance_plan'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('insurance_plan')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "monthly_deduction" not in col_names:
+                conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
+                print("✓ Added insurance_plan.monthly_deduction (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='insurance_plan'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "monthly_deduction" not in col_names:
+                conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
+                print("  + Added column insurance_plan.monthly_deduction")
+
+
+def _ensure_schedule_recurrence_columns_if_needed():
+    """Ensure schedule table has recurrence-related columns."""
+    new_cols_sqlite = {
+        "recurrence_frequency": "VARCHAR",
+        "recurrence_end_date": "DATETIME",
+        "recurrence_count": "INTEGER",
+        "parent_schedule_id": "TEXT",
+        "is_recurring_master": "BOOLEAN DEFAULT 0",
+    }
+    new_cols_pg = {
+        "recurrence_frequency": "VARCHAR",
+        "recurrence_end_date": "TIMESTAMP WITH TIME ZONE",
+        "recurrence_count": "INTEGER",
+        "parent_schedule_id": "UUID",
+        "is_recurring_master": "BOOLEAN DEFAULT FALSE",
+    }
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='schedule'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('schedule')")).fetchall()
+            col_names = {row[1] for row in cols}
+            for col, col_type in new_cols_sqlite.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
+                    print(f"✓ Added schedule.{col} (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, col_type in new_cols_pg.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
+                    print(f"  + Added column schedule.{col} ({col_type})")
 
 
 def _ensure_leave_request_supervisor_id_if_needed():
