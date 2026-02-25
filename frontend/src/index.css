@@ -133,6 +133,10 @@ body,
   color: rgb(243 244 246) !important;
 }
 
+[data-bs-theme="dark"] .bg-white {
+  background-color: var(--bs-body-bg) !important;
+}
+
 input[type="text"],
 input[type="search"],
 input[type="email"],
