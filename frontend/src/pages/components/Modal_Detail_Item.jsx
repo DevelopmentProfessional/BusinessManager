@@ -310,7 +310,7 @@ export default function Modal_Detail_Item({
 
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Edit Item</h6>
            
         </div>
@@ -371,7 +371,7 @@ export default function Modal_Detail_Item({
       )}
 
       {/* Container_Scrollable Content Area */}
-      <div className="overflow-auto px-3 pt-3 no-scrollbar" style={{ flexGrow: 1 }}>
+      <div className="overflow-auto px-3 pt-3 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" style={{ flexGrow: 1 }}>
         {isSalesMode ? (
           /* Sales Mode - Display only */
           <div>

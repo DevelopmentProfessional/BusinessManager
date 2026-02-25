@@ -250,7 +250,7 @@ return (
       {/* Container_Scrollable rows – grow upwards from bottom */}
       <div
         ref={scrollRef}
-        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white no-scrollbar"
+        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
         style={{ background: 'var(--bs-body-bg)' }}
       >
         {filteredInventory.length > 0 ? (

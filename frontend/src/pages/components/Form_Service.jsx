@@ -216,7 +216,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
           {service ? 'Edit Service' : 'Add Service'}
         </h6>
@@ -240,7 +240,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
         {/* ── Details ── */}
         {activeTab === 'details' && (
-          <div className="flex-grow-1 overflow-auto no-scrollbar">
+          <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <div className="px-3 d-flex flex-column" style={{ minHeight: '100%', justifyContent: 'flex-end' }}>
               <form id="service-details-form" onSubmit={handleSubmit}>
                 {/* Top Section: Image (left) + Core fields (right) */}
@@ -274,7 +274,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     </div>
                     {/* Camera/URL panel */}
                     {addImageMode !== null && (
-                      <div className="mt-1 p-2 border rounded bg-light">
+                      <div className="mt-1 p-2 border rounded bg-light dark:bg-gray-800 dark:border-gray-700">
                         <div className="d-flex align-items-center gap-2 mb-2">
                           <div className="btn-group btn-group-sm">
                             <button type="button" className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('camera')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>Camera</button>
@@ -341,7 +341,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
         {/* ── Resources ── */}
         {activeTab === 'resources' && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Scrollable list - grows upward from bottom */}
             <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
@@ -400,7 +400,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
         {/* ── Assets ── */}
         {activeTab === 'assets' && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Scrollable list - grows upward from bottom */}
             <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
@@ -442,7 +442,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
         {/* ── Employees ── */}
         {activeTab === 'employees' && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Scrollable list - grows upward from bottom */}
             <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (
@@ -486,7 +486,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
         {/* ── Locations ── */}
         {activeTab === 'locations' && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Scrollable list - grows upward from bottom */}
             <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
               {relLoading ? (

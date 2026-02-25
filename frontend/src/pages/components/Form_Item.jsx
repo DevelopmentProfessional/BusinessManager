@@ -157,13 +157,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   return (    
     <div className="d-flex flex-column bg-white dark:bg-gray-900"      style={{ height: '100%' }}  >
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? 'Edit' : 'Add Item'}</h6>
         
       </div>
 
       {/* Container_Scrollable Content Area */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
@@ -217,7 +217,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
               {/* Camera/URL panel */}
               {addImageMode !== null && (
-                <div className="mt-1 p-2 border rounded bg-light">
+                <div className="mt-1 p-2 border rounded bg-light dark:bg-gray-800 dark:border-gray-700">
                   <div className="d-flex align-items-center gap-2 mb-2">
                     <div className="btn-group btn-group-sm">
                       <button type="button" className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('camera')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>Camera</button>
