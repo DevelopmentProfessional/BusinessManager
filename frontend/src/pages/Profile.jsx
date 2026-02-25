@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
@@ -18,11 +18,24 @@ import {
   MoonIcon,
   PencilIcon,
   ArrowLeftOnRectangleIcon,
+  BellIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  CircleStackIcon,
+  SwatchIcon,
+  ArrowUpTrayIcon,
+  TableCellsIcon,
+  DocumentTextIcon,
+  ChevronDownIcon,
+  InformationCircleIcon,
+  QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
-import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI } from '../services/api';
+import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI } from '../services/api';
 import api from '../services/api';
 import Modal_Signature from './components/Modal_Signature';
+import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
+import useBranding from '../services/useBranding';
 
 // CSS for accordion pop-up animation
 const accordionStyles = `
@@ -53,20 +66,53 @@ const accordionStyles = `
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
-  
+
   .accordion-popup *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Blanket no-scrollbar for everything inside the Profile page */
+  .profile-page * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .profile-page *::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
   }
 `;
 
-// Add styles to document
+// Add animation styles (shared with Settings — only inject once)
 if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = accordionStyles;
   if (!document.head.querySelector('style[data-accordion-popup]')) {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = accordionStyles;
     styleSheet.setAttribute('data-accordion-popup', 'true');
+    document.head.appendChild(styleSheet);
+  }
+}
+
+// Always inject profile-specific no-scrollbar styles (own unique tag, never blocked)
+if (typeof document !== 'undefined') {
+  const existing = document.head.querySelector('style[data-profile-no-scrollbar]');
+  if (!existing) {
+    const styleSheet = document.createElement('style');
+    styleSheet.setAttribute('data-profile-no-scrollbar', 'true');
+    styleSheet.textContent = `
+      .profile-page * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+      .profile-page *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    `;
     document.head.appendChild(styleSheet);
   }
 }
@@ -86,7 +132,7 @@ const statusColor = (status) => {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, logout, setUser } = useStore();
+  const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Log Profile component mount if performance session is active
@@ -127,9 +173,286 @@ const Profile = () => {
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveError, setLeaveError] = useState('');
 
+  const footerRef = useRef(null);
+  const [footerHeight, setFooterHeight] = useState(80);
+
+  // ── Settings state ──────────────────────────────────────────────────────────
+  const [settingsError, setSettingsError] = useState('');
+  const [settingsSuccess, setSettingsSuccess] = useState('');
+
+  const { branding, updateBranding } = useBranding();
+  const [localBranding, setLocalBranding] = useState(branding);
+
+  const [dbSettings, setDbSettings] = useState({
+    connectionString: '',
+    apiBaseUrl: '',
+    onlyofficeUrl: '',
+  });
+
+  const [scheduleSettings, setScheduleSettings] = useState({
+    start_of_day: '06:00',
+    end_of_day: '21:00',
+    attendance_check_in_required: true,
+    monday_enabled: true,
+    tuesday_enabled: true,
+    wednesday_enabled: true,
+    thursday_enabled: true,
+    friday_enabled: true,
+    saturday_enabled: true,
+    sunday_enabled: true,
+  });
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  const [openAccordions, setOpenAccordions] = useState({
+    application: true,
+    branding: false,
+    notifications: false,
+  });
+
+  const [availableTables, setAvailableTables] = useState([]);
+  const [selectedTable, setSelectedTable] = useState('');
+  const [tableColumns, setTableColumns] = useState([]);
+  const [csvData, setCsvData] = useState(null);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const csvFileInputRef = useRef(null);
+
+  const [notifications, setNotifications] = useState({
+    emailEnabled: true,
+    pushEnabled: false,
+    appointmentReminders: true,
+    dailyDigest: false,
+  });
+
+  useEffect(() => {
+    if (!footerRef.current) return;
+    const updateHeight = () => setFooterHeight(footerRef.current.offsetHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(footerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Sync local branding when global branding changes
+  useEffect(() => { setLocalBranding(branding); }, [branding]);
+
+  // Load saved settings + schedule from backend on mount
+  useEffect(() => {
+    const savedDb = localStorage.getItem('app_db_settings');
+    if (savedDb) {
+      try { setDbSettings(JSON.parse(savedDb)); } catch { /* ignore */ }
+    } else {
+      setDbSettings({
+        connectionString: '',
+        apiBaseUrl: import.meta.env.VITE_API_URL || '',
+        onlyofficeUrl: import.meta.env.VITE_ONLYOFFICE_URL || '',
+      });
+    }
+    const savedNotif = localStorage.getItem('app_notifications');
+    if (savedNotif) {
+      try { setNotifications(JSON.parse(savedNotif)); } catch { /* ignore */ }
+    }
+    const loadSchedule = async () => {
+      try {
+        const res = await settingsAPI.getScheduleSettings();
+        if (res.data) {
+          setScheduleSettings({
+            start_of_day: res.data.start_of_day || '06:00',
+            end_of_day: res.data.end_of_day || '21:00',
+            attendance_check_in_required: res.data.attendance_check_in_required ?? true,
+            monday_enabled: res.data.monday_enabled ?? true,
+            tuesday_enabled: res.data.tuesday_enabled ?? true,
+            wednesday_enabled: res.data.wednesday_enabled ?? true,
+            thursday_enabled: res.data.thursday_enabled ?? true,
+            friday_enabled: res.data.friday_enabled ?? true,
+            saturday_enabled: res.data.saturday_enabled ?? true,
+            sunday_enabled: res.data.sunday_enabled ?? true,
+          });
+        }
+      } catch { /* silently degrade */ }
+    };
+    loadSchedule();
+  }, []);
+
+  // Load available tables when database tab opens
+  useEffect(() => {
+    if (openAccordion === 'database' && availableTables.length === 0) {
+      loadTables();
+    }
+  }, [openAccordion]);
+
+  // Load table columns when table selected
+  useEffect(() => {
+    if (selectedTable) loadTableColumns(selectedTable);
+  }, [selectedTable]);
+
   const toNumber = (value) => {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  // ── Settings helpers ─────────────────────────────────────────────────────────
+  const HelpIcon = ({ id, text }) => (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon
+        className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors"
+        onClick={() => setActiveTooltip(activeTooltip === id ? null : id)}
+        onMouseEnter={() => setActiveTooltip(id)}
+        onMouseLeave={() => setActiveTooltip(null)}
+      />
+      {activeTooltip === id && (
+        <div className="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-lg shadow-lg max-w-xs text-center">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+        </div>
+      )}
+    </div>
+  );
+
+  const toggleAccordion = (id) => setOpenAccordions(prev => ({ ...prev, [id]: !prev[id] }));
+
+  const handleSaveBranding = () => {
+    updateBranding(localBranding);
+    setSettingsSuccess('Branding saved!');
+    setTimeout(() => setSettingsSuccess(''), 3000);
+  };
+  const handleBrandingChange = (field, value) => setLocalBranding(prev => ({ ...prev, [field]: value }));
+
+  const handleSaveDbSettings = () => {
+    localStorage.setItem('app_db_settings', JSON.stringify(dbSettings));
+    setSettingsSuccess('Connection settings saved!');
+    setTimeout(() => setSettingsSuccess(''), 3000);
+  };
+  const handleDbSettingsChange = (field, value) => setDbSettings(prev => ({ ...prev, [field]: value }));
+
+  const handleSaveNotifications = () => {
+    localStorage.setItem('app_notifications', JSON.stringify(notifications));
+    setSettingsSuccess('Notification settings saved!');
+    setTimeout(() => setSettingsSuccess(''), 3000);
+  };
+  const handleNotificationChange = (field, value) => setNotifications(prev => ({ ...prev, [field]: value }));
+
+  const handleScheduleSettingsChange = (field, value) => setScheduleSettings(prev => ({ ...prev, [field]: value }));
+
+  const handleSaveScheduleSettings = async () => {
+    setScheduleLoading(true);
+    setSettingsError('');
+    setSettingsSuccess('');
+    try {
+      await settingsAPI.updateScheduleSettings(scheduleSettings);
+      setSettingsSuccess('Schedule settings saved!');
+      setTimeout(() => setSettingsSuccess(''), 3000);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || 'Failed to save schedule settings');
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  const loadTables = async () => {
+    try {
+      const res = await schemaAPI.getTables();
+      setAvailableTables(res.data || []);
+    } catch { /* silently degrade */ }
+  };
+
+  const loadTableColumns = async (tableName) => {
+    try {
+      const res = await schemaAPI.getTableColumns(tableName);
+      setTableColumns(res.data || []);
+      setColumnMapping({});
+      setCsvData(null);
+      setCsvHeaders([]);
+      setImportResult(null);
+    } catch { setTableColumns([]); }
+  };
+
+  const parseCSVLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') { inQuotes = !inQuotes; }
+      else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+      else { current += char; }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const parseCSV = (text) => {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return { headers: [], data: [] };
+    const headers = parseCSVLine(lines[0]);
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length === headers.length) {
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = values[idx]; });
+        data.push(row);
+      }
+    }
+    return { headers, data };
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const { headers, data } = parseCSV(e.target.result);
+      setCsvHeaders(headers);
+      setCsvData(data);
+      const autoMapping = {};
+      headers.forEach(header => {
+        const norm = header.toLowerCase().replace(/\s+/g, '_');
+        const match = tableColumns.find(col => col.name.toLowerCase() === norm || col.display_name.toLowerCase() === header.toLowerCase());
+        if (match) autoMapping[header] = match.name;
+      });
+      setColumnMapping(autoMapping);
+      setImportResult(null);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleColumnMappingChange = (csvHeader, dbColumn) => {
+    setColumnMapping(prev => ({ ...prev, [csvHeader]: dbColumn || undefined }));
+  };
+
+  const handleImport = async () => {
+    if (!csvData || csvData.length === 0) { setSettingsError('No data to import'); return; }
+    setImportLoading(true);
+    setSettingsError('');
+    setImportResult(null);
+    try {
+      const transformedData = csvData.map(row => {
+        const newRow = {};
+        Object.entries(columnMapping).forEach(([csvH, dbCol]) => {
+          if (dbCol && row[csvH] !== undefined) newRow[dbCol] = row[csvH];
+        });
+        return newRow;
+      }).filter(row => Object.keys(row).length > 0);
+      const res = await schemaAPI.bulkImport(selectedTable, transformedData);
+      setImportResult(res.data);
+      if (res.data.imported > 0) {
+        setSettingsSuccess(`Imported ${res.data.imported} records!`);
+        setTimeout(() => setSettingsSuccess(''), 5000);
+      }
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || 'Import failed');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const resetImport = () => {
+    setCsvData(null); setCsvHeaders([]); setColumnMapping({}); setImportResult(null);
+    if (csvFileInputRef.current) csvFileInputRef.current.value = '';
   };
 
   const syncCurrentUser = async () => {
@@ -409,8 +732,32 @@ const Profile = () => {
     setShowLeaveModal(true);
   };
 
+  const canAccessSettings = hasPermission('settings', 'read');
+
+  // Shared panel style for settings panels
+  const settingsPanelStyle = {
+    position: 'fixed',
+    top: 0,
+    bottom: `${footerHeight}px`,
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: `calc(100vh - ${footerHeight}px)`,
+    overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+    backgroundColor: 'var(--bs-card-bg, white)',
+    zIndex: 1000,
+    paddingTop: '1rem',
+    paddingLeft: '1rem',
+    paddingRight: '1rem',
+    paddingBottom: '0.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
   return (
-    <div className="d-flex flex-column overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: '100dvh' }}>
       
       {/* Main Content Area */}
       <div className="flex-grow-1"></div>
@@ -423,12 +770,14 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: '60px',
+            bottom: `${footerHeight}px`,
             left: 0,
             right: 0,
             width: '100%',
-            height: 'calc(100vh - 60px)',
+            height: `calc(100vh - ${footerHeight}px)`,
             overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
             paddingTop: '1rem',
@@ -515,12 +864,14 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: '60px',
+            bottom: `${footerHeight}px`,
             left: 0,
             right: 0,
             width: '100%',
-            height: 'calc(100vh - 60px)',
+            height: `calc(100vh - ${footerHeight}px)`,
             overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
             paddingTop: '1rem',
@@ -598,7 +949,7 @@ const Profile = () => {
                       {vacationRequests.filter(r => r.status === 'pending').length === 0 && sickRequests.filter(r => r.status === 'pending').length === 0 ? (
                         <p className="text-muted small mb-0">No pending requests</p>
                       ) : (
-                        <div style={{ overflowX: 'auto' }}>
+                        <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                           <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
                             <thead className="table-light">
                               <tr>
@@ -656,12 +1007,14 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: '60px',
+            bottom: `${footerHeight}px`,
             left: 0,
             right: 0,
             width: '100%',
-            height: 'calc(100vh - 60px)',
+            height: `calc(100vh - ${footerHeight}px)`,
             overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
             backgroundColor: 'var(--bs-card-bg, white)',
             zIndex: 1000,
             paddingTop: '1rem',
@@ -841,16 +1194,402 @@ const Profile = () => {
         </div>
         )}
 
+      {/* ── Schedule Panel ────────────────────────────────────────────────────── */}
+      {openAccordion === 'schedule' && canAccessSettings && (
+        <div className="accordion-popup" style={settingsPanelStyle}>
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0, width: '100%' }}>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <ClockIcon className="h-5 w-5" /> Schedule Settings
+            </h2>
+
+            {/* Business Hours */}
+            <div className="mb-6">
+              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                Business Hours <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="form-floating">
+                  <input type="time" id="start_of_day" value={scheduleSettings.start_of_day}
+                    onChange={(e) => handleScheduleSettingsChange('start_of_day', e.target.value)}
+                    className="form-control form-control-sm" placeholder="Start of Day" />
+                  <label htmlFor="start_of_day">Start of Day</label>
+                </div>
+                <div className="form-floating">
+                  <input type="time" id="end_of_day" value={scheduleSettings.end_of_day}
+                    onChange={(e) => handleScheduleSettingsChange('end_of_day', e.target.value)}
+                    className="form-control form-control-sm" placeholder="End of Day" />
+                  <label htmlFor="end_of_day">End of Day</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Days of Operation */}
+            <div className="mb-6">
+              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                Days of Operation <HelpIcon id="days-of-operation" text="Select which days your business operates" />
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { key: 'monday_enabled', label: 'Mon', fullLabel: 'Monday' },
+                  { key: 'tuesday_enabled', label: 'Tue', fullLabel: 'Tuesday' },
+                  { key: 'wednesday_enabled', label: 'Wed', fullLabel: 'Wednesday' },
+                  { key: 'thursday_enabled', label: 'Thu', fullLabel: 'Thursday' },
+                  { key: 'friday_enabled', label: 'Fri', fullLabel: 'Friday' },
+                  { key: 'saturday_enabled', label: 'Sat', fullLabel: 'Saturday' },
+                  { key: 'sunday_enabled', label: 'Sun', fullLabel: 'Sunday' },
+                ].map(day => (
+                  <div key={day.key} className="flex items-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <input type="checkbox" id={day.key} checked={scheduleSettings[day.key]}
+                      onChange={(e) => handleScheduleSettingsChange(day.key, e.target.checked)}
+                      className="h-4 w-4 rounded" />
+                    <label htmlFor={day.key} className="ml-2 text-sm font-medium cursor-pointer">
+                      <span className="hidden sm:inline">{day.fullLabel}</span>
+                      <span className="sm:hidden">{day.label}</span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Attendance */}
+            <div className="mb-6">
+              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                Attendance <HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" />
+              </h3>
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">Attendance Check-in</span>
+                  <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={scheduleSettings.attendance_check_in_required}
+                    onChange={(e) => handleScheduleSettingsChange('attendance_check_in_required', e.target.checked)}
+                    className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
+
+            <button onClick={handleSaveScheduleSettings} disabled={scheduleLoading}
+              className="btn btn-primary btn-sm px-4">
+              {scheduleLoading ? 'Saving…' : 'Save'}
+            </button>
+
+            {settingsError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800 text-sm">
+                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />{settingsError}
+              </div>
+            )}
+            {settingsSuccess && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
+                <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />{settingsSuccess}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── General Panel ─────────────────────────────────────────────────────── */}
+      {openAccordion === 'general' && canAccessSettings && (
+        <div className="accordion-popup" style={settingsPanelStyle}>
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0, width: '100%' }}>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <CogIcon className="h-5 w-5" /> General Settings
+            </h2>
+
+            {/* Application */}
+            <div className="mb-2">
+              <button onClick={() => toggleAccordion('application')}
+                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
+                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+                <div className="d-flex align-items-center gap-2">
+                  <InformationCircleIcon className="h-5 w-5 text-blue-500" />
+                  <span className="fw-medium">Application</span>
+                </div>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500"
+                  style={{ transition: 'transform 0.2s', transform: openAccordions.application ? 'rotate(180deg)' : 'none' }} />
+              </button>
+              {openAccordions.application && (
+                <div className="accordion-popup py-3">
+                  <div className="row g-2">
+                    <div className="col-6">
+                      <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+                        <span className="small fw-medium">Version</span>
+                        <span className="small text-muted">1.0.0</span>
+                      </div>
+                    </div>
+                    <div className="col-6">
+                      <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+                        <span className="small fw-medium">Environment</span>
+                        <span className="small text-muted">{import.meta.env.DEV ? 'Development' : 'Production'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Branding */}
+            <div className="mb-2">
+              <button onClick={() => toggleAccordion('branding')}
+                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
+                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+                <div className="d-flex align-items-center gap-2">
+                  <SwatchIcon className="h-5 w-5 text-purple-500" />
+                  <span className="fw-medium">Branding</span>
+                </div>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500"
+                  style={{ transition: 'transform 0.2s', transform: openAccordions.branding ? 'rotate(180deg)' : 'none' }} />
+              </button>
+              {openAccordions.branding && (
+                <div className="accordion-popup py-3 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="form-floating">
+                      <input type="text" id="companyName" value={localBranding.companyName}
+                        onChange={(e) => handleBrandingChange('companyName', e.target.value)}
+                        className="form-control form-control-sm" placeholder="Company Name" />
+                      <label htmlFor="companyName">Company Name</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="text" id="tagline" value={localBranding.tagline}
+                        onChange={(e) => handleBrandingChange('tagline', e.target.value)}
+                        className="form-control form-control-sm" placeholder="Tagline" />
+                      <label htmlFor="tagline">Tagline</label>
+                    </div>
+                  </div>
+                  <div className="form-floating">
+                    <input type="url" id="logoUrl" value={localBranding.logoUrl}
+                      onChange={(e) => handleBrandingChange('logoUrl', e.target.value)}
+                      className="form-control form-control-sm" placeholder="Logo URL" />
+                    <label htmlFor="logoUrl">Logo URL</label>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: 'primaryColor', label: 'Primary', helpId: 'primary-color', helpText: 'Main buttons and links' },
+                      { key: 'secondaryColor', label: 'Secondary', helpId: 'secondary-color', helpText: 'Success states and highlights' },
+                      { key: 'accentColor', label: 'Accent', helpId: 'accent-color', helpText: 'Special elements and badges' },
+                    ].map(({ key, label, helpId, helpText }) => (
+                      <div key={key}>
+                        <label className="flex items-center text-sm font-medium mb-1">
+                          {label} <HelpIcon id={helpId} text={helpText} />
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={localBranding[key]}
+                            onChange={(e) => handleBrandingChange(key, e.target.value)}
+                            className="rounded border cursor-pointer flex-shrink-0" style={{ width: '2.5rem', height: '2.5rem' }} />
+                          <input type="text" value={localBranding[key]}
+                            onChange={(e) => handleBrandingChange(key, e.target.value)}
+                            className="flex-1 min-w-0 px-2 py-1 border rounded text-xs font-mono" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={handleSaveBranding} className="btn btn-primary btn-sm px-4">
+                    Save Branding
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Notifications */}
+            <div className="mb-2">
+              <button onClick={() => toggleAccordion('notifications')}
+                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
+                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+                <div className="d-flex align-items-center gap-2">
+                  <BellIcon className="h-5 w-5 text-amber-500" />
+                  <span className="fw-medium">Notifications</span>
+                </div>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500"
+                  style={{ transition: 'transform 0.2s', transform: openAccordions.notifications ? 'rotate(180deg)' : 'none' }} />
+              </button>
+              {openAccordions.notifications && (
+                <div className="accordion-popup py-3 space-y-3">
+                  {[
+                    { key: 'emailEnabled', label: 'Email Notifications', helpId: 'email-notif', helpText: 'Receive updates via email' },
+                    { key: 'appointmentReminders', label: 'Appointment Reminders', helpId: 'appt-reminders', helpText: 'Get reminded before appointments' },
+                    { key: 'dailyDigest', label: 'Daily Digest', helpId: 'daily-digest', helpText: 'Receive a daily summary email' },
+                  ].map(({ key, label, helpId, helpText }) => (
+                    <div key={key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium">{label}</span>
+                        <HelpIcon id={helpId} text={helpText} />
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={notifications[key]}
+                          onChange={(e) => handleNotificationChange(key, e.target.checked)}
+                          className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  ))}
+                  <button onClick={handleSaveNotifications} className="btn btn-primary btn-sm px-4">
+                    Save Notifications
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {settingsSuccess && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
+                <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />{settingsSuccess}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Database Panel ─────────────────────────────────────────────────────── */}
+      {openAccordion === 'database' && canAccessSettings && (
+        <div className="accordion-popup" style={settingsPanelStyle}>
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0, width: '100%' }}>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <CircleStackIcon className="h-5 w-5" /> Database Settings
+            </h2>
+
+            <div className="mb-6">
+              <Manager_DatabaseConnection />
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-base font-medium mb-3 flex items-center">
+                <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                Data Import
+                <HelpIcon id="data-import" text="Import data from CSV files into database tables" />
+              </h3>
+
+              {/* Table Selection */}
+              <div className="mb-3">
+                <label className="flex items-center text-sm font-medium mb-1">
+                  Select Table <HelpIcon id="select-table" text="Choose which database table to import data into" />
+                </label>
+                <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)}
+                  className="form-select form-select-sm">
+                  <option value="">-- Select a table --</option>
+                  {availableTables.map(t => (
+                    <option key={t.name} value={t.name}>{t.display_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Table Columns */}
+              {selectedTable && tableColumns.length > 0 && (
+                <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <h4 className="text-sm font-medium mb-2 flex items-center">
+                    <TableCellsIcon className="h-4 w-4 mr-1" /> Table Columns
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tableColumns.filter(col => !col.auto_generated).map(col => (
+                      <span key={col.name}
+                        className={`px-2 py-1 text-xs rounded ${col.required ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'}`}
+                        title={`Type: ${col.type}${col.required ? ' (Required)' : ''}`}>
+                        {col.display_name}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>Required fields
+                  </p>
+                </div>
+              )}
+
+              {/* CSV Upload */}
+              {selectedTable && (
+                <div className="mb-3">
+                  <label className="flex items-center text-sm font-medium mb-1">
+                    Upload CSV File <HelpIcon id="csv-upload" text="First row should contain column headers" />
+                  </label>
+                  <div className="d-flex align-items-center gap-2">
+                    <input ref={csvFileInputRef} type="file" accept=".csv" onChange={handleFileSelect}
+                      className="form-control form-control-sm flex-1" />
+                    {csvData && (
+                      <button onClick={resetImport} className="btn btn-outline-secondary btn-sm">Clear</button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Column Mapping */}
+              {csvData && csvHeaders.length > 0 && (
+                <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <h4 className="text-sm font-medium mb-2 flex items-center">
+                    <DocumentTextIcon className="h-4 w-4 mr-1" />
+                    Column Mapping <HelpIcon id="column-mapping" text="Match CSV columns to database columns" />
+                  </h4>
+                  <div className="space-y-2" style={{ maxHeight: '12rem', overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {csvHeaders.map(header => (
+                      <div key={header} className="d-flex align-items-center gap-2">
+                        <span className="small fw-medium text-truncate" style={{ minWidth: '8rem', maxWidth: '8rem' }}>{header}</span>
+                        <span className="text-muted">→</span>
+                        <select value={columnMapping[header] || ''} onChange={(e) => handleColumnMappingChange(header, e.target.value)}
+                          className="form-select form-select-sm flex-1">
+                          <option value="">-- Skip --</option>
+                          {tableColumns.filter(col => !col.auto_generated).map(col => (
+                            <option key={col.name} value={col.name}>{col.display_name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{csvData.length} rows found in CSV</p>
+                </div>
+              )}
+
+              {/* Import Button */}
+              {csvData && Object.keys(columnMapping).filter(k => columnMapping[k]).length > 0 && (
+                <button onClick={handleImport} disabled={importLoading}
+                  className="btn btn-success btn-sm d-flex align-items-center gap-2">
+                  <ArrowUpTrayIcon className="h-4 w-4" />
+                  {importLoading ? 'Importing…' : `Import ${csvData.length} Records`}
+                </button>
+              )}
+
+              {/* Import Result */}
+              {importResult && (
+                <div className={`mt-3 p-3 rounded-lg border ${importResult.errors?.length > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <CheckCircleIcon className={`h-5 w-5 flex-shrink-0 ${importResult.errors?.length > 0 ? 'text-yellow-600' : 'text-green-600'}`} />
+                    <span className="small">Imported {importResult.imported} of {importResult.total} records</span>
+                  </div>
+                  {importResult.errors?.length > 0 && (
+                    <div className="text-xs text-yellow-700 mt-1">
+                      <p className="fw-medium mb-1">Errors:</p>
+                      <ul className="list-unstyled mb-0">
+                        {importResult.errors.slice(0, 5).map((err, idx) => (
+                          <li key={idx}>Row {err.row}: {err.error}</li>
+                        ))}
+                        {importResult.errors.length > 5 && <li>…and {importResult.errors.length - 5} more</li>}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settingsError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg d-flex align-items-center gap-2 text-danger text-sm">
+                  <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />{settingsError}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Leave Management Panel */}
       {leaveManagementOpen && (
         <div 
           style={{
             position: 'fixed',
-            bottom: '60px',
+            bottom: `${footerHeight}px`,
             left: 0,
             right: 0,
             maxHeight: 'calc(100vh - 164px)',
             overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
             backgroundColor: 'var(--bs-card-bg, white)',  
             zIndex: 1000,
           }}
@@ -900,7 +1639,7 @@ const Profile = () => {
                     {vacationRequests.filter(r => r.status === 'pending').length === 0 && sickRequests.filter(r => r.status === 'pending').length === 0 ? (
                       <p className="text-muted small mb-0">No pending requests</p>
                     ) : (
-                      <div style={{ overflowX: 'auto' }}>
+                      <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
                           <thead className="table-light">
                             <tr>
@@ -961,38 +1700,55 @@ const Profile = () => {
 
       {/* Footer Tabs */}
       <div
-        className="flex-shrink-0 d-flex align-items-center gap-1 p-4 ps-3 pt-2 bg-body border-top"
-        style={{ zIndex: 1100 }}
+        ref={footerRef}
+        className="flex-shrink-0 bg-body profile-footer-nav"
+        style={{ zIndex: 10 }}
       >
-        <button
-          type="button"
-          className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ width: '3rem', height: '3rem' }}
-          onClick={() => setOpenAccordion(openAccordion === 'profile' ? '' : 'profile')}
-          title="Profile"
-        >
-          <UserIcon className="h-5 w-5" />
-        </button>
+        {/* Row 1 — Personal: Profile, Benefits, Settings */}
+        <div className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2">
+          {[
+            { id: 'profile',   Icon: UserIcon,  title: 'Profile'   },
+            { id: 'benefits',  Icon: HeartIcon, title: 'Benefits'  },
+            { id: 'settings',  Icon: CogIcon,   title: 'Settings'  },
+          ].map(({ id, Icon, title }) => (
+            <button
+              key={id}
+              type="button"
+              className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '3rem', height: '3rem' }}
+              onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+              title={title}
+              data-active={openAccordion === id}
+            >
+              <Icon className="h-5 w-5" />
+            </button>
+          ))}
+        </div>
 
-        <button
-          type="button"
-          className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === 'benefits' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ width: '3rem', height: '3rem' }}
-          onClick={() => setOpenAccordion(openAccordion === 'benefits' ? '' : 'benefits')}
-          title="Benefits"
-        >
-          <HeartIcon className="h-5 w-5" />
-        </button>
-
-        <button
-          type="button"
-          className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === 'settings' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ width: '3rem', height: '3rem' }}
-          onClick={() => setOpenAccordion(openAccordion === 'settings' ? '' : 'settings')}
-          title="Settings"
-        >
-          <CogIcon className="h-5 w-5" />
-        </button>
+        {/* Row 2 — Admin/Settings: Schedule, General, Database */}
+        {canAccessSettings && (
+          <div className="d-flex align-items-center gap-1 p-4 ps-3 pe-3 pt-1 
+          "
+          >
+            {[
+              { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
+              { id: 'general',  Icon: CogIcon,          title: 'General'  },
+              { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+            ].map(({ id, Icon, title }) => (
+              <button
+                key={id}
+                type="button"
+                className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                style={{ width: '3rem', height: '3rem' }}
+                onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                title={title}
+                data-active={openAccordion === id}
+              >
+                <Icon className="h-5 w-5" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Signature Modal */}

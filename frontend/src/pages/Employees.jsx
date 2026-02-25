@@ -190,6 +190,12 @@ export default function Employees() {
     return Array.from(new Set(roles)).sort();
   }, [employees]);
 
+  const getStatusFilterButtonClass = () => {
+    if (statusFilter === 'active') return 'bg-green-600 text-white';
+    if (statusFilter === 'inactive') return 'bg-red-600 text-white';
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+  };
+
   const filteredEmployees = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
@@ -881,6 +887,7 @@ export default function Employees() {
                     }`}
                     style={{ width: '3rem', height: '3rem' }}
                     title="Filter by role"
+                    data-active={roleFilter !== 'all'}
                   >
                     <UserGroupIcon className="h-6 w-6" />
                   </button>
@@ -910,13 +917,10 @@ export default function Employees() {
                   <button
                     type="button"
                     onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
-                    className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
-                      statusFilter !== 'all'
-                        ? 'bg-secondary-600 hover:bg-secondary-700 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
+                    className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
                     style={{ width: '3rem', height: '3rem' }}
                     title="Filter by status"
+                    data-active={statusFilter !== 'all'}
                   >
                     <CheckCircleIcon className="h-6 w-6" />
                   </button>

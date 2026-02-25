@@ -241,6 +241,12 @@ export default function Documents() {
     return Array.from(new Set(types)).sort();
   }, [documents]);
 
+  const getStatusFilterButtonClass = () => {
+    if (statusFilter === 'signed') return 'bg-green-600 text-white';
+    if (statusFilter === 'unsigned') return 'bg-red-600 text-white';
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+  };
+
   const filteredDocuments = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
@@ -722,6 +728,7 @@ export default function Documents() {
                   }`}
                   style={{ width: '3rem', height: '3rem' }}
                   title="Filter by categories"
+                  data-active={categoryFilter !== 'all'}
                 >
                   <FolderOpenIcon className="h-6 w-6" />
                 </button>
@@ -751,13 +758,10 @@ export default function Documents() {
                 <button
                   type="button"
                   onClick={() => setIsFilterStatusOpen(!isFilterStatusOpen)}
-                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
-                    statusFilter !== 'all'
-                      ? 'bg-secondary-600 hover:bg-secondary-700 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
                   style={{ width: '3rem', height: '3rem' }}
                   title="Filter by status"
+                  data-active={statusFilter !== 'all'}
                 >
                   <CheckCircleIcon className="h-6 w-6" />
                 </button>
@@ -797,6 +801,7 @@ export default function Documents() {
                   }`}
                   style={{ width: '3rem', height: '3rem' }}
                   title="Filter by type"
+                  data-active={typeFilter !== 'all'}
                 >
                   <TagIcon className="h-6 w-6" />
                 </button>

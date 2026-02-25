@@ -8,7 +8,6 @@ import {
   ArchiveBoxIcon,
   DocumentIcon,
   EllipsisHorizontalIcon,
-  Cog6ToothIcon,
   UserCircleIcon,
   ChartBarIcon,
   ShoppingCartIcon,
@@ -28,7 +27,6 @@ const allNavigation = [
   { name: 'Sales', href: '/sales', icon: ShoppingCartIcon, permission: 'services:read' },
   { name: 'Services', href: '/services', icon: SparklesIcon, permission: 'services:read' },
   { name: 'Schedule', href: '/schedule', icon: CalendarDaysIcon, permission: 'schedule:read' },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 function classNames(...classes) {
@@ -71,7 +69,7 @@ export default function Layout({ children }) {
           
           {/* Menu positioned bottom-right */}
           <div 
-            className="position-fixed bg-body rounded-3  p-2" 
+            className="position-fixed bg-body rounded-3  p-1" 
             style={{ 
               minWidth: '12rem', 
               zIndex: 1051, 

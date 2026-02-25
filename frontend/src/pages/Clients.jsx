@@ -145,6 +145,15 @@ export default function Clients() {
     return labels[(tier || 'NONE').toUpperCase()] || tier || 'None';
   };
 
+  const getTierFilterButtonClass = () => {
+    if (tierFilter === 'all') return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    if (tierFilter === 'PLATINUM') return 'bg-purple-600 text-white';
+    if (tierFilter === 'GOLD') return 'bg-yellow-500 text-white';
+    if (tierFilter === 'SILVER') return 'bg-gray-400 text-white';
+    if (tierFilter === 'BRONZE') return 'bg-orange-600 text-white';
+    return 'bg-gray-500 text-white'; // NONE
+  };
+
   // Filter clients
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
@@ -313,13 +322,10 @@ export default function Clients() {
                 <button
                   type="button"
                   onClick={() => setIsTierFilterOpen(!isTierFilterOpen)}
-                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
-                    tierFilter !== 'all'
-                      ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`}
                   style={{ width: '3rem', height: '3rem' }}
                   title="Filter by tier"
+                  data-active={tierFilter !== 'all'}
                 >
                   <StarIcon className="h-6 w-6" />
                 </button>

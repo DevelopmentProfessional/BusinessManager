@@ -761,6 +761,7 @@ export default function Sales() {
             }`}
             style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title={selectedClient ? `Client: ${selectedClient.name}` : 'Select client'}
+            data-active={!!selectedClient}
           >
             <UserCircleIcon className="h-5 w-5" />
             {selectedClient && (
@@ -790,6 +791,7 @@ export default function Sales() {
             onClick={() => setShowServices((prev) => !prev)}
             aria-pressed={showServices}
             title="Toggle Services"
+            data-active={showServices}
             className={`flex-shrink-0 btn btn-sm ${
               showServices
                 ? 'btn-primary'
@@ -806,6 +808,7 @@ export default function Sales() {
             onClick={() => setShowProducts((prev) => !prev)}
             aria-pressed={showProducts}
             title="Toggle Products"
+            data-active={showProducts}
             className={`flex-shrink-0 btn btn-sm ${
               showProducts
                 ? 'btn-secondary'

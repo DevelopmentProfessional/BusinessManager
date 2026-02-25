@@ -46,7 +46,8 @@
       "Bash(find:*)",
       "Bash(git:*)",
       "Bash(cd \"C:/Users/dpint/Documents/Development/BusinessManager/frontend\" && node --input-type=module <<'EOF'\n// Quick syntax check - just try to parse the files\nimport { readFileSync } from 'fs';\nconst files = [\n  'src/pages/Clients.jsx',\n  'src/pages/components/Modal_Detail_Client.jsx',\n  'src/services/api.js',\n];\nfor \\(const f of files\\) {\n  try {\n    const content = readFileSync\\(f, 'utf8'\\);\n    console.log\\(`✓ ${f} \\(${content.length} chars\\)`\\);\n  } catch \\(e\\) {\n    console.log\\(`✗ ${f}: ${e.message}`\\);\n  }\n}\nEOF)",
-      "Read(//c/Users/dpint/.claude/projects/c--Users-dpint-Documents-Development-BusinessManager/e39ef214-8aad-4099-bdc3-75385e0728c7/tool-results/**)"
+      "Read(//c/Users/dpint/.claude/projects/c--Users-dpint-Documents-Development-BusinessManager/e39ef214-8aad-4099-bdc3-75385e0728c7/tool-results/**)",
+      "Bash(cd \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\frontend\" && node --input-type=module --eval \"\nimport { readFileSync } from 'fs';\nconst src = readFileSync\\('./src/pages/Profile.jsx', 'utf8'\\);\n// Check for balanced braces\nlet depth = 0;\nfor \\(const ch of src\\) { if \\(ch === '{'\\) depth++; else if \\(ch === '}'\\) depth--; }\nconsole.log\\('Brace balance:', depth, '\\(should be 0 or small\\)'\\);\nconsole.log\\('File size:', src.length, 'chars'\\);\nconsole.log\\('Has HelpIcon:', src.includes\\('HelpIcon'\\)\\);\nconsole.log\\('Has canAccessSettings:', src.includes\\('canAccessSettings'\\)\\);\nconsole.log\\('Has Row 2:', src.includes\\('Row 2'\\)\\);\nconsole.log\\('Has schedule panel:', src.includes\\('Schedule Settings'\\)\\);\nconsole.log\\('Has general panel:', src.includes\\('General Settings'\\)\\);\nconsole.log\\('Has database panel:', src.includes\\('Database Settings'\\)\\);\n\" 2>&1)"
     ]
   }
 }

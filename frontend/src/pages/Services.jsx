@@ -296,6 +296,7 @@ export default function Services() {
                   }`}
                   style={{ width: '3rem', height: '3rem' }}
                   title="Filter by category"
+                  data-active={categoryFilter !== 'all'}
                 >
                   <FolderOpenIcon className="h-6 w-6" />
                 </button>
