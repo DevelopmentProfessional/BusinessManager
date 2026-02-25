@@ -403,16 +403,19 @@ export default function Settings() {
     paddingLeft: '1rem',
     paddingRight: '1rem',
     paddingBottom: '0.25rem',
+    display: 'flex',
+    flexDirection: 'column',
   };
 
   return (
-    <div className="d-flex flex-column min-h-screen">
+    <div className="d-flex flex-column overflow-hidden pb-3" style={{ height: '100dvh' }}>
       <div className="flex-grow-1" />
 
       {/* Schedule Panel */}
       {openAccordion === 'schedule' && (
         <div className="accordion-popup no-scrollbar" style={panelStyle}>
-          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0, width: '100%' }}>
           {/* Schedule Settings */}
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6 flex items-center gap-2">
@@ -542,7 +545,8 @@ export default function Settings() {
       {/* General Panel */}
       {openAccordion === 'general' && (
         <div className="accordion-popup no-scrollbar" style={panelStyle}>
-          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0, width: '100%' }}>
             <div className="space-y-4">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <CogIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -849,7 +853,8 @@ export default function Settings() {
       {/* Database Panel */}
       {openAccordion === 'database' && (
         <div className="accordion-popup no-scrollbar" style={panelStyle}>
-          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0, width: '100%' }}>
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6 flex items-center gap-2">
                 <CircleStackIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -1052,10 +1057,10 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Fixed Footer */}
+      {/* Footer */}
       <div
-        className="d-flex gap-1 p-2 bg-body border-top position-fixed bottom-0 start-0 end-0"
-        style={{ zIndex: 1100, minHeight: '60px', paddingRight: '5rem', alignItems: 'center' }}
+        className="flex-shrink-0 d-flex align-items-center gap-1 p-2 bg-body border-top"
+        style={{ zIndex: 1100 }}
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -1064,8 +1069,8 @@ export default function Settings() {
               key={tab.id}
               type="button"
               onClick={() => setOpenAccordion(openAccordion === tab.id ? '' : tab.id)}
-              className={`btn btn-sm ${openAccordion === tab.id ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === tab.id ? 'btn-primary' : 'btn-outline-secondary'}`}
+              style={{ width: '3rem', height: '3rem' }}
               title={tab.name}
             >
               <Icon className="h-5 w-5" />

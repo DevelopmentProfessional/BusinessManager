@@ -410,7 +410,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="d-flex flex-column min-h-screen">
+    <div className="d-flex flex-column overflow-hidden" style={{ height: '100dvh' }}>
       
       {/* Main Content Area */}
       <div className="flex-grow-1"></div>
@@ -423,7 +423,7 @@ const Profile = () => {
           style={{ 
             position: 'fixed',
             top: 0,
-            bottom: '84px',
+            bottom: '60px',
             left: 0,
             right: 0,
             width: '100%',
@@ -434,9 +434,13 @@ const Profile = () => {
             paddingTop: '1rem',
             paddingLeft: '1rem',
             paddingRight: '1rem',
-            paddingBottom: '0.25rem'
+            paddingBottom: '0.25rem',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0 }}>
               <div className="row">
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
@@ -501,6 +505,7 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+          </div>
         )}
 
       {/* Benefits Content */}
@@ -521,9 +526,13 @@ const Profile = () => {
             paddingTop: '1rem',
             paddingLeft: '1rem',
             paddingRight: '1rem',
-            paddingBottom: '0.25rem' 
+            paddingBottom: '0.25rem',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
+          <div style={{ flexGrow: 1 }} />
+          <div style={{ flexShrink: 0 }}>
 
               {/* Salary / Pay / Insurance */}
               <div className="row g-2 mb-3">
@@ -637,6 +646,7 @@ const Profile = () => {
               </div>
 
             </div>
+          </div>
         )}
 
       {/* Settings Content */}
@@ -842,7 +852,7 @@ const Profile = () => {
             maxHeight: 'calc(100vh - 164px)',
             overflowY: 'auto',
             backgroundColor: 'var(--bs-card-bg, white)',  
-            zIndex: 50, 
+            zIndex: 1000,
           }}
           className="accordion-popup"
         >
@@ -951,36 +961,33 @@ const Profile = () => {
 
       {/* Footer Tabs */}
       <div
-        className="d-flex gap-1 bg-body border-top position-fixed bottom-0 start-0 end-0 p-3 pb-2 mb-3 "
-        style={{ zIndex: 100, paddingRight: '5rem', alignItems: 'center' }}
+        className="flex-shrink-0 d-flex align-items-center gap-1 p-4 ps-3 pt-2 bg-body border-top"
+        style={{ zIndex: 1100 }}
       >
-          {/* Profile Tab */}
-          <button
+        <button
           type="button"
-          className={`btn btn-sm ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ width: '3rem', height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ width: '3rem', height: '3rem' }}
           onClick={() => setOpenAccordion(openAccordion === 'profile' ? '' : 'profile')}
           title="Profile"
         >
           <UserIcon className="h-5 w-5" />
         </button>
 
-        {/* Benefits Tab */}
         <button
           type="button"
-          className={`btn btn-sm ${openAccordion === 'benefits' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === 'benefits' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ width: '3rem', height: '3rem' }}
           onClick={() => setOpenAccordion(openAccordion === 'benefits' ? '' : 'benefits')}
           title="Benefits"
         >
           <HeartIcon className="h-5 w-5" />
         </button>
 
-        {/* Settings Tab */}
         <button
           type="button"
-          className={`btn btn-sm ${openAccordion === 'settings' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === 'settings' ? 'btn-primary' : 'btn-outline-secondary'}`}
+          style={{ width: '3rem', height: '3rem' }}
           onClick={() => setOpenAccordion(openAccordion === 'settings' ? '' : 'settings')}
           title="Settings"
         >
