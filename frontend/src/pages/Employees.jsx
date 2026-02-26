@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
@@ -13,6 +13,8 @@ import Modal_Permissions_User from './components/Modal_Permissions_User';
 import Modal_Manage_Roles from './components/Modal_Manage_Roles';
 import Modal_Requests_Employee from './components/Modal_Requests_Employee';
 import Modal_Insurance_Plans from './components/Modal_Insurance_Plans';
+import Chat_Employee from './components/Chat_Employee';
+import Modal_Wages from './components/Modal_Wages';
 
 export default function Employees() {
   const { 
@@ -79,13 +81,61 @@ export default function Employees() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState('');
   const [paySuccess, setPaySuccess] = useState('');
+  const [availableWeeks, setAvailableWeeks] = useState([]);
+  const [payWeeksLoading, setPayWeeksLoading] = useState(false);
+  const [paidEmployeeIds, setPaidEmployeeIds] = useState({});
+
+  // Chat state
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chattingEmployee, setChattingEmployee] = useState(null);
+
+  const [appSettings, setAppSettings] = useState(null);
+
+  // Wages modal
+  const [showWagesModal, setShowWagesModal] = useState(false);
 
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
     loadEmployees();
     // Roles are loaded on-demand when the Manage Roles modal is opened
+    settingsAPI.getSettings().then((res) => setAppSettings(res.data)).catch(() => {});
   }, []);
+
+  // Load payment status for all employees when they update
+  useEffect(() => {
+    const loadPaymentStatus = async () => {
+      if (!employees.length) return;
+      
+      const statuses = {};
+      for (const employee of employees) {
+        if (!employee.pay_frequency) continue;
+        
+        try {
+          const res = await payrollAPI.getByEmployee(employee.id);
+          const paySlips = res?.data ?? res ?? [];
+          const currentPeriod = getCurrentPayPeriod(employee);
+          
+          if (currentPeriod && Array.isArray(paySlips)) {
+            const paidForPeriod = paySlips.some(slip => {
+              const slipStart = new Date(slip.pay_period_start);
+              const slipEnd = new Date(slip.pay_period_end);
+              return slip.status === 'paid' && 
+                     slipStart <= currentPeriod.end && 
+                     slipEnd >= currentPeriod.start;
+            });
+            statuses[employee.id] = paidForPeriod;
+          }
+        } catch (err) {
+          console.error('Failed to load payment status for employee:', employee.id);
+          statuses[employee.id] = false;
+        }
+      }
+      setPaidEmployeeIds(statuses);
+    };
+    
+    loadPaymentStatus();
+  }, [employees]);
 
   const loadRoles = async () => {
     try {
@@ -105,24 +155,77 @@ export default function Employees() {
     return role ? role.name : '-';
   };
 
-  const handleOpenPay = (employee, e) => {
+  const generateWeeks = (paidStartDates, count = 26) => {
+    const weeks = [];
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() - daysToMonday);
+    thisMonday.setHours(0, 0, 0, 0);
+    for (let i = 0; i < count; i++) {
+      const monday = new Date(thisMonday);
+      monday.setDate(thisMonday.getDate() - i * 7);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const mondayStr = monday.toISOString().slice(0, 10);
+      const sundayStr = sunday.toISOString().slice(0, 10);
+      const isPaid = paidStartDates.some(d => {
+        const dStr = typeof d === 'string' ? d.slice(0, 10) : new Date(d).toISOString().slice(0, 10);
+        return dStr === mondayStr;
+      });
+      weeks.push({
+        start: mondayStr,
+        end: sundayStr,
+        label: `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+        isPaid,
+      });
+    }
+    return weeks;
+  };
+
+  const handleOpenPay = async (employee, e) => {
     e.stopPropagation();
     setPayingEmployee(employee);
     setPayError('');
     setPaySuccess('');
-    // Default period to current month
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-    setPayForm({
-      pay_period_start: start,
-      pay_period_end: end,
+    setAvailableWeeks([]);
+    const baseForm = {
+      pay_period_start: '',
+      pay_period_end: '',
       gross_amount: employee.salary ? String(employee.salary) : '',
       hours_worked: '',
       other_deductions: '',
       notes: '',
-    });
-    setShowPayModal(true);
+    };
+    if (employee.pay_frequency === 'weekly') {
+      setPayForm(baseForm);
+      setShowPayModal(true);
+      setPayWeeksLoading(true);
+      try {
+        const res = await payrollAPI.getByEmployee(employee.id);
+        const slips = res?.data ?? res;
+        const paidStarts = Array.isArray(slips) ? slips.map(s => s.pay_period_start) : [];
+        setAvailableWeeks(generateWeeks(paidStarts));
+      } catch (err) {
+        console.error('Failed to load pay history:', err);
+        setAvailableWeeks(generateWeeks([]));
+      } finally {
+        setPayWeeksLoading(false);
+      }
+    } else {
+      const now = new Date();
+      let start, end;
+      if (employee.pay_frequency === 'daily') {
+        start = now.toISOString().slice(0, 10);
+        end = start;
+      } else {
+        start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+      }
+      setPayForm({ ...baseForm, pay_period_start: start, pay_period_end: end });
+      setShowPayModal(true);
+    }
   };
 
   const handlePaySubmit = async (e) => {
@@ -146,6 +249,22 @@ export default function Employees() {
       }
       await payrollAPI.processPayment(payingEmployee.id, payload);
       setPaySuccess('Payment processed successfully!');
+      
+      // Refresh payment status for this employee
+      const res = await payrollAPI.getByEmployee(payingEmployee.id);
+      const paySlips = res?.data ?? res ?? [];
+      const currentPeriod = getCurrentPayPeriod(payingEmployee);
+      if (currentPeriod && Array.isArray(paySlips)) {
+        const paidForPeriod = paySlips.some(slip => {
+          const slipStart = new Date(slip.pay_period_start);
+          const slipEnd = new Date(slip.pay_period_end);
+          return slip.status === 'paid' && 
+                 slipStart <= currentPeriod.end && 
+                 slipEnd >= currentPeriod.start;
+        });
+        setPaidEmployeeIds(prev => ({ ...prev, [payingEmployee.id]: paidForPeriod }));
+      }
+      
       setTimeout(() => { setShowPayModal(false); setPaySuccess(''); }, 1500);
     } catch (err) {
       setPayError(err.response?.data?.detail || 'Failed to process payment');
@@ -756,6 +875,70 @@ export default function Employees() {
   const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
 
+  // Helper function to determine current pay period based on pay_frequency
+  const getCurrentPayPeriod = (employee) => {
+    if (!employee.pay_frequency) return null;
+    
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    
+    switch(employee.pay_frequency) {
+      case 'daily':
+        return {
+          start: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+          end: new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        };
+      case 'weekly':
+        const dayOfWeek = now.getDay();
+        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+        const weekStart = new Date(now.setDate(diff));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        return {
+          start: new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()),
+          end: new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate())
+        };
+      case 'biweekly':
+        const weekStart2 = new Date(startOfYear);
+        const weeksElapsed = Math.floor((now - weekStart2) / (7 * 24 * 60 * 60 * 1000));
+        const periodNum = Math.floor(weeksElapsed / 2);
+        const biStart = new Date(startOfYear);
+        biStart.setDate(biStart.getDate() + periodNum * 14);
+        const biEnd = new Date(biStart);
+        biEnd.setDate(biEnd.getDate() + 13);
+        return {
+          start: new Date(biStart.getFullYear(), biStart.getMonth(), biStart.getDate()),
+          end: new Date(biEnd.getFullYear(), biEnd.getMonth(), biEnd.getDate())
+        };
+      case 'monthly':
+        return {
+          start: new Date(now.getFullYear(), now.getMonth(), 1),
+          end: new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        };
+      case 'annually':
+        return {
+          start: new Date(now.getFullYear(), 0, 1),
+          end: new Date(now.getFullYear(), 11, 31)
+        };
+      default:
+        return null;
+    }
+  };
+
+  // Helper function to check if employee has been paid for current pay period
+  const isEmployeePaidForCurrentPeriod = (employee) => {
+    if (!employee || !employees.length) return false;
+    
+    // For employees without a pay frequency, we can't determine pay period
+    const currentPeriod = getCurrentPayPeriod(employee);
+    if (!currentPeriod) return false;
+    
+    // Check if any of the loaded employees' payroll data shows a paid slip for current period
+    // Since we don't have direct access to pay slips here, we'll need to load it
+    // For now, return false as default - will be checked on demand
+    return false;
+  };
+
   // Helper function to get manager name from reports_to ID
   const getManagerName = (reportsToId) => {
     if (!reportsToId) return '-';
@@ -828,7 +1011,7 @@ export default function Employees() {
                       </div>
                     </td>
 
-                    {/* Role + Pay */}
+                    {/* Role + Pay + Chat */}
                     <td className="px-3">
                       <div className="d-flex align-items-center gap-1 justify-content-between">
                         <span className={`badge rounded-pill ${
@@ -838,17 +1021,23 @@ export default function Employees() {
                         }`}>
                           {employee.role}
                         </span>
-                        {hasPermission('employees', 'admin') && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-success py-0 px-1"
-                            style={{ fontSize: '0.7rem' }}
-                            title={`Pay ${employee.first_name}`}
-                            onClick={(e) => handleOpenPay(employee, e)}
-                          >
-                            $
-                          </button>
-                        )}
+                        <div className="d-flex align-items-center gap-1">
+                          {employee.id !== currentUser?.id && (
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary m-0 d-flex align-items-center justify-content-center"
+                              style={{ width: '3rem', height: '3rem' }}
+                              title={`Chat with ${employee.first_name}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setChattingEmployee(employee);
+                                setShowChatModal(true);
+                              }}
+                            >
+                              <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -902,6 +1091,14 @@ export default function Employees() {
                   title="Manage insurance plans"
                 >
                   Insurance
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowWagesModal(true)}
+                  className="btn btn-sm btn-outline-success rounded-pill"
+                  title="Wages & payroll"
+                >
+                  Wages
                 </button>
               </div>
             )}
@@ -1179,31 +1376,78 @@ export default function Employees() {
                   {paySuccess && <div className="alert alert-success py-1 px-2 small mb-2">{paySuccess}</div>}
                   <div className="mb-2 small text-muted">
                     Type: <strong style={{ textTransform: 'capitalize' }}>{payingEmployee.employment_type || 'salary'}</strong>
+                    {payingEmployee.pay_frequency && (
+                      <> &middot; Freq: <strong style={{ textTransform: 'capitalize' }}>{payingEmployee.pay_frequency.replace('_', '-')}</strong></>
+                    )}
                     {payingEmployee.insurance_plan && (
                       <> &middot; Insurance: <strong>{payingEmployee.insurance_plan}</strong></>
                     )}
                   </div>
-                  <div className="mb-2">
-                    <label className="form-label small mb-1">Pay Period Start</label>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={payForm.pay_period_start}
-                      onChange={e => setPayForm(f => ({ ...f, pay_period_start: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="mb-2">
-                    <label className="form-label small mb-1">Pay Period End</label>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={payForm.pay_period_end}
-                      min={payForm.pay_period_start || undefined}
-                      onChange={e => setPayForm(f => ({ ...f, pay_period_end: e.target.value }))}
-                      required
-                    />
-                  </div>
+
+                  {/* Period selector — varies by pay frequency */}
+                  {payingEmployee.pay_frequency === 'weekly' ? (
+                    <div className="mb-2">
+                      <label className="form-label small mb-1">Select Week</label>
+                      {payWeeksLoading ? (
+                        <div className="text-muted small py-1">Loading weeks…</div>
+                      ) : (
+                        <select
+                          className="form-select form-select-sm"
+                          value={payForm.pay_period_start}
+                          onChange={e => {
+                            const week = availableWeeks.find(w => w.start === e.target.value);
+                            if (week) setPayForm(f => ({ ...f, pay_period_start: week.start, pay_period_end: week.end }));
+                          }}
+                          required
+                        >
+                          <option value="">— Select a week —</option>
+                          {availableWeeks.map(w => (
+                            <option key={w.start} value={w.start} disabled={w.isPaid}>
+                              {w.label}{w.isPaid ? ' ✓ Paid' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {payForm.pay_period_start && (
+                        <div className="text-muted small mt-1">{payForm.pay_period_start} → {payForm.pay_period_end}</div>
+                      )}
+                    </div>
+                  ) : payingEmployee.pay_frequency === 'daily' ? (
+                    <div className="mb-2">
+                      <label className="form-label small mb-1">Payment Date</label>
+                      <input
+                        type="date"
+                        className="form-control form-control-sm"
+                        value={payForm.pay_period_start}
+                        onChange={e => setPayForm(f => ({ ...f, pay_period_start: e.target.value, pay_period_end: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-2">
+                        <label className="form-label small mb-1">Pay Period Start</label>
+                        <input
+                          type="date"
+                          className="form-control form-control-sm"
+                          value={payForm.pay_period_start}
+                          onChange={e => setPayForm(f => ({ ...f, pay_period_start: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="mb-2">
+                        <label className="form-label small mb-1">Pay Period End</label>
+                        <input
+                          type="date"
+                          className="form-control form-control-sm"
+                          value={payForm.pay_period_end}
+                          min={payForm.pay_period_start || undefined}
+                          onChange={e => setPayForm(f => ({ ...f, pay_period_end: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
                   {payingEmployee.employment_type === 'hourly' ? (
                     <div className="mb-2">
                       <label className="form-label small mb-1">Hours Worked</label>
@@ -1276,6 +1520,15 @@ export default function Employees() {
         </div>
       )}
 
+      {/* Employee Chat Modal */}
+      {showChatModal && chattingEmployee && (
+        <Chat_Employee
+          employee={chattingEmployee}
+          currentUser={currentUser}
+          onClose={() => { setShowChatModal(false); setChattingEmployee(null); }}
+        />
+      )}
+
       {/* Insurance Plans Modal */}
       <Modal_Insurance_Plans
         isOpen={showInsuranceModal}
@@ -1291,6 +1544,14 @@ export default function Employees() {
         onDelete={handleInsurancePlanDelete}
         onToggle={handleInsurancePlanToggle}
       />
+
+      {/* Wages Modal */}
+      {showWagesModal && (
+        <Modal_Wages
+          employees={employees}
+          onClose={() => setShowWagesModal(false)}
+        />
+      )}
 
     </div>
   );

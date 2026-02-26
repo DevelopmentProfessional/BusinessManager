@@ -717,6 +717,13 @@ export const payrollAPI = {
     api.get(`/payroll/check/${employeeId}?period_start=${encodeURIComponent(periodStart)}`),
 };
 
+export const chatAPI = {
+  getHistory: (otherUserId) => api.get(`/chat/messages/${otherUserId}`),
+  sendMessage: (receiverId, data) => api.post(`/chat/messages/${receiverId}`, data),
+  markRead: (otherUserId) => api.put(`/chat/messages/${otherUserId}/read`),
+  getUnreadCounts: () => api.get('/chat/unread-counts'),
+};
+
 export const adminAPI = {
   importData: (formData) => {
     clearCache('clients');
@@ -745,6 +752,21 @@ export const settingsAPI = {
     clearCache('schedule-settings');
     return api.put('/settings/schedule', data);
   },
+  // Aliases (same endpoint, both names work)
+  getSettings: () => getCachedOrFetch('schedule-settings', () => api.get('/settings/schedule')),
+  updateSettings: (data) => {
+    clearCache('schedule-settings');
+    return api.put('/settings/schedule', data);
+  },
+};
+
+export const templatesAPI = {
+  getAll: (page) => api.get('/templates' + (page ? `?page=${encodeURIComponent(page)}` : '')),
+  getById: (id) => api.get(`/templates/${id}`),
+  create: (data) => api.post('/templates', data),
+  update: (id, data) => api.put(`/templates/${id}`, data),
+  delete: (id) => api.delete(`/templates/${id}`),
+  render: (id, variables) => api.post(`/templates/${id}/render`, { variables }),
 };
 
 // Schema/Database Import API

@@ -30,11 +30,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates"}:
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates  # type: ignore
     else:
         raise
 
@@ -179,11 +179,23 @@ async def startup_event():
     print("Business Management API is starting...")
     # Initialize database tables
     try:
-        from backend.database import create_db_and_tables
+        from backend.database import create_db_and_tables, get_session
     except ModuleNotFoundError:
-        from database import create_db_and_tables
+        from database import create_db_and_tables, get_session
     create_db_and_tables()
     print("Database tables initialized")
+    # Seed standard templates
+    try:
+        from backend.routers.templates import seed_standard_templates
+    except ModuleNotFoundError:
+        from routers.templates import seed_standard_templates
+    try:
+        session = next(get_session())
+        seed_standard_templates(session)
+        session.close()
+        print("Standard templates seeded")
+    except Exception as e:
+        print(f"Warning: Could not seed standard templates: {e}")
     print("All routers loaded successfully")
 
 # Include routers (documents + document_category CRUD go through isud)
@@ -195,6 +207,8 @@ app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
 app.include_router(leave_requests.router, prefix="/api/v1", tags=["leave-requests"])
 app.include_router(payroll.router, prefix="/api/v1", tags=["payroll"])
+app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
+app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
 
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).

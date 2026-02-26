@@ -533,10 +533,12 @@ export default function Form_Employee({
                 <div className="form-floating">
                   <select id="pay_frequency" name="pay_frequency" value={formData.pay_frequency} onChange={handleInputChange} className="form-select form-select-sm">
                     <option value="">Select frequency</option>
+                    <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="biweekly">Bi-weekly</option>
                     <option value="monthly">Monthly</option>
                     <option value="annually">Annually</option>
+                    <option value="one_time">One-time (Contract)</option>
                   </select>
                   <label htmlFor="pay_frequency">Pay Frequency</label>
                 </div>

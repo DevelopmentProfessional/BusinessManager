@@ -9,7 +9,7 @@ import {
   UserCircleIcon, ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -197,6 +197,7 @@ export default function Sales() {
     } catch { return []; }
   });
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [appSettings, setAppSettings] = useState(null);
   const [historyFilters, setHistoryFilters] = useState({
     showServices: true,
     showProducts: true,
@@ -211,6 +212,7 @@ export default function Sales() {
     hasFetched.current = true;
     loadServices();
     loadProducts();
+    settingsAPI.getSettings().then(res => setAppSettings(res.data)).catch(() => {});
   }, []);
 
   const loadTransactionHistory = async () => {
@@ -880,6 +882,8 @@ export default function Sales() {
         cartTotal={cartTotal}
         selectedClient={selectedClient}
         onProcessPayment={processPayment}
+        currentUser={user}
+        appSettings={appSettings}
       />
 
       {/* Sales History */}
