@@ -210,6 +210,15 @@ const Profile = () => {
     sunday_enabled: true,
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
+
+  // Company info state
+  const [companyInfo, setCompanyInfo] = useState({
+    company_name: '',
+    company_email: '',
+    company_phone: '',
+    company_address: '',
+  });
+  const [companyLoading, setCompanyLoading] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const [openAccordions, setOpenAccordions] = useState({
@@ -293,6 +302,12 @@ const Profile = () => {
             saturday_enabled: res.data.saturday_enabled ?? true,
             sunday_enabled: res.data.sunday_enabled ?? true,
           });
+          setCompanyInfo({
+            company_name: res.data.company_name || '',
+            company_email: res.data.company_email || '',
+            company_phone: res.data.company_phone || '',
+            company_address: res.data.company_address || '',
+          });
         }
       } catch { /* silently degrade */ }
     };
@@ -371,6 +386,23 @@ const Profile = () => {
       setSettingsError(err.response?.data?.detail || 'Failed to save schedule settings');
     } finally {
       setScheduleLoading(false);
+    }
+  };
+
+  const handleCompanyInfoChange = (field, value) => setCompanyInfo(prev => ({ ...prev, [field]: value }));
+
+  const handleSaveCompanyInfo = async () => {
+    setCompanyLoading(true);
+    setSettingsError('');
+    setSettingsSuccess('');
+    try {
+      await settingsAPI.updateSettings(companyInfo);
+      setSettingsSuccess('Company info saved!');
+      setTimeout(() => setSettingsSuccess(''), 3000);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || 'Failed to save company info');
+    } finally {
+      setCompanyLoading(false);
     }
   };
 
@@ -1317,6 +1349,48 @@ const Profile = () => {
         <div className="accordion-popup" style={settingsPanelStyle}>
           <div style={{ flexGrow: 1 }} />
           <div style={{ flexShrink: 0, width: '100%' }}>
+
+            {/* Company Info */}
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <BriefcaseIcon className="h-5 w-5" /> Company Info
+            </h2>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="form-floating">
+                <input type="text" id="company_name" value={companyInfo.company_name}
+                  onChange={(e) => handleCompanyInfoChange('company_name', e.target.value)}
+                  className="form-control form-control-sm" placeholder="Company Name" />
+                <label htmlFor="company_name">Company Name</label>
+              </div>
+              <div className="form-floating">
+                <input type="email" id="company_email" value={companyInfo.company_email}
+                  onChange={(e) => handleCompanyInfoChange('company_email', e.target.value)}
+                  className="form-control form-control-sm" placeholder="Company Email" />
+                <label htmlFor="company_email">Company Email</label>
+              </div>
+              <div className="form-floating">
+                <input type="text" id="company_phone" value={companyInfo.company_phone}
+                  onChange={(e) => handleCompanyInfoChange('company_phone', e.target.value)}
+                  className="form-control form-control-sm" placeholder="Company Phone" />
+                <label htmlFor="company_phone">Company Phone</label>
+              </div>
+              <div className="form-floating">
+                <input type="text" id="company_address" value={companyInfo.company_address}
+                  onChange={(e) => handleCompanyInfoChange('company_address', e.target.value)}
+                  className="form-control form-control-sm" placeholder="Company Address" />
+                <label htmlFor="company_address">Company Address</label>
+              </div>
+            </div>
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={handleSaveCompanyInfo}
+                className="btn btn-primary btn-sm"
+                disabled={companyLoading}
+              >
+                {companyLoading ? 'Saving...' : 'Save Company Info'}
+              </button>
+            </div>
+
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <ClockIcon className="h-5 w-5" /> Schedule Settings
             </h2>

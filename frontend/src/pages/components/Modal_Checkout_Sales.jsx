@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Modal from './Modal';
-import { 
-  XMarkIcon, CreditCardIcon, BanknotesIcon, 
+import Modal_Template_Use from './Modal_Template_Use';
+import {
+  XMarkIcon, CreditCardIcon, BanknotesIcon,
   CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon,
-  UserIcon, ReceiptPercentIcon
+  UserIcon, ReceiptPercentIcon, PrinterIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
@@ -11,14 +12,16 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
  * Modal_Checkout_Sales - A reusable checkout/payment modal component
  * Handles card and cash payments with validation and processing animation
  */
-export default function Modal_Checkout_Sales({ 
-  isOpen, 
-  onClose, 
-  cart = [], 
-  cartTotal = 0, 
+export default function Modal_Checkout_Sales({
+  isOpen,
+  onClose,
+  cart = [],
+  cartTotal = 0,
   selectedClient = null,
   onProcessPayment,
-  taxRate = 0.08
+  taxRate = 0.08,
+  currentUser = null,
+  appSettings = null,
 }) {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [cardNumber, setCardNumber] = useState('');
@@ -27,6 +30,9 @@ export default function Modal_Checkout_Sales({
   const [cardName, setCardName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showTemplateUse, setShowTemplateUse] = useState(false);
+  const [templateFilterType, setTemplateFilterType] = useState(null);
+  const completedSaleRef = useRef(null);
   
   const subtotal = cartTotal;
   const tax = subtotal * taxRate;
@@ -83,22 +89,35 @@ export default function Modal_Checkout_Sales({
     setCardName('');
     setPaymentSuccess(false);
     setIsProcessing(false);
+    setShowTemplateUse(false);
+    setTemplateFilterType(null);
+    completedSaleRef.current = null;
   };
   
   const handleSubmit = async () => {
     setIsProcessing(true);
-    
+
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
+    // Capture sale entity so template modal has stable data
+    completedSaleRef.current = {
+      id: Date.now().toString(),
+      created_at: new Date().toISOString(),
+      subtotal,
+      tax_amount: tax,
+      total,
+      payment_method: paymentMethod,
+    };
+
     setIsProcessing(false);
     setPaymentSuccess(true);
-    
-    // Wait a moment then complete
-    setTimeout(() => {
-      onProcessPayment(paymentMethod);
-      resetForm();
-    }, 1500);
+    // User clicks Done to close — no auto-close
+  };
+
+  const handleDone = () => {
+    onProcessPayment(paymentMethod);
+    resetForm();
   };
   
   const handleClose = () => {
@@ -132,13 +151,52 @@ export default function Modal_Checkout_Sales({
         </div>
         
         {paymentSuccess ? (
-          <div className="p-1 text-center">
+          <div className="p-4 text-center">
             <div className="w-24 h-24 mx-auto mb-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center animate-in zoom-in duration-300">
               <CheckCircleSolid className="h-14 w-14 text-emerald-500" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-2">Transaction completed successfully</p>
-            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">${total.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-4">${total.toFixed(2)}</p>
+            <div className="flex justify-center gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => { setTemplateFilterType('invoice'); setShowTemplateUse(true); }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <PrinterIcon className="h-4 w-4" /> Print Invoice
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTemplateFilterType('receipt'); setShowTemplateUse(true); }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <PrinterIcon className="h-4 w-4" /> Print Receipt
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleDone}
+              className="px-6 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+            >
+              Done
+            </button>
+            {showTemplateUse && completedSaleRef.current && (
+              <Modal_Template_Use
+                page="sales"
+                entity={completedSaleRef.current}
+                client={selectedClient}
+                items={cart.map(item => ({
+                  item_name: item.name,
+                  quantity: item.quantity,
+                  line_total: item.price * item.quantity,
+                }))}
+                currentUser={currentUser}
+                settings={appSettings}
+                filterType={templateFilterType}
+                onClose={() => setShowTemplateUse(false)}
+              />
+            )}
           </div>
         ) : (
           <div className="flex flex-col md:flex-row max-h-[calc(90vh-80px)] overflow-hidden">

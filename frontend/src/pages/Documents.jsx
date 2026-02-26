@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
@@ -12,15 +12,17 @@ import {
   CheckCircleIcon,
   TagIcon,
   XMarkIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { documentsAPI, documentCategoriesAPI } from '../services/api';
+import api, { documentsAPI, documentCategoriesAPI, templatesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Table_Mobile from './components/Table_Mobile';
 import Button_Add_Mobile from './components/Button_Add_Mobile';
 import Gate_Permission from './components/Gate_Permission';
 import Modal_Viewer_Document from './components/Modal_Viewer_Document';
 import Modal_Edit_Document from './components/Modal_Edit_Document';
+import Modal_Template_Editor from './components/Modal_Template_Editor';
 
 function DocumentUploadForm({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -230,6 +232,14 @@ export default function Documents() {
   const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
   const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
 
+  // Templates state
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+  const [templateTypeFilter, setTemplateTypeFilter] = useState('all');
+
   const categoryNameById = useMemo(() => {
     return new Map(categories.map((cat) => [String(cat.id), cat.name]));
   }, [categories]);
@@ -284,7 +294,53 @@ export default function Documents() {
     hasFetched.current = true;
     loadDocuments();
     loadCategories();
+    loadTemplates();
   }, []);
+
+  const loadTemplates = async () => {
+    setTemplatesLoading(true);
+    try {
+      const res = await templatesAPI.getAll();
+      setTemplates(res.data || []);
+    } catch (err) {
+      console.warn('Failed to load templates', err);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  const handleNewTemplate = () => {
+    setEditingTemplate(null);
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleEditTemplate = (tpl) => {
+    setEditingTemplate(tpl);
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleSaveTemplate = async (data) => {
+    if (editingTemplate?.id) {
+      const res = await templatesAPI.update(editingTemplate.id, data);
+      setTemplates((prev) => prev.map((t) => (t.id === editingTemplate.id ? res.data : t)));
+    } else {
+      const res = await templatesAPI.create(data);
+      setTemplates((prev) => [...prev, res.data]);
+    }
+    setIsTemplateEditorOpen(false);
+    setEditingTemplate(null);
+  };
+
+  const handleDeleteTemplate = async (tpl) => {
+    if (!window.confirm(`Delete template "${tpl.name}"?`)) return;
+    try {
+      await templatesAPI.delete(tpl.id);
+      setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Failed to delete template';
+      alert(msg);
+    }
+  };
 
   const loadDocuments = async (retries = 2) => {
     setLoading(true);
@@ -609,47 +665,113 @@ export default function Documents() {
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
           style={{ background: 'var(--bs-body-bg)' }}
         >
-          {filteredDocuments.length > 0 ? (
-            <table className="table table-borderless table-hover mb-0 table-fixed">
-              <colgroup>
-                <col />
-                <col style={{ width: '60px' }} />
-              </colgroup>
-              <tbody>
-                {filteredDocuments.map((doc, index) => (
-                  <tr
-                    key={doc.id || index}
-                    className="align-middle border-bottom"
-                    style={{ height: '56px' }}
-                  >
-                    {/* File Name */}
-                    <td className="px-3">
-                      <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
-                        {doc.original_filename ?? '(unnamed)'}
-                      </div>
-                      <div className="small text-muted text-truncate">
-                        {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
-                      </div>
-                    </td>
-
-                    {/* View */}
-                    <td className="text-center px-2">
-                      <button
-                        onClick={() => handleView(doc)}
-                        className="btn btn-sm btn-outline-primary border-0 p-1"
-                        title="View"
-                      >
-                        👁
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {showTemplates ? (
+            /* ── Templates list ── */
+            (() => {
+              const TEMPLATE_TYPE_COLORS = {
+                email: 'bg-blue-100 text-blue-800',
+                invoice: 'bg-green-100 text-green-800',
+                receipt: 'bg-teal-100 text-teal-800',
+                memo: 'bg-purple-100 text-purple-800',
+                quote: 'bg-yellow-100 text-yellow-800',
+                custom: 'bg-gray-100 text-gray-700',
+              };
+              const filtered = templates.filter(
+                (t) => templateTypeFilter === 'all' || t.template_type === templateTypeFilter
+              );
+              return filtered.length > 0 ? (
+                <table className="table table-borderless table-hover mb-0 table-fixed">
+                  <colgroup>
+                    <col />
+                    <col style={{ width: '80px' }} />
+                  </colgroup>
+                  <tbody>
+                    {filtered.map((tpl) => (
+                      <tr key={tpl.id} className="align-middle border-bottom" style={{ height: '56px' }}>
+                        <td className="px-3">
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-medium text-truncate">{tpl.name}</span>
+                            {tpl.is_standard && (
+                              <span className="badge bg-warning text-dark" style={{ fontSize: '0.65rem' }}>Standard</span>
+                            )}
+                          </div>
+                          <span className={`badge rounded-pill mt-1 ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`} style={{ fontSize: '0.65rem' }}>
+                            {tpl.template_type}
+                          </span>
+                        </td>
+                        <td className="text-center px-2">
+                          <div className="d-flex gap-1 justify-content-center">
+                            <button
+                              onClick={() => handleEditTemplate(tpl)}
+                              className="btn btn-sm btn-outline-primary border-0 p-1"
+                              title="Edit"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTemplate(tpl)}
+                              className="btn btn-sm btn-outline-danger border-0 p-1"
+                              title={tpl.is_standard ? 'Standard templates cannot be deleted' : 'Delete'}
+                              disabled={tpl.is_standard}
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+                  {templatesLoading ? 'Loading templates...' : 'No templates found'}
+                </div>
+              );
+            })()
           ) : (
-            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
-              No documents found
-            </div>
+            /* ── Documents list ── */
+            filteredDocuments.length > 0 ? (
+              <table className="table table-borderless table-hover mb-0 table-fixed">
+                <colgroup>
+                  <col />
+                  <col style={{ width: '60px' }} />
+                </colgroup>
+                <tbody>
+                  {filteredDocuments.map((doc, index) => (
+                    <tr
+                      key={doc.id || index}
+                      className="align-middle border-bottom"
+                      style={{ height: '56px' }}
+                    >
+                      {/* File Name */}
+                      <td className="px-3">
+                        <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                          {doc.original_filename ?? '(unnamed)'}
+                        </div>
+                        <div className="small text-muted text-truncate">
+                          {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
+                        </div>
+                      </td>
+
+                      {/* View */}
+                      <td className="text-center px-2">
+                        <button
+                          onClick={() => handleView(doc)}
+                          className="btn btn-sm btn-outline-primary border-0 p-1"
+                          title="View"
+                        >
+                          👁
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+                No documents found
+              </div>
+            )
           )}
         </div>
 
@@ -659,45 +781,93 @@ export default function Documents() {
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
               <col />
-              <col style={{ width: '60px' }} />
+              <col style={{ width: showTemplates ? '80px' : '60px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
-                <th>Document</th>
-                <th className="text-center">View</th>
+                <th>{showTemplates ? 'Template' : 'Document'}</th>
+                <th className="text-center">{showTemplates ? 'Actions' : 'View'}</th>
               </tr>
             </tfoot>
           </table>
 
           {/* Controls */}
           <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="position-relative w-100 mb-2">
-              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Search by name, type, or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="app-search-input form-control ps-5 w-100 rounded-pill"
-              />
-            </div>
+            {!showTemplates && (
+              <div className="position-relative w-100 mb-2">
+                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search by name, type, or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="app-search-input form-control ps-5 w-100 rounded-pill"
+                />
+              </div>
+            )}
 
             <div className="d-flex align-items-center gap-1 mb-1 flex-wrap pb-1">
-              <Gate_Permission page="documents" permission="write">
-                <button
-                  type="button"
-                  onClick={handleUploadDocument}
-                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Upload document"
-                >
-                  <PlusIcon className="h-5 w-5" />
-                </button>
-              </Gate_Permission>
+              {/* Templates toggle */}
+              <button
+                type="button"
+                onClick={() => setShowTemplates((v) => !v)}
+                className={`btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                  showTemplates
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                style={{ width: '3rem', height: '3rem' }}
+                title={showTemplates ? 'Back to Documents' : 'Templates'}
+              >
+                <DocumentTextIcon className="h-5 w-5" />
+              </button>
+
+              {showTemplates ? (
+                /* Templates mode controls */
+                <>
+                  <button
+                    type="button"
+                    onClick={handleNewTemplate}
+                    className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="New template"
+                  >
+                    <PlusIcon className="h-5 w-5" />
+                  </button>
+                  {/* Type filter for templates */}
+                  {['all', 'email', 'invoice', 'receipt', 'memo', 'quote', 'custom'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTemplateTypeFilter(t)}
+                      className={`btn btn-sm rounded-pill px-3 border-0 ${
+                        templateTypeFilter === t
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
+                    </button>
+                  ))}
+                </>
+              ) : (
+                /* Documents mode controls */
+                <>
+                  <Gate_Permission page="documents" permission="write">
+                    <button
+                      type="button"
+                      onClick={handleUploadDocument}
+                      className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                      style={{ width: '3rem', height: '3rem' }}
+                      title="Upload document"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                    </button>
+                  </Gate_Permission>
 
               {/* Clear Filters Button */}
               {(categoryFilter !== 'all' || statusFilter !== 'all' || typeFilter !== 'all') && (
@@ -825,11 +995,22 @@ export default function Documents() {
                   </div>
                 )}
               </div>
+                </>
+              )}
 
             </div>
           </div>
         </div>
       </div>
+
+      {/* Template Editor Modal */}
+      {isTemplateEditorOpen && (
+        <Modal_Template_Editor
+          template={editingTemplate}
+          onSave={handleSaveTemplate}
+          onClose={() => { setIsTemplateEditorOpen(false); setEditingTemplate(null); }}
+        />
+      )}
 
       {/* Document Upload Modal */}
       <Modal

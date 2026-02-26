@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
-import { clientsAPI } from '../services/api';
+import { clientsAPI, settingsAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Client from './components/Form_Client';
 import Modal_Detail_Client from './components/Modal_Detail_Client';
 import Gate_Permission from './components/Gate_Permission';
-import { PlusIcon, StarIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import Modal_Template_Use from './components/Modal_Template_Use';
 
 export default function Clients() {
   const {
     clients, setClients, addClient, updateClient, removeClient,
     loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
+    isModalOpen, modalContent, openModal, closeModal, hasPermission,
+    user,
   } = useStore();
 
   // Check permissions at page level
@@ -29,6 +31,11 @@ export default function Clients() {
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
+
+  // Template modal state
+  const [templateClient, setTemplateClient] = useState(null);
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [appSettings, setAppSettings] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -36,6 +43,7 @@ export default function Clients() {
     if (hasFetched.current) return;
     hasFetched.current = true;
     loadClients();
+    settingsAPI.getSettings().then((res) => setAppSettings(res.data)).catch(() => {});
   }, []);
 
   // Auto-open create modal when navigated with ?new=1
@@ -221,7 +229,7 @@ export default function Clients() {
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
                 <col />
-                <col style={{ width: '110px' }} />
+                <col style={{ width: '140px' }} />
               </colgroup>
               <tbody>
                 {filteredClients.map((client, index) => (
@@ -239,11 +247,21 @@ export default function Clients() {
                       </div>
                     </td>
 
-                    {/* Membership */}
+                    {/* Membership + template */}
                     <td className="px-2">
-                      <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>
-                        {getTierLabel(client.membership_tier)}
-                      </span>
+                      <div className="d-flex align-items-center gap-1">
+                        <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>
+                          {getTierLabel(client.membership_tier)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setTemplateClient(client); setIsTemplateOpen(true); }}
+                          className="btn btn-sm p-1 border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                          title="Use template"
+                        >
+                          <EnvelopeIcon className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -396,6 +414,17 @@ export default function Clients() {
           />
         )}
       </Modal>
+
+      {/* Template Use Modal */}
+      {isTemplateOpen && templateClient && (
+        <Modal_Template_Use
+          page="clients"
+          entity={templateClient}
+          currentUser={user}
+          settings={appSettings}
+          onClose={() => { setIsTemplateOpen(false); setTemplateClient(null); }}
+        />
+      )}
     </div>
   );
 }

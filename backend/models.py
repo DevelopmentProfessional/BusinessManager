@@ -358,6 +358,11 @@ class AppSettings(BaseModel, table=True):
     friday_enabled: bool = Field(default=True)
     saturday_enabled: bool = Field(default=True)
     sunday_enabled: bool = Field(default=True)
+    # Company info
+    company_name: Optional[str] = Field(default=None)
+    company_email: Optional[str] = Field(default=None)
+    company_phone: Optional[str] = Field(default=None)
+    company_address: Optional[str] = Field(default=None)
 
 
 # Document model (table name and types aligned with PostgreSQL schema)
@@ -950,6 +955,10 @@ class AppSettingsUpdate(SQLModel):
     friday_enabled: Optional[bool] = None
     saturday_enabled: Optional[bool] = None
     sunday_enabled: Optional[bool] = None
+    company_name: Optional[str] = None
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
 
 
 class AppSettingsRead(SQLModel):
@@ -964,6 +973,10 @@ class AppSettingsRead(SQLModel):
     friday_enabled: bool
     saturday_enabled: bool
     sunday_enabled: bool
+    company_name: Optional[str] = None
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -1308,6 +1321,36 @@ class SaleTransactionRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# Chat models
+class ChatMessage(BaseModel, table=True):
+    __tablename__ = "chat_message"
+    sender_id: UUID = Field(foreign_key="user.id", index=True)
+    receiver_id: UUID = Field(foreign_key="user.id", index=True)
+    content: Optional[str] = Field(default=None)
+    message_type: str = Field(default="text")  # "text" or "document"
+    document_id: Optional[UUID] = Field(default=None, foreign_key="document.id")
+    is_read: bool = Field(default=False)
+
+
+class ChatMessageCreate(SQLModel):
+    content: Optional[str] = None
+    message_type: str = "text"
+    document_id: Optional[UUID] = None
+
+
+class ChatMessageRead(SQLModel):
+    id: UUID
+    sender_id: UUID
+    receiver_id: UUID
+    content: Optional[str] = None
+    message_type: str
+    document_id: Optional[UUID] = None
+    is_read: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class SaleTransactionCreate(SQLModel):
     client_id: Optional[UUID] = None
     employee_id: Optional[UUID] = None
@@ -1339,3 +1382,50 @@ class SaleTransactionItemCreate(SQLModel):
     unit_price: float = 0
     quantity: int = 1
     line_total: float = 0
+
+
+# Document Template model
+class DocumentTemplate(BaseModel, table=True):
+    __tablename__ = "document_template"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    template_type: str = Field(default="custom")  # email|invoice|receipt|memo|quote|custom
+    content: str = Field(default="")              # HTML with {{var}} placeholders
+    is_standard: bool = Field(default=False)      # standard = cannot delete
+    is_active: bool = Field(default=True)
+    accessible_pages: Optional[str] = Field(default='[]')  # JSON string: '["clients"]'
+
+
+class DocumentTemplateCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+    template_type: str = "custom"
+    content: str = ""
+    is_standard: bool = False
+    is_active: bool = True
+    accessible_pages: Optional[str] = '[]'
+
+
+class DocumentTemplateUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    template_type: Optional[str] = None
+    content: Optional[str] = None
+    is_standard: Optional[bool] = None
+    is_active: Optional[bool] = None
+    accessible_pages: Optional[str] = None
+
+
+class DocumentTemplateRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    template_type: str
+    content: str
+    is_standard: bool
+    is_active: bool
+    accessible_pages: Optional[str] = '[]'
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
