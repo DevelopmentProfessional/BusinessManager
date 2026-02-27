@@ -1145,7 +1145,7 @@ export default function Employees() {
                 />
               </div>
 
-              <div className="d-flex align-items-center gap-1 flex-wrap pb-2">
+              <div className="d-flex align-items-center gap-1 flex-wrap pb-2" style={{ minHeight: '3rem' }}>
                 <Gate_Permission page="employees" permission="write">
                   <Button_Toolbar
                     icon={PlusIcon}

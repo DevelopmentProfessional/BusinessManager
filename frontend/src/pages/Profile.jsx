@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
 import useViewMode from '../services/useViewMode';
+import Button_Toolbar from './components/Button_Toolbar';
 import { getMobileEnvironment } from '../services/mobileEnvironment';
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from '../services/performanceTracker';
 import {
@@ -1216,55 +1217,27 @@ const Profile = () => {
           <div style={{ flexGrow: 1 }}></div>
 
           {/* Action Buttons - Bottom */}
-          <div className="d-flex align-items-center justify-content-start gap-1 mb-3">
+          <div className="d-flex align-items-center justify-content-start gap-1 mb-3 flex-wrap" style={{ minHeight: '3rem' }}>
             {/* Dark Mode Toggle */}
-            <div className="position-relative">
-              <button
-                type="button"
-                onClick={toggleDarkMode}
-                className={`btn btn-sm ${isDarkMode ? 'text-white' : ''}`}
-                style={{ 
-                  width: '3rem', 
-                  height: '3rem', 
-                  padding: 0, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B',
-                  border: 'none'
-                }}
-                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDarkMode ? (
-                  <MoonIcon className="h-5 w-5" />
-                ) : (
-                  <SunIcon className="h-5 w-5" />
-                )}
-              </button>
-            </div>
+            <Button_Toolbar
+              icon={isDarkMode ? MoonIcon : SunIcon}
+              label={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              onClick={toggleDarkMode}
+              className={isDarkMode ? 'text-white' : ''}
+              style={{ backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
+            />
 
             {/* Calendar Color */}
             <div className="position-relative">
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={CalendarDaysIcon}
+                label="Calendar Color"
                 onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
-                className="btn btn-sm"
-                style={{ 
-                  width: '3rem', 
-                  height: '3rem', 
-                  padding: 0, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  backgroundColor: employeeColor,
-                  border: '2px solid var(--bs-border-color, #dee2e6)'
-                }}
-                title="Calendar color"
-                aria-expanded={colorPickerOpen}
+                className=""
+                style={{ backgroundColor: employeeColor, border: '2px solid var(--bs-border-color, #dee2e6)', color: 'white' }}
                 disabled={colorUpdating}
-              >
-                <CalendarDaysIcon className="h-5 w-5" style={{ color: 'white', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }} />
-              </button>
+                aria-expanded={colorPickerOpen}
+              />
               {colorPickerOpen && (
                 <div
                   className="position-absolute bottom-100 mb-2 start-0 p-2 border rounded bg-white dark:bg-gray-800 shadow-lg"
@@ -1300,26 +1273,12 @@ const Profile = () => {
             </div>
 
             {/* Signature */}
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon}
+              label="Signature"
               onClick={() => setSignatureModalOpen(true)}
-              className="btn btn-sm btn-outline-secondary"
-              style={{ 
-                width: '3rem', 
-                height: '3rem', 
-                padding: 0, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center'
-              }}
-              title="Manage signature"
-            >
-              {user?.signature_data || user?.signature_url ? (
-                <PencilSquareIcon className="h-5 w-5" />
-              ) : (
-                <PencilIcon className="h-5 w-5" />
-              )}
-            </button>
+              className="btn-outline-secondary"
+            />
 
             {/* Training / Compact Mode Toggle */}
             <button
@@ -1336,22 +1295,12 @@ const Profile = () => {
             </button>
 
             {/* Logout */}
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={ArrowLeftOnRectangleIcon}
+              label="Log out"
               onClick={handleLogout}
-              className="btn btn-sm btn-outline-secondary"
-              style={{
-                width: '3rem',
-                height: '3rem',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title="Log out"
-            >
-              <ArrowLeftOnRectangleIcon className="h-5 w-5" />
-            </button>
+              className="btn-outline-secondary"
+            />
           </div>
 
           {colorMessage && (

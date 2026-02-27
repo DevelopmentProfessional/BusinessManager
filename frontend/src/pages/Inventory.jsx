@@ -337,7 +337,7 @@ return (
           </div>
 
           {/* Controls row - Add, Type, Stock */}
-          <div className="d-flex align-items-center gap-1 pb-2 ">
+          <div className="d-flex align-items-center gap-1 pb-2" style={{ minHeight: '3rem' }}>
             <Gate_Permission page="inventory" permission="write">
               <Button_Toolbar
                 icon={PlusIcon}

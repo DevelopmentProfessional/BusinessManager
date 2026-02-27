@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI, employeesAPI, serviceRelationsAPI } from '../../services/api';
 import Widget_Camera from './Widget_Camera';
 
@@ -563,43 +564,33 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
           {/* Left: Delete */}
           <div style={{ width: 40 }}>
             {service && canDelete && (
-              <button
-                type="button"
-                style={{ height: '3rem', width: '3rem' }}
-                className="btn btn-outline-danger btn-sm p-1 align-items-center justify-content-center d-flex"
-                title="Delete service"
-                onClick={() => {
-                  if (window.confirm('Delete this service?')) onDelete(service.id);
-                }}
-              >
-                <TrashIcon style={{ width: 18, height: 18 }} />
-              </button>
+              <Button_Toolbar
+                icon={TrashIcon}
+                label="Delete service"
+                onClick={() => { if (window.confirm('Delete this service?')) onDelete(service.id); }}
+                className="btn-outline-danger"
+              />
             )}
           </div>
 
           {/* Center: Cancel + Save */}
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <button
-              type="button"
-              style={{ height: '3rem', width: '3rem' }}
-              className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
-              title="Cancel"
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
               onClick={onCancel}
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-outline-secondary"
+            />
 
             {/* Save only shown on Details tab */}
             {activeTab === 'details' && (
-              <button
+              <Button_Toolbar
+                icon={CheckIcon}
+                label={service ? 'Update service' : 'Create service'}
                 type="submit"
                 form="service-details-form"
-                className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
-                title={service ? 'Update service' : 'Create service'}
-                style={{ height: '3rem', width: '3rem' }}
-              >
-                <CheckIcon style={{ width: 18, height: 18 }} />
-              </button>
+                className="btn-primary"
+              />
             )}
           </div>
 

@@ -310,7 +310,7 @@ export default function Clients() {
             </div>
 
             {/* Controls row - Add, Tier */}
-            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap">
+            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap" style={{ minHeight: '3rem' }}>
               <Gate_Permission page="clients" permission="write">
                 <Button_Toolbar
                   icon={PlusIcon}

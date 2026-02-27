@@ -6,6 +6,7 @@ import {
   WrenchScrewdriverIcon, BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
+import Button_Toolbar from './Button_Toolbar';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
 import cacheService from '../../services/cacheService';
@@ -456,24 +457,19 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         <div className="d-flex align-items-center">
           <div style={{ width: 40 }} />
           <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
               onClick={onCancel}
-              className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Cancel"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
-            <button
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={item ? 'Save Changes' : 'Create Item'}
               type="submit"
               form="item-form"
-              className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
-              style={{ width: '3rem', height: '3rem' }}
-              title={item ? 'Save Changes' : 'Create Item'}
-            >
-              <CheckIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-primary"
+            />
           </div>
           <div style={{ width: 40 }} />
         </div>

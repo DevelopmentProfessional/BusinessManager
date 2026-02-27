@@ -1221,7 +1221,7 @@ export default function Schedule() {
 
         <div className="schedule-footer px-2 py-1 border-top pb-4">
           {/* Row 1: Month, Week, Day, Previous, Next */}
-          <div className="d-flex gap-1 mb-1 flex-wrap">
+          <div className="d-flex gap-1 mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={MonthViewIcon}
               label="Month"
@@ -1257,7 +1257,7 @@ export default function Schedule() {
             />
           </div>
           {/* Row 2: Today, Filter */}
-          <div className="d-flex gap-1 flex-wrap">
+          <div className="d-flex gap-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={TodayIcon}
               label="Today"
