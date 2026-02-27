@@ -24,7 +24,8 @@ Standalone usage:
 import os
 import sys
 import random
-from datetime import datetime, timedelta, date
+import argparse
+from datetime import datetime, timedelta, date, timezone
 from uuid import UUID, uuid4
 
 # ── path resolution so the script works run from any cwd ─────────────────────
@@ -59,7 +60,7 @@ except ModuleNotFoundError:
 # ─────────────────────────────────────────────────────────────────────────────
 random.seed(42)
 
-TODAY        = datetime(2026, 2, 25, 12, 0, 0)
+TODAY        = datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0, tzinfo=None)
 TODAY_DATE   = TODAY.date()
 START_DATE   = (TODAY - timedelta(days=122)).date()   # ≈ Oct 25 2025
 
@@ -278,15 +279,59 @@ def _seed_chat_messages(session: Session, user_by_username: dict) -> None:
         raise
 
 
-def seed_demo_data(session: Session) -> None:
+def _clear_recent_generated_data(session: Session) -> None:
+    """Clear generated transactional data in the last 4 months so reseed can be rerun safely."""
+    cutoff_dt = datetime(START_DATE.year, START_DATE.month, START_DATE.day)
+
+    recent_schedules = session.exec(
+        select(Schedule).where(Schedule.appointment_date >= cutoff_dt)
+    ).all()
+    recent_schedule_ids = {s.id for s in recent_schedules}
+
+    if recent_schedule_ids:
+        attendees = session.exec(select(ScheduleAttendee)).all()
+        for attendee in attendees:
+            if attendee.schedule_id in recent_schedule_ids:
+                session.delete(attendee)
+        for sched in recent_schedules:
+            session.delete(sched)
+
+    recent_sales = session.exec(
+        select(SaleTransaction).where(SaleTransaction.created_at >= cutoff_dt)
+    ).all()
+    recent_sale_ids = {s.id for s in recent_sales}
+
+    if recent_sale_ids:
+        sale_items = session.exec(select(SaleTransactionItem)).all()
+        for item in sale_items:
+            if item.sale_transaction_id in recent_sale_ids:
+                session.delete(item)
+        for sale in recent_sales:
+            session.delete(sale)
+
+    recent_slips = session.exec(
+        select(PaySlip).where(PaySlip.pay_period_start >= cutoff_dt)
+    ).all()
+    for slip in recent_slips:
+        session.delete(slip)
+
+    session.commit()
+    print("  ✓ Cleared recent schedules, sales, and payslips for reseed window")
+
+
+def seed_demo_data(session: Session, force: bool = False) -> None:
     # ── Guard: skip if already seeded ────────────────────────────────────────
     existing_clients = session.exec(select(Client)).all()
-    if len(existing_clients) >= 10:
+    if len(existing_clients) >= 10 and not force:
         print("  seed_demo_data: 10+ clients found — already seeded, skipping.")
         # Still seed chat messages if they're missing (idempotent)
         all_users = session.exec(select(User)).all()
         _seed_chat_messages(session, {u.username: u for u in all_users})
         return
+
+    if force:
+        print("  force mode enabled: refreshing last 4 months of generated transactional data…")
+        _clear_recent_generated_data(session)
 
     print("  seed_demo_data: starting…")
 
@@ -447,6 +492,7 @@ def seed_demo_data(session: Session) -> None:
     ]
 
     appt_count = 0
+    completed_appointments: list[Schedule] = []
     # Iterate over days in the 4-month window
     current = START_DATE
     rng = random.Random(42)
@@ -519,6 +565,9 @@ def seed_demo_data(session: Session) -> None:
             session.add(attendee_cl)
             appt_count += 1
 
+            if status == "completed":
+                completed_appointments.append(appt)
+
         current += timedelta(days=1)
 
     # ── Intentional overlapping appointments (4 cases) ──────────────────────
@@ -549,6 +598,10 @@ def seed_demo_data(session: Session) -> None:
 
     try:
         session.commit()
+        # Refresh completed appointments after commit so IDs and relationships are available
+        if completed_appointments:
+            for appt in completed_appointments:
+                session.refresh(appt)
         print(f"  ✓ ~{appt_count + 8} appointments (incl. 4 intentional overlaps)")
     except Exception:
         session.rollback()
@@ -560,27 +613,38 @@ def seed_demo_data(session: Session) -> None:
 
     sale_count = 0
     for i in range(32):
-        days_back = rng.randint(0, 120)
-        sale_date = TODAY - timedelta(days=days_back)
-        cl        = rng.choice(client_objs)
-        emp       = rng.choice(employee_objs)
+        # Prefer tying a sale to an existing completed appointment so purchased
+        # services are visibly represented in the calendar history.
+        linked_appt = rng.choice(completed_appointments) if completed_appointments else None
+
+        if linked_appt:
+            sale_date = linked_appt.appointment_date
+            cl = next((c for c in client_objs if c.id == linked_appt.client_id), rng.choice(client_objs))
+            emp = next((e for e in employee_objs if e.id == linked_appt.employee_id), rng.choice(employee_objs))
+            linked_service = next((s for s in service_objs if s.id == linked_appt.service_id), None)
+        else:
+            days_back = rng.randint(0, 120)
+            sale_date = TODAY - timedelta(days=days_back)
+            cl = rng.choice(client_objs)
+            emp = rng.choice(employee_objs)
+            linked_service = rng.choice(service_objs)
+
         method    = rng.choice(PAYMENT_METHODS)
 
-        # 1–3 line items: mix of services sold as retail + retail products
-        n_items   = rng.randint(1, 3)
+        # Always include at least one service + one product for richer client purchase history
+        n_items   = rng.randint(2, 3)
         items     = []
 
-        # Optionally include a service as a sold item
-        if rng.random() < 0.6:
-            svc = rng.choice(service_objs)
-            qty = 1
-            items.append(dict(
-                item_type  = "service",
-                item_name  = svc.name,
-                unit_price = svc.price,
-                quantity   = qty,
-                line_total = svc.price * qty,
-            ))
+        # Include the service associated with the completed appointment when available
+        svc = linked_service or rng.choice(service_objs)
+        qty = 1
+        items.append(dict(
+            item_type  = "service",
+            item_name  = svc.name,
+            unit_price = svc.price,
+            quantity   = qty,
+            line_total = svc.price * qty,
+        ))
 
         # Fill the rest with retail products
         products_needed = n_items - len(items)
@@ -715,12 +779,18 @@ def seed_demo_data(session: Session) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Seed BusinessManager demo data")
+    parser.add_argument("--force", action="store_true", help="Force refresh of last 4 months generated data")
+    args = parser.parse_args()
+
+    force_seed = args.force or os.getenv("FORCE_SEED", "").strip().lower() in {"1", "true", "yes", "y"}
+
     print("Creating / verifying database tables…")
     create_db_and_tables()
     print("Running seed…")
     session = next(get_session())
     try:
-        seed_demo_data(session)
+        seed_demo_data(session, force=force_seed)
     finally:
         session.close()
     print("Done.")
