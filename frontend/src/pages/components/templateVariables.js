@@ -40,6 +40,15 @@ export const TEMPLATE_VARIABLES = {
     { key: 'invoice.items', label: 'Line Items', description: 'List of purchased items' },
     { key: 'invoice.payment_method', label: 'Payment Method', description: 'Cash or card' },
   ],
+  appointment: [
+    { key: 'appointment.date', label: 'Appointment Date', description: 'Formatted date (e.g. Monday, March 15, 2026)' },
+    { key: 'appointment.time', label: 'Appointment Time', description: 'Time (e.g. 10:30 AM)' },
+    { key: 'appointment.day', label: 'Day of Week', description: 'Day name (e.g. Monday)' },
+    { key: 'appointment.service', label: 'Service Name', description: 'Name of the booked service' },
+    { key: 'appointment.duration', label: 'Duration', description: 'Appointment duration (e.g. 1 hour 30 min)' },
+    { key: 'appointment.notes', label: 'Notes', description: 'Appointment notes' },
+    { key: 'appointment.employee_name', label: 'Employee Name', description: 'Full name of the assigned employee' },
+  ],
 };
 
 /** Which variable scopes are available per page context */
@@ -47,6 +56,7 @@ export const PAGE_VARIABLE_SCOPES = {
   clients: ['system', 'company', 'sender', 'client'],
   employees: ['system', 'company', 'sender', 'employee'],
   sales: ['system', 'company', 'sender', 'client', 'invoice'],
+  schedule: ['system', 'company', 'sender', 'client', 'appointment'],
 };
 
 /**
@@ -104,6 +114,16 @@ export function buildEmployeeVariables(employee, currentUser, settings) {
   };
 }
 
+/** Format duration in minutes to a human-readable string */
+function formatDuration(minutes) {
+  if (!minutes) return '';
+  const m = parseInt(minutes, 10);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem > 0 ? `${h} hour ${rem} min` : `${h} hour${h !== 1 ? 's' : ''}`;
+}
+
 /** Build a flat variable dict from a sale transaction + client + current user + settings */
 export function buildSalesVariables(transaction, client, currentUser, settings, items = []) {
   const now = new Date();
@@ -134,5 +154,46 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
     'invoice.tax': transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '',
     'invoice.items': itemsHtml,
     'invoice.payment_method': transaction?.payment_method || '',
+  };
+}
+
+/** Build a flat variable dict from a schedule appointment + related objects */
+export function buildScheduleVariables(appointment, client, employee, service, currentUser, settings) {
+  const now = new Date();
+  let apptDate = '';
+  let apptTime = '';
+  let apptDay = '';
+  if (appointment?.appointment_date) {
+    const d = new Date(appointment.appointment_date);
+    if (!Number.isNaN(d.getTime())) {
+      apptDate = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      apptTime = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      apptDay = d.toLocaleDateString('en-US', { weekday: 'long' });
+    }
+  }
+  const employeeName = employee
+    ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim()
+    : '';
+  return {
+    date: now.toLocaleDateString('en-CA'),
+    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    'company.name': settings?.company_name || '',
+    'company.email': settings?.company_email || '',
+    'company.phone': settings?.company_phone || '',
+    'company.address': settings?.company_address || '',
+    'sender.first_name': currentUser?.first_name || '',
+    'sender.last_name': currentUser?.last_name || '',
+    'sender.email': currentUser?.email || '',
+    'client.name': client?.name || '',
+    'client.email': client?.email || '',
+    'client.phone': client?.phone || '',
+    'client.membership_tier': client?.membership_tier || 'none',
+    'appointment.date': apptDate,
+    'appointment.time': apptTime,
+    'appointment.day': apptDay,
+    'appointment.service': service?.name || '',
+    'appointment.duration': formatDuration(appointment?.duration_minutes),
+    'appointment.notes': appointment?.notes || '',
+    'appointment.employee_name': employeeName,
   };
 }

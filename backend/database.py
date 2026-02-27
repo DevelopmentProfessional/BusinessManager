@@ -175,6 +175,7 @@ def create_db_and_tables():
     _ensure_user_payroll_columns_if_needed()
     _ensure_insurance_plan_monthly_deduction_if_needed()
     _ensure_schedule_recurrence_columns_if_needed()
+    _ensure_chat_message_table_if_needed()
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
@@ -918,6 +919,60 @@ def _ensure_schedule_recurrence_columns_if_needed():
                 if col not in col_names:
                     conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
                     print(f"  + Added column schedule.{col} ({col_type})")
+
+
+def _ensure_chat_message_table_if_needed():
+    """Ensure the chat_message table exists with all required columns.
+
+    SQLModel.metadata.create_all creates the table on fresh installs, but
+    existing databases that were set up before chat was added need an explicit
+    migration to create the table.
+    """
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='chat_message'"
+            )).fetchone()
+            if not tbl_exists:
+                conn.execute(text("""
+                    CREATE TABLE chat_message (
+                        id TEXT PRIMARY KEY,
+                        created_at DATETIME NOT NULL,
+                        updated_at DATETIME,
+                        sender_id TEXT NOT NULL REFERENCES "user"(id),
+                        receiver_id TEXT NOT NULL REFERENCES "user"(id),
+                        content TEXT,
+                        message_type VARCHAR NOT NULL DEFAULT 'text',
+                        document_id TEXT REFERENCES document(id),
+                        is_read BOOLEAN NOT NULL DEFAULT 0
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_sender_id ON chat_message(sender_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_receiver_id ON chat_message(receiver_id)"))
+                print("✓ Created chat_message table (SQLite)")
+    else:
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='chat_message')"
+            )).scalar()
+            if not tbl_exists:
+                conn.execute(text("""
+                    CREATE TABLE chat_message (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE,
+                        sender_id UUID NOT NULL REFERENCES "user"(id),
+                        receiver_id UUID NOT NULL REFERENCES "user"(id),
+                        content TEXT,
+                        message_type VARCHAR NOT NULL DEFAULT 'text',
+                        document_id UUID REFERENCES document(id),
+                        is_read BOOLEAN NOT NULL DEFAULT FALSE
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_sender_id ON chat_message(sender_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_receiver_id ON chat_message(receiver_id)"))
+                print("✓ Created chat_message table (PostgreSQL)")
 
 
 def _ensure_leave_request_supervisor_id_if_needed():

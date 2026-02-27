@@ -88,6 +88,7 @@ export default function Employees() {
   // Chat state
   const [showChatModal, setShowChatModal] = useState(false);
   const [chattingEmployee, setChattingEmployee] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   const [appSettings, setAppSettings] = useState(null);
 
@@ -106,36 +107,45 @@ export default function Employees() {
   useEffect(() => {
     const loadPaymentStatus = async () => {
       if (!employees.length) return;
-      
-      const statuses = {};
-      for (const employee of employees) {
-        if (!employee.pay_frequency) continue;
-        
-        try {
-          const res = await payrollAPI.getByEmployee(employee.id);
-          const paySlips = res?.data ?? res ?? [];
+      try {
+        const res = await payrollAPI.getAll();
+        const allSlips = res?.data ?? res ?? [];
+        if (!Array.isArray(allSlips)) return;
+
+        const statuses = {};
+        for (const employee of employees) {
+          if (!employee.pay_frequency) continue;
           const currentPeriod = getCurrentPayPeriod(employee);
-          
-          if (currentPeriod && Array.isArray(paySlips)) {
-            const paidForPeriod = paySlips.some(slip => {
-              const slipStart = new Date(slip.pay_period_start);
-              const slipEnd = new Date(slip.pay_period_end);
-              return slip.status === 'paid' && 
-                     slipStart <= currentPeriod.end && 
-                     slipEnd >= currentPeriod.start;
-            });
-            statuses[employee.id] = paidForPeriod;
-          }
-        } catch (err) {
-          console.error('Failed to load payment status for employee:', employee.id);
-          statuses[employee.id] = false;
+          if (!currentPeriod) continue;
+          const slips = allSlips.filter(s => String(s.employee_id) === String(employee.id));
+          statuses[employee.id] = slips.some(slip => {
+            const slipStart = new Date(slip.pay_period_start);
+            const slipEnd = new Date(slip.pay_period_end);
+            return slip.status === 'paid' &&
+                   slipStart <= currentPeriod.end &&
+                   slipEnd >= currentPeriod.start;
+          });
         }
+        setPaidEmployeeIds(statuses);
+      } catch {
+        // silent — backend may be unavailable
       }
-      setPaidEmployeeIds(statuses);
     };
-    
+
     loadPaymentStatus();
   }, [employees]);
+
+  const loadUnreadCounts = async () => {
+    try {
+      const res = await chatAPI.getUnreadCounts();
+      const data = res?.data ?? res;
+      if (data && typeof data === 'object') setUnreadCounts(data);
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    loadUnreadCounts();
+  }, []);
 
   const loadRoles = async () => {
     try {
@@ -1025,16 +1035,30 @@ export default function Employees() {
                           {employee.id !== currentUser?.id && (
                             <button
                               type="button"
-                              className="btn btn-outline-secondary m-0 d-flex align-items-center justify-content-center"
+                              className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? 'btn-primary' : 'btn-outline-secondary'}`}
                               style={{ width: '3rem', height: '3rem' }}
-                              title={`Chat with ${employee.first_name}`}
+                              title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ''}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setChattingEmployee(employee);
                                 setShowChatModal(true);
+                                // Clear badge immediately, backend will mark as read
+                                setUnreadCounts(prev => {
+                                  const next = { ...prev };
+                                  delete next[employee.id];
+                                  return next;
+                                });
                               }}
                             >
                               <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
+                              {!!unreadCounts[employee.id] && (
+                                <span
+                                  className="badge bg-danger rounded-pill position-absolute"
+                                  style={{ top: 2, right: 2, fontSize: '0.6rem', minWidth: 16, padding: '2px 4px' }}
+                                >
+                                  {unreadCounts[employee.id] > 9 ? '9+' : unreadCounts[employee.id]}
+                                </span>
+                              )}
                             </button>
                           )}
                         </div>
@@ -1525,7 +1549,7 @@ export default function Employees() {
         <Chat_Employee
           employee={chattingEmployee}
           currentUser={currentUser}
-          onClose={() => { setShowChatModal(false); setChattingEmployee(null); }}
+          onClose={() => { setShowChatModal(false); setChattingEmployee(null); loadUnreadCounts(); }}
         />
       )}
 

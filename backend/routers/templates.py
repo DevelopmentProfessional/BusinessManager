@@ -21,12 +21,19 @@ _STANDARD_TEMPLATES = [
     {
         "name": "Client Reminder Email",
         "template_type": "email",
-        "accessible_pages": '["clients"]',
-        "description": "A reminder email to send to clients.",
+        "accessible_pages": '["clients","schedule"]',
+        "description": "A reminder email to send to clients about upcoming appointments.",
         "content": (
             "<p>Dear {{client.name}},</p>"
-            "<p>This is a friendly reminder from <strong>{{company.name}}</strong>.</p>"
-            "<p>If you have any questions, please contact us at {{company.email}} or {{company.phone}}.</p>"
+            "<p>This is a friendly reminder about your upcoming appointment:</p>"
+            "<ul>"
+            "<li><strong>Date:</strong> {{appointment.date}}</li>"
+            "<li><strong>Time:</strong> {{appointment.time}}</li>"
+            "<li><strong>Service:</strong> {{appointment.service}}</li>"
+            "<li><strong>Duration:</strong> {{appointment.duration}}</li>"
+            "<li><strong>With:</strong> {{appointment.employee_name}}</li>"
+            "</ul>"
+            "<p>If you need to reschedule, please contact us at {{company.phone}} or {{company.email}}.</p>"
             "<p>Best regards,<br>{{sender.first_name}} {{sender.last_name}}<br>{{company.name}}</p>"
         ),
     },
@@ -118,19 +125,46 @@ _STANDARD_TEMPLATES = [
             "<p><em>{{company.name}} | {{company.phone}}</em></p>"
         ),
     },
+    {
+        "name": "Appointment Confirmation",
+        "template_type": "email",
+        "accessible_pages": '["schedule","clients"]',
+        "description": "Confirmation email for a booked appointment.",
+        "content": (
+            "<p>Dear {{client.name}},</p>"
+            "<p>Your appointment has been confirmed. Here are the details:</p>"
+            "<ul>"
+            "<li><strong>Date:</strong> {{appointment.date}}</li>"
+            "<li><strong>Time:</strong> {{appointment.time}}</li>"
+            "<li><strong>Service:</strong> {{appointment.service}}</li>"
+            "<li><strong>Duration:</strong> {{appointment.duration}}</li>"
+            "<li><strong>With:</strong> {{appointment.employee_name}}</li>"
+            "</ul>"
+            "<p>Please arrive a few minutes early. If you need to cancel or reschedule, "
+            "contact us at {{company.phone}} or {{company.email}}.</p>"
+            "<p>We look forward to seeing you!</p>"
+            "<p>Best regards,<br>{{sender.first_name}} {{sender.last_name}}<br>{{company.name}}</p>"
+        ),
+    },
 ]
 
 
 def seed_standard_templates(session: Session) -> None:
-    """Insert missing standard templates. Safe to call multiple times (idempotent)."""
-    existing_names = set(
-        row[0]
+    """Upsert standard templates — insert if missing, update content/pages if already exists."""
+    existing = {
+        row.name: row
         for row in session.exec(
-            select(DocumentTemplate.name).where(DocumentTemplate.is_standard == True)
+            select(DocumentTemplate).where(DocumentTemplate.is_standard == True)
         ).all()
-    )
+    }
     for tpl in _STANDARD_TEMPLATES:
-        if tpl["name"] not in existing_names:
+        if tpl["name"] in existing:
+            obj = existing[tpl["name"]]
+            obj.content = tpl["content"]
+            obj.accessible_pages = tpl["accessible_pages"]
+            obj.description = tpl.get("description", obj.description)
+            obj.template_type = tpl["template_type"]
+        else:
             obj = DocumentTemplate(
                 name=tpl["name"],
                 template_type=tpl["template_type"],

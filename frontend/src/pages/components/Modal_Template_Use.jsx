@@ -6,6 +6,7 @@ import {
   buildClientVariables,
   buildEmployeeVariables,
   buildSalesVariables,
+  buildScheduleVariables,
 } from './templateVariables';
 
 const TYPE_BADGE_COLOR = {
@@ -19,13 +20,15 @@ const TYPE_BADGE_COLOR = {
 
 /**
  * Props:
- *  page          – 'clients' | 'employees' | 'sales'
- *  entity        – client | employee | transaction object
+ *  page          – 'clients' | 'employees' | 'sales' | 'schedule'
+ *  entity        – client | employee | transaction | appointment object
  *  currentUser   – logged-in user object
  *  settings      – AppSettings object
  *  items         – (optional) sale transaction items for sales page
- *  client        – (optional) client for sales page
- *  filterType    – (optional) only show templates of this type (e.g. 'invoice', 'receipt')
+ *  client        – (optional) client for sales/schedule page
+ *  employee      – (optional) employee for schedule page
+ *  service       – (optional) service for schedule page
+ *  filterType    – (optional) only show templates of this type (e.g. 'email', 'invoice')
  *  onClose       – callback to close this modal
  */
 export default function Modal_Template_Use({
@@ -35,6 +38,8 @@ export default function Modal_Template_Use({
   settings,
   items = [],
   client,
+  employee,
+  service,
   filterType = null,
   onClose,
 }) {
@@ -71,6 +76,7 @@ export default function Modal_Template_Use({
     if (page === 'clients') return buildClientVariables(entity, currentUser, settings);
     if (page === 'employees') return buildEmployeeVariables(entity, currentUser, settings);
     if (page === 'sales') return buildSalesVariables(entity, client || entity, currentUser, settings, items);
+    if (page === 'schedule') return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
     return {};
   };
 
@@ -205,6 +211,9 @@ export default function Modal_Template_Use({
                 >
                   Copy Text
                 </button>
+                {/* TODO: Email sending — wire emailAPI.sendEmail({ to: client.email, subject: selected.name, html_body: renderedHtml })
+                    Requires backend SMTP router (backend/routers/email.py) and env vars:
+                    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM */}
               </div>
               {/* iframe preview */}
               <div className="flex-1 overflow-hidden">
