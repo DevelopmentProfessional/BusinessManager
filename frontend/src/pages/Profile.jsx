@@ -34,9 +34,10 @@ import {
   CurrencyDollarIcon,
   AcademicCapIcon,
   Squares2X2Icon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
-import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
+import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, preloadMajorTables } from '../services/api';
 import api from '../services/api';
 import Modal_Signature from './components/Modal_Signature';
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
@@ -192,6 +193,7 @@ const Profile = () => {
   // ── Settings state ──────────────────────────────────────────────────────────
   const [settingsError, setSettingsError] = useState('');
   const [settingsSuccess, setSettingsSuccess] = useState('');
+  const [syncLoading, setSyncLoading] = useState(false);
 
   const { branding, updateBranding } = useBranding();
   const [localBranding, setLocalBranding] = useState(branding);
@@ -408,6 +410,32 @@ const Profile = () => {
       setSettingsError(err.response?.data?.detail || 'Failed to save company info');
     } finally {
       setCompanyLoading(false);
+    }
+  };
+
+  const handleManualSync = async () => {
+    setSyncLoading(true);
+    setSettingsError('');
+    setSettingsSuccess('');
+    try {
+      if (typeof window !== 'undefined' && typeof window.clearApiCache === 'function') {
+        window.clearApiCache();
+      }
+
+      await preloadMajorTables();
+
+      try {
+        await settingsAPI.getScheduleSettings();
+      } catch {
+        // best-effort ping only
+      }
+
+      setSettingsSuccess('Sync complete. Latest server data has been refreshed.');
+      setTimeout(() => setSettingsSuccess(''), 3000);
+    } catch (err) {
+      setSettingsError('Sync failed. Please try again.');
+    } finally {
+      setSyncLoading(false);
     }
   };
 
@@ -1484,6 +1512,17 @@ const Profile = () => {
                         <span className="small fw-medium">Environment</span>
                         <span className="small text-muted">{import.meta.env.DEV ? 'Development' : 'Production'}</span>
                       </div>
+                    </div>
+                    <div className="col-12">
+                      <button
+                        type="button"
+                        onClick={handleManualSync}
+                        disabled={syncLoading}
+                        className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                      >
+                        <ArrowPathIcon className="h-4 w-4" />
+                        <span>{syncLoading ? 'Syncing…' : 'Sync Now'}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
