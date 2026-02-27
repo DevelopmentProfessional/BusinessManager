@@ -23,6 +23,39 @@ else:
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
     engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 
+# Bump this string whenever you add a new migration function
+CURRENT_SCHEMA_VERSION = "2026.02.27.1"
+
+def _schema_is_current() -> bool:
+    """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE TABLE IF NOT EXISTS schema_migration (version TEXT PRIMARY KEY)"))
+            result = conn.execute(
+                text("SELECT 1 FROM schema_migration WHERE version = :v"),
+                {"v": CURRENT_SCHEMA_VERSION}
+            ).fetchone()
+            return result is not None
+    except Exception:
+        return False
+
+def _mark_schema_current():
+    """Record that the schema is now at CURRENT_SCHEMA_VERSION."""
+    try:
+        with engine.begin() as conn:
+            if DATABASE_URL.startswith("sqlite"):
+                conn.execute(
+                    text("INSERT OR REPLACE INTO schema_migration (version) VALUES (:v)"),
+                    {"v": CURRENT_SCHEMA_VERSION}
+                )
+            else:
+                conn.execute(
+                    text("INSERT INTO schema_migration (version) VALUES (:v) ON CONFLICT (version) DO NOTHING"),
+                    {"v": CURRENT_SCHEMA_VERSION}
+                )
+    except Exception as e:
+        print(f"Warning: Could not mark schema version: {e}")
+
 def _migrate_documents_table_if_needed():
     """Ensure SQLite 'document' table allows NULL for entity fields.
     If existing table has NOT NULL constraints on entity_type/entity_id, migrate schema preserving data.
@@ -150,13 +183,16 @@ def _migrate_document_entity_type_enum_to_varchar():
 
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
-    # Pre-create migrations: move legacy product/assets to item schema and adjust inventory FK
-    _migrate_products_and_inventory_to_items_if_needed()
-    # Convert document.entity_type from PG enum to varchar BEFORE create_all
-    _migrate_document_entity_type_enum_to_varchar()
-    # Create all tables based on current models
+    # Always run create_all — idempotent metadata check, required for fresh deploys
     SQLModel.metadata.create_all(engine)
-    # Post-create migrations
+
+    if _schema_is_current():
+        print(f"Schema version {CURRENT_SCHEMA_VERSION} already applied, skipping migrations.")
+        return
+
+    print(f"Running migrations to schema version {CURRENT_SCHEMA_VERSION}...")
+    _migrate_products_and_inventory_to_items_if_needed()
+    _migrate_document_entity_type_enum_to_varchar()
     _ensure_item_type_column_if_needed()
     _migrate_documents_table_if_needed()
     _ensure_document_extra_columns_if_needed()
@@ -176,6 +212,8 @@ def create_db_and_tables():
     _ensure_insurance_plan_monthly_deduction_if_needed()
     _ensure_schedule_recurrence_columns_if_needed()
     _ensure_chat_message_table_if_needed()
+    _mark_schema_current()
+    print("Migrations complete.")
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
