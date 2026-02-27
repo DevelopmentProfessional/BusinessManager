@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from '../services/api';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './components/Button_Toolbar';
 import Modal from './components/Modal';
 import Form_Schedule from './components/Form_Schedule';
 import Gate_Permission from './components/Gate_Permission';
@@ -10,6 +11,31 @@ import Widget_Attendance from './components/Widget_Attendance';
 import useDarkMode from '../services/useDarkMode';
 import Modal_Filter_Schedule from './components/Modal_Filter_Schedule';
 import Modal_Template_Use from './components/Modal_Template_Use';
+
+// SVG icon wrappers for schedule view buttons
+const MonthViewIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/>
+    <path d="M2.5 7a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 9a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 11a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+  </svg>
+);
+const WeekViewIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+    <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
+    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+  </svg>
+);
+const DayViewIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+    <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
+  </svg>
+);
+const TodayIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+    <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">{new Date().getDate()}</text>
+  </svg>
+);
 
 export default function Schedule() {
   const {
@@ -1195,93 +1221,54 @@ export default function Schedule() {
 
         <div className="schedule-footer px-2 py-1 border-top pb-4">
           {/* Row 1: Month, Week, Day, Previous, Next */}
-          <div className="d-flex gap-1 mb-1">
-            {/* Month View */}
-            <button
-              type="button"
+          <div className="d-flex gap-1 mb-1 flex-wrap">
+            <Button_Toolbar
+              icon={MonthViewIcon}
+              label="Month"
               onClick={() => setCurrentView('month')}
-              className={`btn btn-sm ${currentView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Month View"
+              className={currentView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}
               data-active={currentView === 'month'}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/>
-                <path d="M2.5 7a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 9a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 11a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
-              </svg>
-            </button>
-            {/* Week View */}
-            <button
-              type="button"
+            />
+            <Button_Toolbar
+              icon={WeekViewIcon}
+              label="Week"
               onClick={() => setCurrentView('week')}
-              className={`btn btn-sm ${currentView === 'week' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Week View"
+              className={currentView === 'week' ? 'btn-primary' : 'btn-outline-secondary'}
               data-active={currentView === 'week'}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-              </svg>
-            </button>
-            {/* Day View */}
-            <button
-              type="button"
+            />
+            <Button_Toolbar
+              icon={DayViewIcon}
+              label="Day"
               onClick={() => setCurrentView('day')}
-              className={`btn btn-sm ${currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Day View"
+              className={currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}
               data-active={currentView === 'day'}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
-              </svg>
-            </button>
-            {/* Previous */}
-            <button
-              type="button"
+            />
+            <Button_Toolbar
+              icon={ChevronLeftIcon}
+              label="Prev"
               onClick={handleNavigatePrevious}
-              className="btn btn-sm btn-outline-secondary"
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Previous"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
-              </svg>
-            </button>
-            {/* Next */}
-            <button
-              type="button"
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={ChevronRightIcon}
+              label="Next"
               onClick={handleNavigateNext}
-              className="btn btn-sm btn-outline-secondary"
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Next"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
-              </svg>
-            </button>
+              className="btn-outline-secondary"
+            />
           </div>
           {/* Row 2: Today, Filter */}
-          <div className="d-flex gap-1">
-            {/* Today */}
-            <button
-              type="button"
+          <div className="d-flex gap-1 flex-wrap">
+            <Button_Toolbar
+              icon={TodayIcon}
+              label="Today"
               onClick={() => setCurrentDate(new Date())}
-              className="btn btn-sm btn-outline-secondary"
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Today"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-                <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">{new Date().getDate()}</text>
-              </svg>
-            </button>
-            {/* Filter */}
-            <button
-              type="button"
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={FunnelIcon}
+              label="Filter"
               onClick={() => setIsFilterOpen(true)}
-              className={`btn btn-sm ${
+              className={`${
                 filters.employeeIds.length > 0 ||
                 filters.clientIds.length > 0 ||
                 filters.serviceIds.length > 0 ||
@@ -1291,15 +1278,9 @@ export default function Schedule() {
                   ? 'btn-primary'
                   : 'btn-outline-secondary'
               }`}
-              style={{ width: '3rem', height: '3rem', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-              title="Filter"
               data-active={filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || !!filters.startDate || !!filters.endDate || filters.showOutOfOffice}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/>
-              </svg>
-              {filters.showOutOfOffice && <span>OOO</span>}
-            </button>
+              badge={filters.showOutOfOffice ? <span>OOO</span> : null}
+            />
           </div>
         </div>
 

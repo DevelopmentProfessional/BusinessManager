@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
 import { inventoryAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -338,45 +339,33 @@ return (
           {/* Controls row - Add, Type, Stock */}
           <div className="d-flex align-items-center gap-1 pb-2 ">
             <Gate_Permission page="inventory" permission="write">
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={PlusIcon}
+                label="Add Item"
                 onClick={handleCreateItem}
-                className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Add item"
-              >
-                <PlusIcon className="h-5 w-5" />
-              </button>
+                className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+              />
             </Gate_Permission>
 
             {/* Clear Filters Button */}
             {(typeFilter !== 'all' || stockFilter !== 'all') && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTypeFilter('all');
-                  setStockFilter('all');
-                }}
-                className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Clear all filters"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Clear"
+                onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
+                className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+              />
             )}
 
             {/* Type Filter */}
             <div className="position-relative">
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={TagIcon}
+                label="Filter Type"
                 onClick={() => setIsTypeFilterOpen(!isTypeFilterOpen)}
-                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
-                style={{ width: '3rem', height: '3rem' }}
-                title="Filter by type"
+                className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
                 data-active={typeFilter !== 'all'}
-              >
-                <TagIcon className="h-6 w-6" />
-              </button>
+              />
               {isTypeFilterOpen && (
                 <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
                   <button
@@ -421,16 +410,13 @@ return (
 
             {/* Stock Filter */}
             <div className="position-relative">
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={CircleStackIcon}
+                label="Filter Stock"
                 onClick={() => setIsStockFilterOpen(!isStockFilterOpen)}
-                className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
-                style={{ width: '3rem', height: '3rem' }}
-                title="Filter by stock"
+                className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
                 data-active={stockFilter !== 'all'}
-              >
-                <CircleStackIcon className="h-6 w-6" />
-              </button>
+              />
               {isStockFilterOpen && (
                 <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
                   <button

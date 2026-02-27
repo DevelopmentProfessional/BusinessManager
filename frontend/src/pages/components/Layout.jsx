@@ -14,6 +14,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
+import useViewMode from '../../services/useViewMode';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
@@ -37,6 +38,7 @@ export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const location = useLocation();
   const { hasPermission } = useStore();
+  const { isTrainingMode } = useViewMode();
 
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
@@ -87,11 +89,13 @@ export default function Layout({ children }) {
                     location.pathname === item.href
                       ? 'btn btn-primary btn-sm'
                       : 'btn btn-outline-secondary btn-sm',
-                    'd-flex align-items-center gap-2 text-decoration-none'
+                    'd-flex align-items-center gap-2 text-decoration-none',
+                    !isTrainingMode && 'justify-content-center'
                   )}
+                  title={item.name}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  {isTrainingMode && <span>{item.name}</span>}
                 </Link>
               ))}
             </div>

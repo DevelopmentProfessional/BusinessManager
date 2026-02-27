@@ -7,6 +7,7 @@ import Form_Client from './components/Form_Client';
 import Modal_Detail_Client from './components/Modal_Detail_Client';
 import Gate_Permission from './components/Gate_Permission';
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './components/Button_Toolbar';
 import Modal_Template_Use from './components/Modal_Template_Use';
 
 export default function Clients() {
@@ -311,42 +312,33 @@ export default function Clients() {
             {/* Controls row - Add, Tier */}
             <div className="d-flex align-items-center gap-1 pb-2 flex-wrap">
               <Gate_Permission page="clients" permission="write">
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={PlusIcon}
+                  label="Add Client"
                   onClick={handleCreateClient}
-                  className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Add client"
-                >
-                  <PlusIcon className="h-5 w-5" />
-                </button>
+                  className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                />
               </Gate_Permission>
 
               {/* Clear Filters Button */}
               {tierFilter !== 'all' && (
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Clear Filter"
                   onClick={() => setTierFilter('all')}
-                  className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Clear filter"
-                >
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
+                  className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                />
               )}
 
               {/* Tier Filter */}
               <div className="position-relative">
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={StarIcon}
+                  label="Filter Tier"
                   onClick={() => setIsTierFilterOpen(!isTierFilterOpen)}
-                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`}
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Filter by tier"
+                  className={`border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`}
                   data-active={tierFilter !== 'all'}
-                >
-                  <StarIcon className="h-6 w-6" />
-                </button>
+                />
                 {isTierFilterOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
                     <button

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -1146,49 +1147,37 @@ export default function Employees() {
 
               <div className="d-flex align-items-center gap-1 flex-wrap pb-2">
                 <Gate_Permission page="employees" permission="write">
-                  <button
-                    type="button"
+                  <Button_Toolbar
+                    icon={PlusIcon}
+                    label="Add Employee"
                     onClick={handleCreate}
-                    className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-                    style={{ width: '3rem', height: '3rem' }}
-                    title="Add employee"
-                  >
-                    <PlusIcon className="h-5 w-5" />
-                  </button>
+                    className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  />
                 </Gate_Permission>
 
                 {/* Clear Filters Button */}
                 {(roleFilter !== 'all' || statusFilter !== 'all') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRoleFilter('all');
-                      setStatusFilter('all');
-                    }}
-                    className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
-                    style={{ width: '3rem', height: '3rem' }}
-                    title="Clear all filters"
-                  >
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
+                  <Button_Toolbar
+                    icon={XMarkIcon}
+                    label="Clear"
+                    onClick={() => { setRoleFilter('all'); setStatusFilter('all'); }}
+                    className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  />
                 )}
 
                 {/* Role Filter */}
                 <div className="position-relative">
-                  <button
-                    type="button"
+                  <Button_Toolbar
+                    icon={UserGroupIcon}
+                    label="Filter Role"
                     onClick={() => setIsRoleFilterOpen(!isRoleFilterOpen)}
-                    className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                    className={`border-0 shadow-lg transition-all ${
                       roleFilter !== 'all'
                         ? 'bg-primary-600 hover:bg-primary-700 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
-                    style={{ width: '3rem', height: '3rem' }}
-                    title="Filter by role"
                     data-active={roleFilter !== 'all'}
-                  >
-                    <UserGroupIcon className="h-6 w-6" />
-                  </button>
+                  />
                   {isRoleFilterOpen && (
                     <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
                       <button
@@ -1212,16 +1201,13 @@ export default function Employees() {
 
                 {/* Status Filter */}
                 <div className="position-relative">
-                  <button
-                    type="button"
+                  <Button_Toolbar
+                    icon={CheckCircleIcon}
+                    label="Filter Status"
                     onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
-                    className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
-                    style={{ width: '3rem', height: '3rem' }}
-                    title="Filter by status"
+                    className={`border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
                     data-active={statusFilter !== 'all'}
-                  >
-                    <CheckCircleIcon className="h-6 w-6" />
-                  </button>
+                  />
                   {isStatusFilterOpen && (
                     <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
                       <button

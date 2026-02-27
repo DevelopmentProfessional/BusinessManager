@@ -9,6 +9,7 @@ import {
   UserCircleIcon, ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
+import Button_Toolbar from './components/Button_Toolbar';
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
@@ -723,103 +724,75 @@ export default function Sales() {
         {/* Controls Row 1 - History and Cart */}
         <div className="flex items-center gap-1 pb-2">
           {/* Sales History Button */}
-          <button
-            type="button"
+          <Button_Toolbar
+            icon={ArrowTrendingUpIcon}
+            label="History"
             onClick={() => { setShowHistoryModal(true); loadTransactionHistory(); }}
-            className="flex-shrink-0 btn btn-sm btn-outline-secondary"
-            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Sales history"
-          >
-            <ArrowTrendingUpIcon className="h-5 w-5" />
-          </button>
+            className="btn-outline-secondary"
+          />
 
-          {/* Circular Cart Button */}
-          <button
-            type="button"
+          {/* Cart Button */}
+          <Button_Toolbar
+            icon={ShoppingCartIcon}
+            label="Cart"
             onClick={() => setShowCartModal(true)}
-            className="flex-shrink-0 btn btn-sm btn-secondary"
-            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
-            title="Cart"
-          >
-            <ShoppingCartIcon className="h-5 w-5" />
-            {cartItemCount > 0 && (
+            className="btn-secondary"
+            style={{ position: 'relative' }}
+            badge={cartItemCount > 0 ? (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                 {cartItemCount}
               </span>
-            )}
-          </button>
+            ) : null}
+          />
         </div>
 
         {/* Controls Row 2 - Client, Clear, Filters */}
         <div className="flex items-center gap-1 pb-2">
           {/* Account / Client Icon */}
-          <button
-            type="button"
+          <Button_Toolbar
+            icon={UserCircleIcon}
+            label="Client"
             onClick={() => { setShowClientPanel(p => !p); if (!showClientPanel) { loadClients(); } }}
-            className={`flex-shrink-0 btn btn-sm ${
-              selectedClient
-                ? 'btn-success'
-                : 'btn-outline-secondary'
-            }`}
-            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            className={selectedClient ? 'btn-success' : 'btn-outline-secondary'}
             title={selectedClient ? `Client: ${selectedClient.name}` : 'Select client'}
             data-active={!!selectedClient}
-          >
-            <UserCircleIcon className="h-5 w-5" />
-            {selectedClient && (
+            style={{ position: 'relative' }}
+            badge={selectedClient ? (
               <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-800" />
-            )}
-          </button>
+            ) : null}
+          />
 
           {/* Clear Filters Button - Shows when any filter is active */}
           {(showServices || showProducts) && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowServices(false);
-                setShowProducts(false);
-              }}
-              className="flex-shrink-0 btn btn-sm btn-danger"
-              style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Clear filters"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Clear"
+              onClick={() => { setShowServices(false); setShowProducts(false); }}
+              className="btn-danger"
+            />
           )}
 
           {/* Service Toggle Button */}
-          <button
-            type="button"
+          <Button_Toolbar
+            icon={SparklesIcon}
+            label="Services"
             onClick={() => setShowServices((prev) => !prev)}
             aria-pressed={showServices}
-            title="Toggle Services"
             data-active={showServices}
-            className={`flex-shrink-0 btn btn-sm ${
-              showServices
-                ? 'btn-primary'
-                : 'btn-outline-secondary'
-            }`}
-            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: showServices ? 1 : 0.5 }}
-          >
-            <SparklesIcon className="h-5 w-5" />
-          </button>
+            className={showServices ? 'btn-primary' : 'btn-outline-secondary'}
+            style={{ opacity: showServices ? 1 : 0.5 }}
+          />
 
           {/* Product Toggle Button */}
-          <button
-            type="button"
+          <Button_Toolbar
+            icon={CubeIcon}
+            label="Products"
             onClick={() => setShowProducts((prev) => !prev)}
             aria-pressed={showProducts}
-            title="Toggle Products"
             data-active={showProducts}
-            className={`flex-shrink-0 btn btn-sm ${
-              showProducts
-                ? 'btn-secondary'
-                : 'btn-outline-secondary'
-            }`}
-            style={{ width: '3rem', height: '3rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: showProducts ? 1 : 0.5 }}
-          >
-            <CubeIcon className="h-5 w-5" />
-          </button>
+            className={showProducts ? 'btn-secondary' : 'btn-outline-secondary'}
+            style={{ opacity: showProducts ? 1 : 0.5 }}
+          />
         </div>
       </div>
 
