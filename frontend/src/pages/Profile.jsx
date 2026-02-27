@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useDarkMode from '../services/useDarkMode';
+import useViewMode from '../services/useViewMode';
 import { getMobileEnvironment } from '../services/mobileEnvironment';
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from '../services/performanceTracker';
 import {
@@ -30,6 +31,8 @@ import {
   InformationCircleIcon,
   QuestionMarkCircleIcon,
   CurrencyDollarIcon,
+  AcademicCapIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
@@ -135,6 +138,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isTrainingMode, toggleViewMode } = useViewMode();
 
   // Log Profile component mount if performance session is active
   useEffect(() => {
@@ -1317,17 +1321,31 @@ const Profile = () => {
               )}
             </button>
 
+            {/* Training / Compact Mode Toggle */}
+            <button
+              type="button"
+              onClick={toggleViewMode}
+              className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex align-items-center gap-1"
+              style={{ height: '2.25rem' }}
+              title={isTrainingMode ? 'Switch to compact mode' : 'Switch to training mode'}
+            >
+              {isTrainingMode
+                ? <Squares2X2Icon className="h-4 w-4" />
+                : <AcademicCapIcon className="h-4 w-4" />}
+              <span style={{ fontSize: '0.78rem' }}>{isTrainingMode ? 'Compact' : 'Training'}</span>
+            </button>
+
             {/* Logout */}
             <button
               type="button"
               onClick={handleLogout}
               className="btn btn-sm btn-outline-secondary"
-              style={{ 
-                width: '3rem', 
-                height: '3rem', 
-                padding: 0, 
-                display: 'flex', 
-                alignItems: 'center', 
+              style={{
+                width: '3rem',
+                height: '3rem',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center'
               }}
               title="Log out"

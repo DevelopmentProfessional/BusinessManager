@@ -15,6 +15,7 @@ import {
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
+import Button_Toolbar from './components/Button_Toolbar';
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Table_Mobile from './components/Table_Mobile';
@@ -812,19 +813,17 @@ export default function Documents() {
 
             <div className="d-flex align-items-center gap-1 mb-1 flex-wrap pb-1">
               {/* Templates toggle */}
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={DocumentTextIcon}
+                label="Templates"
                 onClick={() => setShowTemplates((v) => !v)}
-                className={`btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                className={`border-0 shadow-lg transition-all ${
                   showTemplates
                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
-                style={{ width: '3rem', height: '3rem' }}
                 title={showTemplates ? 'Back to Documents' : 'Templates'}
-              >
-                <DocumentTextIcon className="h-5 w-5" />
-              </button>
+              />
 
               {showTemplates ? (
                 /* Templates mode controls */
@@ -858,50 +857,37 @@ export default function Documents() {
                 /* Documents mode controls */
                 <>
                   <Gate_Permission page="documents" permission="write">
-                    <button
-                      type="button"
+                    <Button_Toolbar
+                      icon={PlusIcon}
+                      label="Upload"
                       onClick={handleUploadDocument}
-                      className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-                      style={{ width: '3rem', height: '3rem' }}
-                      title="Upload document"
-                    >
-                      <PlusIcon className="h-5 w-5" />
-                    </button>
+                      className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                    />
                   </Gate_Permission>
 
               {/* Clear Filters Button */}
               {(categoryFilter !== 'all' || statusFilter !== 'all' || typeFilter !== 'all') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter('all');
-                    setStatusFilter('all');
-                    setTypeFilter('all');
-                  }}
-                  className="btn d-flex align-items-center justify-content-center rounded-circle bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Clear all filters"
-                >
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Clear"
+                  onClick={() => { setCategoryFilter('all'); setStatusFilter('all'); setTypeFilter('all'); }}
+                  className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                />
               )}
 
               {/* Categories Filter */}
               <div className="position-relative">
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={FolderOpenIcon}
+                  label="Category"
                   onClick={() => setIsFilterCategoriesOpen(!isFilterCategoriesOpen)}
-                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                  className={`border-0 shadow-lg transition-all ${
                     categoryFilter !== 'all'
                       ? 'bg-primary-600 hover:bg-primary-700 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Filter by categories"
                   data-active={categoryFilter !== 'all'}
-                >
-                  <FolderOpenIcon className="h-6 w-6" />
-                </button>
+                />
                 {isFilterCategoriesOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
                     <button
@@ -925,16 +911,13 @@ export default function Documents() {
 
               {/* Status Filter */}
               <div className="position-relative">
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={CheckCircleIcon}
+                  label="Status"
                   onClick={() => setIsFilterStatusOpen(!isFilterStatusOpen)}
-                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Filter by status"
+                  className={`border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
                   data-active={statusFilter !== 'all'}
-                >
-                  <CheckCircleIcon className="h-6 w-6" />
-                </button>
+                />
                 {isFilterStatusOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
                     <button
@@ -961,20 +944,17 @@ export default function Documents() {
 
               {/* Type Filter */}
               <div className="position-relative">
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={TagIcon}
+                  label="Type"
                   onClick={() => setIsFilterTypeOpen(!isFilterTypeOpen)}
-                  className={`btn d-flex align-items-center justify-content-center rounded-circle border-0 shadow-lg transition-all ${
+                  className={`border-0 shadow-lg transition-all ${
                     typeFilter !== 'all'
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Filter by type"
                   data-active={typeFilter !== 'all'}
-                >
-                  <TagIcon className="h-6 w-6" />
-                </button>
+                />
                 {isFilterTypeOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px', maxHeight: '300px', overflowY: 'auto' }}>
                     <button
