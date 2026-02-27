@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
 import { isudAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { XMarkIcon, CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import Gate_Permission from './Gate_Permission';
 import Dropdown_Custom from './Dropdown_Custom';
 
@@ -34,7 +34,7 @@ const ATTENDEE_STATUS_STYLE = {
   declined: { label: 'Declined', bg: '#fee2e2', color: '#991b1b' },
 };
 
-export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -657,7 +657,18 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               </button>
             )}
           </div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+            {appointment?.id && appointment?.client_id && (formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && onSendReminder && (
+              <button
+                type="button"
+                onClick={onSendReminder}
+                className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                style={{ width: '2.5rem', height: '2.5rem' }}
+                title="Send Reminder"
+              >
+                <EnvelopeIcon style={{ width: 16, height: 16 }} />
+              </button>
+            )}
             <button
               type="button"
               onClick={onCancel}

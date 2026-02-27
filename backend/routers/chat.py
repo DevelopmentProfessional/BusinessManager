@@ -1,6 +1,9 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, or_, and_
 from uuid import UUID
+
+log = logging.getLogger(__name__)
 
 try:
     from backend.database import get_session
@@ -66,9 +69,10 @@ def send_message(
     try:
         session.commit()
         session.refresh(msg)
-    except Exception:
+    except Exception as exc:
         session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to send message")
+        log.exception("Failed to save chat message: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Failed to send message: {exc}")
     return msg
 
 
@@ -90,9 +94,10 @@ def mark_as_read(
         msg.is_read = True
     try:
         session.commit()
-    except Exception:
+    except Exception as exc:
         session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to mark messages as read")
+        log.exception("Failed to mark messages as read: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Failed to mark messages as read: {exc}")
     return {"marked_read": len(messages)}
 
 

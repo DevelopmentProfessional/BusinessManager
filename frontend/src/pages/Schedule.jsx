@@ -9,6 +9,7 @@ import Gate_Permission from './components/Gate_Permission';
 import Widget_Attendance from './components/Widget_Attendance';
 import useDarkMode from '../services/useDarkMode';
 import Modal_Filter_Schedule from './components/Modal_Filter_Schedule';
+import Modal_Template_Use from './components/Modal_Template_Use';
 
 export default function Schedule() {
   const {
@@ -59,6 +60,8 @@ export default function Schedule() {
     oooEmployeeIds: [],
   });
   const [approvedLeaves, setApprovedLeaves] = useState([]);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderAppointment, setReminderAppointment] = useState(null);
   const hasFetched = useRef(false);
   const calendarGridRef = useRef(null);
   const calendarContainerRef = useRef(null);
@@ -1306,12 +1309,31 @@ export default function Schedule() {
             onSubmit={handleSubmitAppointment}
             onCancel={closeModal}
             onDelete={handleDeleteAppointment}
+            onSendReminder={() => {
+              setReminderAppointment(editingAppointment);
+              setShowReminderModal(true);
+              closeModal();
+            }}
             clients={clients}
             services={services}
             employees={employees}
             attendees={selectedAttendees}
           />
         </Modal>
+
+        {showReminderModal && reminderAppointment && (
+          <Modal_Template_Use
+            page="schedule"
+            filterType="email"
+            entity={reminderAppointment}
+            client={clients.find(c => c.id === reminderAppointment?.client_id)}
+            employee={employees.find(e => e.id === reminderAppointment?.employee_id)}
+            service={services.find(s => s.id === reminderAppointment?.service_id)}
+            currentUser={user}
+            settings={scheduleSettings}
+            onClose={() => { setShowReminderModal(false); setReminderAppointment(null); }}
+          />
+        )}
 
         <Modal_Filter_Schedule
           isOpen={isFilterOpen}

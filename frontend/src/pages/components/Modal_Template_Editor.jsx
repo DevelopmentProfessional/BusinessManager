@@ -19,10 +19,11 @@ const PAGE_OPTIONS = [
   { value: 'clients', label: 'Clients' },
   { value: 'employees', label: 'Employees' },
   { value: 'sales', label: 'Sales' },
+  { value: 'schedule', label: 'Schedule' },
 ];
 
 // All variable scopes to show in the picker
-const ALL_SCOPES = ['system', 'company', 'sender', 'client', 'employee', 'invoice'];
+const ALL_SCOPES = ['system', 'company', 'sender', 'client', 'employee', 'invoice', 'appointment'];
 
 export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const isNew = !template?.id;
