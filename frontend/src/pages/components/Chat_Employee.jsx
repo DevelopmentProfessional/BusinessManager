@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { chatAPI, documentsAPI } from '../../services/api';
 import useDarkMode from '../../services/useDarkMode';
 
@@ -7,7 +7,6 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   const { isDarkMode } = useDarkMode();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -18,32 +17,28 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   const [docSearch, setDocSearch] = useState('');
 
   const bottomRef = useRef(null);
+  const pollRef = useRef(null);
   const inputRef = useRef(null);
 
   const loadMessages = async (quiet = false) => {
     if (!quiet) setLoading(true);
-    else setRefreshing(true);
     try {
       const res = await chatAPI.getHistory(employee.id);
       const data = res?.data ?? res;
-      if (Array.isArray(data)) {
-        lastCountRef.current = data.length;
-        setMessages(data);
-      }
+      if (Array.isArray(data)) setMessages(data);
     } catch (err) {
       console.error('Failed to load chat history:', err);
     } finally {
       if (!quiet) setLoading(false);
-      else setRefreshing(false);
     }
   };
 
-  // Load on open and mark as read
   useEffect(() => {
     loadMessages();
     chatAPI.markRead(employee.id).catch(() => {});
+    pollRef.current = setInterval(() => loadMessages(true), 5000);
+    return () => clearInterval(pollRef.current);
   }, [employee.id]);
-
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -123,7 +118,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
 
   return (
     <div
-      style={{
+      style={{ 
         position: 'fixed',
         top: 0,
         left: 0,
@@ -149,7 +144,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
             >
               {employee.first_name?.[0]}{employee.last_name?.[0]}
             </div>
-            <div className="flex-grow-1">
+            <div>
               <div className="fw-semibold" style={{ fontSize: '0.95rem', lineHeight: 1.2 }}>
                 {employee.first_name} {employee.last_name}
               </div>
@@ -157,17 +152,6 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                 {employee.role}
               </div>
             </div>
-            {/* Manual refresh button */}
-            <button
-              type="button"
-              className={`btn btn-sm p-1 d-flex align-items-center justify-content-center ${dm ? 'btn-outline-secondary' : 'btn-outline-secondary'}`}
-              style={{ width: 32, height: 32, borderRadius: '50%' }}
-              title="Refresh messages"
-              onClick={() => { loadMessages(true); chatAPI.markRead(employee.id).catch(() => {}); }}
-              disabled={refreshing || loading}
-            >
-              <ArrowPathIcon style={{ width: 15, height: 15, ...(refreshing ? { animation: 'spin 0.8s linear infinite' } : {}) }} />
-            </button>
           </div>
         </div>
 
@@ -271,7 +255,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                   <button
                     key={doc.id}
                     type="button"
-                    className="btn btn-sm btn-outline-secondary w-100 text-start d-flex align-items-center gap-2 mb-1"
+                    className={`btn btn-sm w-100 text-start d-flex align-items-center gap-2 mb-1 ${dm ? 'btn-outline-secondary' : 'btn-outline-secondary'}`}
                     onClick={() => handleSendDocument(doc)}
                   >
                     <DocumentIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
@@ -309,9 +293,9 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                 <button
                   type="button"
                   title="Share a document"
-                  className={`btn btn-sm p-1 d-flex align-items-center justify-content-center ${showDocPicker ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  className={`btn btn-sm p-1 d-flex align-items-center justify-content-center ${showDocPicker ? 'btn-primary' : dm ? 'btn-outline-secondary' : 'btn-outline-secondary'}`}
                   onClick={openDocPicker}
-                  style={{ width: '3rem', height: '3rem', borderRadius: '50%', minWidth: '3rem', flexShrink: 0 }}
+                    style={{ width: '3rem', height: '3rem', borderRadius: '50%', minWidth: '3rem', flexShrink: 0 }}
                 >
                   <PaperClipIcon style={{ width: 18, height: 18 }} />
                 </button>
@@ -323,9 +307,9 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                   value={text}
                   onChange={e => setText(e.target.value)}
                   disabled={sending}
-                  style={{
-                    height: '3rem',
-                    resize: 'none',
+                  style={{ 
+                    height: '3rem', 
+                    resize: 'none', 
                     maxWidth: '600px',
                     flex: '1 1 auto',
                     lineHeight: '3rem',
@@ -353,10 +337,6 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }
