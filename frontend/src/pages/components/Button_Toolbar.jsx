@@ -22,14 +22,27 @@ function withTrainingModeMargin(className, isTrainingMode) {
   return adjusted.join(' ');
 }
 
+function simplifyTrainingLabel(normalizedLabel, isTrainingMode) {
+  if (!isTrainingMode || !normalizedLabel) return normalizedLabel;
+
+  const actionMatch = normalizedLabel.match(/^(add|update|delete)\b/i);
+  if (actionMatch) {
+    const action = actionMatch[1].toLowerCase();
+    return action.charAt(0).toUpperCase() + action.slice(1);
+  }
+
+  return normalizedLabel;
+}
+
 export default function Button_Toolbar({ icon: Icon, label, onClick, className = '', disabled = false, badge, style = {}, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const effectiveClassName = withTrainingModeMargin(className, isTrainingMode);
   const normalizedLabel = typeof label === 'string' ? label.trim() : '';
   const isFilterButton = /^filter\b/i.test(normalizedLabel);
-  const displayLabel = isTrainingMode
+  const baseTrainingLabel = isTrainingMode
     ? normalizedLabel.replace(/^filter\s*/i, '').trim()
     : normalizedLabel;
+  const displayLabel = simplifyTrainingLabel(baseTrainingLabel, isTrainingMode);
   const showTextLabel = isTrainingMode && displayLabel.length > 0;
 
   return (
