@@ -12,6 +12,7 @@ Seeded entities
   • ~120 Appointments – 4 months back, incl. overlaps & cancellations
   • ~30 SaleTransactions with line items
   • ~130 PaySlips   – covering every past pay period up to the current week
+  • ~30 ChatMessages – 8 realistic 1-on-1 conversations among employees
 
 Idempotent: aborts silently if ≥ 10 clients are already present.
 
@@ -40,7 +41,7 @@ try:
         User, Client, InsurancePlan, Service,
         Schedule, ScheduleAttendee,
         SaleTransaction, SaleTransactionItem,
-        PaySlip, AppSettings,
+        PaySlip, AppSettings, ChatMessage,
         UserRole, MembershipTier,
     )
 except ModuleNotFoundError:
@@ -49,7 +50,7 @@ except ModuleNotFoundError:
         User, Client, InsurancePlan, Service,
         Schedule, ScheduleAttendee,
         SaleTransaction, SaleTransactionItem,
-        PaySlip, AppSettings,
+        PaySlip, AppSettings, ChatMessage,
         UserRole, MembershipTier,
     )
 
@@ -131,6 +132,65 @@ _SERVICES = [
     dict(name="Premium Package",      description="Full-day pampering experience",            price=180.0, duration_minutes=120, category="Package", is_active=True),
 ]
 
+# Each thread is a list of (sender_username, receiver_username, content, days_ago, hour, minute)
+# is_read=True for days_ago >= 2, False for the last message in threads where days_ago <= 1
+_CHAT_THREADS = [
+    # ── James Wilson <-> Sarah Chen (management) ──────────────────────────────
+    [
+        ("jwilson",   "schen",     "Sarah, reminder that Q4 performance reviews are due by end of next week. Let me know if you need the templates.", 10, 9, 5),
+        ("schen",     "jwilson",   "Thanks James! Getting those done by Thursday. Also, two new premium clients are booked for the Full-Day Package on Friday — should I coordinate with Natalie on towel sets?", 10, 9, 22),
+        ("jwilson",   "schen",     "Great catch. Yes, loop in Natalie on inventory. Also, payroll for hourly staff goes out Wednesday.", 10, 10, 1),
+        ("schen",     "jwilson",   "Will do! I'll also check Tyler's schedule — had a few last-minute rescheduling requests come in.", 10, 10, 15),
+        ("jwilson",   "schen",     "Sounds good. Good work this week!", 10, 10, 31),
+    ],
+    # ── Sarah Chen <-> Emily Rodriguez (scheduling) ───────────────────────────
+    [
+        ("schen",     "erodriguez", "Emily, can you cover the 2pm Facial Treatment slot on Wednesday? Short notice, I know.", 8, 14, 3),
+        ("erodriguez","schen",      "Of course! No problem at all. Should I pull the client history beforehand?", 8, 14, 11),
+        ("schen",     "erodriguez", "Yes please — it's Priya Kapoor. Platinum tier, so make sure everything is top-notch.", 8, 14, 19),
+        ("erodriguez","schen",      "On it. I remember her preferences from last time. Will have everything prepared.", 8, 14, 28),
+    ],
+    # ── Marcus Thompson <-> Tyler Brooks (inventory) ──────────────────────────
+    [
+        ("mthompson", "tbrooks",    "Tyler, heads up — we're running low on Argan Oil Shampoo. Can you check inventory and submit a restock request?", 6, 10, 10),
+        ("tbrooks",   "mthompson",  "Just checked — only 3 units left. Submitting the request now. Same 10-unit order as last time?", 6, 10, 25),
+        ("mthompson", "tbrooks",    "Make it 15 this time, it's been moving faster lately. Thanks Tyler.", 6, 10, 36),
+        ("tbrooks",   "mthompson",  "Done. Order placed, estimated delivery Friday.", 6, 11, 2),
+    ],
+    # ── Emily Rodriguez <-> Aisha Johnson (client handoff) ────────────────────
+    [
+        ("erodriguez","ajohnson",   "Hey Aisha, are you free for the 11am Consultation Session tomorrow? Client specifically requested a female therapist.", 5, 16, 5),
+        ("ajohnson",  "erodriguez", "Yes, my morning is completely clear! What's the client's name?", 5, 16, 13),
+        ("erodriguez","ajohnson",   "Samira Okafor — it's her first visit so just run the standard intake process.", 5, 16, 21),
+        ("ajohnson",  "erodriguez", "Got it. I'll have the consultation room set up and ready.", 5, 16, 29),
+    ],
+    # ── David Park <-> Natalie Foster (general) ───────────────────────────────
+    [
+        ("dpark",     "nfoster",    "Natalie, did the Jade Rollers get restocked? Had a client asking about them this morning.", 4, 11, 5),
+        ("nfoster",   "dpark",      "They came in yesterday! Put 6 on the front display. Let your client know we have them.", 4, 11, 19),
+        ("dpark",     "nfoster",    "Perfect, thank you! Also — are you coming to the team lunch on Friday?", 4, 11, 31),
+        ("nfoster",   "dpark",      "Definitely! Wouldn't miss it.", 4, 11, 46),
+    ],
+    # ── Marcus Thompson <-> Aisha Johnson (praise) ────────────────────────────
+    [
+        ("mthompson", "ajohnson",   "Aisha, great feedback on your deep tissue session today — the client left a 5-star review and mentioned you by name!", 3, 17, 5),
+        ("ajohnson",  "mthompson",  "That's so nice to hear, thank you for telling me! She was a wonderful client.", 3, 17, 19),
+        ("mthompson", "ajohnson",   "Keep it up — clients like her are what make this place special.", 3, 17, 33),
+    ],
+    # ── James Wilson <-> Marcus Thompson (leave approval) ─────────────────────
+    [
+        ("jwilson",   "mthompson",  "Marcus, please review David Park's leave request for next Friday before EOD.", 2, 9, 0),
+        ("mthompson", "jwilson",    "Already on it — approved it this morning. Natalie confirmed she can cover his bookings.", 2, 9, 47),
+        ("jwilson",   "mthompson",  "Perfect, thank you.", 2, 10, 3),
+    ],
+    # ── Sarah Chen <-> Natalie Foster (inventory planning) ────────────────────
+    [
+        ("schen",     "nfoster",    "Natalie, can you do a quick stock count on the Collagen Face Masks? I want to make sure we're stocked for the weekend rush.", 1, 13, 15),
+        ("nfoster",   "schen",      "Just counted — 11 left. Should be enough for the weekend but I'll flag it for reorder on Monday.", 1, 13, 28),
+        ("schen",     "nfoster",    "Great, thanks for the quick turnaround!", 1, 13, 35),
+    ],
+]
+
 _APPT_NOTES = [
     "Client requested extra care",
     "First visit — full consultation needed",
@@ -187,11 +247,45 @@ def _biweekly_periods(start: date, end: date):
 # Main seed function
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _seed_chat_messages(session: Session, user_by_username: dict) -> None:
+    """Seed chat messages if none exist. Requires a username->User map."""
+    existing_msg = session.exec(select(ChatMessage).limit(1)).first()
+    if existing_msg:
+        return
+    msg_count = 0
+    for thread in _CHAT_THREADS:
+        for (sender_un, receiver_un, content, days_ago, hour, minute) in thread:
+            sender   = user_by_username.get(sender_un)
+            receiver = user_by_username.get(receiver_un)
+            if not sender or not receiver:
+                continue
+            msg_date = (TODAY - timedelta(days=days_ago)).date()
+            msg = ChatMessage(
+                sender_id    = sender.id,
+                receiver_id  = receiver.id,
+                content      = content,
+                message_type = "text",
+                is_read      = days_ago >= 2,
+                created_at   = datetime(msg_date.year, msg_date.month, msg_date.day, hour, minute),
+            )
+            session.add(msg)
+            msg_count += 1
+    try:
+        session.commit()
+        print(f"  ✓ {msg_count} chat messages")
+    except Exception:
+        session.rollback()
+        raise
+
+
 def seed_demo_data(session: Session) -> None:
     # ── Guard: skip if already seeded ────────────────────────────────────────
     existing_clients = session.exec(select(Client)).all()
     if len(existing_clients) >= 10:
         print("  seed_demo_data: 10+ clients found — already seeded, skipping.")
+        # Still seed chat messages if they're missing (idempotent)
+        all_users = session.exec(select(User)).all()
+        _seed_chat_messages(session, {u.username: u for u in all_users})
         return
 
     print("  seed_demo_data: starting…")
@@ -295,6 +389,9 @@ def seed_demo_data(session: Session) -> None:
     except Exception:
         session.rollback()
         raise
+
+    # ── 3b. Chat messages (needs employees in DB) ─────────────────────────────
+    _seed_chat_messages(session, {emp.username: emp for emp in employee_objs})
 
     # ── 4. Clients ───────────────────────────────────────────────────────────
     client_objs: list[Client] = []

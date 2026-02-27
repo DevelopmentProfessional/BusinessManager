@@ -2,22 +2,36 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { documentsAPI } from '../../services/api';
 
 // Simple utility to load the OnlyOffice script once
-function loadOnlyOfficeScript(onlyofficeUrl) {
+function loadOnlyOfficeScript(onlyofficeUrl, timeoutMs = 10000) {
   const url = `${onlyofficeUrl.replace(/\/+$/, '')}/web-apps/apps/api/documents/api.js`;
   return new Promise((resolve, reject) => {
     if (window.DocsAPI) return resolve(window.DocsAPI);
-    // Check if script already in DOM
-    const existing = Array.from(document.getElementsByTagName('script')).find(s => s.src === url);
+
+    const existing = Array.from(document.getElementsByTagName('script'))
+      .find(s => s.src === url);
     if (existing) {
       existing.addEventListener('load', () => resolve(window.DocsAPI));
       existing.addEventListener('error', () => reject(new Error('Failed to load OnlyOffice script')));
       return;
     }
+
+    let done = false;
+    const timer = setTimeout(() => {
+      if (!done) {
+        done = true;
+        reject(new Error(`OnlyOffice script timed out after ${timeoutMs / 1000}s. Server may be starting up.`));
+      }
+    }, timeoutMs);
+
     const script = document.createElement('script');
     script.src = url;
     script.async = true;
-    script.onload = () => resolve(window.DocsAPI);
-    script.onerror = () => reject(new Error('Failed to load OnlyOffice script'));
+    script.onload = () => {
+      if (!done) { done = true; clearTimeout(timer); resolve(window.DocsAPI); }
+    };
+    script.onerror = () => {
+      if (!done) { done = true; clearTimeout(timer); reject(new Error('Failed to load OnlyOffice script')); }
+    };
     document.head.appendChild(script);
   });
 }

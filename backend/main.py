@@ -9,18 +9,8 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 # Completely disable ALL SQLAlchemy logging BEFORE any imports
-_SQLALCHEMY_LOGGERS_TO_DISABLE = (
-    "sqlalchemy",
-    "sqlalchemy.engine",
-    "sqlalchemy.pool",
-    "sqlalchemy.dialects",
-    "sqlalchemy.orm",
-    "sqlalchemy.engine.base.Engine",
-    "sqlalchemy.dialects.sqlite",
-    "sqlalchemy.pool.impl.QueuePool",
-)
-for _logger_name in _SQLALCHEMY_LOGGERS_TO_DISABLE:
-    logging.getLogger(_logger_name).disabled = True
+logging.getLogger("sqlalchemy").setLevel(logging.CRITICAL)
+logging.getLogger("sqlalchemy").propagate = False
 
 from datetime import datetime
 from fastapi import FastAPI
@@ -153,19 +143,14 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     try:
-        from backend.database import get_session
-        from backend.models import User
-        
-        # Test database connection
-        session = next(get_session())
-        user_count = session.query(User).count()
-        session.close()
-        
+        from backend.database import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
         return {
-            "status": "healthy", 
+            "status": "healthy",
             "message": "Business Management API is running",
-            "database": "connected",
-            "users_count": user_count
+            "database": "connected"
         }
     except Exception as e:
         return {

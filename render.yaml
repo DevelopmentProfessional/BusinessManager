@@ -21,7 +21,7 @@ services:
   # Frontend Service
   - type: static
     name: BusinessManager_Reference
-    buildCommand: cd frontend && VITE_API_URL=https://businessmanager-reference-api.onrender.com/api/v1 VITE_ONLYOFFICE_URL=https://businessmanager-onlyoffice.onrender.com npm install && npm run build
+    buildCommand: cd frontend && VITE_API_URL=https://businessmanager-reference-api.onrender.com/api/v1 VITE_ONLYOFFICE_URL=https://businessmanager-onlyoffice.onrender.com npm ci && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_URL
