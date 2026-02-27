@@ -85,25 +85,31 @@ export default function Layout({ children }) {
             }}
           >
             <div className="d-flex flex-column gap-1">
-              {filteredNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setExpandedMenuOpen(false)}
-                  className={classNames(
-                    location.pathname === item.href
-                      ? 'btn btn-primary'
-                      : 'btn btn-outline-secondary',
-                    'd-flex align-items-center text-decoration-none',
-                    isTrainingMode ? 'btn-sm rounded-pill gap-2 px-3' : 'rounded-circle justify-content-center p-0'
-                  )}
-                  style={isTrainingMode ? undefined : { width: '3rem', height: '3rem' }}
-                  title={item.name}
-                >
-                  <item.icon className={classNames('flex-shrink-0', isTrainingMode ? 'h-4 w-4' : 'h-5 w-5')} />
-                  {isTrainingMode && <span>{item.name}</span>}
-                </Link>
-              ))}
+              {filteredNavigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setExpandedMenuOpen(false)}
+                    className={classNames(
+                      isActive ? 'btn btn-primary' : 'btn btn-outline-secondary',
+                      'd-flex align-items-center text-decoration-none',
+                      isTrainingMode ? 'btn-sm rounded-pill gap-2 px-3' : 'rounded-circle justify-content-center p-0'
+                    )}
+                    style={{
+                      ...(isTrainingMode ? {} : { width: '3rem', height: '3rem' }),
+                      backgroundColor: isActive ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
+                      color: isActive ? 'var(--bs-white)' : 'var(--bs-body-color)',
+                      borderColor: isActive ? 'var(--bs-primary)' : 'var(--bs-border-color)',
+                    }}
+                    title={item.name}
+                  >
+                    <item.icon className={classNames('flex-shrink-0', isTrainingMode ? 'h-4 w-4' : 'h-5 w-5')} />
+                    {isTrainingMode && <span>{item.name}</span>}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -125,7 +131,10 @@ export default function Layout({ children }) {
           height: '3rem', 
           zIndex: 1100, 
           bottom: '1.5rem', 
-          right: '1rem' 
+          right: '1rem',
+          backgroundColor: expandedMenuOpen ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
+          color: expandedMenuOpen ? 'var(--bs-white)' : 'var(--bs-body-color)',
+          borderColor: expandedMenuOpen ? 'var(--bs-primary)' : 'var(--bs-border-color)',
         }}
       >
         <EllipsisHorizontalIcon className="h-5 w-5" />
