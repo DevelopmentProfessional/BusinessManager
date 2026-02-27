@@ -3,6 +3,7 @@ import useStore from '../../services/useStore';
 import { isudAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './Button_Toolbar';
 import Gate_Permission from './Gate_Permission';
 import Dropdown_Custom from './Dropdown_Custom';
 
@@ -646,47 +647,36 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         <div className="d-flex align-items-center">
           <div style={{ width: 40 }}>
             {appointment?.id && onDelete && (
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={TrashIcon}
+                label="Delete"
                 onClick={onDelete}
-                className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center"
-                style={{ width: '2.5rem', height: '2.5rem' }}
-                title="Delete"
-              >
-                <TrashIcon style={{ width: 16, height: 16 }} />
-              </button>
+                className="btn-outline-danger"
+              />
             )}
           </div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
             {appointment?.id && appointment?.client_id && (formData.appointment_type === 'one_time' || formData.appointment_type === 'series') && onSendReminder && (
-              <button
-                type="button"
+              <Button_Toolbar
+                icon={EnvelopeIcon}
+                label="Send Reminder"
                 onClick={onSendReminder}
-                className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                style={{ width: '2.5rem', height: '2.5rem' }}
-                title="Send Reminder"
-              >
-                <EnvelopeIcon style={{ width: 16, height: 16 }} />
-              </button>
+                className="btn-outline-secondary"
+              />
             )}
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
               onClick={onCancel}
-              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Cancel"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
-            <button
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={appointment ? 'Save Changes' : 'Book'}
               type="submit"
               form="schedule-form"
-              className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title={appointment ? 'Save Changes' : 'Book'}
-            >
-              <CheckIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-primary"
+            />
           </div>
           <div style={{ width: 40 }} />
         </div>

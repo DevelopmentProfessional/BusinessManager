@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './Button_Toolbar';
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI } from '../../services/api';
 import api from '../../services/api';
 import Widget_Signature from './Widget_Signature';
@@ -931,26 +932,21 @@ export default function Form_Employee({
               </button>
             )}
           </div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <button
-              type="button"
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
               onClick={onCancel}
-              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Cancel"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-outline-secondary"
+            />
             {(activeTab === 'details' || activeTab === 'benefits') && (
-              <button
+              <Button_Toolbar
+                icon={CheckIcon}
+                label={employee ? 'Update Employee' : 'Create Employee'}
                 type="submit"
                 form="employee-form"
-                className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
-                style={{ width: '3rem', height: '3rem' }}
-                title={employee ? 'Update Employee' : 'Create Employee'}
-              >
-                <CheckIcon style={{ width: 18, height: 18 }} />
-              </button>
+                className="btn-primary"
+              />
             )}
           </div>
           <div style={{ width: 40 }} />

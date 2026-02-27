@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { XMarkIcon, CheckIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './Button_Toolbar';
 import Modal from './Modal';
 
 const EMPTY_FILTERS = {
@@ -118,35 +119,26 @@ export default function Modal_Filter_Schedule({
       footer={
         <div className="d-flex align-items-center pb-2">
           <div style={{ width: 40 }}>
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={TrashIcon}
+              label="Clear all filters"
               onClick={handleClear}
-              className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '2.5rem', height: '2.5rem' }}
-              title="Clear all filters"
-            >
-              <TrashIcon style={{ width: 16, height: 16 }} />
-            </button>
+              className="btn-outline-danger"
+            />
           </div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <button
-              type="button"
+          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
               onClick={onClose}
-              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Cancel"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
-            <button
-              type="button"
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={CheckIcon}
+              label="Apply"
               onClick={handleApply}
-              className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Apply"
-            >
-              <CheckIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-primary"
+            />
           </div>
           <div style={{ width: 40 }} />
         </div>

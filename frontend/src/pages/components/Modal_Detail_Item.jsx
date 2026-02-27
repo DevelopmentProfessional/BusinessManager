@@ -6,6 +6,7 @@ import {
   TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
+import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI } from '../../services/api';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
@@ -834,36 +835,27 @@ export default function Modal_Detail_Item({
           <div className="d-flex align-items-center">
             <div>
               {canDelete && (
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={TrashIcon}
+                  label="Delete Item"
                   onClick={handleDelete}
-                  className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Delete Item"
-                >
-                  <TrashIcon style={{ width: 18, height: 18 }} />
-                </button>
+                  className="btn-outline-danger"
+                />
               )}
             </div>
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button
-                type="button"
+            <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Cancel"
                 onClick={onClose}
-                className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Cancel"
-              >
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
-              <button
-                type="button"
+                className="btn-outline-secondary"
+              />
+              <Button_Toolbar
+                icon={CheckIcon}
+                label="Save Changes"
                 onClick={handleUpdateInventory}
-                className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Save Changes"
-              >
-                <CheckIcon style={{ width: 18, height: 18 }} />
-              </button>
+                className="btn-primary"
+              />
             </div>
                 {/* Right spacer to balance delete */}
           <div style={{ width: 40 }} />

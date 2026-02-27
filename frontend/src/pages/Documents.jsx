@@ -811,7 +811,7 @@ export default function Documents() {
               </div>
             )}
 
-            <div className="d-flex align-items-center gap-1 mb-1 flex-wrap pb-1">
+            <div className="d-flex align-items-center gap-1 mb-1 flex-wrap pb-1" style={{ minHeight: '3rem' }}>
               {/* Templates toggle */}
               <Button_Toolbar
                 icon={DocumentTextIcon}

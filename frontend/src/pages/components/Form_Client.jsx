@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Button_Toolbar from './Button_Toolbar';
 
 const MEMBERSHIP_TIERS = [
   { value: 'none', label: 'None' },
@@ -223,24 +224,19 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
         <div className="d-flex align-items-center">
           <div style={{ width: 40 }} />
           <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
               onClick={onCancel}
-              className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Cancel"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
-            <button
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={client ? 'Save Changes' : 'Create Client'}
               type="submit"
               form="client-form"
-              className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
-              style={{ width: '3rem', height: '3rem' }}
-              title={client ? 'Save Changes' : 'Create Client'}
-            >
-              <CheckIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-primary"
+            />
           </div>
           <div style={{ width: 40 }} />
         </div>

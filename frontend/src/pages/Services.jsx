@@ -259,7 +259,7 @@ export default function Services() {
             </div>
 
             {/* Add button + category filter */}
-            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap">
+            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap" style={{ minHeight: '3rem' }}>
               <Gate_Permission page="services" permission="write">
                 <Button_Toolbar
                   icon={PlusIcon}

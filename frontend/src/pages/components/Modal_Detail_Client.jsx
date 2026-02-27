@@ -5,6 +5,7 @@ import {
   ShoppingCartIcon, ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import Modal from './Modal';
+import Button_Toolbar from './Button_Toolbar';
 import { clientsAPI, servicesAPI } from '../../services/api';
 import Modal_Client_Cart, { getClientCartCount } from './Modal_Client_Cart';
 
@@ -184,15 +185,12 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex justify-content-center">
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
               onClick={onClose}
-              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Close"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-outline-secondary"
+            />
           </div>
         </div>
 
@@ -340,15 +338,12 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex justify-content-center">
-            <button
-              type="button"
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
               onClick={onClose}
-              className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-              style={{ width: '3rem', height: '3rem' }}
-              title="Close"
-            >
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
+              className="btn-outline-secondary"
+            />
           </div>
         </div>
 
@@ -640,36 +635,27 @@ export default function Modal_Detail_Client({
           <div className="d-flex align-items-center">
             <div>
               {canDelete && (
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={TrashIcon}
+                  label="Delete Client"
                   onClick={handleDelete}
-                  className="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                  style={{ width: '3rem', height: '3rem' }}
-                  title="Delete Client"
-                >
-                  <TrashIcon style={{ width: 18, height: 18 }} />
-                </button>
+                  className="btn-outline-danger"
+                />
               )}
             </div>
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button
-                type="button"
+            <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Cancel"
                 onClick={onClose}
-                className="btn btn-outline-secondary btn-sm p-1 align-items-center justify-content-center d-flex"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Cancel"
-              >
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
-              <button
-                type="button"
+                className="btn-outline-secondary"
+              />
+              <Button_Toolbar
+                icon={CheckIcon}
+                label="Save Changes"
                 onClick={handleSubmit}
-                className="btn btn-primary btn-sm p-1 align-items-center justify-content-center d-flex"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Save Changes"
-              >
-                <CheckIcon style={{ width: 18, height: 18 }} />
-              </button>
+                className="btn-primary"
+              />
             </div>
      {/* Right spacer to balance delete */}
           <div style={{ width: 40 }} />          </div>

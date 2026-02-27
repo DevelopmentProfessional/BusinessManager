@@ -722,7 +722,7 @@ export default function Sales() {
         </div>
 
         {/* Controls Row 1 - History and Cart */}
-        <div className="flex items-center gap-1 pb-2">
+        <div className="flex items-center gap-1 pb-2" style={{ minHeight: '3rem' }}>
           {/* Sales History Button */}
           <Button_Toolbar
             icon={ArrowTrendingUpIcon}
@@ -747,7 +747,7 @@ export default function Sales() {
         </div>
 
         {/* Controls Row 2 - Client, Clear, Filters */}
-        <div className="flex items-center gap-1 pb-2">
+        <div className="flex items-center gap-1 pb-2" style={{ minHeight: '3rem' }}>
           {/* Account / Client Icon */}
           <Button_Toolbar
             icon={UserCircleIcon}
