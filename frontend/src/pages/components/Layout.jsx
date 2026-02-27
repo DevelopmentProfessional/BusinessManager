@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   UserGroupIcon,
@@ -40,6 +40,11 @@ export default function Layout({ children }) {
   const { hasPermission } = useStore();
   const { isTrainingMode } = useViewMode();
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('training-mode', isTrainingMode);
+  }, [isTrainingMode]);
+
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
     if (!item.permission) return true; // Dashboard and Profile don't need specific permissions
@@ -73,7 +78,7 @@ export default function Layout({ children }) {
           <div 
             className="position-fixed rounded-3  p-1" 
             style={{ 
-              minWidth: '12rem', 
+              minWidth: isTrainingMode ? '12rem' : '3.5rem', 
               zIndex: 1051, 
               bottom: '5rem', 
               right: '1rem' 
@@ -87,14 +92,15 @@ export default function Layout({ children }) {
                   onClick={() => setExpandedMenuOpen(false)}
                   className={classNames(
                     location.pathname === item.href
-                      ? 'btn btn-primary btn-sm'
-                      : 'btn btn-outline-secondary btn-sm',
-                    'd-flex align-items-center gap-2 text-decoration-none',
-                    !isTrainingMode && 'justify-content-center'
+                      ? 'btn btn-primary'
+                      : 'btn btn-outline-secondary',
+                    'd-flex align-items-center text-decoration-none',
+                    isTrainingMode ? 'btn-sm rounded-pill gap-2 px-3' : 'rounded-circle justify-content-center p-0'
                   )}
+                  style={isTrainingMode ? undefined : { width: '3rem', height: '3rem' }}
                   title={item.name}
                 >
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  <item.icon className={classNames('flex-shrink-0', isTrainingMode ? 'h-4 w-4' : 'h-5 w-5')} />
                   {isTrainingMode && <span>{item.name}</span>}
                 </Link>
               ))}
