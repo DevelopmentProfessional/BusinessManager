@@ -8,7 +8,7 @@ _project_root = os.path.dirname(_this_dir)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-# Completely disable ALL SQLAlchemy logging BEFORE any imports
+# Keep SQLAlchemy logs quiet
 logging.getLogger("sqlalchemy").setLevel(logging.CRITICAL)
 logging.getLogger("sqlalchemy").propagate = False
 
