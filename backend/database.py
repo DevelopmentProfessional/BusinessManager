@@ -43,6 +43,13 @@ def _mark_schema_current():
     """Record that the schema is now at CURRENT_SCHEMA_VERSION."""
     try:
         with engine.begin() as conn:
+            # Ensure table exists first with explicit DDL
+            try:
+                conn.execute(text("CREATE TABLE IF NOT EXISTS schema_migration (version TEXT PRIMARY KEY)"))
+            except Exception:
+                # Table might already exist or permission denied, proceed
+                pass
+            
             if DATABASE_URL.startswith("sqlite"):
                 conn.execute(
                     text("INSERT OR REPLACE INTO schema_migration (version) VALUES (:v)"),
@@ -186,10 +193,7 @@ def create_db_and_tables():
     # Always run create_all — idempotent metadata check, required for fresh deploys
     SQLModel.metadata.create_all(engine)
 
-    if _schema_is_current():
-        print(f"Schema version {CURRENT_SCHEMA_VERSION} already applied, skipping migrations.")
-        return
-
+    # Always run migrations - idempotent functions ensure no duplicates
     print(f"Running migrations to schema version {CURRENT_SCHEMA_VERSION}...")
     _migrate_products_and_inventory_to_items_if_needed()
     _migrate_document_entity_type_enum_to_varchar()
@@ -212,6 +216,7 @@ def create_db_and_tables():
     _ensure_insurance_plan_monthly_deduction_if_needed()
     _ensure_schedule_recurrence_columns_if_needed()
     _ensure_chat_message_table_if_needed()
+    _ensure_app_settings_company_columns_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
@@ -1037,3 +1042,37 @@ def _ensure_leave_request_supervisor_id_if_needed():
             if "supervisor_id" not in col_names:
                 conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id UUID"))
                 print("✓ Added leave_request.supervisor_id (PostgreSQL)")
+
+
+def _ensure_app_settings_company_columns_if_needed():
+    """Ensure app_settings table has company name, email, phone, and address columns."""
+    new_cols = {
+        "company_name": ("VARCHAR", "VARCHAR"),
+        "company_email": ("VARCHAR", "VARCHAR"),
+        "company_phone": ("VARCHAR", "VARCHAR"),
+        "company_address": ("TEXT", "TEXT"),
+    }
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('app_settings')")).fetchall()
+            col_names = {row[1] for row in cols}
+            for col, (sqlite_type, _) in new_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE app_settings ADD COLUMN {col} {sqlite_type}"))
+                    print(f"✓ Added app_settings.{col} (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='app_settings'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, (_, pg_type) in new_cols.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
+                    print(f"  + Added column app_settings.{col} ({pg_type})")
