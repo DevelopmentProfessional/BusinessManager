@@ -1,23 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlmodel import Session, select
 from datetime import datetime
 from uuid import UUID
+from pydantic import BaseModel
 
 try:
     from backend.database import get_session
     from backend.models import (
-        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead
+        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, UserRole
     )
+    from backend.routers.auth import get_current_user
+    from backend.seed_data import seed_demo_data
 except ModuleNotFoundError:
     from database import get_session
     from models import (
-        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead
+        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, UserRole
     )
+    from routers.auth import get_current_user
+    from seed_data import seed_demo_data
 
 router = APIRouter()
 
 # Singleton UUID for app settings - always use this ID
 SETTINGS_SINGLETON_ID = UUID("00000000-0000-0000-0000-000000000001")
+
+
+class SeedRequest(BaseModel):
+    force: bool = True
 
 
 def get_or_create_settings(session: Session) -> AppSettings:
@@ -69,3 +79,30 @@ def update_schedule_settings(
         raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
     return AppSettingsRead.model_validate(settings)
+
+
+@router.post("/admin/seed")
+def trigger_seed_data(
+    payload: SeedRequest,
+    x_seed_key: str | None = Header(default=None, alias="X-Seed-Key"),
+    session: Session = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    """Admin-only endpoint to trigger demo data seeding without shell access."""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    required_key = os.getenv("SEED_ADMIN_KEY", "ONE_TIME_SEED").strip()
+    if required_key and x_seed_key != required_key:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid seed key")
+
+    try:
+        seed_demo_data(session, force=payload.force)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Seeding failed: {exc}")
+
+    return {
+        "status": "ok",
+        "message": "Seed completed successfully",
+        "force": payload.force,
+    }

@@ -758,6 +758,13 @@ export const settingsAPI = {
     clearCache('schedule-settings');
     return api.put('/settings/schedule', data);
   },
+  seedDemoData: (force = true, seedKey = '') => {
+    const headers = {};
+    if (seedKey) {
+      headers['X-Seed-Key'] = seedKey;
+    }
+    return api.post('/settings/admin/seed', { force }, { headers });
+  },
 };
 
 export const templatesAPI = {

@@ -194,6 +194,8 @@ const Profile = () => {
   const [settingsError, setSettingsError] = useState('');
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedKey, setSeedKey] = useState('ONE_TIME_SEED');
 
   const { branding, updateBranding } = useBranding();
   const [localBranding, setLocalBranding] = useState(branding);
@@ -436,6 +438,27 @@ const Profile = () => {
       setSettingsError('Sync failed. Please try again.');
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  const handleSeedDemoData = async () => {
+    setSeedLoading(true);
+    setSettingsError('');
+    setSettingsSuccess('');
+    try {
+      await settingsAPI.seedDemoData(true, seedKey.trim());
+
+      if (typeof window !== 'undefined' && typeof window.clearApiCache === 'function') {
+        window.clearApiCache();
+      }
+      await preloadMajorTables();
+
+      setSettingsSuccess('Demo data reseed complete for the last 4 months.');
+      setTimeout(() => setSettingsSuccess(''), 4000);
+    } catch (err) {
+      setSettingsError(err?.response?.data?.detail || 'Seed failed. Check admin role and seed key.');
+    } finally {
+      setSeedLoading(false);
     }
   };
 
@@ -1523,6 +1546,27 @@ const Profile = () => {
                         <ArrowPathIcon className="h-4 w-4" />
                         <span>{syncLoading ? 'Syncing…' : 'Sync Now'}</span>
                       </button>
+                    </div>
+                    <div className="col-12">
+                      <div className="d-flex flex-column gap-2 p-2 bg-light rounded">
+                        <div className="small text-muted">Admin reseed (last 4 months)</div>
+                        <input
+                          type="password"
+                          value={seedKey}
+                          onChange={(e) => setSeedKey(e.target.value)}
+                          className="form-control form-control-sm"
+                          placeholder="Seed key (optional if server key not configured)"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSeedDemoData}
+                          disabled={seedLoading}
+                          className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                        >
+                          <ArrowPathIcon className="h-4 w-4" />
+                          <span>{seedLoading ? 'Seeding…' : 'Seed Demo Data (4 Months)'}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
