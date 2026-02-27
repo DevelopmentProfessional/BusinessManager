@@ -107,6 +107,16 @@ body,
   height: 2.1rem !important;
 }
 
+/* Training mode footer spacing compensation (pages + component footers) */
+body.training-mode .app-footer-search .btn,
+body.training-mode .schedule-footer .btn,
+body.training-mode .profile-footer-nav .btn,
+body.training-mode .modal-footer .btn,
+body.training-mode footer[aria-label="Actions"] .btn,
+body.training-mode .flex-shrink-0.border-top .btn {
+  margin: 0.25rem !important;
+}
+
 @media (max-width: 1024px) {
   html.search-focus .app-footer-search {
     transform: translateY(calc(-1 * var(--keyboard-offset)));

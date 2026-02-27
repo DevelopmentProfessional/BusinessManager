@@ -1863,30 +1863,27 @@ const Profile = () => {
         style={{ zIndex: 10 }}
       >
         {/* Row 1 — Personal: Profile, Benefits, Settings */}
-        <div ref={row1Ref} className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2">
+        <div ref={row1Ref} className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2 flex-wrap">
           {[
             { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
             { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
             { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
             { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
           ].map(({ id, Icon, title }) => (
-            <button
+            <Button_Toolbar
               key={id}
-              type="button"
-              className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-              style={{ width: '3rem', height: '3rem' }}
+              icon={Icon}
+              label={title}
               onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-              title={title}
+              className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
               data-active={openAccordion === id}
-            >
-              <Icon className="h-5 w-5" />
-            </button>
+            />
           ))}
         </div>
 
         {/* Row 2 — Admin/Settings: Schedule, General, Database */}
         {canAccessSettings && (
-          <div ref={handleRow2Ref} className="d-flex align-items-center gap-1 p-4 ps-3 pe-3 pt-1
+          <div ref={handleRow2Ref} className="d-flex align-items-center gap-1 p-4 ps-3 pe-3 pt-1 flex-wrap
           "
           >
             {[
@@ -1894,17 +1891,14 @@ const Profile = () => {
               { id: 'general',  Icon: CogIcon,          title: 'General'  },
               { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
             ].map(({ id, Icon, title }) => (
-              <button
+              <Button_Toolbar
                 key={id}
-                type="button"
-                className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                style={{ width: '3rem', height: '3rem' }}
+                icon={Icon}
+                label={title}
                 onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                title={title}
+                className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
                 data-active={openAccordion === id}
-              >
-                <Icon className="h-5 w-5" />
-              </button>
+              />
             ))}
           </div>
         )}
