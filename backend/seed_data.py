@@ -96,14 +96,14 @@ _INSURANCE_PLANS = [
 ]
 
 _EMPLOYEES = [
-    dict(username="jwilson",   first_name="James",   last_name="Wilson",    email="james.wilson@serenity.com",   role=UserRole.ADMIN,    employment_type="salary",  salary=95000.0, hourly_rate=None, pay_frequency="weekly",   insurance_plan="Premium Health", color="#E74C3C", hire_date=datetime(2021, 3, 15), vacation_days=20, sick_days=10),
-    dict(username="schen",     first_name="Sarah",   last_name="Chen",      email="sarah.chen@serenity.com",     role=UserRole.MANAGER,  employment_type="salary",  salary=72000.0, hourly_rate=None, pay_frequency="biweekly", insurance_plan="Premium Health", color="#9B59B6", hire_date=datetime(2022, 1, 10), vacation_days=15, sick_days=8),
-    dict(username="mthompson", first_name="Marcus",  last_name="Thompson",  email="marcus.t@serenity.com",       role=UserRole.MANAGER,  employment_type="salary",  salary=68000.0, hourly_rate=None, pay_frequency="biweekly", insurance_plan="Basic Health",   color="#2980B9", hire_date=datetime(2021, 7, 22), vacation_days=15, sick_days=8),
-    dict(username="erodriguez",first_name="Emily",   last_name="Rodriguez", email="emily.r@serenity.com",        role=UserRole.EMPLOYEE, employment_type="salary",  salary=52000.0, hourly_rate=None, pay_frequency="weekly",   insurance_plan="Basic Health",   color="#27AE60", hire_date=datetime(2022, 9, 5),  vacation_days=12, sick_days=6),
-    dict(username="dpark",     first_name="David",   last_name="Park",      email="david.park@serenity.com",     role=UserRole.EMPLOYEE, employment_type="hourly",  salary=None,    hourly_rate=22.0, pay_frequency="weekly",   insurance_plan="Basic Health",   color="#F39C12", hire_date=datetime(2023, 2, 14), vacation_days=10, sick_days=5),
-    dict(username="ajohnson",  first_name="Aisha",   last_name="Johnson",   email="aisha.j@serenity.com",        role=UserRole.EMPLOYEE, employment_type="salary",  salary=48000.0, hourly_rate=None, pay_frequency="weekly",   insurance_plan="Premium Health", color="#1ABC9C", hire_date=datetime(2023, 5, 20), vacation_days=10, sick_days=5),
-    dict(username="tbrooks",   first_name="Tyler",   last_name="Brooks",    email="tyler.b@serenity.com",        role=UserRole.EMPLOYEE, employment_type="hourly",  salary=None,    hourly_rate=19.0, pay_frequency="weekly",   insurance_plan="No Insurance",   color="#E67E22", hire_date=datetime(2024, 1, 8),  vacation_days=8,  sick_days=4),
-    dict(username="nfoster",   first_name="Natalie", last_name="Foster",    email="natalie.f@serenity.com",      role=UserRole.EMPLOYEE, employment_type="salary",  salary=55000.0, hourly_rate=None, pay_frequency="biweekly", insurance_plan="Basic Health",   color="#8E44AD", hire_date=datetime(2023, 8, 3),  vacation_days=12, sick_days=6),
+    dict(username="jwilson",   first_name="James",   last_name="Wilson",    email="james.wilson@serenity.com",   role=UserRole.ADMIN,    employment_type="salary",  salary=95000.0, hourly_rate=None, pay_frequency="weekly",   insurance_plan="Premium Health", color="#E74C3C", hire_date=datetime(2021, 3, 15), vacation_days=20, vacation_days_used=8,  sick_days=10, sick_days_used=2),
+    dict(username="schen",     first_name="Sarah",   last_name="Chen",      email="sarah.chen@serenity.com",     role=UserRole.MANAGER,  employment_type="salary",  salary=72000.0, hourly_rate=None, pay_frequency="biweekly", insurance_plan="Premium Health", color="#9B59B6", hire_date=datetime(2022, 1, 10), vacation_days=15, vacation_days_used=5,  sick_days=8,  sick_days_used=1),
+    dict(username="mthompson", first_name="Marcus",  last_name="Thompson",  email="marcus.t@serenity.com",       role=UserRole.MANAGER,  employment_type="salary",  salary=68000.0, hourly_rate=None, pay_frequency="biweekly", insurance_plan="Basic Health",   color="#2980B9", hire_date=datetime(2021, 7, 22), vacation_days=15, vacation_days_used=4,  sick_days=8,  sick_days_used=3),
+    dict(username="erodriguez",first_name="Emily",   last_name="Rodriguez", email="emily.r@serenity.com",        role=UserRole.EMPLOYEE, employment_type="salary",  salary=52000.0, hourly_rate=None, pay_frequency="weekly",   insurance_plan="Basic Health",   color="#27AE60", hire_date=datetime(2022, 9, 5),  vacation_days=12, vacation_days_used=6,  sick_days=6,  sick_days_used=2),
+    dict(username="dpark",     first_name="David",   last_name="Park",      email="david.park@serenity.com",     role=UserRole.EMPLOYEE, employment_type="hourly",  salary=None,    hourly_rate=22.0, pay_frequency="weekly",   insurance_plan="Basic Health",   color="#F39C12", hire_date=datetime(2023, 2, 14), vacation_days=10, vacation_days_used=3,  sick_days=5,  sick_days_used=1),
+    dict(username="ajohnson",  first_name="Aisha",   last_name="Johnson",   email="aisha.j@serenity.com",        role=UserRole.EMPLOYEE, employment_type="salary",  salary=48000.0, hourly_rate=None, pay_frequency="weekly",   insurance_plan="Premium Health", color="#1ABC9C", hire_date=datetime(2023, 5, 20), vacation_days=10, vacation_days_used=2,  sick_days=5,  sick_days_used=0),
+    dict(username="tbrooks",   first_name="Tyler",   last_name="Brooks",    email="tyler.b@serenity.com",        role=UserRole.EMPLOYEE, employment_type="hourly",  salary=None,    hourly_rate=19.0, pay_frequency="weekly",   insurance_plan="No Insurance",   color="#E67E22", hire_date=datetime(2024, 1, 8),  vacation_days=8,  vacation_days_used=1,  sick_days=4,  sick_days_used=1),
+    dict(username="nfoster",   first_name="Natalie", last_name="Foster",    email="natalie.f@serenity.com",      role=UserRole.EMPLOYEE, employment_type="salary",  salary=55000.0, hourly_rate=None, pay_frequency="biweekly", insurance_plan="Basic Health",   color="#8E44AD", hire_date=datetime(2023, 8, 3),  vacation_days=12, vacation_days_used=7,  sick_days=6,  sick_days_used=2),
 ]
 
 _CLIENTS = [
@@ -407,6 +407,8 @@ def seed_demo_data(session: Session, force: bool = False) -> None:
             existing.insurance_plan  = e["insurance_plan"]
             existing.vacation_days   = e.get("vacation_days", 10)
             existing.sick_days       = e.get("sick_days", 5)
+            existing.vacation_days_used = e.get("vacation_days_used", 0)
+            existing.sick_days_used     = e.get("sick_days_used", 0)
             employee_objs.append(existing)
             continue
         emp = User(
@@ -431,8 +433,8 @@ def seed_demo_data(session: Session, force: bool = False) -> None:
             insurance_plan  = e["insurance_plan"],
             vacation_days   = e.get("vacation_days", 10),
             sick_days       = e.get("sick_days", 5),
-            vacation_days_used = 0,
-            sick_days_used     = 0,
+            vacation_days_used = e.get("vacation_days_used", 0),
+            sick_days_used     = e.get("sick_days_used", 0),
         )
         session.add(emp)
         employee_objs.append(emp)
