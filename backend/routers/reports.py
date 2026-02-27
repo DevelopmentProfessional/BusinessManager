@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from datetime import datetime
 from typing import Optional
 from backend.database import get_session
-from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction
+from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip
 
 router = APIRouter()
 
@@ -250,3 +250,96 @@ def get_employees_report(
     labels = [item[0] for item in sorted_items]
     data = [item[1] for item in sorted_items]
     return {"labels": labels, "data": data}
+
+
+@router.get("/reports/attendance")
+def get_attendance_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    group_by: str = Query("day"),
+    employee_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session),
+):
+    """Attendance analytics: attendance records grouped over time."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date)
+
+    rows = session.exec(select(Attendance)).all()
+    grouped: dict = {}
+
+    for row in rows:
+        dt = row.date
+        if dt is None:
+            continue
+        if start and dt < start:
+            continue
+        if end and dt > end:
+            continue
+        if employee_id and employee_id != "all" and str(row.user_id) != employee_id:
+            continue
+
+        label = _group_label(dt, group_by)
+        grouped[label] = grouped.get(label, 0) + 1
+
+    sorted_keys = sorted(grouped.keys())
+    return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
+
+
+@router.get("/reports/sales")
+def get_sales_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    group_by: str = Query("day"),
+    session: Session = Depends(get_session),
+):
+    """Sales analytics: transaction totals grouped over time."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date)
+
+    txs = session.exec(select(SaleTransaction)).all()
+    grouped: dict = {}
+
+    for tx in txs:
+        dt = tx.created_at
+        if dt is None:
+            continue
+        if start and dt < start:
+            continue
+        if end and dt > end:
+            continue
+
+        label = _group_label(dt, group_by)
+        grouped[label] = grouped.get(label, 0) + (tx.total or 0)
+
+    sorted_keys = sorted(grouped.keys())
+    return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
+
+
+@router.get("/reports/payroll")
+def get_payroll_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    group_by: str = Query("month"),
+    session: Session = Depends(get_session),
+):
+    """Payroll analytics: total net pay grouped over time."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date)
+
+    slips = session.exec(select(PaySlip)).all()
+    grouped: dict = {}
+
+    for slip in slips:
+        dt = slip.pay_period_end
+        if dt is None:
+            continue
+        if start and dt < start:
+            continue
+        if end and dt > end:
+            continue
+
+        label = _group_label(dt, group_by)
+        grouped[label] = grouped.get(label, 0) + (slip.net_amount or 0)
+
+    sorted_keys = sorted(grouped.keys())
+    return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}

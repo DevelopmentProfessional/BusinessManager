@@ -1,26 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   ChartBarIcon,
   CalendarIcon,
   UsersIcon,
   BanknotesIcon,
-  TruckIcon,
+  CurrencyDollarIcon,
   WrenchScrewdriverIcon,
   ArchiveBoxIcon,
-  DocumentIcon,
   ClockIcon,
-  EyeIcon,
-  FunnelIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import { reportsAPI } from '../services/api';
+import { reportsAPI, employeesAPI, servicesAPI } from '../services/api';
 import useBranding from '../services/useBranding';
-import Gate_Permission from './components/Gate_Permission';
-import Modal from './components/Modal';
 import Chart_Report from './components/Chart_Report';
-import Filter_Report from './components/Filter_Report';
+import Button_Toolbar from './components/Button_Toolbar';
 
 const AVAILABLE_REPORTS = [
   {
@@ -60,6 +56,24 @@ const AVAILABLE_REPORTS = [
     chartTypes: ['pie', 'bar', 'doughnut']
   },
   {
+    id: 'sales',
+    title: 'Sales Trends',
+    description: 'Track transaction totals over time',
+    icon: CurrencyDollarIcon,
+    color: 'emerald',
+    tables: ['sale_transaction', 'user', 'client'],
+    chartTypes: ['line', 'bar', 'area']
+  },
+  {
+    id: 'payroll',
+    title: 'Payroll Summary',
+    description: 'Monitor payroll payouts by period',
+    icon: BanknotesIcon,
+    color: 'teal',
+    tables: ['pay_slip', 'user'],
+    chartTypes: ['bar', 'line', 'area']
+  },
+  {
     id: 'inventory',
     title: 'Inventory Analytics',
     description: 'Track stock levels and usage patterns',
@@ -88,15 +102,27 @@ const AVAILABLE_REPORTS = [
   }
 ];
 
+const DATE_RANGE_OPTIONS = [
+  { value: 'last7days', label: '7D' },
+  { value: 'last30days', label: '30D' },
+  { value: 'last3months', label: '3M' },
+  { value: 'last6months', label: '6M' },
+  { value: 'lastyear', label: '1Y' },
+  { value: 'custom', label: 'Custom' }
+];
+
+const GROUP_BY_OPTIONS = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' }
+];
+
 export default function Reports() {
   const {
     loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
+    hasPermission
   } = useStore();
 
-  // Use the permission refresh hook
-
-  // Check permissions at page level
   if (!hasPermission('reports', 'read') && 
       !hasPermission('schedule', 'read') &&
       !hasPermission('clients', 'read') &&
@@ -106,26 +132,23 @@ export default function Reports() {
 
   const { branding } = useBranding();
 
-  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedReportId, setSelectedReportId] = useState('');
   const [reportData, setReportData] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [services, setServices] = useState([]);
   const [reportFilters, setReportFilters] = useState({
     dateRange: 'last30days',
     startDate: null,
     endDate: null,
     groupBy: 'day',
-    chartType: 'line'
+    chartType: 'line',
+    status: 'all',
+    employeeId: 'all',
+    serviceId: 'all'
   });
 
-  const handleCloseReport = () => {
-    closeModal();
-    setSelectedReport(null);
-    setReportData(null);
-  };
-
-  // Filter available reports based on user permissions
   const accessibleReports = AVAILABLE_REPORTS.filter(report => {
     return report.tables.some(table => {
-      // Map table names to permission page names
       const pageMap = {
         'schedule': 'schedule',
         'clients': 'clients', 
@@ -134,31 +157,30 @@ export default function Reports() {
         'inventory': 'inventory',
         'item': 'inventory',
         'supplier': 'suppliers',
-        'attendance': 'attendance'
+        'attendance': 'attendance',
+        'sale_transaction': 'sales',
+        'pay_slip': 'profile'
       };
       const page = pageMap[table];
-      return page && hasPermission(page, 'read');
+      if (page === 'profile') return true;
+      return page && (hasPermission(page, 'read') || hasPermission(page, 'write') || hasPermission(page, 'admin'));
     });
   });
 
-  const handleReportSelect = (report) => {
-    setSelectedReport(report);
-    setReportFilters(prev => ({
-      ...prev,
-      chartType: report.chartTypes[0] // Default to first available chart type
-    }));
-    openModal('report-view');
-  };
+  const selectedReport = useMemo(
+    () => accessibleReports.find((r) => r.id === selectedReportId) || null,
+    [accessibleReports, selectedReportId]
+  );
 
-  const handleFilterChange = (newFilters) => {
-    setReportFilters(newFilters);
-    // Trigger data refresh when filters change
-    if (selectedReport) {
-      loadReportData(selectedReport.id, newFilters);
-    }
+  const handleReportSelect = (reportId) => {
+    const report = accessibleReports.find((r) => r.id === reportId);
+    if (!report) return;
+    setSelectedReportId(report.id);
+    setReportFilters((prev) => ({ ...prev, chartType: report.chartTypes[0] || 'line' }));
   };
 
   const loadReportData = async (reportId, filters = reportFilters) => {
+    if (!reportId) return;
     setLoading(true);
     try {
       let response;
@@ -168,7 +190,7 @@ export default function Reports() {
         group_by: filters.groupBy,
         ...(filters.status && filters.status !== 'all' ? { status: filters.status } : {}),
         ...(filters.employeeId && filters.employeeId !== 'all' ? { employee_id: filters.employeeId } : {}),
-        ...(filters.category && filters.category !== 'all' ? { service_id: filters.category } : {})
+        ...(filters.serviceId && filters.serviceId !== 'all' ? { service_id: filters.serviceId } : {})
       };
 
       switch (reportId) {
@@ -196,18 +218,26 @@ export default function Reports() {
           response = await reportsAPI.getEmployeesReport(apiParams);
           setReportData(transformEmployeesData(response.data, filters.chartType));
           break;
+        case 'attendance':
+          response = await reportsAPI.getAttendanceReport(apiParams);
+          setReportData(transformAttendanceData(response.data, filters.chartType));
+          break;
+        case 'sales':
+          response = await reportsAPI.getSalesReport(apiParams);
+          setReportData(transformSalesData(response.data, filters.chartType));
+          break;
+        case 'payroll':
+          response = await reportsAPI.getPayrollReport(apiParams);
+          setReportData(transformPayrollData(response.data, filters.chartType));
+          break;
         default:
-          // Fallback to mock data
-          const mockData = generateMockReportData(reportId, filters);
-          setReportData(mockData);
+          setReportData({ labels: [], datasets: [] });
       }
       clearError();
     } catch (err) {
       setError('Failed to load report data');
       console.error(err);
-      // Fallback to mock data on API error
-      const mockData = generateMockReportData(reportId, filters);
-      setReportData(mockData);
+      setReportData({ labels: [], datasets: [] });
     } finally {
       setLoading(false);
     }
@@ -239,7 +269,9 @@ export default function Reports() {
     return new Date().toISOString().split('T')[0];
   };
 
-  // Data transformation functions
+  const getPalette = (count, alpha = 0.5) =>
+    Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`);
+
   const transformAppointmentsData = (data, chartType) => ({
     labels: data.labels,
     datasets: [{
@@ -289,9 +321,9 @@ export default function Reports() {
     labels: data.labels,
     datasets: [{
       label: 'Service Usage',
-      data: data.usage_data,
+      data: data.data || [],
       backgroundColor: chartType === 'pie' || chartType === 'doughnut' ? 
-        data.labels.map((_, i) => `hsl(${(i * 360) / data.labels.length}, 70%, 60%)`) : 
+        getPalette((data.labels || []).length) : 
         'rgba(251, 146, 60, 0.5)',
       borderColor: 'rgb(251, 146, 60)',
       borderWidth: 2
@@ -302,17 +334,10 @@ export default function Reports() {
     labels: data.labels,
     datasets: [{
       label: 'Current Stock',
-      data: data.quantities,
+      data: data.data || [],
       backgroundColor: 'rgba(239, 68, 68, 0.5)',
       borderColor: 'rgb(239, 68, 68)',
       borderWidth: 2
-    }, {
-      label: 'Minimum Level',
-      data: data.min_levels,
-      backgroundColor: 'rgba(107, 114, 128, 0.3)',
-      borderColor: 'rgb(107, 114, 128)',
-      borderWidth: 1,
-      borderDash: [5, 5]
     }]
   });
 
@@ -320,83 +345,130 @@ export default function Reports() {
     labels: data.labels,
     datasets: [{
       label: 'Appointments',
-      data: data.appointment_counts,
+      data: data.data || [],
       backgroundColor: 'rgba(99, 102, 241, 0.5)',
       borderColor: 'rgb(99, 102, 241)',
       borderWidth: 2
     }]
   });
 
-  // Mock data generator - replace with real API calls
-  const generateMockReportData = (reportId, filters) => {
-    const dataPoints = filters.groupBy === 'day' ? 30 : filters.groupBy === 'week' ? 12 : 6;
-    const labels = Array.from({ length: dataPoints }, (_, i) => {
-      if (filters.groupBy === 'day') return `Day ${i + 1}`;
-      if (filters.groupBy === 'week') return `Week ${i + 1}`;
-      return `Month ${i + 1}`;
-    });
+  const transformAttendanceData = (data, chartType) => ({
+    labels: data.labels,
+    datasets: [{
+      label: 'Attendance Records',
+      data: data.data || [],
+      backgroundColor: 'rgba(75, 85, 99, 0.5)',
+      borderColor: 'rgb(75, 85, 99)',
+      borderWidth: 2
+    }]
+  });
 
-    switch (reportId) {
-      case 'appointments':
-        return {
-          labels,
-          datasets: [{
-            label: 'Appointments',
-            data: labels.map(() => Math.floor(Math.random() * 50) + 10),
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgb(59, 130, 246)',
-            borderWidth: 2
-          }]
-        };
-      case 'revenue':
-        return {
-          labels,
-          datasets: [{
-            label: 'Revenue ($)',
-            data: labels.map(() => Math.floor(Math.random() * 5000) + 1000),
-            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-            borderColor: 'rgb(34, 197, 94)',
-            borderWidth: 2
-          }]
-        };
-      case 'clients':
-        return {
-          labels: ['New Clients', 'Returning Clients', 'Inactive Clients'],
-          datasets: [{
-            label: 'Client Status',
-            data: [25, 45, 10],
-            backgroundColor: [
-              'rgba(147, 51, 234, 0.5)',
-              'rgba(59, 130, 246, 0.5)',
-              'rgba(107, 114, 128, 0.5)'
-            ],
-            borderColor: [
-              'rgb(147, 51, 234)',
-              'rgb(59, 130, 246)',
-              'rgb(107, 114, 128)'
-            ],
-            borderWidth: 2
-          }]
-        };
-      default:
-        return {
-          labels,
-          datasets: [{
-            label: 'Data',
-            data: labels.map(() => Math.floor(Math.random() * 100)),
-            backgroundColor: 'rgba(107, 114, 128, 0.5)',
-            borderColor: 'rgb(107, 114, 128)',
-            borderWidth: 2
-          }]
-        };
-    }
-  };
+  const transformSalesData = (data, chartType) => ({
+    labels: data.labels,
+    datasets: [{
+      label: 'Sales Total ($)',
+      data: data.data || [],
+      backgroundColor: 'rgba(16, 185, 129, 0.5)',
+      borderColor: 'rgb(16, 185, 129)',
+      borderWidth: 2
+    }]
+  });
+
+  const transformPayrollData = (data, chartType) => ({
+    labels: data.labels,
+    datasets: [{
+      label: 'Payroll Net ($)',
+      data: data.data || [],
+      backgroundColor: 'rgba(20, 184, 166, 0.5)',
+      borderColor: 'rgb(20, 184, 166)',
+      borderWidth: 2
+    }]
+  });
 
   useEffect(() => {
-    if (selectedReport && isModalOpen) {
-      loadReportData(selectedReport.id);
+    if (accessibleReports.length > 0 && !selectedReportId) {
+      setSelectedReportId(accessibleReports[0].id);
     }
-  }, [selectedReport, isModalOpen]);
+  }, [accessibleReports, selectedReportId]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [empRes, svcRes] = await Promise.all([
+          employeesAPI.getAll(),
+          servicesAPI.getAll(),
+        ]);
+        setEmployees(empRes.data || []);
+        setServices(svcRes.data || []);
+      } catch {
+        setEmployees([]);
+        setServices([]);
+      }
+    };
+    loadOptions();
+  }, []);
+
+  useEffect(() => {
+    if (selectedReport) {
+      loadReportData(selectedReport.id, reportFilters);
+    }
+  }, [selectedReport?.id, reportFilters.dateRange, reportFilters.startDate, reportFilters.endDate, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId]);
+
+  const canUseStatus = selectedReport?.id === 'appointments';
+  const canUseService = ['appointments', 'services', 'revenue'].includes(selectedReport?.id || '');
+  const canUseEmployee = ['appointments', 'employees', 'attendance'].includes(selectedReport?.id || '');
+
+  const handleExportPdf = () => {
+    if (!selectedReport) return;
+
+    const reportEl = document.getElementById('report-export-section');
+    if (!reportEl) return;
+
+    const chartCanvas = reportEl.querySelector('canvas');
+    const chartImg = chartCanvas ? chartCanvas.toDataURL('image/png') : '';
+
+    const prettyRange = reportFilters.dateRange === 'custom'
+      ? `${reportFilters.startDate || 'N/A'} to ${reportFilters.endDate || 'N/A'}`
+      : reportFilters.dateRange;
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=800');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${selectedReport.title} - PDF Export</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #111827; }
+            h1 { margin: 0 0 8px; font-size: 24px; }
+            p { margin: 0 0 6px; color: #4b5563; }
+            .meta { margin: 12px 0 18px; font-size: 12px; color: #6b7280; }
+            .chart-wrap { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+            .chart-wrap img { width: 100%; height: auto; display: block; }
+            .footer { margin-top: 18px; font-size: 12px; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <h1>${selectedReport.title}</h1>
+          <p>${selectedReport.description}</p>
+          <div class="meta">
+            <div><strong>Range:</strong> ${prettyRange}</div>
+            <div><strong>Group:</strong> ${reportFilters.groupBy}</div>
+            <div><strong>Chart:</strong> ${reportFilters.chartType}</div>
+            <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+          </div>
+          <div class="chart-wrap">
+            ${chartImg ? `<img src="${chartImg}" alt="${selectedReport.title}" />` : '<p>Chart preview unavailable.</p>'}
+          </div>
+          <div class="footer">${branding.companyName || 'Business Manager'}</div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   if (loading && !selectedReport) {
     return (
@@ -408,168 +480,180 @@ export default function Reports() {
 
   return (
     <div
-      className="h-full flex flex-col p-4 overflow-y-auto reports-page"
-      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      className="h-full flex flex-col reports-page"
+      style={{ minHeight: 0 }}
     >
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
-        <p className="text-gray-600">
-          Generate insights from your business data with interactive charts and reports.
-        </p>
-      </div>
-
-      {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Report Cards Grid */}
-      <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {accessibleReports.map((report) => (
-          <div
-            key={report.id}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => handleReportSelect(report)}
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg bg-${report.color}-100`}>
-                  <report.icon className={`h-6 w-6 text-${report.color}-600`} />
-                </div>
-                <EyeIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {report.title}
-              </h3>
-              
-              <p className="text-sm text-gray-600 mb-4">
-                {report.description}
-              </p>
-              
-              <div className="flex flex-wrap gap-1">
-                {report.tables.map((table) => (
-                  <span
-                    key={table}
-                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
-                  >
-                    {table}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {accessibleReports.length === 0 && (
-        <div className="text-center py-12">
-          <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            You don't have permissions to view any reports.
-          </p>
-        </div>
-      )}
-
-      {/* Report Modal */}
-      <Modal
-        isOpen={isModalOpen && modalContent === 'report-view'}
-        onClose={handleCloseReport}
-        footer={selectedReport && (
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={handleCloseReport} className="btn btn-outline-secondary">
-              Cancel
+      <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Live reports powered by your current database data.</p>
+        <div className="d-flex gap-1 flex-wrap">
+          {accessibleReports.map((report) => (
+            <button
+              key={report.id}
+              type="button"
+              className={`btn btn-sm ${selectedReportId === report.id ? 'btn-primary' : 'btn-outline-secondary'} d-flex align-items-center gap-1`}
+              onClick={() => handleReportSelect(report.id)}
+            >
+              <report.icon className="h-4 w-4" />
+              <span>{report.title}</span>
             </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-grow-1 overflow-auto p-3" style={{ minHeight: 0, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {error && (
+          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">
+            {error}
+          </div>
+        )}
+
+        {!selectedReport ? (
+          <div className="text-center py-12">
+            <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
+            <p className="mt-1 text-sm text-gray-500">You don't have permissions to view reports.</p>
+          </div>
+        ) : (
+          <>
+            <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+              <div className="d-flex align-items-center gap-2">
+                <selectedReport.icon className="h-5 w-5 text-primary-600" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-0">{selectedReport.title}</h2>
+              </div>
+              <Button_Toolbar
+                icon={ArrowDownTrayIcon}
+                label="Export PDF"
+                onClick={handleExportPdf}
+                className="btn-outline-secondary"
+              />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{selectedReport.description}</p>
+            <div id="report-export-section" className="h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <Chart_Report
+                data={reportData}
+                type={reportFilters.chartType}
+                title={selectedReport.title}
+                loading={loading}
+              />
+            </div>
+
+            <div className="mt-3 pt-2 border-top border-gray-200 dark:border-gray-700 d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div className="d-flex align-items-center gap-2">
+                {branding.logoUrl && <img src={branding.logoUrl} alt="logo" style={{ height: '1rem', objectFit: 'contain' }} />}
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{branding.companyName || 'Business Manager'}</span>
+              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Generated {new Date().toLocaleDateString()}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {selectedReport && (
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 pb-4">
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <select
+              className="form-select form-select-sm"
+              style={{ width: 'auto' }}
+              value={reportFilters.dateRange}
+              onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
+            >
+              {DATE_RANGE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+
+            {reportFilters.dateRange === 'custom' && (
+              <>
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  style={{ width: 'auto' }}
+                  value={reportFilters.startDate || ''}
+                  onChange={(e) => setReportFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                />
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  style={{ width: 'auto' }}
+                  value={reportFilters.endDate || ''}
+                  onChange={(e) => setReportFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                />
+              </>
+            )}
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: 'auto' }}
+              value={reportFilters.groupBy}
+              onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
+            >
+              {GROUP_BY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: 'auto' }}
+              value={reportFilters.chartType}
+              onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
+            >
+              {selectedReport.chartTypes.map((chartType) => (
+                <option key={chartType} value={chartType}>{chartType}</option>
+              ))}
+            </select>
+
+            {canUseStatus && (
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={reportFilters.status}
+                onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
+              >
+                <option value="all">All Statuses</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            )}
+
+            {canUseService && (
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={reportFilters.serviceId}
+                onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
+              >
+                <option value="all">All Services</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>{service.name}</option>
+                ))}
+              </select>
+            )}
+
+            {canUseEmployee && (
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={reportFilters.employeeId}
+                onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
+              >
+                <option value="all">All Employees</option>
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>{`${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username}</option>
+                ))}
+              </select>
+            )}
+
             <button
               type="button"
-              onClick={() => loadReportData(selectedReport.id)}
-              className="btn btn-primary d-flex align-items-center gap-2"
+              onClick={() => loadReportData(selectedReport.id, reportFilters)}
+              className="btn btn-primary btn-sm d-flex align-items-center gap-1"
             >
               <ArrowPathIcon className="h-4 w-4" />
-              Refresh
+              <span>Refresh</span>
             </button>
           </div>
-        )}
-      >
-        {selectedReport && (
-          <div
-            className="p-6"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            <style>{`.report-modal-inner::-webkit-scrollbar{display:none!important}`}</style>
-            {/* Modal Header */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className={`p-2 rounded-lg bg-${selectedReport.color}-100`}>
-                <selectedReport.icon className={`h-5 w-5 text-${selectedReport.color}-600`} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  {selectedReport.title}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {selectedReport.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <Filter_Report
-              filters={reportFilters}
-              availableChartTypes={selectedReport.chartTypes}
-              onFilterChange={handleFilterChange}
-            />
-
-            {/* Chart */}
-            <div className="mt-6 h-96">
-              {reportData ? (
-                <Chart_Report
-                  data={reportData}
-                  type={reportFilters.chartType}
-                  title={selectedReport.title}
-                  loading={loading}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                </div>
-              )}
-            </div>
-
-            {/* Report Footer */}
-            <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                {branding.logoUrl && (
-                  <img src={branding.logoUrl} alt="logo" style={{ height: '1rem', objectFit: 'contain' }} />
-                )}
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                  {branding.companyName || 'Business Manager'}
-                </span>
-                {branding.tagline && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">&mdash; {branding.tagline}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
-                <span style={{ textTransform: 'capitalize' }}>
-                  {reportFilters.dateRange === 'custom'
-                    ? `${reportFilters.startDate || ''} – ${reportFilters.endDate || ''}`
-                    : reportFilters.dateRange.replace('last', 'Last ').replace(/(\d)/, ' $1').replace('days', ' Days').replace('months', ' Months').replace('year', ' Year').trim()}
-                </span>
-                <span className="text-gray-300 dark:text-gray-600">|</span>
-                <span>
-                  Generated {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }

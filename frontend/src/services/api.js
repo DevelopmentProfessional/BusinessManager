@@ -800,6 +800,18 @@ export const reportsAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/employees?${queryParams}`);
   },
+  getAttendanceReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/attendance?${queryParams}`);
+  },
+  getSalesReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/sales?${queryParams}`);
+  },
+  getPayrollReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/payroll?${queryParams}`);
+  },
 };
 
 /**
