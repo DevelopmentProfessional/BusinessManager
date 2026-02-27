@@ -25,22 +25,28 @@ function withTrainingModeMargin(className, isTrainingMode) {
 export default function Button_Toolbar({ icon: Icon, label, onClick, className = '', disabled = false, badge, style = {}, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const effectiveClassName = withTrainingModeMargin(className, isTrainingMode);
+  const normalizedLabel = typeof label === 'string' ? label.trim() : '';
+  const isFilterButton = /^filter\b/i.test(normalizedLabel);
+  const displayLabel = isTrainingMode
+    ? normalizedLabel.replace(/^filter\s*/i, '').trim()
+    : normalizedLabel;
+  const showTextLabel = isTrainingMode && displayLabel.length > 0;
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title={label}
-      aria-label={label}
+      title={normalizedLabel || label}
+      aria-label={normalizedLabel || label}
       className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
-        ${isTrainingMode ? 'rounded-pill px-3' : 'rounded-circle'}
+        ${isTrainingMode ? (isFilterButton ? 'rounded-pill p-1' : 'rounded-pill px-3') : 'rounded-circle'}
         ${effectiveClassName}`}
       style={isTrainingMode ? { height: '2.25rem', ...style } : { width: '3rem', height: '3rem', ...style }}
       {...rest}
     >
-      <Icon className={`flex-shrink-0 h-5 w-5${isTrainingMode ? ' me-1' : ''}`} />
-      {isTrainingMode && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1 }}>{label}</span>}
+      <Icon className={`flex-shrink-0 h-5 w-5${showTextLabel ? ' me-1' : ''}`} />
+      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1 }}>{displayLabel}</span>}
       {badge}
     </button>
   );
