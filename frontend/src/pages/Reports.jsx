@@ -10,13 +10,15 @@ import {
   ArchiveBoxIcon,
   ClockIcon,
   ArrowPathIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  ChevronUpDownIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { reportsAPI, employeesAPI, servicesAPI } from '../services/api';
 import useBranding from '../services/useBranding';
 import Chart_Report from './components/Chart_Report';
 import Button_Toolbar from './components/Button_Toolbar';
+import useViewMode from '../services/useViewMode';
 
 const AVAILABLE_REPORTS = [
   {
@@ -131,16 +133,18 @@ export default function Reports() {
   }
 
   const { branding } = useBranding();
+  const { isTrainingMode } = useViewMode();
 
   const [selectedReportId, setSelectedReportId] = useState('');
   const [reportData, setReportData] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     dateRange: 'last30days',
     startDate: null,
     endDate: null,
-    groupBy: 'day',
+    groupBy: 'month',
     chartType: 'line',
     status: 'all',
     employeeId: 'all',
@@ -176,7 +180,12 @@ export default function Reports() {
     const report = accessibleReports.find((r) => r.id === reportId);
     if (!report) return;
     setSelectedReportId(report.id);
-    setReportFilters((prev) => ({ ...prev, chartType: report.chartTypes[0] || 'line' }));
+    setReportFilters((prev) => ({
+      ...prev,
+      groupBy: 'month',
+      chartType: report.chartTypes[0] || 'line'
+    }));
+    setReportMenuOpen(false);
   };
 
   const loadReportData = async (reportId, filters = reportFilters) => {
@@ -487,19 +496,6 @@ export default function Reports() {
       <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Live reports powered by your current database data.</p>
-        <div className="d-flex gap-1 flex-wrap">
-          {accessibleReports.map((report) => (
-            <button
-              key={report.id}
-              type="button"
-              className={`btn btn-sm ${selectedReportId === report.id ? 'btn-primary' : 'btn-outline-secondary'} d-flex align-items-center gap-1`}
-              onClick={() => handleReportSelect(report.id)}
-            >
-              <report.icon className="h-4 w-4" />
-              <span>{report.title}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="flex-grow-1 overflow-auto p-3" style={{ minHeight: 0, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -552,6 +548,7 @@ export default function Reports() {
 
       {selectedReport && (
         <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 pb-4">
+          {/* Row 1: report filters */}
           <div className="d-flex flex-wrap align-items-center gap-2">
             <select
               className="form-select form-select-sm"
@@ -651,6 +648,43 @@ export default function Reports() {
               <ArrowPathIcon className="h-4 w-4" />
               <span>Refresh</span>
             </button>
+          </div>
+
+          {/* Row 2: centered report dropup selector */}
+          <div className="d-flex justify-content-center align-items-center pt-2 position-relative">
+            <div className="position-relative">
+              <Button_Toolbar
+                icon={ChevronUpDownIcon}
+                label={selectedReport?.title || 'Report'}
+                onClick={() => setReportMenuOpen((prev) => !prev)}
+                className="btn-outline-secondary"
+              />
+
+              {reportMenuOpen && (
+                <div
+                  className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1"
+                  style={{ minWidth: isTrainingMode ? '16rem' : '12rem', zIndex: 20 }}
+                >
+                  {accessibleReports.map((report) => {
+                    const isActive = selectedReportId === report.id;
+                    return (
+                      <button
+                        key={report.id}
+                        type="button"
+                        onClick={() => {
+                          handleReportSelect(report.id);
+                          setReportMenuOpen(false);
+                        }}
+                        className={`btn btn-sm w-100 d-flex align-items-center gap-2 text-start ${isActive ? 'btn-primary' : 'btn-outline-secondary'} mb-1`}
+                      >
+                        <report.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="text-truncate">{report.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
