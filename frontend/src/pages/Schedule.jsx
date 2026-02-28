@@ -1221,7 +1221,48 @@ export default function Schedule() {
 
         <div className="schedule-footer px-2 py-1 border-top pb-4">
           {/* Row 1: Month, Week, Day, Previous, Next */}
-          <div className="d-flex gap-1 mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+          <div className="d-lg-none">
+            <div className="row g-0">
+              <div className="col-12">
+                <div className="d-flex mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+            <Button_Toolbar
+              icon={MonthViewIcon}
+              label="Month"
+              onClick={() => setCurrentView('month')}
+              className={currentView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}
+              data-active={currentView === 'month'}
+            />
+            <Button_Toolbar
+              icon={WeekViewIcon}
+              label="Week"
+              onClick={() => setCurrentView('week')}
+              className={currentView === 'week' ? 'btn-primary' : 'btn-outline-secondary'}
+              data-active={currentView === 'week'}
+            />
+            <Button_Toolbar
+              icon={DayViewIcon}
+              label="Day"
+              onClick={() => setCurrentView('day')}
+              className={currentView === 'day' ? 'btn-primary' : 'btn-outline-secondary'}
+              data-active={currentView === 'day'}
+            />
+            <Button_Toolbar
+              icon={ChevronLeftIcon}
+              label="Prev"
+              onClick={handleNavigatePrevious}
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={ChevronRightIcon}
+              label="Next"
+              onClick={handleNavigateNext}
+              className="btn-outline-secondary"
+            />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="d-none d-lg-flex  mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={MonthViewIcon}
               label="Month"
@@ -1257,7 +1298,38 @@ export default function Schedule() {
             />
           </div>
           {/* Row 2: Today, Filter */}
-          <div className="d-flex gap-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+          <div className="d-lg-none">
+            <div className="row g-0">
+              <div className="col-10">
+                <div className="d-flex flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+            <Button_Toolbar
+              icon={TodayIcon}
+              label="Today"
+              onClick={() => setCurrentDate(new Date())}
+              className="btn-outline-secondary"
+            />
+            <Button_Toolbar
+              icon={FunnelIcon}
+              label="Filter"
+              onClick={() => setIsFilterOpen(true)}
+              className={`${
+                filters.employeeIds.length > 0 ||
+                filters.clientIds.length > 0 ||
+                filters.serviceIds.length > 0 ||
+                filters.startDate ||
+                filters.endDate ||
+                filters.showOutOfOffice
+                  ? 'btn-primary'
+                  : 'btn-outline-secondary'
+              }`}
+              data-active={filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || !!filters.startDate || !!filters.endDate || filters.showOutOfOffice}
+              badge={filters.showOutOfOffice ? <span>OOO</span> : null}
+            />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="d-none d-lg-flex gap-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={TodayIcon}
               label="Today"

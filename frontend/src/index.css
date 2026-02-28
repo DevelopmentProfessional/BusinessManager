@@ -80,9 +80,54 @@ body,
 
 /* Remove border from all footer navigation bars */
 .app-footer-search,
-.schedule-footer {
+.schedule-footer,
+.profile-footer-nav {
   border-top: none !important;
   border: none !important;
+}
+
+/* ========================================
+   GLOBAL FOOTER STYLES
+   All footers application-wide
+   ======================================== */
+.modal-footer,
+.app-footer-search,
+.schedule-footer,
+.profile-footer-nav,
+footer[aria-label="Actions"],
+.flex-shrink-0.border-top {
+  padding-left: 0.5rem;
+  margin-left: 0.25rem;
+}
+
+/* Footer button spacing */
+.modal-footer .btn,
+.app-footer-search .btn,
+.schedule-footer .btn,
+.profile-footer-nav .btn,
+footer[aria-label="Actions"] .btn {
+  gap: 0.25rem;
+}
+
+/* ========================================
+   GLOBAL BUTTON STYLES
+   All buttons application-wide
+   ======================================== */
+.btn {
+  height: 3rem !important;
+}
+
+/* ========================================
+   GLOBAL FORM INPUT STYLES
+   All inputs and dropdowns application-wide
+   ======================================== */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+.form-control:not(textarea),
+.form-select,
+button[role="combobox"],
+div[role="combobox"] {
+  height: 3rem !important;
 }
 
 /* Footer nav/filter buttons — scale up icon when active/selected */
@@ -94,20 +139,44 @@ body,
   transition: width 0.15s ease, height 0.15s ease;
 }
 
-.app-footer-search .btn[data-active="true"],
-.schedule-footer .btn[data-active="true"],
-.profile-footer-nav .btn[data-active="true"] {
+.app-footer-search .btn.rounded-circle[data-active="true"],
+.schedule-footer .btn.rounded-circle[data-active="true"],
+.profile-footer-nav .btn.rounded-circle[data-active="true"] {
   padding: 0 !important;
 }
 
-.app-footer-search .btn[data-active="true"] svg,
-.schedule-footer .btn[data-active="true"] svg,
-.profile-footer-nav .btn[data-active="true"] svg {
+.app-footer-search .btn.rounded-circle[data-active="true"] svg,
+.schedule-footer .btn.rounded-circle[data-active="true"] svg,
+.profile-footer-nav .btn.rounded-circle[data-active="true"] svg {
   width: 2.1rem !important;
   height: 2.1rem !important;
 }
 
-/* Training mode footer spacing compensation (pages + component footers) */
+/* ========================================
+   COMPACT MODE BUTTON STYLES
+   Buttons in compact/icon-only mode
+   ======================================== */
+.btn.rounded-circle {
+  width: 3rem !important;
+  height: 3rem !important;
+}
+
+/* Button_Icon component and other icon-only action buttons */
+button.rounded-lg.w-12.h-12 {
+  width: 3rem !important;
+  height: 3rem !important;
+}
+
+/* Floating action buttons with rounded-full */
+button.rounded-full.fixed {
+  width: 3rem !important;
+  height: 3rem !important;
+}
+
+/* ========================================
+   TRAINING MODE BUTTON STYLES
+   Buttons with labels in training mode
+   ======================================== */
 body.training-mode .app-footer-search .btn,
 body.training-mode .schedule-footer .btn,
 body.training-mode .profile-footer-nav .btn,
@@ -115,6 +184,19 @@ body.training-mode .modal-footer .btn,
 body.training-mode footer[aria-label="Actions"] .btn,
 body.training-mode .flex-shrink-0.border-top .btn {
   margin: 0.25rem !important;
+}
+
+body.training-mode .profile-footer-nav .btn.profile-footer-btn {
+  margin: 0 !important;
+}
+
+body.training-mode .btn.settings-accordion-btn {
+  margin: 0 !important;
+}
+
+/* Profile footer responsive button padding */
+.profile-footer-wrap-row {
+  gap: 0.25rem !important;
 }
 
 @media (max-width: 1024px) {
@@ -159,12 +241,14 @@ input[type="number"],
 .form-control:not(textarea),
 .form-select {
   border-radius: 9999px !important;
+  height: 3rem !important;
 }
 
 /* Floating label adjustments for pill-shaped inputs */
 .form-floating > .form-control:not(textarea),
 .form-floating > .form-select {
   padding-left: 1rem;
+  height: 3rem !important;
 }
 .form-floating > label {
   padding-left: 1rem;
