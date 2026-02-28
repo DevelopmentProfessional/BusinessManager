@@ -230,7 +230,8 @@ export default function Clients() {
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
                 <col />
-                <col style={{ width: '140px' }} />
+                <col style={{ width: '80px' }} />
+                <col style={{ width: '40px' }}/> 
               </colgroup>
               <tbody>
                 {filteredClients.map((client, index) => (
@@ -254,15 +255,18 @@ export default function Clients() {
                         <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>
                           {getTierLabel(client.membership_tier)}
                         </span>
+                       
+                      </div>
+                    </td>
+                    <td>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setTemplateClient(client); setIsTemplateOpen(true); }}
                           className="btn btn-sm p-1 border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
                           title="Use template"
                         >
-                          <EnvelopeIcon className="h-4 w-4" />
+                          <EnvelopeIcon className="h-6 w-6" />
                         </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -281,12 +285,14 @@ export default function Clients() {
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
               <col />
-              <col style={{ width: '110px' }} />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '40px' }}/>
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
                 <th>Client</th>
                 <th>Membership</th>
+                <th>Notify</th>
               </tr>
             </tfoot>
           </table>

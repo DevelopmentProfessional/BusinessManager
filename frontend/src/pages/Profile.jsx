@@ -32,7 +32,7 @@ import {
   InformationCircleIcon,
   QuestionMarkCircleIcon,
   CurrencyDollarIcon,
-  AcademicCapIcon,
+  BookOpenIcon,
   Squares2X2Icon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
@@ -42,6 +42,7 @@ import api from '../services/api';
 import Modal_Signature from './components/Modal_Signature';
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
 import useBranding from '../services/useBranding';
+import { right } from '@popperjs/core';
 
 // CSS for accordion pop-up animation
 const accordionStyles = `
@@ -169,6 +170,9 @@ const Profile = () => {
   const [colorMessage, setColorMessage] = useState('');
   const [openAccordion, setOpenAccordion] = useState('settings');
   const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
+  const footerTabButtonStyle = isTrainingMode
+    ? { width: '6.8rem' }
+    : { width: '3rem' };
 
   // Leave request state
   const [vacationRequests, setVacationRequests] = useState([]);
@@ -230,6 +234,7 @@ const Profile = () => {
 
   const [openAccordions, setOpenAccordions] = useState({
     application: true,
+    companyInfo: false,
     branding: false,
     notifications: false,
   });
@@ -1253,33 +1258,33 @@ const Profile = () => {
               icon={isDarkMode ? MoonIcon : SunIcon}
               label={isDarkMode ? 'Light Mode' : 'Dark Mode'}
               onClick={toggleDarkMode}
-              className={isDarkMode ? 'text-white' : ''}
-              style={{ backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
+              className={`settings-accordion-btn ${isDarkMode ? 'text-white' : ''}`}
+              style={{ ...footerTabButtonStyle, backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
             />
 
             {/* Calendar Color */}
             <div className="position-relative">
               <Button_Toolbar
                 icon={CalendarDaysIcon}
-                label="Calendar Color"
+                label="Color"
                 onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
-                className=""
-                style={{ backgroundColor: employeeColor, border: '2px solid var(--bs-border-color, #dee2e6)', color: 'white' }}
+                className="settings-accordion-btn"
+                style={{ ...footerTabButtonStyle, backgroundColor: employeeColor, border: '0px solid var(--bs-border-color, #dee2e6)', color: 'white' }}
                 disabled={colorUpdating}
                 aria-expanded={colorPickerOpen}
               />
               {colorPickerOpen && (
                 <div
-                  className="position-absolute bottom-100 mb-2 start-0 p-2 border rounded bg-white dark:bg-gray-800 shadow-lg"
-                  style={{ minWidth: '210px', zIndex: 10 }}
+                  className="position-absolute bottom-100 mb-5 start-0  border bg-white dark:bg-gray-800 shadow-lg d-flex justify-content-start gap-4"
+                  style={{ zIndex: 10, borderBottomRightRadius: '3rem', borderTopRightRadius: '3rem' }}
                 >
-                  <div className="d-flex align-items-center gap-2 mb-2">
+                  <div className="d-flex align-items-center gap-1 ">
                     <input
                       type="color"
                       value={pendingColor}
                       onChange={(e) => setPendingColor(e.target.value)}
-                      className="form-control form-control-sm"
-                      style={{ width: '50px', height: '38px', padding: '4px', cursor: colorUpdating ? 'not-allowed' : 'pointer', opacity: colorUpdating ? 0.6 : 1 }}
+                      className=""
+                      style={{ width: '3rem', height: '3rem', padding: '0px', cursor: colorUpdating ? 'not-allowed' : 'pointer', opacity: colorUpdating ? 0.6 : 1 }}
                       disabled={colorUpdating}
                     />
                     <span className="small text-muted">{pendingColor.toUpperCase()}</span>
@@ -1307,21 +1312,26 @@ const Profile = () => {
               icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon}
               label="Signature"
               onClick={() => setSignatureModalOpen(true)}
-              className="btn-outline-secondary"
+              className="settings-accordion-btn btn-outline-secondary"
+              style={footerTabButtonStyle}
             />
 
             {/* Training / Compact Mode Toggle */}
             <button
               type="button"
               onClick={toggleViewMode}
-              className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex align-items-center gap-1"
-              style={{ height: '2.25rem' }}
+              className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex justify-content-center align-items-center"
+              style={{ ...footerTabButtonStyle, height: '3rem' }}
               title={isTrainingMode ? 'Switch to compact mode' : 'Switch to training mode'}
             >
-              {isTrainingMode
-                ? <Squares2X2Icon className="h-4 w-4" />
-                : <AcademicCapIcon className="h-4 w-4" />}
-              <span style={{ fontSize: '0.78rem' }}>{isTrainingMode ? 'Compact' : 'Training'}</span>
+              {isTrainingMode ? (
+                <>
+                  <Squares2X2Icon className="h-5 w-5" />
+                  <span className="ms-1" style={{ fontSize: '0.78rem' }}>Compact</span>
+                </>
+              ) : (
+                <BookOpenIcon className="h-5 w-5" />
+              )}
             </button>
 
             {/* Logout */}
@@ -1329,7 +1339,8 @@ const Profile = () => {
               icon={ArrowLeftOnRectangleIcon}
               label="Log out"
               onClick={handleLogout}
-              className="btn-outline-secondary"
+              className="settings-accordion-btn btn-outline-secondary"
+              style={footerTabButtonStyle}
             />
           </div>
 
@@ -1346,47 +1357,6 @@ const Profile = () => {
         <div className="accordion-popup" style={settingsPanelStyle}>
           <div style={{ flexGrow: 1 }} />
           <div style={{ flexShrink: 0, width: '100%' }}>
-
-            {/* Company Info */}
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-              <BriefcaseIcon className="h-5 w-5" /> Company Info
-            </h2>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="form-floating">
-                <input type="text" id="company_name" value={companyInfo.company_name}
-                  onChange={(e) => handleCompanyInfoChange('company_name', e.target.value)}
-                  className="form-control form-control-sm" placeholder="Company Name" />
-                <label htmlFor="company_name">Company Name</label>
-              </div>
-              <div className="form-floating">
-                <input type="email" id="company_email" value={companyInfo.company_email}
-                  onChange={(e) => handleCompanyInfoChange('company_email', e.target.value)}
-                  className="form-control form-control-sm" placeholder="Company Email" />
-                <label htmlFor="company_email">Company Email</label>
-              </div>
-              <div className="form-floating">
-                <input type="text" id="company_phone" value={companyInfo.company_phone}
-                  onChange={(e) => handleCompanyInfoChange('company_phone', e.target.value)}
-                  className="form-control form-control-sm" placeholder="Company Phone" />
-                <label htmlFor="company_phone">Company Phone</label>
-              </div>
-              <div className="form-floating">
-                <input type="text" id="company_address" value={companyInfo.company_address}
-                  onChange={(e) => handleCompanyInfoChange('company_address', e.target.value)}
-                  className="form-control form-control-sm" placeholder="Company Address" />
-                <label htmlFor="company_address">Company Address</label>
-              </div>
-            </div>
-            <div className="mb-6">
-              <button
-                type="button"
-                onClick={handleSaveCompanyInfo}
-                className="btn btn-primary btn-sm"
-                disabled={companyLoading}
-              >
-                {companyLoading ? 'Saving...' : 'Save Company Info'}
-              </button>
-            </div>
 
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <ClockIcon className="h-5 w-5" /> Schedule Settings
@@ -1460,10 +1430,14 @@ const Profile = () => {
               </div>
             </div>
 
-            <button onClick={handleSaveScheduleSettings} disabled={scheduleLoading}
-              className="btn btn-primary btn-sm px-4">
-              {scheduleLoading ? 'Saving…' : 'Save'}
-            </button>
+            <Button_Toolbar
+              icon={CheckCircleIcon}
+              label={scheduleLoading ? 'Saving…' : 'Save'}
+              onClick={handleSaveScheduleSettings}
+              className="btn-primary"
+              style={footerTabButtonStyle}
+              disabled={scheduleLoading}
+            />
 
             {settingsError && (
               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800 text-sm">
@@ -1531,6 +1505,60 @@ const Profile = () => {
               )}
             </div>
 
+            {/* Company Info */}
+            <div className="mb-2">
+              <button onClick={() => toggleAccordion('companyInfo')}
+                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
+                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+                <div className="d-flex align-items-center gap-2">
+                  <BriefcaseIcon className="h-5 w-5 text-blue-600" />
+                  <span className="fw-medium">Company Info</span>
+                </div>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500"
+                  style={{ transition: 'transform 0.2s', transform: openAccordions.companyInfo ? 'rotate(180deg)' : 'none' }} />
+              </button>
+              {openAccordions.companyInfo && (
+                <div className="accordion-popup py-3">
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="form-floating">
+                      <input type="text" id="company_name" value={companyInfo.company_name}
+                        onChange={(e) => handleCompanyInfoChange('company_name', e.target.value)}
+                        className="form-control form-control-sm" placeholder="Company Name" />
+                      <label htmlFor="company_name">Company Name</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="email" id="company_email" value={companyInfo.company_email}
+                        onChange={(e) => handleCompanyInfoChange('company_email', e.target.value)}
+                        className="form-control form-control-sm" placeholder="Company Email" />
+                      <label htmlFor="company_email">Company Email</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="text" id="company_phone" value={companyInfo.company_phone}
+                        onChange={(e) => handleCompanyInfoChange('company_phone', e.target.value)}
+                        className="form-control form-control-sm" placeholder="Company Phone" />
+                      <label htmlFor="company_phone">Company Phone</label>
+                    </div>
+                    <div className="form-floating">
+                      <input type="text" id="company_address" value={companyInfo.company_address}
+                        onChange={(e) => handleCompanyInfoChange('company_address', e.target.value)}
+                        className="form-control form-control-sm" placeholder="Company Address" />
+                      <label htmlFor="company_address">Company Address</label>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <Button_Toolbar
+                      icon={CheckCircleIcon}
+                      label={companyLoading ? 'Saving...' : 'Save '}
+                      onClick={handleSaveCompanyInfo}
+                      className="btn-primary"
+                      style={footerTabButtonStyle}
+                      disabled={companyLoading}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Branding */}
             <div className="mb-2">
               <button onClick={() => toggleAccordion('branding')}
@@ -1586,9 +1614,13 @@ const Profile = () => {
                       </div>
                     ))}
                   </div>
-                  <button onClick={handleSaveBranding} className="btn btn-primary btn-sm px-4">
-                    Save Branding
-                  </button>
+                  <Button_Toolbar
+                    icon={CheckCircleIcon}
+                    label="Save Branding"
+                    onClick={handleSaveBranding}
+                    className="btn-primary"
+                    style={footerTabButtonStyle}
+                  />
                 </div>
               )}
             </div>
@@ -1625,9 +1657,13 @@ const Profile = () => {
                       </label>
                     </div>
                   ))}
-                  <button onClick={handleSaveNotifications} className="btn btn-primary btn-sm px-4">
-                    Save Notifications
-                  </button>
+                  <Button_Toolbar
+                    icon={CheckCircleIcon}
+                    label="Save Notifications"
+                    onClick={handleSaveNotifications}
+                    className="btn-primary"
+                    style={footerTabButtonStyle}
+                  />
                 </div>
               )}
             </div>
@@ -1904,33 +1940,40 @@ const Profile = () => {
         style={{ zIndex: 10 }}
       >
         {/* Row 1 — Personal: Profile, Benefits, Settings */}
-        <div ref={row1Ref} className="d-flex align-items-center gap-1 ps-3 pe-3 pt-2 flex-wrap">
-          {[
-            { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
-            { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
-            { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
-            { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
-          ].map(({ id, Icon, title }) => (
-            <Button_Toolbar
-              key={id}
-              icon={Icon}
-              label={title}
-              onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-              className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-              data-active={openAccordion === id}
-            />
-          ))}
-        </div>
-
-        {/* Row 2 — Admin/Settings: Schedule, General, Database */}
-        {canAccessSettings && (
-          <div ref={handleRow2Ref} className="d-flex align-items-center gap-1 p-4 ps-3 pe-3 pt-1 flex-wrap
-          "
-          >
+        <div ref={row1Ref} className="pt-2 pb-1">
+          {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
+          <div className="d-lg-none">
+            <div className="row g-0">
+              <div className="col-12">
+                <div className="d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row">
+                  {[
+                    { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
+                    { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
+                    { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
+                    { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
+                  ].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                      className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      style={{ ...footerTabButtonStyle, height: '3rem'  }}
+                      data-active={openAccordion === id}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Large screens: Original compact flex layout */}
+          <div className="d-none d-lg-flex align-items-center gap-1 ps-3 pe-3 flex-wrap">
             {[
-              { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
-              { id: 'general',  Icon: CogIcon,          title: 'General'  },
-              { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+              { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
+              { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
+              { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
+              { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
             ].map(({ id, Icon, title }) => (
               <Button_Toolbar
                 key={id}
@@ -1938,9 +1981,59 @@ const Profile = () => {
                 label={title}
                 onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
                 className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                style={{ ...footerTabButtonStyle, height: '3rem' }}
                 data-active={openAccordion === id}
               />
             ))}
+          </div>
+        </div>
+
+        {/* Row 2 — Admin/Settings: Schedule, General, Database */}
+        {canAccessSettings && (
+          <div ref={handleRow2Ref} className="pb-4">
+            {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
+            <div className="d-lg-none">
+              <div className="row g-0">
+                <div className="col-10">
+                  <div className="d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row">
+                    {[
+                      { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
+                      { id: 'general',  Icon: CogIcon,          title: 'General'  },
+                      { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+                    ].map(({ id, Icon, title }) => (
+                      <Button_Toolbar
+                        key={id}
+                        icon={Icon}
+                        label={title}
+                        onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                        className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        style={{ ...footerTabButtonStyle, height: '3rem' }}
+                        data-active={openAccordion === id}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Large screens: Original compact flex layout */}
+            <div className="d-none d-lg-flex align-items-center gap-1 ps-3 pe-3 flex-wrap">
+              {[
+                { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
+                { id: 'general',  Icon: CogIcon,          title: 'General'  },
+                { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+              ].map(({ id, Icon, title }) => (
+                <Button_Toolbar
+                  key={id}
+                  icon={Icon}
+                  label={title}
+                  onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                  className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  style={{ ...footerTabButtonStyle, height: '3rem' }}
+                  data-active={openAccordion === id}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

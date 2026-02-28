@@ -305,6 +305,12 @@ async def insert_with_file(
             raise HTTPException(status_code=400, detail="Invalid request body")
         _file_bytes = None
 
+    # Special handling for user table: hash plain password into password_hash
+    if table_name.lower() in ('user', 'users') and 'password' in record_data:
+        plain_password = record_data.pop('password')
+        if plain_password:
+            record_data['password_hash'] = User.hash_password(plain_password)
+
     try:
         record = model_class(**record_data)
     except Exception as e:
@@ -340,6 +346,12 @@ async def insert(
 ):
     """Standard JSON insert endpoint."""
     model_class = get_model_class(table_name)
+
+    # Special handling for user table: hash plain password into password_hash
+    if table_name.lower() in ('user', 'users') and 'password' in record_data:
+        plain_password = record_data.pop('password')
+        if plain_password:
+            record_data['password_hash'] = User.hash_password(plain_password)
 
     try:
         record = model_class(**record_data)

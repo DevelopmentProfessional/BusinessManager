@@ -76,7 +76,7 @@ export default function Layout({ children }) {
           
           {/* Menu positioned bottom-right */}
           <div 
-            className="position-fixed rounded-3  p-1" 
+            className="position-fixed rounded-3 ps-2" 
             style={{ 
               minWidth: isTrainingMode ? '12rem' : '3.5rem', 
               zIndex: 1051, 
@@ -84,7 +84,7 @@ export default function Layout({ children }) {
               right: '1rem' 
             }}
           >
-            <div className="d-flex flex-column gap-1">
+            <div className="d-flex flex-column gap-2">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
