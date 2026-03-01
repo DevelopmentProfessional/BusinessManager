@@ -1,10 +1,31 @@
+/*
+ * ============================================================
+ * FILE: Modal.jsx
+ *
+ * PURPOSE:
+ *   Base modal wrapper component used throughout the application.
+ *   Supports three layout variants — fullscreen, centered bottom-sheet,
+ *   and default bottom-sheet — with optional title, footer, and padding.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Overlay — Semi-transparent backdrop that closes the modal on click
+ *   [2] Fullscreen Variant — Fixed inset panel filling the entire viewport
+ *   [3] Centered Variant — Bottom-anchored sheet with rounded top corners (max 90vh)
+ *   [4] Default Variant — Standard bottom-sheet that slides up from the bottom
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null }) {
   if (!isOpen) return null;
 
-  // Background overlay
+  // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
   const Overlay = (
     <div
       className="fixed inset-0 bg-gray-500 dark:bg-gray-900 dark:bg-opacity-75 bg-opacity-75 transition-opacity"
@@ -12,7 +33,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     />
   );
 
-  // ── Fullscreen ─────────────────────────────────────────────────
+  // ─── 2 FULLSCREEN VARIANT ──────────────────────────────────────────────────────
   if (fullScreen) {
     return (
       <div className="fixed inset-0 z-50">
@@ -37,7 +58,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     );
   }
 
-  // ── Centered dialog ────────────────────────────────────────────
+  // ─── 3 CENTERED VARIANT ────────────────────────────────────────────────────────
   if (centered) {
     return (
       <div className="fixed inset-0 z-50">
@@ -64,7 +85,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     );
   }
 
-  // ── Default: bottom sheet ──────────────────────────────────────
+  // ─── 4 DEFAULT VARIANT (BOTTOM SHEET) ──────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen">

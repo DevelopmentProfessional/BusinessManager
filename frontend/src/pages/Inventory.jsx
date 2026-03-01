@@ -1,3 +1,34 @@
+/*
+ * ============================================================
+ * FILE: Inventory.jsx
+ *
+ * PURPOSE:
+ *   Displays and manages the business inventory list. Allows users to view,
+ *   search, filter, create, edit, and delete inventory items (Products, Resources,
+ *   Assets, Locations, and generic Items). Access is gated by role permissions.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports              — React, router, icons, store, API, and component imports
+ *   [2]  State & Refs         — Editing target, search term, type/stock filter toggles, scroll ref
+ *   [3]  Lifecycle            — One-shot data fetch on mount; auto-scroll to bottom on data change
+ *   [4]  Data Loading         — loadInventoryData fetches all inventory items from the API
+ *   [5]  CRUD Handlers        — handleUpdateInventory, handleCreateItem, handleSubmitUpdate,
+ *                               handleSubmitNewItem, handleDeleteItem
+ *   [6]  Display Utilities    — getItemTypeLabel, getItemTypeColor, isLocationOrAsset,
+ *                               isLowStock, getTypeFilterButtonClass, getStockFilterButtonClass,
+ *                               getStockColor — helpers for rendering badges and filter buttons
+ *   [7]  Derived Data         — filteredInventory memoized from search, type, and stock filters
+ *   [8]  Render               — Header, error banner, upside-down scrollable table, footer
+ *                               controls (search, Add, Type filter, Stock filter), and modals
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -10,7 +41,8 @@ import Modal_Detail_Item from './components/Modal_Detail_Item';
 import Gate_Permission from './components/Gate_Permission';
 
 export default function Inventory() {
-  const { 
+  // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
+  const {
     inventory, setInventory,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
@@ -26,6 +58,7 @@ export default function Inventory() {
     return <Navigate to="/profile" replace />;
   }
 
+  // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
@@ -35,12 +68,14 @@ export default function Inventory() {
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
 
+  // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
     loadInventoryData();
   }, []);
 
+  // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   const loadInventoryData = async () => {
     setLoading(true);
     try {
@@ -66,6 +101,7 @@ export default function Inventory() {
     }
   };
 
+  // ─── 6 CRUD HANDLERS ─────────────────────────────────────────────────────────
   const handleUpdateInventory = (inventoryItem) => {
     if (!hasPermission('inventory', 'write')) {
       setError('You do not have permission to update inventory');
@@ -121,6 +157,7 @@ export default function Inventory() {
     }
   }; 
 
+  // ─── 7 DISPLAY UTILITIES ─────────────────────────────────────────────────────
   const getItemTypeLabel = (type) => {
     const labels = { 
       PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', LOCATION: 'Location', ITEM: 'Item',
@@ -189,6 +226,7 @@ export default function Inventory() {
     }
   };
 
+  // ─── 8 DERIVED / FILTERED DATA ───────────────────────────────────────────────
   // Filtered inventory based on search, type, and stock filters
   const filteredInventory = useMemo(() => {
     return inventory.filter((inv) => {
@@ -221,6 +259,7 @@ export default function Inventory() {
     }
   }, [filteredInventory.length]);
 
+  // ─── 9 RENDER ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">

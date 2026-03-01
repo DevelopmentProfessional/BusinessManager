@@ -1,3 +1,30 @@
+/*
+ * ============================================================
+ * FILE: Modal_Checkout_Sales.jsx
+ *
+ * PURPOSE:
+ *   Full checkout and payment processing modal for the Sales page.
+ *   Handles card and cash payment flows with simulated processing, a
+ *   success confirmation screen, and post-sale invoice/receipt printing
+ *   via the document template system.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State & Derived Values — Payment form state, subtotal/tax/total calculations
+ *   [2] Input Formatters — Card number, expiry, and CVC formatting helpers
+ *   [3] Validation & Form Handlers — Card validity check, submit, done, and close handlers
+ *   [4] Modal Header — Checkout title bar with item count and close button
+ *   [5] Payment Success Screen — Confirmation UI with Print Invoice / Print Receipt actions
+ *   [6] Order Summary Panel — Read-only cart list with pricing breakdown
+ *   [7] Payment Method Tabs — Card / Cash toggle buttons
+ *   [8] Card Payment Form — Card number, name, expiry, CVC inputs with submit button
+ *   [9] Cash Payment View — Amount display with confirm button
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React, { useState, useRef } from 'react';
 import Modal from './Modal';
 import Modal_Template_Use from './Modal_Template_Use';

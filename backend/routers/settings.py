@@ -1,3 +1,22 @@
+# ============================================================
+# FILE: settings.py
+#
+# PURPOSE:
+#   Manages application-wide settings (schedule hours, attendance rules, company
+#   info) stored as a singleton AppSettings record, and provides an admin-gated
+#   endpoint to trigger demo data seeding without direct shell access.
+#
+# FUNCTIONAL PARTS:
+#   [1] Settings Singleton Helper — get or auto-create the single AppSettings row
+#   [2] Schedule Settings Routes — GET and PUT for schedule/company configuration
+#   [3] Admin Seed Endpoint — POST to trigger demo data seeding (admin + secret key required)
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 import os
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlmodel import Session, select
@@ -30,6 +49,8 @@ class SeedRequest(BaseModel):
     force: bool = True
 
 
+# ─── 1 SETTINGS SINGLETON HELPER ───────────────────────────────────────────────
+
 def get_or_create_settings(session: Session) -> AppSettings:
     """Get existing settings or create defaults if none exist."""
     settings = session.get(AppSettings, SETTINGS_SINGLETON_ID)
@@ -49,6 +70,8 @@ def get_or_create_settings(session: Session) -> AppSettings:
             raise HTTPException(status_code=500, detail=f"Failed to create default settings: {str(e)}")
     return settings
 
+
+# ─── 2 SCHEDULE SETTINGS ROUTES ────────────────────────────────────────────────
 
 @router.get("/schedule", response_model=AppSettingsRead)
 def get_schedule_settings(session: Session = Depends(get_session)):
@@ -80,6 +103,8 @@ def update_schedule_settings(
 
     return AppSettingsRead.model_validate(settings)
 
+
+# ─── 3 ADMIN SEED ENDPOINT ─────────────────────────────────────────────────────
 
 @router.post("/admin/seed")
 def trigger_seed_data(

@@ -1,3 +1,39 @@
+# ============================================================
+# FILE: auth.py
+#
+# PURPOSE:
+#   Handles all authentication and user-management concerns for the
+#   BusinessManager API.  It issues and validates JWT tokens, exposes
+#   login/logout endpoints, and provides admin-gated CRUD for users,
+#   roles, individual permissions, passwords, signatures, and profile
+#   pictures.
+#
+# FUNCTIONAL PARTS:
+#   [1] Imports                     — stdlib, third-party, and local imports
+#   [2] JWT Configuration & Helpers — constants, create_access_token, verify_token,
+#                                     get_current_user, get_user_permissions_list
+#   [3] Token Verification / get_current_user Dependency
+#                                   — verify_token + get_current_user FastAPI deps
+#   [4] Login / Token Endpoints     — /initialize, /login, /logout
+#   [5] User CRUD Endpoints         — /me, /users (create, list, get, update, lock/unlock)
+#   [6] Password Management         — /reset-password, /change-password, /admin/reset-password,
+#                                     /admin/unlock-account, /admin/lock-account,
+#                                     /admin/account-status, /admin/normalize-permissions,
+#                                     /me/dark-mode
+#   [7] User Permission Endpoints   — /users/{id}/permissions, /permissions (body variant)
+#   [8] Role Management Endpoints   — /roles CRUD + /roles/{id}/permissions
+#   [9] Signature Endpoints         — /me/signature (GET/PUT)
+#  [10] Profile Self-Update & Profile Picture
+#                                   — /me/profile, /me/profile-picture,
+#                                     /users/{id}/profile-picture
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
+# ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
 from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
@@ -18,6 +54,7 @@ from backend.models import (
     Role, RolePermission, RoleCreate, RoleUpdate, RoleRead, RolePermissionCreate, RolePermissionRead
 )
 
+# ─── [2] JWT CONFIGURATION AND HELPERS ────────────────────────────────────────
 router = APIRouter()
 security = HTTPBearer()
 
@@ -38,6 +75,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+# ─── [3] TOKEN VERIFICATION / get_current_user DEPENDENCY ─────────────────────
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """Verify JWT token and return payload"""
     try:
@@ -143,6 +181,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
 
     return list(permission_strings)
 
+# ─── [4] LOGIN / TOKEN ENDPOINTS ──────────────────────────────────────────────
 @router.get("/initialize")
 @router.post("/initialize")
 def initialize_admin(session: Session = Depends(get_session)):
@@ -325,6 +364,7 @@ def change_password(
     
     return {"message": "Password changed successfully"}
 
+# ─── [5] USER CRUD ENDPOINTS ──────────────────────────────────────────────────
 @router.get("/me", response_model=UserRead)
 def get_current_user_info(
     current_user: User = Depends(get_current_user),
@@ -344,6 +384,7 @@ def get_current_user_permissions(
     permissions = get_user_permissions_list(current_user, session)
     return {"permissions": permissions}
 
+# ─── [6] PASSWORD MANAGEMENT ENDPOINTS ────────────────────────────────────────
 # Admin endpoints for user management
 @router.post("/users", response_model=UserRead)
 def create_user(
@@ -539,6 +580,7 @@ def force_password_reset(
     
     return {"message": "User will be required to reset password on next login"}
 
+# ─── [7] USER PERMISSION ENDPOINTS ───────────────────────────────────────────
 # Permission management endpoints
 @router.post("/users/{user_id}/permissions", response_model=UserPermissionRead)
 def create_user_permission(
@@ -1058,6 +1100,7 @@ def get_account_status(
     }
 
 
+# ─── [8] ROLE MANAGEMENT ENDPOINTS ───────────────────────────────────────────
 # ============================================================================
 # Role Management Endpoints
 # ============================================================================
@@ -1351,6 +1394,7 @@ def remove_role_permission(
 
     return {"message": "Permission removed from role"}
 
+# ─── [9] SIGNATURE ENDPOINTS ──────────────────────────────────────────────────
 # ============================================================================
 # Signature Endpoints
 # ============================================================================
@@ -1392,6 +1436,7 @@ def get_my_signature(
     return {"signature_data": current_user.signature_data}
 
 
+# ─── [10] PROFILE SELF-UPDATE & PROFILE PICTURE ───────────────────────────────
 # ============================================================================
 # Profile Self-Update & Profile Picture
 # ============================================================================

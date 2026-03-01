@@ -1,3 +1,30 @@
+/*
+ * ============================================================
+ * FILE: Clients.jsx
+ *
+ * PURPOSE:
+ *   Displays the Clients page, which lists all client records with search and
+ *   membership-tier filtering. Allows authorized users to create, view, edit,
+ *   and delete clients, and to open a document template mailer for any client.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports — React, routing, store, API services, and UI components
+ *   [2] State & Refs — local UI state for editing, search, tier filter, and template modal
+ *   [3] Lifecycle Hooks — initial data load and auto-open-create-modal on ?new=1 query param
+ *   [4] Data Loading — fetches client list and app settings from the API
+ *   [5] CRUD Handlers — create, open (view/edit), update, and delete client operations
+ *   [6] Utility Helpers — tier badge color, tier label, and tier filter button styling
+ *   [7] Filtered Client List — memoized search + tier filter derivation
+ *   [8] Render — page layout with scrollable client table, footer controls, and modals
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
@@ -11,6 +38,7 @@ import Button_Toolbar from './components/Button_Toolbar';
 import Modal_Template_Use from './components/Modal_Template_Use';
 
 export default function Clients() {
+// ─── [2] STATE & REFS ───────────────────────────────────────────────────────
   const {
     clients, setClients, addClient, updateClient, removeClient,
     loading, setLoading, error, setError, clearError,
@@ -40,6 +68,7 @@ export default function Clients() {
   const location = useLocation();
   const navigate = useNavigate();
 
+// ─── [3] LIFECYCLE HOOKS ────────────────────────────────────────────────────
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -58,6 +87,7 @@ export default function Clients() {
     }
   }, [location.search]);
 
+// ─── [4] DATA LOADING ───────────────────────────────────────────────────────
   const loadClients = async () => {
     setLoading(true);
     try {
@@ -80,6 +110,7 @@ export default function Clients() {
     }
   };
 
+// ─── [5] CRUD HANDLERS ──────────────────────────────────────────────────────
   const handleCreateClient = () => {
     if (!hasPermission('clients', 'write')) {
       setError('You do not have permission to create clients');
@@ -139,6 +170,7 @@ export default function Clients() {
     }
   };
 
+// ─── [6] UTILITY HELPERS ────────────────────────────────────────────────────
   // Get membership tier badge color
   const getTierColor = (tier) => {
     const upperTier = (tier || 'NONE').toUpperCase();
@@ -163,6 +195,7 @@ export default function Clients() {
     return 'bg-gray-500 text-white'; // NONE
   };
 
+// ─── [7] FILTERED CLIENT LIST ───────────────────────────────────────────────
   // Filter clients
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
@@ -192,6 +225,7 @@ export default function Clients() {
     }
   }, [filteredClients.length]);
 
+// ─── [8] RENDER ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '16rem' }}>

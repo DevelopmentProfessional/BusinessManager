@@ -1,9 +1,33 @@
+/*
+ * ============================================================
+ * FILE: Button_Icon.jsx
+ *
+ * PURPOSE:
+ *   A reusable icon-only button component that renders a Heroicon inside a
+ *   consistently sized square button. It exposes a tooltip via title/aria-label
+ *   and supports four visual variants (primary, secondary, danger, ghost) as
+ *   well as disabled state styling.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Variant Styles — Defines base and per-variant Tailwind class strings
+ *   [2] Button Render — Applies resolved classes, forwards icon, and spreads
+ *       additional HTML button props
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React from 'react';
 
 /**
  * Icon-only button with tooltip on hover and long-press.
  * Use title and aria-label so the button's purpose is shown when hovering or focusing.
  */
+
+// ─── 1 VARIANT STYLES ──────────────────────────────────────────────────────────
+
 export default function Button_Icon({
   icon: Icon,
   label,
@@ -23,6 +47,8 @@ export default function Button_Icon({
     ghost: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-500',
   };
   const v = variants[variant] || variants.secondary;
+
+  // ─── 2 BUTTON RENDER ─────────────────────────────────────────────────────────
 
   return (
     <button

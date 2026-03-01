@@ -1,3 +1,32 @@
+/*
+ * ============================================================
+ * FILE: Login.jsx
+ *
+ * PURPOSE:
+ *   Renders the application login screen, handling credential submission,
+ *   session persistence via "remember me" cookies, and an inline password
+ *   reset flow. On successful login, stores the auth token and user data
+ *   then redirects to the profile page.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports — React, routing, icons, store, API services, and performance tracker
+ *   [2] State — form data, loading flags, error/success messages, and password-reset toggle
+ *   [3] Lifecycle Hook — checks for saved credentials in cookies and redirects if already logged in
+ *   [4] Form Validation — validates username and password fields before submission
+ *   [5] Input Change Handlers — updates form state and clears stale validation errors
+ *   [6] Cookie Helpers — reads and writes "remember me" credentials to browser cookies
+ *   [7] Login Handler — posts credentials to the auth API, stores token, and navigates on success
+ *   [8] Password Reset Handler — submits new password to the reset endpoint
+ *   [9] Render — login form and password-reset form, conditionally toggled
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,6 +43,7 @@ import api, { preloadMajorTables } from '../services/api';
 import { startPerformanceSession } from '../services/performanceTracker';
 
 const Login = () => {
+// ─── [2] STATE ───────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -35,6 +65,7 @@ const Login = () => {
   const { setUser, setToken, setPermissions } = useStore();
   // Login page respects the active theme (light or dark) from store
 
+// ─── [6] COOKIE HELPERS ─────────────────────────────────────────────────────
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -42,6 +73,7 @@ const Login = () => {
     return null;
   };
 
+// ─── [3] LIFECYCLE HOOK ─────────────────────────────────────────────────────
   useEffect(() => {
     // Check cookies for saved parameters
     const savedRememberMe = getCookie('rememberMe') === 'true';
@@ -66,6 +98,7 @@ const Login = () => {
     }
   }, [navigate]);
 
+// ─── [4] FORM VALIDATION ────────────────────────────────────────────────────
   const validateForm = () => {
     const errors = {};
     
@@ -85,6 +118,7 @@ const Login = () => {
     return Object.keys(errors).length === 0;
   };
 
+// ─── [5] INPUT CHANGE HANDLERS ──────────────────────────────────────────────
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -109,7 +143,7 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
-  const saveUserCredentials = (username, password, rememberMe) => {
+  const saveUserCredentials = (username, password, rememberMe) => { // (part of [6] COOKIE HELPERS)
     try {
       if (rememberMe) {
         console.log('Saving user credentials:', { username, rememberMe });
@@ -131,7 +165,7 @@ const Login = () => {
     }
   };
 
-  const handleResetInputChange = (e) => {
+  const handleResetInputChange = (e) => { // (part of [5] INPUT CHANGE HANDLERS)
     const { name, value } = e.target;
     setResetData(prev => ({
       ...prev,
@@ -139,6 +173,7 @@ const Login = () => {
     }));
   };
 
+// ─── [7] LOGIN HANDLER ──────────────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
     
@@ -237,6 +272,7 @@ const Login = () => {
     }
   };
 
+// ─── [8] PASSWORD RESET HANDLER ─────────────────────────────────────────────
   const handlePasswordReset = async (e) => {
     e.preventDefault();
     
@@ -271,6 +307,7 @@ const Login = () => {
     }
   };
 
+// ─── [9] RENDER ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-2 px-1 sm:px-1 lg:px-1">
       <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-3xl shadow-xl max-h-[calc(100vh-1rem)] overflow-y-auto">

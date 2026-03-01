@@ -1,3 +1,50 @@
+/*
+ * ============================================================
+ * FILE: Schedule.jsx
+ *
+ * PURPOSE:
+ *   Full-featured calendar page for managing employee appointments and
+ *   schedules. Supports month, week, and day views with drag-and-drop
+ *   rescheduling, mobile swipe navigation, attendance check-in, out-of-office
+ *   indicators, multi-attendee meetings, filter panel, and email reminder
+ *   templates. Access is gated by role permissions.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports & SVG Icons  — React, router, store, APIs, Heroicons, child
+ *                               components; inline SVG wrappers for view-toggle buttons
+ *   [2]  State & Refs         — Current date/view, modal flags, drag state, clock,
+ *                               filters, approved leaves, swipe refs, schedule settings
+ *   [3]  Lifecycle / Effects  — Live clock interval; one-shot data fetch (schedule,
+ *                               clients, services, employees, leave requests, settings);
+ *                               auto-scroll to current hour in day/week views
+ *   [4]  Derived Data         — employeeColorMap (memoized); filteredAppointments
+ *                               (memoized with employee/client/service/date filters)
+ *   [5]  Calendar Utilities   — isDayEnabled, getCalendarDays, getTimeSlots — compute
+ *                               visible day/hour grid respecting schedule settings
+ *   [6]  Permission Helpers   — canCreateSchedule, canEditAppointment — checks against
+ *                               current user role and employee ownership
+ *   [7]  Event / Click Handlers — handleAppointmentClick, handleDateClick, refreshSchedules
+ *   [8]  Attendee Sync        — normalizeIds, syncScheduleAttendees, deleteScheduleAttendees
+ *   [9]  CRUD Handlers        — handleSubmitAppointment (create/update + attendee sync),
+ *                               handleDeleteAppointment
+ *   [10] Drag & Drop          — handleDragStart, handleDragEnd, handleDragOver,
+ *                               handleDragLeave, handleDrop
+ *   [11] Navigation           — closeModal, handleNavigatePrevious, handleNavigateNext
+ *   [12] Touch / Swipe        — handleTouchStart, handleTouchMove, handleTouchEnd —
+ *                               swipe gesture navigation with visual feedback and cooldown
+ *   [13] Render Helpers       — isCurrentMonth, getAppointmentsForDate, getOutOfOfficeForDate
+ *   [14] Render               — Attendance widget, header clock, calendar grid (month/week/day),
+ *                               footer toolbar, appointment modal, reminder modal,
+ *                               filter modal, overlap modal, and inline CSS styles
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
@@ -38,6 +85,7 @@ const TodayIcon = ({ className }) => (
 );
 
 export default function Schedule() {
+  // ─── 2 STORE & PERMISSION GUARD ──────────────────────────────────────────────
   const {
     appointments,
     clients,
@@ -66,6 +114,7 @@ export default function Schedule() {
     return <Navigate to="/profile" replace />;
   }
   
+  // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,6 +150,7 @@ export default function Schedule() {
   const MAX_DATE = new Date(2100, 11, 31); // December 31, 2100
   const [swipeOffset, setSwipeOffset] = useState(0); // For visual feedback during swipe
 
+  // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   // Update clock every minute
   useEffect(() => {
     const timer = setInterval(() => {

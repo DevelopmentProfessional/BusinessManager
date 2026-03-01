@@ -1,3 +1,26 @@
+/*
+ * ============================================================
+ * FILE: Modal_Cart_Sales.jsx
+ *
+ * PURPOSE:
+ *   Displays the sales cart as a bottom-sheet modal, showing all items
+ *   currently added to the cart with quantity controls and a client selector.
+ *   Provides a checkout action that hands off to the checkout modal.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] CartItem (sub-component) — Individual cart line with image, quantity controls, and remove button
+ *   [2] Cart Header — Item count display at the top of the modal
+ *   [3] Empty State — Placeholder shown when the cart contains no items
+ *   [4] Client Selection — Searchable customer picker with inline add-new option
+ *   [5] Cart Items List — Scrollable list of CartItem rows
+ *   [6] Cart Summary & Actions — Subtotal/tax/total breakdown, checkout and clear-all buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React from 'react';
 import Modal from './Modal';
 import { getDisplayImageUrl } from './imageUtils';
@@ -6,6 +29,7 @@ import {
   PlusIcon, MinusIcon, SparklesIcon, CubeIcon
 } from '@heroicons/react/24/outline';
 
+// ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const isService = item.itemType === 'service';
   const imageUrl = getDisplayImageUrl(item);
@@ -84,6 +108,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   );
 };
 
+// ─── 2 MAIN MODAL COMPONENT ────────────────────────────────────────────────
 export default function Modal_Cart_Sales({
   isOpen,
   onClose,
@@ -109,6 +134,7 @@ export default function Modal_Cart_Sales({
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true}>
       <div className="flex flex-col max-h-[90vh]">
+        {/* ─── 3 CART HEADER ─────────────────────────────────────────────── */}
         {/* Cart Header */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -127,6 +153,7 @@ export default function Modal_Cart_Sales({
           </div>
         ) : (
           <>
+            {/* ─── 4 CLIENT SELECTION ─────────────────────────────────────── */}
             {/* Client Selection */}
             <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -201,6 +228,7 @@ export default function Modal_Cart_Sales({
               )}
             </div>
 
+            {/* ─── 5 CART ITEMS LIST ──────────────────────────────────────── */}
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[35vh]">
               {cart.map(item => (
@@ -213,6 +241,7 @@ export default function Modal_Cart_Sales({
               ))}
             </div>
 
+            {/* ─── 6 CART SUMMARY & ACTIONS ───────────────────────────────── */}
             {/* Cart Summary & Checkout */}
             <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div className="space-y-2 mb-3">

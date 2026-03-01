@@ -1,3 +1,34 @@
+/*
+ * ============================================================
+ * FILE: Attendance.jsx
+ *
+ * PURPOSE:
+ *   Displays the Attendance page, which shows employee attendance records in a
+ *   mobile-friendly table. Allows the logged-in user to clock in and clock out
+ *   with a single button, and lets authorized users manually create attendance
+ *   records via a modal form.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports — React, routing, icons, store, API services, and UI components
+ *   [2] AttendanceForm Component — inline sub-component for the manual record creation form
+ *   [3] State & Refs — clock status, current record, loading flags, and fetch guard
+ *   [4] Lifecycle Hook — initial data load and clock-status check on mount
+ *   [5] Data Loading — fetches attendance records and employee list in parallel
+ *   [6] Clock Status Check — determines if the current user is currently clocked in
+ *   [7] Clock In / Out Handler — toggles clock-in and clock-out via API
+ *   [8] Create Record Handler — opens the manual attendance form modal
+ *   [9] Submit Record Handler — posts a new manually-entered attendance record
+ *   [10] Utility Helpers — employee name lookup and hours calculation
+ *   [11] Render — page layout with attendance table, clock button, and form modal
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
@@ -8,6 +39,7 @@ import Table_Mobile from './components/Table_Mobile';
 import Dropdown_Custom from './components/Dropdown_Custom';
 import Gate_Permission from './components/Gate_Permission';
 
+// ─── [2] ATTENDANCEFORM COMPONENT ───────────────────────────────────────────
 function AttendanceForm({ onSubmit, onCancel }) {
   const { employees } = useStore();
   const [formData, setFormData] = useState({
@@ -126,7 +158,8 @@ function AttendanceForm({ onSubmit, onCancel }) {
 }
 
 export default function Attendance() {
-  const { 
+// ─── [3] STATE & REFS ───────────────────────────────────────────────────────
+  const {
     attendanceRecords, setAttendanceRecords, addAttendanceRecord,
     employees, setEmployees,
     loading, setLoading, error, setError, clearError,
@@ -147,6 +180,7 @@ export default function Attendance() {
     return <Navigate to="/profile" replace />;
   }
 
+// ─── [4] LIFECYCLE HOOK ─────────────────────────────────────────────────────
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -154,6 +188,7 @@ export default function Attendance() {
     checkClockStatus();
   }, []);
 
+// ─── [5] DATA LOADING ───────────────────────────────────────────────────────
   const loadAttendanceData = async () => {
     setLoading(true);
     try {
@@ -191,6 +226,7 @@ export default function Attendance() {
     }
   };
 
+// ─── [6] CLOCK STATUS CHECK ─────────────────────────────────────────────────
   const checkClockStatus = async () => {
     if (!user?.id) return;
     
@@ -250,6 +286,7 @@ export default function Attendance() {
     }
   };
 
+// ─── [7] CLOCK IN / OUT HANDLER ─────────────────────────────────────────────
   const handleCheckInOut = async () => {
     if (!user?.id) {
       setError('You must be logged in to clock in/out');
@@ -293,6 +330,7 @@ export default function Attendance() {
     }
   };
 
+// ─── [8] CREATE RECORD HANDLER ──────────────────────────────────────────────
   const handleCreateRecord = () => {
     if (!hasPermission('attendance', 'write')) {
       setError('You do not have permission to create attendance records');
@@ -301,6 +339,7 @@ export default function Attendance() {
     openModal('attendance-form');
   };
 
+// ─── [9] SUBMIT RECORD HANDLER ──────────────────────────────────────────────
   const handleSubmitRecord = async (recordData) => {
     try {
       const response = await attendanceAPI.create(recordData);
@@ -313,6 +352,7 @@ export default function Attendance() {
     }
   };
 
+// ─── [10] UTILITY HELPERS ───────────────────────────────────────────────────
   const getEmployeeName = (employeeId) => {
     if (!employeeId) return 'Unknown Employee';
     const employee = employees.find(e => e.id === employeeId);
@@ -327,6 +367,7 @@ export default function Attendance() {
     return hours.toFixed(2) + ' hrs';
   };
 
+// ─── [11] RENDER ────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">

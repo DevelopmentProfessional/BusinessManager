@@ -1,3 +1,39 @@
+/*
+ * ============================================================
+ * FILE: Form_Employee.jsx
+ *
+ * PURPOSE:
+ *   Multi-tab create/edit form for an employee record. Covers personal
+ *   details and credentials, compensation and leave benefits, an
+ *   e-signature capture/upload panel, page-level permissions management,
+ *   and a read-only performance summary (schedules, attendance, reviews).
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants          — PAGES and PERMISSION_TYPES lookup arrays
+ *   [2] State              — tab, roles, insurance plans, employees list,
+ *                            permissions, signature, and form field state
+ *   [3] Effects            — load roles, insurance plans, employees list,
+ *                            populate form on edit, fetch permissions and
+ *                            signature when switching tabs
+ *   [4] Derived Data       — managerOptions (filtered supervisor list),
+ *                            directReports
+ *   [5] Handlers: Core     — handleInputChange, handleSubmit
+ *   [6] Handlers: Signature — handleSignatureUpload, handleSaveSignature
+ *   [7] Handlers: Permissions — fetchUserPermissions, handleCreatePermission,
+ *                               handleTogglePermission, handleDeletePermission
+ *   [8] Render: Header     — title and close button
+ *   [9] Render: Tab Panes  — Details, Benefits, Signature, Permissions,
+ *                            Performance
+ *  [10] Render: Footer     — tab navigation, context-sensitive controls,
+ *                            Cancel / Save action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';

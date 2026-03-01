@@ -1,3 +1,33 @@
+/*
+ * ============================================================
+ * FILE: Suppliers.jsx
+ *
+ * PURPOSE:
+ *   Displays and manages the supplier directory. Supports creating, editing,
+ *   and deleting supplier records. Renders a mobile card list and a desktop
+ *   table, both gated by role permissions. Includes an inline SupplierForm
+ *   component for data entry inside a full-screen modal.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports              — React, router, icons, store, API, and component imports
+ *   [2]  State & Refs         — Supplier list, editing target, hasFetched guard ref
+ *   [3]  Lifecycle            — One-shot data fetch on mount; URL ?new=1 auto-open effect
+ *   [4]  Data Loading         — loadSuppliers fetches all suppliers from the API
+ *   [5]  Event Handlers       — handleCreateSupplier, handleEditSupplier, handleDeleteSupplier
+ *   [6]  CRUD Submit          — handleSubmitSupplier performs create or update via API
+ *   [7]  Render               — Header with Add button, error banner, mobile Table_Mobile,
+ *                               desktop HTML table, full-screen modal with SupplierForm
+ *   [8]  SupplierForm         — Standalone inline component; controlled form for name,
+ *                               email, phone, and address with Cancel/Submit actions
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -10,7 +40,8 @@ import Gate_Permission from './components/Gate_Permission';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Suppliers() {
-  const { 
+  // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
+  const {
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
@@ -18,19 +49,21 @@ export default function Suppliers() {
   // Use the permission refresh hook
 
   // Check permissions at page level
-  if (!hasPermission('suppliers', 'read') && 
+  if (!hasPermission('suppliers', 'read') &&
       !hasPermission('suppliers', 'write') && 
       !hasPermission('suppliers', 'delete') && 
       !hasPermission('suppliers', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
 
+  // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [suppliers, setSuppliers] = useState([]);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
   const hasFetched = useRef(false);
 
+  // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -48,6 +81,7 @@ export default function Suppliers() {
     }
   }, [location.search]);
 
+  // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   const loadSuppliers = async () => {
     setLoading(true);
     try {
@@ -71,6 +105,7 @@ export default function Suppliers() {
     }
   };
 
+  // ─── 6 EVENT HANDLERS ────────────────────────────────────────────────────────
   const handleCreateSupplier = () => {
     if (!hasPermission('suppliers', 'write')) {
       setError('You do not have permission to create suppliers');
@@ -107,6 +142,7 @@ export default function Suppliers() {
     }
   };
 
+  // ─── 7 CRUD SUBMIT ───────────────────────────────────────────────────────────
   const handleSubmitSupplier = async (supplierData) => {
     try {
       if (editingSupplier) {
@@ -124,6 +160,7 @@ export default function Suppliers() {
     }
   };
 
+  // ─── 8 RENDER ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -267,6 +304,7 @@ export default function Suppliers() {
   );
 }
 
+// ─── 9 SUPPLIER FORM COMPONENT ───────────────────────────────────────────────
 // Simple Supplier Form Component
 function SupplierForm({ supplier, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({

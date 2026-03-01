@@ -1,3 +1,50 @@
+/*
+ * ============================================================
+ * FILE: Employees.jsx
+ *
+ * PURPOSE:
+ *   Central page for managing the employee roster. Provides full CRUD for
+ *   employee records, payroll processing, granular per-user permission
+ *   management, role administration, and HR workflows including leave,
+ *   onboarding, and offboarding requests. Also surfaces real-time chat
+ *   with individual employees and an insurance-plans manager.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports                  — React, routing, icons, API clients, child modals/components
+ *   [2]  Store & Dark-Mode        — Global Zustand store (employees, user, permissions) + dark-mode hook
+ *   [3]  Core State               — Editing, permissions, roles, search/filter, and UI-flag state vars
+ *   [4]  Payroll State            — Pay-modal form, available weeks, paid-status map
+ *   [5]  Chat State               — Chat modal visibility, current chat target, unread counts
+ *   [6]  Initialization Effects   — On-mount: load employees + settings; watch employees for pay status
+ *   [7]  Unread-Count Loader      — Fetches per-employee unread chat counts from the API
+ *   [8]  Role Helpers             — loadRoles(), getRoleName() utilities
+ *   [9]  Payroll Helpers          — generateWeeks(), getCurrentPayPeriod(), isEmployeePaidForCurrentPeriod()
+ *   [10] Payroll Handlers         — handleOpenPay(), handlePaySubmit()
+ *   [11] Role Management Handlers — handleCreateRole(), handleDeleteRole(), handleAddRolePermission(), handleRemoveRolePermission()
+ *   [12] Permission Guard         — Redirect non-authorised users to /profile
+ *   [13] Data Loaders             — loadEmployees()
+ *   [14] CRUD Handlers            — handleCreate(), handleEdit(), handleDelete(), handleSubmit()
+ *   [15] Filter / Search Helpers  — roleOptions (memo), filteredEmployees (memo), getStatusFilterButtonClass()
+ *   [16] Permission Handlers      — handleManagePermissions(), fetchUserPermissions(), handleCreatePermission(),
+ *                                   handleDeletePermission(), handleUpdatePermission(),
+ *                                   handleScheduleViewAllToggle(), handleScheduleWriteAllToggle()
+ *   [17] Admin Handlers           — handleCreateUser(), handleLockUser(), handleUnlockUser(),
+ *                                   handleForcePasswordReset(), handleTestAppointments()
+ *   [18] Request Handlers         — loadRequests(), handleOpenRequests(), handleRequestAction()
+ *   [19] Insurance Handlers       — handleOpenInsurance(), handleInsurancePlanSave(),
+ *                                   handleInsurancePlanDelete(), handleInsurancePlanToggle()
+ *   [20] Misc Helper              — getManagerName()
+ *   [21] Loading Guard            — Early return while data is in-flight
+ *   [22] Render / JSX             — Page shell, employee table, footer controls, and all modal declarations
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── [1] IMPORTS ────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
@@ -18,7 +65,9 @@ import Chat_Employee from './components/Chat_Employee';
 import Modal_Wages from './components/Modal_Wages';
 
 export default function Employees() {
-  const { 
+
+  // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
+  const {
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal,
@@ -26,9 +75,10 @@ export default function Employees() {
   } = useStore();
 
   const { isDarkMode } = useDarkMode();
-  
+
   // Use the permission refresh hook
 
+  // ─── [3] CORE STATE ─────────────────────────────────────────────────────────
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userPermissions, setUserPermissions] = useState([]);
@@ -68,7 +118,7 @@ export default function Employees() {
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const hasFetched = useRef(false);
 
-  // Payroll state
+  // ─── [4] PAYROLL STATE ──────────────────────────────────────────────────────
   const [showPayModal, setShowPayModal] = useState(false);
   const [payingEmployee, setPayingEmployee] = useState(null);
   const [payForm, setPayForm] = useState({
@@ -86,7 +136,7 @@ export default function Employees() {
   const [payWeeksLoading, setPayWeeksLoading] = useState(false);
   const [paidEmployeeIds, setPaidEmployeeIds] = useState({});
 
-  // Chat state
+  // ─── [5] CHAT STATE ─────────────────────────────────────────────────────────
   const [showChatModal, setShowChatModal] = useState(false);
   const [chattingEmployee, setChattingEmployee] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
@@ -96,6 +146,8 @@ export default function Employees() {
   // Wages modal
   const [showWagesModal, setShowWagesModal] = useState(false);
 
+  // ─── [6] INITIALIZATION EFFECTS ─────────────────────────────────────────────
+  // On mount: trigger employee load and fetch app settings once.
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -104,7 +156,8 @@ export default function Employees() {
     settingsAPI.getSettings().then((res) => setAppSettings(res.data)).catch(() => {});
   }, []);
 
-  // Load payment status for all employees when they update
+  // Whenever the employees list changes, re-evaluate each employee's paid
+  // status for the current pay period so the UI badge stays accurate.
   useEffect(() => {
     const loadPaymentStatus = async () => {
       if (!employees.length) return;
@@ -136,6 +189,7 @@ export default function Employees() {
     loadPaymentStatus();
   }, [employees]);
 
+  // ─── [7] UNREAD-COUNT LOADER ────────────────────────────────────────────────
   const loadUnreadCounts = async () => {
     try {
       const res = await chatAPI.getUnreadCounts();
@@ -148,6 +202,7 @@ export default function Employees() {
     loadUnreadCounts();
   }, []);
 
+  // ─── [8] ROLE HELPERS ───────────────────────────────────────────────────────
   const loadRoles = async () => {
     try {
       const response = await rolesAPI.getAll();
@@ -166,6 +221,7 @@ export default function Employees() {
     return role ? role.name : '-';
   };
 
+  // ─── [9] PAYROLL HELPERS ────────────────────────────────────────────────────
   const generateWeeks = (paidStartDates, count = 26) => {
     const weeks = [];
     const today = new Date();
@@ -195,6 +251,7 @@ export default function Employees() {
     return weeks;
   };
 
+  // ─── [10] PAYROLL HANDLERS ──────────────────────────────────────────────────
   const handleOpenPay = async (employee, e) => {
     e.stopPropagation();
     setPayingEmployee(employee);
@@ -284,6 +341,7 @@ export default function Employees() {
     }
   };
 
+  // ─── [11] ROLE MANAGEMENT HANDLERS ─────────────────────────────────────────
   const handleCreateRole = async (e) => {
     e.preventDefault();
     if (!newRole.name.trim()) {
@@ -340,17 +398,18 @@ export default function Employees() {
     }
   };
 
-  // Check permissions at page level
-  if (!hasPermission('employees', 'read') && 
-      !hasPermission('employees', 'write') && 
-      !hasPermission('employees', 'delete') && 
+  // ─── [12] PERMISSION GUARD ──────────────────────────────────────────────────
+  // Redirect any user who lacks every employee permission to their profile page.
+  if (!hasPermission('employees', 'read') &&
+      !hasPermission('employees', 'write') &&
+      !hasPermission('employees', 'delete') &&
       !hasPermission('employees', 'admin')) {
     return <Navigate to="/profile" replace />;
   }
 
+  // ─── [13] DATA LOADERS ──────────────────────────────────────────────────────
   const loadEmployees = async () => {
 
-    
     setLoading(true);
     try {
       const response = await employeesAPI.getAll();

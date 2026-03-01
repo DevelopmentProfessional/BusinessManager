@@ -1,3 +1,31 @@
+# ============================================================
+# FILE: main.py
+#
+# PURPOSE:
+#   Application entry point for the BusinessManager FastAPI backend.
+#   Registers all routers, configures CORS, handles startup events
+#   (DB init, template seeding), and defines all document file-operation
+#   endpoints (upload, serve, download, edit, sign, assignments).
+#
+# FUNCTIONAL PARTS:
+#   [1] Imports & Logging         — stdlib, FastAPI, and router imports; SQLAlchemy silence
+#   [2] Health Filter             — suppresses /health access log noise
+#   [3] CORS Middleware           — AggressiveCORSMiddleware + standard CORSMiddleware
+#   [4] App Initialization        — FastAPI instance creation and CORS origin list
+#   [5] Health Endpoint           — GET /health with database connectivity check
+#   [6] Startup Event             — DB table creation + standard template seeding
+#   [7] Router Registration       — all API routers mounted under /api/v1/
+#   [8] Document File Endpoints   — upload, serve/download, content read/write,
+#                                   binary save, e-sign, OnlyOffice, assignments
+#   [9] Entry Point               — uvicorn runner for direct execution
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
+# ─── 1 IMPORTS & LOGGING ───────────────────────────────────────────────────────
 import os
 import sys
 import logging
@@ -28,6 +56,7 @@ except ModuleNotFoundError as e:
     else:
         raise
 
+# ─── 2 HEALTH LOG FILTER ───────────────────────────────────────────────────────
 # Suppress noisy health check access logs while keeping other access logs
 class _SuppressHealthFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
@@ -41,6 +70,7 @@ class _SuppressHealthFilter(logging.Filter):
 logging.getLogger("uvicorn.access").addFilter(_SuppressHealthFilter())
 
 
+# ─── 3 CORS MIDDLEWARE ─────────────────────────────────────────────────────────
 class AggressiveCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         # Handle preflight requests FIRST
@@ -87,6 +117,7 @@ class AggressiveCORSMiddleware(BaseHTTPMiddleware):
         return response
 
 
+# ─── 4 APP INITIALIZATION ──────────────────────────────────────────────────────
 def _extend_allowed_origins_from_env(allowed_origins: list[str]) -> list[str]:
     env_origins = os.getenv("ALLOWED_ORIGINS", "")
     if not env_origins:
@@ -139,6 +170,7 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# ─── 5 HEALTH ENDPOINT ─────────────────────────────────────────────────────────
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -159,6 +191,7 @@ async def health_check():
             "error": str(e)
         }
 
+# ─── 6 STARTUP EVENT ───────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
@@ -183,6 +216,7 @@ async def startup_event():
         print(f"Warning: Could not seed standard templates: {e}")
     print("All routers loaded successfully")
 
+# ─── 7 ROUTER REGISTRATION ─────────────────────────────────────────────────────
 # Include routers (documents + document_category CRUD go through isud)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
@@ -195,6 +229,7 @@ app.include_router(payroll.router, prefix="/api/v1", tags=["payroll"])
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
 
+# ─── 8 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).
 import shutil
@@ -670,6 +705,7 @@ async def document_onlyoffice_callback(
     return {"error": 0}
 
 
+# ─── 8b DOCUMENT ASSIGNMENT ENDPOINTS ─────────────────────────────────────────
 # --- Document Assignment Endpoints ---
 
 @app.get("/api/v1/documents/{document_id}/assignments", tags=["documents"])
@@ -738,6 +774,7 @@ async def remove_document_assignment(
     return {"deleted": True}
 
 
+# ─── 9 ENTRY POINT ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(app, host="127.0.0.1", port=port)
