@@ -1,3 +1,23 @@
+# ============================================================
+# FILE: payroll.py
+#
+# PURPOSE:
+#   Handles employee payroll processing for BusinessManager. Provides endpoints
+#   to process wage payments (creating pay slips), retrieve pay slip history per
+#   employee or across all employees, and check whether an employee is eligible
+#   for payment in a given pay period (duplicate prevention).
+#
+# FUNCTIONAL PARTS:
+#   [1] Payment Processing — compute gross/net pay with insurance deductions and persist a PaySlip record
+#   [2] Pay Slip Retrieval — fetch pay slips for a single employee or all employees
+#   [3] Payment Eligibility Check — determine whether an employee has already been paid for a period
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from uuid import UUID
@@ -14,6 +34,8 @@ except ModuleNotFoundError:
 
 router = APIRouter()
 
+
+# ─── 1 PAYMENT PROCESSING ──────────────────────────────────────────────────────
 
 @router.post("/payroll/pay/{employee_id}", response_model=PaySlipRead, tags=["payroll"])
 def process_payment(
@@ -86,6 +108,8 @@ def process_payment(
     return slip
 
 
+# ─── 2 PAY SLIP RETRIEVAL ──────────────────────────────────────────────────────
+
 @router.get("/payroll/pay-slips/{employee_id}", response_model=list[PaySlipRead], tags=["payroll"])
 def get_employee_pay_slips(
     employee_id: UUID,
@@ -112,6 +136,8 @@ def get_all_pay_slips(
     ).all()
     return slips
 
+
+# ─── 3 PAYMENT ELIGIBILITY CHECK ───────────────────────────────────────────────
 
 @router.get("/payroll/check/{employee_id}", tags=["payroll"])
 def check_payment_eligibility(

@@ -1,8 +1,32 @@
+/*
+ * ============================================================
+ * FILE: Modal_Edit_Document.jsx
+ *
+ * PURPOSE:
+ *   Modal form for editing the metadata of an existing document record.
+ *   Allows the user to update the description, owner, category, review date,
+ *   and the list of employee assignments tied to the document.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State Initialization — form field state and supporting list state
+ *   [2] Data Loading Effects — fetch categories, employees, and current assignments on open
+ *   [3] Assignment Handlers — add and remove document-to-employee assignments
+ *   [4] Form Submit Handler — PATCH document metadata and invoke onSave callback
+ *   [5] JSX Render — modal shell with floating-label form fields and assignment chip list
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import { documentsAPI, documentCategoriesAPI, employeesAPI } from '../../services/api';
 import Dropdown_Custom from './Dropdown_Custom';
 import Modal from './Modal';
 
+// ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Edit_Document({ isOpen, onClose, document, onSave }) {
   const [description, setDescription] = useState('');
   const [ownerId, setOwnerId] = useState('');
@@ -15,6 +39,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // ─── 2 DATA LOADING EFFECTS ──────────────────────────────────────────────
   // Load meta lists only when modal opens
   useEffect(() => {
     if (!isOpen) return;
@@ -69,6 +94,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     }
   };
 
+  // ─── 3 ASSIGNMENT HANDLERS ───────────────────────────────────────────────
   const handleAddAssignment = async () => {
     if (!document || !assignEmployeeId) return;
     try {
@@ -90,6 +116,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     }
   };
 
+  // ─── 4 FORM SUBMIT HANDLER ───────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!document) return;
@@ -117,6 +144,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     }
   };
 
+  // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   if (!document) return null;
 
   return (

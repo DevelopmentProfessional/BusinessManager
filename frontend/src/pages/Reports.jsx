@@ -1,3 +1,34 @@
+/*
+ * ============================================================
+ * FILE: Reports.jsx
+ *
+ * PURPOSE:
+ *   Analytics and reporting page that lets users select a report type, configure
+ *   date-range and grouping filters, and view the results as an interactive chart.
+ *   Permission-gated: only reports whose underlying tables the user can read are
+ *   shown. Supports PDF export via the browser print dialog.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports & module-level constants — heroicons, API services, report/filter config arrays
+ *   [2] Component setup & permission guard — useStore hooks, early redirect if no permissions
+ *   [3] State declarations — selected report, report data, filter state, employee/service lists
+ *   [4] Derived state — accessibleReports (permission-filtered), selectedReport memo
+ *   [5] Report selection handler — handleReportSelect resets filters to report defaults
+ *   [6] Data loading / API fetch — loadReportData dispatches to the correct report endpoint
+ *   [7] Date range helpers — getStartDate / getEndDate compute ISO date strings
+ *   [8] Data transform functions — one transform per report type maps API response to Chart.js shape
+ *   [9] useEffect / lifecycle hooks — default report selection, load employees/services, reload on filter change
+ *   [10] PDF export handler — handleExportPdf opens a print window with the chart snapshot
+ *   [11] Render — header, chart area, filter footer row, report dropup selector
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
@@ -120,12 +151,13 @@ const GROUP_BY_OPTIONS = [
 ];
 
 export default function Reports() {
+  // ─── 2 COMPONENT SETUP & PERMISSION GUARD ──────────────────────────────
   const {
     loading, setLoading, error, setError, clearError,
     hasPermission
   } = useStore();
 
-  if (!hasPermission('reports', 'read') && 
+  if (!hasPermission('reports', 'read') &&
       !hasPermission('schedule', 'read') &&
       !hasPermission('clients', 'read') &&
       !hasPermission('services', 'read')) {
@@ -135,6 +167,7 @@ export default function Reports() {
   const { branding } = useBranding();
   const { isTrainingMode } = useViewMode();
 
+  // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
   const [selectedReportId, setSelectedReportId] = useState('');
   const [reportData, setReportData] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -151,6 +184,7 @@ export default function Reports() {
     serviceId: 'all'
   });
 
+  // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
   const accessibleReports = AVAILABLE_REPORTS.filter(report => {
     return report.tables.some(table => {
       const pageMap = {
@@ -176,6 +210,7 @@ export default function Reports() {
     [accessibleReports, selectedReportId]
   );
 
+  // ─── 5 REPORT SELECTION HANDLER ──────────────────────────────────────────
   const handleReportSelect = (reportId) => {
     const report = accessibleReports.find((r) => r.id === reportId);
     if (!report) return;
@@ -188,6 +223,7 @@ export default function Reports() {
     setReportMenuOpen(false);
   };
 
+  // ─── 6 DATA LOADING / API FETCH ──────────────────────────────────────────
   const loadReportData = async (reportId, filters = reportFilters) => {
     if (!reportId) return;
     setLoading(true);
@@ -252,7 +288,7 @@ export default function Reports() {
     }
   };
 
-  // Helper functions for date handling
+  // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
   const getStartDate = (dateRange, customStart) => {
     if (dateRange === 'custom' && customStart) return customStart;
     
@@ -278,6 +314,7 @@ export default function Reports() {
     return new Date().toISOString().split('T')[0];
   };
 
+  // ─── 8 DATA TRANSFORM FUNCTIONS — map API responses to Chart.js datasets ─
   const getPalette = (count, alpha = 0.5) =>
     Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`);
 
@@ -394,6 +431,7 @@ export default function Reports() {
     }]
   });
 
+  // ─── 9 LIFECYCLE HOOKS ───────────────────────────────────────────────────
   useEffect(() => {
     if (accessibleReports.length > 0 && !selectedReportId) {
       setSelectedReportId(accessibleReports[0].id);

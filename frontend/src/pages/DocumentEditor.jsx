@@ -1,3 +1,30 @@
+/*
+ * ============================================================
+ * FILE: DocumentEditor.jsx
+ *
+ * PURPOSE:
+ *   Full-screen document editor page reached via /documents/:documentId.
+ *   Loads document metadata from the API, then renders an OnlyOffice editor
+ *   for collaborative editing along with a header ribbon containing file info,
+ *   preview toggle, download, save, and close actions.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports & component setup — React, router hooks, heroicons, API service, OnlyOffice editor
+ *   [2] State declarations — document data, loading/error flags, save state, preview toggle
+ *   [3] useEffect / lifecycle — triggers loadDocument on documentId change
+ *   [4] Data loading — loadDocument fetches document metadata from the API
+ *   [5] Action handlers — handleSave, handleDownload, handleClose
+ *   [6] Render — loading spinner, error state, header ribbon, editor/preview area
+ *   [7] Utility — formatFileSize helper function
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS ──────────────────────────────────────────────────────────────
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -16,17 +43,20 @@ export default function DocumentEditor() {
   const { documentId } = useParams();
   const navigate = useNavigate();
   const { setLoading, setError, clearError } = useStore();
-  
+
+  // ─── 2 STATE DECLARATIONS ────────────────────────────────────────────────
   const [document, setDocument] = useState(null);
   const [loading, setLocalLoading] = useState(true);
   const [error, setLocalError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // ─── 3 LIFECYCLE — load document when documentId changes ─────────────────
   useEffect(() => {
     loadDocument();
   }, [documentId]);
 
+  // ─── 4 DATA LOADING ──────────────────────────────────────────────────────
   const loadDocument = async () => {
     setLocalLoading(true);
     setLocalError('');
@@ -43,6 +73,7 @@ export default function DocumentEditor() {
     }
   };
 
+  // ─── 5 ACTION HANDLERS ───────────────────────────────────────────────────
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -73,6 +104,7 @@ export default function DocumentEditor() {
     navigate('/documents');
   };
 
+  // ─── 6 RENDER ────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -236,6 +268,7 @@ export default function DocumentEditor() {
   );
 }
 
+// ─── 7 UTILITY FUNCTIONS ─────────────────────────────────────────────────────
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;

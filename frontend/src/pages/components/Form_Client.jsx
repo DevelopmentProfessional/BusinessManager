@@ -1,7 +1,33 @@
+/*
+ * ============================================================
+ * FILE: Form_Client.jsx
+ *
+ * PURPOSE:
+ *   Renders a create/edit form for a single client record. Handles
+ *   contact details, membership tier and date fields, address, and
+ *   notes. Surfaces field-level validation errors returned by the
+ *   parent (e.g. duplicate name) and provides Cancel / Save actions.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants          — MEMBERSHIP_TIERS lookup array
+ *   [2] State & Effects    — form data initialisation, error mapping
+ *   [3] Handlers           — handleChange, handleSubmit
+ *   [4] Render: Header     — title ("Add Client" / "Edit Client")
+ *   [5] Render: Form Body  — contact fields, membership section, address/notes
+ *   [6] Render: Footer     — Cancel and Save/Create action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 
+// ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const MEMBERSHIP_TIERS = [
   { value: 'none', label: 'None' },
   { value: 'bronze', label: 'Bronze' },
@@ -10,6 +36,7 @@ const MEMBERSHIP_TIERS = [
   { value: 'platinum', label: 'Platinum' }
 ];
 
+// ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
 export default function Form_Client({ client, onSubmit, onCancel, error = null }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -40,6 +67,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
     }
   }, [client]);
 
+  // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -67,6 +95,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
     }
   }, [error]);
 
+  // ─── 4 RENDER ─────────────────────────────────────────────────────────────────
   return (
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
@@ -77,6 +106,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
         </h6>
       </div>
 
+      {/* ─── 5 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable content */}
       <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="client-form" onSubmit={handleSubmit}>
@@ -219,6 +249,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
         </form>
       </div>
 
+      {/* ─── 6 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Footer */}
       <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="d-flex align-items-center">

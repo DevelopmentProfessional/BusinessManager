@@ -1,6 +1,33 @@
+/*
+ * ============================================================
+ * FILE: EditorToolbar.jsx
+ *
+ * PURPOSE:
+ *   Renders a context-aware toolbar for both the rich-text (Tiptap) and code
+ *   (CodeMirror) editors. For rich text it presents a tabbed ribbon with Home,
+ *   Find & Replace, and Design tabs; for code it renders a minimal Save/Undo/Redo
+ *   strip. All formatting commands are dispatched directly to the Tiptap editor
+ *   instance passed in via props.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Reusable UI Primitives  — ToolButton, Divider, ColorButton helper components
+ *   [2] Static Data Constants   — FONT_FAMILIES, FONT_SIZES, LINE_SPACINGS, THEMES arrays
+ *   [3] HomeTab Panel           — inline formatting, font, paragraph, alignment, and spacing controls
+ *   [4] FindTab Panel           — search input, match counter, next/prev navigation, and replace controls
+ *   [5] DesignTab Panel         — one-click theme presets that apply font + color across the document
+ *   [6] StatusBadge             — small inline save-status indicator (Unsaved / Saving / Saved / Failed)
+ *   [7] EditorToolbar (main)    — tab orchestration, Ctrl+F shortcut, code-editor fallback rendering
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-/* ── Small reusable pieces ────────────────────────────────────────── */
+// ─── 1 REUSABLE UI PRIMITIVES ──────────────────────────────────────────────────
 
 function ToolButton({ active, onClick, title, children, disabled, className = '' }) {
   return (

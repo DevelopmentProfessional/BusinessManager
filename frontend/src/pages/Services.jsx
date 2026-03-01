@@ -1,3 +1,31 @@
+/*
+ * ============================================================
+ * FILE: Services.jsx
+ *
+ * PURPOSE:
+ *   Admin page for managing the business's service catalogue. Displays all
+ *   services in a scrollable table and allows authorised users to create,
+ *   edit, and delete services via a full-screen form modal. Supports free-text
+ *   search and category filtering from the sticky footer toolbar.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports                   — React, router, icons, store, API, and child components
+ *   [2]  Services Component        — Page shell with permission guard and store bindings
+ *   [3]  State / Ref Declarations  — Search term, category filter, editing service, scroll ref, fetch guard
+ *   [4]  Lifecycle / useEffect     — Initial service load and scroll-to-bottom after data arrives
+ *   [5]  Data Loading              — loadServices fetches all services from the API
+ *   [6]  CRUD Handlers             — handleCreateService, handleEditService, handleDeleteService, handleSubmitService
+ *   [7]  Derived / Computed Values — useMemo for unique categories list and filtered services
+ *   [8]  Render / Return           — Table layout, sticky footer with search/add/filter, and form modal
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1  IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -8,6 +36,7 @@ import Modal from './components/Modal';
 import Form_Service from './components/Form_Service';
 import Gate_Permission from './components/Gate_Permission';
 
+// ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
   const {
     services, setServices, addService, updateService, removeService,
@@ -23,6 +52,7 @@ export default function Services() {
     return <Navigate to="/profile" replace />;
   }
 
+  // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -30,12 +60,14 @@ export default function Services() {
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
 
+  // ─── 4  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
     loadServices();
   }, []);
 
+  // ─── 5  DATA LOADING ──────────────────────────────────────────────────────
   const loadServices = async () => {
     setLoading(true);
     try {
@@ -55,6 +87,7 @@ export default function Services() {
     }
   };
 
+  // ─── 6  CRUD HANDLERS ─────────────────────────────────────────────────────
   const handleCreateService = () => {
     if (!hasPermission('services', 'write')) {
       setError('You do not have permission to create services');
@@ -107,6 +140,7 @@ export default function Services() {
     }
   };
 
+  // ─── 7  DERIVED / COMPUTED VALUES ────────────────────────────────────────
   // Get unique categories for filter
   const categories = useMemo(() => {
     const cats = new Set(services.map(s => s.category).filter(Boolean));
@@ -129,6 +163,7 @@ export default function Services() {
     });
   }, [services, searchTerm, categoryFilter]);
 
+  // ─── 8  SECONDARY LIFECYCLE ───────────────────────────────────────────────
   // Scroll to bottom when data loads
   useEffect(() => {
     if (scrollRef.current && filteredServices.length > 0) {

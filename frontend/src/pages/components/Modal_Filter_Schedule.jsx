@@ -1,8 +1,32 @@
+/*
+ * ============================================================
+ * FILE: Modal_Filter_Schedule.jsx
+ *
+ * PURPOSE:
+ *   Modal panel for filtering the Schedule page calendar view.
+ *   Allows users to narrow displayed appointments by employee, client,
+ *   service, date range, and out-of-office status using accordion sections.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants — EMPTY_FILTERS default shape
+ *   [2] AccordionSection Sub-component — collapsible filter group with clear button
+ *   [3] State & Effects — local filter state synced from parent filters prop
+ *   [4] Filter Handlers — toggle ID selection, date change, apply, clear
+ *   [5] JSX Render — accordion sections for employees/clients/services, date range, OOO toggle
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useEffect, useState } from 'react';
 import { XMarkIcon, CheckIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import Modal from './Modal';
 
+// ─── 1 CONSTANTS ─────────────────────────────────────────────────────────
 const EMPTY_FILTERS = {
   employeeIds: [],
   clientIds: [],
@@ -13,6 +37,7 @@ const EMPTY_FILTERS = {
   oooEmployeeIds: [],
 };
 
+// ─── 2 ACCORDIONSECTION SUB-COMPONENT ────────────────────────────────────
 function AccordionSection({ label, count, isOpen, onToggle, onClear, children }) {
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded">

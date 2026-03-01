@@ -1,3 +1,32 @@
+/*
+ * ============================================================
+ * FILE: Sales.jsx
+ *
+ * PURPOSE:
+ *   Point-of-sale (POS) page that lets staff browse services and inventory
+ *   products, manage a shopping cart, assign a client to a transaction, and
+ *   process payment through checkout. Completed sales are persisted to the
+ *   database and cached in localStorage for history review.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  ItemCard Component        — Reusable card UI for a single service or product with cart controls
+ *   [2]  Sales Component (export)  — Main POS page shell with permission guard
+ *   [3]  State Declarations        — POS state, cart, client, product/service, history, and modal flags
+ *   [4]  Lifecycle / useEffect     — Initial data load, navigation pre-selection, and cart persistence
+ *   [5]  Data Loading              — loadServices, loadProducts, loadClients, loadTransactionHistory
+ *   [6]  Cart Handlers             — addToCart, removeFromCart, updateCartQuantity, increment/decrement
+ *   [7]  Computed / Derived Values — cartTotal, cartItemCount, filtered lists, isInCart, filteredHistory
+ *   [8]  Checkout Handler          — handleCheckout, processPayment (saves to DB + localStorage)
+ *   [9]  Render / Return           — Sticky header, item grid, fixed footer, and all modal outlets
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1  IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import {
@@ -19,6 +48,7 @@ import Modal_Cart_Sales from './components/Modal_Cart_Sales';
 import Modal_History_Sales from './components/Modal_History_Sales';
 import { getDisplayImageUrl } from './components/imageUtils';
 
+// ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
 // Unified Product/Service Card Component
 const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart }) => {
   const isService = itemType === 'service';
@@ -151,6 +181,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
   );
 };
 
+// ─── 3  SALES PAGE COMPONENT ───────────────────────────────────────────────
 export default function Sales() {
   const {
     services, setServices,
@@ -167,6 +198,7 @@ export default function Sales() {
     return <Navigate to="/profile" replace />;
   }
 
+  // ─── 4  STATE / REF DECLARATIONS ─────────────────────────────────────────
   // POS State
   const [showServices, setShowServices] = useState(true);
   const [showProducts, setShowProducts] = useState(true);
@@ -208,6 +240,7 @@ export default function Sales() {
     endDate: ''
   });
 
+  // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
@@ -216,6 +249,7 @@ export default function Sales() {
     settingsAPI.getSettings().then(res => setAppSettings(res.data)).catch(() => {});
   }, []);
 
+  // ─── 6  DATA LOADING FUNCTIONS ───────────────────────────────────────────
   const loadTransactionHistory = async () => {
     try {
       const res = await saleTransactionsAPI.getAll();
@@ -320,6 +354,7 @@ export default function Sales() {
     }
   };
 
+  // ─── 7  CART HANDLERS ─────────────────────────────────────────────────────
   // Open product detail modal
   const handleSelectItem = (item, itemType) => {
     setSelectedItem(item);
@@ -385,6 +420,7 @@ export default function Sales() {
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // ─── 8  CHECKOUT / PAYMENT HANDLERS ──────────────────────────────────────
   const handleCheckout = () => {
     if (cart.length === 0) {
       setError('Cart is empty');
@@ -448,6 +484,7 @@ export default function Sales() {
     clearError();
   };
 
+  // ─── 9  SERVICE LOAD FUNCTION ─────────────────────────────────────────────
   const loadServices = async () => {
     setLoading(true);
     try {
@@ -471,8 +508,9 @@ export default function Sales() {
     }
   };
 
+  // ─── 10  DERIVED / COMPUTED VALUES ───────────────────────────────────────
   // Filter items based on search and category
-  const filteredServices = services.filter(s => 
+  const filteredServices = services.filter(s =>
     s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -519,6 +557,7 @@ export default function Sales() {
     return false;
   });
 
+  // ─── 11  RENDER / RETURN ──────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">

@@ -1,3 +1,30 @@
+# ============================================================
+# FILE: reports.py
+#
+# PURPOSE:
+#   Provides read-only analytics and reporting endpoints for the
+#   BusinessManager application. Each route aggregates data from one or more
+#   database tables and returns label/data pairs suitable for charting on the
+#   frontend. All routes support optional date-range and grouping parameters.
+#
+# FUNCTIONAL PARTS:
+#   [1] Helper Utilities — date parsing, group-label generation, and date-range filtering
+#   [2] Appointments Report — scheduled appointments grouped by day/week/month with status/employee filters
+#   [3] Revenue Report — combined revenue from completed appointments and sale transactions
+#   [4] Clients Report — new client registrations and appointment counts over time
+#   [5] Services Report — appointment counts broken down by service (popularity ranking)
+#   [6] Inventory Report — current stock levels and low-stock alerts
+#   [7] Employees Report — appointment counts per employee (performance ranking)
+#   [8] Attendance Report — attendance record counts grouped over time with employee filter
+#   [9] Sales Report — sale transaction totals grouped over time
+#   [10] Payroll Report — net pay totals from pay slips grouped over time
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 from datetime import datetime
@@ -7,6 +34,8 @@ from backend.models import Schedule, Client, Service, User, Inventory, SaleTrans
 
 router = APIRouter()
 
+
+# ─── 1 HELPER UTILITIES ────────────────────────────────────────────────────────
 
 def _parse_date(d: Optional[str]) -> Optional[datetime]:
     if not d:
@@ -40,6 +69,8 @@ def _date_filter(items, date_field_getter, start, end):
     return result
 
 
+# ─── 2 APPOINTMENTS REPORT ─────────────────────────────────────────────────────
+
 @router.get("/reports/appointments")
 def get_appointments_report(
     start_date: Optional[str] = Query(None),
@@ -72,6 +103,8 @@ def get_appointments_report(
     sorted_keys = sorted(grouped.keys())
     return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
 
+
+# ─── 3 REVENUE REPORT ──────────────────────────────────────────────────────────
 
 @router.get("/reports/revenue")
 def get_revenue_report(
@@ -124,6 +157,8 @@ def get_revenue_report(
     return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
 
 
+# ─── 4 CLIENTS REPORT ──────────────────────────────────────────────────────────
+
 @router.get("/reports/clients")
 def get_clients_report(
     start_date: Optional[str] = Query(None),
@@ -172,6 +207,8 @@ def get_clients_report(
     }
 
 
+# ─── 5 SERVICES REPORT ─────────────────────────────────────────────────────────
+
 @router.get("/reports/services")
 def get_services_report(
     start_date: Optional[str] = Query(None),
@@ -202,6 +239,8 @@ def get_services_report(
     return {"labels": labels, "data": data}
 
 
+# ─── 6 INVENTORY REPORT ────────────────────────────────────────────────────────
+
 @router.get("/reports/inventory")
 def get_inventory_report(
     session: Session = Depends(get_session),
@@ -220,6 +259,8 @@ def get_inventory_report(
         "low_stock_count": len(low_stock),
     }
 
+
+# ─── 7 EMPLOYEES REPORT ────────────────────────────────────────────────────────
 
 @router.get("/reports/employees")
 def get_employees_report(
@@ -251,6 +292,8 @@ def get_employees_report(
     data = [item[1] for item in sorted_items]
     return {"labels": labels, "data": data}
 
+
+# ─── 8 ATTENDANCE REPORT ───────────────────────────────────────────────────────
 
 @router.get("/reports/attendance")
 def get_attendance_report(
@@ -285,6 +328,8 @@ def get_attendance_report(
     return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
 
 
+# ─── 9 SALES REPORT ────────────────────────────────────────────────────────────
+
 @router.get("/reports/sales")
 def get_sales_report(
     start_date: Optional[str] = Query(None),
@@ -314,6 +359,8 @@ def get_sales_report(
     sorted_keys = sorted(grouped.keys())
     return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
 
+
+# ─── 10 PAYROLL REPORT ─────────────────────────────────────────────────────────
 
 @router.get("/reports/payroll")
 def get_payroll_report(
