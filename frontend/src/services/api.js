@@ -447,6 +447,8 @@ export const employeesAPI = {
     return api.delete(`/isud/users/${id}`);
   },
   getUserData: (userId) => api.get(`/auth/users/${userId}`),
+  lockUser: (userId) => api.post(`/auth/users/${userId}/lock`),
+  unlockUser: (userId) => api.post(`/auth/users/${userId}/unlock`),
   getUserPermissions: (userId) => api.get(`/auth/users/${userId}/permissions`),
   updateUser: (userId, data) => api.put(`/auth/users/${userId}`, data),
   createUserPermission: (userId, data) => api.post(`/auth/users/${userId}/permissions`, data),
