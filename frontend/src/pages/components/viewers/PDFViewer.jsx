@@ -1,3 +1,28 @@
+/*
+ * ============================================================
+ * FILE: PDFViewer.jsx
+ *
+ * PURPOSE:
+ *   Renders a paginated, zoomable PDF viewer using react-pdf backed by PDF.js.
+ *   If react-pdf fails to load the file, the component automatically falls back
+ *   to an iframe so the browser's native PDF renderer is used instead.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Worker Configuration      — sets the PDF.js worker source URL via pdfjs.GlobalWorkerOptions
+ *   [2] PDFViewer Component       — state management for page, zoom, and error; resize observer
+ *                                   for responsive page width
+ *   [3] Navigation & Zoom Helpers — goToPrev, goToNext, zoomIn, zoomOut, fitWidth, handlePageInput
+ *   [4] Iframe Fallback Render    — renders a minimal toolbar + native iframe when react-pdf errors
+ *   [5] Primary Render            — full toolbar (pagination + zoom controls + Edit Metadata button)
+ *                                   and react-pdf Document/Page content area
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useRef, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -11,6 +36,8 @@ import {
   ArrowsPointingOutIcon,
 } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../../../services/api';
+
+// ─── 1 WORKER CONFIGURATION ────────────────────────────────────────────────────
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(

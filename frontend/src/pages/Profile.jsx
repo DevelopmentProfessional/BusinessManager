@@ -1,3 +1,41 @@
+/*
+ * ============================================================
+ * FILE: Profile.jsx
+ *
+ * PURPOSE:
+ *   The logged-in user's personal hub page. It displays employee profile details,
+ *   benefits (leave/vacation/sick days), wage/pay-slip history, and a full
+ *   application settings area (theme, database environment, schedule, branding,
+ *   notifications, CSV data import). Content is surfaced through a bottom-tab
+ *   accordion footer: each tab slides up a full-height floating panel.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports — React hooks, router, services, heroicons, API helpers, modals
+ *   [2]  Module-level style injection — accordion pop-up animation CSS, no-scrollbar rules
+ *   [3]  Module-level constants — DB_ENVIRONMENTS map, statusColor helper
+ *   [4]  State declarations — per-accordion, leave requests, payroll, settings, branding, import, notifications
+ *   [5]  Layout measurement effects — ResizeObserver hooks for footer row heights
+ *   [6]  Settings load effects — localStorage restore + schedule/company info fetch on mount
+ *   [7]  Database / import effects — load tables when database tab opens; load columns on table select
+ *   [8]  Settings handlers — branding, DB settings, notifications, schedule, company info, manual sync
+ *   [9]  CSV import handlers — table/column loading, CSV parse, file select, column mapping, import, reset
+ *   [10] User sync helpers — syncCurrentUser refreshes store from API
+ *   [11] Payroll load effect — fetches pay slips when wages panel opens
+ *   [12] Leave request effects & handlers — load, refresh, submit leave / onboarding / offboarding requests
+ *   [13] Action handlers — environment switch, Add-to-Home-Screen, calendar color picker, logout
+ *   [14] Performance tracking effect — finalizes perf report once profile is fully painted
+ *   [15] Render helpers — formatDate, getRoleBadgeColor, leave day counters, openLeaveModal
+ *   [16] Render — floating content panels (Profile, Benefits, Wages, Settings, Schedule, General, Database),
+ *                 Leave Management panel, footer tab rows, Signature modal, Leave modal, Pay Slip modal
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS ──────────────────────────────────────────────────────────────
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
@@ -44,6 +82,7 @@ import Manager_DatabaseConnection from './components/Manager_DatabaseConnection'
 import useBranding from '../services/useBranding';
 import { right } from '@popperjs/core';
 
+// ─── 2 MODULE-LEVEL STYLE INJECTION ──────────────────────────────────────────
 // CSS for accordion pop-up animation
 const accordionStyles = `
   @keyframes popUp {
@@ -124,6 +163,7 @@ if (typeof document !== 'undefined') {
   }
 }
 
+// ─── 3 MODULE-LEVEL CONSTANTS & HELPERS ──────────────────────────────────────
 // Available database environments - shows what's possible
 const DB_ENVIRONMENTS = {
   development: { name: 'Development', description: 'Development database' },
@@ -143,6 +183,7 @@ const Profile = () => {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleViewMode } = useViewMode();
 
+  // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
   // Log Profile component mount if performance session is active
   useEffect(() => {
     if (getPerformanceSessionActive()) {
@@ -256,6 +297,7 @@ const Profile = () => {
     dailyDigest: false,
   });
 
+  // ─── 5 LAYOUT MEASUREMENT EFFECTS ────────────────────────────────────────
   useEffect(() => {
     if (!row1Ref.current) return;
     const update = () => setRow1Height(row1Ref.current.offsetHeight);

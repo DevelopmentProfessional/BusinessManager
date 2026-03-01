@@ -77,7 +77,7 @@ function ColorButton({ value, onChange, title, label }) {
   );
 }
 
-/* ── Font families & sizes ────────────────────────────────────────── */
+// ─── 2 STATIC DATA CONSTANTS ───────────────────────────────────────────────────
 
 const FONT_FAMILIES = [
   { label: 'Default', value: '' },
@@ -107,7 +107,7 @@ const LINE_SPACINGS = [
   { label: '3.0', value: '3' },
 ];
 
-/* ── Design themes ────────────────────────────────────────────────── */
+// ─── 3 DESIGN THEMES ───────────────────────────────────────────────────────────
 
 const THEMES = [
   {
@@ -148,7 +148,7 @@ const THEMES = [
   },
 ];
 
-/* ── Tab panels ───────────────────────────────────────────────────── */
+// ─── 4 TAB PANELS ──────────────────────────────────────────────────────────────
 
 function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus }) {
   if (!editor) return null;
@@ -480,6 +480,8 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
   );
 }
 
+// ─── 5 FINDTAB PANEL ───────────────────────────────────────────────────────────
+
 function FindTab({ editor }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [replaceTerm, setReplaceTerm] = useState('');
@@ -598,6 +600,8 @@ function FindTab({ editor }) {
   );
 }
 
+// ─── 6 DESIGNTAB PANEL ─────────────────────────────────────────────────────────
+
 function DesignTab({ editor }) {
   if (!editor) return null;
 
@@ -653,6 +657,8 @@ function DesignTab({ editor }) {
   );
 }
 
+// ─── 7 STATUS BADGE ────────────────────────────────────────────────────────────
+
 function StatusBadge({ saveStatus, isDirty }) {
   const statusText = {
     idle: isDirty ? 'Unsaved' : '',
@@ -677,7 +683,7 @@ function StatusBadge({ saveStatus, isDirty }) {
   );
 }
 
-/* ── Main Toolbar ─────────────────────────────────────────────────── */
+// ─── 8 EDITORTOOLBAR (MAIN EXPORT) ─────────────────────────────────────────────
 
 export default function EditorToolbar({
   editorType,

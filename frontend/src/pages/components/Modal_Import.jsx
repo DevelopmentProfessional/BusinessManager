@@ -1,3 +1,26 @@
+/*
+ * ============================================================
+ * FILE: Modal_Import.jsx
+ *
+ * PURPOSE:
+ *   Modal dialog that allows admins to bulk-import business data from CSV files.
+ *   Supports independent upload of clients, services, and appointments CSV files
+ *   in a single submission, with visual confirmation and error feedback.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State Initialization — selected file refs, uploading flag, error/success messages
+ *   [2] File Selection Handler — validates .csv extension and updates file state
+ *   [3] Upload Handler — builds FormData, calls adminAPI.importData, shows result
+ *   [4] Close Handler — resets all state before closing
+ *   [5] JSX Render — three drag-and-drop file zones (clients, services, appointments) with feedback
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState } from 'react';
 import { DocumentArrowUpIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { adminAPI } from '../../services/api';

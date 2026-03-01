@@ -1,3 +1,25 @@
+# ============================================================
+# FILE: templates.py
+#
+# PURPOSE:
+#   Manages HTML document templates with {{key}} placeholder variables used for
+#   generating emails, invoices, receipts, memos, and quotes throughout the
+#   application. Provides seeding of standard built-in templates at startup and
+#   full CRUD plus a server-side render endpoint for user-defined templates.
+#
+# FUNCTIONAL PARTS:
+#   [1] Standard Template Definitions — static list of built-in template objects (email, invoice, receipt, memo, quote)
+#   [2] Seed Helper — upsert standard templates into the database at startup
+#   [3] Render Helper — server-side {{key}} placeholder substitution utility
+#   [4] Template CRUD Endpoints — list, get, create, update, delete templates
+#   [5] Render Endpoint — POST to render a template with caller-supplied variables
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from datetime import datetime
@@ -12,6 +34,8 @@ except ModuleNotFoundError:
     from models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead
 
 router = APIRouter()
+
+# ─── 1 STANDARD TEMPLATE DEFINITIONS ───────────────────────────────────────────
 
 # ---------------------------------------------------------------------------
 # Standard template seed data
@@ -149,6 +173,8 @@ _STANDARD_TEMPLATES = [
 ]
 
 
+# ─── 2 SEED HELPER ─────────────────────────────────────────────────────────────
+
 def seed_standard_templates(session: Session) -> None:
     """Upsert standard templates — insert if missing, update content/pages if already exists."""
     existing = {
@@ -181,6 +207,8 @@ def seed_standard_templates(session: Session) -> None:
         session.rollback()
 
 
+# ─── 3 RENDER HELPER ───────────────────────────────────────────────────────────
+
 # ---------------------------------------------------------------------------
 # Render helper (server-side)
 # ---------------------------------------------------------------------------
@@ -191,6 +219,8 @@ def _render_template(html: str, variables: dict) -> str:
         html = html.replace("{{" + key + "}}", str(val) if val is not None else "{{" + key + "}}")
     return html
 
+
+# ─── 4 TEMPLATE CRUD ENDPOINTS ─────────────────────────────────────────────────
 
 # ---------------------------------------------------------------------------
 # Endpoints
@@ -279,6 +309,8 @@ def delete_template(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     return {"deleted": True}
 
+
+# ─── 5 RENDER ENDPOINT ─────────────────────────────────────────────────────────
 
 @router.post("/templates/{template_id}/render")
 def render_template(

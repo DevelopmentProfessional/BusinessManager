@@ -84,6 +84,7 @@ function AccordionSection({ label, count, isOpen, onToggle, onClear, children })
   );
 }
 
+// ─── 3 STATE & EFFECTS ───────────────────────────────────────────────────
 export default function Modal_Filter_Schedule({
   isOpen,
   onClose,
@@ -102,6 +103,7 @@ export default function Modal_Filter_Schedule({
     setLocalFilters(filters || EMPTY_FILTERS);
   }, [filters, isOpen]);
 
+  // ─── 4 FILTER HANDLERS ───────────────────────────────────────────────────
   const toggleId = (key, id) => {
     setLocalFilters((prev) => {
       const current = prev[key] || [];
@@ -136,6 +138,7 @@ export default function Modal_Filter_Schedule({
     setLocalFilters((prev) => ({ ...prev, [key]: [] }));
   };
 
+  // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
     <Modal
       isOpen={isOpen}

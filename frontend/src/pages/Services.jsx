@@ -171,6 +171,7 @@ export default function Services() {
     }
   }, [filteredServices.length]);
 
+  // ─── 9  RENDER / RETURN ───────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
