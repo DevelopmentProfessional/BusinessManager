@@ -42,15 +42,15 @@ CONFIG_FILE = Path(__file__).parent / "db_environment.json"
 
 # Hardcoded database URLs for each environment
 DATABASE_ENVIRONMENTS = {
-    "local": "sqlite:///./business_manager.db",
+    "local": "",  # Intentionally disabled (no local SQLite fallback)
     "local-postgres": "postgresql://postgres:password@localhost:5432/businessmanager",
     "development": "postgresql://db_reference_user:AGONHh5kBrXztl8hwYUEIGpCZncxK06j@dpg-d5scoucoud1c73b1s5tg-a.oregon-postgres.render.com/db_reference_name",
     "test": "",  # Empty for now - can be configured later
     "production": "",  # Empty for now - can be configured later
 }
 
-# Default environment - use SQLite for local development
-DEFAULT_ENVIRONMENT = "local"
+# Default environment - use configured remote database
+DEFAULT_ENVIRONMENT = "development"
 
 
 # ─── 3 ENVIRONMENT READ / WRITE ────────────────────────────────────────────────
@@ -86,18 +86,20 @@ def get_database_url() -> str:
     # Prefer env var so Render/CI/production use the injected connection string
     env_url = os.getenv("DATABASE_URL", "").strip()
     if env_url:
+        if env_url.startswith("sqlite://"):
+            raise RuntimeError("SQLite URLs are disabled. Configure a PostgreSQL DATABASE_URL.")
         return env_url
 
     env = get_current_environment()
     url = DATABASE_ENVIRONMENTS.get(env, "")
 
-    # If the selected environment has no URL configured, fall back to development
     if not url:
-        url = DATABASE_ENVIRONMENTS.get("development", "")
+        raise RuntimeError(
+            f"Database environment '{env}' is not configured. Set DATABASE_URL or configure backend/db_config.py."
+        )
 
-    # If still no URL, fall back to SQLite for local development
-    if not url:
-        url = "sqlite:///./business_manager.db"
+    if url.startswith("sqlite://"):
+        raise RuntimeError("SQLite URLs are disabled. Configure a PostgreSQL database URL.")
 
     return url
 

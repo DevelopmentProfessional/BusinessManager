@@ -21,7 +21,7 @@ export default function Manager_DatabaseConnection() {
 
   const [formData, setFormData] = useState({
     name: '',
-    environment: 'development',
+    environment: 'production',
     host: '',
     port: 5432,
     database_name: '',
@@ -107,7 +107,7 @@ export default function Manager_DatabaseConnection() {
   const resetForm = () => {
     setFormData({
       name: '',
-      environment: 'development',
+      environment: 'production',
       host: '',
       port: 5432,
       database_name: '',
@@ -321,8 +321,6 @@ export default function Manager_DatabaseConnection() {
                           onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
                           required
                         >
-                          <option value="development">Development</option>
-                          <option value="test">Test</option>
                           <option value="production">Production</option>
                         </select>
                         <label htmlFor="conn_environment">Environment *</label>

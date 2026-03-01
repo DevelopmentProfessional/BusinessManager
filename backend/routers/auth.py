@@ -486,9 +486,16 @@ def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+
+    incoming = user_data.dict(exclude_unset=True)
+    if "db_environment" in incoming and incoming["db_environment"] != "production":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only 'production' database environment is allowed"
+        )
     
     # Update user fields
-    for field, value in user_data.dict(exclude_unset=True).items():
+    for field, value in incoming.items():
         if field == 'password':
             # Hash the password before storing
             user.password_hash = User.hash_password(value)

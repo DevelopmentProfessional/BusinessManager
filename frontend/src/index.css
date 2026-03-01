@@ -663,4 +663,31 @@ textarea.form-control {
   }
 }
 
+/* ========================================
+   BUTTON DESIGN SYSTEM
+   Utility classes for consistent button styling across the app.
+   Use these on Button_Toolbar className prop and standalone <button> elements.
+   ======================================== */
+@layer components {
+  /* Primary action — uses the app's secondary brand colour */
+  .btn-app-primary {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg transition-colors;
+  }
+
+  /* Destructive action */
+  .btn-app-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-colors;
+  }
+
+  /* Neutral / secondary action (filter buttons, secondary actions) */
+  .btn-app-secondary {
+    @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-0 transition-colors;
+  }
+
+  /* Cancel / close action (modal dismiss buttons) */
+  .btn-app-cancel {
+    @apply bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700 border-0 transition-colors;
+  }
+}
+
 

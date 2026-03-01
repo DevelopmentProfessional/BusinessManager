@@ -10,14 +10,14 @@ import useStore from '../../services/useStore';
  * @param {React.ReactNode} fallback - Optional fallback content to render if permission is denied
  * @param {boolean} hide - If true, renders nothing when permission is denied (default: true)
  */
-const Gate_Permission = ({ 
-  page, 
-  permission, 
-  children, 
-  fallback = null, 
-  hide = true 
+const Gate_Permission = ({
+  page,
+  permission,
+  children,
+  fallback = null,
+  hide = true
 }) => {
-  const { hasPermission } = useStore();
+  const { hasPermission, isOnline } = useStore();
   const [hasAccess, setHasAccess] = useState(() => hasPermission(page, permission));
   
   // Update access when permissions change
@@ -39,14 +39,20 @@ const Gate_Permission = ({
     }
   }, [page, permission, hasPermission]);
   
+  // Hide write/delete/admin actions when offline
+  const isWriteOp = ['write', 'delete', 'admin'].includes(permission);
+  if (!isOnline && isWriteOp) {
+    return hide ? null : <>{fallback}</>;
+  }
+
   if (hasAccess) {
     return <>{children}</>;
   }
-  
+
   if (!hide) {
     return <>{fallback}</>;
   }
-  
+
   return null;
 };
 

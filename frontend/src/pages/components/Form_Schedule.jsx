@@ -31,6 +31,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-01 | Claude  | P5-A — Added status field (APPOINTMENT_STATUS_OPTIONS, formData.status, submitData.status)
  * ============================================================
  */
 
@@ -71,6 +72,13 @@ const ATTENDEE_STATUS_STYLE = {
   accepted: { label: 'Accepted', bg: '#d1fae5', color: '#065f46' },
   declined: { label: 'Declined', bg: '#fee2e2', color: '#991b1b' },
 };
+
+const APPOINTMENT_STATUS_OPTIONS = [
+  { value: 'scheduled',  label: 'Scheduled'  },
+  { value: 'confirmed',  label: 'Confirmed'  },
+  { value: 'completed',  label: 'Completed'  },
+  { value: 'cancelled',  label: 'Cancelled'  },
+];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
@@ -193,7 +201,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         recurrence_end_type: appointment.recurrence_count ? 'count' : 'date',
         recurrence_end_date: recEndDate,
         recurrence_count: appointment.recurrence_count || '',
-        duration_minutes: appointment.duration_minutes || ''
+        duration_minutes: appointment.duration_minutes || '',
+        status: appointment.status || 'scheduled',
       };
     }
     return {
@@ -209,7 +218,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       recurrence_end_type: 'date',
       recurrence_end_date: '',
       recurrence_count: '',
-      duration_minutes: ''
+      duration_minutes: '',
+      status: 'scheduled',
     };
   };
 
@@ -343,7 +353,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         ? parseInt(formData.recurrence_count)
         : null,
       is_recurring_master: isSeries,
-      duration_minutes: parseInt(formData.duration_minutes)
+      duration_minutes: parseInt(formData.duration_minutes),
+      status: formData.status,
     };
 
     // Only include client_id and service_id if needed for this type
@@ -395,6 +406,17 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             placeholder="Select event type"
             required
             label="Event Type"
+          />
+
+          {/* Status */}
+          <Dropdown_Custom
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={APPOINTMENT_STATUS_OPTIONS}
+            placeholder="Select status"
+            required
+            label="Status"
           />
 
           {/* Meeting Title */}

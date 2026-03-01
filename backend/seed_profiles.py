@@ -27,10 +27,10 @@ from sqlmodel import Session, select
 
 try:
     from backend.database import create_db_and_tables, get_session
-    from backend.models import User, LeaveRequest, Attendance, Task
+    from backend.models import User, LeaveRequest, Attendance, Task, UserRole
 except ModuleNotFoundError:
     from database import create_db_and_tables, get_session
-    from models import User, LeaveRequest, Attendance, Task
+    from models import User, LeaveRequest, Attendance, Task, UserRole
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants
@@ -89,6 +89,18 @@ _PROFILE_EXTRAS = {
         location="Skin Studio", supervisor="Sarah Chen", reports_to_un="schen",
         vacation_days_used=2, sick_days_used=0,
     ),
+}
+
+_BENEFITS_DEFAULTS_BY_ROLE = {
+    UserRole.ADMIN: dict(employment_type="salary", pay_frequency="biweekly", salary=98000.0, hourly_rate=None, insurance_plan="Premium Health", vacation_days=20, sick_days=10),
+    UserRole.MANAGER: dict(employment_type="salary", pay_frequency="biweekly", salary=72000.0, hourly_rate=None, insurance_plan="Basic Health", vacation_days=15, sick_days=8),
+    UserRole.EMPLOYEE: dict(employment_type="salary", pay_frequency="weekly", salary=52000.0, hourly_rate=None, insurance_plan="Basic Health", vacation_days=12, sick_days=6),
+    UserRole.VIEWER: dict(employment_type="salary", pay_frequency="monthly", salary=42000.0, hourly_rate=None, insurance_plan="No Insurance", vacation_days=10, sick_days=5),
+}
+
+_LEAVE_NOTES = {
+    "vacation": "Auto-seeded vacation history",
+    "sick": "Auto-seeded sick leave history",
 }
 
 
@@ -217,7 +229,7 @@ def seed_employee_profiles(session: Session) -> None:
         print("  seed_employee_profiles: no users found — run seed_data.py first.")
         return
 
-    # ── 1. Fill in missing User profile fields ────────────────────────────────
+    # ── 1. Fill in missing User profile + benefits fields ─────────────────────
     updated = 0
     for un, extras in _PROFILE_EXTRAS.items():
         emp = by_un.get(un)
@@ -249,6 +261,52 @@ def seed_employee_profiles(session: Session) -> None:
             session.add(emp)
             updated += 1
 
+    # Backfill benefits for all users that still have missing compensation/insurance
+    for emp in all_users:
+        defaults = _BENEFITS_DEFAULTS_BY_ROLE.get(emp.role, _BENEFITS_DEFAULTS_BY_ROLE[UserRole.EMPLOYEE])
+        changed = False
+
+        if not emp.employment_type:
+            emp.employment_type = defaults["employment_type"]
+            changed = True
+
+        if not emp.pay_frequency:
+            emp.pay_frequency = defaults["pay_frequency"]
+            changed = True
+
+        if not emp.insurance_plan:
+            emp.insurance_plan = defaults["insurance_plan"]
+            changed = True
+
+        if emp.vacation_days is None:
+            emp.vacation_days = defaults["vacation_days"]
+            changed = True
+
+        if emp.sick_days is None:
+            emp.sick_days = defaults["sick_days"]
+            changed = True
+
+        if emp.vacation_days_used is None:
+            emp.vacation_days_used = 0
+            changed = True
+
+        if emp.sick_days_used is None:
+            emp.sick_days_used = 0
+            changed = True
+
+        if emp.employment_type == "hourly":
+            if emp.hourly_rate is None:
+                emp.hourly_rate = 22.0
+                changed = True
+        else:
+            if emp.salary is None:
+                emp.salary = defaults["salary"]
+                changed = True
+
+        if changed:
+            session.add(emp)
+            updated += 1
+
     try:
         session.commit()
         print(f"  ✓ {updated} employee records updated with profile fields")
@@ -257,34 +315,83 @@ def seed_employee_profiles(session: Session) -> None:
         raise
 
     # ── 2. Leave requests ─────────────────────────────────────────────────────
-    existing_lr = session.exec(select(LeaveRequest).limit(1)).first()
-    if not existing_lr:
-        lr_count = 0
-        for (un, ltype, s_str, e_str, days, status, notes, sup_un) in _LEAVE_REQUESTS:
-            emp = by_un.get(un)
-            if not emp:
+    lr_count = 0
+
+    # Seed canonical leave request set when those records don't already exist.
+    for (un, ltype, s_str, e_str, days, status, notes, sup_un) in _LEAVE_REQUESTS:
+        emp = by_un.get(un)
+        if not emp:
+            continue
+        exists = session.exec(
+            select(LeaveRequest).where(
+                LeaveRequest.user_id == emp.id,
+                LeaveRequest.leave_type == ltype,
+                LeaveRequest.start_date == s_str,
+                LeaveRequest.end_date == e_str,
+            )
+        ).first()
+        if exists:
+            continue
+        sup = by_un.get(sup_un) if sup_un else None
+        lr = LeaveRequest(
+            user_id        = emp.id,
+            supervisor_id  = sup.id if sup else None,
+            leave_type     = ltype,
+            start_date     = s_str,
+            end_date       = e_str,
+            days_requested = days,
+            status         = status,
+            notes          = notes,
+        )
+        session.add(lr)
+        lr_count += 1
+
+    # Ensure each non-viewer user has at least one vacation and one sick request.
+    for emp in all_users:
+        if emp.role == UserRole.VIEWER:
+            continue
+
+        sup = None
+        if emp.reports_to:
+            sup = next((u for u in all_users if u.id == emp.reports_to), None)
+
+        for leave_type in ("vacation", "sick"):
+            has_type = session.exec(
+                select(LeaveRequest).where(
+                    LeaveRequest.user_id == emp.id,
+                    LeaveRequest.leave_type == leave_type,
+                )
+            ).first()
+            if has_type:
                 continue
-            sup = by_un.get(sup_un) if sup_un else None
+
+            start = TODAY_DATE - timedelta(days=21 if leave_type == "vacation" else 12)
+            end = start if leave_type == "sick" else start + timedelta(days=1)
+            days_requested = 1.0 if leave_type == "sick" else 2.0
+            status = "approved"
+
             lr = LeaveRequest(
-                user_id        = emp.id,
-                supervisor_id  = sup.id if sup else None,
-                leave_type     = ltype,
-                start_date     = s_str,
-                end_date       = e_str,
-                days_requested = days,
-                status         = status,
-                notes          = notes,
+                user_id=emp.id,
+                supervisor_id=sup.id if sup else None,
+                leave_type=leave_type,
+                start_date=start.isoformat(),
+                end_date=end.isoformat(),
+                days_requested=days_requested,
+                status=status,
+                notes=_LEAVE_NOTES[leave_type],
             )
             session.add(lr)
             lr_count += 1
-        try:
-            session.commit()
+
+    try:
+        session.commit()
+        if lr_count:
             print(f"  ✓ {lr_count} leave requests")
-        except Exception:
-            session.rollback()
-            raise
-    else:
-        print("  - leave requests already present, skipping")
+        else:
+            print("  - leave requests already present, no additions needed")
+    except Exception:
+        session.rollback()
+        raise
 
     # ── 3. Attendance records ─────────────────────────────────────────────────
     existing_att = session.exec(select(Attendance).limit(1)).first()

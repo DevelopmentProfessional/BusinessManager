@@ -182,9 +182,8 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
           name="description"
           value={formData.description}
           onChange={handleChange}
-          className="form-control form-control-sm"
+          className="form-control form-control-sm min-h-[80px]"
           placeholder="Description"
-          style={{ height: '80px' }}
         />
         <label htmlFor="description">Description (optional)</label>
       </div>
@@ -295,7 +294,7 @@ export default function Documents() {
   const getStatusFilterButtonClass = () => {
     if (statusFilter === 'signed') return 'bg-green-600 text-white';
     if (statusFilter === 'unsigned') return 'bg-red-600 text-white';
-    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    return 'btn-app-secondary';
   };
 
   const filteredDocuments = useMemo(() => {
@@ -869,7 +868,7 @@ export default function Documents() {
                 className={`border-0 shadow-lg transition-all ${
                   showTemplates
                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'btn-app-secondary'
                 }`}
                 title={showTemplates ? 'Back to Documents' : 'Templates'}
               />
@@ -880,7 +879,7 @@ export default function Documents() {
                   <button
                     type="button"
                     onClick={handleNewTemplate}
-                    className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                    className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"
                     style={{ width: '3rem', height: '3rem' }}
                     title="New template"
                   >
@@ -910,7 +909,7 @@ export default function Documents() {
                       icon={PlusIcon}
                       label="Upload"
                       onClick={handleUploadDocument}
-                      className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                      className="btn-app-primary"
                     />
                   </Gate_Permission>
 
@@ -920,7 +919,7 @@ export default function Documents() {
                   icon={XMarkIcon}
                   label="Clear"
                   onClick={() => { setCategoryFilter('all'); setStatusFilter('all'); setTypeFilter('all'); }}
-                  className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  className="btn-app-danger"
                 />
               )}
 
@@ -933,7 +932,7 @@ export default function Documents() {
                   className={`border-0 shadow-lg transition-all ${
                     categoryFilter !== 'all'
                       ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'btn-app-secondary'
                   }`}
                   data-active={categoryFilter !== 'all'}
                 />
@@ -1000,7 +999,7 @@ export default function Documents() {
                   className={`border-0 shadow-lg transition-all ${
                     typeFilter !== 'all'
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'btn-app-secondary'
                   }`}
                   data-active={typeFilter !== 'all'}
                 />
@@ -1272,7 +1271,7 @@ export default function Documents() {
               </div>
               <button
                 type="submit"
-                className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow"
+                className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"
                 style={{ width: '3rem', height: '3rem' }}
                 title="Add category"
               >

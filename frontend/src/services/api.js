@@ -330,6 +330,8 @@ export const inventoryAPI = {
     return api.delete(`/isud/inventory/${id}`);
   },
   
+  invalidateCache: () => clearCache('inventory'),
+
   // Image management
   getImages: (inventoryId) => api.get(`/isud/inventory/${inventoryId}/images`),
   addImageUrl: (inventoryId, imageData) => {

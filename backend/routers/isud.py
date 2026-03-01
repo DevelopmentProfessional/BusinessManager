@@ -138,14 +138,21 @@ def _serialize_record(record, table_name: str, session=None):
                     InventoryImage.inventory_id == record.id
                 ).order_by(InventoryImage.sort_order)
                 images = session.exec(images_stmt).all()
-                
+
                 # Convert record to dict and add images
                 record_dict = record.model_dump() if hasattr(record, 'model_dump') else record.__dict__.copy()
                 record_dict['images'] = [
-                    InventoryImageRead.model_validate(img).model_dump(mode='json') 
+                    InventoryImageRead.model_validate(img).model_dump(mode='json')
                     for img in images
                 ]
-                
+
+                # Resolve supplier name from the FK
+                if record.supplier_id:
+                    supplier = session.get(Supplier, record.supplier_id)
+                    record_dict['supplier_name'] = supplier.name if supplier else None
+                else:
+                    record_dict['supplier_name'] = None
+
                 # Create and return the read schema instance
                 validated = read_schema.model_validate(record_dict)
                 if hasattr(validated, 'model_dump'):
@@ -410,6 +417,25 @@ async def insert(
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
+
+    # ── P1-E: Decrement inventory stock when a product is sold ────────────────
+    # Runs after the sale_transaction_item is committed so a failure here does
+    # not roll back the sale itself — the sale is already persisted.
+    if table_name.lower() in ('sale_transaction_item', 'sale_transaction_items'):
+        item_type = getattr(record, 'item_type', None)
+        item_id = getattr(record, 'item_id', None)
+        qty_sold = getattr(record, 'quantity', 1) or 1
+        if item_type == 'product' and item_id:
+            try:
+                inv = session.get(Inventory, item_id)
+                if inv is not None:
+                    inv.quantity = max(0, inv.quantity - qty_sold)
+                    session.add(inv)
+                    session.commit()
+            except Exception as e:
+                session.rollback()
+                print(f"Warning: stock decrement failed for inventory {item_id}: {e}")
+
     return _serialize_record(record, table_name)
 
 # ─── [9] UPDATE ENDPOINTS ──────────────────────────────────────────────────────

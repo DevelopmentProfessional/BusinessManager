@@ -259,7 +259,7 @@ export default function Services() {
         </div>
 
         {/* Fixed footer – headers + controls */}
-        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
@@ -277,7 +277,7 @@ export default function Services() {
           </table>
 
           {/* Controls */}
-          <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Search */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -301,7 +301,7 @@ export default function Services() {
                   icon={PlusIcon}
                   label="Add Service"
                   onClick={handleCreateService}
-                  className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  className="btn-app-primary"
                 />
               </Gate_Permission>
 
@@ -311,7 +311,7 @@ export default function Services() {
                   icon={XMarkIcon}
                   label="Clear"
                   onClick={() => setCategoryFilter('all')}
-                  className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  className="btn-app-danger"
                 />
               )}
 
@@ -324,7 +324,7 @@ export default function Services() {
                   className={`border-0 shadow-lg transition-all ${
                     categoryFilter !== 'all'
                       ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'btn-app-secondary'
                   }`}
                   data-active={categoryFilter !== 'all'}
                 />
