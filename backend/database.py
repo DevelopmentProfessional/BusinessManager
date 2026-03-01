@@ -615,6 +615,7 @@ def _ensure_service_duration_column_if_needed():
                 conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
 
 
+# ─── 10 MIGRATION: SCHEDULE COLUMNS ────────────────────────────────────────────
 def _ensure_schedule_extra_columns_if_needed():
     """Ensure schedule table has appointment_type and duration_minutes columns."""
     if DATABASE_URL.startswith("sqlite"):
@@ -641,6 +642,7 @@ def _ensure_schedule_extra_columns_if_needed():
             if "duration_minutes" not in col_names:
                 conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
 
+# ─── 11 MIGRATION: USER COLUMNS ────────────────────────────────────────────────
 def _ensure_user_extra_columns_if_needed():
     """Ensure user table has employee detail/benefit columns."""
     new_cols = {
@@ -679,6 +681,7 @@ def _ensure_user_extra_columns_if_needed():
                     conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
 
 
+# ─── 11b MIGRATION: USER PROFILE PICTURE ───────────────────────────────────────
 def _ensure_user_profile_picture_if_needed():
     """Ensure user table has profile_picture column."""
     if DATABASE_URL.startswith("sqlite"):
