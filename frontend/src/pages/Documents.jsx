@@ -1,3 +1,38 @@
+/*
+ * ============================================================
+ * FILE: Documents.jsx
+ *
+ * PURPOSE:
+ *   Document management page that enables uploading, viewing, editing,
+ *   signing, and deleting documents. Also provides category management,
+ *   filterable document and template lists, and a template editor for
+ *   reusable HTML content templates (invoices, emails, memos, etc.).
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports                        — React, router, icons, store, API helpers, and modal components
+ *   [2]  DocumentUploadForm Component   — Standalone drag-and-drop file upload form with description field
+ *   [3]  formatFileSize Helper          — Utility to convert bytes to a human-readable size string
+ *   [4]  Documents Component (export)   — Main page shell with store bindings and permission guard
+ *   [5]  State Declarations             — Documents list, filter state, modal open flags, category and template state
+ *   [6]  Derived / Computed Values      — categoryNameById map, entityTypeOptions list, filteredDocuments memo
+ *   [7]  Lifecycle / useEffect          — Initial fetch guard that loads documents, categories, and templates
+ *   [8]  Template API Handlers          — loadTemplates, handleNewTemplate, handleEditTemplate, handleSaveTemplate, handleDeleteTemplate
+ *   [9]  Document Data Loading          — loadDocuments (with retry), loadCategories (with retry)
+ *   [10] Document View / Edit Handlers  — handleView, handleOpenEdit, handleEditFromViewer, handleSaveEdit, handleOpenEditor
+ *   [11] Document Sign Handlers         — handleOpenSign, handleSubmitSign
+ *   [12] Document History Handlers      — handleOpenHistory, handleReplaceContent
+ *   [13] Upload / Delete Handlers       — handleUploadDocument, handleSubmitDocument, handleDeleteDocument
+ *   [14] Category Management Handlers   — handleCreateCategory, startEditCategory, cancelEditCategory, saveEditCategory, handleDeleteCategory
+ *   [15] Render / Return                — Table layout toggling between documents and templates, footer controls, and all modal outlets
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
+// ─── 1  IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -25,6 +60,7 @@ import Modal_Viewer_Document from './components/Modal_Viewer_Document';
 import Modal_Edit_Document from './components/Modal_Edit_Document';
 import Modal_Template_Editor from './components/Modal_Template_Editor';
 
+// ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     description: '',
@@ -170,6 +206,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   );
 }
 
+// ─── 3  FORMAT FILE SIZE HELPER ───────────────────────────────────────────
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -178,6 +215,7 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+// ─── 4  DOCUMENTS PAGE COMPONENT ─────────────────────────────────────────
 export default function Documents() {
   const navigate = useNavigate();
   const {
@@ -194,6 +232,7 @@ export default function Documents() {
     hasPermission,
   } = useStore();
 
+  // ─── 5  STATE DECLARATIONS ────────────────────────────────────────────────
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -241,6 +280,7 @@ export default function Documents() {
   const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
   const [templateTypeFilter, setTemplateTypeFilter] = useState('all');
 
+  // ─── 6  DERIVED / COMPUTED VALUES ────────────────────────────────────────
   const categoryNameById = useMemo(() => {
     return new Map(categories.map((cat) => [String(cat.id), cat.name]));
   }, [categories]);
@@ -287,6 +327,7 @@ export default function Documents() {
     });
   }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById]);
 
+  // ─── 7  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   // Ref to prevent double fetching in StrictMode
   const hasFetched = useRef(false);
 

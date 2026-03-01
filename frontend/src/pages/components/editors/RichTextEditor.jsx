@@ -1,3 +1,29 @@
+/*
+ * ============================================================
+ * FILE: RichTextEditor.jsx
+ *
+ * PURPOSE:
+ *   Wraps the Tiptap rich-text editor with a curated extension set (formatting,
+ *   alignment, indent, search/replace, etc.) and exposes the editor instance
+ *   imperatively via a forwarded ref so parent components can invoke toolbar
+ *   commands. External content updates are synced without clobbering in-progress
+ *   user edits.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports & Extension Setup — Tiptap core + all extension imports
+ *   [2] RichTextEditor Component  — editor initialisation, external-content sync
+ *                                   via useEffect, loading state, and EditorContent render
+ *   [3] Scoped CSS Styles         — embedded <style> block defining typography,
+ *                                   heading, list, code, blockquote, search highlight,
+ *                                   and dark-mode overrides for the Tiptap surface
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -10,6 +36,8 @@ import { Superscript } from '@tiptap/extension-superscript';
 import { Subscript } from '@tiptap/extension-subscript';
 import { Indent } from './extensions/Indent';
 import { SearchAndReplace } from './extensions/SearchAndReplace';
+
+// ─── 1 RICHTEXTEDITOR COMPONENT ────────────────────────────────────────────────
 
 const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange }, ref) {
   // Track what the editor currently contains so we can distinguish
@@ -74,6 +102,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
         editor={editor}
         className="flex-1 min-h-0 overflow-auto tiptap-editor"
       />
+      {/* ─── 2 SCOPED CSS STYLES ─────────────────────────────────────────────── */}
       <style>{`
         .tiptap-editor .tiptap {
           padding: 1.5rem;

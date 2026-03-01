@@ -433,11 +433,13 @@ export default function Employees() {
     }
   };
 
+  // ─── [14] CRUD HANDLERS ─────────────────────────────────────────────────────
   const handleCreate = () => {
     setEditingEmployee(null);
     openModal('employee-form');
   };
 
+  // ─── [15] FILTER / SEARCH HELPERS ───────────────────────────────────────────
   const roleOptions = useMemo(() => {
     const roles = employees.map((employee) => employee.role).filter(Boolean);
     return Array.from(new Set(roles)).sort();
@@ -474,6 +476,8 @@ export default function Employees() {
     });
   }, [employees, searchTerm, roleFilter, statusFilter]);
 
+  // handleEdit, handleDelete, and handleSubmit are the CRUD action handlers —
+  // continued from the handleCreate stub above under section [14].
   const handleEdit = (employee) => {
     console.log('handleEdit called with:', employee);
     setEditingEmployee(employee);
@@ -526,7 +530,7 @@ export default function Employees() {
     }
   };
 
-  // Permissions Management
+  // ─── [16] PERMISSION HANDLERS ───────────────────────────────────────────────
   const handleManagePermissions = async (user) => {
     console.log('🔥 MANAGE PERMISSIONS - Opening modal for user:', user);
     
@@ -730,7 +734,7 @@ export default function Employees() {
     }
   };
 
-  // Admin Functions
+  // ─── [17] ADMIN HANDLERS ────────────────────────────────────────────────────
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -801,6 +805,8 @@ export default function Employees() {
     }
   };
 
+  // ─── [18] REQUEST HANDLERS ──────────────────────────────────────────────────
+  // Handles leave, onboarding, and offboarding request loading and approval actions.
   const loadRequests = async (typeFilter = requestTypeFilter) => {
     setRequestsLoading(true);
     try {
@@ -874,6 +880,7 @@ export default function Employees() {
     loadRequests(requestTypeFilter);
   };
 
+  // ─── [19] INSURANCE HANDLERS ────────────────────────────────────────────────
   const handleOpenInsurance = async () => {
     setShowInsuranceModal(true);
     if (insurancePlans.length === 0) {
@@ -941,6 +948,8 @@ export default function Employees() {
     }
   };
 
+  // ─── [9b] SHARED CONSTANTS & PAYROLL PERIOD HELPERS ────────────────────────
+  // pages/permissions/roles are used by both the permission and role modals.
   const pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
   const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
@@ -1009,6 +1018,7 @@ export default function Employees() {
     return false;
   };
 
+  // ─── [20] MISC HELPERS ──────────────────────────────────────────────────────
   // Helper function to get manager name from reports_to ID
   const getManagerName = (reportsToId) => {
     if (!reportsToId) return '-';

@@ -41,9 +41,11 @@ import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI } from '../../servic
 import api from '../../services/api';
 import Widget_Signature from './Widget_Signature';
 
+// ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const PAGES = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
 const PERMISSION_TYPES = ['read', 'write', 'admin'];
 
+// ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Employee({
   employee,
   onSubmit,
@@ -101,6 +103,7 @@ export default function Form_Employee({
     sick_days_used: '',
   });
 
+  // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load available roles
   useEffect(() => {
     const loadRoles = async () => {
@@ -205,6 +208,7 @@ export default function Form_Employee({
     }
   }, [activeTab, employee?.id]);
 
+  // ─── 6 HANDLERS: SIGNATURE ───────────────────────────────────────────────────
   const handleSignatureUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -245,6 +249,7 @@ export default function Form_Employee({
     }
   };
 
+  // ─── 4 DERIVED DATA ──────────────────────────────────────────────────────────
   // Filter out current employee from potential supervisors.
   // Also enforce one-supervisoree constraint: exclude employees who already have someone
   // else reporting to them (they can't take on another supervisee).
@@ -269,6 +274,7 @@ export default function Form_Employee({
     return employeesList.filter(e => e.reports_to === employee.id);
   }, [employeesList, employee?.id]);
 
+  // ─── 5 HANDLERS: CORE ────────────────────────────────────────────────────────
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === 'reports_to') {
@@ -328,6 +334,7 @@ export default function Form_Employee({
     onSubmit(submitData);
   };
 
+  // ─── 7 HANDLERS: PERMISSIONS ─────────────────────────────────────────────────
   // Permission handlers
   const handleCreatePermission = async (e) => {
     e.preventDefault();
@@ -373,6 +380,7 @@ export default function Form_Employee({
     }
   };
 
+  // ─── 8 RENDER ─────────────────────────────────────────────────────────────────
   const tabs = [
     { key: 'details', label: 'Details' },
     { key: 'benefits', label: 'Benefits' },
@@ -394,6 +402,7 @@ export default function Form_Employee({
         </button>
       </div>
 
+      {/* ─── 9 RENDER: TAB PANES ────────────────────────────────────────────────── */}
       {/* Scrollable Body */}
       <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="employee-form" onSubmit={handleSubmit}>
@@ -879,6 +888,7 @@ export default function Form_Employee({
         </form>
       </div>
 
+      {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
       {/* Footer */}
       <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         {/* Tab Navigation */}

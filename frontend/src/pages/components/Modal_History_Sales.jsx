@@ -1,7 +1,30 @@
+/*
+ * ============================================================
+ * FILE: Modal_History_Sales.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal that displays a scrollable list of past sales transactions.
+ *   Provides a sidebar with filter controls for transaction type, price range,
+ *   and date range so the user can narrow the displayed history.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Header — title with transaction count badge
+ *   [2] Scrollable Transaction List — renders each sale with date, client, items, total, and payment method
+ *   [3] Footer — close/cancel button
+ *   [4] Right Sidebar Filters — services/products toggle pills, price range inputs, date range inputs, clear button
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React from 'react';
 import Modal from './Modal';
 import { ClockIcon } from '@heroicons/react/24/outline';
 
+// ─── 1 COMPONENT DEFINITION & JSX RENDER ─────────────────────────────────
 export default function Modal_History_Sales({
   isOpen,
   onClose,

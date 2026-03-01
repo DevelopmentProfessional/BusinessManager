@@ -1,8 +1,47 @@
+# ============================================================
+# FILE: database.py
+#
+# PURPOSE:
+#   Creates the SQLAlchemy engine, provides the FastAPI session dependency,
+#   and runs all incremental schema migrations that bring an existing database
+#   up to the current schema version on every server startup.
+#
+# FUNCTIONAL PARTS:
+#   [1] Imports                              — SQLModel, SQLAlchemy, stdlib
+#   [2] Engine Setup                         — URL resolution, SQLite/PostgreSQL
+#                                              engine creation with appropriate settings
+#   [3] Schema Version Tracking             — CURRENT_SCHEMA_VERSION constant,
+#                                              _schema_is_current(), _mark_schema_current()
+#   [4] Migration: Documents Table           — nullability fix, entity_type enum -> VARCHAR
+#   [5] Migration: Items / Inventory         — product -> item rename, FK column rename
+#   [6] Migration: Document Extra Columns    — owner_id, review_date, category_id,
+#                                              e-sign columns
+#   [7] Migration: Employee Columns          — user_id, supervisor columns on legacy table
+#   [8] Migration: InventoryImage Table      — table creation with indexes and triggers
+#   [9] Migration: Service Columns           — duration_minutes
+#   [10] Migration: Schedule Columns         — appointment_type, duration_minutes,
+#                                              recurrence columns
+#   [11] Migration: User Columns             — payroll, benefit, signature, profile picture
+#   [12] Migration: Leave Request            — supervisor_id column
+#   [13] Migration: AppSettings Columns      — company info columns
+#   [14] Migration: Chat Message Table       — table creation for older databases
+#   [15] Seed Functions                      — user colors, insurance plans
+#   [16] create_db_and_tables()              — orchestrates create_all + all migrations
+#   [17] get_session()                       — FastAPI dependency that yields a DB session
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
+# ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy import text
 import os
 from typing import Generator
 
+# ─── 2 ENGINE SETUP ────────────────────────────────────────────────────────────
 # Import database configuration
 try:
     from backend.db_config import get_database_url
@@ -23,6 +62,7 @@ else:
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
     engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 
+# ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
 CURRENT_SCHEMA_VERSION = "2026.02.27.1"
 
@@ -63,6 +103,7 @@ def _mark_schema_current():
     except Exception as e:
         print(f"Warning: Could not mark schema version: {e}")
 
+# ─── 4 MIGRATION: DOCUMENTS TABLE ──────────────────────────────────────────────
 def _migrate_documents_table_if_needed():
     """Ensure SQLite 'document' table allows NULL for entity fields.
     If existing table has NOT NULL constraints on entity_type/entity_id, migrate schema preserving data.
@@ -147,6 +188,7 @@ def _migrate_documents_table_if_needed():
         conn.execute(text("DROP TABLE document"))
         conn.execute(text("ALTER TABLE document_new RENAME TO document"))    
     
+# ─── 4b MIGRATION: DOCUMENT ENTITY_TYPE ENUM -> VARCHAR ────────────────────────
 def _migrate_document_entity_type_enum_to_varchar():
     """Convert document.entity_type from PostgreSQL enum to VARCHAR.
 
@@ -188,6 +230,7 @@ def _migrate_document_entity_type_enum_to_varchar():
         print("✓ Migrated document.entity_type from enum to VARCHAR")
 
 
+# ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
     # Always run create_all — idempotent metadata check, required for fresh deploys
@@ -220,11 +263,13 @@ def create_db_and_tables():
     _mark_schema_current()
     print("Migrations complete.")
 
+# ─── 17 SESSION DEPENDENCY ─────────────────────────────────────────────────────
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
     with Session(engine) as session:
         yield session
 
+# ─── 5 MIGRATION: ITEMS / INVENTORY ────────────────────────────────────────────
 def _migrate_products_and_inventory_to_items_if_needed():
     """SQLite-safe migrations to remove legacy products/assets and move to items.
 
@@ -306,6 +351,7 @@ def _migrate_products_and_inventory_to_items_if_needed():
         if table_exists("asset"):
             conn.execute(text("DROP TABLE asset"))
 
+# ─── 5b MIGRATION: ITEM TYPE COLUMN ────────────────────────────────────────────
 def _ensure_item_type_column_if_needed():
     """Ensure the 'item' table has a 'type' column; add it if missing (SQLite).
 
@@ -330,6 +376,7 @@ def _ensure_item_type_column_if_needed():
             # Ensure existing rows have a non-null value
             conn.execute(text("UPDATE item SET type = 'item' WHERE type IS NULL"))
 
+# ─── 5c MIGRATION: NORMALIZE ITEM TYPES ────────────────────────────────────────
 def _normalize_item_types_if_needed():
     """Normalize legacy item.type values to 'item'.
 
@@ -355,6 +402,7 @@ def _normalize_item_types_if_needed():
             except Exception:
                 pass
 
+# ─── 6 MIGRATION: DOCUMENT EXTRA COLUMNS ───────────────────────────────────────
 def _ensure_document_extra_columns_if_needed():
     """Ensure new columns exist on 'document' table: owner_id, review_date, category_id,
     is_signed, signed_by, signed_at.  Works on both SQLite and PostgreSQL.
@@ -400,6 +448,7 @@ def _ensure_document_extra_columns_if_needed():
                     conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
                     print(f"  + Added column document.{col} ({pg_type})")
 
+# ─── 7 MIGRATION: EMPLOYEE COLUMNS ─────────────────────────────────────────────
 def _ensure_employee_user_id_column_if_needed():
     """Ensure the 'employee' table has a 'user_id' column; add it if missing (SQLite)."""
     if not DATABASE_URL.startswith("sqlite"):
@@ -449,6 +498,7 @@ def _ensure_employee_supervisor_column_if_needed():
                 conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor VARCHAR"))
 
 
+# ─── 8 MIGRATION: INVENTORYIMAGE TABLE ─────────────────────────────────────────
 def _ensure_inventory_image_table_if_needed():
     """Ensure InventoryImage table exists and has proper structure."""
     if DATABASE_URL.startswith("sqlite"):
@@ -541,6 +591,7 @@ def _ensure_inventory_image_table_if_needed():
                 print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")
 
 
+# ─── 9 MIGRATION: SERVICE COLUMNS ──────────────────────────────────────────────
 def _ensure_service_duration_column_if_needed():
     """Ensure service table has duration_minutes column."""
     if DATABASE_URL.startswith("sqlite"):

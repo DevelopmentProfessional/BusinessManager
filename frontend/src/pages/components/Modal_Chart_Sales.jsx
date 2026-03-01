@@ -1,3 +1,24 @@
+/*
+ * ============================================================
+ * FILE: Modal_Chart_Sales.jsx
+ *
+ * PURPOSE:
+ *   Displays a Chart.js line chart of daily sales for the current month
+ *   inside a custom overlay modal. Uses randomly generated mock data to
+ *   populate the chart until real sales data is wired in.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Mock Data Generator — Builds random daily sales values for every day in the current month
+ *   [2] Chart Configuration — Responsive Chart.js options (labels, axes, dollar tick formatting)
+ *   [3] Modal Component — Conditional overlay rendering the chart and a Close button
+ *   [4] Inline Styles — Style objects for overlay, modal container, chart wrapper, and button
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 `import React from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -22,6 +43,7 @@ ChartJS.register(
   Legend
 );
 
+// ─── 1 MOCK DATA GENERATOR ─────────────────────────────────────────────────
 // Generate mock data for the current month
 const generateMockData = () => {
   const now = new Date();
@@ -46,6 +68,7 @@ const generateMockData = () => {
   };
 };
 
+// ─── 2 CHART CONFIGURATION ─────────────────────────────────────────────────
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -73,6 +96,7 @@ const chartOptions = {
   }
 };
 
+// ─── 3 MODAL COMPONENT ─────────────────────────────────────────────────────
 const Modal_Chart_Sales = ({ isOpen, onClose }) => {
   if (!isOpen) {
     return null;
@@ -94,6 +118,7 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
   );
 };
 
+// ─── 4 INLINE STYLES ───────────────────────────────────────────────────────
 const styles = {
   overlay: {
     position: 'fixed',

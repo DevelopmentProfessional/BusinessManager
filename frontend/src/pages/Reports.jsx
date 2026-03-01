@@ -465,6 +465,7 @@ export default function Reports() {
   const canUseService = ['appointments', 'services', 'revenue'].includes(selectedReport?.id || '');
   const canUseEmployee = ['appointments', 'employees', 'attendance'].includes(selectedReport?.id || '');
 
+  // ─── 10 PDF EXPORT HANDLER ───────────────────────────────────────────────
   const handleExportPdf = () => {
     if (!selectedReport) return;
 
@@ -517,6 +518,7 @@ export default function Reports() {
     printWindow.print();
   };
 
+  // ─── 11 RENDER ───────────────────────────────────────────────────────────
   if (loading && !selectedReport) {
     return (
       <div className="flex justify-center items-center h-64">

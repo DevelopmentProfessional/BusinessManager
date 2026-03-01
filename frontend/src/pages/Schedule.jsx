@@ -160,6 +160,7 @@ export default function Schedule() {
     return () => clearInterval(timer);
   }, []);
 
+  // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   // Schedule settings state
   const [scheduleSettings, setScheduleSettings] = useState({
     start_of_day: '06:00',
@@ -249,6 +250,7 @@ export default function Schedule() {
     loadSchedule();
   }, [setAppointments, setClients, setServices, setEmployees, isAuthenticated]);
 
+  // ─── 6 DERIVED DATA ──────────────────────────────────────────────────────────
   const employeeColorMap = useMemo(() => {
     const entries = employees.map((employee) => [employee.id, employee.color]);
     return new Map(entries);
@@ -300,6 +302,7 @@ export default function Schedule() {
     });
   }, [appointments, filters]);
 
+  // ─── 7 CALENDAR UTILITIES ────────────────────────────────────────────────────
   // Get calendar data based on current view
   // Helper to check if a day is enabled based on settings
   const isDayEnabled = (date) => {
@@ -421,6 +424,7 @@ export default function Schedule() {
       ? 'max-content minmax(0, 1fr)'
       : `repeat(${numEnabledDays}, minmax(0, 1fr))`;
 
+  // ─── 8 AUTO-SCROLL EFFECT ────────────────────────────────────────────────────
   // Auto-scroll to current time when switching to day or week view
   useEffect(() => {
     if ((currentView === 'day' || currentView === 'week') && calendarGridRef.current) {
@@ -441,6 +445,7 @@ export default function Schedule() {
     }
   }, [currentView, scheduleSettings.start_of_day, scheduleSettings.end_of_day]);
 
+  // ─── 9 PERMISSION HELPERS ────────────────────────────────────────────────────
   const canCreateSchedule = useCallback(() => {
     return (
       hasPermission('schedule', 'write') ||
@@ -466,6 +471,7 @@ export default function Schedule() {
     return false;
   }, [employees, hasPermission, user]);
 
+  // ─── 10 EVENT / CLICK HANDLERS ───────────────────────────────────────────────
   const handleAppointmentClick = useCallback(async (e, appointment) => {
     e.stopPropagation();
     if (!canEditAppointment(appointment)) return;
@@ -493,6 +499,7 @@ export default function Schedule() {
     setIsModalOpen(true);
   }, [canCreateSchedule]);
 
+  // ─── 11 DATA REFRESH ─────────────────────────────────────────────────────────
   // Helper to refresh schedule data (uses cache deduplication)
   const refreshSchedules = useCallback(async () => {
     try {
@@ -506,6 +513,7 @@ export default function Schedule() {
     }
   }, [setAppointments]);
 
+  // ─── 12 ATTENDEE SYNC UTILITIES ──────────────────────────────────────────────
   const normalizeIds = useCallback((value) => {
     if (Array.isArray(value)) return value.filter(Boolean);
     if (!value) return [];
@@ -558,6 +566,7 @@ export default function Schedule() {
     }
   }, []);
 
+  // ─── 13 CRUD HANDLERS ────────────────────────────────────────────────────────
   const handleSubmitAppointment = useCallback(async (appointmentData) => {
     const employeeIds = normalizeIds(appointmentData.employee_ids ?? appointmentData.employee_id);
     const clientIds = normalizeIds(appointmentData.client_ids ?? appointmentData.client_id);
@@ -610,7 +619,7 @@ export default function Schedule() {
     setSelectedAttendees([]);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
 
-  // Drag and drop handlers
+  // ─── 14 DRAG & DROP HANDLERS ─────────────────────────────────────────────────
   const handleDragStart = useCallback((e, appointment) => {
     setDraggedAppointment(appointment);
     e.dataTransfer.effectAllowed = 'move';
@@ -676,6 +685,7 @@ export default function Schedule() {
     setEditingAppointment(null);
   }, []);
 
+  // ─── 15 NAVIGATION HANDLERS ──────────────────────────────────────────────────
   // Navigation handlers for swipe gestures with date bounds validation
   const handleNavigatePrevious = useCallback(() => {
     const newDate = new Date(currentDate);
@@ -735,6 +745,7 @@ export default function Schedule() {
     setCurrentDate(newDate);
   }, [currentDate, currentView]);
 
+  // ─── 16 TOUCH / SWIPE HANDLERS ───────────────────────────────────────────────
   // Touch handlers for swipe navigation on mobile with visual feedback
   const handleTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -801,6 +812,7 @@ export default function Schedule() {
     touchStartY.current = 0;
   }, [handleNavigateNext, handleNavigatePrevious]);
 
+  // ─── 17 RENDER HELPERS ───────────────────────────────────────────────────────
   const isCurrentMonth = (date) => {
     return date.getMonth() === currentDate.getMonth();
   };
@@ -814,6 +826,7 @@ export default function Schedule() {
     return appointmentsForDate;
   };
  
+  // ─── 18 RENDER ───────────────────────────────────────────────────────────────
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }

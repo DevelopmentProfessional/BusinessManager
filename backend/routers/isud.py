@@ -1,3 +1,41 @@
+# ============================================================
+# FILE: isud.py
+#
+# PURPOSE:
+#   Provides a single generic CRUD router mounted at
+#   `/api/v1/isud/{table_name}` that dynamically dispatches Insert,
+#   Select, Update, and Delete operations against any SQLModel table
+#   without needing a dedicated router per model.  It also hosts
+#   inventory-image management endpoints and lightweight sync-check
+#   helpers used by the frontend cache layer.
+#
+# FUNCTIONAL PARTS:
+#   [1]  Imports                        — stdlib, third-party, and local imports
+#   [2]  Constants                      — UPLOAD_DIR definition and directory creation
+#   [3]  Read Schema Map                — READ_SCHEMA_MAP dict mapping table names
+#                                         to their Pydantic read schemas
+#   [4]  Serialization Helpers          — _serialize_record, _serialize_records
+#   [5]  Model Discovery / Mapping      — _MODEL_MAPPING_CACHE, _build_model_mapping,
+#                                         get_model_mapping, get_model_class
+#   [6]  Router Definition              — APIRouter instantiation
+#   [7]  Filter Coercion Helper         — _coerce_filter_value
+#   [8]  Insert Endpoints               — POST /{table_name}/insert (multipart/JSON),
+#                                         POST /{table_name} (JSON-only)
+#   [9]  Update Endpoints               — PUT /{table_name}/{id}, PUT /{table_name}
+#  [10]  Special Endpoints              — GET /inventory/locations,
+#                                         GET /{table_name}/sync
+#  [11]  Select Endpoints (GET)         — GET /{table_name}, GET /{table_name}/{id}
+#  [12]  Delete Endpoint                — DELETE /{table_name}/{id}
+#  [13]  Inventory Image Management     — POST/GET/PUT/DELETE /inventory/{id}/images/*,
+#                                         GET /inventory/images/{id}/file
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
+# ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
 import os
 import inspect
 import uuid as uuid_module
@@ -14,6 +52,7 @@ from sqlmodel import SQLModel, select as sql_select
 from ..database import get_session
 from ..models import *
 
+# ─── [2] CONSTANTS ─────────────────────────────────────────────────────────────
 # Upload dir for document file cleanup on delete (used when table is "document")
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 
@@ -31,6 +70,7 @@ def _resolve_document_path(file_path: str, upload_dir: str) -> str:
         return fallback
     return file_path
 
+# ─── [3] READ SCHEMA MAP (CONSTANTS) ──────────────────────────────────────────
 # Mapping of table names to their safe Read schemas (to avoid relationship serialization issues)
 READ_SCHEMA_MAP = {
     'client': ClientRead,
@@ -82,6 +122,7 @@ READ_SCHEMA_MAP = {
     'service_locations': ServiceLocationRead,
 }
 
+# ─── [4] SERIALIZATION HELPERS ────────────────────────────────────────────────
 def _serialize_record(record, table_name: str, session=None):
     """Serialize a record using the appropriate Read schema if available."""
     if record is None:
@@ -162,6 +203,7 @@ def _serialize_records(records, table_name: str, session=None):
     # No schema - use model_dump directly with relationship exclusion
     return [(r.model_dump(mode='json', exclude={'supplier', 'inventory_items', 'schedules'}) if hasattr(r, 'model_dump') else r) for r in records]
 
+# ─── [5] MODEL DISCOVERY / MAPPING HELPERS ────────────────────────────────────
 # In-memory cache for model mapping
 _MODEL_MAPPING_CACHE: Optional[Dict[str, Type[SQLModel]]] = None
 
@@ -210,8 +252,10 @@ def get_model_class(table_name: str) -> Type[SQLModel]:
         )
     return mapping[table_name]
 
+# ─── [6] ROUTER DEFINITION ────────────────────────────────────────────────────
 router = APIRouter()
 
+# ─── [7] FILTER COERCION HELPER ───────────────────────────────────────────────
 def _coerce_filter_value(model_class: Type[SQLModel], column: str, raw_value: str) -> Any:
     field_info = model_class.model_fields.get(column)
     if field_info is None:
@@ -235,6 +279,7 @@ def _coerce_filter_value(model_class: Type[SQLModel], column: str, raw_value: st
 
     return raw_value
 
+# ─── [8] INSERT ENDPOINTS ──────────────────────────────────────────────────────
 @router.post("/{table_name}/insert")
 async def insert_with_file(
     table_name: str,
@@ -367,6 +412,7 @@ async def insert(
     session.refresh(record)
     return _serialize_record(record, table_name)
 
+# ─── [9] UPDATE ENDPOINTS ──────────────────────────────────────────────────────
 @router.put("/{table_name}/{record_id}")
 async def update_by_id(
     table_name: str,
@@ -399,6 +445,7 @@ async def update_by_id(
     return _serialize_record(record, table_name, session)
 
 
+# ─── [10] SPECIAL ENDPOINTS ───────────────────────────────────────────────────
 # ===== INVENTORY LOCATIONS ENDPOINT (must be before generic routes) =====
 
 @router.get("/inventory/locations")
@@ -447,6 +494,7 @@ async def sync_check(
     return {"count": total, "max_created_at": max_created_at}
 
 
+# ─── [11] SELECT ENDPOINTS (GET) ──────────────────────────────────────────────
 @router.get("/{table_name}")
 async def select(
     table_name: str,
@@ -580,6 +628,7 @@ async def update(
     session.refresh(record)
     return _serialize_record(record, table_name)
 
+# ─── [12] DELETE ENDPOINT ──────────────────────────────────────────────────────
 @router.delete("/{table_name}/{record_id}")
 async def delete_by_id(
     table_name: str,
@@ -618,6 +667,7 @@ async def delete_by_id(
     return {"count": 1}
 
 
+# ─── [13] INVENTORY IMAGE MANAGEMENT ENDPOINTS ────────────────────────────────
 # ===== INVENTORY IMAGE MANAGEMENT ENDPOINTS =====
 
 @router.post("/inventory/{inventory_id}/images/url")

@@ -35,10 +35,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
-/**
- * Modal_Checkout_Sales - A reusable checkout/payment modal component
- * Handles card and cash payments with validation and processing animation
- */
+// ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Checkout_Sales({
   isOpen,
   onClose,
@@ -66,6 +63,7 @@ export default function Modal_Checkout_Sales({
   const total = subtotal + tax;
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   
+  // ─── 2 INPUT FORMATTERS ────────────────────────────────────────────────────
   // Format card number with spaces
   const formatCardNumber = (value) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -102,6 +100,7 @@ export default function Modal_Checkout_Sales({
     if (v.length <= 4) setCardCVC(v);
   };
   
+  // ─── 3 VALIDATION & FORM HANDLERS ──────────────────────────────────────────
   const isCardValid = () => {
     return cardNumber.replace(/\s/g, '').length >= 15 && 
            cardExpiry.length === 5 && 
@@ -157,6 +156,7 @@ export default function Modal_Checkout_Sales({
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true}>
       <div className="bg-white dark:bg-gray-900 w-full h-full  max-w-2xl overflow-hidden">
+        {/* ─── 4 MODAL HEADER ──────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex items-center justify-between p-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
           <div className="flex items-center gap-1">
@@ -177,6 +177,7 @@ export default function Modal_Checkout_Sales({
           </button>
         </div>
         
+        {/* ─── 5 PAYMENT SUCCESS SCREEN ────────────────────────────────────── */}
         {paymentSuccess ? (
           <div className="p-4 text-center">
             <div className="w-24 h-24 mx-auto mb-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center animate-in zoom-in duration-300">
@@ -227,6 +228,7 @@ export default function Modal_Checkout_Sales({
           </div>
         ) : (
           <div className="flex flex-col md:flex-row max-h-[calc(90vh-80px)] overflow-hidden">
+            {/* ─── 6 ORDER SUMMARY PANEL ───────────────────────────────────── */}
             {/* Order Summary */}
             <div className="md:w-2/5 p-1 bg-gray-50 dark:bg-gray-800/50 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-1">
@@ -279,10 +281,12 @@ export default function Modal_Checkout_Sales({
               </div>
             </div>
             
+            {/* ─── 7 PAYMENT FORM ──────────────────────────────────────────── */}
             {/* Payment Form */}
             <div className="md:w-3/5 p-1 overflow-y-auto">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h3>
               
+              {/* ─── 8 PAYMENT METHOD TABS ───────────────────────────────── */}
               {/* Payment Method Tabs */}
               <div className="flex gap-1 mb-1">
                 <button

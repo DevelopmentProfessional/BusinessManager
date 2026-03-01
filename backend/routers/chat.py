@@ -1,3 +1,23 @@
+# ============================================================
+# FILE: chat.py
+#
+# PURPOSE:
+#   Provides direct one-to-one messaging between authenticated users. Supports
+#   text messages and document-sharing messages, read-status tracking, and
+#   per-sender unread counts to power a chat notification badge in the UI.
+#
+# FUNCTIONAL PARTS:
+#   [1] Message History — retrieve the last 100 messages between two users
+#   [2] Send Message — post a new text or document message to another user
+#   [3] Mark as Read — bulk-mark all unread messages from a sender as read
+#   [4] Unread Counts — return per-sender unread message counts for the current user
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, or_, and_
@@ -16,6 +36,8 @@ except ModuleNotFoundError:
 
 router = APIRouter()
 
+
+# ─── 1 MESSAGE HISTORY ─────────────────────────────────────────────────────────
 
 @router.get("/chat/messages/{other_user_id}", response_model=list[ChatMessageRead], tags=["chat"])
 def get_chat_history(
@@ -43,6 +65,8 @@ def get_chat_history(
     ).all()
     return messages
 
+
+# ─── 2 SEND MESSAGE ────────────────────────────────────────────────────────────
 
 @router.post("/chat/messages/{receiver_id}", response_model=ChatMessageRead, tags=["chat"])
 def send_message(
@@ -76,6 +100,8 @@ def send_message(
     return msg
 
 
+# ─── 3 MARK AS READ ────────────────────────────────────────────────────────────
+
 @router.put("/chat/messages/{other_user_id}/read", tags=["chat"])
 def mark_as_read(
     other_user_id: UUID,
@@ -100,6 +126,8 @@ def mark_as_read(
         raise HTTPException(status_code=500, detail=f"Failed to mark messages as read: {exc}")
     return {"marked_read": len(messages)}
 
+
+# ─── 4 UNREAD COUNTS ───────────────────────────────────────────────────────────
 
 @router.get("/chat/unread-counts", tags=["chat"])
 def get_unread_counts(
