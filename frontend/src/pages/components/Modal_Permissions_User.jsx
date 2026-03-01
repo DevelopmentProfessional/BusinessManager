@@ -1,3 +1,26 @@
+/*
+ * ============================================================
+ * FILE: Modal_Permissions_User.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal for viewing and editing an individual user's page-level permissions.
+ *   Supports adding new page/permission pairs, toggling grant/deny status, deleting permissions,
+ *   and configuring schedule-specific special permissions (view-all / write-all).
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Header — title bar with close button
+ *   [2] Add New Permission Form — page and permission selectors with submit
+ *   [3] Schedule Special Permissions — conditional view-all and write-all checkboxes
+ *   [4] Current Permissions Table — tabular list with toggle and delete actions per row
+ *   [5] Footer — centered close button
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React from 'react';
 import Modal from './Modal';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -21,6 +44,7 @@ export default function Modal_Permissions_User({
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Permissions</h6>
@@ -31,6 +55,7 @@ export default function Modal_Permissions_User({
 
         {/* Scrollable Body */}
         <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+          {/* ─── 2 ADD NEW PERMISSION FORM ──────────────────────────────────────── */}
           {/* Add New Permission Form */}
           <form onSubmit={onCreatePermission} className="mb-4 p-3 border rounded">
             <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Add New Permission</h5>
@@ -68,6 +93,7 @@ export default function Modal_Permissions_User({
             </button>
           </form>
 
+          {/* ─── 3 SCHEDULE SPECIAL PERMISSIONS ─────────────────────────────────── */}
           {/* Schedule Special Permissions */}
           {newPermission.page === 'schedule' && (
             <div className="mt-4 p-3 border rounded-lg bg-light">
@@ -111,6 +137,7 @@ export default function Modal_Permissions_User({
             </div>
           )}
 
+          {/* ─── 4 CURRENT PERMISSIONS TABLE ────────────────────────────────────── */}
           {/* Current Permissions Table */}
           <div className="mt-4">
             <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Current Permissions</h5>
@@ -161,6 +188,7 @@ export default function Modal_Permissions_User({
           </div>
         </div>
 
+        {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex align-items-center">

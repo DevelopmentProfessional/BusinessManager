@@ -1,3 +1,24 @@
+/*
+ * ============================================================
+ * FILE: Modal_Requests_Employee.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal that displays and manages employee requests (leave, onboarding,
+ *   offboarding). Groups requests by status (approved, denied, pending) and allows
+ *   managers to approve or deny pending requests inline.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Header — title bar with close button
+ *   [2] Scrollable Request List — grouped by status with time-filter applied, approve/deny buttons for pending
+ *   [3] Footer — request type filter pills, time-range dropdown, and close button
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React from 'react';
 import Modal from './Modal';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -19,6 +40,7 @@ export default function Modal_Requests_Employee({
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Requests</h6>
@@ -27,6 +49,7 @@ export default function Modal_Requests_Employee({
           </button>
         </div>
 
+        {/* ─── 2 SCROLLABLE REQUEST LIST ──────────────────────────────────────── */}
         <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
           {requestsLoading ? (
             <div className="text-center py-4">
@@ -101,6 +124,7 @@ export default function Modal_Requests_Employee({
           )}
         </div>
 
+        {/* ─── 3 FOOTER ───────────────────────────────────────────────────────── */}
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           {/* Row 1: Type filter pills */}

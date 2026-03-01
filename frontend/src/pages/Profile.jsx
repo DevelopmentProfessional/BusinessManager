@@ -321,6 +321,7 @@ const Profile = () => {
     row2ObsRef.current = obs;
   }, []);
 
+  // ─── 6 SETTINGS LOAD EFFECTS ─────────────────────────────────────────────
   // Sync local branding when global branding changes
   useEffect(() => { setLocalBranding(branding); }, [branding]);
 
@@ -368,6 +369,7 @@ const Profile = () => {
     loadSchedule();
   }, []);
 
+  // ─── 7 DATABASE / IMPORT EFFECTS ─────────────────────────────────────────
   // Load available tables when database tab opens
   useEffect(() => {
     if (openAccordion === 'database' && availableTables.length === 0) {
@@ -380,6 +382,7 @@ const Profile = () => {
     if (selectedTable) loadTableColumns(selectedTable);
   }, [selectedTable]);
 
+  // ─── 8 SETTINGS HANDLERS ─────────────────────────────────────────────────
   const toNumber = (value) => {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -488,6 +491,7 @@ const Profile = () => {
 
 
 
+  // ─── 9 CSV IMPORT HANDLERS ───────────────────────────────────────────────
   const loadTables = async () => {
     try {
       const res = await schemaAPI.getTables();
@@ -591,6 +595,7 @@ const Profile = () => {
     if (csvFileInputRef.current) csvFileInputRef.current.value = '';
   };
 
+  // ─── 10 USER SYNC HELPER ─────────────────────────────────────────────────
   const syncCurrentUser = async () => {
     if (!user?.id) return;
     try {
@@ -606,6 +611,7 @@ const Profile = () => {
     }
   };
 
+  // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
   // Load pay slips when wages accordion opens
   useEffect(() => {
     if (openAccordion !== 'wages' || !user?.id) return;
@@ -625,6 +631,7 @@ const Profile = () => {
     return () => { cancelled = true; };
   }, [openAccordion, user?.id]);
 
+  // ─── 12 LEAVE REQUEST EFFECTS & HANDLERS ─────────────────────────────────
   // Load leave requests whenever benefits accordion opens or Leave Management modal opens
   useEffect(() => {
     if ((openAccordion !== 'benefits' && !leaveManagementOpen) || !user?.id) return;
@@ -739,6 +746,7 @@ const Profile = () => {
     }
   };
 
+  // ─── 13 ACTION HANDLERS ───────────────────────────────────────────────────
   const handleSwitchEnvironment = async (env) => {
     if (env === currentDbEnvironment || !user?.id) return;
     setDbLoading(true);
@@ -814,6 +822,7 @@ const Profile = () => {
     if (ok) setColorPickerOpen(false);
   };
 
+  // ─── 14 PERFORMANCE TRACKING EFFECT ──────────────────────────────────────
   // Finalize performance report when Profile is fully loaded
   useEffect(() => {
     if (getPerformanceSessionActive()) {
@@ -840,6 +849,7 @@ const Profile = () => {
     }
   }, [user]);
 
+  // ─── 15 RENDER HELPERS ───────────────────────────────────────────────────
   if (!user) {
     return (
       <div className="container-fluid py-1">
@@ -915,6 +925,7 @@ const Profile = () => {
     flexDirection: 'column',
   };
 
+  // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
     <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: '100dvh' }}>
       

@@ -1,11 +1,49 @@
+/*
+ * ============================================================
+ * FILE: Form_Service.jsx
+ *
+ * PURPOSE:
+ *   Multi-tab create/edit form for a service record. The Details tab
+ *   captures core fields (name, category, price, duration, image).
+ *   When editing, additional tabs allow managing the service's linked
+ *   resources, assets, employees, and locations via live API calls.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants          — TABS array
+ *   [2] State              — form fields; lookup data (inventory, employees);
+ *                            relationship lists (resources, assets, employees,
+ *                            locations); image state; "add row" state
+ *   [3] Effects            — populate form on edit; load inventory and employee
+ *                            lookups; load service relations when service.id exists
+ *   [4] Derived Data       — filtered inventory sets (locationItems, resourceItems,
+ *                            assetItems); linked-ID sets; name resolver helpers
+ *   [5] Handlers: Core     — handleChange, handlePhotoCapture, handleSubmit
+ *   [6] Handlers: Relations — add/remove/update for resources, assets, employees,
+ *                            and locations; shared error-wrapping utility
+ *   [7] Render: Header     — title ("Add Service" / "Edit Service")
+ *   [8] Render: Details Tab — image preview/capture panel, core fields form
+ *   [9] Render: Relation Tabs — Resources, Assets, Employees, Locations tabs
+ *                              (each with scrollable list + sticky add row)
+ *  [10] Render: Footer     — tab navigation bar (edit mode only), Delete,
+ *                            Cancel, and Save action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI, employeesAPI, serviceRelationsAPI } from '../../services/api';
 import Widget_Camera from './Widget_Camera';
 
+// ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const TABS = ['details', 'resources', 'assets', 'employees', 'locations'];
 
+// ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Service({ service, onSubmit, onCancel, onDelete, canDelete }) {
   const [activeTab, setActiveTab] = useState('details');
 
@@ -44,6 +82,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
   const [newLocation, setNewLocation] = useState({ inventory_id: '' });
   const [tabError, setTabError] = useState('');
 
+  // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Populate form when editing
   useEffect(() => {
     if (service) {

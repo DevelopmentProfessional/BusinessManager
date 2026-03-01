@@ -1,5 +1,30 @@
+/*
+ * ============================================================
+ * FILE: Button_Toolbar.jsx
+ *
+ * PURPOSE:
+ *   A toolbar button component that renders an icon (and optionally a text label)
+ *   inside a pill or circle shape. It adapts its appearance and layout when
+ *   Training Mode is active — expanding to show a simplified action label
+ *   alongside the icon and increasing margins to give extra breathing room.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Training Mode Helpers — withTrainingModeMargin adjusts margin Tailwind
+ *       classes; simplifyTrainingLabel strips filler words from the button label
+ *   [2] Button Component — Reads Training Mode state, computes effective classes
+ *       and display label, and renders the Bootstrap btn element with icon and
+ *       optional text span
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React from 'react';
 import useViewMode from '../../services/useViewMode';
+
+// ─── 1 TRAINING MODE HELPERS ───────────────────────────────────────────────────
 
 function withTrainingModeMargin(className, isTrainingMode) {
   if (!isTrainingMode) return className;
@@ -35,6 +60,8 @@ function simplifyTrainingLabel(normalizedLabel, isTrainingMode) {
 
   return normalizedLabel;
 }
+
+// ─── 2 BUTTON COMPONENT ────────────────────────────────────────────────────────
 
 export default function Button_Toolbar({ icon: Icon, label, onClick, className = '', disabled = false, badge, style = {}, ...rest }) {
   const { isTrainingMode } = useViewMode();

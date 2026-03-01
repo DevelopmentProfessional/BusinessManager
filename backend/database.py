@@ -705,6 +705,7 @@ def _ensure_user_profile_picture_if_needed():
                 conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_picture VARCHAR'))
 
 
+# ─── 15 SEED: USER COLORS ──────────────────────────────────────────────────────
 def _seed_user_colors_if_needed():
     """Assign unique colors to users that do not have one."""
     def _hsl_to_hex(h: float, s: float, l: float) -> str:
@@ -797,6 +798,7 @@ def _seed_user_colors_if_needed():
                 )
 
 
+# ─── 11c MIGRATION: SIGNATURE COLUMNS ──────────────────────────────────────────
 def _ensure_signature_columns_if_needed():
     """Ensure signature-related columns exist on user and document tables.
 
@@ -861,6 +863,7 @@ def _ensure_signature_columns_if_needed():
                     print(f"  + Added column document.{col} ({pg_type})")
 
 
+# ─── 15b SEED: INSURANCE PLANS ─────────────────────────────────────────────────
 def _seed_insurance_plans_if_needed():
     """Seed the insurance_plan table with default plans if it is empty."""
     default_plans = [
@@ -918,6 +921,7 @@ def _seed_insurance_plans_if_needed():
         print(f"✓ Seeded {len(default_plans)} insurance plans")
 
 
+# ─── 11d MIGRATION: USER PAYROLL COLUMNS ───────────────────────────────────────
 def _ensure_user_payroll_columns_if_needed():
     """Ensure user table has hourly_rate and employment_type columns for payroll support."""
     new_cols = {
@@ -950,6 +954,7 @@ def _ensure_user_payroll_columns_if_needed():
                     print(f"  + Added column user.{col} ({pg_type})")
 
 
+# ─── 11e MIGRATION: INSURANCE PLAN MONTHLY DEDUCTION ───────────────────────────
 def _ensure_insurance_plan_monthly_deduction_if_needed():
     """Ensure insurance_plan table has monthly_deduction column."""
     if DATABASE_URL.startswith("sqlite"):
@@ -976,6 +981,7 @@ def _ensure_insurance_plan_monthly_deduction_if_needed():
                 print("  + Added column insurance_plan.monthly_deduction")
 
 
+# ─── 10b MIGRATION: SCHEDULE RECURRENCE COLUMNS ────────────────────────────────
 def _ensure_schedule_recurrence_columns_if_needed():
     """Ensure schedule table has recurrence-related columns."""
     new_cols_sqlite = {
@@ -1018,6 +1024,7 @@ def _ensure_schedule_recurrence_columns_if_needed():
                     print(f"  + Added column schedule.{col} ({col_type})")
 
 
+# ─── 14 MIGRATION: CHAT MESSAGE TABLE ──────────────────────────────────────────
 def _ensure_chat_message_table_if_needed():
     """Ensure the chat_message table exists with all required columns.
 
@@ -1072,6 +1079,7 @@ def _ensure_chat_message_table_if_needed():
                 print("✓ Created chat_message table (PostgreSQL)")
 
 
+# ─── 12 MIGRATION: LEAVE REQUEST SUPERVISOR ID ─────────────────────────────────
 def _ensure_leave_request_supervisor_id_if_needed():
     """Ensure leave_request table has a supervisor_id column."""
     if DATABASE_URL.startswith("sqlite"):
@@ -1098,6 +1106,7 @@ def _ensure_leave_request_supervisor_id_if_needed():
                 print("✓ Added leave_request.supervisor_id (PostgreSQL)")
 
 
+# ─── 13 MIGRATION: APP SETTINGS COMPANY COLUMNS ────────────────────────────────
 def _ensure_app_settings_company_columns_if_needed():
     """Ensure app_settings table has company name, email, phone, and address columns."""
     new_cols = {

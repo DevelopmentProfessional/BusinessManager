@@ -1026,10 +1026,12 @@ export default function Employees() {
     return manager ? `${manager.first_name} ${manager.last_name}` : '-';
   };
 
+  // ─── [21] LOADING GUARD ─────────────────────────────────────────────────────
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
+  // ─── [22] RENDER / JSX ──────────────────────────────────────────────────────
   return (
     <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
 

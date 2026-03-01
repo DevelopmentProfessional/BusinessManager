@@ -1,3 +1,24 @@
+/*
+ * ============================================================
+ * FILE: Modal_Insurance_Plans.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal for managing insurance plans within the application.
+ *   Displays a scrollable list of existing plans with activate/deactivate,
+ *   edit, and delete controls, plus an inline form for adding or editing a plan.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Header — modal title bar
+ *   [2] Scrollable Plan List — renders each plan card with status badge and action buttons
+ *   [3] Footer Add/Edit Form — dual-mode form (new plan vs. edit existing) with save and cancel
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React from 'react';
 import Modal from './Modal';
 import { XMarkIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
@@ -25,11 +46,12 @@ export default function Modal_Insurance_Plans({
       fullScreen={true}
     >
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-        {/* Header */}
+        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Insurance Plans</h6>
         </div>
 
+        {/* ─── 2 SCROLLABLE PLAN LIST ─────────────────────────────────────────── */}
         {/* Scrollable list */}
         <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
           {insuranceError && (
@@ -88,6 +110,7 @@ export default function Modal_Insurance_Plans({
           )}
         </div>
 
+        {/* ─── 3 FOOTER ADD/EDIT FORM ─────────────────────────────────────────── */}
         {/* Footer – Add / Edit Plan form */}
         <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 pt-2 pb-4">
           <form onSubmit={onSave} className="d-flex flex-column gap-2">

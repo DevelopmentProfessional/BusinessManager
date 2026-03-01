@@ -1,3 +1,34 @@
+/*
+ * ============================================================
+ * FILE: Modal_Detail_Client.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal for viewing and editing a client's full profile,
+ *   including contact info, membership tier/points, and quick access to
+ *   service history, purchase history, and the client's saved cart.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Helper Constants & Utilities — Membership tier colours, badge classes, labels,
+ *       and date formatting functions
+ *   [2] ServiceHistoryModal (sub-component) — Full-screen sub-modal listing upcoming
+ *       and past scheduled appointments fetched from the API
+ *   [3] PurchaseHistoryModal (sub-component) — Full-screen sub-modal listing
+ *       transactions with expandable line-item details
+ *   [4] Main Component State & Effects — Form data initialisation and cart count sync
+ *   [5] Form Handlers — handleChange, handleSubmit, handleDelete
+ *   [6] Header — "Client Details" title bar with close button
+ *   [7] Avatar & Action Buttons — Initials avatar, tier badge, service history,
+ *       purchase history, and cart shortcut buttons
+ *   [8] Editable Form Fields — Contact info inputs and membership section
+ *   [9] Fixed Footer — Delete, Cancel, and Save Changes actions
+ *   [10] Sub-modal Mounts — ServiceHistoryModal, PurchaseHistoryModal, Modal_Client_Cart
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React, { useState, useEffect } from 'react';
 import {
   XMarkIcon, CheckIcon, TrashIcon,
@@ -9,6 +40,7 @@ import Button_Toolbar from './Button_Toolbar';
 import { clientsAPI, servicesAPI } from '../../services/api';
 import Modal_Client_Cart, { getClientCartCount } from './Modal_Client_Cart';
 
+// ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
 const MEMBERSHIP_TIERS = [
   { value: 'none', label: 'None' },
   { value: 'bronze', label: 'Bronze' },
@@ -57,7 +89,7 @@ const formatDateTime = (dt) => {
   } catch { return dt; }
 };
 
-// ─── Service History Sub-modal ───────────────────────────────────────────────
+// ─── 2 SERVICE HISTORY SUB-MODAL ───────────────────────────────────────────
 
 function ServiceHistoryModal({ isOpen, onClose, client }) {
   const [schedules, setSchedules] = useState([]);
@@ -199,7 +231,7 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
   );
 }
 
-// ─── Purchase History Sub-modal ──────────────────────────────────────────────
+// ─── 3 PURCHASE HISTORY SUB-MODAL ──────────────────────────────────────────
 
 function PurchaseHistoryModal({ isOpen, onClose, client }) {
   const [transactions, setTransactions] = useState([]);
@@ -352,7 +384,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── 4 MAIN COMPONENT ──────────────────────────────────────────────────────
 
 export default function Modal_Detail_Client({
   isOpen,
@@ -397,6 +429,7 @@ export default function Modal_Detail_Client({
     }
   }, [isOpen, client?.id]);
 
+  // ─── 5 FORM HANDLERS ──────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -428,6 +461,7 @@ export default function Modal_Detail_Client({
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
+        {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Client Details</h6>
@@ -445,6 +479,7 @@ export default function Modal_Detail_Client({
         {/* Scrollable content */}
         <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
+          {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
           {/* Avatar + name + tier */}
           <div className="d-flex align-items-center gap-3 mb-3">
             <div
@@ -494,6 +529,7 @@ export default function Modal_Detail_Client({
             </button>
           </div>
 
+          {/* ─── 8 EDITABLE FORM FIELDS ──────────────────────────────────── */}
           {/* Form fields */}
           <div className="form-floating mb-2">
             <input
@@ -630,6 +666,7 @@ export default function Modal_Detail_Client({
 
         </div>
 
+        {/* ─── 9 FIXED FOOTER ──────────────────────────────────────────────── */}
         {/* Fixed footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex align-items-center">
@@ -663,6 +700,7 @@ export default function Modal_Detail_Client({
 
       </div>
 
+      {/* ─── 10 SUB-MODAL MOUNTS ──────────────────────────────────────────── */}
       {/* Service History Sub-modal */}
       <ServiceHistoryModal
         isOpen={showServiceHistory}

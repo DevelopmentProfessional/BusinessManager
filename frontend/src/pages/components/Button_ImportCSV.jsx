@@ -1,10 +1,37 @@
+/*
+ * ============================================================
+ * FILE: Button_ImportCSV.jsx
+ *
+ * PURPOSE:
+ *   A self-contained CSV import button that opens a modal allowing the user to
+ *   select a CSV file, preview the parsed data, review column mapping against
+ *   the target entity's table columns, and trigger a batch import via a
+ *   caller-supplied async callback. Handles parsing, validation, error display,
+ *   and import result feedback entirely within the component.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State & Refs — File, parsed data, headers, import status, error/result state
+ *   [2] Column Mapping — useMemo computes matched, unmatched CSV, and missing table columns
+ *   [3] CSV Parsing — parseCSV and parseCSVLine handle quoted fields and header mapping
+ *   [4] File Selection Handler — FileReader reads the file, validates required fields
+ *   [5] Import Handler — Calls onImport callback, stores results, triggers onComplete
+ *   [6] Modal Close Handler — Resets all state on dismiss
+ *   [7] Trigger Button & Modal UI — File upload area, mapping preview, data preview table,
+ *       error/success panels, and action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React, { useState, useRef, useMemo } from 'react';
 import { ArrowUpTrayIcon, XMarkIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import Modal from './Modal';
 
 /**
  * Reusable CSV Import Button component
- * 
+ *
  * Props:
  * - onImport: async function(records) - called with parsed CSV records array, should save to DB
  * - onComplete: function() - called after successful import to refresh data
@@ -22,6 +49,8 @@ export default function Button_ImportCSV({
   tableColumns = [],
   className = ''
 }) {
+  // ─── 1 STATE & REFS ──────────────────────────────────────────────────────────
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [parsedData, setParsedData] = useState([]);
@@ -30,6 +59,8 @@ export default function Button_ImportCSV({
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const fileInputRef = useRef(null);
+
+  // ─── 2 COLUMN MAPPING ────────────────────────────────────────────────────────
 
   // Compute column mapping info when tableColumns is provided
   const mappingInfo = useMemo(() => {
@@ -59,6 +90,8 @@ export default function Button_ImportCSV({
     return { matched, unmatchedCsv, missingTable };
   }, [headers, tableColumns, fieldMapping]);
 
+  // ─── 3 CSV PARSING ───────────────────────────────────────────────────────────
+
   const parseCSV = (text) => {
     const lines = text.split(/\r?\n/).filter(line => line.trim());
     if (lines.length < 2) {
@@ -68,18 +101,18 @@ export default function Button_ImportCSV({
     // Parse header row
     const headerLine = lines[0];
     const csvHeaders = parseCSVLine(headerLine);
-    
+
     // Parse data rows
     const records = [];
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
       if (values.length === 0 || values.every(v => !v.trim())) continue; // Skip empty rows
-      
+
       const record = {};
       csvHeaders.forEach((header, index) => {
         // Apply field mapping if provided, otherwise use header as-is (lowercase, underscored)
-        const fieldName = fieldMapping[header.toLowerCase()] || 
-                         fieldMapping[header] || 
+        const fieldName = fieldMapping[header.toLowerCase()] ||
+                         fieldMapping[header] ||
                          header.toLowerCase().replace(/\s+/g, '_');
         record[fieldName] = values[index]?.trim() || '';
       });
@@ -93,10 +126,10 @@ export default function Button_ImportCSV({
     const result = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
-      
+
       if (char === '"') {
         if (inQuotes && line[i + 1] === '"') {
           current += '"';
@@ -112,15 +145,17 @@ export default function Button_ImportCSV({
       }
     }
     result.push(current);
-    
+
     return result;
   };
+
+  // ─── 4 FILE SELECTION HANDLER ────────────────────────────────────────────────
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setError('');
     setResults(null);
-    
+
     if (!selectedFile) {
       setFile(null);
       setParsedData([]);
@@ -138,10 +173,10 @@ export default function Button_ImportCSV({
     reader.onload = (event) => {
       try {
         const { headers: csvHeaders, records } = parseCSV(event.target.result);
-        
+
         // Validate required fields
         if (requiredFields.length > 0) {
-          const mappedHeaders = csvHeaders.map(h => 
+          const mappedHeaders = csvHeaders.map(h =>
             fieldMapping[h.toLowerCase()] || fieldMapping[h] || h.toLowerCase().replace(/\s+/g, '_')
           );
           const missingFields = requiredFields.filter(f => !mappedHeaders.includes(f));
@@ -167,6 +202,8 @@ export default function Button_ImportCSV({
     reader.readAsText(selectedFile);
   };
 
+  // ─── 5 IMPORT HANDLER ────────────────────────────────────────────────────────
+
   const handleImport = async () => {
     if (parsedData.length === 0) {
       setError('No data to import');
@@ -179,7 +216,7 @@ export default function Button_ImportCSV({
 
     try {
       const importResults = await onImport(parsedData);
-      
+
       setResults({
         success: importResults.success || parsedData.length,
         failed: importResults.failed || 0,
@@ -205,6 +242,8 @@ export default function Button_ImportCSV({
     }
   };
 
+  // ─── 6 MODAL CLOSE HANDLER ───────────────────────────────────────────────────
+
   const handleClose = () => {
     setIsModalOpen(false);
     setFile(null);
@@ -216,6 +255,8 @@ export default function Button_ImportCSV({
       fileInputRef.current.value = '';
     }
   };
+
+  // ─── 7 TRIGGER BUTTON & MODAL UI ─────────────────────────────────────────────
 
   return (
     <>
@@ -415,8 +456,8 @@ export default function Button_ImportCSV({
                     {parsedData.slice(0, 5).map((row, i) => (
                       <tr key={i} className="bg-white dark:bg-gray-800">
                         {headers.map((header, j) => {
-                          const fieldName = fieldMapping[header.toLowerCase()] || 
-                                           fieldMapping[header] || 
+                          const fieldName = fieldMapping[header.toLowerCase()] ||
+                                           fieldMapping[header] ||
                                            header.toLowerCase().replace(/\s+/g, '_');
                           return (
                             <td key={j} className="px-2 py-1 text-gray-700 dark:text-gray-300 truncate max-w-32">

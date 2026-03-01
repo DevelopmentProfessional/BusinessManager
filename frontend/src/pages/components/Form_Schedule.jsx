@@ -1,3 +1,39 @@
+/*
+ * ============================================================
+ * FILE: Form_Schedule.jsx
+ *
+ * PURPOSE:
+ *   Create/edit form for scheduling events (appointments, recurring
+ *   series, meetings, and tasks). Dynamically shows or hides client,
+ *   service, and employee selectors based on the chosen event type,
+ *   enforces business-hour validation, and supports permission-based
+ *   employee selection locking for self-scheduling users.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants          — APPOINTMENT_TYPES, APPOINTMENT_TYPE_CONFIG,
+ *                            RECURRENCE_OPTIONS, ATTENDEE_STATUS_STYLE
+ *   [2] State              — clients, services, employees lists; time/duration
+ *                            errors; lazy-load flags; form data
+ *   [3] Effects            — load services and employees (or use props);
+ *                            populate form on edit; auto-select current user
+ *                            for write-only permission holders
+ *   [4] Handlers           — handleChange, handleServiceChange,
+ *                            handleDurationChange, handleClientChange,
+ *                            handleEmployeeChange, handleClientDropdownOpen,
+ *                            handleSubmit, extractLocalParts, getInitialFormData
+ *   [5] Render: Header     — dynamic title based on appointment type and mode
+ *   [6] Render: Form Body  — event type selector, conditional client/service/
+ *                            employee dropdowns, recurrence options, duration,
+ *                            date+time pickers, attendee status panel, notes
+ *   [7] Render: Footer     — Delete, Send Reminder, Cancel, and Book/Save buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
 import { isudAPI } from '../../services/api';
@@ -7,6 +43,7 @@ import Button_Toolbar from './Button_Toolbar';
 import Gate_Permission from './Gate_Permission';
 import Dropdown_Custom from './Dropdown_Custom';
 
+// ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const APPOINTMENT_TYPES = [
   { value: 'one_time', label: 'Appointment', description: 'Client appointment with service' },
   { value: 'series', label: 'Recurring', description: 'Recurring appointment series' },
@@ -35,6 +72,7 @@ const ATTENDEE_STATUS_STYLE = {
   declined: { label: 'Declined', bg: '#fee2e2', color: '#991b1b' },
 };
 
+// ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
@@ -46,6 +84,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [durationError, setDurationError] = useState('');
   const navigate = useNavigate();
 
+  // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load services and employees if not provided as props (clients loaded on-demand)
   useEffect(() => {
     // Use props if provided
@@ -102,6 +141,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
   }, [servicesProp, employeesProp, clientsProp]);
 
+  // ─── 4 HANDLERS ──────────────────────────────────────────────────────────────
   // Load clients on-demand when dropdown opens
   const handleClientDropdownOpen = async () => {
     // Skip if already loaded or loading
@@ -318,6 +358,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     onSubmit(submitData);
   };
 
+  // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   // Get config for current appointment type
   const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
 
@@ -337,6 +378,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{formTitle}</h6>
       </div>
 
+      {/* ─── 6 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable body */}
       <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2">
@@ -642,6 +684,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         </form>
       </div>
 
+      {/* ─── 7 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Footer */}
       <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="d-flex align-items-center">
