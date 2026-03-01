@@ -263,7 +263,7 @@ export default function Modal_Cart_Sales({
               <div className="flex gap-2 mb-2">
                 <button
                   onClick={() => { onClose(); handleCheckout(); }}
-                  className="flex-1 py-3 bg-secondary-600 hover:bg-secondary-700 text-white rounded-full font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                  className="flex-1 btn-app-primary font-semibold flex items-center justify-center gap-2"
                 >
                   <CreditCardIcon className="h-5 w-5" />
                   Checkout

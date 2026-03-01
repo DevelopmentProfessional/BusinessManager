@@ -45,7 +45,7 @@ import Button_Toolbar from './Button_Toolbar';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
 import cacheService from '../../services/cacheService';
-import { servicesAPI } from '../../services/api';
+import { servicesAPI, suppliersAPI } from '../../services/api';
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
@@ -58,6 +58,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     image_url: '',
     location: '',
     service_id: '',
+    supplier_id: '',
     quantity: 0,
     min_stock_level: 10,
   });
@@ -70,6 +71,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const [newImageUrl, setNewImageUrl] = useState('');
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
+  const [availableSuppliers, setAvailableSuppliers] = useState([]);
 
   // ─── 2 EFFECTS ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         image_url: item.image_url || '',
         location: item.location || '',
         service_id: item.service_id || '',
+        supplier_id: item.supplier_id || '',
         quantity: item.quantity || 0,
         min_stock_level: item.min_stock_level || 10,
       });
@@ -100,6 +103,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     servicesAPI.getAll().then(res => {
       const data = res?.data ?? res;
       if (Array.isArray(data)) setAvailableServices(data);
+    }).catch(() => {});
+    suppliersAPI.getAll().then(res => {
+      const data = res?.data ?? res;
+      if (Array.isArray(data)) setAvailableSuppliers(data);
     }).catch(() => {});
   }, []);
 
@@ -162,6 +169,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       image_url: image_url || undefined,
       location: (location && location !== '[NEW]') ? location : undefined,
       service_id: formData.service_id || undefined,
+      supplier_id: formData.supplier_id || undefined,
       min_stock_level: parseInt(formData.min_stock_level) || 10,
     };
     const qty = parseInt(formData.quantity) || 0;
@@ -456,6 +464,25 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
             </div>
           )}
 
+          {/* Supplier */}
+          <div className="form-floating mb-2">
+            <select
+              id="supplier_id"
+              name="supplier_id"
+              value={formData.supplier_id}
+              onChange={handleChange}
+              className="form-select form-select-sm"
+            >
+              <option value="">No supplier</option>
+              {availableSuppliers.map(supplier => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="supplier_id">Supplier (optional)</label>
+          </div>
+
           {/* Linked Service - only for RESOURCE or ASSET types */}
           {(formData.type === 'RESOURCE' || formData.type === 'ASSET') && (
             <div className="form-floating mb-2">
@@ -484,9 +511,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className="form-control form-control-sm border-0"
+              className="form-control form-control-sm border-0 min-h-[80px]"
               placeholder="Description"
-              style={{ height: '80px' }}
             />
             <label htmlFor="description">Description</label>
           </div>

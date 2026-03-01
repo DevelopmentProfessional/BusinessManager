@@ -41,6 +41,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-01 | Claude  | P5-B — Added STATUS_DOT_COLOR; status dot/strikethrough/opacity on all three calendar views
  * ============================================================
  */
 
@@ -83,6 +84,14 @@ const TodayIcon = ({ className }) => (
     <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">{new Date().getDate()}</text>
   </svg>
 );
+
+// Status dot colours used across all three calendar views
+const STATUS_DOT_COLOR = {
+  scheduled: '#9ca3af', // gray
+  confirmed: '#3b82f6', // blue
+  completed: '#22c55e', // green
+  cancelled: '#ef4444', // red
+};
 
 export default function Schedule() {
   // ─── 2 STORE & PERMISSION GUARD ──────────────────────────────────────────────
@@ -1000,6 +1009,7 @@ export default function Schedule() {
                           const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
 
                           const isMeeting = appointment.appointment_type === 'meeting';
+                          const isCancelled = appointment.status === 'cancelled';
                           return (
                             <div
                               key={appointment.id}
@@ -1012,6 +1022,7 @@ export default function Schedule() {
                                 height: `${heightPercent}%`,
                                 width: '95%',
                                 zIndex: 10000 + minutesFromMidnight,
+                                opacity: isCancelled ? 0.65 : 1,
                               }}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
@@ -1019,9 +1030,12 @@ export default function Schedule() {
                               onClick={(e) => handleAppointmentClick(e, appointment)}
                             >
                               {isMeeting
-                                ? <div className="appointment-service">{appointment.notes || 'Meeting'}</div>
-                                : <div className="appointment-service">{serviceName}</div>
+                                ? <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>{appointment.notes || 'Meeting'}</div>
+                                : <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>{serviceName}</div>
                               }
+                              {appointment.status && appointment.status !== 'scheduled' && (
+                                <span style={{ display: 'block', width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_DOT_COLOR[appointment.status] || '#9ca3af', position: 'absolute', bottom: 3, right: 3 }} />
+                              )}
                             </div>
                           );
                         })}
@@ -1125,6 +1139,7 @@ export default function Schedule() {
                         const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
 
                         const isMeeting = appointment.appointment_type === 'meeting';
+                        const isCancelled = appointment.status === 'cancelled';
                         return (
                           <div
                             key={appointment.id}
@@ -1137,6 +1152,7 @@ export default function Schedule() {
                               height: `${heightPercent}%`,
                               width: '95%',
                               zIndex: 10000 + minutesFromMidnight,
+                              opacity: isCancelled ? 0.65 : 1,
                             }}
                             draggable={true}
                             onDragStart={(e) => handleDragStart(e, appointment)}
@@ -1146,14 +1162,17 @@ export default function Schedule() {
                             <div className="appointment-time">{timeString}</div>
                             {isMeeting ? (
                               <>
-                                <div className="appointment-service">{appointment.notes || 'Meeting'}</div>
+                                <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>{appointment.notes || 'Meeting'}</div>
                                 <div className="appointment-client" style={{ fontSize: '0.65rem', opacity: 0.85 }}>Meeting</div>
                               </>
                             ) : (
                               <>
-                                <div className="appointment-service">{serviceName}</div>
+                                <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>{serviceName}</div>
                                 <div className="appointment-client">{clientName}</div>
                               </>
+                            )}
+                            {appointment.status && appointment.status !== 'scheduled' && (
+                              <span style={{ display: 'block', width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_DOT_COLOR[appointment.status] || '#9ca3af', position: 'absolute', bottom: 3, right: 3 }} />
                             )}
                           </div>
                         );
@@ -1210,18 +1229,25 @@ export default function Schedule() {
                           const employeeColor = employeeColorMap.get(appointment.employee_id) || '#2563eb';
 
                           const isMeeting = appointment.appointment_type === 'meeting';
+                          const isCancelled = appointment.status === 'cancelled';
                           return (
                             <div
                               key={appointment.id}
                               className="appointment-dot"
                               title={isMeeting ? `Meeting: ${appointment.notes || ''} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
-                              style={{ backgroundColor: employeeColor }}
+                              style={{
+                                backgroundColor: employeeColor,
+                                opacity: isCancelled ? 0.65 : 1,
+                                borderLeft: appointment.status && appointment.status !== 'scheduled'
+                                  ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}`
+                                  : undefined,
+                              }}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, appointment)}
                               onDragEnd={handleDragEnd}
                               onClick={(e) => handleAppointmentClick(e, appointment)}
                             >
-                              <div className="appointment-service">
+                              <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>
                                 {isMeeting ? (appointment.notes || 'Meeting') : serviceName}
                               </div>
                             </div>

@@ -166,8 +166,6 @@ if (typeof document !== 'undefined') {
 // ─── 3 MODULE-LEVEL CONSTANTS & HELPERS ──────────────────────────────────────
 // Available database environments - shows what's possible
 const DB_ENVIRONMENTS = {
-  development: { name: 'Development', description: 'Development database' },
-  test: { name: 'Test', description: 'Testing environment' },
   production: { name: 'Production', description: 'Live production database' }
 };
 
@@ -196,8 +194,8 @@ const Profile = () => {
     navigate('/login');
   };
 
-  // Database environment from user profile - defaults to development if not set
-  const currentDbEnvironment = user?.db_environment || 'development';
+  // Database environment from user profile - production only
+  const currentDbEnvironment = user?.db_environment === 'production' ? 'production' : 'production';
   const [dbLoading, setDbLoading] = useState(false);
   const [dbMessage, setDbMessage] = useState('');
   const [dbError, setDbError] = useState('');
@@ -269,6 +267,7 @@ const Profile = () => {
     company_email: '',
     company_phone: '',
     company_address: '',
+    tax_rate: 0,
   });
   const [companyLoading, setCompanyLoading] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -362,6 +361,7 @@ const Profile = () => {
             company_email: res.data.company_email || '',
             company_phone: res.data.company_phone || '',
             company_address: res.data.company_address || '',
+            tax_rate: res.data.tax_rate ?? 0,
           });
         }
       } catch { /* silently degrade */ }
@@ -1597,7 +1597,15 @@ const Profile = () => {
                         className="form-control form-control-sm" placeholder="Company Address" />
                       <label htmlFor="company_address">Company Address</label>
                     </div>
+                    <div className="form-floating">
+                      <input type="number" id="tax_rate" value={companyInfo.tax_rate}
+                        onChange={(e) => handleCompanyInfoChange('tax_rate', parseFloat(e.target.value) || 0)}
+                        className="form-control form-control-sm" placeholder="Tax Rate"
+                        min="0" max="100" step="0.01" />
+                      <label htmlFor="tax_rate">Tax Rate (%)</label>
+                    </div>
                   </div>
+                  <p className="text-xs text-muted mb-2">e.g. 8.5 for 8.5%</p>
                   <div className="mb-2">
                     <Button_Toolbar
                       icon={CheckCircleIcon}

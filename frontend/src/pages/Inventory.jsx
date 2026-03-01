@@ -31,7 +31,7 @@
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
 import { inventoryAPI } from '../services/api';
@@ -39,6 +39,7 @@ import Modal from './components/Modal';
 import Form_Item from './components/Form_Item';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
 import Gate_Permission from './components/Gate_Permission';
+import Suppliers_Panel from './components/Suppliers_Panel';
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
@@ -60,6 +61,7 @@ export default function Inventory() {
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
+  const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
@@ -188,7 +190,7 @@ export default function Inventory() {
   };
 
   const getTypeFilterButtonClass = () => {
-    if (typeFilter === 'all') return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    if (typeFilter === 'all') return 'btn-app-secondary';
     if (typeFilter === 'RESOURCE') return 'bg-blue-600 text-white';
     if (typeFilter === 'ASSET') return 'bg-purple-600 text-white';
     if (typeFilter === 'LOCATION') return 'bg-teal-600 text-white';
@@ -199,7 +201,7 @@ export default function Inventory() {
   const getStockFilterButtonClass = () => {
     if (stockFilter === 'low') return 'bg-orange-700 text-white';
     if (stockFilter === 'ok') return 'bg-green-600 text-white';
-    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    return 'btn-app-secondary';
   };
 
   // Get stock status color (uses the former status badge colors)
@@ -313,6 +315,9 @@ return (
                     <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
                       {inv.name}
                     </div>
+                    {inv.supplier_name && (
+                      <div className="small text-muted">{inv.supplier_name}</div>
+                    )}
                   </td>
 
                   {/* Type */}
@@ -340,7 +345,7 @@ return (
       </div>
 
       {/* Fixed bottom – headers + controls */}
-      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         {/* Column Headers */}
         <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ">
           <colgroup>
@@ -358,7 +363,17 @@ return (
         </table>
 
         {/* Controls */}
-        <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          {/* Top row: Management links */}
+          <div className="d-flex align-items-center gap-1 mb-2">
+            <Button_Toolbar
+              icon={TruckIcon}
+              label="Suppliers"
+              onClick={() => setShowSuppliersPanel(true)}
+              className="btn-app-secondary"
+            />
+          </div>
+
           {/* Search row */}
           <div className="position-relative w-100 mb-2">
             <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -382,7 +397,7 @@ return (
                 icon={PlusIcon}
                 label="Add Item"
                 onClick={handleCreateItem}
-                className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                className="btn-app-primary"
               />
             </Gate_Permission>
 
@@ -392,7 +407,7 @@ return (
                 icon={XMarkIcon}
                 label="Clear"
                 onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
-                className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                className="btn-app-danger"
               />
             )}
 
@@ -509,6 +524,11 @@ return (
         />
       )}
     </Modal>
+
+    <Suppliers_Panel
+      isOpen={showSuppliersPanel}
+      onClose={() => setShowSuppliersPanel(false)}
+    />
 
   </div>
 );

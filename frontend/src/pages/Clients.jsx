@@ -187,7 +187,7 @@ export default function Clients() {
   };
 
   const getTierFilterButtonClass = () => {
-    if (tierFilter === 'all') return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    if (tierFilter === 'all') return 'btn-app-secondary';
     if (tierFilter === 'PLATINUM') return 'bg-purple-600 text-white';
     if (tierFilter === 'GOLD') return 'bg-yellow-500 text-white';
     if (tierFilter === 'SILVER') return 'bg-gray-400 text-white';
@@ -314,7 +314,7 @@ export default function Clients() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
           <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
@@ -332,7 +332,7 @@ export default function Clients() {
           </table>
 
           {/* Controls */}
-          <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ">
+          <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {/* Search row */}
             <div className="position-relative w-100 mb-2">
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
@@ -356,7 +356,7 @@ export default function Clients() {
                   icon={PlusIcon}
                   label="Add Client"
                   onClick={handleCreateClient}
-                  className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  className="btn-app-primary"
                 />
               </Gate_Permission>
 
@@ -366,7 +366,7 @@ export default function Clients() {
                   icon={XMarkIcon}
                   label="Clear Filter"
                   onClick={() => setTierFilter('all')}
-                  className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                  className="btn-app-danger"
                 />
               )}
 

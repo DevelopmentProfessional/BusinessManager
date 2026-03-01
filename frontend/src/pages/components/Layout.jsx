@@ -37,13 +37,24 @@ function classNames(...classes) {
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const location = useLocation();
-  const { hasPermission } = useStore();
+  const { hasPermission, isOnline, setOnline } = useStore();
   const { isTrainingMode } = useViewMode();
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('training-mode', isTrainingMode);
   }, [isTrainingMode]);
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [setOnline]);
 
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
@@ -60,8 +71,23 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-shell bg-body d-flex flex-column">
+      {/* Offline banner */}
+      {!isOnline && (
+        <div
+          className="position-fixed start-0 end-0 top-0 d-flex align-items-center justify-content-center gap-2 px-3 py-2 text-sm"
+          style={{ zIndex: 2000, backgroundColor: '#f59e0b', color: '#1c1917' }}
+        >
+          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+            You are offline — changes cannot be saved.
+          </span>
+        </div>
+      )}
+
       {/* Main content - min-h-0 so children can use overflow without making page scroll */}
-      <main className="app-shell-main flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
+      <main
+        className="app-shell-main flex-grow-1 d-flex flex-column min-h-0 overflow-hidden"
+        style={!isOnline ? { paddingTop: '2rem' } : undefined}
+      >
         {children}
       </main>
 

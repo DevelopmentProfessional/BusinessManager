@@ -16,7 +16,6 @@ const Clients = lazy(() => import('./pages/Clients'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Services = lazy(() => import('./pages/Services'));
 const Sales = lazy(() => import('./pages/Sales'));
-const Suppliers = lazy(() => import('./pages/Suppliers'));
 const Employees = lazy(() => import('./pages/Employees'));
 const Schedule = lazy(() => import('./pages/Schedule'));
 const Documents = lazy(() => import('./pages/Documents'));
@@ -142,13 +141,6 @@ function App() {
             <ProtectedRoute requiredPermission="services:read">
               <Layout>
                 <Services />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/suppliers" element={
-            <ProtectedRoute requiredPermission="suppliers:read">
-              <Layout>
-                <Suppliers />
               </Layout>
             </ProtectedRoute>
           } />

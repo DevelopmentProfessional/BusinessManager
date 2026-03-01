@@ -18,13 +18,13 @@
  *   [6]  Initialization Effects   — On-mount: load employees + settings; watch employees for pay status
  *   [7]  Unread-Count Loader      — Fetches per-employee unread chat counts from the API
  *   [8]  Role Helpers             — loadRoles(), getRoleName() utilities
- *   [9]  Payroll Helpers          — generateWeeks(), getCurrentPayPeriod(), isEmployeePaidForCurrentPeriod()
- *   [10] Payroll Handlers         — handleOpenPay(), handlePaySubmit()
+ *   [9]  Payroll Helpers          — getCurrentPayPeriod(), isEmployeePaidForCurrentPeriod()
+ *   [10] Payroll Handlers         — handleOpenPay(), handlePaySuccess()
  *   [11] Role Management Handlers — handleCreateRole(), handleDeleteRole(), handleAddRolePermission(), handleRemoveRolePermission()
  *   [12] Permission Guard         — Redirect non-authorised users to /profile
  *   [13] Data Loaders             — loadEmployees()
  *   [14] CRUD Handlers            — handleCreate(), handleEdit(), handleDelete(), handleSubmit()
- *   [15] Filter / Search Helpers  — roleOptions (memo), filteredEmployees (memo), getStatusFilterButtonClass()
+ *   [15] Filter / Search Helpers  — roleOptions (memo), filteredEmployees (memo)
  *   [16] Permission Handlers      — handleManagePermissions(), fetchUserPermissions(), handleCreatePermission(),
  *                                   handleDeletePermission(), handleUpdatePermission(),
  *                                   handleScheduleViewAllToggle(), handleScheduleWriteAllToggle()
@@ -63,6 +63,87 @@ import Modal_Requests_Employee from './components/Modal_Requests_Employee';
 import Modal_Insurance_Plans from './components/Modal_Insurance_Plans';
 import Chat_Employee from './components/Chat_Employee';
 import Modal_Wages from './components/Modal_Wages';
+import Modal_Pay_Employee from './components/Modal_Pay_Employee';
+
+// ─── INLINE SUB-COMPONENTS (P4-B) ────────────────────────────────────────────
+
+function RoleFilterDropdown({ roleFilter, setRoleFilter, isOpen, setIsOpen, roleOptions }) {
+  return (
+    <div className="position-relative">
+      <Button_Toolbar
+        icon={UserGroupIcon}
+        label="Filter Role"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`border-0 shadow-lg transition-all ${
+          roleFilter !== 'all'
+            ? 'bg-primary-600 hover:bg-primary-700 text-white'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+        data-active={roleFilter !== 'all'}
+      />
+      {isOpen && (
+        <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
+          <button
+            onClick={() => { setRoleFilter('all'); setIsOpen(false); }}
+            className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+          >
+            All Roles
+          </button>
+          {roleOptions.map((role) => (
+            <button
+              key={role}
+              onClick={() => { setRoleFilter(role); setIsOpen(false); }}
+              className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === role ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+            >
+              {role}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusFilterDropdown({ statusFilter, setStatusFilter, isOpen, setIsOpen }) {
+  const btnClass = () => {
+    if (statusFilter === 'active') return 'bg-green-600 text-white';
+    if (statusFilter === 'inactive') return 'bg-red-600 text-white';
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+  };
+  return (
+    <div className="position-relative">
+      <Button_Toolbar
+        icon={CheckCircleIcon}
+        label="Filter Status"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`border-0 shadow-lg transition-all ${btnClass()}`}
+        data-active={statusFilter !== 'all'}
+      />
+      {isOpen && (
+        <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+          <button
+            onClick={() => { setStatusFilter('all'); setIsOpen(false); }}
+            className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'all' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+          >
+            All Statuses
+          </button>
+          <button
+            onClick={() => { setStatusFilter('active'); setIsOpen(false); }}
+            className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'active' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => { setStatusFilter('inactive'); setIsOpen(false); }}
+            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${statusFilter === 'inactive' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+          >
+            Inactive
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Employees() {
 
@@ -71,7 +152,7 @@ export default function Employees() {
     employees, setEmployees, addEmployee, updateEmployee, removeEmployee,
     loading, setLoading, error, setError, clearError,
     isModalOpen, modalContent, openModal, closeModal,
-    user: currentUser, setUser, hasPermission
+    user: currentUser, setUser, hasPermission, refetchPermissions
   } = useStore();
 
   const { isDarkMode } = useDarkMode();
@@ -118,22 +199,10 @@ export default function Employees() {
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const hasFetched = useRef(false);
 
-  // ─── [4] PAYROLL STATE ──────────────────────────────────────────────────────
+  // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
+  // All modal open/close flags and their associated target object grouped here.
   const [showPayModal, setShowPayModal] = useState(false);
   const [payingEmployee, setPayingEmployee] = useState(null);
-  const [payForm, setPayForm] = useState({
-    pay_period_start: '',
-    pay_period_end: '',
-    gross_amount: '',
-    hours_worked: '',
-    other_deductions: '',
-    notes: '',
-  });
-  const [payLoading, setPayLoading] = useState(false);
-  const [payError, setPayError] = useState('');
-  const [paySuccess, setPaySuccess] = useState('');
-  const [availableWeeks, setAvailableWeeks] = useState([]);
-  const [payWeeksLoading, setPayWeeksLoading] = useState(false);
   const [paidEmployeeIds, setPaidEmployeeIds] = useState({});
 
   // ─── [5] CHAT STATE ─────────────────────────────────────────────────────────
@@ -221,124 +290,15 @@ export default function Employees() {
     return role ? role.name : '-';
   };
 
-  // ─── [9] PAYROLL HELPERS ────────────────────────────────────────────────────
-  const generateWeeks = (paidStartDates, count = 26) => {
-    const weeks = [];
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const thisMonday = new Date(today);
-    thisMonday.setDate(today.getDate() - daysToMonday);
-    thisMonday.setHours(0, 0, 0, 0);
-    for (let i = 0; i < count; i++) {
-      const monday = new Date(thisMonday);
-      monday.setDate(thisMonday.getDate() - i * 7);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      const mondayStr = monday.toISOString().slice(0, 10);
-      const sundayStr = sunday.toISOString().slice(0, 10);
-      const isPaid = paidStartDates.some(d => {
-        const dStr = typeof d === 'string' ? d.slice(0, 10) : new Date(d).toISOString().slice(0, 10);
-        return dStr === mondayStr;
-      });
-      weeks.push({
-        start: mondayStr,
-        end: sundayStr,
-        label: `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
-        isPaid,
-      });
-    }
-    return weeks;
-  };
-
   // ─── [10] PAYROLL HANDLERS ──────────────────────────────────────────────────
-  const handleOpenPay = async (employee, e) => {
+  const handleOpenPay = (employee, e) => {
     e.stopPropagation();
     setPayingEmployee(employee);
-    setPayError('');
-    setPaySuccess('');
-    setAvailableWeeks([]);
-    const baseForm = {
-      pay_period_start: '',
-      pay_period_end: '',
-      gross_amount: employee.salary ? String(employee.salary) : '',
-      hours_worked: '',
-      other_deductions: '',
-      notes: '',
-    };
-    if (employee.pay_frequency === 'weekly') {
-      setPayForm(baseForm);
-      setShowPayModal(true);
-      setPayWeeksLoading(true);
-      try {
-        const res = await payrollAPI.getByEmployee(employee.id);
-        const slips = res?.data ?? res;
-        const paidStarts = Array.isArray(slips) ? slips.map(s => s.pay_period_start) : [];
-        setAvailableWeeks(generateWeeks(paidStarts));
-      } catch (err) {
-        console.error('Failed to load pay history:', err);
-        setAvailableWeeks(generateWeeks([]));
-      } finally {
-        setPayWeeksLoading(false);
-      }
-    } else {
-      const now = new Date();
-      let start, end;
-      if (employee.pay_frequency === 'daily') {
-        start = now.toISOString().slice(0, 10);
-        end = start;
-      } else {
-        start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-      }
-      setPayForm({ ...baseForm, pay_period_start: start, pay_period_end: end });
-      setShowPayModal(true);
-    }
+    setShowPayModal(true);
   };
 
-  const handlePaySubmit = async (e) => {
-    e.preventDefault();
-    setPayError('');
-    setPayLoading(true);
-    try {
-      const isHourly = payingEmployee?.employment_type === 'hourly';
-      const payload = {
-        pay_period_start: new Date(payForm.pay_period_start).toISOString(),
-        pay_period_end: new Date(payForm.pay_period_end).toISOString(),
-        other_deductions: payForm.other_deductions !== '' ? parseFloat(payForm.other_deductions) : 0,
-        notes: payForm.notes || null,
-        employment_type: payingEmployee?.employment_type || 'salary',
-      };
-      if (isHourly) {
-        payload.hours_worked = payForm.hours_worked !== '' ? parseFloat(payForm.hours_worked) : 0;
-        payload.hourly_rate_snapshot = payingEmployee?.hourly_rate || 0;
-      } else {
-        payload.gross_amount = payForm.gross_amount !== '' ? parseFloat(payForm.gross_amount) : null;
-      }
-      await payrollAPI.processPayment(payingEmployee.id, payload);
-      setPaySuccess('Payment processed successfully!');
-      
-      // Refresh payment status for this employee
-      const res = await payrollAPI.getByEmployee(payingEmployee.id);
-      const paySlips = res?.data ?? res ?? [];
-      const currentPeriod = getCurrentPayPeriod(payingEmployee);
-      if (currentPeriod && Array.isArray(paySlips)) {
-        const paidForPeriod = paySlips.some(slip => {
-          const slipStart = new Date(slip.pay_period_start);
-          const slipEnd = new Date(slip.pay_period_end);
-          return slip.status === 'paid' && 
-                 slipStart <= currentPeriod.end && 
-                 slipEnd >= currentPeriod.start;
-        });
-        setPaidEmployeeIds(prev => ({ ...prev, [payingEmployee.id]: paidForPeriod }));
-      }
-      
-      setTimeout(() => { setShowPayModal(false); setPaySuccess(''); }, 1500);
-    } catch (err) {
-      setPayError(err.response?.data?.detail || 'Failed to process payment');
-    } finally {
-      setPayLoading(false);
-    }
+  const handlePaySuccess = (employeeId) => {
+    setPaidEmployeeIds(prev => ({ ...prev, [employeeId]: true }));
   };
 
   // ─── [11] ROLE MANAGEMENT HANDLERS ─────────────────────────────────────────
@@ -444,12 +404,6 @@ export default function Employees() {
     const roles = employees.map((employee) => employee.role).filter(Boolean);
     return Array.from(new Set(roles)).sort();
   }, [employees]);
-
-  const getStatusFilterButtonClass = () => {
-    if (statusFilter === 'active') return 'bg-green-600 text-white';
-    if (statusFilter === 'inactive') return 'bg-red-600 text-white';
-    return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
-  };
 
   const filteredEmployees = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -598,9 +552,10 @@ export default function Employees() {
 
       setSuccess('Permission added successfully!');
       setNewPermission({ page: '', permission: '' });
-      
+
       fetchUserPermissions(selectedUser.id);
-      
+      if (selectedUser.id === currentUser?.id) refetchPermissions();
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('🔥 PERMISSION CREATE ERROR:', err);
@@ -637,9 +592,10 @@ export default function Employees() {
       
       
       setSuccess('Permission deleted successfully!');
-      
+
       fetchUserPermissions(selectedUser.id);
-      
+      if (selectedUser.id === currentUser?.id) refetchPermissions();
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       
@@ -664,6 +620,7 @@ export default function Employees() {
       await api.put(`/auth/users/${selectedUser.id}/permissions/${permissionId}`, { granted });
       setSuccess(granted ? 'Permission granted!' : 'Permission denied!');
       fetchUserPermissions(selectedUser.id);
+      if (selectedUser.id === currentUser?.id) refetchPermissions();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update permission');
@@ -1237,71 +1194,21 @@ export default function Employees() {
                 )}
 
                 {/* Role Filter */}
-                <div className="position-relative">
-                  <Button_Toolbar
-                    icon={UserGroupIcon}
-                    label="Filter Role"
-                    onClick={() => setIsRoleFilterOpen(!isRoleFilterOpen)}
-                    className={`border-0 shadow-lg transition-all ${
-                      roleFilter !== 'all'
-                        ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                    data-active={roleFilter !== 'all'}
-                  />
-                  {isRoleFilterOpen && (
-                    <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
-                      <button
-                        onClick={() => { setRoleFilter('all'); setIsRoleFilterOpen(false); }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                      >
-                        All Roles
-                      </button>
-                      {roleOptions.map((role) => (
-                        <button
-                          key={role}
-                          onClick={() => { setRoleFilter(role); setIsRoleFilterOpen(false); }}
-                          className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === role ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                        >
-                          {role}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <RoleFilterDropdown
+                  roleFilter={roleFilter}
+                  setRoleFilter={setRoleFilter}
+                  isOpen={isRoleFilterOpen}
+                  setIsOpen={setIsRoleFilterOpen}
+                  roleOptions={roleOptions}
+                />
 
                 {/* Status Filter */}
-                <div className="position-relative">
-                  <Button_Toolbar
-                    icon={CheckCircleIcon}
-                    label="Filter Status"
-                    onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
-                    className={`border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
-                    data-active={statusFilter !== 'all'}
-                  />
-                  {isStatusFilterOpen && (
-                    <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
-                      <button
-                        onClick={() => { setStatusFilter('all'); setIsStatusFilterOpen(false); }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'all' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                      >
-                        All Statuses
-                      </button>
-                      <button
-                        onClick={() => { setStatusFilter('active'); setIsStatusFilterOpen(false); }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'active' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                      >
-                        Active
-                      </button>
-                      <button
-                        onClick={() => { setStatusFilter('inactive'); setIsStatusFilterOpen(false); }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${statusFilter === 'inactive' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                      >
-                        Inactive
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <StatusFilterDropdown
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  isOpen={isStatusFilterOpen}
+                  setIsOpen={setIsStatusFilterOpen}
+                />
               </div>
             </div>
 
@@ -1436,170 +1343,12 @@ export default function Employees() {
       )}
 
       {/* Process Pay Modal */}
-      {showPayModal && payingEmployee && (
-        <div
-          className="modal d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) { setShowPayModal(false); setPayError(''); } }}
-        >
-          <div className="modal-dialog modal-sm modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">
-                  Pay {payingEmployee.first_name} {payingEmployee.last_name}
-                </h6>
-                <button type="button" className="btn-close" onClick={() => { setShowPayModal(false); setPayError(''); }} />
-              </div>
-              <form onSubmit={handlePaySubmit}>
-                <div className="modal-body py-3">
-                  {payError && <div className="alert alert-danger py-1 px-2 small mb-2">{payError}</div>}
-                  {paySuccess && <div className="alert alert-success py-1 px-2 small mb-2">{paySuccess}</div>}
-                  <div className="mb-2 small text-muted">
-                    Type: <strong style={{ textTransform: 'capitalize' }}>{payingEmployee.employment_type || 'salary'}</strong>
-                    {payingEmployee.pay_frequency && (
-                      <> &middot; Freq: <strong style={{ textTransform: 'capitalize' }}>{payingEmployee.pay_frequency.replace('_', '-')}</strong></>
-                    )}
-                    {payingEmployee.insurance_plan && (
-                      <> &middot; Insurance: <strong>{payingEmployee.insurance_plan}</strong></>
-                    )}
-                  </div>
-
-                  {/* Period selector — varies by pay frequency */}
-                  {payingEmployee.pay_frequency === 'weekly' ? (
-                    <div className="mb-2">
-                      <label className="form-label small mb-1">Select Week</label>
-                      {payWeeksLoading ? (
-                        <div className="text-muted small py-1">Loading weeks…</div>
-                      ) : (
-                        <select
-                          className="form-select form-select-sm"
-                          value={payForm.pay_period_start}
-                          onChange={e => {
-                            const week = availableWeeks.find(w => w.start === e.target.value);
-                            if (week) setPayForm(f => ({ ...f, pay_period_start: week.start, pay_period_end: week.end }));
-                          }}
-                          required
-                        >
-                          <option value="">— Select a week —</option>
-                          {availableWeeks.map(w => (
-                            <option key={w.start} value={w.start} disabled={w.isPaid}>
-                              {w.label}{w.isPaid ? ' ✓ Paid' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {payForm.pay_period_start && (
-                        <div className="text-muted small mt-1">{payForm.pay_period_start} → {payForm.pay_period_end}</div>
-                      )}
-                    </div>
-                  ) : payingEmployee.pay_frequency === 'daily' ? (
-                    <div className="mb-2">
-                      <label className="form-label small mb-1">Payment Date</label>
-                      <input
-                        type="date"
-                        className="form-control form-control-sm"
-                        value={payForm.pay_period_start}
-                        onChange={e => setPayForm(f => ({ ...f, pay_period_start: e.target.value, pay_period_end: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-2">
-                        <label className="form-label small mb-1">Pay Period Start</label>
-                        <input
-                          type="date"
-                          className="form-control form-control-sm"
-                          value={payForm.pay_period_start}
-                          onChange={e => setPayForm(f => ({ ...f, pay_period_start: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div className="mb-2">
-                        <label className="form-label small mb-1">Pay Period End</label>
-                        <input
-                          type="date"
-                          className="form-control form-control-sm"
-                          value={payForm.pay_period_end}
-                          min={payForm.pay_period_start || undefined}
-                          onChange={e => setPayForm(f => ({ ...f, pay_period_end: e.target.value }))}
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
-                  {payingEmployee.employment_type === 'hourly' ? (
-                    <div className="mb-2">
-                      <label className="form-label small mb-1">Hours Worked</label>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        placeholder="0"
-                        min="0"
-                        step="0.25"
-                        value={payForm.hours_worked}
-                        onChange={e => setPayForm(f => ({ ...f, hours_worked: e.target.value }))}
-                        required
-                      />
-                      {payingEmployee.hourly_rate && (
-                        <div className="text-muted small mt-1">Rate: ${payingEmployee.hourly_rate}/hr</div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mb-2">
-                      <label className="form-label small mb-1">Gross Amount ($)</label>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        value={payForm.gross_amount}
-                        onChange={e => setPayForm(f => ({ ...f, gross_amount: e.target.value }))}
-                      />
-                      <div className="text-muted small mt-1">Leave blank to use employee salary</div>
-                    </div>
-                  )}
-                  <div className="mb-2">
-                    <label className="form-label small mb-1">Other Deductions ($)</label>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      value={payForm.other_deductions}
-                      onChange={e => setPayForm(f => ({ ...f, other_deductions: e.target.value }))}
-                    />
-                  </div>
-                  <div className="mb-0">
-                    <label className="form-label small mb-1">Notes (optional)</label>
-                    <textarea
-                      className="form-control form-control-sm"
-                      rows="2"
-                      value={payForm.notes}
-                      onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="modal-footer py-2">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-secondary"
-                    onClick={() => { setShowPayModal(false); setPayError(''); }}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-sm btn-success" disabled={payLoading}>
-                    {payLoading ? 'Processing…' : 'Process Payment'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal_Pay_Employee
+        isOpen={showPayModal}
+        onClose={() => setShowPayModal(false)}
+        employee={payingEmployee}
+        onPaySuccess={handlePaySuccess}
+      />
 
       {/* Employee Chat Modal */}
       {showChatModal && chattingEmployee && (

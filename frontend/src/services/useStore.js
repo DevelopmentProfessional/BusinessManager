@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import cacheService from './cacheService';
 
 const useStore = create((set, get) => ({
+  // Network state
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  setOnline: (value) => set({ isOnline: value }),
+
   // Authentication state
   user: null,
   token: null,
@@ -50,6 +54,31 @@ const useStore = create((set, get) => ({
     // No additional permission checks needed - all permissions are now handled via UserPermission table
     
     return false;
+  },
+
+  // Fetch and update the current user's flat permission strings from the server
+  refetchPermissions: async () => {
+    try {
+      const token = get().token || localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) return;
+      const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+      const response = await fetch(`${API_BASE_URL}/auth/me/permissions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.permissions)) {
+          set({ permissions: data.permissions });
+          localStorage.setItem('permissions', JSON.stringify(data.permissions));
+          sessionStorage.setItem('permissions', JSON.stringify(data.permissions));
+        }
+      }
+    } catch {
+      // Silently fail — stale permissions are better than a broken UI
+    }
   },
 
   // Function to refresh user permissions from server

@@ -142,7 +142,7 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
-    db_environment: str = Field(default="development")  # User's preferred database environment
+    db_environment: str = Field(default="production")  # User's preferred database environment
 
     # Hierarchy - who this user reports to
     reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
@@ -417,6 +417,8 @@ class AppSettings(BaseModel, table=True):
     company_email: Optional[str] = Field(default=None)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
+    # Tax
+    tax_rate: Optional[float] = Field(default=0.0)  # Percentage, e.g. 8.5 = 8.5%
 
 
 # ─── 11 DOCUMENT MODELS ────────────────────────────────────────────────────────
@@ -686,7 +688,7 @@ class AttendanceRead(SQLModel):
 
 # ─── 17b2 INVENTORY READ / IMAGE SCHEMAS ───────────────────────────────────────
 class InventoryRead(SQLModel):
-    """Schema for reading inventory items (includes images)"""
+    """Schema for reading inventory items (includes images and supplier name)"""
     id: UUID
     name: str
     sku: str
@@ -695,6 +697,7 @@ class InventoryRead(SQLModel):
     type: str
     image_url: Optional[str] = None  # Legacy field
     supplier_id: Optional[UUID] = None
+    supplier_name: Optional[str] = None  # Joined from Supplier table
     service_id: Optional[UUID] = None
     quantity: int
     min_stock_level: int
@@ -811,7 +814,7 @@ class UserRead(SQLModel):
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: bool = False
-    db_environment: str = "development"  # User's preferred database environment
+    db_environment: str = "production"  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
@@ -1024,6 +1027,7 @@ class AppSettingsUpdate(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    tax_rate: Optional[float] = None
 
 
 class AppSettingsRead(SQLModel):
@@ -1042,6 +1046,7 @@ class AppSettingsRead(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    tax_rate: Optional[float] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

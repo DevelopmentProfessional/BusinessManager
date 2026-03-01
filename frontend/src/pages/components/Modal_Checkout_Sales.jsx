@@ -23,6 +23,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-01 | Claude  | P6-B — taxRate prop now accepts a percentage value (e.g. 8.5); hides tax line when 0
  * ============================================================
  */
 import React, { useState, useRef } from 'react';
@@ -43,7 +44,7 @@ export default function Modal_Checkout_Sales({
   cartTotal = 0,
   selectedClient = null,
   onProcessPayment,
-  taxRate = 0.08,
+  taxRate = 0,
   currentUser = null,
   appSettings = null,
 }) {
@@ -59,7 +60,7 @@ export default function Modal_Checkout_Sales({
   const completedSaleRef = useRef(null);
   
   const subtotal = cartTotal;
-  const tax = subtotal * taxRate;
+  const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   
@@ -190,14 +191,14 @@ export default function Modal_Checkout_Sales({
               <button
                 type="button"
                 onClick={() => { setTemplateFilterType('invoice'); setShowTemplateUse(true); }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center gap-1.5 text-sm btn-app-secondary"
               >
                 <PrinterIcon className="h-4 w-4" /> Print Invoice
               </button>
               <button
                 type="button"
                 onClick={() => { setTemplateFilterType('receipt'); setShowTemplateUse(true); }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center gap-1.5 text-sm btn-app-secondary"
               >
                 <PrinterIcon className="h-4 w-4" /> Print Receipt
               </button>
@@ -270,10 +271,12 @@ export default function Modal_Checkout_Sales({
                   <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                   <span className="text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Tax ({(taxRate * 100).toFixed(0)}%)</span>
-                  <span className="text-gray-900 dark:text-white">${tax.toFixed(2)}</span>
-                </div>
+                {taxRate > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, '')}%)</span>
+                    <span className="text-gray-900 dark:text-white">${tax.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xl font-bold pt-3 border-t border-gray-200 dark:border-gray-700">
                   <span className="text-gray-900 dark:text-white">Total</span>
                   <span className="text-emerald-600 dark:text-emerald-400">${total.toFixed(2)}</span>

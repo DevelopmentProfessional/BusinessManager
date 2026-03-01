@@ -85,10 +85,10 @@ export default function Modal_History_Sales({
           </div>
 
           {/* ========== FOOTER WITH CANCEL BUTTON ========== */}
-          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-center">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-center">
             <button
               onClick={onClose}
-              className="px-6 py-2 rounded-lg bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700 transition-colors font-medium"
+              className="btn-app-cancel font-medium"
             >
               Cancel
             </button>

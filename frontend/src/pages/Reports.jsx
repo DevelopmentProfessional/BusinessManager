@@ -25,6 +25,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-01 | Claude  | P10-A: KPI summary cards; P10-B: collapsible data table; P10-C: CSV export
  * ============================================================
  */
 
@@ -465,6 +466,31 @@ export default function Reports() {
   const canUseService = ['appointments', 'services', 'revenue'].includes(selectedReport?.id || '');
   const canUseEmployee = ['appointments', 'employees', 'attendance'].includes(selectedReport?.id || '');
 
+  const [showDataTable, setShowDataTable] = useState(false);
+
+  // Derive KPI summary cards from current chart data
+  const kpis = useMemo(() => {
+    const values = reportData?.datasets?.[0]?.data;
+    if (!values?.length) return null;
+    const nums = values.map(Number);
+    const labels = reportData.labels || [];
+    const total = nums.reduce((s, v) => s + v, 0);
+    const avg = total / nums.length;
+    const maxVal = Math.max(...nums);
+    const maxIdx = nums.indexOf(maxVal);
+    const isCurrency = (reportData.datasets[0].label || '').includes('($)');
+    const fmt = (n) =>
+      isCurrency
+        ? `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+    return [
+      { label: 'Total', value: fmt(total) },
+      { label: 'Avg / Period', value: fmt(avg) },
+      { label: 'Peak', value: fmt(maxVal), sub: labels[maxIdx] || '' },
+      { label: 'Periods', value: nums.length },
+    ];
+  }, [reportData]);
+
   // ─── 10 PDF EXPORT HANDLER ───────────────────────────────────────────────
   const handleExportPdf = () => {
     if (!selectedReport) return;
@@ -518,7 +544,25 @@ export default function Reports() {
     printWindow.print();
   };
 
-  // ─── 11 RENDER ───────────────────────────────────────────────────────────
+  // ─── 11 CSV EXPORT HANDLER ───────────────────────────────────────────────
+  const handleExportCsv = () => {
+    if (!reportData?.labels?.length || !selectedReport) return;
+    const datasetLabel = reportData.datasets?.[0]?.label || 'Value';
+    const rows = [
+      ['Period', datasetLabel],
+      ...reportData.labels.map((label, i) => [label, reportData.datasets[0].data[i] ?? '']),
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedReport.id}-${reportFilters.dateRange}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ─── 12 RENDER ───────────────────────────────────────────────────────────
   if (loading && !selectedReport) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -566,6 +610,24 @@ export default function Reports() {
               />
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{selectedReport.description}</p>
+
+            {/* ── KPI SUMMARY CARDS ── */}
+            {kpis && (
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {kpis.map((kpi) => (
+                  <div
+                    key={kpi.label}
+                    className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center"
+                    style={{ minWidth: '6rem' }}
+                  >
+                    <div className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{kpi.value}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{kpi.label}</div>
+                    {kpi.sub && <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{kpi.sub}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div id="report-export-section" className="h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
               <Chart_Report
                 data={reportData}
@@ -574,6 +636,44 @@ export default function Reports() {
                 loading={loading}
               />
             </div>
+
+            {/* ── DATA TABLE TOGGLE + TABLE ── */}
+            {reportData?.labels?.length > 0 && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDataTable((v) => !v)}
+                  className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                >
+                  <ChevronUpDownIcon className="h-4 w-4" />
+                  {showDataTable ? 'Hide' : 'Show'} Data Table
+                </button>
+                {showDataTable && (
+                  <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: '16rem' }}>
+                    <table className="table table-sm mb-0">
+                      <thead className="sticky-top bg-white dark:bg-gray-900">
+                        <tr>
+                          <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold">Period</th>
+                          <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">
+                            {reportData.datasets?.[0]?.label || 'Value'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.labels.map((label, i) => (
+                          <tr key={i}>
+                            <td className="text-sm text-gray-700 dark:text-gray-300">{label}</td>
+                            <td className="text-sm text-gray-900 dark:text-white text-end font-medium">
+                              {reportData.datasets?.[0]?.data?.[i] ?? '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-3 pt-2 border-top border-gray-200 dark:border-gray-700 d-flex flex-wrap align-items-center justify-content-between gap-2">
               <div className="d-flex align-items-center gap-2">
@@ -687,6 +787,17 @@ export default function Reports() {
             >
               <ArrowPathIcon className="h-4 w-4" />
               <span>Refresh</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={!reportData?.labels?.length}
+              className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+              title="Download data as CSV"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              <span>CSV</span>
             </button>
           </div>
 

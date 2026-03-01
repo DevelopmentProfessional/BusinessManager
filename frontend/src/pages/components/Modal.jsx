@@ -49,7 +49,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
           )}
           <div className={`${noPadding ? '' : 'p-2'} flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{children}</div>
           {footer && (
-            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 flex-shrink-0">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 flex-shrink-0">
               {footer}
             </div>
           )}

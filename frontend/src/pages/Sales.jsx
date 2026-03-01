@@ -223,12 +223,7 @@ export default function Sales() {
   const hasFetched = useRef(false);
 
   // Sales History State
-  const [salesHistory, setSalesHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('salesHistory');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [appSettings, setAppSettings] = useState(null);
   const [historyFilters, setHistoryFilters] = useState({
@@ -267,11 +262,8 @@ export default function Sales() {
           total: tx.total || 0,
           paymentMethod: tx.payment_method || 'cash',
         }));
-        const localHistory = (() => { try { return JSON.parse(localStorage.getItem('salesHistory') || '[]'); } catch { return []; } })();
-        const merged = [...dbHistory];
-        localHistory.forEach(local => { if (!merged.find(db => db.id === String(local.id))) merged.push(local); });
-        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setSalesHistory(merged);
+        dbHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setSalesHistory(dbHistory);
       }
     } catch (err) {
       console.error('Failed to load transaction history from DB:', err);
@@ -444,9 +436,7 @@ export default function Sales() {
       total,
       paymentMethod,
     };
-    const updated = [sale, ...salesHistory].slice(0, 50);
-    setSalesHistory(updated);
-    try { localStorage.setItem('salesHistory', JSON.stringify(updated)); } catch {}
+    setSalesHistory(prev => [sale, ...prev].slice(0, 50));
 
     // Persist to database
     try {
@@ -472,6 +462,21 @@ export default function Sales() {
             line_total: item.price * item.quantity,
           })
         ));
+        // Optimistically decrement local product quantities and bust the inventory cache
+        const soldMap = {};
+        cart.forEach(item => {
+          if (item.itemType === 'product' && item.id) {
+            soldMap[item.id] = (soldMap[item.id] || 0) + item.quantity;
+          }
+        });
+        if (Object.keys(soldMap).length > 0) {
+          setProducts(prev => prev.map(p =>
+            soldMap[p.id] != null
+              ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - soldMap[p.id]) }
+              : p
+          ));
+          inventoryAPI.invalidateCache();
+        }
       }
     } catch (err) {
       console.error('Failed to persist sale transaction:', err);
@@ -582,7 +587,7 @@ export default function Sales() {
       </div>
 
       {/* Main Body - Items Grid */}
-      <div className="flex-1 overflow-y-auto pb-40">
+      <div className="flex-1 overflow-y-auto pb-4">
           {/* Services Section */}
           {showServices && filteredServices.length > 0 && (
             <div className="mb-6">
@@ -650,7 +655,7 @@ export default function Sales() {
         </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="app-footer-search flex-shrink-0 fixed bottom-0 left-0 right-0 w-100 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pt-2 pr-16 md:ml-64">
+      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pt-2">
        
                {/* Client Selection Panel - shown when account icon is active */}
         {showClientPanel && (
@@ -894,6 +899,7 @@ export default function Sales() {
         cartTotal={cartTotal}
         selectedClient={selectedClient}
         onProcessPayment={processPayment}
+        taxRate={appSettings?.tax_rate ?? 0}
         currentUser={user}
         appSettings={appSettings}
       />

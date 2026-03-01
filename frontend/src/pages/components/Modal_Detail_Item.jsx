@@ -827,7 +827,20 @@ export default function Modal_Detail_Item({
               <label htmlFor="detail_location">Location</label>
             </div>
 
-             <hr className="my-2" />   
+            {/* Supplier (read-only display) */}
+            <div className="form-floating mb-2">
+              <input
+                type="text"
+                id="detail_supplier"
+                readOnly
+                value={item?.supplier_name || '— None —'}
+                className="form-control form-control-sm bg-transparent border-0 text-muted"
+                placeholder="Supplier"
+              />
+              <label htmlFor="detail_supplier">Supplier</label>
+            </div>
+
+             <hr className="my-2" />
             <div className="form-floating mb-2 border-0">
               <textarea
                 id="detail_description"
