@@ -47,7 +47,7 @@
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI } from '../services/api';
@@ -156,6 +156,7 @@ export default function Employees() {
   } = useStore();
 
   const { isDarkMode } = useDarkMode();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Use the permission refresh hook
 
@@ -691,7 +692,23 @@ export default function Employees() {
     }
   };
 
-  // ─── [17] ADMIN HANDLERS ────────────────────────────────────────────────────
+  // ─── [17] LOCK / UNLOCK HANDLER ─────────────────────────────────────────────
+  const handleToggleLock = async (e, employee) => {
+    e.stopPropagation();
+    if (!isAdmin || employee.id === currentUser?.id) return;
+    try {
+      if (employee.is_locked) {
+        await employeesAPI.unlockUser(employee.id);
+      } else {
+        await employeesAPI.lockUser(employee.id);
+      }
+      updateEmployee(employee.id, { is_locked: !employee.is_locked, locked_until: null });
+    } catch {
+      setError('Failed to update account lock status');
+    }
+  };
+
+  // ─── [18] ADMIN HANDLERS ────────────────────────────────────────────────────
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1022,6 +1039,7 @@ export default function Employees() {
           {filteredEmployees.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
+                {isAdmin && <col style={{ width: '3rem' }} />}
                 <col />
                 <col style={{ width: '120px' }} />
               </colgroup>
@@ -1038,6 +1056,33 @@ export default function Employees() {
                       handleEdit(employee);
                     }}
                   >
+                    {/* Lock / unlock (admin only) */}
+                    {isAdmin && (
+                      <td className="px-1 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleLock(e, employee)}
+                          disabled={employee.id === currentUser?.id}
+                          className={`btn m-0 d-flex align-items-center justify-content-center ${
+                            employee.is_locked ? 'btn-outline-danger' : 'btn-outline-secondary'
+                          }`}
+                          style={{ width: '3rem', height: '3rem' }}
+                          title={
+                            employee.id === currentUser?.id
+                              ? 'Cannot lock your own account'
+                              : employee.is_locked
+                              ? 'Account locked — click to unlock'
+                              : 'Account unlocked — click to lock'
+                          }
+                        >
+                          {employee.is_locked
+                            ? <LockClosedIcon style={{ width: 20, height: 20 }} />
+                            : <LockOpenIcon style={{ width: 20, height: 20 }} />
+                          }
+                        </button>
+                      </td>
+                    )}
+
                     {/* Name with color coding for active/inactive */}
                     <td className="px-3">
                       <div 
@@ -1114,6 +1159,7 @@ export default function Employees() {
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
+                {isAdmin && <th style={{ width: '3rem' }}></th>}
                 <th>Employee</th>
                 <th>Role</th>
               </tr>
