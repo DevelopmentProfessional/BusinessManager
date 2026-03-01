@@ -1,3 +1,23 @@
+# ============================================================
+# FILE: leave_requests.py
+#
+# PURPOSE:
+#   Handles approval and denial actions for three types of HR workflow requests:
+#   leave (vacation/sick), onboarding, and offboarding. Enforces authorization
+#   rules (admin or assigned supervisor only) and adjusts employee leave-day
+#   counters when a leave request is approved or reversed.
+#
+# FUNCTIONAL PARTS:
+#   [1] Leave Request Action — approve/deny leave requests with vacation/sick day ledger updates
+#   [2] Onboarding Request Action — approve/deny new-hire onboarding requests
+#   [3] Offboarding Request Action — approve/deny employee offboarding requests
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select
 from uuid import UUID
@@ -8,6 +28,8 @@ from backend.routers.auth import get_current_user
 
 router = APIRouter()
 
+
+# ─── 1 LEAVE REQUEST ACTION ────────────────────────────────────────────────────
 
 @router.put("/leave-requests/{request_id}/action")
 def leave_request_action(
@@ -76,6 +98,8 @@ def leave_request_action(
     return {"message": f"Request {action}", "id": str(req.id), "status": req.status}
 
 
+# ─── 2 ONBOARDING REQUEST ACTION ───────────────────────────────────────────────
+
 @router.put("/onboarding-requests/{request_id}/action")
 def onboarding_request_action(
     request_id: str,
@@ -110,6 +134,8 @@ def onboarding_request_action(
 
     return {"message": f"Request {action}", "id": str(req.id), "status": req.status}
 
+
+# ─── 3 OFFBOARDING REQUEST ACTION ──────────────────────────────────────────────
 
 @router.put("/offboarding-requests/{request_id}/action")
 def offboarding_request_action(

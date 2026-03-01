@@ -1,3 +1,24 @@
+/*
+ * ============================================================
+ * FILE: Modal_Create_User.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal form for creating a new application user.
+ *   Collects username, email, password, first/last name, and role,
+ *   then delegates submission to the parent via the onSubmit prop.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Modal Shell — Full-screen Modal wrapper with flex column layout
+ *   [2] Header — "Create User" title bar with close button
+ *   [3] Scrollable Form Body — Floating-label inputs for all user fields and a role selector
+ *   [4] Footer — Cancel (X) and Submit (check) icon buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React from 'react';
 import Modal from './Modal';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
@@ -11,9 +32,11 @@ export default function Modal_Create_User({
   loading,
   roles,
 }) {
+  // ─── 1 RENDER ──────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+        {/* ─── 2 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Create User</h6>
@@ -22,6 +45,7 @@ export default function Modal_Create_User({
           </button>
         </div>
 
+        {/* ─── 3 SCROLLABLE FORM BODY ───────────────────────────────────── */}
         {/* Scrollable Body */}
         <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
           <form id="create-user-form" onSubmit={onSubmit}>
@@ -101,6 +125,7 @@ export default function Modal_Create_User({
           </form>
         </div>
 
+        {/* ─── 4 FOOTER ─────────────────────────────────────────────────── */}
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex align-items-center">

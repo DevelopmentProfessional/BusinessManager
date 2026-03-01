@@ -45,6 +45,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+// ─── 2 PDFVIEWER COMPONENT ─────────────────────────────────────────────────────
+
 export default function PDFViewer({ document, onEdit }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
@@ -63,6 +65,8 @@ export default function PDFViewer({ document, onEdit }) {
     console.error('react-pdf load error, falling back to iframe', err);
     setLoadError(true);
   }, []);
+
+  // ─── 3 NAVIGATION & ZOOM HELPERS ─────────────────────────────────────────────
 
   const goToPrev = () => setPageNumber((p) => Math.max(1, p - 1));
   const goToNext = () => setPageNumber((p) => Math.min(numPages || 1, p + 1));
@@ -93,6 +97,8 @@ export default function PDFViewer({ document, onEdit }) {
 
   const fileUrl = documentsAPI.fileUrl(document.id);
 
+  // ─── 4 IFRAME FALLBACK RENDER ─────────────────────────────────────────────────
+
   // Fallback: if react-pdf fails, use browser's native PDF viewer via iframe
   if (loadError) {
     return (
@@ -121,6 +127,8 @@ export default function PDFViewer({ document, onEdit }) {
       </div>
     );
   }
+
+  // ─── 5 PRIMARY RENDER ──────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full">

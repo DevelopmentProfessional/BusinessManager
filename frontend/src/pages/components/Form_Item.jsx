@@ -1,3 +1,38 @@
+/*
+ * ============================================================
+ * FILE: Form_Item.jsx
+ *
+ * PURPOSE:
+ *   Create/edit form for a single inventory item. Supports multiple
+ *   item types (Product, Resource, Asset, Location), allows photo
+ *   capture via camera or URL, barcode scanning for SKU entry, and
+ *   optional initial quantity/stock level fields for new items.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State              — form fields, scanner/camera/image mode,
+ *                            pending photo, available locations and services
+ *   [2] Effects            — populate form on edit, load locations and
+ *                            services, clean up object URL on unmount
+ *   [3] Handlers           — handleChange, handleBarcodeDetected,
+ *                            handlePhotoCapture, handleSubmit
+ *   [4] Derived Values     — type flags (isAsset, isLocation, isResource),
+ *                            isLowStock, getTypeIcon
+ *   [5] Render: Header     — title ("Add Item" / "Edit")
+ *   [6] Render: Image Area — preview, camera/URL toggle panel
+ *   [7] Render: Stock Fields — quantity, min stock level, price (or
+ *                              "no stock tracking" notice for assets/locations)
+ *   [8] Render: Core Fields — name, type, SKU with optional barcode button,
+ *                             location dropdown, linked service, description
+ *   [9] Render: Footer     — Cancel and Save/Create action buttons
+ *  [10] Render: Modals     — Widget_Camera overlay, barcode Scanner_Barcode modal
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useEffect, useState } from 'react';
 import Modal from './Modal';
 import {
@@ -12,6 +47,7 @@ import Widget_Camera from './Widget_Camera';
 import cacheService from '../../services/cacheService';
 import { servicesAPI } from '../../services/api';
 
+// ─── 1 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -35,6 +71,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
 
+  // ─── 2 EFFECTS ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (item) {
       setFormData({
@@ -71,6 +108,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     return () => { if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl); };
   }, []);
 
+  // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
   const handlePhotoCapture = (blob) => {
     setIsCameraOpen(false);
     setAddImageMode(null);
@@ -141,6 +179,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     }
   };
 
+  // ─── 4 DERIVED VALUES ────────────────────────────────────────────────────────
   const upperType = (formData.type || 'PRODUCT').toUpperCase();
   const isAsset = upperType === 'ASSET';
   const isLocation = upperType === 'LOCATION';
@@ -155,7 +194,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     return <CubeIcon className="h-16 w-16" />;
   };
 
-  return (    
+  // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
+  return (
     <div className="d-flex flex-column bg-white dark:bg-gray-900"      style={{ height: '100%' }}  >
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
@@ -163,6 +203,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         
       </div>
 
+      {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
       {/* Container_Scrollable Content Area */}
       <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="item-form" onSubmit={handleSubmit}>
@@ -313,6 +354,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
             </div>
           </div>
 
+          {/* ─── 8 RENDER: CORE FIELDS ───────────────────────────────────────────── */}
           {/* Full-width form fields below */}
           <div className="form-floating mb-2">
             <input
@@ -452,6 +494,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         </form>
       </div>
 
+      {/* ─── 9 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Fixed Footer with Action Buttons */}
       <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="d-flex align-items-center">
@@ -475,6 +518,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         </div>
       </div>
 
+      {/* ─── 10 RENDER: MODALS ──────────────────────────────────────────────────── */}
       {isCameraOpen && (
         <Widget_Camera
           onCapture={handlePhotoCapture}

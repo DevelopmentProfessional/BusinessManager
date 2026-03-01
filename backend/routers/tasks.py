@@ -1,3 +1,24 @@
+# ============================================================
+# FILE: tasks.py
+#
+# PURPOSE:
+#   Provides full CRUD management for tasks and their inter-task relationships.
+#   Tasks can be linked to other tasks by title, forming a "related" graph that
+#   is resolved and returned as human-readable titles in every response.
+#
+# FUNCTIONAL PARTS:
+#   [1] Request Models — Pydantic model for task link requests
+#   [2] Task Read Routes — list all tasks, get by ID, get by title
+#   [3] Task Write Routes — create and update tasks with optional linked-task title resolution
+#   [4] Task Delete Route — delete a task and remove all associated TaskLink records
+#   [5] Task Link Management — add a link by title and remove a link by target task ID
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List, Optional
@@ -6,10 +27,14 @@ from pydantic import BaseModel
 from backend.database import get_session
 from backend.models import Task, TaskCreate, TaskUpdate, TaskRead, TaskLink, TaskLinkRead
 
+# ─── 1 REQUEST MODELS ──────────────────────────────────────────────────────────
+
 class TaskLinkRequest(BaseModel):
     target_task_title: str
 
 router = APIRouter()
+
+# ─── 2 TASK READ ROUTES ────────────────────────────────────────────────────────
 
 @router.get("/tasks", response_model=List[TaskRead])
 async def get_tasks(session: Session = Depends(get_session)):
@@ -70,6 +95,8 @@ async def get_tasks_by_title(title: str, session: Session = Depends(get_session)
         }
         result.append(TaskRead(**task_dict))
     return result
+
+# ─── 3 TASK WRITE ROUTES ───────────────────────────────────────────────────────
 
 @router.post("/tasks", response_model=TaskRead)
 async def create_task(task_data: TaskCreate, session: Session = Depends(get_session)):
@@ -175,6 +202,8 @@ async def update_task(
     }
     return TaskRead(**task_dict)
 
+# ─── 4 TASK DELETE ROUTE ───────────────────────────────────────────────────────
+
 @router.delete("/tasks/{task_id}")
 async def delete_task(task_id: UUID, session: Session = Depends(get_session)):
     """Delete a task"""
@@ -196,6 +225,8 @@ async def delete_task(task_id: UUID, session: Session = Depends(get_session)):
     session.delete(task)
     session.commit()
     return {"message": "Task deleted successfully"}
+
+# ─── 5 TASK LINK MANAGEMENT ────────────────────────────────────────────────────
 
 @router.post("/tasks/{task_id}/link", response_model=TaskRead)
 async def link_task_by_title(

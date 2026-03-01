@@ -1,3 +1,33 @@
+/*
+ * ============================================================
+ * FILE: Modal_Detail_Item.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal for viewing or editing an inventory item, operating
+ *   in two modes: "sales" (display + add-to-cart) and "inventory" (full
+ *   edit form with image management, barcode scanning, and stock tracking).
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State Initialisation — Form data, image list, scanner/camera state, edit mode flags
+ *   [2] Data Loaders — loadImages (fetches InventoryImage records), location cache read
+ *   [3] Form & SKU Handlers — handleChange, isDuplicateSku, handleBarcodeDetected
+ *   [4] Image Management Handlers — add URL, capture photo, delete image, edit image URL
+ *   [5] Cart & Inventory Action Handlers — handleAddToCart, handleUpdateInventory, handleDelete
+ *   [6] Derived Display Helpers — getTypeIcon, isLowStock, renderImage (with nav arrows)
+ *   [7] Sales Mode Header — Full-width image with stock badge and multi-image navigation
+ *   [8] Inventory Mode Header — Compact "Edit Item" title bar
+ *   [9] Sales Mode Content — Name, price, description, quantity selector, add-to-cart button
+ *   [10] Inventory Mode Form — Image panel + stock fields side-by-side, photo strip,
+ *        full-width form fields (name, type, SKU with scanner, location, description)
+ *   [11] Fixed Footer — Delete / Cancel / Save actions (inventory mode only)
+ *   [12] Sub-modal Mounts — Barcode scanner modal and camera widget
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React, { useState, useEffect } from 'react';
 import {
   XMarkIcon, ShoppingCartIcon, TagIcon,
@@ -14,9 +44,7 @@ import { getImageSrc } from './imageUtils';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
 
-/**
- * Modal_Detail_Item - Full screen modal for viewing/editing items
- */
+// ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Detail_Item({
   isOpen,
   onClose,
@@ -91,6 +119,7 @@ export default function Modal_Detail_Item({
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode]);
 
+  // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
   const loadImages = async (inventoryId) => {
     try {
       const response = await inventoryAPI.getImages(inventoryId);
@@ -104,6 +133,7 @@ export default function Modal_Detail_Item({
   };
 
 
+  // ─── 3 FORM & SKU HANDLERS ────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     const nextValue = type === 'number' ? (parseFloat(value) || 0) : value;
@@ -143,6 +173,7 @@ export default function Modal_Detail_Item({
     setIsScannerOpen(false);
   };
 
+  // ─── 4 IMAGE MANAGEMENT HANDLERS ──────────────────────────────────────────
   const handleAddImageUrl = async () => {
     const url = newImageUrl.trim();
     if (!url) return;
@@ -197,6 +228,7 @@ export default function Modal_Detail_Item({
     }
   };
 
+  // ─── 5 CART & INVENTORY ACTION HANDLERS ───────────────────────────────────
   const handleAddToCart = () => {
     onAddToCart?.(item, itemType, quantity);
     onClose();
@@ -228,6 +260,7 @@ export default function Modal_Detail_Item({
     }
   };
 
+  // ─── 6 DISPLAY HELPERS ────────────────────────────────────────────────────
   const incrementQuantity = () => setQuantity(q => q + 1);
   const decrementQuantity = () => setQuantity(q => Math.max(1, q - 1));
 
@@ -309,6 +342,7 @@ export default function Modal_Detail_Item({
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
+      {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
       {/* Header for Inventory Mode - Fixed at top */}
       {!isSalesMode && (
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">

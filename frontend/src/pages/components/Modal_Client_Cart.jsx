@@ -1,3 +1,29 @@
+/*
+ * ============================================================
+ * FILE: Modal_Client_Cart.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal that shows a client-specific shopping cart persisted
+ *   in localStorage. Allows quantity adjustment and item removal, and
+ *   provides a shortcut to navigate to the Sales page with the cart and
+ *   client pre-loaded.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] localStorage Helpers — Exported utility functions for reading, writing,
+ *       and counting items in a client-keyed cart (shared format with Sales.jsx)
+ *   [2] Component State & Effects — Cart load on open and persistence on change
+ *   [3] Cart Mutation Handlers — updateQty, removeItem, and total calculation
+ *   [4] Navigation Handler — Navigates to /sales with preSelectedClient and preloadCart
+ *   [5] Header — Cart title with client name
+ *   [6] Content Area — Scrollable list of cart items with quantity controls, or empty state
+ *   [7] Footer — Close and Go-to-Sales action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React, { useState, useEffect } from 'react';
 import {
   XMarkIcon, PlusIcon, MinusIcon,
@@ -7,7 +33,7 @@ import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import { useNavigate } from 'react-router-dom';
 
-// ─── localStorage helpers (shared cart format with Sales.jsx) ────────────────
+// ─── 1 LOCALSTORAGE HELPERS ────────────────────────────────────────────────
 
 export const getClientCart = (clientId) => {
   try {
@@ -26,12 +52,13 @@ export const getClientCartCount = (clientId) => {
   return getClientCart(clientId).reduce((sum, item) => sum + (item.quantity || 1), 0);
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── 2 COMPONENT DEFINITION ────────────────────────────────────────────────
 
 export default function Modal_Client_Cart({ isOpen, onClose, client }) {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
 
+  // ─── 3 STATE & EFFECTS ────────────────────────────────────────────────────
   // Load cart when modal opens
   useEffect(() => {
     if (isOpen && client) {
@@ -46,6 +73,7 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
     }
   }, [cartItems, client?.id]);
 
+  // ─── 4 CART MUTATION HANDLERS ─────────────────────────────────────────────
   const updateQty = (cartKey, delta) => {
     setCartItems(prev =>
       prev
@@ -60,6 +88,7 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
 
   const total = cartItems.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
+  // ─── 5 NAVIGATION HANDLER ─────────────────────────────────────────────────
   const handleGoToSales = () => {
     navigate('/sales', { state: { preSelectedClient: client, preloadCart: cartItems } });
     onClose();

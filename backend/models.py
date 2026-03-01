@@ -1,3 +1,47 @@
+# ============================================================
+# FILE: models.py
+#
+# PURPOSE:
+#   Defines every SQLModel table class (ORM), every Pydantic read/create/
+#   update schema, and all Python Enum types used across the BusinessManager
+#   backend. This file is the single source of truth for the database schema.
+#
+# FUNCTIONAL PARTS:
+#   [1]  Imports                     — SQLModel, SQLAlchemy, stdlib
+#   [2]  Enums                       — EntityType, ItemType, AttendanceStatus,
+#                                      MembershipTier, AppointmentType,
+#                                      RecurrenceFrequency, TaskPriority,
+#                                      UserRole, PermissionType
+#   [3]  Base Model                  — BaseModel (id, created_at, updated_at)
+#   [4]  User & Auth Models          — User, UserPermission, Role, RolePermission
+#   [5]  Client Models               — Client
+#   [6]  Inventory Models            — Inventory, InventoryImage, Supplier
+#   [7]  Service Models              — Service, ServiceResource, ServiceAsset,
+#                                      ServiceEmployee, ServiceLocation
+#   [8]  Schedule Models             — Schedule, ScheduleAttendee, ScheduleDocument
+#   [9]  Attendance Models           — Attendance
+#   [10] App Settings Model          — AppSettings
+#   [11] Document Models             — Document, DocumentBlob, DocumentCategory,
+#                                      DocumentAssignment
+#   [12] Task Models                 — TaskLink, Task
+#   [13] Leave & HR Models           — LeaveRequest, OnboardingRequest,
+#                                      OffboardingRequest, InsurancePlan, PaySlip
+#   [14] Sales Models                — SaleTransaction, SaleTransactionItem
+#   [15] Chat Models                 — ChatMessage
+#   [16] Document Template Models    — DocumentTemplate
+#   [17] Read / Create / Update Schemas — all Pydantic response/request models
+#                                         grouped by domain (Client, Inventory,
+#                                         Service, User, Schedule, Task, Payroll,
+#                                         Sales, Chat, Template, AppSettings,
+#                                         DatabaseConnection, Auth)
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
+# ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, LargeBinary
 from typing import Optional, List, Union
@@ -6,6 +50,7 @@ from uuid import UUID, uuid4
 from enum import Enum
 import bcrypt
 
+# ─── 2 ENUMS ───────────────────────────────────────────────────────────────────
 class EntityType(str, Enum):
     CLIENT = "client"
     INVENTORY = "inventory"  # Changed from ITEM
@@ -71,12 +116,14 @@ class PermissionType(str, Enum):
     ADMIN = "admin"
     VIEW_ALL = "view_all"  # Schedule page uses this instead of WRITE_ALL
 
+# ─── 3 BASE MODEL ──────────────────────────────────────────────────────────────
 # Base model with common fields
 class BaseModel(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default=None)
 
+# ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
 # User model for authentication (consolidated user/employee)
 class User(BaseModel, table=True):
     username: str = Field(unique=True, index=True)
@@ -172,6 +219,7 @@ class RolePermission(BaseModel, table=True):
     role: Role = Relationship(back_populates="role_permissions")
 
 
+# ─── 5 CLIENT MODELS ───────────────────────────────────────────────────────────
 # Client model
 class Client(BaseModel, table=True):
     name: str = Field(unique=True, index=True)  # Client names must be unique
@@ -190,6 +238,7 @@ class Client(BaseModel, table=True):
     schedules: List["Schedule"] = Relationship(back_populates="client")
 
 
+# ─── 6 INVENTORY MODELS ────────────────────────────────────────────────────────
 # Inventory model (standalone - replaces Item model)
 class Inventory(BaseModel, table=True):
     # Product/Item fields (merged from former Item model)
@@ -227,6 +276,7 @@ class InventoryImage(BaseModel, table=True):
     inventory_item: Inventory = Relationship(back_populates="images")
 
 
+# ─── 6b SUPPLIER MODEL ─────────────────────────────────────────────────────────
 # Supplier model
 class Supplier(BaseModel, table=True):
     name: str = Field(index=True)
@@ -239,6 +289,7 @@ class Supplier(BaseModel, table=True):
     inventory_items: List[Inventory] = Relationship(back_populates="supplier")
 
 
+# ─── 7 SERVICE MODELS ──────────────────────────────────────────────────────────
 # Service model
 class Service(BaseModel, table=True):
     name: str = Field(unique=True, index=True)  # Service names must be unique
@@ -285,6 +336,7 @@ class ServiceLocation(BaseModel, table=True):
     notes: Optional[str] = Field(default=None)
 
 
+# ─── 8 SCHEDULE MODELS ─────────────────────────────────────────────────────────
 # Employee model
 # Employee model removed - now using User model directly
 
@@ -328,6 +380,7 @@ class ScheduleDocument(BaseModel, table=True):
     document_id: UUID = Field(foreign_key="document.id")
 
 
+# ─── 9 ATTENDANCE MODELS ───────────────────────────────────────────────────────
 # Asset model
 ## Asset model removed
 
@@ -344,6 +397,7 @@ class Attendance(BaseModel, table=True):
     user: User = Relationship(back_populates="attendance_records")
 
 
+# ─── 10 APP SETTINGS MODEL ─────────────────────────────────────────────────────
 # App Settings model (singleton pattern for global settings)
 class AppSettings(BaseModel, table=True):
     __tablename__ = "app_settings"
@@ -365,6 +419,7 @@ class AppSettings(BaseModel, table=True):
     company_address: Optional[str] = Field(default=None)
 
 
+# ─── 11 DOCUMENT MODELS ────────────────────────────────────────────────────────
 # Document model (table name and types aligned with PostgreSQL schema)
 class Document(BaseModel, table=True):
     __tablename__ = "document"
@@ -452,6 +507,8 @@ class DocumentAssignmentRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── 17 READ / CREATE / UPDATE SCHEMAS ─────────────────────────────────────────
+# ─── 17a CLIENT SCHEMAS ────────────────────────────────────────────────────────
 # Request/Response models for API
 class ClientCreate(SQLModel):
     name: str
@@ -516,6 +573,7 @@ class ClientRead(SQLModel):
         )
 
 
+# ─── 17b INVENTORY SCHEMAS ─────────────────────────────────────────────────────
 class InventoryCreate(SQLModel):
     """Schema for creating inventory items (replaces ItemCreate)"""
     name: str
@@ -530,6 +588,7 @@ class InventoryCreate(SQLModel):
     supplier_id: Optional[UUID] = None
 
 
+# ─── 17c SERVICE SCHEMAS ───────────────────────────────────────────────────────
 class ServiceRead(SQLModel):
     """Schema for reading service records (excludes relationship fields)"""
     id: UUID
@@ -594,6 +653,7 @@ class ServiceLocationRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── 17d SUPPLIER SCHEMAS ──────────────────────────────────────────────────────
 class SupplierRead(SQLModel):
     """Schema for reading supplier records (excludes relationship fields)"""
     id: UUID
@@ -608,6 +668,7 @@ class SupplierRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── 17e ATTENDANCE SCHEMAS ────────────────────────────────────────────────────
 class AttendanceRead(SQLModel):
     """Schema for reading attendance records (excludes relationship fields)"""
     id: UUID
@@ -623,6 +684,7 @@ class AttendanceRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── 17b2 INVENTORY READ / IMAGE SCHEMAS ───────────────────────────────────────
 class InventoryRead(SQLModel):
     """Schema for reading inventory items (includes images)"""
     id: UUID
@@ -678,6 +740,7 @@ class InventoryImageUpdate(SQLModel):
     sort_order: Optional[int] = None
 
 
+# ─── 17f USER SCHEMAS ──────────────────────────────────────────────────────────
 class UserCreate(SQLModel):
     username: str
     email: Optional[str] = None
@@ -767,6 +830,7 @@ class UserRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── 17g USER PERMISSION SCHEMAS ───────────────────────────────────────────────
 class UserPermissionCreate(SQLModel):
     user_id: Optional[UUID] = None
     page: str
@@ -792,6 +856,7 @@ class UserPermissionRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── 17h ROLE SCHEMAS ──────────────────────────────────────────────────────────
 # Role request/response models
 class RoleCreate(SQLModel):
     name: str

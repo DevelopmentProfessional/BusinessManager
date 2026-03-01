@@ -1,3 +1,26 @@
+/*
+ * ============================================================
+ * FILE: Modal_Manage_Roles.jsx
+ *
+ * PURPOSE:
+ *   Full-screen modal for creating and managing application roles and their permissions.
+ *   Allows admins to create new roles, delete non-system roles, and assign or remove
+ *   page-level permissions from each role inline.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Header — title bar with close button
+ *   [2] Status Messages — error and success alert banners
+ *   [3] Create New Role Form — name and description inputs with submit button
+ *   [4] Existing Roles List — per-role card with permissions badges and add-permission selectors
+ *   [5] Footer — centered close button
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React from 'react';
 import Modal from './Modal';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -26,6 +49,7 @@ export default function Modal_Manage_Roles({
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Roles</h6>
@@ -34,6 +58,7 @@ export default function Modal_Manage_Roles({
           </button>
         </div>
 
+        {/* ─── 2 STATUS MESSAGES ──────────────────────────────────────────────── */}
         {/* Scrollable Body */}
         <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
           {error && (
@@ -47,6 +72,7 @@ export default function Modal_Manage_Roles({
             </div>
           )}
 
+          {/* ─── 3 CREATE NEW ROLE FORM ─────────────────────────────────────────── */}
           {/* Create New Role Form */}
           <form onSubmit={onCreateRole} className="mb-4 p-3 border rounded">
             <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Create New Role</h5>
@@ -78,6 +104,7 @@ export default function Modal_Manage_Roles({
             </div>
           </form>
 
+          {/* ─── 4 EXISTING ROLES LIST ──────────────────────────────────────────── */}
           {/* Existing Roles List */}
           <div className="mt-4">
             <h5 className={`mb-3 ${isDarkMode ? 'text-light' : 'text-dark'}`}>Existing Roles</h5>
@@ -179,6 +206,7 @@ export default function Modal_Manage_Roles({
           </div>
         </div>
 
+        {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex align-items-center">

@@ -1,7 +1,43 @@
+/*
+ * ============================================================
+ * FILE: XlsxViewer.jsx
+ *
+ * PURPOSE:
+ *   Fetches and renders an Excel (.xlsx) spreadsheet in-browser using the xlsx
+ *   library. Supports multi-sheet navigation, a toggleable cell-editing mode with
+ *   inline inputs, row/column add and row delete, and saves modified workbook
+ *   data back to the server via the documents API.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Component State & Refs   — workbook, sheet data, loading/error, edit mode,
+ *                                  cell edit, save status, and timer refs
+ *   [2] Data Loading             — useEffect that fetches the file, parses it with
+ *                                  xlsx, and seeds activeSheet/sheetData
+ *   [3] Sheet Navigation         — handleSheetChange switches the active sheet
+ *   [4] Cell Editing Helpers     — handleCellDoubleClick, commitEdit, cancelEdit,
+ *                                  handleCellKeyDown (Enter/Escape/Tab support)
+ *   [5] Row & Column Mutations   — handleAddRow, handleDeleteRow, handleAddColumn
+ *   [6] Save Logic               — saveWorkbook (POST binary to API), Ctrl+S listener,
+ *                                  cleanup timer on unmount
+ *   [7] Toolbar Render           — edit-mode toggle, save button, add row/col, metadata button
+ *   [8] Sheet Tabs Render        — tab strip shown when workbook has more than one sheet
+ *   [9] Spreadsheet Table Render — sticky header with column letters, row numbers,
+ *                                  editable cells, delete row controls
+ *   [10] Status Bar Render       — row/column count, active sheet name, unsaved indicator
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { ArrowDownTrayIcon, PencilIcon, TableCellsIcon, PlusIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { documentsAPI } from '../../../services/api';
+
+// ─── 1 COMPONENT STATE & REFS ──────────────────────────────────────────────────
 
 export default function XlsxViewer({ document, onEdit }) {
   const [workbook, setWorkbook] = useState(null);
@@ -20,6 +56,8 @@ export default function XlsxViewer({ document, onEdit }) {
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
   const saveTimerRef = useRef(null);
   const editInputRef = useRef(null);
+
+  // ─── 2 DATA LOADING ────────────────────────────────────────────────────────────
 
   useEffect(() => {
     let canceled = false;
@@ -55,6 +93,8 @@ export default function XlsxViewer({ document, onEdit }) {
     return () => { canceled = true; };
   }, [document.id]);
 
+  // ─── 3 SHEET NAVIGATION ────────────────────────────────────────────────────────
+
   const handleSheetChange = (sheetName) => {
     if (!workbook) return;
     setActiveSheet(sheetName);
@@ -76,6 +116,8 @@ export default function XlsxViewer({ document, onEdit }) {
     }
     return letter;
   };
+
+  // ─── 4 CELL EDITING HELPERS ────────────────────────────────────────────────────
 
   // Start editing a cell on double-click
   const handleCellDoubleClick = (rowIdx, colIdx) => {
@@ -153,6 +195,8 @@ export default function XlsxViewer({ document, onEdit }) {
     }
   };
 
+  // ─── 5 ROW & COLUMN MUTATIONS ──────────────────────────────────────────────────
+
   // Add a new row at the bottom
   const handleAddRow = () => {
     const newRow = Array(maxCols).fill('');
@@ -195,6 +239,8 @@ export default function XlsxViewer({ document, onEdit }) {
       workbook.Sheets[activeSheet] = XLSX.utils.aoa_to_sheet(newData);
     }
   };
+
+  // ─── 6 SAVE LOGIC ──────────────────────────────────────────────────────────────
 
   // Save workbook back to server
   const saveWorkbook = useCallback(async () => {
@@ -254,6 +300,8 @@ export default function XlsxViewer({ document, onEdit }) {
     }
     setIsEditing(!isEditing);
   };
+
+  // ─── 7 TOOLBAR RENDER ──────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full">
@@ -337,6 +385,7 @@ export default function XlsxViewer({ document, onEdit }) {
         </div>
       </div>
 
+      {/* ─── 8 SHEET TABS RENDER ────────────────────────────────────────────── */}
       {/* Sheet Tabs */}
       {workbook && workbook.SheetNames.length > 1 && (
         <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 overflow-x-auto">
@@ -356,6 +405,7 @@ export default function XlsxViewer({ document, onEdit }) {
         </div>
       )}
 
+      {/* ─── 9 SPREADSHEET TABLE RENDER ─────────────────────────────────────── */}
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white" ref={tableRef}>
         {loading && (
@@ -466,6 +516,7 @@ export default function XlsxViewer({ document, onEdit }) {
         )}
       </div>
 
+      {/* ─── 10 STATUS BAR RENDER ───────────────────────────────────────────── */}
       {/* Status bar */}
       {!loading && !error && (
         <div className="px-3 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-4">

@@ -339,6 +339,7 @@ export default function Documents() {
     loadTemplates();
   }, []);
 
+  // ─── 8  TEMPLATE API HANDLERS ─────────────────────────────────────────────
   const loadTemplates = async () => {
     setTemplatesLoading(true);
     try {
@@ -384,6 +385,7 @@ export default function Documents() {
     }
   };
 
+  // ─── 9  DOCUMENT DATA LOADING ─────────────────────────────────────────────
   const loadDocuments = async (retries = 2) => {
     setLoading(true);
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -430,6 +432,7 @@ export default function Documents() {
     }
   };
 
+  // ─── 10  DOCUMENT VIEW / EDIT HANDLERS ───────────────────────────────────
   // View document in modal
   const handleView = (doc) => {
     setViewerDoc(doc);
@@ -480,6 +483,7 @@ export default function Documents() {
     navigate(`/documents/${doc.id}/edit`);
   };
 
+  // ─── 11  DOCUMENT SIGN HANDLERS ──────────────────────────────────────────
   // Sign document
   const handleOpenSign = async (doc) => {
     setSignDoc(doc);
@@ -521,6 +525,7 @@ export default function Documents() {
     }
   };
 
+  // ─── 12  DOCUMENT HISTORY HANDLERS ───────────────────────────────────────
   // History
   const handleOpenHistory = async (doc) => {
     setHistoryDoc(doc);
@@ -554,6 +559,7 @@ export default function Documents() {
     }
   };
 
+  // ─── 13  UPLOAD / DELETE HANDLERS ────────────────────────────────────────
   // Upload
   const handleUploadDocument = () => {
     if (!hasPermission('documents', 'write')) {
@@ -595,6 +601,7 @@ export default function Documents() {
     }
   };
 
+  // ─── 14  CATEGORY MANAGEMENT HANDLERS ────────────────────────────────────
   // Categories management
   const handleCreateCategory = async (e) => {
     e?.preventDefault?.();
@@ -651,6 +658,7 @@ export default function Documents() {
     }
   };
 
+  // ─── 15  RENDER / RETURN ──────────────────────────────────────────────────
   // Permission check after all hooks
   if (
     !hasPermission('documents', 'read') &&

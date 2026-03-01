@@ -1,11 +1,42 @@
+# ============================================================
+# FILE: db_config.py
+#
+# PURPOSE:
+#   Manages database environment selection (local SQLite, local Postgres,
+#   Render development/test/production). Provides helpers for reading and
+#   writing the active environment, resolving the connection URL, and
+#   inspecting or extending the environment registry.
+#
+# FUNCTIONAL PARTS:
+#   [1] Imports & Configuration        — stdlib imports and CONFIG_FILE path
+#   [2] Environment Registry           — DATABASE_ENVIRONMENTS dict and
+#                                        DEFAULT_ENVIRONMENT constant
+#   [3] Environment Read/Write         — get_current_environment(),
+#                                        set_current_environment()
+#   [4] URL Resolution                 — get_database_url() with env-var override
+#   [5] Environment Inspection Helpers — get_all_environments(),
+#                                        get_configured_environments(),
+#                                        get_environment_info()
+#   [6] Environment Mutation Helpers   — add_environment(),
+#                                        validate_database_url()
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 """
 Database environment configuration.
 Allows switching between Development, Test, and Production databases.
 """
+
+# ─── 1 IMPORTS & CONFIGURATION ─────────────────────────────────────────────────
 import os
 import json
 from pathlib import Path
 
+# ─── 2 ENVIRONMENT REGISTRY ────────────────────────────────────────────────────
 # Configuration file path (stored in backend folder)
 CONFIG_FILE = Path(__file__).parent / "db_environment.json"
 
@@ -22,6 +53,7 @@ DATABASE_ENVIRONMENTS = {
 DEFAULT_ENVIRONMENT = "local"
 
 
+# ─── 3 ENVIRONMENT READ / WRITE ────────────────────────────────────────────────
 def get_current_environment() -> str:
     """Get the currently selected database environment."""
     if CONFIG_FILE.exists():
@@ -46,6 +78,7 @@ def set_current_environment(environment: str) -> bool:
         return False
 
 
+# ─── 4 URL RESOLUTION ──────────────────────────────────────────────────────────
 def get_database_url() -> str:
     """Get the database URL for the current environment.
     When DATABASE_URL is set (e.g. on Render), use it so the deployed app uses the linked database.
@@ -69,6 +102,7 @@ def get_database_url() -> str:
     return url
 
 
+# ─── 5 ENVIRONMENT INSPECTION HELPERS ──────────────────────────────────────────
 def get_all_environments() -> dict:
     """Get all available environments with their configuration status."""
     current = get_current_environment()
@@ -136,6 +170,7 @@ def get_environment_info(include_urls: bool = False) -> dict:
     return result
 
 
+# ─── 6 ENVIRONMENT MUTATION HELPERS ────────────────────────────────────────────
 def add_environment(name: str, url: str) -> bool:
     """
     Add or update a database environment configuration.

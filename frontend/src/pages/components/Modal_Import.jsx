@@ -28,6 +28,7 @@ import Button_Icon from './Button_Icon';
 import Footer_Action from './Footer_Action';
 import Modal from './Modal';
 
+// ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
   const [files, setFiles] = useState({
     clients: null,
@@ -38,6 +39,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // ─── 2 FILE SELECTION HANDLER ─────────────────────────────────────────────
   const handleFileChange = (fileType, e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
@@ -51,6 +53,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
     }
   };
 
+  // ─── 3 UPLOAD HANDLER ─────────────────────────────────────────────────────
   const handleUpload = async () => {
     // Check if at least one file is selected
     const hasFiles = Object.values(files).some(file => file !== null);
@@ -102,6 +105,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
     }
   };
 
+  // ─── 4 CLOSE HANDLER ──────────────────────────────────────────────────────
   const handleClose = () => {
     setFiles({ clients: null, services: null, appointments: null });
     setError('');
@@ -109,6 +113,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
     onClose();
   };
 
+  // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
     <Modal
       isOpen={isOpen}

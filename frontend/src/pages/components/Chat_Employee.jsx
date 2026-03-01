@@ -1,9 +1,42 @@
+/*
+ * ============================================================
+ * FILE: Chat_Employee.jsx
+ *
+ * PURPOSE:
+ *   A full-screen direct-message chat panel between the current user and a
+ *   selected employee. It polls the backend every 5 seconds for new messages,
+ *   supports sending text or sharing a document from the document library, and
+ *   groups messages by date with visual separators.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State & Refs — Message list, loading/sending flags, text input, document
+ *       picker visibility and document list, polling interval ref
+ *   [2] Message Loading & Polling — loadMessages fetches history; useEffect sets
+ *       up a 5-second poll and marks the conversation as read on mount
+ *   [3] Auto-scroll — useEffect scrolls to the bottom ref whenever messages change
+ *   [4] Send Text — handleSend submits the text message via chatAPI
+ *   [5] Send Document — handleSendDocument shares a document link via chatAPI
+ *   [6] Document Picker — openDocPicker lazily loads the document list; filtered
+ *       by docSearch
+ *   [7] Message Grouping — Builds grouped list with date-separator entries
+ *   [8] Render — Full-screen overlay with header, scrollable message list,
+ *       optional document picker panel, and bottom input bar
+ *   [9] Utility Functions — formatTime and formatDate helpers for timestamps
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { chatAPI, documentsAPI } from '../../services/api';
 import useDarkMode from '../../services/useDarkMode';
 
 export default function Chat_Employee({ employee, currentUser, onClose }) {
+  // ─── 1 STATE & REFS ────────────────────────────────────────────────────────
+
   const { isDarkMode } = useDarkMode();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +52,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
   const inputRef = useRef(null);
+
+  // ─── 2 MESSAGE LOADING & POLLING ───────────────────────────────────────────
 
   const loadMessages = async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -40,9 +75,13 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     return () => clearInterval(pollRef.current);
   }, [employee.id]);
 
+  // ─── 3 AUTO-SCROLL ─────────────────────────────────────────────────────────
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // ─── 4 SEND TEXT ───────────────────────────────────────────────────────────
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -62,6 +101,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     }
   };
 
+  // ─── 5 SEND DOCUMENT ───────────────────────────────────────────────────────
+
   const handleSendDocument = async (doc) => {
     setSending(true);
     setShowDocPicker(false);
@@ -79,6 +120,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
       setSending(false);
     }
   };
+
+  // ─── 6 DOCUMENT PICKER ─────────────────────────────────────────────────────
 
   const openDocPicker = async () => {
     setShowDocPicker(v => !v);
@@ -102,6 +145,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     (d.description || '').toLowerCase().includes(docSearch.toLowerCase())
   );
 
+  // ─── 7 MESSAGE GROUPING ────────────────────────────────────────────────────
+
   // Build a grouped message list with date separators
   const grouped = [];
   let currentDate = null;
@@ -116,9 +161,11 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
 
   const dm = isDarkMode;
 
+  // ─── 8 RENDER ──────────────────────────────────────────────────────────────
+
   return (
     <div
-      style={{ 
+      style={{
         position: 'fixed',
         top: 0,
         left: 0,
@@ -307,9 +354,9 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                   value={text}
                   onChange={e => setText(e.target.value)}
                   disabled={sending}
-                  style={{ 
-                    height: '3rem', 
-                    resize: 'none', 
+                  style={{
+                    height: '3rem',
+                    resize: 'none',
                     maxWidth: '600px',
                     flex: '1 1 auto',
                     lineHeight: '3rem',
@@ -340,6 +387,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     </div>
   );
 }
+
+// ─── 9 UTILITY FUNCTIONS ───────────────────────────────────────────────────────
 
 function formatTime(ts) {
   const d = new Date(ts);

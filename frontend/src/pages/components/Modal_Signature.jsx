@@ -1,14 +1,40 @@
+/*
+ * ============================================================
+ * FILE: Modal_Signature.jsx
+ *
+ * PURPOSE:
+ *   Modal for viewing and capturing a user's digital signature.
+ *   On open it fetches any existing saved signature; if none exists the
+ *   drawing pad is shown immediately. The user can draw a new signature,
+ *   save it to the backend, or replace an existing one.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State Initialization — saved signature data, loading flag, message, pad visibility
+ *   [2] Load Signature Effect — fetches the current user's signature on modal open
+ *   [3] Save Handler — PUTs the drawn signature to the API and closes on success
+ *   [4] Cancel Handler — hides the drawing pad or closes the modal depending on context
+ *   [5] JSX Render — scrollable content area with loading spinner, pad or image display, and footer actions
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import Widget_Signature from './Widget_Signature';
 import api from '../../services/api';
 
+// ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
   const [savedSignature, setSavedSignature] = useState(null);
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState('');
   const [showSignaturePad, setShowSignaturePad] = useState(false);
 
+  // ─── 2 LOAD SIGNATURE EFFECT ──────────────────────────────────────────────
   useEffect(() => {
     const loadSignature = async () => {
       if (!isOpen || !userId) return;

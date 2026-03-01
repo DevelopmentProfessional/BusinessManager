@@ -1,3 +1,26 @@
+/*
+ * ============================================================
+ * FILE: Chart_Report.jsx
+ *
+ * PURPOSE:
+ *   A generic chart wrapper that renders one of four Chart.js chart types
+ *   (Line, Bar, Pie, Doughnut) based on the `type` prop. It registers the
+ *   required Chart.js components globally, provides sensible defaults, and
+ *   handles loading and empty-data states gracefully.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Chart.js Registration — Registers all required Chart.js scales, elements,
+ *       and plugins once at module load time
+ *   [2] Default Options — Shared responsive/legend configuration baseline
+ *   [3] Component Logic — Loading and empty-data guards, chart-type-specific
+ *       option overrides (scales, legend position), and chart type dispatch
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ * ============================================================
+ */
 import React from 'react';
 import {
   Chart as ChartJS,
@@ -13,6 +36,8 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 
+// ─── 1 CHART.JS REGISTRATION ───────────────────────────────────────────────────
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -25,6 +50,8 @@ ChartJS.register(
   ArcElement
 );
 
+// ─── 2 DEFAULT OPTIONS ─────────────────────────────────────────────────────────
+
 const defaultOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -34,6 +61,8 @@ const defaultOptions = {
     },
   },
 };
+
+// ─── 3 COMPONENT LOGIC ─────────────────────────────────────────────────────────
 
 const Chart_Report = ({ data, type, title, loading }) => {
   if (loading) {

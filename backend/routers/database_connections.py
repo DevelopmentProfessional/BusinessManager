@@ -1,3 +1,23 @@
+# ============================================================
+# FILE: database_connections.py
+#
+# PURPOSE:
+#   Manages named external database connection records that administrators can
+#   store, configure, and optionally expose to regular users for profile-level
+#   selection. All write operations are admin-only; read of the full list is
+#   admin/manager-only; a filtered "visible" list is available to all authenticated users.
+#
+# FUNCTIONAL PARTS:
+#   [1] Read Routes — list all connections (admin/manager), list user-visible connections, get single connection
+#   [2] Write Routes — create, update (PATCH), and delete connections (admin only)
+#   [3] Visibility Toggle — PATCH endpoint to flip the visible_to_users flag (admin only)
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+# ============================================================
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import List
@@ -15,6 +35,8 @@ from backend.routers.auth import get_current_user
 
 router = APIRouter(prefix="/database-connections", tags=["database-connections"])
 
+
+# ─── 1 READ ROUTES ─────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[DatabaseConnectionRead])
 def get_all_connections(
@@ -68,6 +90,8 @@ def get_connection(
     
     return DatabaseConnectionRead.model_validate(connection)
 
+
+# ─── 2 WRITE ROUTES ────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=DatabaseConnectionRead, status_code=status.HTTP_201_CREATED)
 def create_connection(
@@ -149,6 +173,8 @@ def delete_connection(
     
     return None
 
+
+# ─── 3 VISIBILITY TOGGLE ───────────────────────────────────────────────────────
 
 @router.patch("/{connection_id}/toggle-visibility", response_model=DatabaseConnectionRead)
 def toggle_visibility(
