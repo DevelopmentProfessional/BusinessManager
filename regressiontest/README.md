@@ -117,9 +117,11 @@ cd regressiontest
 python orchestrator.py
 ```
 
-The orchestrator skips Stages 2–4 automatically if Stage 1 fails (no point testing a dead API).
+**Behavior:** ALL stages and ALL tests run to completion, regardless of failures. This provides a complete pass/fail ratio showing exactly which functions work and which don't.
 
 Report is written to `reports/regression_report.html` — open it in a browser.
+
+JSON reports for each stage are in `reports/stage1.json`, `reports/stage2.json`, etc.
 
 ---
 
@@ -166,15 +168,21 @@ pytest stage2_api/ -m stage2 -v -x
 ### Orchestrator options
 
 ```bash
-# Run only stages 1 and 2
+# Run only specific stages
 python orchestrator.py --stages 1 2
 
-# Stop each stage on first failure
-python orchestrator.py --failfast
-
-# Skip HTML report generation
+# Skip HTML report generation (JSON reports still created)
 python orchestrator.py --no-report
 ```
+
+### View failures from last run
+
+```powershell
+# PowerShell
+.\show-failures.ps1
+```
+
+This reads the JSON reports and displays all failures with full error messages and a summary count.
 
 ---
 
