@@ -16,9 +16,18 @@ if ($reports.Count -eq 0) {
 }
 
 $hasFailures = $false
+$totalPassed = 0
+$totalFailed = 0
+$totalSkipped = 0
 
 foreach ($report in $reports) {
     $json = Get-Content $report.FullName | ConvertFrom-Json
+    
+    if ($json.summary) {
+        $totalPassed += $json.summary.passed
+        $totalFailed += $json.summary.failed
+        $totalSkipped += $json.summary.skipped
+    }
     
     if ($json.tests) {
         $failures = $json.tests | Where-Object { $_.outcome -eq "failed" }
@@ -37,6 +46,11 @@ foreach ($report in $reports) {
         }
     }
 }
+
+Write-Host "`n=== SUMMARY ===" -ForegroundColor Cyan
+Write-Host "Passed:  $totalPassed" -ForegroundColor Green
+Write-Host "Failed:  $totalFailed" -ForegroundColor $(if ($totalFailed -gt 0) { "Red" } else { "Gray" })
+Write-Host "Skipped: $totalSkipped" -ForegroundColor Yellow
 
 if (-not $hasFailures) {
     Write-Host "`n✓ All tests passed!" -ForegroundColor Green

@@ -5,15 +5,24 @@ orchestrator.py — Central runner for the BusinessManager regression test suite
 Executes all 4 stages in order via pytest subprocesses, generates an HTML
 report, and exits with code 0 (all passed) or 1 (any failures).
 
+ALL tests run to completion regardless of failures, providing a complete
+pass/fail ratio across all stages and tests.
+
 Usage:
     cd regressiontest
-    python orchestrator.py [--stages 1 2 3 4] [--failfast] [--no-report]
+    python orchestrator.py [--stages 1 2 3 4] [--no-report]
 
-Stages:
+Stages (all run regardless of failures):
     1 — Pre-push connectivity + OpenAPI spec
     2 — Full backend API coverage
     3 — Browser E2E (requires frontend dev server)
     4 — Database integrity
+
+Features:
+    • Continues on failure (no early exit)
+    • Collects all failures in JSON reports
+    • Shows complete pass/fail/skip counts
+    • Generates HTML summary report
 """
 import argparse
 import json
@@ -43,25 +52,21 @@ STAGE_CONFIG = {
         "name": "Stage 1 — Pre-check (Connectivity + OpenAPI)",
         "dir": "stage1_precheck",
         "marker": "stage1",
-        "critical": True,   # If this fails, skip stages 2–4
     },
     2: {
         "name": "Stage 2 — Backend API Coverage",
         "dir": "stage2_api",
         "marker": "stage2",
-        "critical": False,
     },
     3: {
         "name": "Stage 3 — E2E Browser (Playwright)",
         "dir": "stage3_e2e",
         "marker": "stage3",
-        "critical": False,
     },
     4: {
         "name": "Stage 4 — Database Integrity",
         "dir": "stage4_database",
         "marker": "stage4",
-        "critical": False,
     },
 }
 
@@ -88,7 +93,7 @@ def run_stage(stage_num: int) -> dict:
         f"--json-report-file={report_file}",
         "--json-report-indent=2",
         "--no-header",
-        "-x",           # always stop on first failure within a stage
+        "--continue-on-collection-errors",  # continue even if some tests can't be collected
     ]
 
     print(f"\n{'='*60}")
@@ -136,7 +141,6 @@ def run_stage(stage_num: int) -> dict:
         "skipped": skipped,
         "total": total,
         "ok": ok,
-        "critical": cfg["critical"],
         "skipped_reason": None,
     }
 
@@ -159,65 +163,51 @@ def main():
     print(f"Target API:  {BASE_URL}")
     print(f"Frontend:    {FRONTEND_URL}")
     print(f"Stages:      {args.stages}")
-    print(f"Mode:        fail-fast (stops on first failure in each stage)")
+    print(f"Mode:        continue-on-failure (runs ALL tests, collects all failures)")
     print(f"Reports dir: {REPORT_DIR}\n")
 
     stage_results = []
-    abort_remaining = False
 
-    failed_stage = None
+    # Run all stages regardless of failures
     for stage_num in sorted(args.stages):
-        if abort_remaining:
-            cfg = STAGE_CONFIG.get(stage_num, {})
-            stage_results.append({
-                "name": cfg.get("name", f"Stage {stage_num}"),
-                "report_file": None,
-                "skipped_reason": f"Stage {failed_stage} failed",
-            })
-            continue
-
         result = run_stage(stage_num)
         stage_results.append(result)
-
+        
         if not result["ok"]:
-            abort_remaining = True
-            failed_stage = stage_num
-            print(f"\n[ORCHESTRATOR] Stage {stage_num} FAILED — stopping.")
-            print(f"[ORCHESTRATOR] Fix failures before running remaining stages.")
+            print(f"\n[ORCHESTRATOR] Stage {stage_num} had failures — continuing to next stage.")
 
     # Summary
     print(f"\n{'='*60}")
     print("  FINAL SUMMARY")
     print(f"{'='*60}")
-    grand_total = grand_passed = grand_failed = 0
+    grand_total = grand_passed = grand_failed = grand_skipped = 0
     all_failed_tests: list = []
 
     for r in stage_results:
-        if "ok" in r:
-            status = "PASSED" if r["ok"] else "FAILED"
-            print(f"  {r['name']}: {status} "
-                  f"({r.get('passed',0)}/{r.get('total',0)} passed, "
-                  f"{r.get('failed',0)} failed)")
-            grand_total += r.get("total", 0)
-            grand_passed += r.get("passed", 0)
-            grand_failed += r.get("failed", 0) + r.get("errors", 0)
-            # Collect failed test node IDs from JSON report
-            rf = r.get("report_file")
-            if rf and Path(rf).exists() and not r["ok"]:
-                try:
-                    with open(rf) as f:
-                        data = json.load(f)
-                    for t in data.get("tests", []):
-                        if t.get("outcome") in ("failed", "error"):
-                            all_failed_tests.append(t.get("nodeid", "?"))
-                except Exception:
-                    pass
-        else:
-            print(f"  {r['name']}: SKIPPED — {r.get('skipped_reason', '')}")
+        status = "PASSED" if r["ok"] else "FAILED"
+        print(f"  {r['name']}: {status} "
+              f"({r.get('passed',0)}/{r.get('total',0)} passed, "
+              f"{r.get('failed',0)} failed, "
+              f"{r.get('skipped',0)} skipped)")
+        grand_total += r.get("total", 0)
+        grand_passed += r.get("passed", 0)
+        grand_failed += r.get("failed", 0) + r.get("errors", 0)
+        grand_skipped += r.get("skipped", 0)
+        # Collect failed test node IDs from JSON report
+        rf = r.get("report_file")
+        if rf and Path(rf).exists() and not r["ok"]:
+            try:
+                with open(rf) as f:
+                    data = json.load(f)
+                for t in data.get("tests", []):
+                    if t.get("outcome") in ("failed", "error"):
+                        all_failed_tests.append(t.get("nodeid", "?"))
+            except Exception:
+                pass
 
-    overall_ok = grand_failed == 0 and not abort_remaining
+    overall_ok = grand_failed == 0
     print(f"\n  OVERALL: {'PASSED' if overall_ok else 'FAILED'}")
-    print(f"  Total: {grand_total} tests | {grand_passed} passed | {grand_failed} failed")
+    print(f"  Total: {grand_total} tests | {grand_passed} passed | {grand_failed} failed | {grand_skipped} skipped")
 
     if all_failed_tests:
         print(f"\n{'='*60}")
