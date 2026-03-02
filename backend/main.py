@@ -202,6 +202,27 @@ async def startup_event():
         from database import create_db_and_tables, get_session
     create_db_and_tables()
     print("Database tables initialized")
+    # Unlock any locked admin accounts (self-healing on redeploy)
+    try:
+        from backend.models import User, UserRole
+    except ModuleNotFoundError:
+        from models import User, UserRole
+    try:
+        from sqlmodel import select
+        session = next(get_session())
+        locked_admins = session.exec(
+            select(User).where(User.role == UserRole.ADMIN, User.is_locked == True)
+        ).all()
+        for admin in locked_admins:
+            admin.is_locked = False
+            admin.failed_login_attempts = 0
+            admin.locked_until = None
+            print(f"Unlocked admin account: {admin.username}")
+        if locked_admins:
+            session.commit()
+        session.close()
+    except Exception as e:
+        print(f"Warning: Could not unlock admin accounts: {e}")
     # Seed standard templates
     try:
         from backend.routers.templates import seed_standard_templates
