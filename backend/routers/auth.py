@@ -61,7 +61,7 @@ security = HTTPBearer()
 # JWT Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours (was 30 min — too short for a working session)
 REMEMBER_ME_EXPIRE_DAYS = 30
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -87,7 +87,13 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.JWTError:
+    except jwt.DecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

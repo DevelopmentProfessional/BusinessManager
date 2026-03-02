@@ -106,15 +106,16 @@ api.interceptors.response.use(
         baseURL: error.config?.baseURL,
       });
       
-      // Handle 401/403 authentication errors
-      if (error.response.status === 401 || error.response.status === 403) {
-        // Clear auth data and redirect to login
+      // Handle authentication errors
+      if (error.response.status === 401) {
+        // Token expired or invalid — clear auth data and redirect to login
         localStorage.removeItem('token');
         sessionStorage.removeItem('token');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }
+      // 403 Forbidden = authenticated but lacks permission — do NOT log out
     } else if (error.request) {
       // Request was made but no response received
       console.error('API Network Error - No response received:', {
