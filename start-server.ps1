@@ -62,6 +62,14 @@ Write-Host ""
 $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev:frontend" -PassThru -WindowStyle Normal
 
 Write-Host "Frontend started (PID: $($frontendProcess.Id))" -ForegroundColor Yellow
+
+# Launch regression tests in a new window - waits for backend health before running
+$regScript = Join-Path $scriptDir "regressiontest\run-local.ps1"
+if (Test-Path $regScript) {
+	$regProcess = Start-Process -FilePath "powershell.exe" -ArgumentList @("-ExecutionPolicy", "Bypass", "-File", $regScript, "-Port", $port) -PassThru -WindowStyle Normal
+	Write-Host "Regression tests queued (PID: $($regProcess.Id)) - will run once backend is ready." -ForegroundColor DarkCyan
+}
+
 Write-Host "Starting backend in this window (any error below is from the backend)..." -ForegroundColor Cyan
 Write-Host ""
 

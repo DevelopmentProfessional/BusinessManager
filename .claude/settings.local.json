@@ -53,7 +53,8 @@
       "Bash(PYTHONIOENCODING=utf-8 python:*)",
       "mcp__ide__getDiagnostics",
       "Bash(do echo:*)",
-      "Bash(sed 's/:@router//')"
+      "Bash(sed 's/:@router//')",
+      "Bash(powershell.exe:*)"
     ]
   }
 }
