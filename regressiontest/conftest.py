@@ -1,8 +1,24 @@
 """
-conftest.py — Session-wide fixtures: admin token, global cleanup registry.
+conftest.py — Session-wide fixtures: admin token, global cleanup registry,
+              pre-run sweep, and per-test (function-scoped) cleanup fixture.
+
+Pre-run sweep:
+  At the very start of every test session (before any test data is created),
+  sweep_regtest_data() calls DELETE /api/v1/regtest/sweep on the backend.
+  That endpoint dynamically scans every database table for [REGTEST]-tagged
+  records and removes them.  This handles orphans left by interrupted runs.
+
+Rolling insert-delete:
+  Use the `test_cleanup` fixture (function-scoped) for any resource a single
+  test creates.  It tears down immediately after each test function, so
+  the database is clean after every test rather than only at session end.
+
+  Use `cleanup` (session-scoped) only for resources that must survive across
+  the whole session — e.g. the test user accounts created in stage2_api/conftest.
 """
 import sys
 import os
+import logging
 import pytest
 
 # Ensure regressiontest/ is on the path so helpers and config are importable
@@ -10,7 +26,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from config import validate_config, ADMIN_USERNAME, ADMIN_PASSWORD, BASE_URL
 from helpers.api_client import login
-from helpers.cleanup import CleanupRegistry
+from helpers.cleanup import CleanupRegistry, sweep_regtest_data
+
+log = logging.getLogger(__name__)
 
 
 def pytest_configure(config):
@@ -100,12 +118,69 @@ def _config_error(headline: str, hint: str = "") -> None:
     pytest.exit(msg, returncode=3)
 
 
-@pytest.fixture(scope="session")
-def cleanup(admin_token) -> CleanupRegistry:
+# ── Pre-run sweep — runs once at session start, before any test ────────────────
+
+@pytest.fixture(scope="session", autouse=True)
+def pre_run_sweep(admin_token) -> None:
     """
-    Session-scoped CleanupRegistry.
-    All created resources should be registered here.
+    At the very start of each test session, call the backend sweep endpoint to
+    delete any [REGTEST]-tagged records left over from a previously interrupted
+    run.  Runs automatically (autouse=True) — no test needs to request it.
+
+    The sweep is non-fatal: if it fails (e.g. backend is unreachable), a
+    warning is logged and tests proceed.  The pre-sweep is a safety net, not
+    a hard requirement.
+    """
+    try:
+        result = sweep_regtest_data(admin_token)
+        total = result.get("total", 0)
+        if total:
+            log.warning(
+                f"[pre-run sweep] Removed {total} orphaned [REGTEST] record(s) "
+                f"from a previous interrupted run: {result.get('deleted', {})}"
+            )
+        # Print to stdout so it's visible in pytest -v output
+        print(
+            f"\n[pre-run sweep] {'Cleaned ' + str(total) + ' orphaned record(s)' if total else 'Database clean'}"
+        )
+    except Exception as exc:
+        log.warning(f"[pre-run sweep] Sweep failed (non-fatal): {exc}")
+        print(f"\n[pre-run sweep] WARNING: sweep failed: {exc}")
+
+
+# ── Session-scoped cleanup — for resources that span the whole session ─────────
+
+@pytest.fixture(scope="session")
+def cleanup(admin_token, pre_run_sweep) -> CleanupRegistry:
+    """
+    Session-scoped CleanupRegistry for resources that must persist across the
+    entire test session (e.g. test user accounts created in stage2 conftest).
+
     Teardown runs automatically after the session ends.
+
+    For per-test resources use `test_cleanup` instead.
+    """
+    registry = CleanupRegistry()
+    yield registry
+    registry.teardown()
+
+
+# ── Function-scoped cleanup — rolling insert-delete per test ──────────────────
+
+@pytest.fixture(scope="function")
+def test_cleanup() -> CleanupRegistry:
+    """
+    Per-test CleanupRegistry.  Tears down immediately after each test function,
+    so the database is returned to a clean state after every test regardless of
+    pass or fail.
+
+    Usage in tests:
+        def test_create_client(self, admin_client, test_admin_token, test_cleanup):
+            resp = admin_client.post("/api/v1/isud/clients", json=payload)
+            rec_id = resp.json()["id"]
+            test_cleanup.register(f"/api/v1/isud/clients/{rec_id}", token=test_admin_token)
+            # assertions ...
+            # After this function returns (pass OR fail), teardown() is called automatically.
     """
     registry = CleanupRegistry()
     yield registry
