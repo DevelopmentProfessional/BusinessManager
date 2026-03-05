@@ -655,7 +655,7 @@ export default function Sales() {
         </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pt-2">
+      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 pt-2 -mx-4 md:-mx-6">
        
                {/* Client Selection Panel - shown when account icon is active */}
         {showClientPanel && (
