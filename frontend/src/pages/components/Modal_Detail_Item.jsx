@@ -43,6 +43,7 @@ import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
+import FeatureSection from './FeatureSection';
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Detail_Item({
@@ -70,6 +71,9 @@ export default function Modal_Detail_Item({
   const [imageError, setImageError] = useState('');
   const [editingImageId, setEditingImageId] = useState(null);
   const [editingImageUrl, setEditingImageUrl] = useState('');
+  // Feature-derived values (updated by FeatureSection callbacks)
+  const [featureStock, setFeatureStock] = useState(null);       // total qty from features, or null
+  const [featuresPriceRange, setFeaturesPriceRange] = useState(null); // { min, max } or null
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -110,10 +114,13 @@ export default function Modal_Detail_Item({
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
       }
-      
+      // Reset feature-derived state for fresh load
+      setFeatureStock(null);
+      setFeaturesPriceRange(null);
+
       // Load images for this inventory item
       loadImages(item.id);
-      
+
       // Load available locations from cache (no API call)
       setAvailableLocations(cacheService.getLocations());
     }
@@ -243,9 +250,11 @@ export default function Modal_Detail_Item({
     onUpdateInventory?.(item.id, {
       name: formData.name,
       sku: formData.sku,
+      // When features manage price, preserve the existing fixed price (don't override with range)
       price: parseFloat(formData.price) || 0,
       description: formData.description,
-      quantity: parseInt(formData.quantity) || 0,
+      // When features manage stock, use the feature-computed total
+      quantity: featureStock != null ? featureStock : parseInt(formData.quantity) || 0,
       min_stock_level: parseInt(formData.min_stock_level) || 10,
       location: formData.location,
       image_url: formData.image_url,
@@ -272,7 +281,9 @@ export default function Modal_Detail_Item({
     return <CubeIcon className="h-16 w-16" />;
   };
 
-  const isLowStock = formData.quantity <= formData.min_stock_level;
+  // When features are managing stock, use the feature-derived total; else use form value
+  const effectiveStock = featureStock ?? formData.quantity;
+  const isLowStock = effectiveStock <= formData.min_stock_level;
 
   // Reusable image display with navigation
   const renderImage = (containerStyle = {}) => (
@@ -478,6 +489,7 @@ export default function Modal_Detail_Item({
           </div>
         ) : (
           /* Inventory Mode - Image + Stock fields at top, form fields below */
+          <>
           <form onSubmit={handleUpdateInventory}>
             {/* Top Section: Image (left) + Stock fields (right) */}
             <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
@@ -576,13 +588,17 @@ export default function Modal_Detail_Item({
                         type="number"
                         id="quantity"
                         name="quantity"
-                        value={formData.quantity}
+                        value={featureStock != null ? featureStock : formData.quantity}
                         onChange={handleChange}
                         className="form-control form-control-sm"
                         placeholder="Current Count"
                         min="0"
+                        disabled={featureStock != null}
+                        title={featureStock != null ? 'Stock is managed by features below' : ''}
                       />
-                      <label htmlFor="quantity">Current Count</label>
+                      <label htmlFor="quantity">
+                        {featureStock != null ? 'Stock (from features)' : 'Current Count'}
+                      </label>
                     </div>
 
                                 <div className="mb-2">
@@ -602,8 +618,16 @@ export default function Modal_Detail_Item({
                   <label htmlFor="detail_price">Price</label>
                 </div>
               </div>
+              {featuresPriceRange && (
+                <div className="mt-1 small text-primary fw-semibold">
+                  {featuresPriceRange.min === featuresPriceRange.max
+                    ? `Feature price: $${featuresPriceRange.min.toFixed(2)}`
+                    : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`
+                  }
+                </div>
+              )}
             </div>
-                    
+
                   </>
                 ) : (
                   <div className="d-flex align-items-center gap-2 text-success">
@@ -873,6 +897,16 @@ export default function Modal_Detail_Item({
             )}
 
           </form>
+
+          {/* Descriptive Features — shown in inventory mode when item has been saved (has an id) */}
+          {item?.id && (
+            <FeatureSection
+              inventoryId={item.id}
+              onStockChange={setFeatureStock}
+              onPriceRangeChange={setFeaturesPriceRange}
+            />
+          )}
+          </>
         )}
       </div>
 
