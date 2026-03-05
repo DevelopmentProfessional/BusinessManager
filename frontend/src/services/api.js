@@ -363,6 +363,26 @@ export const inventoryAPI = {
   getLocations: () => api.get('/isud/inventory/locations'),
 };
 
+// ─── Descriptive Features API ────────────────────────────────────────────────
+export const featuresAPI = {
+  listAll:      ()               => api.get('/features'),
+  create:       (data)           => api.post('/features', data),
+  rename:       (id, data)       => api.patch(`/features/${id}`, data),
+  delete:       (id)             => api.delete(`/features/${id}`),
+  addOption:    (fid, data)      => api.post(`/features/${fid}/options`, data),
+  renameOption: (fid, oid, data) => api.patch(`/features/${fid}/options/${oid}`, data),
+  deleteOption: (fid, oid)       => api.delete(`/features/${fid}/options/${oid}`),
+};
+
+export const inventoryFeaturesAPI = {
+  get:             (invId)           => api.get(`/inventory/${invId}/features`),
+  addFeature:      (invId, fid)      => api.post(`/inventory/${invId}/features/${fid}`),
+  removeFeature:   (invId, fid)      => api.delete(`/inventory/${invId}/features/${fid}`),
+  setAffectsPrice: (invId, data)     => api.patch(`/inventory/${invId}/features/affects-price`, data),
+  saveOptionData:  (invId, fid, rows) =>
+    api.put(`/inventory/${invId}/features/${fid}/options`, rows),
+};
+
 export const servicesAPI = {
   getAll: () => getCachedOrFetch('services', () => api.get('/isud/services')),
   getById: (id) => api.get(`/isud/services/${id}`),

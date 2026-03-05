@@ -289,6 +289,39 @@ class Supplier(BaseModel, table=True):
     inventory_items: List[Inventory] = Relationship(back_populates="supplier")
 
 
+# ─── 6c DESCRIPTIVE FEATURES MODELS ────────────────────────────────────────────
+class DescriptiveFeature(BaseModel, table=True):
+    """Global reusable feature template (e.g. 'Size', 'Color')"""
+    __tablename__ = "descriptive_feature"
+    name: str = Field(unique=True, index=True)
+
+
+class FeatureOption(BaseModel, table=True):
+    """An option belonging to a descriptive feature (e.g. 'Small', 'Red')"""
+    __tablename__ = "feature_option"
+    feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
+    name: str = Field(index=True)
+
+
+class InventoryFeature(BaseModel, table=True):
+    """Links a descriptive feature to an inventory item; tracks which feature affects price."""
+    __tablename__ = "inventory_feature"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
+    affects_price: bool = Field(default=False)
+
+
+class InventoryFeatureOptionData(BaseModel, table=True):
+    """Per-option quantity/price data for a feature on a specific inventory item."""
+    __tablename__ = "inventory_feature_option_data"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
+    option_id: UUID = Field(foreign_key="feature_option.id", index=True)
+    is_enabled: bool = Field(default=False)
+    quantity: int = Field(default=0, ge=0)
+    price: Optional[float] = Field(default=None)
+
+
 # ─── 7 SERVICE MODELS ──────────────────────────────────────────────────────────
 # Service model
 class Service(BaseModel, table=True):
@@ -741,6 +774,38 @@ class InventoryImageUpdate(SQLModel):
     file_name: Optional[str] = None
     is_primary: Optional[bool] = None
     sort_order: Optional[int] = None
+
+
+# ─── 17b3 DESCRIPTIVE FEATURE READ SCHEMAS ──────────────────────────────────────
+class FeatureOptionRead(SQLModel):
+    id: UUID
+    feature_id: UUID
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class DescriptiveFeatureRead(SQLModel):
+    id: UUID
+    name: str
+    options: List["FeatureOptionRead"] = []
+    model_config = {"from_attributes": True}
+
+
+class InventoryFeatureOptionDataRead(SQLModel):
+    option_id: UUID
+    option_name: str
+    is_enabled: bool
+    quantity: int
+    price: Optional[float] = None
+    model_config = {"from_attributes": True}
+
+
+class InventoryFeatureRead(SQLModel):
+    feature_id: UUID
+    feature_name: str
+    affects_price: bool
+    options: List["InventoryFeatureOptionDataRead"] = []
+    model_config = {"from_attributes": True}
 
 
 # ─── 17f USER SCHEMAS ──────────────────────────────────────────────────────────
