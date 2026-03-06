@@ -20,6 +20,7 @@
 #
 #   Aggregate:
 #     GET    /features/inventory-summary                               — all items' feature names + price range (for list views)
+#     POST   /features/deduct-stock                                    — decrement option quantities after a sale
 #
 #   Per-inventory-item:
 #     GET    /inventory/{inventory_id}/features                        — get item features + option data
@@ -73,6 +74,12 @@ class OptionDataRow(PydanticModel):
     is_enabled: bool
     quantity: int
     price: Optional[float] = None
+
+class DeductStockItem(PydanticModel):
+    inventory_id: UUID
+    feature_id: UUID
+    option_id: UUID
+    quantity: int
 
 
 # ─── HELPERS ────────────────────────────────────────────────────────────────────
@@ -262,6 +269,36 @@ async def get_inventory_summary(session: Session = Depends(get_session)):
                 summary[inv_id]["price_max"] = max(prices)
 
     return summary
+
+
+# ─── DEDUCT STOCK ROUTE ─────────────────────────────────────────────────────────
+
+@router.post("/features/deduct-stock")
+async def deduct_feature_stock(
+    items: List[DeductStockItem],
+    session: Session = Depends(get_session),
+):
+    """
+    Decrement feature option quantities after a sale.
+    Floors each quantity at 0 and recalculates total inventory stock per affected item.
+    """
+    affected_inventory_ids = set()
+    for item in items:
+        row = session.exec(
+            select(InventoryFeatureOptionData).where(
+                InventoryFeatureOptionData.inventory_id == item.inventory_id,
+                InventoryFeatureOptionData.feature_id == item.feature_id,
+                InventoryFeatureOptionData.option_id == item.option_id,
+            )
+        ).first()
+        if row:
+            row.quantity = max(0, row.quantity - item.quantity)
+            session.add(row)
+            affected_inventory_ids.add(item.inventory_id)
+    session.commit()
+    for inv_id in affected_inventory_ids:
+        _recalculate_inventory_stock(session, inv_id)
+    return {"deducted": len(affected_inventory_ids)}
 
 
 # ─── FEATURE OPTION ROUTES ──────────────────────────────────────────────────────
