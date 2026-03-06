@@ -39,7 +39,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import Button_Toolbar from './components/Button_Toolbar';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -134,11 +134,15 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
         <div className="flex items-center justify-between gap-2">
           {/* Price Badge */}
           <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${
-            isService 
-              ? 'bg-primary-700/90' 
+            isService
+              ? 'bg-primary-700/90'
               : 'bg-secondary-700/90'
           }`}>
-            ${item.price?.toFixed(2)}
+            {!isService && item.price_min != null && item.price_max != null
+              ? item.price_min === item.price_max
+                ? `$${item.price_min.toFixed(2)}`
+                : `$${item.price_min.toFixed(2)}–$${item.price_max.toFixed(2)}`
+              : `$${item.price?.toFixed(2)}`}
           </span>
           
           {/* Cart Controls - Bottom Right */}
@@ -329,16 +333,22 @@ export default function Sales() {
 
   const loadProducts = async () => {
     try {
-      const response = await inventoryAPI.getAll();
+      const [response, summaryRes] = await Promise.all([
+        inventoryAPI.getAll(),
+        featuresAPI.getInventorySummary().catch(() => ({ data: {} })),
+      ]);
       const data = response?.data ?? response;
+      const summary = summaryRes?.data ?? summaryRes ?? {};
       if (Array.isArray(data)) {
-        // Filter to include items that are products (or untyped/legacy 'item' type)
-        // Exclude only RESOURCE and ASSET types which are not sellable
-        const productItems = data.filter(item => {
-          const itemType = (item.type || '').toUpperCase();
-          // Include: PRODUCT, empty, 'item' (legacy), or any non-resource/asset
-          return itemType !== 'RESOURCE' && itemType !== 'ASSET';
-        });
+        const productItems = data
+          .filter(item => {
+            const itemType = (item.type || '').toUpperCase();
+            return itemType !== 'RESOURCE' && itemType !== 'ASSET';
+          })
+          .map(item => ({
+            ...item,
+            ...(summary[item.id] || {}),
+          }));
         setProducts(productItems);
       }
     } catch (err) {
@@ -462,7 +472,7 @@ export default function Sales() {
             line_total: item.price * item.quantity,
           })
         ));
-        // Optimistically decrement local product quantities and bust the inventory cache
+        // Decrement inventory quantities in DB and update local state
         const soldMap = {};
         cart.forEach(item => {
           if (item.itemType === 'product' && item.id) {
@@ -470,6 +480,13 @@ export default function Sales() {
           }
         });
         if (Object.keys(soldMap).length > 0) {
+          // Update backend inventory quantities
+          await Promise.all(
+            products
+              .filter(p => soldMap[p.id] != null)
+              .map(p => inventoryAPI.update(p.id, { quantity: Math.max(0, (p.quantity ?? 0) - soldMap[p.id]) }))
+          );
+          // Update local state to reflect new quantities
           setProducts(prev => prev.map(p =>
             soldMap[p.id] != null
               ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - soldMap[p.id]) }

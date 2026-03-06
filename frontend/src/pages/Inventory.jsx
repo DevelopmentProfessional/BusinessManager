@@ -34,7 +34,7 @@ import { Navigate } from 'react-router-dom';
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
-import { inventoryAPI } from '../services/api';
+import { inventoryAPI, featuresAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Item from './components/Form_Item';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -61,6 +61,7 @@ export default function Inventory() {
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
+  const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
   const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
@@ -81,10 +82,14 @@ export default function Inventory() {
   const loadInventoryData = async () => {
     setLoading(true);
     try {
-      const inventoryRes = await inventoryAPI.getAll();
+      const [inventoryRes, summaryRes] = await Promise.all([
+        inventoryAPI.getAll(),
+        featuresAPI.getInventorySummary().catch(() => ({ data: {} })),
+      ]);
 
       // Handle both direct data and response.data formats
       const inventoryData = inventoryRes?.data ?? inventoryRes;
+      const summaryData = summaryRes?.data ?? summaryRes ?? {};
 
       if (Array.isArray(inventoryData)) {
         setInventory(inventoryData);
@@ -93,6 +98,7 @@ export default function Inventory() {
         setInventory([]);
       }
 
+      setFeatureSummary(typeof summaryData === 'object' ? summaryData : {});
       clearError();
     } catch (err) {
       setError('Failed to load inventory data');
@@ -212,6 +218,16 @@ export default function Inventory() {
     return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
   };
 
+  const getPriceDisplay = (item) => {
+    const s = featureSummary[item.id];
+    if (s?.price_min != null && s?.price_max != null) {
+      return s.price_min === s.price_max
+        ? `$${s.price_min.toFixed(2)}`
+        : `$${s.price_min.toFixed(2)}–$${s.price_max.toFixed(2)}`;
+    }
+    return item.price != null ? `$${item.price.toFixed(2)}` : null;
+  };
+
   const handleDeleteItem = async (inventoryId) => {
     if (!hasPermission('inventory', 'delete')) {
       setError('You do not have permission to delete items');
@@ -317,6 +333,21 @@ return (
                     </div>
                     {inv.supplier_name && (
                       <div className="small text-muted">{inv.supplier_name}</div>
+                    )}
+                    {/* Price display (range if features affect price, otherwise fixed) */}
+                    {getPriceDisplay(inv) && (
+                      <div className="small text-primary fw-semibold">{getPriceDisplay(inv)}</div>
+                    )}
+                    {/* Feature name tags */}
+                    {featureSummary[inv.id]?.feature_names?.length > 0 && (
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        {featureSummary[inv.id].feature_names.map(name => (
+                          <span key={name} className="badge bg-secondary-subtle text-secondary-emphasis"
+                                style={{ fontSize: '0.62rem', fontWeight: 500 }}>
+                            {name}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </td>
 
