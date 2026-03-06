@@ -1,3 +1,10 @@
+Key features Automatically generated public product page for client to login, from there, they can create an account and connect to the cart
+
+products should have the ability to have one or more descriptive features on it.. for instance, size, color, brand, another example would be length width height, but these would be creatable from the internveotry page on the product, when created, it would act like a storage like a list for items. So it is created as like size... from that, sizes can be added that are relevant to the product... for each size, a quantity can be added. Now, when going to another product, that size, as a descri[ptiv4e feature should be able to be found because it would now exsist, and its options from the previous would also exsist. so if i create the size on one product, it should be searchable from other products. to the feature descriptions.... add a tag on it that says "affects price", when selected, each of the inputs need the price set, when unselected, only o0ne price needs to be set, It would be the case where more than one item selection affects the price like a small blue is different than a small red is difference than a medium blue where both the size and the color affects the price. There could also be an option on the produict specifically where the type itself would affect the price meaning that the type of reguardless of what it is, would be the same price.
+
+sales from the sales page aftrer checkout should update the inventory dataset
+
+mobile compatible layout in footer of the pages and thier responsivbeness
 
 		
 clients: Add a chat button to the employee name on the right most, when selected, opens an email thread. The email comes from the employee profile, Should be able to accept the incoming emails for that person. There should be templates that the employee can select in the footer section first row, the second row has the cancel and send button on it.
