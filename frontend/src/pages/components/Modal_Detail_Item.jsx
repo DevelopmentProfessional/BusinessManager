@@ -890,20 +890,6 @@ export default function Modal_Detail_Item({
               <label htmlFor="detail_supplier">Supplier</label>
             </div>
 
-             <hr className="my-2" />
-            <div className="form-floating mb-2 border-0">
-              <textarea
-                id="detail_description"
-                name="description" 
-                value={formData.description}
-                onChange={handleChange}
-                className="form-control form-control-sm border-0"
-                placeholder="Description"
-                style={{ height: '400px' }}
-              />
-              <label htmlFor="detail_description">Description</label>
-            </div>
-
             {formData.location === '[NEW]' && (
               <div className="form-floating mb-2">
                 <input
@@ -912,7 +898,6 @@ export default function Modal_Detail_Item({
                   name="location"
                   value=""
                   onChange={(e) => {
-                    // Update the location value to the new custom location
                     setFormData(prev => ({ ...prev, location: e.target.value }));
                   }}
                   className="form-control form-control-sm"
@@ -924,14 +909,28 @@ export default function Modal_Detail_Item({
 
           </form>
 
-          {/* Descriptive Features — shown in inventory mode when item has been saved (has an id) */}
-          {item?.id && (
+          {/* Descriptive Features — PRODUCT and ITEM types only, shown after item is saved */}
+          {item?.id && !isResource && !isAsset && !isLocation && !isService && (
             <FeatureSection
               inventoryId={item.id}
               onStockChange={setFeatureStock}
               onPriceRangeChange={setFeaturesPriceRange}
             />
           )}
+
+          <hr className="my-2" />
+          <div className="form-floating mb-2 border-0">
+            <textarea
+              id="detail_description"
+              name="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              className="form-control form-control-sm border-0"
+              placeholder="Description"
+              style={{ height: '120px' }}
+            />
+            <label htmlFor="detail_description">Description</label>
+          </div>
           </>
         )}
       </div>
