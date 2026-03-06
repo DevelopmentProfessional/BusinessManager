@@ -18,6 +18,9 @@
 #     PATCH  /features/{feature_id}/options/{option_id}   — rename an option
 #     DELETE /features/{feature_id}/options/{option_id}   — delete (blocked if qty > 0)
 #
+#   Aggregate:
+#     GET    /features/inventory-summary                               — all items' feature names + price range (for list views)
+#
 #   Per-inventory-item:
 #     GET    /inventory/{inventory_id}/features                        — get item features + option data
 #     POST   /inventory/{inventory_id}/features/{feature_id}           — add feature to item
@@ -220,6 +223,45 @@ async def delete_feature(feature_id: UUID, session: Session = Depends(get_sessio
     session.delete(feat)
     session.commit()
     return {"deleted": True}
+
+
+# ─── AGGREGATE SUMMARY ROUTE ────────────────────────────────────────────────────
+
+@router.get("/features/inventory-summary")
+async def get_inventory_summary(session: Session = Depends(get_session)):
+    """
+    Returns a dict keyed by inventory_id with feature names and price range.
+    Used by inventory list and sales page to avoid N+1 per-row fetches.
+    Response: { "<inventory_id>": { feature_names: [], price_min: float|null, price_max: float|null } }
+    """
+    inv_features = session.exec(select(InventoryFeature)).all()
+
+    summary = {}
+    for inv_feat in inv_features:
+        inv_id = str(inv_feat.inventory_id)
+        feat = session.get(DescriptiveFeature, inv_feat.feature_id)
+        if not feat:
+            continue
+
+        if inv_id not in summary:
+            summary[inv_id] = {"feature_names": [], "price_min": None, "price_max": None}
+
+        summary[inv_id]["feature_names"].append(feat.name)
+
+        if inv_feat.affects_price:
+            data_rows = session.exec(
+                select(InventoryFeatureOptionData).where(
+                    InventoryFeatureOptionData.inventory_id == inv_feat.inventory_id,
+                    InventoryFeatureOptionData.feature_id == inv_feat.feature_id,
+                    InventoryFeatureOptionData.is_enabled == True,
+                )
+            ).all()
+            prices = [r.price for r in data_rows if r.price is not None]
+            if prices:
+                summary[inv_id]["price_min"] = min(prices)
+                summary[inv_id]["price_max"] = max(prices)
+
+    return summary
 
 
 # ─── FEATURE OPTION ROUTES ──────────────────────────────────────────────────────

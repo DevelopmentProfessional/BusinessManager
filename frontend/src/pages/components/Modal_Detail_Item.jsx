@@ -37,7 +37,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI } from '../../services/api';
+import { inventoryAPI, inventoryFeaturesAPI } from '../../services/api';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
@@ -74,6 +74,7 @@ export default function Modal_Detail_Item({
   // Feature-derived values (updated by FeatureSection callbacks)
   const [featureStock, setFeatureStock] = useState(null);       // total qty from features, or null
   const [featuresPriceRange, setFeaturesPriceRange] = useState(null); // { min, max } or null
+  const [salesPriceRange, setSalesPriceRange] = useState(null); // { min, max } or null — sales mode only
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -117,6 +118,23 @@ export default function Modal_Detail_Item({
       // Reset feature-derived state for fresh load
       setFeatureStock(null);
       setFeaturesPriceRange(null);
+      setSalesPriceRange(null);
+
+      // In sales mode, fetch feature price range for this item
+      if (isSalesMode) {
+        inventoryFeaturesAPI.get(item.id).then(res => {
+          const features = res?.data ?? res;
+          if (!Array.isArray(features)) return;
+          const active = features.find(f => f.affects_price);
+          if (!active) return;
+          const prices = active.options
+            .filter(o => o.is_enabled && o.price != null)
+            .map(o => parseFloat(o.price));
+          if (prices.length) {
+            setSalesPriceRange({ min: Math.min(...prices), max: Math.max(...prices) });
+          }
+        }).catch(() => {});
+      }
 
       // Load images for this inventory item
       loadImages(item.id);
@@ -422,7 +440,13 @@ export default function Modal_Detail_Item({
           /* Sales Mode - Display only */
           <div>
             <h4 className="fw-bold mb-2">{item.name}</h4>
-            <div className="fs-4 fw-bold text-primary mb-3">${item.price?.toFixed(2)}</div>
+            <div className="fs-4 fw-bold text-primary mb-3">
+              {salesPriceRange
+                ? salesPriceRange.min === salesPriceRange.max
+                  ? `$${salesPriceRange.min.toFixed(2)}`
+                  : `From $${salesPriceRange.min.toFixed(2)} to $${salesPriceRange.max.toFixed(2)}`
+                : `$${item.price?.toFixed(2)}`}
+            </div>
 
             {item.description && (
               <p className="text-muted mb-3">{item.description}</p>
@@ -475,7 +499,9 @@ export default function Modal_Detail_Item({
               <div>
                 <small className="text-muted">Total</small>
                 <div className="fs-3 fw-bold text-primary">
-                  ${(item.price * quantity).toFixed(2)}
+                  {salesPriceRange && salesPriceRange.min !== salesPriceRange.max
+                    ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}`
+                    : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}
                 </div>
               </div>
               <button
