@@ -39,13 +39,14 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import Button_Toolbar from './components/Button_Toolbar';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
 import Modal_Checkout_Sales from './components/Modal_Checkout_Sales';
 import Modal_Cart_Sales from './components/Modal_Cart_Sales';
 import Modal_History_Sales from './components/Modal_History_Sales';
+import Modal_Feature_Select_Sales from './components/Modal_Feature_Select_Sales';
 import { getDisplayImageUrl } from './components/imageUtils';
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
@@ -224,6 +225,10 @@ export default function Sales() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedItemType, setSelectedItemType] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
+
+  // Feature Selection Modal State
+  const [featureModalItem, setFeatureModalItem] = useState(null);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
   const hasFetched = useRef(false);
 
   // Sales History State
@@ -366,15 +371,28 @@ export default function Sales() {
 
   // POS Functions
   // Use cartKey to distinguish services from products (avoids ID collisions)
-  const addToCart = (item, itemType = 'service', quantity = 1) => {
+  const addToCart = (item, itemType = 'service', quantity = 1, overridePrice = null, selectedOptions = null) => {
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find(c => c.cartKey === cartKey);
+    const price = overridePrice != null ? overridePrice : item.price;
     if (existing) {
-      setCart(cart.map(c => 
-        c.cartKey === cartKey ? { ...c, quantity } : c
+      setCart(cart.map(c =>
+        c.cartKey === cartKey
+          ? { ...c, quantity, price, ...(selectedOptions ? { selectedOptions } : {}) }
+          : c
       ));
     } else {
-      setCart([...cart, { ...item, cartKey, itemType, quantity }]);
+      setCart([...cart, { ...item, cartKey, itemType, quantity, price, selectedOptions: selectedOptions ?? [] }]);
+    }
+  };
+
+  // Route add-to-cart through feature check for products
+  const addToCartWithFeatureCheck = (item, itemType, quantity = 1) => {
+    if (itemType === 'product' && item.feature_names?.length > 0) {
+      setFeatureModalItem(item);
+      setShowFeatureModal(true);
+    } else {
+      addToCart(item, itemType, quantity);
     }
   };
   
@@ -399,14 +417,14 @@ export default function Sales() {
     }
   };
 
-  // Increment item quantity in cart (or add with qty 1 if not in cart)
+  // Increment item quantity in cart (or trigger feature check if not yet in cart)
   const incrementCartItem = (item, itemType) => {
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find(c => c.cartKey === cartKey);
     if (existing) {
       updateCartQuantity(cartKey, existing.quantity + 1);
     } else {
-      addToCart(item, itemType, 1);
+      addToCartWithFeatureCheck(item, itemType, 1);
     }
   };
 
@@ -472,24 +490,54 @@ export default function Sales() {
             line_total: item.price * item.quantity,
           })
         ));
-        // Decrement inventory quantities in DB and update local state
-        const soldMap = {};
+        // ── Inventory deduction ──────────────────────────────────────────
+        // Products WITH feature selections → deduct from option rows (backend recalcs total)
+        // Products WITHOUT feature selections → update inventory.quantity directly
+        const featureDeductions = [];
+        const plainSoldMap = {};
+
         cart.forEach(item => {
-          if (item.itemType === 'product' && item.id) {
-            soldMap[item.id] = (soldMap[item.id] || 0) + item.quantity;
+          if (item.itemType !== 'product' || !item.id) return;
+          if (item.selectedOptions?.length > 0) {
+            item.selectedOptions.forEach(opt => {
+              featureDeductions.push({
+                inventory_id: item.id,
+                feature_id:   opt.featureId,
+                option_id:    opt.optionId,
+                quantity:     item.quantity,
+              });
+            });
+          } else {
+            plainSoldMap[item.id] = (plainSoldMap[item.id] || 0) + item.quantity;
           }
         });
-        if (Object.keys(soldMap).length > 0) {
-          // Update backend inventory quantities
-          await Promise.all(
-            products
-              .filter(p => soldMap[p.id] != null)
-              .map(p => inventoryAPI.update(p.id, { quantity: Math.max(0, (p.quantity ?? 0) - soldMap[p.id]) }))
-          );
-          // Update local state to reflect new quantities
+
+        const deductionOps = [];
+        if (featureDeductions.length > 0) {
+          deductionOps.push(inventoryFeaturesAPI.deductStock(featureDeductions));
+        }
+        if (Object.keys(plainSoldMap).length > 0) {
+          products
+            .filter(p => plainSoldMap[p.id] != null)
+            .forEach(p => deductionOps.push(
+              inventoryAPI.update(p.id, { quantity: Math.max(0, (p.quantity ?? 0) - plainSoldMap[p.id]) })
+            ));
+        }
+        if (deductionOps.length > 0) {
+          await Promise.all(deductionOps);
+        }
+
+        // Update local product quantities for immediate UI feedback
+        const allSoldMap = { ...plainSoldMap };
+        cart.forEach(item => {
+          if (item.itemType === 'product' && item.id && item.selectedOptions?.length > 0) {
+            allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
+          }
+        });
+        if (Object.keys(allSoldMap).length > 0) {
           setProducts(prev => prev.map(p =>
-            soldMap[p.id] != null
-              ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - soldMap[p.id]) }
+            allSoldMap[p.id] != null
+              ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - allSoldMap[p.id]) }
               : p
           ));
           inventoryAPI.invalidateCache();
@@ -625,7 +673,7 @@ export default function Sales() {
                     cartQuantity={getCartQuantity(service.id, 'service')}
                     onIncrement={incrementCartItem}
                     onDecrement={decrementCartItem}
-                    onAddToCart={addToCart}
+                    onAddToCart={addToCartWithFeatureCheck}
                   />
                 ))}
               </div>
@@ -652,7 +700,7 @@ export default function Sales() {
                     cartQuantity={getCartQuantity(product.id, 'product')}
                     onIncrement={incrementCartItem}
                     onDecrement={decrementCartItem}
-                    onAddToCart={addToCart}
+                    onAddToCart={addToCartWithFeatureCheck}
                   />
                 ))}
               </div>
@@ -905,7 +953,7 @@ export default function Sales() {
         item={selectedItem}
         itemType={selectedItemType}
         mode="sales"
-        onAddToCart={addToCart}
+        onAddToCart={addToCartWithFeatureCheck}
         cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0}
       />
 
@@ -920,6 +968,18 @@ export default function Sales() {
         taxRate={appSettings?.tax_rate ?? 0}
         currentUser={user}
         appSettings={appSettings}
+      />
+
+      {/* Feature Selection Modal — opens when a product with features is added to cart */}
+      <Modal_Feature_Select_Sales
+        isOpen={showFeatureModal}
+        onClose={() => { setShowFeatureModal(false); setFeatureModalItem(null); }}
+        item={featureModalItem}
+        onConfirm={(item, selectedOptions, qty, resolvedPrice) => {
+          addToCart(item, 'product', qty, resolvedPrice, selectedOptions);
+          setShowFeatureModal(false);
+          setFeatureModalItem(null);
+        }}
       />
 
       {/* Sales History */}

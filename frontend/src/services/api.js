@@ -373,6 +373,7 @@ export const featuresAPI = {
   renameOption: (fid, oid, data) => api.patch(`/features/${fid}/options/${oid}`, data),
   deleteOption:        (fid, oid) => api.delete(`/features/${fid}/options/${oid}`),
   getInventorySummary: ()         => api.get('/features/inventory-summary'),
+  deductStock:         (items)    => api.post('/features/deduct-stock', items),
 };
 
 export const inventoryFeaturesAPI = {
