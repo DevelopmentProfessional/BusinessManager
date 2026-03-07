@@ -19,6 +19,8 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Reduced icon-label spacing for Profile footer buttons
+ *   2026-03-07 | Claude  | Tightened Profile footer icon-label spacing again
  * ============================================================
  */
 import React from 'react';
@@ -89,8 +91,8 @@ export default function Button_Toolbar({ icon: Icon, label, onClick, className =
       style={isTrainingMode ? { height: '3rem', minWidth: '6.8rem', ...style } : { width: '3rem', height: '3rem', ...style }}
       {...rest}
     >
-      <Icon className={`flex-shrink-0 h-5 w-5${showTextLabel ? ' me-1' : ''}`} />
-      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1 }}>{displayLabel}</span>}
+      <Icon className={`flex-shrink-0 h-5 w-5${showTextLabel ? (isProfileFooter ? ' me-0' : ' me-1') : ''}`} />
+      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1, marginLeft: isProfileFooter ? '-0.125rem' : 0 }}>{displayLabel}</span>}
       {badge}
     </button>
   );

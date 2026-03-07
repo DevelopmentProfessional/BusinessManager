@@ -30,6 +30,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Converted type select to custom dropdown with per-option help popovers
  * ============================================================
  */
 
@@ -72,6 +73,16 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+  const [typeHelpKey, setTypeHelpKey] = useState(null);
+
+  const typeOptions = [
+    { value: 'PRODUCT', label: 'Product', description: 'Items sold to customers. Tracks inventory and stock levels.' },
+    { value: 'RESOURCE', label: 'Resource', description: 'Consumable materials used in services. Links to specific service offerings.' },
+    { value: 'ASSET', label: 'Asset', description: 'Reusable equipment or tools. No stock tracking, managed by location/service.' },
+    { value: 'LOCATION', label: 'Location', description: 'Physical place within your business (room, station, area). No stock tracking.' },
+    { value: 'ITEM', label: 'Item', description: 'Generic item type. Use when other categories don\'t apply.' },
+  ];
 
   // ─── 2 EFFECTS ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -378,21 +389,77 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
             <label htmlFor="name">Name *</label>
           </div>
 
-          <div className="form-floating mb-2">
-            <select
-              id="type"
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              className="form-select form-select-sm"
-            >
-              <option value="PRODUCT">Product</option>
-              <option value="RESOURCE">Resource</option>
-              <option value="ASSET">Asset</option>
-              <option value="LOCATION">Location</option>
-              <option value="ITEM">Item</option>
-            </select>
-            <label htmlFor="type">Type</label>
+          <div className="mb-2 position-relative">
+            <label htmlFor="type" className="form-label" style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Type</label>
+            <div className="position-relative">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextOpen = !isTypeDropdownOpen;
+                  setIsTypeDropdownOpen(nextOpen);
+                  if (!nextOpen) setTypeHelpKey(null);
+                }}
+                className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                style={{ cursor: 'pointer' }}
+              >
+                <span>{typeOptions.find(opt => opt.value === formData.type)?.label || 'Select Type'}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: '8px' }}>
+                  <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </button>
+              {isTypeDropdownOpen && (
+                <div
+                  className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+                  style={{ top: 'calc(100% + 4px)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                >
+                  {typeOptions.map((option, index) => {
+                    const isHelpOpen = typeHelpKey === option.value;
+                    return (
+                      <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, type: option.value }));
+                            setIsTypeDropdownOpen(false);
+                            setTypeHelpKey(null);
+                          }}
+                          className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                          style={{ fontSize: '0.875rem' }}
+                        >
+                          {option.label}
+                        </button>
+                        <div className="position-relative flex-shrink-0">
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm p-0 text-primary border-0"
+                            aria-label={`${option.label} help`}
+                            onMouseEnter={() => setTypeHelpKey(option.value)}
+                            onMouseLeave={() => setTypeHelpKey(prev => prev === option.value ? null : prev)}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setTypeHelpKey(prev => prev === option.value ? null : option.value);
+                            }}
+                            style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
+                          >?</button>
+                          {isHelpOpen && (
+                            <div
+                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                              style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
+                              onMouseEnter={() => setTypeHelpKey(option.value)}
+                              onMouseLeave={() => setTypeHelpKey(prev => prev === option.value ? null : prev)}
+                            >
+                              <div className="fw-semibold">{option.label}</div>
+                              <div className="small">{option.description}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mb-2">

@@ -18,6 +18,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Added section-level help popovers for Employees/Clients/Services filters
  * ============================================================
  */
 
@@ -38,7 +39,9 @@ const EMPTY_FILTERS = {
 };
 
 // ─── 2 ACCORDIONSECTION SUB-COMPONENT ────────────────────────────────────
-function AccordionSection({ label, count, isOpen, onToggle, onClear, children }) {
+function AccordionSection({ label, count, isOpen, onToggle, onClear, children, helpText, helpKey, showHelp, setShowHelp }) {
+  const isHelpOpen = showHelp === helpKey;
+  
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded">
       <div
@@ -50,6 +53,36 @@ function AccordionSection({ label, count, isOpen, onToggle, onClear, children })
           <span className="fw-semibold" style={{ fontSize: '0.875rem' }}>{label}</span>
           {count > 0 && (
             <span className="badge bg-primary rounded-pill" style={{ fontSize: '0.65rem' }}>{count}</span>
+          )}
+          {helpText && (
+            <div className="position-relative flex-shrink-0">
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0 text-primary border-0"
+                aria-label={`${label} help`}
+                onMouseEnter={() => setShowHelp(helpKey)}
+                onMouseLeave={() => setShowHelp(prev => prev === helpKey ? null : prev)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowHelp(prev => prev === helpKey ? null : helpKey);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{ width: '1.5rem', height: '1.5rem', lineHeight: 1, fontWeight: 600, fontSize: '0.8rem', border: 'none', outline: 'none' }}
+              >?</button>
+              {isHelpOpen && (
+                <div
+                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
+                  onMouseEnter={() => setShowHelp(helpKey)}
+                  onMouseLeave={() => setShowHelp(prev => prev === helpKey ? null : prev)}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="fw-semibold mb-1">{label}</div>
+                  <div className="small">{helpText}</div>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div className="d-flex align-items-center gap-2">
@@ -98,6 +131,7 @@ export default function Modal_Filter_Schedule({
 }) {
   const [localFilters, setLocalFilters] = useState(EMPTY_FILTERS);
   const [openSections, setOpenSections] = useState({ employees: true, clients: false, services: false });
+  const [showHelp, setShowHelp] = useState(null);
 
   useEffect(() => {
     setLocalFilters(filters || EMPTY_FILTERS);
@@ -181,6 +215,10 @@ export default function Modal_Filter_Schedule({
           isOpen={openSections.employees}
           onToggle={() => toggleSection('employees')}
           onClear={() => clearSection('employeeIds')}
+          helpText="Show only appointments for selected employees. Use this to focus on specific team members' schedules."
+          helpKey="employees"
+          showHelp={showHelp}
+          setShowHelp={setShowHelp}
         >
           {employees.map((employee) => (
             <label key={employee.id} className="d-flex align-items-center gap-2 mb-0">
@@ -206,6 +244,10 @@ export default function Modal_Filter_Schedule({
           isOpen={openSections.clients}
           onToggle={() => toggleSection('clients')}
           onClear={() => clearSection('clientIds')}
+          helpText="Show only appointments for selected clients. Useful for tracking specific client interactions and bookings."
+          helpKey="clients"
+          showHelp={showHelp}
+          setShowHelp={setShowHelp}
         >
           {clients.map((client) => (
             <label key={client.id} className="d-flex align-items-center gap-2 mb-0">
@@ -227,6 +269,10 @@ export default function Modal_Filter_Schedule({
           isOpen={openSections.services}
           onToggle={() => toggleSection('services')}
           onClear={() => clearSection('serviceIds')}
+          helpText="Show only appointments for selected services. Filter by service type to analyze booking patterns or capacity."
+          helpKey="services"
+          showHelp={showHelp}
+          setShowHelp={setShowHelp}
         >
           {services.map((service) => (
             <label key={service.id} className="d-flex align-items-center gap-2 mb-0">

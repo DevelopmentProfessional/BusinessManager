@@ -7,6 +7,7 @@ import useStore from './services/useStore';
 import { preloadMajorTables } from './services/api';
 import useDarkMode from './services/useDarkMode';
 import useBranding from './services/useBranding';
+import { initializeActiveColorTheme } from './services/activeColorTheme';
 import Modal_Client from './pages/components/Modal_Client';
 import Manager_MobileAddressBar from './pages/components/Manager_MobileAddressBar';
 import Prompt_InstallApp from './pages/components/Prompt_InstallApp';
@@ -67,7 +68,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 };
 
 function App() {
-  const { setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
+  const { user, setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
   const { initializeDarkMode } = useDarkMode();
   const { isInitialized: brandingInitialized } = useBranding();
 
@@ -107,6 +108,10 @@ function App() {
   useEffect(() => {
     initializeDarkMode();
   }, [initializeDarkMode]);
+
+  useEffect(() => {
+    initializeActiveColorTheme(user?.color);
+  }, [user?.color]);
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

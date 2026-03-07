@@ -95,9 +95,9 @@ def _create_test_user(
     user_id = user.get("id")
     assert user_id, f"No id in created user response: {user}"
 
-    # Register for cleanup (real admin token — most reliable)
+    # Register for cleanup via ISUD (DELETE /api/v1/auth/users/{id} returns 405)
     cleanup.register(
-        f"/api/v1/auth/users/{user_id}",
+        f"/api/v1/isud/user/{user_id}",
         token=admin_token,
         label=f"test {role} user",
     )

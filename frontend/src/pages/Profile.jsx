@@ -32,6 +32,8 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Reduced Profile footer tab width and side padding
+ *   2026-03-07 | Claude  | Fixed compact-mode footer centering and training toggle width
  * ============================================================
  */
 
@@ -80,6 +82,7 @@ import api from '../services/api';
 import Modal_Signature from './components/Modal_Signature';
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
 import useBranding from '../services/useBranding';
+import { applyActiveColorTheme } from '../services/activeColorTheme';
 import { right } from '@popperjs/core';
 
 // ─── 2 MODULE-LEVEL STYLE INJECTION ──────────────────────────────────────────
@@ -210,8 +213,8 @@ const Profile = () => {
   const [openAccordion, setOpenAccordion] = useState('settings');
   const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
   const footerTabButtonStyle = isTrainingMode
-    ? { width: '6.8rem' }
-    : { width: '3rem' };
+    ? { width: '5.2rem', minWidth: '5.2rem' }
+    : { width: '2.3rem' };
 
   // Leave request state
   const [vacationRequests, setVacationRequests] = useState([]);
@@ -798,18 +801,24 @@ const Profile = () => {
 
   const handleColorChange = async (newColor) => {
     setEmployeeColor(newColor);
+    applyActiveColorTheme(newColor);
     setColorUpdating(true);
     setColorMessage('');
     try {
       await employeesAPI.updateUser(user.id, { color: newColor });
-      setUser({ ...user, color: newColor });
+      const updatedUser = { ...user, color: newColor };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
       setColorMessage('Calendar color updated!');
       setTimeout(() => setColorMessage(''), 2000);
       return true;
     } catch (error) {
       const detail = error?.response?.data?.detail || error?.message || 'Failed to update color';
       setColorMessage(detail);
-      setEmployeeColor(user?.color || '#3B82F6');
+      const fallbackColor = user?.color || '#3B82F6';
+      setEmployeeColor(fallbackColor);
+      applyActiveColorTheme(fallbackColor);
       setTimeout(() => setColorMessage(''), 3000);
       return false;
     } finally {
@@ -1309,7 +1318,7 @@ const Profile = () => {
             {/* Dark Mode Toggle */}
             <Button_Toolbar
               icon={isDarkMode ? MoonIcon : SunIcon}
-              label={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              label={isDarkMode ? 'Light' : 'Dark'}
               onClick={toggleDarkMode}
               className={`settings-accordion-btn ${isDarkMode ? 'text-white' : ''}`}
               style={{ ...footerTabButtonStyle, backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
@@ -1374,7 +1383,7 @@ const Profile = () => {
               type="button"
               onClick={toggleViewMode}
               className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex justify-content-center align-items-center"
-              style={{ ...footerTabButtonStyle, height: '3rem' }}
+              style={isTrainingMode ? { ...footerTabButtonStyle, height: '3rem' } : { width: '3rem', minWidth: '3rem', height: '3rem' }}
               title={isTrainingMode ? 'Switch to compact mode' : 'Switch to training mode'}
             >
               {isTrainingMode ? (
@@ -2018,7 +2027,7 @@ const Profile = () => {
                       icon={Icon}
                       label={title}
                       onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                      className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
                       style={{ ...footerTabButtonStyle, height: '3rem'  }}
                       data-active={openAccordion === id}
                     />
@@ -2041,7 +2050,7 @@ const Profile = () => {
                 icon={Icon}
                 label={title}
                 onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
                 style={{ ...footerTabButtonStyle, height: '3rem' }}
                 data-active={openAccordion === id}
               />
@@ -2067,7 +2076,7 @@ const Profile = () => {
                         icon={Icon}
                         label={title}
                         onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                        className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
                         style={{ ...footerTabButtonStyle, height: '3rem' }}
                         data-active={openAccordion === id}
                       />
@@ -2089,7 +2098,7 @@ const Profile = () => {
                   icon={Icon}
                   label={title}
                   onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                  className={`btn btn-sm flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
                   style={{ ...footerTabButtonStyle, height: '3rem' }}
                   data-active={openAccordion === id}
                 />

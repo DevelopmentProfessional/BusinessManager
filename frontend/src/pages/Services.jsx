@@ -22,6 +22,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Copilot | Added per-option help popovers for category filter options
  * ============================================================
  */
 
@@ -57,6 +58,7 @@ export default function Services() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
+  const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
 
@@ -320,7 +322,11 @@ export default function Services() {
                 <Button_Toolbar
                   icon={FolderOpenIcon}
                   label="Filter Category"
-                  onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
+                  onClick={() => {
+                    const nextOpen = !isCategoryFilterOpen;
+                    setIsCategoryFilterOpen(nextOpen);
+                    if (!nextOpen) setCategoryFilterHelpKey(null);
+                  }}
                   className={`border-0 shadow-lg transition-all ${
                     categoryFilter !== 'all'
                       ? 'bg-primary-600 hover:bg-primary-700 text-white'
@@ -330,15 +336,64 @@ export default function Services() {
                 />
                 {isCategoryFilterOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
-                    {categories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => { setCategoryFilter(cat); setIsCategoryFilterOpen(false); }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${categoryFilter === cat ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                      >
-                        {cat === 'all' ? 'All Categories' : cat || 'No Category'}
-                      </button>
-                    ))}
+                    {categories.map((cat, index) => {
+                      const key = cat ?? '__none__';
+                      const label = cat === 'all' ? 'All Categories' : cat || 'No Category';
+                      const description =
+                        cat === 'all'
+                          ? 'Shows services from every category.'
+                          : (cat || '').trim() === ''
+                            ? 'Shows services that do not have a category assigned.'
+                            : `Shows only services in the "${cat}" category.`;
+                      const isLast = index === categories.length - 1;
+                      const isSelected = categoryFilter === cat;
+                      const isHelpOpen = categoryFilterHelpKey === String(key);
+
+                      return (
+                        <div key={String(key)} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                          <button
+                            onClick={() => {
+                              setCategoryFilter(cat);
+                              setIsCategoryFilterOpen(false);
+                              setCategoryFilterHelpKey(null);
+                            }}
+                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                          >
+                            {label}
+                          </button>
+
+                          <div className="position-relative flex-shrink-0">
+                            <button
+                              type="button"
+                              aria-label={`${label} help`}
+                              className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                              onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
+                              onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : String(key)));
+                              }}
+                            >
+                              ?
+                            </button>
+
+                            {isHelpOpen && (
+                              <div
+                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                                onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
+                                onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
+                              >
+                                <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
+                                <div className="small text-gray-700 dark:text-gray-300">{description}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
