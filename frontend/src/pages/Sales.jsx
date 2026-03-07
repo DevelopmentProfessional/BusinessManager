@@ -637,7 +637,7 @@ export default function Sales() {
   }
 
   return (
-    <div className="h-full flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-900 -m-4 ">
+    <div className="h-full flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Sticky Header - Title Only */}
       <div className="flex-shrink-0 sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales</h1>
@@ -720,10 +720,10 @@ export default function Sales() {
         </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 
-      dark:border-gray-700 shadow-lg p-3 pt-2 -mx-4 md:-mx-6">
-       
-               {/* Client Selection Panel - shown when account icon is active */}
+      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+        <div className="p-3 pt-2">
+
+        {/* Client Selection Panel - shown when account icon is active */}
         {showClientPanel && (
           <div className="mb-2 relative">
             {selectedClient ? (
@@ -903,6 +903,7 @@ export default function Sales() {
             className={showProducts ? 'btn-secondary' : 'btn-outline-secondary'}
             style={{ opacity: showProducts ? 1 : 0.5 }}
           />
+        </div>
         </div>
       </div>
 

@@ -50,6 +50,27 @@
 
   /* Mobile keyboard offset (px) used to keep search inputs visible */
   --keyboard-offset: 0px;
+
+  /* App-wide active color (synced from Profile calendar color) */
+  --app-active-color: #3B82F6;
+  --app-active-color-hover: #2563EB;
+  --app-active-color-rgb: 59, 130, 246;
+
+  /* Bootstrap primary bridge so existing btn/active variants follow app active color */
+  --bs-primary: var(--app-active-color);
+  --bs-primary-rgb: var(--app-active-color-rgb);
+}
+
+/* Global shadow reset (requested app-wide) */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
 
@@ -115,6 +136,27 @@ footer[aria-label="Actions"] .btn {
    ======================================== */
 .btn {
   height: 3rem !important;
+  box-shadow: none !important;
+  --bs-btn-focus-box-shadow: none !important;
+}
+
+button,
+.btn,
+[role="button"] {
+  box-shadow: none !important;
+}
+
+button:focus,
+button:focus-visible,
+button:active,
+.btn:focus,
+.btn:focus-visible,
+.btn:active,
+.btn.active,
+[role="button"]:focus,
+[role="button"]:focus-visible,
+[role="button"]:active {
+  box-shadow: none !important;
 }
 
 /* ========================================
@@ -293,7 +335,19 @@ textarea.form-control {
 @layer components {
   /* Theme-aware utility classes using branded colors */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-full transition-colors;
+    background-color: var(--app-active-color);
+    border-color: var(--app-active-color);
+    color: #fff;
+    @apply font-medium py-2 px-4 rounded-full transition-colors;
+  }
+
+  .btn-primary:hover,
+  .btn-primary:focus,
+  .btn-primary:active,
+  .btn-check:checked + .btn-primary {
+    background-color: var(--app-active-color-hover);
+    border-color: var(--app-active-color-hover);
+    color: #fff;
   }
 
   .btn-secondary {
@@ -661,6 +715,30 @@ textarea.form-control {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
+}
+
+/* App-wide active state bridge (menus, navs, list selections, pagination, toggles) */
+.btn.active,
+.btn.show,
+.nav-pills .nav-link.active,
+.nav-tabs .nav-link.active,
+.dropdown-item.active,
+.list-group-item.active,
+.page-link.active,
+.active > .page-link,
+.form-check-input:checked {
+  background-color: var(--app-active-color) !important;
+  border-color: var(--app-active-color) !important;
+}
+
+.page-link.active,
+.active > .page-link,
+.dropdown-item.active,
+.list-group-item.active,
+.nav-pills .nav-link.active,
+.btn.active,
+.btn.show {
+  color: #fff !important;
 }
 
 /* ========================================

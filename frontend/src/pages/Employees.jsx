@@ -41,6 +41,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Copilot | Added per-option help popovers for role/status filters
  * ============================================================
  */
 
@@ -68,12 +69,19 @@ import Modal_Pay_Employee from './components/Modal_Pay_Employee';
 // ─── INLINE SUB-COMPONENTS (P4-B) ────────────────────────────────────────────
 
 function RoleFilterDropdown({ roleFilter, setRoleFilter, isOpen, setIsOpen, roleOptions }) {
+  const [roleHelpKey, setRoleHelpKey] = useState(null);
+  const roleOptionsWithAll = ['all', ...roleOptions];
+
   return (
     <div className="position-relative">
       <Button_Toolbar
         icon={UserGroupIcon}
         label="Filter Role"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const nextOpen = !isOpen;
+          setIsOpen(nextOpen);
+          if (!nextOpen) setRoleHelpKey(null);
+        }}
         className={`border-0 shadow-lg transition-all ${
           roleFilter !== 'all'
             ? 'bg-primary-600 hover:bg-primary-700 text-white'
@@ -83,21 +91,56 @@ function RoleFilterDropdown({ roleFilter, setRoleFilter, isOpen, setIsOpen, role
       />
       {isOpen && (
         <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
-          <button
-            onClick={() => { setRoleFilter('all'); setIsOpen(false); }}
-            className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-          >
-            All Roles
-          </button>
-          {roleOptions.map((role) => (
-            <button
-              key={role}
-              onClick={() => { setRoleFilter(role); setIsOpen(false); }}
-              className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${roleFilter === role ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-            >
-              {role}
-            </button>
-          ))}
+          {roleOptionsWithAll.map((role, index) => {
+            const label = role === 'all' ? 'All Roles' : role;
+            const description = role === 'all'
+              ? 'Shows employees from every role.'
+              : `Shows only employees assigned the "${role}" role.`;
+            const isLast = index === roleOptionsWithAll.length - 1;
+            const isSelected = roleFilter === role;
+            const isHelpOpen = roleHelpKey === role;
+
+            return (
+              <div key={role} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                <button
+                  onClick={() => { setRoleFilter(role); setIsOpen(false); setRoleHelpKey(null); }}
+                  className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                >
+                  {label}
+                </button>
+
+                <div className="position-relative flex-shrink-0">
+                  <button
+                    type="button"
+                    aria-label={`${label} help`}
+                    className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                    style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                    onMouseEnter={() => setRoleHelpKey(role)}
+                    onMouseLeave={() => setRoleHelpKey((prev) => (prev === role ? null : prev))}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setRoleHelpKey((prev) => (prev === role ? null : role));
+                    }}
+                  >
+                    ?
+                  </button>
+
+                  {isHelpOpen && (
+                    <div
+                      className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                      style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                      onMouseEnter={() => setRoleHelpKey(role)}
+                      onMouseLeave={() => setRoleHelpKey((prev) => (prev === role ? null : prev))}
+                    >
+                      <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
+                      <div className="small text-gray-700 dark:text-gray-300">{description}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -105,40 +148,81 @@ function RoleFilterDropdown({ roleFilter, setRoleFilter, isOpen, setIsOpen, role
 }
 
 function StatusFilterDropdown({ statusFilter, setStatusFilter, isOpen, setIsOpen }) {
+  const [statusHelpKey, setStatusHelpKey] = useState(null);
+
   const btnClass = () => {
     if (statusFilter === 'active') return 'bg-green-600 text-white';
     if (statusFilter === 'inactive') return 'bg-red-600 text-white';
     return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
   };
+
+  const statusOptions = [
+    { value: 'all', label: 'All Statuses', description: 'Shows both active and inactive employees.' },
+    { value: 'active', label: 'Active', description: 'Shows only active employees.' },
+    { value: 'inactive', label: 'Inactive', description: 'Shows only inactive employees.' },
+  ];
+
   return (
     <div className="position-relative">
       <Button_Toolbar
         icon={CheckCircleIcon}
         label="Filter Status"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const nextOpen = !isOpen;
+          setIsOpen(nextOpen);
+          if (!nextOpen) setStatusHelpKey(null);
+        }}
         className={`border-0 shadow-lg transition-all ${btnClass()}`}
         data-active={statusFilter !== 'all'}
       />
       {isOpen && (
         <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
-          <button
-            onClick={() => { setStatusFilter('all'); setIsOpen(false); }}
-            className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'all' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-          >
-            All Statuses
-          </button>
-          <button
-            onClick={() => { setStatusFilter('active'); setIsOpen(false); }}
-            className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${statusFilter === 'active' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-          >
-            Active
-          </button>
-          <button
-            onClick={() => { setStatusFilter('inactive'); setIsOpen(false); }}
-            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${statusFilter === 'inactive' ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-          >
-            Inactive
-          </button>
+          {statusOptions.map((option, index) => {
+            const isLast = index === statusOptions.length - 1;
+            const isSelected = statusFilter === option.value;
+            const isHelpOpen = statusHelpKey === option.value;
+
+            return (
+              <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                <button
+                  onClick={() => { setStatusFilter(option.value); setIsOpen(false); setStatusHelpKey(null); }}
+                  className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                >
+                  {option.label}
+                </button>
+
+                <div className="position-relative flex-shrink-0">
+                  <button
+                    type="button"
+                    aria-label={`${option.label} help`}
+                    className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                    style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                    onMouseEnter={() => setStatusHelpKey(option.value)}
+                    onMouseLeave={() => setStatusHelpKey((prev) => (prev === option.value ? null : prev))}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setStatusHelpKey((prev) => (prev === option.value ? null : option.value));
+                    }}
+                  >
+                    ?
+                  </button>
+
+                  {isHelpOpen && (
+                    <div
+                      className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                      style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                      onMouseEnter={() => setStatusHelpKey(option.value)}
+                      onMouseLeave={() => setStatusHelpKey((prev) => (prev === option.value ? null : prev))}
+                    >
+                      <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                      <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

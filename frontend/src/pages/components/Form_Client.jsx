@@ -20,6 +20,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Converted membership tier select to custom dropdown with per-option help
  * ============================================================
  */
 
@@ -29,11 +30,11 @@ import Button_Toolbar from './Button_Toolbar';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const MEMBERSHIP_TIERS = [
-  { value: 'none', label: 'None' },
-  { value: 'bronze', label: 'Bronze' },
-  { value: 'silver', label: 'Silver' },
-  { value: 'gold', label: 'Gold' },
-  { value: 'platinum', label: 'Platinum' }
+  { value: 'none', label: 'None', description: 'No membership tier. Standard pricing and access apply.' },
+  { value: 'bronze', label: 'Bronze', description: 'Entry-level membership with basic benefits and discounts.' },
+  { value: 'silver', label: 'Silver', description: 'Mid-tier membership with enhanced benefits and priority booking.' },
+  { value: 'gold', label: 'Gold', description: 'Premium membership with exclusive perks and significant discounts.' },
+  { value: 'platinum', label: 'Platinum', description: 'Top-tier membership with maximum benefits and VIP treatment.' }
 ];
 
 // ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
@@ -50,6 +51,8 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
     membership_points: 0
   });
   const [fieldErrors, setFieldErrors] = useState({});
+  const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
+  const [tierHelpKey, setTierHelpKey] = useState(null);
 
   useEffect(() => {
     if (client) {
@@ -158,19 +161,77 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
 
           <div className="row g-2 mb-2">
             <div className="col-6">
-              <div className="form-floating">
-                <select
-                  id="fc_tier"
-                  name="membership_tier"
-                  value={formData.membership_tier}
-                  onChange={handleChange}
-                  className="form-select form-select-sm"
-                >
-                  {MEMBERSHIP_TIERS.map(tier => (
-                    <option key={tier.value} value={tier.value}>{tier.label}</option>
-                  ))}
-                </select>
-                <label htmlFor="fc_tier">Tier</label>
+              <div className="position-relative">
+                <label htmlFor="fc_tier" className="form-label" style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Tier</label>
+                <div className="position-relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextOpen = !isTierDropdownOpen;
+                      setIsTierDropdownOpen(nextOpen);
+                      if (!nextOpen) setTierHelpKey(null);
+                    }}
+                    className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span>{MEMBERSHIP_TIERS.find(opt => opt.value === formData.membership_tier)?.label || 'Select Tier'}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: '8px' }}>
+                      <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                  </button>
+                  {isTierDropdownOpen && (
+                    <div
+                      className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+                      style={{ top: 'calc(100% + 4px)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                    >
+                      {MEMBERSHIP_TIERS.map((option, index) => {
+                        const isHelpOpen = tierHelpKey === option.value;
+                        return (
+                          <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleChange({ target: { name: 'membership_tier', value: option.value } });
+                                setIsTierDropdownOpen(false);
+                                setTierHelpKey(null);
+                              }}
+                              className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                              style={{ fontSize: '0.875rem' }}
+                            >
+                              {option.label}
+                            </button>
+                            <div className="position-relative flex-shrink-0">
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-primary border-0"
+                                aria-label={`${option.label} help`}
+                                onMouseEnter={() => setTierHelpKey(option.value)}
+                                onMouseLeave={() => setTierHelpKey(prev => prev === option.value ? null : prev)}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setTierHelpKey(prev => prev === option.value ? null : option.value);
+                                }}
+                                style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
+                              >?</button>
+                              {isHelpOpen && (
+                                <div
+                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
+                                  onMouseEnter={() => setTierHelpKey(option.value)}
+                                  onMouseLeave={() => setTierHelpKey(prev => prev === option.value ? null : prev)}
+                                >
+                                  <div className="fw-semibold">{option.label}</div>
+                                  <div className="small">{option.description}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="col-6">

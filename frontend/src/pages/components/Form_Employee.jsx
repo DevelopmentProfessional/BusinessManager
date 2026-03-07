@@ -31,6 +31,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Converted role select to custom dropdown with per-option help popovers
  * ============================================================
  */
 
@@ -61,6 +62,33 @@ export default function Form_Employee({
   const [rolesLoading, setRolesLoading] = useState(false);
   const [employeesList, setEmployeesList] = useState(employeesProp);
   const [insurancePlans, setInsurancePlans] = useState([]);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [roleHelpKey, setRoleHelpKey] = useState(null);
+  const [isEmploymentTypeDropdownOpen, setIsEmploymentTypeDropdownOpen] = useState(false);
+  const [employmentTypeHelpKey, setEmploymentTypeHelpKey] = useState(null);
+  const [isPayFrequencyDropdownOpen, setIsPayFrequencyDropdownOpen] = useState(false);
+  const [payFrequencyHelpKey, setPayFrequencyHelpKey] = useState(null);
+
+  const roleOptions = [
+    { value: 'EMPLOYEE', label: 'Employee', description: 'Standard employee with basic access. Can view their own profile and schedule.' },
+    { value: 'MANAGER', label: 'Manager', description: 'Supervisory role with team management access. Can view and manage direct reports.' },
+    { value: 'ADMIN', label: 'Admin', description: 'Full administrative access. Can manage all users, settings, and system configuration.' },
+    { value: 'VIEWER', label: 'Viewer', description: 'Read-only access. Can view data but cannot make changes or create records.' },
+  ];
+
+  const employmentTypeOptions = [
+    { value: 'salary', label: 'Salary', description: 'Fixed annual compensation. Employee receives consistent pay regardless of hours worked.' },
+    { value: 'hourly', label: 'Hourly', description: 'Paid by the hour worked. Compensation varies based on actual hours logged.' },
+  ];
+
+  const payFrequencyOptions = [
+    { value: 'daily', label: 'Daily', description: 'Paid every working day. Common for temporary or gig workers.' },
+    { value: 'weekly', label: 'Weekly', description: 'Paid once per week, typically on a specific weekday.' },
+    { value: 'biweekly', label: 'Bi-weekly', description: 'Paid every two weeks. Results in 26 pay periods per year.' },
+    { value: 'monthly', label: 'Monthly', description: 'Paid once per month, typically on a specific date. 12 pay periods per year.' },
+    { value: 'annually', label: 'Annually', description: 'Paid once per year. Often used for bonuses or contractor final payments.' },
+    { value: 'one_time', label: 'One-time (Contract)', description: 'Single payment for completed project or contract work. No recurring schedule.' },
+  ];
 
   // Permissions state
   const [userPermissions, setUserPermissions] = useState([]);
@@ -456,14 +484,77 @@ export default function Form_Employee({
               {!selfEdit && (
               <>
               <div className="col-md-6">
-                <div className="form-floating">
-                  <select id="role" name="role" value={formData.role} onChange={handleInputChange} className="form-select form-select-sm">
-                    <option value="EMPLOYEE">Employee</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="VIEWER">Viewer</option>
-                  </select>
-                  <label htmlFor="role">Role</label>
+                <div className="position-relative">
+                  <label htmlFor="role" className="form-label" style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Role</label>
+                  <div className="position-relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextOpen = !isRoleDropdownOpen;
+                        setIsRoleDropdownOpen(nextOpen);
+                        if (!nextOpen) setRoleHelpKey(null);
+                      }}
+                      className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span>{roleOptions.find(opt => opt.value === formData.role)?.label || 'Select Role'}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: '8px' }}>
+                        <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </button>
+                    {isRoleDropdownOpen && (
+                      <div
+                        className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+                        style={{ top: 'calc(100% + 4px)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                      >
+                        {roleOptions.map((option, index) => {
+                          const isHelpOpen = roleHelpKey === option.value;
+                          return (
+                            <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange({ target: { name: 'role', value: option.value } });
+                                  setIsRoleDropdownOpen(false);
+                                  setRoleHelpKey(null);
+                                }}
+                                className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                style={{ fontSize: '0.875rem' }}
+                              >
+                                {option.label}
+                              </button>
+                              <div className="position-relative flex-shrink-0">
+                                <button
+                                  type="button"
+                                  className="btn btn-link btn-sm p-0 text-primary border-0"
+                                  aria-label={`${option.label} help`}
+                                  onMouseEnter={() => setRoleHelpKey(option.value)}
+                                  onMouseLeave={() => setRoleHelpKey(prev => prev === option.value ? null : prev)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setRoleHelpKey(prev => prev === option.value ? null : option.value);
+                                  }}
+                                  style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
+                                >?</button>
+                                {isHelpOpen && (
+                                  <div
+                                    className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                    style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
+                                    onMouseEnter={() => setRoleHelpKey(option.value)}
+                                    onMouseLeave={() => setRoleHelpKey(prev => prev === option.value ? null : prev)}
+                                  >
+                                    <div className="fw-semibold">{option.label}</div>
+                                    <div className="small">{option.description}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="col-md-6">
@@ -566,27 +657,151 @@ export default function Form_Employee({
                 <hr className="mt-1 mb-2" />
               </div>
               <div className="col-md-6">
-                <div className="form-floating">
-                  <select id="employment_type" name="employment_type" value={formData.employment_type} onChange={handleInputChange} className="form-select form-select-sm">
-                    <option value="">Select type</option>
-                    <option value="salary">Salary</option>
-                    <option value="hourly">Hourly</option>
-                  </select>
-                  <label htmlFor="employment_type">Employment Type</label>
+                <div className="position-relative">
+                  <label htmlFor="employment_type" className="form-label" style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Employment Type</label>
+                  <div className="position-relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextOpen = !isEmploymentTypeDropdownOpen;
+                        setIsEmploymentTypeDropdownOpen(nextOpen);
+                        if (!nextOpen) setEmploymentTypeHelpKey(null);
+                      }}
+                      className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span>{employmentTypeOptions.find(opt => opt.value === formData.employment_type)?.label || 'Select type'}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: '8px' }}>
+                        <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </button>
+                    {isEmploymentTypeDropdownOpen && (
+                      <div
+                        className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+                        style={{ top: 'calc(100% + 4px)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                      >
+                        {employmentTypeOptions.map((option) => {
+                          const isHelpOpen = employmentTypeHelpKey === option.value;
+                          return (
+                            <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange({ target: { name: 'employment_type', value: option.value } });
+                                  setIsEmploymentTypeDropdownOpen(false);
+                                  setEmploymentTypeHelpKey(null);
+                                }}
+                                className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                style={{ fontSize: '0.875rem' }}
+                              >
+                                {option.label}
+                              </button>
+                              <div className="position-relative flex-shrink-0">
+                                <button
+                                  type="button"
+                                  className="btn btn-link btn-sm p-0 text-primary border-0"
+                                  aria-label={`${option.label} help`}
+                                  onMouseEnter={() => setEmploymentTypeHelpKey(option.value)}
+                                  onMouseLeave={() => setEmploymentTypeHelpKey(prev => prev === option.value ? null : prev)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setEmploymentTypeHelpKey(prev => prev === option.value ? null : option.value);
+                                  }}
+                                  style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
+                                >?</button>
+                                {isHelpOpen && (
+                                  <div
+                                    className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                    style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
+                                    onMouseEnter={() => setEmploymentTypeHelpKey(option.value)}
+                                    onMouseLeave={() => setEmploymentTypeHelpKey(prev => prev === option.value ? null : prev)}
+                                  >
+                                    <div className="fw-semibold">{option.label}</div>
+                                    <div className="small">{option.description}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="col-md-6">
-                <div className="form-floating">
-                  <select id="pay_frequency" name="pay_frequency" value={formData.pay_frequency} onChange={handleInputChange} className="form-select form-select-sm">
-                    <option value="">Select frequency</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="biweekly">Bi-weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="annually">Annually</option>
-                    <option value="one_time">One-time (Contract)</option>
-                  </select>
-                  <label htmlFor="pay_frequency">Pay Frequency</label>
+                <div className="position-relative">
+                  <label htmlFor="pay_frequency" className="form-label" style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Pay Frequency</label>
+                  <div className="position-relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextOpen = !isPayFrequencyDropdownOpen;
+                        setIsPayFrequencyDropdownOpen(nextOpen);
+                        if (!nextOpen) setPayFrequencyHelpKey(null);
+                      }}
+                      className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span>{payFrequencyOptions.find(opt => opt.value === formData.pay_frequency)?.label || 'Select frequency'}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: '8px' }}>
+                        <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </button>
+                    {isPayFrequencyDropdownOpen && (
+                      <div
+                        className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+                        style={{ top: 'calc(100% + 4px)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                      >
+                        {payFrequencyOptions.map((option) => {
+                          const isHelpOpen = payFrequencyHelpKey === option.value;
+                          return (
+                            <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange({ target: { name: 'pay_frequency', value: option.value } });
+                                  setIsPayFrequencyDropdownOpen(false);
+                                  setPayFrequencyHelpKey(null);
+                                }}
+                                className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                style={{ fontSize: '0.875rem' }}
+                              >
+                                {option.label}
+                              </button>
+                              <div className="position-relative flex-shrink-0">
+                                <button
+                                  type="button"
+                                  className="btn btn-link btn-sm p-0 text-primary border-0"
+                                  aria-label={`${option.label} help`}
+                                  onMouseEnter={() => setPayFrequencyHelpKey(option.value)}
+                                  onMouseLeave={() => setPayFrequencyHelpKey(prev => prev === option.value ? null : prev)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setPayFrequencyHelpKey(prev => prev === option.value ? null : option.value);
+                                  }}
+                                  style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
+                                >?</button>
+                                {isHelpOpen && (
+                                  <div
+                                    className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                    style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
+                                    onMouseEnter={() => setPayFrequencyHelpKey(option.value)}
+                                    onMouseLeave={() => setPayFrequencyHelpKey(prev => prev === option.value ? null : prev)}
+                                  >
+                                    <div className="fw-semibold">{option.label}</div>
+                                    <div className="small">{option.description}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               {formData.employment_type !== 'hourly' && (

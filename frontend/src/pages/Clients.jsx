@@ -21,6 +21,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Copilot | Added per-option help popovers for tier filter options
  * ============================================================
  */
 
@@ -58,8 +59,18 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
+  const [tierFilterHelpKey, setTierFilterHelpKey] = useState(null);
   const scrollRef = useRef(null);
   const hasFetched = useRef(false);
+
+  const tierFilterOptions = [
+    { value: 'all', label: 'All Tiers', description: 'Shows all clients regardless of membership tier.' },
+    { value: 'NONE', label: 'No Membership', description: 'Shows clients without any membership tier assigned.' },
+    { value: 'BRONZE', label: 'Bronze', description: 'Shows only clients assigned to the Bronze tier.' },
+    { value: 'SILVER', label: 'Silver', description: 'Shows only clients assigned to the Silver tier.' },
+    { value: 'GOLD', label: 'Gold', description: 'Shows only clients assigned to the Gold tier.' },
+    { value: 'PLATINUM', label: 'Platinum', description: 'Shows only clients assigned to the Platinum tier.' },
+  ];
 
   // Template modal state
   const [templateClient, setTemplateClient] = useState(null);
@@ -375,48 +386,66 @@ export default function Clients() {
                 <Button_Toolbar
                   icon={StarIcon}
                   label="Filter Tier"
-                  onClick={() => setIsTierFilterOpen(!isTierFilterOpen)}
+                  onClick={() => {
+                    const nextOpen = !isTierFilterOpen;
+                    setIsTierFilterOpen(nextOpen);
+                    if (!nextOpen) setTierFilterHelpKey(null);
+                  }}
                   className={`border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`}
                   data-active={tierFilter !== 'all'}
                 />
                 {isTierFilterOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
-                    <button
-                      onClick={() => { setTierFilter('all'); setIsTierFilterOpen(false); }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'all' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                    >
-                      All Tiers
-                    </button>
-                    <button
-                      onClick={() => { setTierFilter('NONE'); setIsTierFilterOpen(false); }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'NONE' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                    >
-                      No Membership
-                    </button>
-                    <button
-                      onClick={() => { setTierFilter('BRONZE'); setIsTierFilterOpen(false); }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'BRONZE' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                    >
-                      Bronze
-                    </button>
-                    <button
-                      onClick={() => { setTierFilter('SILVER'); setIsTierFilterOpen(false); }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'SILVER' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                    >
-                      Silver
-                    </button>
-                    <button
-                      onClick={() => { setTierFilter('GOLD'); setIsTierFilterOpen(false); }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg mb-1 transition-colors ${tierFilter === 'GOLD' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                    >
-                      Gold
-                    </button>
-                    <button
-                      onClick={() => { setTierFilter('PLATINUM'); setIsTierFilterOpen(false); }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${tierFilter === 'PLATINUM' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                    >
-                      Platinum
-                    </button>
+                    {tierFilterOptions.map((option, index) => {
+                      const isLast = index === tierFilterOptions.length - 1;
+                      const isSelected = tierFilter === option.value;
+                      const isHelpOpen = tierFilterHelpKey === option.value;
+
+                      return (
+                        <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                          <button
+                            onClick={() => {
+                              setTierFilter(option.value);
+                              setIsTierFilterOpen(false);
+                              setTierFilterHelpKey(null);
+                            }}
+                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                          >
+                            {option.label}
+                          </button>
+
+                          <div className="position-relative flex-shrink-0">
+                            <button
+                              type="button"
+                              aria-label={`${option.label} help`}
+                              className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                              onMouseEnter={() => setTierFilterHelpKey(option.value)}
+                              onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTierFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                              }}
+                            >
+                              ?
+                            </button>
+
+                            {isHelpOpen && (
+                              <div
+                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                                onMouseEnter={() => setTierFilterHelpKey(option.value)}
+                                onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                              >
+                                <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                                <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
