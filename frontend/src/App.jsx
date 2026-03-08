@@ -6,6 +6,7 @@ import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
 import { preloadMajorTables } from './services/api';
 import useDarkMode from './services/useDarkMode';
+import useViewMode from './services/useViewMode';
 import useBranding from './services/useBranding';
 import { initializeActiveColorTheme } from './services/activeColorTheme';
 import Modal_Client from './pages/components/Modal_Client';
@@ -70,6 +71,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 function App() {
   const { user, setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
   const { initializeDarkMode } = useDarkMode();
+  const { setTrainingMode } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
 
   // Initialize user data from localStorage/sessionStorage on app startup
@@ -108,6 +110,13 @@ function App() {
   useEffect(() => {
     initializeDarkMode();
   }, [initializeDarkMode]);
+
+  // Sync training mode from database when user loads
+  useEffect(() => {
+    if (user?.training_mode !== undefined) {
+      setTrainingMode(user.training_mode);
+    }
+  }, [user?.training_mode, setTrainingMode]);
 
   useEffect(() => {
     initializeActiveColorTheme(user?.color);

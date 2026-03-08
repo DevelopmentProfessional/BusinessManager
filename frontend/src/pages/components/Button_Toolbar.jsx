@@ -21,6 +21,8 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Reduced icon-label spacing for Profile footer buttons
  *   2026-03-07 | Claude  | Tightened Profile footer icon-label spacing again
+ *   2026-03-07 | Copilot | Standardized footer/modal button sizing and icon-label spacing
+ *   2026-03-07 | Copilot | Reduced training-mode margin inflation to keep footer buttons tighter
  * ============================================================
  */
 import React from 'react';
@@ -32,23 +34,13 @@ function withTrainingModeMargin(className, isTrainingMode) {
   if (!isTrainingMode) return className;
 
   const tokens = (className || '').split(/\s+/).filter(Boolean);
-  let hasMarginClass = false;
-  const isProfileFooter = tokens.includes('profile-footer-btn');
-  const isSettingsAccordion = tokens.includes('settings-accordion-btn');
 
-  const adjusted = tokens.map((token) => {
+  return tokens.map((token) => {
     const match = token.match(/^(m|mx|my|mt|me|mb|ms)-([0-5])$/);
     if (!match) return token;
-    hasMarginClass = true;
-    const nextStep = Math.min(Number(match[2]) + 1, 5);
+    const nextStep = Math.max(Number(match[2]) - 1, 0);
     return `${match[1]}-${nextStep}`;
-  });
-
-  if (!hasMarginClass && !isProfileFooter && !isSettingsAccordion) {
-    adjusted.push('m-1');
-  }
-
-  return adjusted.join(' ');
+  }).join(' ');
 }
 
 function simplifyTrainingLabel(normalizedLabel, isTrainingMode) {
@@ -65,18 +57,16 @@ function simplifyTrainingLabel(normalizedLabel, isTrainingMode) {
 
 // ─── 2 BUTTON COMPONENT ────────────────────────────────────────────────────────
 
-export default function Button_Toolbar({ icon: Icon, label, onClick, className = '', disabled = false, badge, style = {}, ...rest }) {
+export default function Button_Toolbar({ icon: Icon, label, onClick, className = '', disabled = false, badge, style = {}, compact = false, ...rest }) {
   const { isTrainingMode } = useViewMode();
-  const effectiveClassName = withTrainingModeMargin(className, isTrainingMode);
+  const training = isTrainingMode && !compact;
+  const effectiveClassName = withTrainingModeMargin(className, training);
   const normalizedLabel = typeof label === 'string' ? label.trim() : '';
-  const isFilterButton = /^filter\b/i.test(normalizedLabel);
-  const isProfileFooter = className.includes('profile-footer-btn');
-  const isSettingsAccordion = className.includes('settings-accordion-btn');
-  const baseTrainingLabel = isTrainingMode
+  const baseTrainingLabel = training
     ? normalizedLabel.replace(/^filter\s*/i, '').trim()
     : normalizedLabel;
-  const displayLabel = simplifyTrainingLabel(baseTrainingLabel, isTrainingMode);
-  const showTextLabel = isTrainingMode && displayLabel.length > 0;
+  const displayLabel = simplifyTrainingLabel(baseTrainingLabel, training);
+  const showTextLabel = training && displayLabel.length > 0;
 
   return (
     <button
@@ -85,14 +75,14 @@ export default function Button_Toolbar({ icon: Icon, label, onClick, className =
       disabled={disabled}
       title={normalizedLabel || label}
       aria-label={normalizedLabel || label}
-      className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
-        ${isTrainingMode ? (isFilterButton ? 'rounded-pill p-1' : (isProfileFooter || isSettingsAccordion) ? 'rounded-pill' : 'rounded-pill px-3') : 'rounded-circle'}
+      className={`btn flex-shrink-0 d-flex align-items-center justify-content-center gap-1
+        ${training ? 'rounded-pill ps-0 pe-1' : 'rounded-circle p-0'}
         ${effectiveClassName}`}
-      style={isTrainingMode ? { height: '3rem', minWidth: '6.8rem', ...style } : { width: '3rem', height: '3rem', ...style }}
+      style={training ? { height: '2.5rem', ...style } : { width: '2.5rem', height: '2.5rem', ...style }}
       {...rest}
     >
-      <Icon className={`flex-shrink-0 h-5 w-5${showTextLabel ? (isProfileFooter ? ' me-0' : ' me-1') : ''}`} />
-      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1, marginLeft: isProfileFooter ? '-0.125rem' : 0 }}>{displayLabel}</span>}
+      <Icon className="flex-shrink-0 h-5" />
+      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1 }}>{displayLabel}</span>}
       {badge}
     </button>
   );

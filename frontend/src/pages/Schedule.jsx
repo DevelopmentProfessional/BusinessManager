@@ -1313,7 +1313,7 @@ export default function Schedule() {
           <div className="d-lg-none">
             <div className="row g-0">
               <div className="col-12">
-                <div className="d-flex mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+                <div className="d-flex gap-1 mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={MonthViewIcon}
               label="Month"
@@ -1351,7 +1351,7 @@ export default function Schedule() {
               </div>
             </div>
           </div>
-          <div className="d-none d-lg-flex  mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+          <div className="d-none d-lg-flex gap-1 mb-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={MonthViewIcon}
               label="Month"
@@ -1390,7 +1390,7 @@ export default function Schedule() {
           <div className="d-lg-none">
             <div className="row g-0">
               <div className="col-10">
-                <div className="d-flex flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
+                <div className="d-flex gap-1 flex-wrap align-items-center" style={{ minHeight: '3rem' }}>
             <Button_Toolbar
               icon={TodayIcon}
               label="Today"

@@ -212,9 +212,6 @@ const Profile = () => {
   const [colorMessage, setColorMessage] = useState('');
   const [openAccordion, setOpenAccordion] = useState('settings');
   const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
-  const footerTabButtonStyle = isTrainingMode
-    ? { width: '5.2rem', minWidth: '5.2rem' }
-    : { width: '2.3rem' };
 
   // Leave request state
   const [vacationRequests, setVacationRequests] = useState([]);
@@ -1321,7 +1318,7 @@ const Profile = () => {
               label={isDarkMode ? 'Light' : 'Dark'}
               onClick={toggleDarkMode}
               className={`settings-accordion-btn ${isDarkMode ? 'text-white' : ''}`}
-              style={{ ...footerTabButtonStyle, backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
+              style={{ backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
             />
 
             {/* Calendar Color */}
@@ -1331,7 +1328,7 @@ const Profile = () => {
                 label="Color"
                 onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
                 className="settings-accordion-btn"
-                style={{ ...footerTabButtonStyle, backgroundColor: employeeColor, border: '0px solid var(--bs-border-color, #dee2e6)', color: 'white' }}
+                style={{ backgroundColor: employeeColor, border: '0px solid var(--bs-border-color, #dee2e6)', color: 'white' }}
                 disabled={colorUpdating}
                 aria-expanded={colorPickerOpen}
               />
@@ -1375,15 +1372,19 @@ const Profile = () => {
               label="Signature"
               onClick={() => setSignatureModalOpen(true)}
               className="settings-accordion-btn btn-outline-secondary"
-              style={footerTabButtonStyle}
             />
 
             {/* Training / Compact Mode Toggle */}
             <button
               type="button"
-              onClick={toggleViewMode}
+              onClick={async () => {
+                toggleViewMode();
+                if (user?.id) {
+                  try { await api.put(`/isud/user/${user.id}`, { training_mode: !isTrainingMode }); } catch (_) {}
+                }
+              }}
               className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex justify-content-center align-items-center"
-              style={isTrainingMode ? { ...footerTabButtonStyle, height: '3rem' } : { width: '3rem', minWidth: '3rem', height: '3rem' }}
+              style={isTrainingMode ? { height: '3rem' } : { width: '3rem', minWidth: '3rem', height: '3rem' }}
               title={isTrainingMode ? 'Switch to compact mode' : 'Switch to training mode'}
             >
               {isTrainingMode ? (
@@ -1402,7 +1403,6 @@ const Profile = () => {
               label="Log out"
               onClick={handleLogout}
               className="settings-accordion-btn btn-outline-secondary"
-              style={footerTabButtonStyle}
             />
           </div>
 
@@ -1497,7 +1497,6 @@ const Profile = () => {
               label={scheduleLoading ? 'Saving…' : 'Save'}
               onClick={handleSaveScheduleSettings}
               className="btn-primary"
-              style={footerTabButtonStyle}
               disabled={scheduleLoading}
             />
 
@@ -1621,7 +1620,6 @@ const Profile = () => {
                       label={companyLoading ? 'Saving...' : 'Save '}
                       onClick={handleSaveCompanyInfo}
                       className="btn-primary"
-                      style={footerTabButtonStyle}
                       disabled={companyLoading}
                     />
                   </div>
@@ -1689,7 +1687,6 @@ const Profile = () => {
                     label="Save Branding"
                     onClick={handleSaveBranding}
                     className="btn-primary"
-                    style={footerTabButtonStyle}
                   />
                 </div>
               )}
@@ -1732,7 +1729,6 @@ const Profile = () => {
                     label="Save Notifications"
                     onClick={handleSaveNotifications}
                     className="btn-primary"
-                    style={footerTabButtonStyle}
                   />
                 </div>
               )}
@@ -2028,7 +2024,7 @@ const Profile = () => {
                       label={title}
                       onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
                       className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      style={{ ...footerTabButtonStyle, height: '3rem'  }}
+                      style={{ height: '3rem'  }}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -2051,7 +2047,7 @@ const Profile = () => {
                 label={title}
                 onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
                 className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                style={{ ...footerTabButtonStyle, height: '3rem' }}
+                style={{ height: '3rem' }}
                 data-active={openAccordion === id}
               />
             ))}
@@ -2077,7 +2073,7 @@ const Profile = () => {
                         label={title}
                         onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
                         className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        style={{ ...footerTabButtonStyle, height: '3rem' }}
+                        style={{ height: '3rem' }}
                         data-active={openAccordion === id}
                       />
                     ))}
@@ -2099,7 +2095,7 @@ const Profile = () => {
                   label={title}
                   onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
                   className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  style={{ ...footerTabButtonStyle, height: '3rem' }}
+                  style={{ height: '3rem' }}
                   data-active={openAccordion === id}
                 />
               ))}
