@@ -37,7 +37,8 @@ function withTrainingModeMargin(className, isTrainingMode) {
 
   return tokens.map((token) => {
     const match = token.match(/^(m|mx|my|mt|me|mb|ms)-([0-5])$/);
-    if (!match)1, 0);
+    if (!match) return token;
+    const nextStep = Math.max(Number(match[2]) - 1, 0);
     return `${match[1]}-${nextStep}`;
   }).join(' ');
 }
