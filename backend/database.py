@@ -1144,7 +1144,19 @@ def _ensure_app_settings_company_columns_if_needed():
 
 # ─── 11f MIGRATION: USER TRAINING MODE COLUMN ──────────────────────────────────
 def _ensure_training_mode_column_if_needed():
-    """Ensure user table has training_mode column."""
+    """Ensure user table has training_mode, db_environment, reports_to, and role_id columns."""
+    new_cols_sqlite = {
+        "training_mode": "BOOLEAN DEFAULT 0",
+        "db_environment": "VARCHAR DEFAULT 'production'",
+        "reports_to": "TEXT",
+        "role_id": "TEXT",
+    }
+    new_cols_pg = {
+        "training_mode": "BOOLEAN DEFAULT FALSE",
+        "db_environment": "VARCHAR DEFAULT 'production'",
+        "reports_to": "UUID",
+        "role_id": "UUID",
+    }
     if DATABASE_URL.startswith("sqlite"):
         with engine.begin() as conn:
             tbl_exists = conn.execute(text(
@@ -1154,9 +1166,10 @@ def _ensure_training_mode_column_if_needed():
                 return
             cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
             col_names = {row[1] for row in cols}
-            if "training_mode" not in col_names:
-                conn.execute(text("ALTER TABLE user ADD COLUMN training_mode BOOLEAN DEFAULT 0"))
-                print("✓ Added user.training_mode (SQLite)")
+            for col, col_type in new_cols_sqlite.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {col_type}"))
+                    print(f"✓ Added user.{col} (SQLite)")
     else:
         with engine.begin() as conn:
             cols = conn.execute(text(
@@ -1164,6 +1177,7 @@ def _ensure_training_mode_column_if_needed():
                 "WHERE table_schema='public' AND table_name='user'"
             )).fetchall()
             col_names = {row[0] for row in cols}
-            if "training_mode" not in col_names:
-                conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE'))
-                print("  + Added column user.training_mode (PostgreSQL)")
+            for col, col_type in new_cols_pg.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+                    print(f"  + Added column user.{col} (PostgreSQL)")
