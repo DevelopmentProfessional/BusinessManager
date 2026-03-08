@@ -260,6 +260,7 @@ def create_db_and_tables():
     _ensure_schedule_recurrence_columns_if_needed()
     _ensure_chat_message_table_if_needed()
     _ensure_app_settings_company_columns_if_needed()
+    _ensure_training_mode_column_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
@@ -1139,3 +1140,44 @@ def _ensure_app_settings_company_columns_if_needed():
                 if col not in col_names:
                     conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
                     print(f"  + Added column app_settings.{col} ({pg_type})")
+
+
+# ─── 11f MIGRATION: USER TRAINING MODE COLUMN ──────────────────────────────────
+def _ensure_training_mode_column_if_needed():
+    """Ensure user table has training_mode, db_environment, reports_to, and role_id columns."""
+    new_cols_sqlite = {
+        "training_mode": "BOOLEAN DEFAULT 0",
+        "db_environment": "VARCHAR DEFAULT 'production'",
+        "reports_to": "TEXT",
+        "role_id": "TEXT",
+    }
+    new_cols_pg = {
+        "training_mode": "BOOLEAN DEFAULT FALSE",
+        "db_environment": "VARCHAR DEFAULT 'production'",
+        "reports_to": "UUID",
+        "role_id": "UUID",
+    }
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
+            col_names = {row[1] for row in cols}
+            for col, col_type in new_cols_sqlite.items():
+                if col not in col_names:
+                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {col_type}"))
+                    print(f"✓ Added user.{col} (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            for col, col_type in new_cols_pg.items():
+                if col not in col_names:
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+                    print(f"  + Added column user.{col} (PostgreSQL)")
