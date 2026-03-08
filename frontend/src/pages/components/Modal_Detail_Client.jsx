@@ -39,6 +39,7 @@ import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import { clientsAPI, servicesAPI } from '../../services/api';
 import Modal_Client_Cart, { getClientCartCount } from './Modal_Client_Cart';
+import { formatDate, formatDateTime } from '../../utils/dateFormatters';
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
 const MEMBERSHIP_TIERS = [
@@ -72,22 +73,6 @@ const getTierLabel = (tier) => {
   return labels[(tier || 'none').toLowerCase()] || 'None';
 };
 
-const formatDate = (dt) => {
-  if (!dt) return '—';
-  try {
-    return new Date(dt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch { return dt; }
-};
-
-const formatDateTime = (dt) => {
-  if (!dt) return '—';
-  try {
-    return new Date(dt).toLocaleString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  } catch { return dt; }
-};
 
 // ─── 2 SERVICE HISTORY SUB-MODAL ───────────────────────────────────────────
 

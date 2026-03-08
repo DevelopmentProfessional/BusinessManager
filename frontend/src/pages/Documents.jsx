@@ -34,8 +34,11 @@
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { formatDateTime } from '../utils/dateFormatters';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
 import {
   PlusIcon,
   DocumentIcon,
@@ -60,6 +63,7 @@ import Gate_Permission from './components/Gate_Permission';
 import Modal_Viewer_Document from './components/Modal_Viewer_Document';
 import Modal_Edit_Document from './components/Modal_Edit_Document';
 import Modal_Template_Editor from './components/Modal_Template_Editor';
+import PageTableFooter from './components/PageTableFooter';
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -331,16 +335,11 @@ export default function Documents() {
   }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById]);
 
   // ─── 7  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
-  // Ref to prevent double fetching in StrictMode
-  const hasFetched = useRef(false);
-
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+  useFetchOnce(() => {
     loadDocuments();
     loadCategories();
     loadTemplates();
-  }, []);
+  });
 
   // ─── 8  TEMPLATE API HANDLERS ─────────────────────────────────────────────
   const loadTemplates = async () => {
@@ -662,15 +661,7 @@ export default function Documents() {
   };
 
   // ─── 15  RENDER / RETURN ──────────────────────────────────────────────────
-  // Permission check after all hooks
-  if (
-    !hasPermission('documents', 'read') &&
-    !hasPermission('documents', 'write') &&
-    !hasPermission('documents', 'delete') &&
-    !hasPermission('documents', 'admin')
-  ) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('documents', hasPermission);
 
   if (loading) {
     return (
@@ -829,93 +820,68 @@ export default function Documents() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-          {/* Column Headers */}
-          <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-            <colgroup>
-              <col />
-              <col style={{ width: showTemplates ? '80px' : '60px' }} />
-            </colgroup>
-            <tfoot>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th>{showTemplates ? 'Template' : 'Document'}</th>
-                <th className="text-center">{showTemplates ? 'Actions' : 'View'}</th>
-              </tr>
-            </tfoot>
-          </table>
+        <PageTableFooter
+          columns={[
+            { label: showTemplates ? 'Template' : 'Document' },
+            { label: showTemplates ? 'Actions' : 'View', width: showTemplates ? 80 : 60, className: 'text-center' },
+          ]}
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name, type, or description..."
+          hideSearch={showTemplates}
+        >
+          {/* Templates toggle */}
+          <Button_Toolbar
+            icon={DocumentTextIcon}
+            label="Templates"
+            onClick={() => setShowTemplates((v) => !v)}
+            className={`border-0 shadow-lg transition-all ${
+              showTemplates
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                : 'btn-app-secondary'
+            }`}
+            title={showTemplates ? 'Back to Documents' : 'Templates'}
+          />
 
-          {/* Controls */}
-          <div className="p-3 pt-2 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {!showTemplates && (
-              <div className="position-relative w-100 mb-2">
-                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search by name, type, or description..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="app-search-input form-control ps-5 w-100 rounded-pill"
+          {showTemplates ? (
+            /* Templates mode controls */
+            <>
+              <button
+                type="button"
+                onClick={handleNewTemplate}
+                className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"
+                style={{ width: '3rem', height: '3rem' }}
+                title="New template"
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+              {/* Type filter for templates */}
+              {['all', 'email', 'invoice', 'receipt', 'memo', 'quote', 'custom'].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTemplateTypeFilter(t)}
+                  className={`btn btn-sm rounded-pill px-3 border-0 ${
+                    templateTypeFilter === t
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </>
+          ) : (
+            /* Documents mode controls */
+            <>
+              <Gate_Permission page="documents" permission="write">
+                <Button_Toolbar
+                  icon={PlusIcon}
+                  label="Upload"
+                  onClick={handleUploadDocument}
+                  className="btn-app-primary"
                 />
-              </div>
-            )}
-
-            <div className="d-flex align-items-center gap-1 mb-1 flex-wrap pb-1" style={{ minHeight: '3rem' }}>
-              {/* Templates toggle */}
-              <Button_Toolbar
-                icon={DocumentTextIcon}
-                label="Templates"
-                onClick={() => setShowTemplates((v) => !v)}
-                className={`border-0 shadow-lg transition-all ${
-                  showTemplates
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    : 'btn-app-secondary'
-                }`}
-                title={showTemplates ? 'Back to Documents' : 'Templates'}
-              />
-
-              {showTemplates ? (
-                /* Templates mode controls */
-                <>
-                  <button
-                    type="button"
-                    onClick={handleNewTemplate}
-                    className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"
-                    style={{ width: '3rem', height: '3rem' }}
-                    title="New template"
-                  >
-                    <PlusIcon className="h-5 w-5" />
-                  </button>
-                  {/* Type filter for templates */}
-                  {['all', 'email', 'invoice', 'receipt', 'memo', 'quote', 'custom'].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTemplateTypeFilter(t)}
-                      className={`btn btn-sm rounded-pill px-3 border-0 ${
-                        templateTypeFilter === t
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
-                    </button>
-                  ))}
-                </>
-              ) : (
-                /* Documents mode controls */
-                <>
-                  <Gate_Permission page="documents" permission="write">
-                    <Button_Toolbar
-                      icon={PlusIcon}
-                      label="Upload"
-                      onClick={handleUploadDocument}
-                      className="btn-app-primary"
-                    />
-                  </Gate_Permission>
+              </Gate_Permission>
 
               {/* Clear Filters Button */}
               {(categoryFilter !== 'all' || statusFilter !== 'all' || typeFilter !== 'all') && (
@@ -1147,12 +1113,9 @@ export default function Documents() {
                   </div>
                 )}
               </div>
-                </>
-              )}
-
-            </div>
-          </div>
-        </div>
+            </>
+          )}
+        </PageTableFooter>
       </div>
 
       {/* Template Editor Modal */}
@@ -1223,7 +1186,7 @@ export default function Documents() {
                   {historyItems.map((h) => (
                     <tr key={h.id}>
                       <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                        {new Date(h.created_at).toLocaleString()}
+                        {formatDateTime(h.created_at)}
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                         {h.note || '-'}

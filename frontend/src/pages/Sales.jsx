@@ -27,8 +27,10 @@
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useRef } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import useFetchOnce from '../services/useFetchOnce';
+import { useLocation } from 'react-router-dom';
+import usePagePermission from '../services/usePagePermission';
 import {
   ShoppingCartIcon, XMarkIcon,
   UserIcon, CreditCardIcon, ClockIcon,
@@ -195,13 +197,7 @@ export default function Sales() {
   } = useStore();
   const location = useLocation();
 
-  // Check permissions at page level
-  if (!hasPermission('services', 'read') &&
-      !hasPermission('services', 'write') &&
-      !hasPermission('services', 'delete') &&
-      !hasPermission('services', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('services', hasPermission);
 
   // ─── 4  STATE / REF DECLARATIONS ─────────────────────────────────────────
   // POS State
@@ -229,8 +225,6 @@ export default function Sales() {
   // Feature Selection Modal State
   const [featureModalItem, setFeatureModalItem] = useState(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
-  const hasFetched = useRef(false);
-
   // Sales History State
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -245,13 +239,11 @@ export default function Sales() {
   });
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+  useFetchOnce(() => {
     loadServices();
     loadProducts();
     settingsAPI.getSettings().then(res => setAppSettings(res.data)).catch(() => {});
-  }, []);
+  });
 
   // ─── 6  DATA LOADING FUNCTIONS ───────────────────────────────────────────
   const loadTransactionHistory = async () => {

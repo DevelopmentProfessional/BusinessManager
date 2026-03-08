@@ -31,7 +31,11 @@
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
+import PageLayout from './components/PageLayout';
+import PageTableFooter from './components/PageTableFooter';
+import PageTableRow from './components/PageTableRow';
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
@@ -52,13 +56,7 @@ export default function Inventory() {
 
   // Use the permission refresh hook
 
-  // Check permissions at page level
-  if (!hasPermission('inventory', 'read') &&
-      !hasPermission('inventory', 'write') &&
-      !hasPermission('inventory', 'delete') &&
-      !hasPermission('inventory', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('inventory', hasPermission);
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
@@ -72,7 +70,6 @@ export default function Inventory() {
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
   const scrollRef = useRef(null);
-  const hasFetched = useRef(false);
 
   const typeFilterOptions = [
     {
@@ -126,11 +123,7 @@ export default function Inventory() {
   ];
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    loadInventoryData();
-  }, []);
+  useFetchOnce(loadInventoryData);
 
   // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   const loadInventoryData = async () => {
@@ -341,23 +334,7 @@ export default function Inventory() {
   }
 
 return (
-  <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
-
-    {/* Header - always visible via flex-shrink-0 */}
-    <div className="flex-shrink-0 border-bottom p-2 bg-body" style={{ zIndex: 5 }}>
-      <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Inventory</h1>
-    </div>
-
-    {/* Error / Low Stock Alerts */}
-    {error && (
-      <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
-        {error}
-      </div>
-    )}
-
-
-    {/* Main upside-down table container */}
-    <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+  <PageLayout title="Inventory" error={error}>
 
       {/* Container_Scrollable rows – grow upwards from bottom */}
       <div
@@ -374,10 +351,8 @@ return (
             </colgroup>
             <tbody>
               {filteredInventory.map((inv, index) => (
-                <tr
+                <PageTableRow
                   key={inv.id || index}
-                  className="align-middle border-bottom"
-                  style={{ height: '56px', cursor: 'pointer' }}
                   onClick={() => handleUpdateInventory(inv)}
                 >
                   {/* Name */}
@@ -418,7 +393,7 @@ return (
                       {inv.quantity}
                     </span>
                   </td>
-                </tr>
+                </PageTableRow>
               ))}
             </tbody>
           </table>
@@ -430,213 +405,177 @@ return (
       </div>
 
       {/* Fixed bottom – headers + controls */}
-      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-        {/* Column Headers */}
-        <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ">
-          <colgroup>
-            <col />
-            <col style={{ width: '80px' }} />
-            <col style={{ width: '50px' }} />
-          </colgroup>
-          <tfoot>
-            <tr className="bg-gray-100 dark:bg-gray-700">
-              <th>Item</th>
-              <th>Type</th>
-              <th className="text-center">Stock</th>
-            </tr>
-          </tfoot>
-        </table>
+      <PageTableFooter
+        columns={[{ label: 'Item' }, { label: 'Type', width: 80 }, { label: 'Stock', width: 50 }]}
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        searchPlaceholder="Search by name or SKU..."
+        beforeSearch={
+          <Button_Toolbar
+            icon={TruckIcon}
+            label="Suppliers"
+            onClick={() => setShowSuppliersPanel(true)}
+            className="btn-app-secondary"
+          />
+        }
+      >
+        <Gate_Permission page="inventory" permission="write">
+          <Button_Toolbar
+            icon={PlusIcon}
+            label="Add Item"
+            onClick={handleCreateItem}
+            className="btn-app-primary"
+          />
+        </Gate_Permission>
 
-        {/* Controls */}
-        <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          {/* Top row: Management links */}
-          <div className="d-flex align-items-center gap-1 mb-2">
-            <Button_Toolbar
-              icon={TruckIcon}
-              label="Suppliers"
-              onClick={() => setShowSuppliersPanel(true)}
-              className="btn-app-secondary"
-            />
-          </div>
+        {/* Clear Filters Button */}
+        {(typeFilter !== 'all' || stockFilter !== 'all') && (
+          <Button_Toolbar
+            icon={XMarkIcon}
+            label="Clear"
+            onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
+            className="btn-app-danger"
+          />
+        )}
 
-          {/* Search row */}
-          <div className="position-relative w-100 mb-2">
-            <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-              </svg>
-            </span>
-            <input
-              type="text"
-              placeholder="Search by name or SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="app-search-input form-control ps-5 w-100 rounded-pill"
-            />
-          </div>
+        {/* Type Filter */}
+        <div className="position-relative">
+          <Button_Toolbar
+            icon={TagIcon}
+            label="Filter Type"
+            onClick={() => {
+              const nextOpen = !isTypeFilterOpen;
+              setIsTypeFilterOpen(nextOpen);
+              if (!nextOpen) setTypeFilterHelpKey(null);
+            }}
+            className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
+            data-active={typeFilter !== 'all'}
+          />
+          {isTypeFilterOpen && (
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
+              {typeFilterOptions.map((option, index) => {
+                const isLast = index === typeFilterOptions.length - 1;
+                const isSelected = typeFilter === option.value;
+                const isHelpOpen = typeFilterHelpKey === option.value;
 
-          {/* Controls row - Add, Type, Stock */}
-          <div className="d-flex align-items-center gap-1 pb-2" style={{ minHeight: '3rem' }}>
-            <Gate_Permission page="inventory" permission="write">
-              <Button_Toolbar
-                icon={PlusIcon}
-                label="Add Item"
-                onClick={handleCreateItem}
-                className="btn-app-primary"
-              />
-            </Gate_Permission>
+                return (
+                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                    <button
+                      onClick={() => {
+                        setTypeFilter(option.value);
+                        setIsTypeFilterOpen(false);
+                        setTypeFilterHelpKey(null);
+                      }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      {option.label}
+                    </button>
 
-            {/* Clear Filters Button */}
-            {(typeFilter !== 'all' || stockFilter !== 'all') && (
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Clear"
-                onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
-                className="btn-app-danger"
-              />
-            )}
+                    <div className="position-relative flex-shrink-0">
+                      <button
+                        type="button"
+                        aria-label={`${option.label} help`}
+                        className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                        style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                        onMouseEnter={() => setTypeFilterHelpKey(option.value)}
+                        onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                        }}
+                      >
+                        ?
+                      </button>
 
-            {/* Type Filter */}
-            <div className="position-relative">
-              <Button_Toolbar
-                icon={TagIcon}
-                label="Filter Type"
-                onClick={() => {
-                  const nextOpen = !isTypeFilterOpen;
-                  setIsTypeFilterOpen(nextOpen);
-                  if (!nextOpen) setTypeFilterHelpKey(null);
-                }}
-                className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
-                data-active={typeFilter !== 'all'}
-              />
-              {isTypeFilterOpen && (
-                <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
-                  {typeFilterOptions.map((option, index) => {
-                    const isLast = index === typeFilterOptions.length - 1;
-                    const isSelected = typeFilter === option.value;
-                    const isHelpOpen = typeFilterHelpKey === option.value;
-
-                    return (
-                      <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
-                        <button
-                          onClick={() => {
-                            setTypeFilter(option.value);
-                            setIsTypeFilterOpen(false);
-                            setTypeFilterHelpKey(null);
-                          }}
-                          className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      {isHelpOpen && (
+                        <div
+                          className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                          style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                          onMouseEnter={() => setTypeFilterHelpKey(option.value)}
+                          onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                         >
-                          {option.label}
-                        </button>
-
-                        <div className="position-relative flex-shrink-0">
-                          <button
-                            type="button"
-                            aria-label={`${option.label} help`}
-                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                            style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                            onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                            onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                            }}
-                          >
-                            ?
-                          </button>
-
-                          {isHelpOpen && (
-                            <div
-                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                              style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
-                              onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                              onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            >
-                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                            </div>
-                          )}
+                          <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                          <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* Stock Filter */}
-            <div className="position-relative">
-              <Button_Toolbar
-                icon={CircleStackIcon}
-                label="Filter Stock"
-                onClick={() => {
-                  const nextOpen = !isStockFilterOpen;
-                  setIsStockFilterOpen(nextOpen);
-                  if (!nextOpen) setStockFilterHelpKey(null);
-                }}
-                className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
-                data-active={stockFilter !== 'all'}
-              />
-              {isStockFilterOpen && (
-                <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
-                  {stockFilterOptions.map((option, index) => {
-                    const isLast = index === stockFilterOptions.length - 1;
-                    const isSelected = stockFilter === option.value;
-                    const isHelpOpen = stockFilterHelpKey === option.value;
-
-                    return (
-                      <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
-                        <button
-                          onClick={() => {
-                            setStockFilter(option.value);
-                            setIsStockFilterOpen(false);
-                            setStockFilterHelpKey(null);
-                          }}
-                          className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
-                        >
-                          {option.label}
-                        </button>
-
-                        <div className="position-relative flex-shrink-0">
-                          <button
-                            type="button"
-                            aria-label={`${option.label} help`}
-                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                            style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                            onMouseEnter={() => setStockFilterHelpKey(option.value)}
-                            onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                            }}
-                          >
-                            ?
-                          </button>
-
-                          {isHelpOpen && (
-                            <div
-                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                              style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
-                              onMouseEnter={() => setStockFilterHelpKey(option.value)}
-                              onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            >
-                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
-      </div>
-    </div>
+
+        {/* Stock Filter */}
+        <div className="position-relative">
+          <Button_Toolbar
+            icon={CircleStackIcon}
+            label="Filter Stock"
+            onClick={() => {
+              const nextOpen = !isStockFilterOpen;
+              setIsStockFilterOpen(nextOpen);
+              if (!nextOpen) setStockFilterHelpKey(null);
+            }}
+            className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
+            data-active={stockFilter !== 'all'}
+          />
+          {isStockFilterOpen && (
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+              {stockFilterOptions.map((option, index) => {
+                const isLast = index === stockFilterOptions.length - 1;
+                const isSelected = stockFilter === option.value;
+                const isHelpOpen = stockFilterHelpKey === option.value;
+
+                return (
+                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                    <button
+                      onClick={() => {
+                        setStockFilter(option.value);
+                        setIsStockFilterOpen(false);
+                        setStockFilterHelpKey(null);
+                      }}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                    >
+                      {option.label}
+                    </button>
+
+                    <div className="position-relative flex-shrink-0">
+                      <button
+                        type="button"
+                        aria-label={`${option.label} help`}
+                        className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                        style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                        onMouseEnter={() => setStockFilterHelpKey(option.value)}
+                        onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                        }}
+                      >
+                        ?
+                      </button>
+
+                      {isHelpOpen && (
+                        <div
+                          className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                          style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                          onMouseEnter={() => setStockFilterHelpKey(option.value)}
+                          onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                        >
+                          <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                          <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </PageTableFooter>
 
     {/* Modals remain unchanged */}
     <Modal_Detail_Item
@@ -669,6 +608,6 @@ return (
       onClose={() => setShowSuppliersPanel(false)}
     />
 
-  </div>
+  </PageLayout>
 );
 }

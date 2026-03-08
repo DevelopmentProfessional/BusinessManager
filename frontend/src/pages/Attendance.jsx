@@ -29,8 +29,10 @@
  */
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { formatDate, formatTime } from '../utils/dateFormatters';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
 import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { attendanceAPI, employeesAPI } from '../services/api';
@@ -170,23 +172,13 @@ export default function Attendance() {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [clockActionLoading, setClockActionLoading] = useState(false);
-  const hasFetched = useRef(false);
-
-  // Check permissions at page level
-  if (!hasPermission('attendance', 'read') &&
-      !hasPermission('attendance', 'write') &&
-      !hasPermission('attendance', 'delete') &&
-      !hasPermission('attendance', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('attendance', hasPermission);
 
 // ─── [4] LIFECYCLE HOOK ─────────────────────────────────────────────────────
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+  useFetchOnce(() => {
     loadAttendanceData();
     checkClockStatus();
-  }, []);
+  });
 
 // ─── [5] DATA LOADING ───────────────────────────────────────────────────────
   const loadAttendanceData = async () => {
@@ -394,9 +386,9 @@ export default function Attendance() {
           data={attendanceRecords}
           columns={[
             { key: 'employee', title: 'Employee', render: (_, r) => getEmployeeName(r.user_id || r.employee_id) },
-            { key: 'date', title: 'Date', render: (v, r) => new Date(r.date).toLocaleDateString() },
-            { key: 'clock_in', title: 'In', render: (v) => (v ? new Date(v).toLocaleTimeString() : '-') },
-            { key: 'clock_out', title: 'Out', render: (v) => (v ? new Date(v).toLocaleTimeString() : '-') },
+            { key: 'date', title: 'Date', render: (v, r) => formatDate(r.date) },
+            { key: 'clock_in', title: 'In', render: (v) => (v ? formatTime(v) : '-') },
+            { key: 'clock_out', title: 'Out', render: (v) => (v ? formatTime(v) : '-') },
             { key: 'hours', title: 'Hours', render: (_, r) => (r.total_hours ? `${r.total_hours.toFixed(2)} hrs` : calculateHours(r.clock_in, r.clock_out)) },
             { key: 'notes', title: 'Notes', render: (v, r) => r.notes || '-' },
           ]}

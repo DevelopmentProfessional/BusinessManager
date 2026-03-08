@@ -2,6 +2,7 @@
  * Template variable definitions for the document template system.
  * Variables use Mustache-style {{scope.field}} placeholders.
  */
+import { formatDateISO, formatTime } from '../../utils/dateFormatters';
 
 export const TEMPLATE_VARIABLES = {
   system: [
@@ -75,8 +76,8 @@ export function renderTemplate(html, variables) {
 export function buildClientVariables(client, currentUser, settings) {
   const now = new Date();
   return {
-    date: now.toLocaleDateString('en-CA'), // YYYY-MM-DD
-    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    date: formatDateISO(now),
+    time: formatTime(now),
     'company.name': settings?.company_name || '',
     'company.email': settings?.company_email || '',
     'company.phone': settings?.company_phone || '',
@@ -94,12 +95,10 @@ export function buildClientVariables(client, currentUser, settings) {
 /** Build a flat variable dict from an employee object + current user + settings */
 export function buildEmployeeVariables(employee, currentUser, settings) {
   const now = new Date();
-  const hireDate = employee?.hire_date
-    ? new Date(employee.hire_date).toLocaleDateString('en-CA')
-    : '';
+  const hireDate = employee?.hire_date ? formatDateISO(employee.hire_date) : '';
   return {
-    date: now.toLocaleDateString('en-CA'),
-    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    date: formatDateISO(now),
+    time: formatTime(now),
     'company.name': settings?.company_name || '',
     'company.email': settings?.company_email || '',
     'company.phone': settings?.company_phone || '',
@@ -127,15 +126,13 @@ function formatDuration(minutes) {
 /** Build a flat variable dict from a sale transaction + client + current user + settings */
 export function buildSalesVariables(transaction, client, currentUser, settings, items = []) {
   const now = new Date();
-  const txDate = transaction?.created_at
-    ? new Date(transaction.created_at).toLocaleDateString('en-CA')
-    : now.toLocaleDateString('en-CA');
+  const txDate = transaction?.created_at ? formatDateISO(transaction.created_at) : formatDateISO(now);
   const itemsHtml = items.length
     ? '<ul>' + items.map(i => `<li>${i.item_name} × ${i.quantity} — $${Number(i.line_total).toFixed(2)}</li>`).join('') + '</ul>'
     : '';
   return {
-    date: now.toLocaleDateString('en-CA'),
-    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    date: formatDateISO(now),
+    time: formatTime(now),
     'company.name': settings?.company_name || '',
     'company.email': settings?.company_email || '',
     'company.phone': settings?.company_phone || '',
@@ -175,8 +172,8 @@ export function buildScheduleVariables(appointment, client, employee, service, c
     ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim()
     : '';
   return {
-    date: now.toLocaleDateString('en-CA'),
-    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    date: formatDateISO(now),
+    time: formatTime(now),
     'company.name': settings?.company_name || '',
     'company.email': settings?.company_email || '',
     'company.phone': settings?.company_phone || '',

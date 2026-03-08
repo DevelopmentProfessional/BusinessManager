@@ -27,9 +27,11 @@
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import { clientsAPI, settingsAPI } from '../services/api';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
 import Modal from './components/Modal';
 import Form_Client from './components/Form_Client';
 import Modal_Detail_Client from './components/Modal_Detail_Client';
@@ -37,6 +39,9 @@ import Gate_Permission from './components/Gate_Permission';
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import Modal_Template_Use from './components/Modal_Template_Use';
+import PageLayout from './components/PageLayout';
+import PageTableFooter from './components/PageTableFooter';
+import PageTableRow from './components/PageTableRow';
 
 export default function Clients() {
 // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
@@ -47,13 +52,7 @@ export default function Clients() {
     user,
   } = useStore();
 
-  // Check permissions at page level
-  if (!hasPermission('clients', 'read') &&
-      !hasPermission('clients', 'write') &&
-      !hasPermission('clients', 'delete') &&
-      !hasPermission('clients', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('clients', hasPermission);
 
   const [editingClient, setEditingClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,7 +60,6 @@ export default function Clients() {
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
   const [tierFilterHelpKey, setTierFilterHelpKey] = useState(null);
   const scrollRef = useRef(null);
-  const hasFetched = useRef(false);
 
   const tierFilterOptions = [
     { value: 'all', label: 'All Tiers', description: 'Shows all clients regardless of membership tier.' },
@@ -80,12 +78,10 @@ export default function Clients() {
   const navigate = useNavigate();
 
 // ─── [3] LIFECYCLE HOOKS ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+  useFetchOnce(() => {
     loadClients();
     settingsAPI.getSettings().then((res) => setAppSettings(res.data)).catch(() => {});
-  }, []);
+  });
 
   // Auto-open create modal when navigated with ?new=1
   useEffect(() => {
@@ -248,22 +244,7 @@ export default function Clients() {
   }
 
   return (
-    <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
-
-      {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-2 bg-body" style={{ zIndex: 5 }}>
-        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Clients</h1>
-      </div>
-
-      {/* Error Alert */}
-      {error && (
-        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
-          {error}
-        </div>
-      )}
-
-      {/* Main table container */}
-      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+    <PageLayout title="Clients" error={error}>
 
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
@@ -280,10 +261,8 @@ export default function Clients() {
               </colgroup>
               <tbody>
                 {filteredClients.map((client, index) => (
-                  <tr
+                  <PageTableRow
                     key={client.id || index}
-                    className="align-middle border-bottom"
-                    style={{ height: '56px', cursor: 'pointer' }}
                     onClick={() => handleOpenClient(client)}
                   >
                     {/* Name + contact */}
@@ -313,7 +292,7 @@ export default function Clients() {
                           <EnvelopeIcon className="h-6 w-6" />
                         </button>
                     </td>
-                  </tr>
+                  </PageTableRow>
                 ))}
               </tbody>
             </table>
@@ -325,134 +304,100 @@ export default function Clients() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-          {/* Column Headers */}
-          <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-            <colgroup>
-              <col />
-              <col style={{ width: '80px' }} />
-              <col style={{ width: '40px' }}/>
-            </colgroup>
-            <tfoot>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th>Client</th>
-                <th>Membership</th>
-                <th>Notify</th>
-              </tr>
-            </tfoot>
-          </table>
+        <PageTableFooter
+          columns={[{ label: 'Client' }, { label: 'Membership', width: 80 }, { label: 'Notify', width: 40 }]}
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name, email, or phone..."
+        >
+          <Gate_Permission page="clients" permission="write">
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="Add Client"
+              onClick={handleCreateClient}
+              className="btn-app-primary"
+            />
+          </Gate_Permission>
 
-          {/* Controls */}
-          <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Search row */}
-            <div className="position-relative w-100 mb-2">
-              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Search by name, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="app-search-input form-control ps-5 w-100 rounded-pill"
-              />
-            </div>
+          {/* Clear Filters Button */}
+          {tierFilter !== 'all' && (
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Clear Filter"
+              onClick={() => setTierFilter('all')}
+              className="btn-app-danger"
+            />
+          )}
 
-            {/* Controls row - Add, Tier */}
-            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap" style={{ minHeight: '3rem' }}>
-              <Gate_Permission page="clients" permission="write">
-                <Button_Toolbar
-                  icon={PlusIcon}
-                  label="Add Client"
-                  onClick={handleCreateClient}
-                  className="btn-app-primary"
-                />
-              </Gate_Permission>
+          {/* Tier Filter */}
+          <div className="position-relative">
+            <Button_Toolbar
+              icon={StarIcon}
+              label="Filter Tier"
+              onClick={() => {
+                const nextOpen = !isTierFilterOpen;
+                setIsTierFilterOpen(nextOpen);
+                if (!nextOpen) setTierFilterHelpKey(null);
+              }}
+              className={`border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`}
+              data-active={tierFilter !== 'all'}
+            />
+            {isTierFilterOpen && (
+              <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
+                {tierFilterOptions.map((option, index) => {
+                  const isLast = index === tierFilterOptions.length - 1;
+                  const isSelected = tierFilter === option.value;
+                  const isHelpOpen = tierFilterHelpKey === option.value;
 
-              {/* Clear Filters Button */}
-              {tierFilter !== 'all' && (
-                <Button_Toolbar
-                  icon={XMarkIcon}
-                  label="Clear Filter"
-                  onClick={() => setTierFilter('all')}
-                  className="btn-app-danger"
-                />
-              )}
+                  return (
+                    <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                      <button
+                        onClick={() => {
+                          setTierFilter(option.value);
+                          setIsTierFilterOpen(false);
+                          setTierFilterHelpKey(null);
+                        }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        {option.label}
+                      </button>
 
-              {/* Tier Filter */}
-              <div className="position-relative">
-                <Button_Toolbar
-                  icon={StarIcon}
-                  label="Filter Tier"
-                  onClick={() => {
-                    const nextOpen = !isTierFilterOpen;
-                    setIsTierFilterOpen(nextOpen);
-                    if (!nextOpen) setTierFilterHelpKey(null);
-                  }}
-                  className={`border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`}
-                  data-active={tierFilter !== 'all'}
-                />
-                {isTierFilterOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
-                    {tierFilterOptions.map((option, index) => {
-                      const isLast = index === tierFilterOptions.length - 1;
-                      const isSelected = tierFilter === option.value;
-                      const isHelpOpen = tierFilterHelpKey === option.value;
+                      <div className="position-relative flex-shrink-0">
+                        <button
+                          type="button"
+                          aria-label={`${option.label} help`}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                          onMouseEnter={() => setTierFilterHelpKey(option.value)}
+                          onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTierFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                          }}
+                        >
+                          ?
+                        </button>
 
-                      return (
-                        <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
-                          <button
-                            onClick={() => {
-                              setTierFilter(option.value);
-                              setIsTierFilterOpen(false);
-                              setTierFilterHelpKey(null);
-                            }}
-                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                        {isHelpOpen && (
+                          <div
+                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                            onMouseEnter={() => setTierFilterHelpKey(option.value)}
+                            onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           >
-                            {option.label}
-                          </button>
-
-                          <div className="position-relative flex-shrink-0">
-                            <button
-                              type="button"
-                              aria-label={`${option.label} help`}
-                              className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                              onMouseEnter={() => setTierFilterHelpKey(option.value)}
-                              onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setTierFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                              }}
-                            >
-                              ?
-                            </button>
-
-                            {isHelpOpen && (
-                              <div
-                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
-                                onMouseEnter={() => setTierFilterHelpKey(option.value)}
-                                onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                              >
-                                <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                                <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                              </div>
-                            )}
+                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      </div>
+        </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}
       <Modal_Detail_Client
@@ -486,6 +431,6 @@ export default function Clients() {
           onClose={() => { setIsTemplateOpen(false); setTemplateClient(null); }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }
