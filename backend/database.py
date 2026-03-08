@@ -260,6 +260,7 @@ def create_db_and_tables():
     _ensure_schedule_recurrence_columns_if_needed()
     _ensure_chat_message_table_if_needed()
     _ensure_app_settings_company_columns_if_needed()
+    _ensure_training_mode_column_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
@@ -1139,3 +1140,30 @@ def _ensure_app_settings_company_columns_if_needed():
                 if col not in col_names:
                     conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
                     print(f"  + Added column app_settings.{col} ({pg_type})")
+
+
+# ─── 11f MIGRATION: USER TRAINING MODE COLUMN ──────────────────────────────────
+def _ensure_training_mode_column_if_needed():
+    """Ensure user table has training_mode column."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "training_mode" not in col_names:
+                conn.execute(text("ALTER TABLE user ADD COLUMN training_mode BOOLEAN DEFAULT 0"))
+                print("✓ Added user.training_mode (SQLite)")
+    else:
+        with engine.begin() as conn:
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "training_mode" not in col_names:
+                conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE'))
+                print("  + Added column user.training_mode (PostgreSQL)")
