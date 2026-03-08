@@ -54,7 +54,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(do echo:*)",
       "Bash(sed 's/:@router//')",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Bash(.venv/Scripts/python backend/migrations/add_training_mode.py)"
     ]
   }
 }
