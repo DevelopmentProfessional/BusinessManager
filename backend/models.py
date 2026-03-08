@@ -142,6 +142,7 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
+    training_mode: bool = Field(default=False)  # User's training/compact mode preference
     db_environment: str = Field(default="production")  # User's preferred database environment
 
     # Hierarchy - who this user reports to

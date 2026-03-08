@@ -42,6 +42,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for role/status filters
+ *   2026-03-08 | Copilot | Moved lock/unlock column between Employee and Role
  * ============================================================
  */
 
@@ -1123,8 +1124,8 @@ export default function Employees() {
           {filteredEmployees.length > 0 ? (
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
-                {isAdmin && <col style={{ width: '52px' }} />}
                 <col />
+                {isAdmin && <col style={{ width: '52px' }} />}
                 <col style={{ width: '120px' }} />
               </colgroup>
               <tbody>
@@ -1140,6 +1141,18 @@ export default function Employees() {
                       handleEdit(employee);
                     }}
                   >
+                    {/* Name with color coding for active/inactive */}
+                    <td className="px-3">
+                      <div 
+                        className={`fw-medium text-truncate ${
+                          employee.is_active ? 'text-success' : 'text-muted'
+                        }`} 
+                        style={{ maxWidth: '100%' }}
+                      >
+                        {employee.first_name} {employee.last_name}
+                      </div>
+                    </td>
+
                     {/* Lock icon — admin only, only visible when account is locked */}
                     {isAdmin && (
                       <td className="px-1 text-center">
@@ -1156,18 +1169,6 @@ export default function Employees() {
                         )}
                       </td>
                     )}
-
-                    {/* Name with color coding for active/inactive */}
-                    <td className="px-3">
-                      <div 
-                        className={`fw-medium text-truncate ${
-                          employee.is_active ? 'text-success' : 'text-muted'
-                        }`} 
-                        style={{ maxWidth: '100%' }}
-                      >
-                        {employee.first_name} {employee.last_name}
-                      </div>
-                    </td>
 
                     {/* Role + Pay + Chat */}
                     <td className="px-3">
@@ -1226,15 +1227,16 @@ export default function Employees() {
         {/* Fixed bottom – headers + controls */}
         <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
           {/* Column Headers */}
-          <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+          <table className="table table-borderless table-fixed mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
             <colgroup>
               <col />
+              {isAdmin && <col style={{ width: '52px' }} />}
               <col style={{ width: '120px' }} />
             </colgroup>
             <tfoot>
               <tr className="bg-gray-100 dark:bg-gray-700">
-                {isAdmin && <th style={{ width: '52px' }}></th>}
                 <th>Employee</th>
+                {isAdmin && <th className="text-center" style={{ width: '52px' }}></th>}
                 <th>Role</th>
               </tr>
             </tfoot>
@@ -1249,7 +1251,7 @@ export default function Employees() {
                 <button
                   type="button"
                   onClick={handleOpenRequests}
-                  className="btn btn-sm btn-outline-warning rounded-pill"
+                  className="btn btn-sm btn-outline-warning rounded-pill p-0"
                   title="Review requests"
                 >
                   Requests
@@ -1299,7 +1301,7 @@ export default function Employees() {
                     icon={PlusIcon}
                     label="Add Employee"
                     onClick={handleCreate}
-                    className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                    className="btn-app-primary"
                   />
                 </Gate_Permission>
 
@@ -1309,7 +1311,7 @@ export default function Employees() {
                     icon={XMarkIcon}
                     label="Clear"
                     onClick={() => { setRoleFilter('all'); setStatusFilter('all'); }}
-                    className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-all"
+                    className="btn-app-danger"
                   />
                 )}
 
