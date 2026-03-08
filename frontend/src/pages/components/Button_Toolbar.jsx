@@ -37,8 +37,7 @@ function withTrainingModeMargin(className, isTrainingMode) {
 
   return tokens.map((token) => {
     const match = token.match(/^(m|mx|my|mt|me|mb|ms)-([0-5])$/);
-    if (!match) return token;
-    const nextStep = Math.max(Number(match[2]) - 1, 0);
+    if (!match)1, 0);
     return `${match[1]}-${nextStep}`;
   }).join(' ');
 }
@@ -75,14 +74,14 @@ export default function Button_Toolbar({ icon: Icon, label, onClick, className =
       disabled={disabled}
       title={normalizedLabel || label}
       aria-label={normalizedLabel || label}
-      className={`btn flex-shrink-0 d-flex align-items-center justify-content-center gap-1
+      className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
         ${training ? 'rounded-pill ps-0 pe-1' : 'rounded-circle p-0'}
         ${effectiveClassName}`}
-      style={training ? { height: '2.5rem', ...style } : { width: '2.5rem', height: '2.5rem', ...style }}
+      style={training ? { height: '3rem', ...style } : { width: '3rem', height: '3rem', ...style }}
       {...rest}
     >
-      <Icon className="flex-shrink-0 h-5" />
-      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1 }}>{displayLabel}</span>}
+      <Icon className={`flex-shrink-0 h-5 px-1 ${showTextLabel ? ' me-0' : ''}`} />
+      {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1, marginLeft: '-0.125rem' }}>{displayLabel}</span>}
       {badge}
     </button>
   );
