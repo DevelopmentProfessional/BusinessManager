@@ -60,7 +60,7 @@ export default function Services() {
   const scrollRef = useRef(null);
 
   // ─── 4  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
-  useFetchOnce(loadServices);
+  useFetchOnce(() => loadServices());
 
   // ─── 5  DATA LOADING ──────────────────────────────────────────────────────
   const loadServices = async () => {

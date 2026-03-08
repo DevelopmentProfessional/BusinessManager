@@ -55,7 +55,8 @@
       "Bash(do echo:*)",
       "Bash(sed 's/:@router//')",
       "Bash(powershell.exe:*)",
-      "Bash(.venv/Scripts/python backend/migrations/add_training_mode.py)"
+      "Bash(.venv/Scripts/python backend/migrations/add_training_mode.py)",
+      "Bash(wc -l /c/Users/dpint/Documents/Development/BusinessManager/frontend/src/pages/*.jsx)"
     ]
   }
 }

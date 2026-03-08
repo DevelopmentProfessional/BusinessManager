@@ -123,7 +123,7 @@ export default function Inventory() {
   ];
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
-  useFetchOnce(loadInventoryData);
+  useFetchOnce(() => loadInventoryData());
 
   // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   const loadInventoryData = async () => {
