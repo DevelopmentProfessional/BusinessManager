@@ -47,8 +47,10 @@
  */
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { formatDateTime } from '../utils/dateFormatters';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
@@ -57,6 +59,8 @@ import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
 import Gate_Permission from './components/Gate_Permission';
+import PageTableFooter from './components/PageTableFooter';
+import PageTableRow from './components/PageTableRow';
 import useDarkMode from '../services/useDarkMode';
 import Modal_Create_User from './components/Modal_Create_User';
 import Modal_Permissions_User from './components/Modal_Permissions_User';
@@ -283,8 +287,6 @@ export default function Employees() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
-  const hasFetched = useRef(false);
-
   // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
   // All modal open/close flags and their associated target object grouped here.
   const [showPayModal, setShowPayModal] = useState(false);
@@ -303,13 +305,11 @@ export default function Employees() {
 
   // ─── [6] INITIALIZATION EFFECTS ─────────────────────────────────────────────
   // On mount: trigger employee load and fetch app settings once.
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+  useFetchOnce(() => {
     loadEmployees();
     // Roles are loaded on-demand when the Manage Roles modal is opened
     settingsAPI.getSettings().then((res) => setAppSettings(res.data)).catch(() => {});
-  }, []);
+  });
 
   // Whenever the employees list changes, re-evaluate each employee's paid
   // status for the current pay period so the UI badge stays accurate.
@@ -446,12 +446,7 @@ export default function Employees() {
 
   // ─── [12] PERMISSION GUARD ──────────────────────────────────────────────────
   // Redirect any user who lacks every employee permission to their profile page.
-  if (!hasPermission('employees', 'read') &&
-      !hasPermission('employees', 'write') &&
-      !hasPermission('employees', 'delete') &&
-      !hasPermission('employees', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('employees', hasPermission);
 
   // ─── [13] DATA LOADERS ──────────────────────────────────────────────────────
   const loadEmployees = async () => {
@@ -1130,10 +1125,8 @@ export default function Employees() {
               </colgroup>
               <tbody>
                 {filteredEmployees.map((employee, index) => (
-                  <tr
+                  <PageTableRow
                     key={employee.id || index}
-                    className="align-middle border-bottom"
-                    style={{ height: '56px', cursor: 'pointer' }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1213,7 +1206,7 @@ export default function Employees() {
                         </div>
                       </div>
                     </td>
-                  </tr>
+                  </PageTableRow>
                 ))}
               </tbody>
             </table>
@@ -1225,29 +1218,18 @@ export default function Employees() {
         </div>
 
         {/* Fixed bottom – headers + controls */}
-        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-top border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-          {/* Column Headers */}
-          <table className="table table-borderless table-fixed mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-            <colgroup>
-              <col />
-              {isAdmin && <col style={{ width: '52px' }} />}
-              <col style={{ width: '120px' }} />
-            </colgroup>
-            <tfoot>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th>Employee</th>
-                {isAdmin && <th className="text-center" style={{ width: '52px' }}></th>}
-                <th>Role</th>
-              </tr>
-            </tfoot>
-          </table>
-
-          {/* Controls */}
-          <div className="border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-
-            {/* Row 1 – Requests + Insurance */}
-            {(hasPermission('employees', 'admin') || hasPermission('employees', 'write')) && (
-              <div className="px-3 pt-2 d-flex gap-2 dark:border-gray-700">
+        <PageTableFooter
+          columns={[
+            { label: 'Employee' },
+            ...(isAdmin ? [{ label: '', width: 52, className: 'text-center' }] : []),
+            { label: 'Role', width: 120 },
+          ]}
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name, email, or role..."
+          beforeSearch={
+            (hasPermission('employees', 'admin') || hasPermission('employees', 'write')) ? (
+              <div className="d-flex gap-2">
                 <button
                   type="button"
                   onClick={handleOpenRequests}
@@ -1276,66 +1258,45 @@ export default function Employees() {
                   Wages
                 </button>
               </div>
-            )}
+            ) : null
+          }
+        >
+          <Gate_Permission page="employees" permission="write">
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="Add Employee"
+              onClick={handleCreate}
+              className="btn-app-primary"
+            />
+          </Gate_Permission>
 
-            {/* Row 2 – Search + Add + Filters */}
-            <div className="p-3 pt-2">
-              <div className="position-relative w-100 mb-2">
-                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or role..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="app-search-input form-control ps-5 w-100 rounded-pill"
-                />
-              </div>
+          {/* Clear Filters Button */}
+          {(roleFilter !== 'all' || statusFilter !== 'all') && (
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Clear"
+              onClick={() => { setRoleFilter('all'); setStatusFilter('all'); }}
+              className="btn-app-danger"
+            />
+          )}
 
-              <div className="d-flex align-items-center gap-1 flex-wrap pb-2" style={{ minHeight: '3rem' }}>
-                <Gate_Permission page="employees" permission="write">
-                  <Button_Toolbar
-                    icon={PlusIcon}
-                    label="Add Employee"
-                    onClick={handleCreate}
-                    className="btn-app-primary"
-                  />
-                </Gate_Permission>
+          {/* Role Filter */}
+          <RoleFilterDropdown
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+            isOpen={isRoleFilterOpen}
+            setIsOpen={setIsRoleFilterOpen}
+            roleOptions={roleOptions}
+          />
 
-                {/* Clear Filters Button */}
-                {(roleFilter !== 'all' || statusFilter !== 'all') && (
-                  <Button_Toolbar
-                    icon={XMarkIcon}
-                    label="Clear"
-                    onClick={() => { setRoleFilter('all'); setStatusFilter('all'); }}
-                    className="btn-app-danger"
-                  />
-                )}
-
-                {/* Role Filter */}
-                <RoleFilterDropdown
-                  roleFilter={roleFilter}
-                  setRoleFilter={setRoleFilter}
-                  isOpen={isRoleFilterOpen}
-                  setIsOpen={setIsRoleFilterOpen}
-                  roleOptions={roleOptions}
-                />
-
-                {/* Status Filter */}
-                <StatusFilterDropdown
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                  isOpen={isStatusFilterOpen}
-                  setIsOpen={setIsStatusFilterOpen}
-                />
-              </div>
-            </div>
-
-          </div>
-        </div>
+          {/* Status Filter */}
+          <StatusFilterDropdown
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            isOpen={isStatusFilterOpen}
+            setIsOpen={setIsStatusFilterOpen}
+          />
+        </PageTableFooter>
       </div>
 
       {/* Employee Form Modal */}
@@ -1454,7 +1415,7 @@ export default function Employees() {
                   <div key={index} className="bg-white p-3 rounded border">
                     <div className="font-medium">{apt.client_name} - {apt.service_name}</div>
                     <div className="text-sm text-gray-600">
-                      {apt.employee_name} • {new Date(apt.appointment_date).toLocaleString()} • {apt.status}
+                      {apt.employee_name} • {formatDateTime(apt.appointment_date)} • {apt.status}
                     </div>
                   </div>
                 ))}

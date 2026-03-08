@@ -47,8 +47,9 @@
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
 import useStore from '../services/useStore';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from '../services/api';
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
@@ -113,15 +114,7 @@ export default function Schedule() {
 
   // Use the permission refresh hook
 
-  // Check permissions at page level (including new permission types)
-  if (!hasPermission('schedule', 'read') && 
-      !hasPermission('schedule', 'read_all') &&
-      !hasPermission('schedule', 'write') && 
-      !hasPermission('schedule', 'view_all') &&
-      !hasPermission('schedule', 'delete') && 
-      !hasPermission('schedule', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('schedule', hasPermission);
   
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -146,7 +139,6 @@ export default function Schedule() {
   const [approvedLeaves, setApprovedLeaves] = useState([]);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderAppointment, setReminderAppointment] = useState(null);
-  const hasFetched = useRef(false);
   const calendarGridRef = useRef(null);
   const calendarContainerRef = useRef(null);
   const touchStartX = useRef(0);
@@ -185,10 +177,7 @@ export default function Schedule() {
   });
 
   // Load schedule data and supporting lookups
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-
+  useFetchOnce(() => {
     const loadSchedule = async () => {
       // Check if user is authenticated before making API calls
       if (!isAuthenticated()) {
@@ -257,7 +246,7 @@ export default function Schedule() {
     };
 
     loadSchedule();
-  }, [setAppointments, setClients, setServices, setEmployees, isAuthenticated]);
+  });
 
   // ─── 6 DERIVED DATA ──────────────────────────────────────────────────────────
   const employeeColorMap = useMemo(() => {

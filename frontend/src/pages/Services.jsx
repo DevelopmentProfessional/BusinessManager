@@ -28,7 +28,11 @@
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import useFetchOnce from '../services/useFetchOnce';
+import usePagePermission from '../services/usePagePermission';
+import PageLayout from './components/PageLayout';
+import PageTableFooter from './components/PageTableFooter';
+import PageTableRow from './components/PageTableRow';
 import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
@@ -45,13 +49,7 @@ export default function Services() {
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
-  // Check permissions at page level
-  if (!hasPermission('services', 'read') &&
-      !hasPermission('services', 'write') &&
-      !hasPermission('services', 'delete') &&
-      !hasPermission('services', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission('services', hasPermission);
 
   // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
@@ -60,14 +58,9 @@ export default function Services() {
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
   const scrollRef = useRef(null);
-  const hasFetched = useRef(false);
 
   // ─── 4  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    loadServices();
-  }, []);
+  useFetchOnce(loadServices);
 
   // ─── 5  DATA LOADING ──────────────────────────────────────────────────────
   const loadServices = async () => {
@@ -183,22 +176,7 @@ export default function Services() {
   }
 
   return (
-    <div className="d-flex flex-column overflow-hidden bg-body" style={{ height: '100dvh' }}>
-
-      {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-2 bg-body" style={{ zIndex: 5 }}>
-        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Services</h1>
-      </div>
-
-      {/* Error Alert */}
-      {error && (
-        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">
-          {error}
-        </div>
-      )}
-
-      {/* Main table container */}
-      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+    <PageLayout title="Services" error={error}>
 
         {/* Scrollable rows – grow upwards from bottom */}
         <div
@@ -215,10 +193,8 @@ export default function Services() {
               </colgroup>
               <tbody>
                 {filteredServices.map((service, index) => (
-                  <tr
+                  <PageTableRow
                     key={service.id || index}
-                    className="align-middle border-bottom"
-                    style={{ height: '56px', cursor: 'pointer' }}
                     onClick={() => handleEditService(service)}
                   >
                     {/* Name + Category stacked */}
@@ -249,7 +225,7 @@ export default function Services() {
                         {service.duration_minutes || 30}m
                       </span>
                     </td>
-                  </tr>
+                  </PageTableRow>
                 ))}
               </tbody>
             </table>
@@ -261,146 +237,112 @@ export default function Services() {
         </div>
 
         {/* Fixed footer – headers + controls */}
-        <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-          {/* Column Headers */}
-          <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-            <colgroup>
-              <col />
-              <col style={{ width: '80px' }} />
-              <col style={{ width: '70px' }} />
-            </colgroup>
-            <tfoot>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th>Service</th>
-                <th className="text-center">Price</th>
-                <th className="text-center">Duration</th>
-              </tr>
-            </tfoot>
-          </table>
+        <PageTableFooter
+          columns={[{ label: 'Service' }, { label: 'Price', width: 80 }, { label: 'Duration', width: 70 }]}
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search services..."
+        >
+          <Gate_Permission page="services" permission="write">
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="Add Service"
+              onClick={handleCreateService}
+              className="btn-app-primary"
+            />
+          </Gate_Permission>
 
-          {/* Controls */}
-          <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Search */}
-            <div className="position-relative w-100 mb-2">
-              <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Search services..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="app-search-input form-control ps-5 w-100 rounded-pill"
-              />
-            </div>
+          {/* Clear Filters Button */}
+          {categoryFilter !== 'all' && (
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Clear"
+              onClick={() => setCategoryFilter('all')}
+              className="btn-app-danger"
+            />
+          )}
 
-            {/* Add button + category filter */}
-            <div className="d-flex align-items-center gap-1 pb-2 flex-wrap" style={{ minHeight: '3rem' }}>
-              <Gate_Permission page="services" permission="write">
-                <Button_Toolbar
-                  icon={PlusIcon}
-                  label="Add Service"
-                  onClick={handleCreateService}
-                  className="btn-app-primary"
-                />
-              </Gate_Permission>
+          {/* Category Filter */}
+          <div className="position-relative">
+            <Button_Toolbar
+              icon={FolderOpenIcon}
+              label="Filter Category"
+              onClick={() => {
+                const nextOpen = !isCategoryFilterOpen;
+                setIsCategoryFilterOpen(nextOpen);
+                if (!nextOpen) setCategoryFilterHelpKey(null);
+              }}
+              className={`border-0 shadow-lg transition-all ${
+                categoryFilter !== 'all'
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                  : 'btn-app-secondary'
+              }`}
+              data-active={categoryFilter !== 'all'}
+            />
+            {isCategoryFilterOpen && (
+              <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
+                {categories.map((cat, index) => {
+                  const key = cat ?? '__none__';
+                  const label = cat === 'all' ? 'All Categories' : cat || 'No Category';
+                  const description =
+                    cat === 'all'
+                      ? 'Shows services from every category.'
+                      : (cat || '').trim() === ''
+                        ? 'Shows services that do not have a category assigned.'
+                        : `Shows only services in the "${cat}" category.`;
+                  const isLast = index === categories.length - 1;
+                  const isSelected = categoryFilter === cat;
+                  const isHelpOpen = categoryFilterHelpKey === String(key);
 
-              {/* Clear Filters Button */}
-              {categoryFilter !== 'all' && (
-                <Button_Toolbar
-                  icon={XMarkIcon}
-                  label="Clear"
-                  onClick={() => setCategoryFilter('all')}
-                  className="btn-app-danger"
-                />
-              )}
+                  return (
+                    <div key={String(key)} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                      <button
+                        onClick={() => {
+                          setCategoryFilter(cat);
+                          setIsCategoryFilterOpen(false);
+                          setCategoryFilterHelpKey(null);
+                        }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      >
+                        {label}
+                      </button>
 
-              {/* Category Filter */}
-              <div className="position-relative">
-                <Button_Toolbar
-                  icon={FolderOpenIcon}
-                  label="Filter Category"
-                  onClick={() => {
-                    const nextOpen = !isCategoryFilterOpen;
-                    setIsCategoryFilterOpen(nextOpen);
-                    if (!nextOpen) setCategoryFilterHelpKey(null);
-                  }}
-                  className={`border-0 shadow-lg transition-all ${
-                    categoryFilter !== 'all'
-                      ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                      : 'btn-app-secondary'
-                  }`}
-                  data-active={categoryFilter !== 'all'}
-                />
-                {isCategoryFilterOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
-                    {categories.map((cat, index) => {
-                      const key = cat ?? '__none__';
-                      const label = cat === 'all' ? 'All Categories' : cat || 'No Category';
-                      const description =
-                        cat === 'all'
-                          ? 'Shows services from every category.'
-                          : (cat || '').trim() === ''
-                            ? 'Shows services that do not have a category assigned.'
-                            : `Shows only services in the "${cat}" category.`;
-                      const isLast = index === categories.length - 1;
-                      const isSelected = categoryFilter === cat;
-                      const isHelpOpen = categoryFilterHelpKey === String(key);
+                      <div className="position-relative flex-shrink-0">
+                        <button
+                          type="button"
+                          aria-label={`${label} help`}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                          onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
+                          onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : String(key)));
+                          }}
+                        >
+                          ?
+                        </button>
 
-                      return (
-                        <div key={String(key)} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
-                          <button
-                            onClick={() => {
-                              setCategoryFilter(cat);
-                              setIsCategoryFilterOpen(false);
-                              setCategoryFilterHelpKey(null);
-                            }}
-                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                        {isHelpOpen && (
+                          <div
+                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                            onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
+                            onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           >
-                            {label}
-                          </button>
-
-                          <div className="position-relative flex-shrink-0">
-                            <button
-                              type="button"
-                              aria-label={`${label} help`}
-                              className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                              onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
-                              onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : String(key)));
-                              }}
-                            >
-                              ?
-                            </button>
-
-                            {isHelpOpen && (
-                              <div
-                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
-                                onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
-                                onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
-                              >
-                                <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
-                                <div className="small text-gray-700 dark:text-gray-300">{description}</div>
-                              </div>
-                            )}
+                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
+                            <div className="small text-gray-700 dark:text-gray-300">{description}</div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      </div>
+        </PageTableFooter>
 
       {/* Service Form Modal */}
       <Modal
@@ -420,6 +362,6 @@ export default function Services() {
         )}
       </Modal>
 
-    </div>
+    </PageLayout>
   );
 }
