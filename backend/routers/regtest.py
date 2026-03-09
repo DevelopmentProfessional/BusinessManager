@@ -21,10 +21,20 @@
 #   columns pointing to other tables) are deleted first, then parent
 #   tables.  A two-pass retry handles any remaining FK conflicts.
 #
+# ENDPOINTS:
+#   DELETE /api/v1/regtest/sweep
+#       - Admin role required
+#       - Deletes records with [REGTEST] tag in any text column
+#   DELETE /api/v1/regtest/sweep/users
+#       - Admin role required
+#       - Finds [REGTEST] users and cascades all FK-linked child deletions
+#         before removing the user rows themselves
+#
 # CHANGE LOG:
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-02 | Claude  | Initial implementation
+#   2026-03-09 | Claude  | Added /sweep/users for cascading user deletion
 # ============================================================
 
 import logging
@@ -216,3 +226,197 @@ def sweep_regtest_data(
     total = sum(deleted.values())
     log.info(f"Sweep complete: {total} record(s) deleted from {len(deleted)} table(s)")
     return {"deleted": deleted, "total": total, "errors": errors}
+
+
+def cascade_delete_regtest_users(session: Session) -> dict:
+    """
+    Core logic: find every user row tagged [REGTEST], cascade-delete all
+    FK-linked child records, then delete the user rows.
+
+    Called both by the HTTP endpoint (sweep_regtest_users) and automatically
+    at application startup so that regtest data is always purged on deploy.
+
+    Returns a summary dict: {users_removed, user_ids, deleted, nulled, errors}
+    """
+    errors: list[str] = []
+    deleted: dict[str, int] = {}
+    nulled: dict[str, int] = {}
+
+    def _exec(sql: str, params: dict) -> int:
+        try:
+            result = session.execute(text(sql), params)
+            return result.rowcount or 0
+        except Exception as exc:
+            errors.append(str(exc))
+            session.rollback()
+            return 0
+
+    # ── Step 1: collect regtest user IDs ──────────────────────────────────────
+    try:
+        rows = session.execute(
+            text(
+                "SELECT id FROM \"user\" WHERE "
+                "username LIKE :tag OR first_name LIKE :tag OR last_name LIKE :tag "
+                "OR email LIKE :tag OR iod_number LIKE :tag OR supervisor LIKE :tag "
+                "OR location LIKE :tag"
+            ),
+            {"tag": f"%{REGTEST_TAG}%"},
+        ).fetchall()
+    except Exception as exc:
+        return {"users_removed": 0, "user_ids": [], "deleted": {}, "nulled": {}, "errors": [str(exc)]}
+
+    user_ids = [str(r[0]) for r in rows]
+    if not user_ids:
+        return {"users_removed": 0, "user_ids": [], "deleted": {}, "nulled": {}, "errors": []}
+
+    log.info(f"sweep/users: found {len(user_ids)} [REGTEST] user(s): {user_ids}")
+
+    def _in_params(ids: list[str]) -> tuple[str, dict]:
+        placeholders = ", ".join(f":uid{i}" for i in range(len(ids)))
+        params = {f"uid{i}": uid for i, uid in enumerate(ids)}
+        return placeholders, params
+
+    ph, p = _in_params(user_ids)
+
+    # ── Step 2: delete schedule_attendee / schedule_document before schedules ─
+    try:
+        sched_rows = session.execute(
+            text(f'SELECT id FROM schedule WHERE employee_id IN ({ph})'), p
+        ).fetchall()
+        sched_ids = [str(r[0]) for r in sched_rows]
+    except Exception as exc:
+        errors.append(f"schedule lookup: {exc}")
+        sched_ids = []
+
+    if sched_ids:
+        sph, sp = _in_params(sched_ids)
+        n = _exec(f'DELETE FROM schedule_attendee WHERE schedule_id IN ({sph})', sp)
+        if n:
+            deleted["schedule_attendee"] = deleted.get("schedule_attendee", 0) + n
+        n = _exec(f'DELETE FROM schedule_document WHERE schedule_id IN ({sph})', sp)
+        if n:
+            deleted["schedule_document"] = deleted.get("schedule_document", 0) + n
+
+    n = _exec(f'DELETE FROM schedule_attendee WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["schedule_attendee"] = deleted.get("schedule_attendee", 0) + n
+
+    # ── Step 3: schedules ─────────────────────────────────────────────────────
+    n = _exec(f'DELETE FROM schedule WHERE employee_id IN ({ph})', p)
+    if n:
+        deleted["schedule"] = n
+
+    # ── Step 4: attendance ────────────────────────────────────────────────────
+    n = _exec(f'DELETE FROM attendance WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["attendance"] = n
+
+    # ── Step 5: user permissions ──────────────────────────────────────────────
+    n = _exec(f'DELETE FROM userpermission WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["userpermission"] = n
+
+    # ── Step 6: service_employee ──────────────────────────────────────────────
+    n = _exec(f'DELETE FROM service_employee WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["service_employee"] = n
+
+    # ── Step 7: leave / HR requests ───────────────────────────────────────────
+    n = _exec(f'DELETE FROM leave_request WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["leave_request"] = n
+    n = _exec(f'UPDATE leave_request SET supervisor_id = NULL WHERE supervisor_id IN ({ph})', p)
+    if n:
+        nulled["leave_request.supervisor_id"] = n
+
+    n = _exec(f'DELETE FROM onboarding_request WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["onboarding_request"] = n
+    n = _exec(f'UPDATE onboarding_request SET supervisor_id = NULL WHERE supervisor_id IN ({ph})', p)
+    if n:
+        nulled["onboarding_request.supervisor_id"] = n
+
+    n = _exec(f'DELETE FROM offboarding_request WHERE user_id IN ({ph})', p)
+    if n:
+        deleted["offboarding_request"] = n
+    n = _exec(f'UPDATE offboarding_request SET supervisor_id = NULL WHERE supervisor_id IN ({ph})', p)
+    if n:
+        nulled["offboarding_request.supervisor_id"] = n
+
+    # ── Step 8: pay slips ─────────────────────────────────────────────────────
+    n = _exec(f'DELETE FROM pay_slip WHERE employee_id IN ({ph})', p)
+    if n:
+        deleted["pay_slip"] = n
+
+    # ── Step 9: chat messages ─────────────────────────────────────────────────
+    n = _exec(f'DELETE FROM chat_message WHERE sender_id IN ({ph})', p)
+    if n:
+        deleted["chat_message"] = deleted.get("chat_message", 0) + n
+    n = _exec(f'DELETE FROM chat_message WHERE receiver_id IN ({ph})', p)
+    if n:
+        deleted["chat_message"] = deleted.get("chat_message", 0) + n
+
+    # ── Step 10: NULL-out optional FKs (documents, tasks, sales) ─────────────
+    n = _exec(f'UPDATE document SET signed_by_user_id = NULL WHERE signed_by_user_id IN ({ph})', p)
+    if n:
+        nulled["document.signed_by_user_id"] = n
+    n = _exec(f'UPDATE document SET owner_id = NULL WHERE owner_id IN ({ph})', p)
+    if n:
+        nulled["document.owner_id"] = n
+    n = _exec(f'UPDATE document_assignment SET assigned_by = NULL WHERE assigned_by IN ({ph})', p)
+    if n:
+        nulled["document_assignment.assigned_by"] = n
+    n = _exec(f'UPDATE task SET assigned_to_id = NULL WHERE assigned_to_id IN ({ph})', p)
+    if n:
+        nulled["task.assigned_to_id"] = n
+    n = _exec(f'UPDATE sale_transaction SET employee_id = NULL WHERE employee_id IN ({ph})', p)
+    if n:
+        nulled["sale_transaction.employee_id"] = n
+
+    # ── Step 11: break self-referential reports_to ────────────────────────────
+    n = _exec(f'UPDATE "user" SET reports_to = NULL WHERE reports_to IN ({ph})', p)
+    if n:
+        nulled["user.reports_to"] = n
+
+    # ── Step 12: delete user rows ─────────────────────────────────────────────
+    n = _exec(f'DELETE FROM "user" WHERE id IN ({ph})', p)
+    if n:
+        deleted["user"] = n
+
+    try:
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        errors.append(f"commit failed: {exc}")
+
+    total_deleted = sum(deleted.values())
+    total_nulled = sum(nulled.values())
+    log.info(
+        f"sweep/users complete: {total_deleted} row(s) deleted, "
+        f"{total_nulled} FK(s) nulled, users removed: {len(user_ids)}"
+    )
+    return {
+        "users_removed": len(user_ids),
+        "user_ids": user_ids,
+        "deleted": deleted,
+        "nulled": nulled,
+        "errors": errors,
+    }
+
+
+@router.delete("/sweep/users")
+def sweep_regtest_users(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """
+    Admin-only: cascade-delete all [REGTEST] users and their linked child
+    records.  Delegates to cascade_delete_regtest_users().
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    result = cascade_delete_regtest_users(session)
+    if result["errors"] and result["users_removed"] == 0:
+        raise HTTPException(status_code=500, detail=result["errors"][0])
+    return result
