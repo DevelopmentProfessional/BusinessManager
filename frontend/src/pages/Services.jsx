@@ -30,6 +30,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import useFetchOnce from '../services/useFetchOnce';
 import usePagePermission from '../services/usePagePermission';
+import useViewMode from '../services/useViewMode';
 import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
 import PageTableRow from './components/PageTableRow';
@@ -57,6 +58,7 @@ export default function Services() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
+  const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
 
   // ─── 4  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
@@ -198,7 +200,7 @@ export default function Services() {
                     onClick={() => handleEditService(service)}
                   >
                     {/* Name + Category stacked */}
-                    <td className="px-1">
+                    <td className="main-page-table-data">
                       <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
                         {service.name}
                       </div>
@@ -213,14 +215,14 @@ export default function Services() {
                     </td>
 
                     {/* Price */}
-                    <td className="text-center px-1">
+                    <td className="main-page-table-data text-center">
                       <span className="fw-medium">
                         ${(service.price || 0).toFixed(2)}
                       </span>
                     </td>
 
                     {/* Duration */}
-                    <td className="text-center px-1">
+                    <td className="main-page-table-data text-center">
                       <span className="badge bg-info-subtle text-info rounded-pill">
                         {service.duration_minutes || 30}m
                       </span>
@@ -307,35 +309,37 @@ export default function Services() {
                         {label}
                       </button>
 
-                      <div className="position-relative flex-shrink-0">
-                        <button
-                          type="button"
-                          aria-label={`${label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                          onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
-                          onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : String(key)));
-                          }}
-                        >
-                          ?
-                        </button>
-
-                        {isHelpOpen && (
-                          <div
-                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                      {isTrainingMode && (
+                        <div className="position-relative flex-shrink-0">
+                          <button
+                            type="button"
+                            aria-label={`${label} help`}
+                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                            style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                             onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                             onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : String(key)));
+                            }}
                           >
-                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
-                            <div className="small text-gray-700 dark:text-gray-300">{description}</div>
-                          </div>
-                        )}
-                      </div>
+                            ?
+                          </button>
+
+                          {isHelpOpen && (
+                            <div
+                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                              onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
+                              onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
+                            >
+                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
+                              <div className="small text-gray-700 dark:text-gray-300">{description}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -93,7 +93,8 @@ export default function Layout({ children }) {
 
       {/* Navigation menu overlay */}
       {expandedMenuOpen && (
-        <div className="position-fixed top-0 start-0 w-100 h-100" style={{ zIndex: 1050 }}>
+        <div className="position-fixed top-0 start-0 w-100 h-100" 
+        style={{ zIndex: 1050 }}>
           {/* Backdrop */}
           <div 
             className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-25" 
@@ -104,7 +105,7 @@ export default function Layout({ children }) {
           <div 
             className="position-fixed rounded-3 ps-2" 
             style={{ 
-              minWidth: isTrainingMode ? '12rem' : '3.5rem', 
+              minWidth: '3rem', 
               zIndex: 1051, 
               bottom: '5rem', 
               right: '1rem' 
@@ -121,10 +122,9 @@ export default function Layout({ children }) {
                     className={classNames(
                       isActive ? 'btn btn-primary' : 'btn btn-outline-secondary',
                       'd-flex align-items-center text-decoration-none',
-                      isTrainingMode ? 'btn-sm rounded-pill gap-2 px-3' : 'rounded-circle justify-content-center p-0'
+                      isTrainingMode ? 'btn-sm rounded-pill gap-2' : 'rounded-circle justify-content-center p-0'
                     )}
-                    style={{
-                      ...(isTrainingMode ? {} : { width: '3rem', height: '3rem' }),
+                    style={{ 
                       backgroundColor: isActive ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
                       color: isActive ? 'var(--bs-white)' : 'var(--bs-body-color)',
                       borderColor: isActive ? 'var(--bs-primary)' : 'var(--bs-border-color)',
@@ -150,7 +150,7 @@ export default function Layout({ children }) {
           expandedMenuOpen
             ? 'btn btn-primary'
             : 'btn btn-outline-secondary',
-          'position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center'
+          'p-0 position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center'
         )}
         style={{ 
           width: '3rem', 

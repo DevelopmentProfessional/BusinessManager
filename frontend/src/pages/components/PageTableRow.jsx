@@ -13,7 +13,7 @@ import React from 'react';
 export default function PageTableRow({ onClick, children }) {
   return (
     <tr
-      className="align-middle border-bottom app-table-row"
+      className="main-page-table-row"
       onClick={onClick}
     >
       {children}

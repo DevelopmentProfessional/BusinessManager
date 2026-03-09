@@ -2002,7 +2002,7 @@ const Profile = () => {
 
       {/* Footer Tabs */}
       <div
-        className="flex-shrink-0 bg-body profile-footer-nav"
+        className="flex-shrink-0 bg-body profile-footer-nav ps-3"
         style={{ zIndex: 10 }}
       >
         {/* Row 1 — Personal: Profile, Benefits, Settings */}

@@ -56,7 +56,10 @@
       "Bash(sed 's/:@router//')",
       "Bash(powershell.exe:*)",
       "Bash(.venv/Scripts/python backend/migrations/add_training_mode.py)",
-      "Bash(wc -l /c/Users/dpint/Documents/Development/BusinessManager/frontend/src/pages/*.jsx)"
+      "Bash(wc -l /c/Users/dpint/Documents/Development/BusinessManager/frontend/src/pages/*.jsx)",
+      "Bash(netsh advfirewall firewall show rule name=\"Vite\")",
+      "Bash(netsh advfirewall firewall show rule name=\"Node\")",
+      "Bash(netsh advfirewall firewall show rule name=\"port 5173\")"
     ]
   }
 }
