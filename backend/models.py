@@ -848,6 +848,7 @@ class UserUpdate(SQLModel):
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: Optional[bool] = None
+    training_mode: Optional[bool] = None
     db_environment: Optional[str] = None  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
@@ -880,6 +881,7 @@ class UserRead(SQLModel):
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: bool = False
+    training_mode: bool = False
     db_environment: str = "production"  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None

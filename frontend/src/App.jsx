@@ -70,7 +70,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 
 function App() {
   const { user, setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
-  const { initializeDarkMode } = useDarkMode();
+  const { initializeDarkMode, setDarkMode } = useDarkMode();
   const { setTrainingMode } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
 
@@ -111,12 +111,18 @@ function App() {
     initializeDarkMode();
   }, [initializeDarkMode]);
 
-  // Sync training mode from database when user loads
+  // Sync training mode and dark mode from database when user loads
   useEffect(() => {
     if (user?.training_mode !== undefined) {
       setTrainingMode(user.training_mode);
     }
   }, [user?.training_mode, setTrainingMode]);
+
+  useEffect(() => {
+    if (user?.dark_mode !== undefined) {
+      setDarkMode(user.dark_mode);
+    }
+  }, [user?.dark_mode, setDarkMode]);
 
   useEffect(() => {
     initializeActiveColorTheme(user?.color);
