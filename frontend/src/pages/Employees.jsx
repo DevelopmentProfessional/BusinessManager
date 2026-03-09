@@ -1135,11 +1135,11 @@ export default function Employees() {
                     }}
                   >
                     {/* Name with color coding for active/inactive */}
-                    <td className="px-3">
-                      <div 
+                    <td className="main-page-table-data">
+                      <div
                         className={`fw-medium text-truncate ${
                           employee.is_active ? 'text-success' : 'text-muted'
-                        }`} 
+                        }`}
                         style={{ maxWidth: '100%' }}
                       >
                         {employee.first_name} {employee.last_name}
@@ -1148,7 +1148,7 @@ export default function Employees() {
 
                     {/* Lock icon — admin only, only visible when account is locked */}
                     {isAdmin && (
-                      <td className="px-1 text-center">
+                      <td className="main-page-table-data text-center">
                         {employee.is_locked && employee.id !== currentUser?.id && (
                           <button
                             type="button"
@@ -1164,7 +1164,7 @@ export default function Employees() {
                     )}
 
                     {/* Role + Pay + Chat */}
-                    <td className="px-3">
+                    <td className="main-page-table-data">
                       <div className="d-flex align-items-center gap-1 justify-content-between">
                         <span className={`badge rounded-pill ${
                           employee.role === 'admin' ? 'bg-danger' :

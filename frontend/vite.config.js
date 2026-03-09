@@ -1,12 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
+import fs from 'fs'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   // Always enable HTTPS in dev so phones on the LAN can use the camera (requires secure context)
   const isDev = command === 'serve'
+
+  // Use custom cert (includes LAN IP SAN) so other devices on the network can connect
+  const sslDir = path.resolve(__dirname, '../ssl')
+  const sslKey = path.join(sslDir, 'key.pem')
+  const sslCert = path.join(sslDir, 'cert.pem')
+  const hasCustomCert = fs.existsSync(sslKey) && fs.existsSync(sslCert)
 
   const plugins = [
     react(),
@@ -36,15 +43,15 @@ export default defineConfig(({ command, mode }) => {
     })
   ]
 
-  if (isDev) {
-    plugins.push(basicSsl())
-  }
-
   return {
     plugins,
     server: {
-      // HTTPS always enabled in dev so phones on the LAN can access the camera (secure context required)
-      https: isDev,
+      // HTTPS in dev: use custom cert (LAN IP in SAN) when available, else fall back to basic ssl
+      https: isDev
+        ? hasCustomCert
+          ? { key: fs.readFileSync(sslKey), cert: fs.readFileSync(sslCert) }
+          : true
+        : false,
       // Allow override via env var VITE_PORT; default to 5173
       port: Number(process.env.VITE_PORT || 5173),
       host: true,

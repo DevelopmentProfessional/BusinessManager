@@ -32,6 +32,7 @@ import useStore from '../services/useStore';
 import { clientsAPI, settingsAPI } from '../services/api';
 import useFetchOnce from '../services/useFetchOnce';
 import usePagePermission from '../services/usePagePermission';
+import useViewMode from '../services/useViewMode';
 import Modal from './components/Modal';
 import Form_Client from './components/Form_Client';
 import Modal_Detail_Client from './components/Modal_Detail_Client';
@@ -59,6 +60,7 @@ export default function Clients() {
   const [tierFilter, setTierFilter] = useState('all');
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
   const [tierFilterHelpKey, setTierFilterHelpKey] = useState(null);
+  const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
 
   const tierFilterOptions = [
@@ -266,7 +268,7 @@ export default function Clients() {
                     onClick={() => handleOpenClient(client)}
                   >
                     {/* Name + contact */}
-                    <td className="px-3">
+                    <td className="main-page-table-data">
                       <div className="fw-medium text-truncate">{client.name}</div>
                       <div className="small text-muted text-truncate">
                         {client.email || client.phone || 'No contact'}
@@ -274,15 +276,15 @@ export default function Clients() {
                     </td>
 
                     {/* Membership + template */}
-                    <td className="px-2">
+                    <td className="main-page-table-data">
                       <div className="d-flex align-items-center gap-1">
                         <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>
                           {getTierLabel(client.membership_tier)}
                         </span>
-                       
+
                       </div>
                     </td>
-                    <td>
+                    <td className="main-page-table-data">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setTemplateClient(client); setIsTemplateOpen(true); }}
@@ -362,35 +364,37 @@ export default function Clients() {
                         {option.label}
                       </button>
 
-                      <div className="position-relative flex-shrink-0">
-                        <button
-                          type="button"
-                          aria-label={`${option.label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                          onMouseEnter={() => setTierFilterHelpKey(option.value)}
-                          onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setTierFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                          }}
-                        >
-                          ?
-                        </button>
-
-                        {isHelpOpen && (
-                          <div
-                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                      {isTrainingMode && (
+                        <div className="position-relative flex-shrink-0">
+                          <button
+                            type="button"
+                            aria-label={`${option.label} help`}
+                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                            style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                             onMouseEnter={() => setTierFilterHelpKey(option.value)}
                             onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setTierFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                            }}
                           >
-                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                          </div>
-                        )}
-                      </div>
+                            ?
+                          </button>
+
+                          {isHelpOpen && (
+                            <div
+                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                              onMouseEnter={() => setTierFilterHelpKey(option.value)}
+                              onMouseLeave={() => setTierFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                            >
+                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

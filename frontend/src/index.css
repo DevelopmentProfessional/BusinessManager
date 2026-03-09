@@ -105,12 +105,26 @@ body,
   cursor: pointer;
 }
 
+/* Main-page data table row — use on <tr> inside PageTableRow */
+.main-page-table-row {
+  height: 36px;
+  cursor: pointer;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Main-page data table cell — use on <td> inside main page tables */
+.main-page-table-data { 
+  vertical-align: middle;
+}
+
 /* Remove border from all footer navigation bars */
 .app-footer-search,
 .schedule-footer,
 .profile-footer-nav {
   border-top: none !important;
   border: none !important;
+  
 }
 
 /* ========================================
@@ -120,12 +134,7 @@ body,
 .modal-footer,
 .app-footer-search,
 .schedule-footer,
-.profile-footer-nav,
-footer[aria-label="Actions"],
-.flex-shrink-0.border-top {
-  padding-left: 0.5rem;
-  margin-left: 0.25rem;
-}
+.profile-footer-nav
 
 /* Footer button spacing */
 .modal-footer .btn,
@@ -278,9 +287,9 @@ footer[aria-label="Actions"] .btn.rounded-circle,
 .flex-shrink-0.border-t .btn.rounded-circle,
 [class*="footer"] .btn.rounded-circle {
   padding: 0 !important;
-  width: 2.5rem !important;
-  height: 2.5rem !important;
-  min-width: 2.5rem !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  min-width: 3rem !important;
 }
 
 /* Compact circles: lock to exact size in all modes including training mode */

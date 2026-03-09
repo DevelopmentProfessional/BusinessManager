@@ -39,6 +39,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDateTime } from '../utils/dateFormatters';
 import useFetchOnce from '../services/useFetchOnce';
 import usePagePermission from '../services/usePagePermission';
+import useViewMode from '../services/useViewMode';
 import {
   PlusIcon,
   DocumentIcon,
@@ -278,6 +279,7 @@ export default function Documents() {
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
   const [statusFilterHelpKey, setStatusFilterHelpKey] = useState(null);
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
+  const { isTrainingMode } = useViewMode();
 
   // Templates state
   const [showTemplates, setShowTemplates] = useState(false);
@@ -933,35 +935,37 @@ export default function Documents() {
                             {option.name}
                           </button>
 
-                          <div className="position-relative flex-shrink-0">
-                            <button
-                              type="button"
-                              aria-label={`${option.name} help`}
-                              className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
-                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                              onMouseEnter={() => setCategoryFilterHelpKey(option.id)}
-                              onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === option.id ? null : prev))}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setCategoryFilterHelpKey((prev) => (prev === option.id ? null : option.id));
-                              }}
-                            >
-                              ?
-                            </button>
-
-                            {isHelpOpen && (
-                              <div
-                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
-                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                          {isTrainingMode && (
+                            <div className="position-relative flex-shrink-0">
+                              <button
+                                type="button"
+                                aria-label={`${option.name} help`}
+                                className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
+                                style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                                 onMouseEnter={() => setCategoryFilterHelpKey(option.id)}
                                 onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === option.id ? null : prev))}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setCategoryFilterHelpKey((prev) => (prev === option.id ? null : option.id));
+                                }}
                               >
-                                <div className="fw-semibold text-gray-900 mb-1">{option.name}</div>
-                                <div className="small text-gray-700">{option.description}</div>
-                              </div>
-                            )}
-                          </div>
+                                ?
+                              </button>
+
+                              {isHelpOpen && (
+                                <div
+                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
+                                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                                  onMouseEnter={() => setCategoryFilterHelpKey(option.id)}
+                                  onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === option.id ? null : prev))}
+                                >
+                                  <div className="fw-semibold text-gray-900 mb-1">{option.name}</div>
+                                  <div className="small text-gray-700">{option.description}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1002,35 +1006,37 @@ export default function Documents() {
                             {option.label}
                           </button>
 
-                          <div className="position-relative flex-shrink-0">
-                            <button
-                              type="button"
-                              aria-label={`${option.label} help`}
-                              className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
-                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                              onMouseEnter={() => setStatusFilterHelpKey(option.value)}
-                              onMouseLeave={() => setStatusFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setStatusFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                              }}
-                            >
-                              ?
-                            </button>
-
-                            {isHelpOpen && (
-                              <div
-                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
-                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                          {isTrainingMode && (
+                            <div className="position-relative flex-shrink-0">
+                              <button
+                                type="button"
+                                aria-label={`${option.label} help`}
+                                className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
+                                style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                                 onMouseEnter={() => setStatusFilterHelpKey(option.value)}
                                 onMouseLeave={() => setStatusFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setStatusFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                                }}
                               >
-                                <div className="fw-semibold text-gray-900 mb-1">{option.label}</div>
-                                <div className="small text-gray-700">{option.description}</div>
-                              </div>
-                            )}
-                          </div>
+                                ?
+                              </button>
+
+                              {isHelpOpen && (
+                                <div
+                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
+                                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                                  onMouseEnter={() => setStatusFilterHelpKey(option.value)}
+                                  onMouseLeave={() => setStatusFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                                >
+                                  <div className="fw-semibold text-gray-900 mb-1">{option.label}</div>
+                                  <div className="small text-gray-700">{option.description}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1078,35 +1084,37 @@ export default function Documents() {
                             {option.label}
                           </button>
 
-                          <div className="position-relative flex-shrink-0">
-                            <button
-                              type="button"
-                              aria-label={`${option.label} help`}
-                              className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
-                              style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                              onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                              onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                              }}
-                            >
-                              ?
-                            </button>
-
-                            {isHelpOpen && (
-                              <div
-                                className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
-                                style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                          {isTrainingMode && (
+                            <div className="position-relative flex-shrink-0">
+                              <button
+                                type="button"
+                                aria-label={`${option.label} help`}
+                                className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
+                                style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                                 onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                                 onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                                }}
                               >
-                                <div className="fw-semibold text-gray-900 mb-1">{option.label}</div>
-                                <div className="small text-gray-700">{option.description}</div>
-                              </div>
-                            )}
-                          </div>
+                                ?
+                              </button>
+
+                              {isHelpOpen && (
+                                <div
+                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
+                                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                                  onMouseEnter={() => setTypeFilterHelpKey(option.value)}
+                                  onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                                >
+                                  <div className="fw-semibold text-gray-900 mb-1">{option.label}</div>
+                                  <div className="small text-gray-700">{option.description}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

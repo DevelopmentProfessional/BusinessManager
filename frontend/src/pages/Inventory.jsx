@@ -33,6 +33,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import useFetchOnce from '../services/useFetchOnce';
 import usePagePermission from '../services/usePagePermission';
+import useViewMode from '../services/useViewMode';
 import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
 import PageTableRow from './components/PageTableRow';
@@ -69,6 +70,7 @@ export default function Inventory() {
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
+  const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
 
   const typeFilterOptions = [
@@ -356,7 +358,7 @@ return (
                   onClick={() => handleUpdateInventory(inv)}
                 >
                   {/* Name */}
-                  <td className="px-1">
+                  <td className="main-page-table-data">
                     <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
                       {inv.name}
                     </div>
@@ -381,14 +383,14 @@ return (
                   </td>
 
                   {/* Type */}
-                  <td className="px-1">
+                  <td className="main-page-table-data">
                     <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>
                       {getItemTypeLabel(inv.type)}
                     </span>
                   </td>
 
                   {/* Stock */}
-                  <td className="text-center px-1">
+                  <td className="main-page-table-data text-center">
                     <span className={`badge rounded-pill ${getStockColor(inv)}`}>
                       {inv.quantity}
                     </span>
@@ -471,35 +473,37 @@ return (
                       {option.label}
                     </button>
 
-                    <div className="position-relative flex-shrink-0">
-                      <button
-                        type="button"
-                        aria-label={`${option.label} help`}
-                        className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                        style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                        onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                        onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                        }}
-                      >
-                        ?
-                      </button>
-
-                      {isHelpOpen && (
-                        <div
-                          className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                          style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                    {isTrainingMode && (
+                      <div className="position-relative flex-shrink-0">
+                        <button
+                          type="button"
+                          aria-label={`${option.label} help`}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                           onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                           onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                          }}
                         >
-                          <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                          <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                        </div>
-                      )}
-                    </div>
+                          ?
+                        </button>
+
+                        {isHelpOpen && (
+                          <div
+                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                            onMouseEnter={() => setTypeFilterHelpKey(option.value)}
+                            onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                          >
+                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -540,35 +544,37 @@ return (
                       {option.label}
                     </button>
 
-                    <div className="position-relative flex-shrink-0">
-                      <button
-                        type="button"
-                        aria-label={`${option.label} help`}
-                        className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                        style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
-                        onMouseEnter={() => setStockFilterHelpKey(option.value)}
-                        onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                        }}
-                      >
-                        ?
-                      </button>
-
-                      {isHelpOpen && (
-                        <div
-                          className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                          style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                    {isTrainingMode && (
+                      <div className="position-relative flex-shrink-0">
+                        <button
+                          type="button"
+                          aria-label={`${option.label} help`}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
+                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
                           onMouseEnter={() => setStockFilterHelpKey(option.value)}
                           onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                          }}
                         >
-                          <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                          <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                        </div>
-                      )}
-                    </div>
+                          ?
+                        </button>
+
+                        {isHelpOpen && (
+                          <div
+                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                            onMouseEnter={() => setStockFilterHelpKey(option.value)}
+                            onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                          >
+                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
