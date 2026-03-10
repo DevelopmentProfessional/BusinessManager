@@ -43,7 +43,8 @@ import {
   ClockIcon,
   ArrowPathIcon,
   ArrowDownTrayIcon,
-  ChevronUpDownIcon
+  ChevronUpDownIcon,
+  CalculatorIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { reportsAPI, employeesAPI, servicesAPI } from '../services/api';
@@ -51,6 +52,7 @@ import useBranding from '../services/useBranding';
 import Chart_Report from './components/Chart_Report';
 import Button_Toolbar from './components/Button_Toolbar';
 import useViewMode from '../services/useViewMode';
+import Modal_Forecast_Calculator from './components/Modal_Forecast_Calculator';
 
 const AVAILABLE_REPORTS = [
   {
@@ -174,6 +176,7 @@ export default function Reports() {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const [showForecastCalculator, setShowForecastCalculator] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     dateRange: 'last30days',
     startDate: null,
@@ -602,12 +605,20 @@ export default function Reports() {
                 <selectedReport.icon className="h-5 w-5 text-primary-600" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-0">{selectedReport.title}</h2>
               </div>
-              <Button_Toolbar
-                icon={ArrowDownTrayIcon}
-                label="Export PDF"
-                onClick={handleExportPdf}
-                className="btn-outline-secondary"
-              />
+              <div className="d-flex align-items-center gap-2">
+                <Button_Toolbar
+                  icon={CalculatorIcon}
+                  label="Forecast"
+                  onClick={() => setShowForecastCalculator(true)}
+                  className="btn-app-primary"
+                />
+                <Button_Toolbar
+                  icon={ArrowDownTrayIcon}
+                  label="Export PDF"
+                  onClick={handleExportPdf}
+                  className="btn-outline-secondary"
+                />
+              </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{selectedReport.description}</p>
 
@@ -839,6 +850,12 @@ export default function Reports() {
           </div>
         </div>
       )}
+
+      {/* Forecast Calculator Modal */}
+      <Modal_Forecast_Calculator
+        isOpen={showForecastCalculator}
+        onClose={() => setShowForecastCalculator(false)}
+      />
     </div>
   );
 }

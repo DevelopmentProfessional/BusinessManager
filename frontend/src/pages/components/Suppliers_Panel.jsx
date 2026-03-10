@@ -238,12 +238,12 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               />
             </>
           ) : (
-            <button
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
               onClick={onClose}
-              className="px-6 py-2 rounded-lg bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700 transition-colors font-medium"
-            >
-              Close
-            </button>
+              className="btn-outline-secondary"
+            />
           )}
         </div>
       </div>
