@@ -1,36 +1,62 @@
-Key features Automatically generated public product page for client to login, from there, they can create an account and connect to the cart
-
-products should have the ability to have one or more descriptive features on it.. for instance, size, color, brand, another example would be length width height, but these would be creatable from the internveotry page on the product, when created, it would act like a storage like a list for items. So it is created as like size... from that, sizes can be added that are relevant to the product... for each size, a quantity can be added. Now, when going to another product, that size, as a descri[ptiv4e feature should be able to be found because it would now exsist, and its options from the previous would also exsist. so if i create the size on one product, it should be searchable from other products. to the feature descriptions.... add a tag on it that says "affects price", when selected, each of the inputs need the price set, when unselected, only o0ne price needs to be set, It would be the case where more than one item selection affects the price like a small blue is different than a small red is difference than a medium blue where both the size and the color affects the price. There could also be an option on the produict specifically where the type itself would affect the price meaning that the type of reguardless of what it is, would be the same price.
 
 sales from the sales page aftrer checkout should update the inventory dataset
 
-mobile compatible layout in footer of the pages and thier responsivbeness
-
-		
-clients: Add a chat button to the employee name on the right most, when selected, opens an email thread. The email comes from the employee profile, Should be able to accept the incoming emails for that person. There should be templates that the employee can select in the footer section first row, the second row has the cancel and send button on it.
-	Add Client :   make the phone number field abide by the number format 
-	Edit client: format it like the add client, For the Services history and product history, put in reverse chronological where the most recent is near the bottom, if the service is upcoming, selecting it should open the appoiuntmenbt edit compoent to allow for that compoenent to be edited 
-	Cart setup, When a client is connected to a cart, it should literally make that cart data go into the clients cart specifically. then selecting various clients should change what is in the cart at the time, currently  it lo9oks like the cqart is not persistent with the clinet. The only time the cart data should disappear is when the application is closed, but until a client is added, it can go into a cart object in cache on the local of that device. 
-
-Employees: right most of employee name, a chat button that opens a chat dialog. Within it, able to link exsisting documents and speak with the other employee in the chat. 
-	Requests: float the request list to the bottom. 
-	Edit employee: 
-	 
-		Benefits: Put the Dollar sign on salaery as an input group
-    Insurance Plans.   the list of plans above it. employees should be able to have more than one plan since insurance companies usually include a previous tier with thier subscriptions. 
+	Add Client :   
+make the phone number field abide by the number format 
+	Edit client: 
+format it like the add client, For the Services history and product history, put in reverse chronological where the most recent is near the bottom, if the service is upcoming, selecting it should open the appoiuntmenbt edit compoent to allow for that compoenent to be edited 
 	
-		
-Documents: Add the ability to add a template type of document where it doesnt need to be a normal docx document but it will be editable with variables so the person can use vawriables like client name, service name, service price, and from that, get variables from the database to put ionto the report. so when using the document. It would be possible to generate a new docuemnt based on that template and scenario. So if the client wanted thier transaction history. OR even just a reciept. It documents page would have a tmeplate for those things. All the way to reminder emails and payslips. Those variables would be key in creating those dynamic documents. 
 
-Sales: 
-	cart: Chanhge the proceed to checkout button to roiunded pill and the contionue shopping to a rounded pill also, horizontal . move the customer selection in the firtst two, the4 other buttons in the second row, total section remove padding for the HR my-3 line, move the clear all button to the bottom left in the second row fotter
-	Transaction History:  Fix the footer 
-	 
+	Inventory 
+For each descriptive feature turn each feature into an accordion in the4 header section, move the remove button to the left most of the header and put it as a trashcan, in the compact/traning mode, it shoud be a trash can for both,
+The title can go to the left most as well but to the right of the removeo button.
+to the right most of the accordion heqader, but the selected options in a comma separated list. so it would look like this 
+[remove][Title][mx-auto][Option1,Option2,Option3]
+For the options table within the accordion body, remove the inner border of the table body, remove the column header vertical borders from the inside of the column header row
+move the new optio0n name input and the add option button to the right most of the row 
 
-Schedule: 
-	Edit appointment Modal: float items to the bottom 
+
+	Clients
+On the -purchase history modal... float the table to the bottom
+on the service history... move the upcoming to the bottom and the past to the top. order by descending. 
+on the service history... make the row items open the appointment edit component so the date or service can be updated for example.
+on the service history... remove the top right close button
+
+	employee
+fix the insurance plans edit and remove buttons 
+investigate the wages and payroll pagfef functionality... the rate isnt set 
+On the add employee modal. the active buttons needs pb-2	
+	
+	Documents
+For the manage categories... make this page style look like the insurance plans modal on the employee page
+Update hte icons on the right most side 
+
+	Components
+for the dropdowns, when the question mark is high lighted, somtimes the popup appears on the sinide of the dropdown, it should be on the oiutside of the dropdown. 
+	
+	sales
+add a scroll to sales history and a footer and a close button in the footer 
+When the clkient button in the footer is selkected, it opens another row, the button in that row should be a cirfcle with 3rem width and height 
+ when selecting the client, if they have a service schedulked, that service should appear in thier cart 
  
-Settings: 
-	 
-	General :  the accordions should ffloat upwards not downwards, instead of a normal accordiuon, it should be like the profile page. 
+	Schedule
+Edit appointment: add a paid button that is a toggle and is connected to the checkout on the sales page so when the sales button is selected and the service is piad. the paid toggle button should be set to paid, otherwise it stays at unpaid. 
+add a discount option 
+	on the appointmnet show which resources are consumed and thier resource consumption rate. 
 
+Services
+	add a resource consumption rate to the resrouces as a percentage
+
+
+
+automatically generateed task assignment that are based on paid client orders. then it will display on it the amount of each item that needs to be produced and as a result the amount of resources it will consume.
+it checks in the inventory for how much stokc is available. if any is needed, it finds the difference between the current amount in stock and the remaining amount needed to increase the minimum threashold. 
+on the task it formulates emails to contact suppliers on what is needed via a template and is checkable and sendable from that point, after sneding, the send icon appears. 
+this is all hjappening on the task event. The task is essentially automaticallytt created and the duration is the amount of time it takes to create <=1 batch, each batch is conectnted to one asset6 so if its 4 assets the throughput can be 4 batches per dureation... but if there are two assets and 4 batches need to be made, then the duration would be 2... likewise, if its 3 batches and only 4 assets, it still 2 becqause only 2 can be processed at a time. i think its the mod.. not certain. 
+
+task are conencted to products. 
+
+products should bne connected to resources and assets such that if they are created by the busnness, then they would consume resoureces of the business and whiile being produced, take up an asset. from this they would have a duration 
+
+how does the bsuiness know it needs a new assset? if a task would queue on an asset, then on the asset, there hsould be a max queue threshold, when reached, the Asset would be flagged with a badge that shows an upward line chart indicating that more assets are needed in order to meet demand. 
+	 
