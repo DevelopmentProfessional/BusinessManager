@@ -934,6 +934,8 @@ export default function Sales() {
           </div>
         </div>
 
+        <div className="grid grid-cols-12">
+        <div className="col-span-10">
         {/* Controls Row 1 - History and Cart */}
         <div className={`search-hide-on-focus flex items-center gap-1 pb-2 ${footerJustify}`} style={{ minHeight: '3rem' }}>
           {/* Sales History Button */}
@@ -1007,6 +1009,8 @@ export default function Sales() {
             style={{ opacity: showProducts ? 1 : 0.5 }}
           />
         </div>
+        </div>{/* col-span-10 */}
+        </div>{/* grid grid-cols-12 */}
         </div>
       </div>
 

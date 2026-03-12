@@ -206,6 +206,7 @@ const Profile = () => {
   const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign } = useViewMode();
+  const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
   // Log Profile component mount if performance session is active
@@ -2067,8 +2068,8 @@ const Profile = () => {
           {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
           <div className="d-lg-none">
             <div className="row g-0">
-              <div className="col-12">
-                <div className="d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row">
+              <div className="col-10">
+                <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                   {[
                     { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
                     { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
@@ -2091,23 +2092,27 @@ const Profile = () => {
           </div>
           
           {/* Large screens: Original compact flex layout */}
-          <div className="d-none d-lg-flex align-items-center gap-1 ps-3 pe-3 flex-wrap">
-            {[
-              { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
-              { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
-              { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
-              { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
-            ].map(({ id, Icon, title }) => (
-              <Button_Toolbar
-                key={id}
-                icon={Icon}
-                label={title}
-                onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                style={{ height: '3rem' }}
-                data-active={openAccordion === id}
-              />
-            ))}
+          <div className="d-none d-lg-block">
+            <div className="row g-0">
+              <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
+                {[
+                  { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
+                  { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
+                  { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
+                  { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
+                ].map(({ id, Icon, title }) => (
+                  <Button_Toolbar
+                    key={id}
+                    icon={Icon}
+                    label={title}
+                    onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                    className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    style={{ height: '3rem' }}
+                    data-active={openAccordion === id}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2118,7 +2123,7 @@ const Profile = () => {
             <div className="d-lg-none">
               <div className="row g-0">
                 <div className="col-10">
-                  <div className="d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row">
+                  <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                     {[
                       { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
                       { id: 'general',  Icon: CogIcon,          title: 'General'  },
@@ -2140,22 +2145,26 @@ const Profile = () => {
             </div>
             
             {/* Large screens: Original compact flex layout */}
-            <div className="d-none d-lg-flex align-items-center gap-1 ps-3 pe-3 flex-wrap">
-              {[
-                { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
-                { id: 'general',  Icon: CogIcon,          title: 'General'  },
-                { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
-              ].map(({ id, Icon, title }) => (
-                <Button_Toolbar
-                  key={id}
-                  icon={Icon}
-                  label={title}
-                  onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                  className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  style={{ height: '3rem' }}
-                  data-active={openAccordion === id}
-                />
-              ))}
+            <div className="d-none d-lg-block">
+              <div className="row g-0">
+                <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
+                  {[
+                    { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
+                    { id: 'general',  Icon: CogIcon,          title: 'General'  },
+                    { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+                  ].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                      className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      style={{ height: '3rem' }}
+                      data-active={openAccordion === id}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
