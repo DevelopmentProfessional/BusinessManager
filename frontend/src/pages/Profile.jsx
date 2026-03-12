@@ -2063,62 +2063,9 @@ const Profile = () => {
         className="flex-shrink-0 bg-body profile-footer-nav ps-3"
         style={{ zIndex: 10 }}
       >
-        {/* Row 1 — Personal: Profile, Benefits, Settings */}
-        <div ref={row1Ref} className="pt-2 pb-1">
-          {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
-          <div className="d-lg-none">
-            <div className="row g-0">
-              <div className="col-10">
-                <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
-                  {[
-                    { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
-                    { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
-                    { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
-                    { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
-                  ].map(({ id, Icon, title }) => (
-                    <Button_Toolbar
-                      key={id}
-                      icon={Icon}
-                      label={title}
-                      onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                      className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      style={{ height: '3rem'  }}
-                      data-active={openAccordion === id}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Large screens: Original compact flex layout */}
-          <div className="d-none d-lg-block">
-            <div className="row g-0">
-              <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
-                {[
-                  { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
-                  { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
-                  { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
-                  { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
-                ].map(({ id, Icon, title }) => (
-                  <Button_Toolbar
-                    key={id}
-                    icon={Icon}
-                    label={title}
-                    onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                    className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                    style={{ height: '3rem' }}
-                    data-active={openAccordion === id}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Row 2 — Admin/Settings: Schedule, General, Database */}
+        {/* Row 1 — Admin/Settings: Schedule, General, Database */}
         {canAccessSettings && (
-          <div ref={handleRow2Ref} className="pb-4">
+          <div ref={handleRow2Ref} className="pt-2 pb-1">
             {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
             <div className="d-lg-none">
               <div className="row g-0">
@@ -2143,7 +2090,7 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Large screens: Original compact flex layout */}
             <div className="d-none d-lg-block">
               <div className="row g-0">
@@ -2168,6 +2115,59 @@ const Profile = () => {
             </div>
           </div>
         )}
+
+        {/* Row 2 — Personal: Profile, Benefits, Wages, Settings */}
+        <div ref={row1Ref} className="pb-4">
+          {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
+          <div className="d-lg-none">
+            <div className="row g-0">
+              <div className="col-10">
+                <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
+                  {[
+                    { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
+                    { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
+                    { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
+                    { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
+                  ].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                      className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      style={{ height: '3rem' }}
+                      data-active={openAccordion === id}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Large screens: Original compact flex layout */}
+          <div className="d-none d-lg-block">
+            <div className="row g-0">
+              <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
+                {[
+                  { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
+                  { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
+                  { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
+                  { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
+                ].map(({ id, Icon, title }) => (
+                  <Button_Toolbar
+                    key={id}
+                    icon={Icon}
+                    label={title}
+                    onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
+                    className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    style={{ height: '3rem' }}
+                    data-active={openAccordion === id}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Signature Modal */}
