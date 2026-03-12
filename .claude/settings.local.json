@@ -59,7 +59,8 @@
       "Bash(wc -l /c/Users/dpint/Documents/Development/BusinessManager/frontend/src/pages/*.jsx)",
       "Bash(netsh advfirewall firewall show rule name=\"Vite\")",
       "Bash(netsh advfirewall firewall show rule name=\"Node\")",
-      "Bash(netsh advfirewall firewall show rule name=\"port 5173\")"
+      "Bash(netsh advfirewall firewall show rule name=\"port 5173\")",
+      "Bash(grep -E \"\\\\.py$\")"
     ]
   }
 }

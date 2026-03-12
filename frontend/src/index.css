@@ -81,6 +81,10 @@ body,
 }
 
 .app-shell {
+  /* 100vh fallback first for browsers that don't support dvh (Firefox < 101, Chrome < 108) */
+  height: 100vh;
+  min-height: 100vh;
+  /* dvh / JS-measured value takes over when available */
   height: var(--mobile-app-height, 100dvh);
   min-height: var(--mobile-app-height, 100dvh);
   overflow: hidden;

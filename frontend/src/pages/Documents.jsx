@@ -44,12 +44,12 @@ import {
   PlusIcon,
   DocumentIcon,
   TrashIcon,
-  EyeIcon,
+  MagnifyingGlassIcon,
   PencilIcon,
   PencilSquareIcon,
   CheckIcon,
   ClockIcon,
-  FolderOpenIcon,
+  Squares2X2Icon,
   CheckCircleIcon,
   TagIcon,
   XMarkIcon,
@@ -807,7 +807,7 @@ export default function Documents() {
                           className="btn btn-sm btn-outline-primary border-0 p-1"
                           title="View"
                         >
-                          👁
+                          <MagnifyingGlassIcon className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>
@@ -899,7 +899,7 @@ export default function Documents() {
               {/* Categories Filter */}
               <div className="position-relative">
                 <Button_Toolbar
-                  icon={FolderOpenIcon}
+                  icon={Squares2X2Icon}
                   label="Category"
                   onClick={() => {
                     const nextOpen = !isFilterCategoriesOpen;

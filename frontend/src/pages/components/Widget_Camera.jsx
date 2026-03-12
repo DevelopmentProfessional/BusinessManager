@@ -10,6 +10,13 @@ export default function Widget_Camera({ onCapture, onCancel }) {
   useEffect(() => {
     let active = true;
     const start = async () => {
+      // navigator.mediaDevices is undefined on HTTP (non-secure) contexts and on some
+      // older browsers (Firefox < 36, Opera Mini, UC Browser). Show a clear message
+      // instead of crashing with a TypeError.
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Camera not available. Please use a secure (HTTPS) connection or a supported browser.');
+        return;
+      }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -65,7 +72,7 @@ export default function Widget_Camera({ onCapture, onCancel }) {
       )}
 
       {/* Bottom controls */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem 2rem', background: 'rgba(0,0,0,0.85)' }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem 2rem', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))', background: 'rgba(0,0,0,0.85)' }}>
         <button
           type="button"
           onClick={onCancel}

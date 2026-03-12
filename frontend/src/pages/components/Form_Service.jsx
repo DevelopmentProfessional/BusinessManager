@@ -37,7 +37,7 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI, employeesAPI, serviceRelationsAPI } from '../../services/api';
+import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from '../../services/api';
 import Widget_Camera from './Widget_Camera';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
@@ -74,6 +74,9 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
+
+  // ── Recipe state ─────────────────────────────────────────────────
+  const [recipe, setRecipe] = useState(null); // null = not loaded or doesn't exist yet
 
   // ── "Add" row state ──────────────────────────────────────────────
   const [newResource, setNewResource] = useState({ inventory_id: '', quantity: '1', consumption_rate_pct: '' });
@@ -127,17 +130,20 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
     const load = async () => {
       setRelLoading(true);
       try {
-        const [resRes, assRes, empRes, locRes] = await Promise.all([
+        const [resRes, assRes, empRes, locRes, recRes] = await Promise.all([
           serviceRelationsAPI.getResources(service.id),
           serviceRelationsAPI.getAssets(service.id),
           serviceRelationsAPI.getEmployees(service.id),
           serviceRelationsAPI.getLocations(service.id),
+          serviceRecipeAPI.get(service.id),
         ]);
         if (!cancelled) {
           setResources(resRes?.data ?? resRes ?? []);
           setAssets(assRes?.data ?? assRes ?? []);
           setSvcEmployees(empRes?.data ?? empRes ?? []);
           setLocations(locRes?.data ?? locRes ?? []);
+          const recipeList = recRes?.data ?? recRes ?? [];
+          setRecipe(Array.isArray(recipeList) && recipeList.length > 0 ? recipeList[0] : null);
         }
       } catch (err) {
         console.error('Form_Service: failed to load relations', err);
@@ -224,6 +230,42 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
       await serviceRelationsAPI.updateResourceRate(id, val);
       setResources(prev => prev.map(r => r.id === id ? { ...r, consumption_rate_pct: val } : r));
     } catch (err) { console.error('Failed to update consumption rate', err); }
+  };
+
+  // ── Recipe handlers ───────────────────────────────────────────────
+  const handleRecipeToggle = async (isProduced) => {
+    if (!service?.id) return;
+    try {
+      if (!recipe) {
+        const res = await serviceRecipeAPI.create({ service_id: service.id, is_produced: isProduced, batch_size: 1 });
+        setRecipe(res.data);
+      } else {
+        const res = await serviceRecipeAPI.update(recipe.id, { is_produced: isProduced });
+        setRecipe(res.data);
+      }
+    } catch (err) { console.error('Failed to update recipe toggle', err); }
+  };
+
+  const handleRecipeField = async (field, value) => {
+    if (!service?.id) return;
+    try {
+      const parsed = field === 'batch_size' ? parseInt(value) || 1 : parseFloat(value) || null;
+      if (!recipe) {
+        const res = await serviceRecipeAPI.create({ service_id: service.id, is_produced: false, batch_size: 1, [field]: parsed });
+        setRecipe(res.data);
+      } else {
+        const res = await serviceRecipeAPI.update(recipe.id, { [field]: parsed });
+        setRecipe(res.data);
+      }
+    } catch (err) { console.error('Failed to update recipe field', err); }
+  };
+
+  const handleUpdateAssetDuration = async (id, durationMinutes) => {
+    try {
+      const val = durationMinutes !== '' ? parseFloat(durationMinutes) : null;
+      await serviceRelationsAPI.updateAssetDuration(id, val);
+      setAssets(prev => prev.map(a => a.id === id ? { ...a, asset_duration_minutes: val } : a));
+    } catch (err) { console.error('Failed to update asset duration', err); }
   };
 
   const handleAddAsset = () => wrap(async () => {
@@ -383,6 +425,122 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                   <label htmlFor="description">Description</label>
                 </div>
               </form>
+
+              {/* ── Recipe Section (edit mode only) ── */}
+              {service?.id && (
+                <div className="border rounded mb-3" style={{ fontSize: '0.85rem' }}>
+                  {/* Toggle header */}
+                  <div className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-light dark:bg-gray-800 rounded-top">
+                    <span className="fw-semibold text-gray-800 dark:text-gray-200">Recipe / Production</span>
+                    <div className="form-check form-switch mb-0">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="recipe-toggle"
+                        checked={recipe?.is_produced ?? false}
+                        onChange={e => handleRecipeToggle(e.target.checked)}
+                      />
+                      <label className="form-check-label small text-muted" htmlFor="recipe-toggle">
+                        {recipe?.is_produced ? 'Manufactured' : 'Purchased / Delivered'}
+                      </label>
+                    </div>
+                  </div>
+
+                  {recipe?.is_produced && (
+                    <div className="px-3 pt-2 pb-3">
+                      {/* Batch fields */}
+                      <div className="d-flex gap-2 mb-3">
+                        <div className="flex-grow-1">
+                          <label className="form-label small mb-1 text-muted">Batch Size (units)</label>
+                          <input
+                            type="number" min="1" step="1"
+                            className="form-control form-control-sm"
+                            defaultValue={recipe?.batch_size ?? 1}
+                            onBlur={e => handleRecipeField('batch_size', e.target.value)}
+                          />
+                        </div>
+                        <div className="flex-grow-1">
+                          <label className="form-label small mb-1 text-muted">Batch Duration (min)</label>
+                          <input
+                            type="number" min="0" step="1"
+                            className="form-control form-control-sm"
+                            defaultValue={recipe?.batch_duration_minutes ?? ''}
+                            placeholder="—"
+                            onBlur={e => handleRecipeField('batch_duration_minutes', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Resources consumed */}
+                      <div className="mb-2">
+                        <div className="small fw-semibold text-muted mb-1">Resources consumed per batch</div>
+                        {resources.length === 0 ? (
+                          <div className="small fst-italic text-muted">No resources linked — add them in the Resources tab.</div>
+                        ) : (
+                          <table className="table table-sm mb-0" style={{ fontSize: '0.8rem' }}>
+                            <thead>
+                              <tr>
+                                <th>Resource</th>
+                                <th style={{ width: 80 }}>Qty / batch</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {resources.map(r => (
+                                <tr key={r.id} className="align-middle">
+                                  <td className="text-truncate" style={{ maxWidth: 160 }}>{inventoryName(r.inventory_id)}</td>
+                                  <td>
+                                    <input
+                                      type="number" min="0" step="0.01"
+                                      className="form-control form-control-sm"
+                                      defaultValue={r.quantity}
+                                      onBlur={e => handleUpdateResourceQty(r.id, e.target.value)}
+                                      style={{ width: 72 }}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+
+                      {/* Assets used */}
+                      <div>
+                        <div className="small fw-semibold text-muted mb-1">Assets used per batch</div>
+                        {assets.length === 0 ? (
+                          <div className="small fst-italic text-muted">No assets linked — add them in the Assets tab.</div>
+                        ) : (
+                          <table className="table table-sm mb-0" style={{ fontSize: '0.8rem' }}>
+                            <thead>
+                              <tr>
+                                <th>Asset</th>
+                                <th style={{ width: 96 }}>Duration (min)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {assets.map(a => (
+                                <tr key={a.id} className="align-middle">
+                                  <td className="text-truncate" style={{ maxWidth: 160 }}>{inventoryName(a.inventory_id)}</td>
+                                  <td>
+                                    <input
+                                      type="number" min="0" step="1"
+                                      className="form-control form-control-sm"
+                                      defaultValue={a.asset_duration_minutes ?? ''}
+                                      placeholder="—"
+                                      onBlur={e => handleUpdateAssetDuration(a.id, e.target.value)}
+                                      style={{ width: 80 }}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -469,17 +627,30 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
               ) : assets.length === 0 ? (
                 <div className="text-muted small fst-italic py-2">No assets linked yet.</div>
               ) : (
-                <ul className="list-group list-group-flush mb-0">
-                  {assets.map(a => (
-                    <li key={a.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm p-1 flex-shrink-0"
-                        onClick={() => handleRemoveAsset(a.id)}>
-                        <TrashIcon style={{ width: 13, height: 13 }} />
-                      </button>
-                      <span className="text-truncate">{inventoryName(a.inventory_id)}</span>
-                    </li>
-                  ))}
-                </ul>
+                <table className="table table-sm mb-0">
+                  <thead><tr><th style={{ width: 36 }}></th><th>Asset</th><th style={{ width: 96 }}>Duration (min)</th></tr></thead>
+                  <tbody>
+                    {assets.map(a => (
+                      <tr key={a.id} className="align-middle">
+                        <td>
+                          <button type="button" className="btn btn-outline-danger btn-sm p-1"
+                            onClick={() => handleRemoveAsset(a.id)}>
+                            <TrashIcon style={{ width: 13, height: 13 }} />
+                          </button>
+                        </td>
+                        <td className="text-truncate" style={{ maxWidth: 140 }}>{inventoryName(a.inventory_id)}</td>
+                        <td>
+                          <input type="number" min="0" step="1"
+                            className="form-control form-control-sm"
+                            defaultValue={a.asset_duration_minutes ?? ''}
+                            onBlur={e => handleUpdateAssetDuration(a.id, e.target.value)}
+                            placeholder="—"
+                            style={{ width: 80 }} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
             {/* Sticky add row */}

@@ -160,17 +160,11 @@ export default function Reports() {
     hasPermission
   } = useStore();
 
-  if (!hasPermission('reports', 'read') &&
-      !hasPermission('schedule', 'read') &&
-      !hasPermission('clients', 'read') &&
-      !hasPermission('services', 'read')) {
-    return <Navigate to="/profile" replace />;
-  }
-
   const { branding } = useBranding();
   const { isTrainingMode } = useViewMode();
 
   // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
+  // NOTE: permission guard is evaluated AFTER all hooks to comply with React's Rules of Hooks
   const [selectedReportId, setSelectedReportId] = useState('');
   const [reportData, setReportData] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -566,6 +560,14 @@ export default function Reports() {
   };
 
   // ─── 12 RENDER ───────────────────────────────────────────────────────────
+  // Permission guard — placed after all hooks to comply with React's Rules of Hooks
+  if (!hasPermission('reports', 'read') &&
+      !hasPermission('schedule', 'read') &&
+      !hasPermission('clients', 'read') &&
+      !hasPermission('services', 'read')) {
+    return <Navigate to="/profile" replace />;
+  }
+
   if (loading && !selectedReport) {
     return (
       <div className="flex justify-center items-center h-64">

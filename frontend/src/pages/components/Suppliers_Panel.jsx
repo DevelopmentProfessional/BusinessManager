@@ -26,7 +26,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   PlusIcon, PencilIcon, TrashIcon,
-  ArrowLeftIcon, XMarkIcon, CheckIcon
+  XMarkIcon, CheckIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import { suppliersAPI } from '../../services/api';
@@ -127,44 +127,25 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
         {/* ── HEADER ── */}
         <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center gap-2 bg-white dark:bg-gray-900">
           {showForm ? (
-            <>
-              <button
-                type="button"
-                onClick={handleCancelForm}
-                className="btn btn-link p-0 text-gray-600 dark:text-gray-400"
-                title="Back to list"
-              >
-                <ArrowLeftIcon className="h-5 w-5" />
-              </button>
-              <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
-                {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
-              </h6>
-            </>
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
+              {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
+            </h6>
           ) : (
             <>
               <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Suppliers</h6>
               <span className="text-muted small">({suppliers.length})</span>
-              <div className="ms-auto">
-                <Gate_Permission page="suppliers" permission="write">
-                  <Button_Toolbar
-                    icon={PlusIcon}
-                    label="Add"
-                    onClick={handleCreate}
-                    className="btn-app-primary"
-                  />
-                </Gate_Permission>
-              </div>
             </>
           )}
         </div>
 
         {/* ── BODY ── */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar">
+        <div className="flex-grow-1 overflow-auto no-scrollbar d-flex flex-column">
           {showForm ? (
             <SupplierForm
               supplier={editingSupplier}
               onSubmit={handleSubmit}
               onCancel={handleCancelForm}
+              className="flex-grow-1"
             />
           ) : loading ? (
             <div className="d-flex justify-content-center align-items-center" style={{ height: '200px' }}>
@@ -179,8 +160,17 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               {suppliers.map(supplier => (
                 <div
                   key={supplier.id}
-                  className="px-3 py-3 d-flex align-items-center justify-content-between border-bottom"
+                  className="px-3 py-3 d-flex align-items-center gap-2 border-bottom"
                 >
+                  <Gate_Permission page="suppliers" permission="delete">
+                    <button
+                      onClick={() => handleDelete(supplier.id)}
+                      className="btn btn-link btn-sm p-0 text-danger flex-shrink-0"
+                      title="Delete"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </Gate_Permission>
                   <div className="min-w-0 flex-1">
                     <div className="fw-medium text-gray-900 dark:text-gray-100">{supplier.name}</div>
                     {supplier.email && (
@@ -193,26 +183,15 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                       <div className="small text-muted text-truncate">{supplier.address}</div>
                     )}
                   </div>
-                  <div className="d-flex gap-2 flex-shrink-0 ms-2">
-                    <Gate_Permission page="suppliers" permission="write">
-                      <button
-                        onClick={() => handleEdit(supplier)}
-                        className="btn btn-link btn-sm p-0 text-secondary"
-                        title="Edit"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                    </Gate_Permission>
-                    <Gate_Permission page="suppliers" permission="delete">
-                      <button
-                        onClick={() => handleDelete(supplier.id)}
-                        className="btn btn-link btn-sm p-0 text-danger"
-                        title="Delete"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </Gate_Permission>
-                  </div>
+                  <Gate_Permission page="suppliers" permission="write">
+                    <button
+                      onClick={() => handleEdit(supplier)}
+                      className="btn btn-link btn-sm p-0 text-secondary flex-shrink-0"
+                      title="Edit"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+                  </Gate_Permission>
                 </div>
               ))}
             </div>
@@ -220,7 +199,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 d-flex justify-content-center gap-3">
+        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 d-flex justify-content-between align-items-center gap-3">
           {showForm ? (
             <>
               <Button_Toolbar
@@ -231,19 +210,29 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               />
               <Button_Toolbar
                 icon={CheckIcon}
-                label={editingSupplier ? 'Save Changes' : 'Create Supplier'}
+                label={editingSupplier ? 'Save' : 'Save'}
                 type="submit"
                 form="supplier-panel-form"
                 className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
               />
             </>
           ) : (
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Close"
-              onClick={onClose}
-              className="btn-outline-secondary"
-            />
+            <>
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={PlusIcon}
+                  label="Add Supplier"
+                  onClick={handleCreate}
+                  className="btn-app-primary"
+                />
+              </Gate_Permission>
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Close"
+                onClick={onClose}
+                className="btn-outline-secondary"
+              />
+            </>
           )}
         </div>
       </div>
@@ -252,7 +241,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
 }
 
 // ─── 6 SUPPLIER FORM COMPONENT ────────────────────────────────────────────────
-function SupplierForm({ supplier, onSubmit }) {
+function SupplierForm({ supplier, onSubmit, className = '' }) {
   const [formData, setFormData] = useState({
     name: supplier?.name || '',
     email: supplier?.email || '',
@@ -271,7 +260,8 @@ function SupplierForm({ supplier, onSubmit }) {
   };
 
   return (
-    <form id="supplier-panel-form" onSubmit={handleSubmit} className="p-3">
+    <form id="supplier-panel-form" onSubmit={handleSubmit} className={`p-3 d-flex flex-column ${className}`} style={{ minHeight: '100%' }}>
+      <div className="mt-auto"></div>
       <div className="form-floating mb-2">
         <input
           type="text"
