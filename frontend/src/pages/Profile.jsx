@@ -2065,7 +2065,7 @@ const Profile = () => {
       >
         {/* Row 1 — Admin/Settings: Schedule, General, Database */}
         {canAccessSettings && (
-          <div ref={handleRow2Ref} className="pt-2 pb-1">
+          <div ref={handleRow2Ref} className="pt-2 pb-0">
             {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
             <div className="d-lg-none">
               <div className="row g-0">
@@ -2117,7 +2117,7 @@ const Profile = () => {
         )}
 
         {/* Row 2 — Personal: Profile, Benefits, Wages, Settings */}
-        <div ref={row1Ref} className="pb-4">
+        <div ref={row1Ref} className="pt-2 pb-4">
           {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
           <div className="d-lg-none">
             <div className="row g-0">
