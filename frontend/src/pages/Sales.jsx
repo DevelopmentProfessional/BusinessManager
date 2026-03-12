@@ -50,6 +50,7 @@ import Modal_Cart_Sales from './components/Modal_Cart_Sales';
 import Modal_History_Sales from './components/Modal_History_Sales';
 import Modal_Feature_Select_Sales from './components/Modal_Feature_Select_Sales';
 import { getDisplayImageUrl } from './components/imageUtils';
+import useViewMode from '../services/useViewMode';
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
 // Unified Product/Service Card Component
@@ -196,6 +197,8 @@ export default function Sales() {
     hasPermission, openAddClientModal, user
   } = useStore();
   const location = useLocation();
+  const { footerAlign } = useViewMode();
+  const footerJustify = footerAlign === 'center' ? 'justify-center' : footerAlign === 'right' ? 'justify-end' : 'justify-start';
 
   usePagePermission('services', hasPermission);
 
@@ -932,7 +935,7 @@ export default function Sales() {
         </div>
 
         {/* Controls Row 1 - History and Cart */}
-        <div className="flex items-center gap-1 pb-2" style={{ minHeight: '3rem' }}>
+        <div className={`search-hide-on-focus flex items-center gap-1 pb-2 ${footerJustify}`} style={{ minHeight: '3rem' }}>
           {/* Sales History Button */}
           <Button_Toolbar
             icon={ArrowTrendingUpIcon}
@@ -957,7 +960,7 @@ export default function Sales() {
         </div>
 
         {/* Controls Row 2 - Client, Clear, Filters */}
-        <div className="flex items-center gap-1 pb-2" style={{ minHeight: '3rem' }}>
+        <div className={`search-hide-on-focus flex items-center gap-1 pb-2 ${footerJustify}`} style={{ minHeight: '3rem' }}>
           {/* Account / Client Icon */}
           <Button_Toolbar
             icon={UserCircleIcon}

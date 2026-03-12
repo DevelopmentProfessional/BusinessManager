@@ -85,6 +85,29 @@ import useBranding from '../services/useBranding';
 import { applyActiveColorTheme } from '../services/activeColorTheme';
 import { right } from '@popperjs/core';
 
+// ─── Inline alignment icons for the footer-align triple toggle ───────────────
+const AlignLeftIcon = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25"/>
+    <rect x="2" y="8.75" width="11" height="2.5" rx="1.25"/>
+    <rect x="2" y="14.5" width="14" height="2.5" rx="1.25"/>
+  </svg>
+);
+const AlignCenterIcon = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25"/>
+    <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25"/>
+    <rect x="3" y="14.5" width="14" height="2.5" rx="1.25"/>
+  </svg>
+);
+const AlignRightIcon = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25"/>
+    <rect x="7" y="8.75" width="11" height="2.5" rx="1.25"/>
+    <rect x="4" y="14.5" width="14" height="2.5" rx="1.25"/>
+  </svg>
+);
+
 // ─── 2 MODULE-LEVEL STYLE INJECTION ──────────────────────────────────────────
 // CSS for accordion pop-up animation
 const accordionStyles = `
@@ -182,7 +205,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode } = useViewMode();
+  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign } = useViewMode();
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
   // Log Profile component mount if performance session is active
@@ -1364,6 +1387,40 @@ const Profile = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Footer Align Triple Toggle */}
+            <div
+              className="d-flex overflow-hidden"
+              style={{ border: '1px solid var(--bs-border-color, #dee2e6)', borderRadius: '0.5rem', height: '3rem' }}
+              title="Footer button alignment"
+            >
+              {[
+                { value: 'left',   Icon: AlignLeftIcon,   label: 'Align left'   },
+                { value: 'center', Icon: AlignCenterIcon, label: 'Align center' },
+                { value: 'right',  Icon: AlignRightIcon,  label: 'Align right'  },
+              ].map(({ value, Icon, label }, idx) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFooterAlign(value)}
+                  title={label}
+                  className={`btn btn-sm ${footerAlign === value ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  style={{
+                    width: '2.75rem',
+                    height: '100%',
+                    border: 'none',
+                    borderRadius: 0,
+                    borderRight: idx < 2 ? '1px solid var(--bs-border-color, #dee2e6)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon />
+                </button>
+              ))}
             </div>
 
             {/* Signature */}

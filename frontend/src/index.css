@@ -328,6 +328,11 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   .app-search-input {
     scroll-margin-bottom: calc(var(--keyboard-offset) + 2rem);
   }
+
+  /* Hide non-search rows in footers when keyboard is open */
+  html.search-focus .search-hide-on-focus {
+    display: none !important;
+  }
 }
 
 [data-bs-theme="dark"] .bg-light {
