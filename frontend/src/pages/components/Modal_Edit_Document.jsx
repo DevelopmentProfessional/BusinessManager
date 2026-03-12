@@ -265,13 +265,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                         className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                       >
                         {label}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAssignment(a.employee_id)}
-                          className="ml-2 text-red-600 hover:text-red-800"
-                        >
-                          ×
-                        </button>
+                        
                       </span>
                     );
                   })}
