@@ -12,6 +12,8 @@ const useViewMode = create(
       setTrainingMode: (bool) => {
         set({ isTrainingMode: bool });
       },
+      footerAlign: 'left',
+      setFooterAlign: (align) => set({ footerAlign: align }),
     }),
     {
       name: 'view-mode-storage',

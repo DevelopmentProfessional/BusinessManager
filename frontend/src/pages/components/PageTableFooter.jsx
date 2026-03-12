@@ -1,4 +1,5 @@
 import React from 'react';
+import useViewMode from '../../services/useViewMode';
 
 /**
  * PageTableFooter
@@ -13,13 +14,15 @@ import React from 'react';
  *   children: Button_Toolbar buttons and filter dropdowns (rendered below search)
  */
 export default function PageTableFooter({ columns, searchTerm, onSearch, searchPlaceholder = 'Search...', beforeSearch, hideSearch, children }) {
+  const { footerAlign } = useViewMode();
+  const alignClass = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
   return (
     <div
       className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm"
       style={{ zIndex: 10 }}
     >
       {/* Column header mirror table */}
-      <table className="table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+      <table className="search-hide-on-focus table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
         <colgroup>
           <col />
           {columns.filter(c => c.width).map((col, i) => (
@@ -38,7 +41,7 @@ export default function PageTableFooter({ columns, searchTerm, onSearch, searchP
       {/* Controls: optional top row + search + buttons */}
       <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         {beforeSearch && (
-          <div className="d-flex align-items-center gap-1 mb-2">
+          <div className={`search-hide-on-focus d-flex align-items-center gap-1 mb-2 ${alignClass}`}>
             {beforeSearch}
           </div>
         )}
@@ -56,7 +59,7 @@ export default function PageTableFooter({ columns, searchTerm, onSearch, searchP
             className="app-search-input form-control ps-5 w-100 rounded-pill"
           />
         </div>}
-        <div className="d-flex align-items-center gap-1 pb-2 flex-wrap" style={{ minHeight: '3rem' }}>
+        <div className={`search-hide-on-focus d-flex align-items-center gap-1 pb-2 flex-wrap ${alignClass}`} style={{ minHeight: '3rem' }}>
           {children}
         </div>
       </div>

@@ -201,7 +201,7 @@ export default function Modal_Cart_Sales({
                     </button>
                   </div>
                   {showClientDropdown && clientSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                    <div className="absolute bottom-full mb-1 left-0 right-0 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                       {filteredClients.slice(0, 5).map(c => (
                         <button key={c.id} onClick={() => { handleSelectClient(c); setClientSearch(''); setShowClientDropdown(false); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white">
                           <p className="font-medium">{c.name}</p>
