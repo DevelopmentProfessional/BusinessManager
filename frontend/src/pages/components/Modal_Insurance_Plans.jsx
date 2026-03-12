@@ -21,7 +21,7 @@
 
 import React from 'react';
 import Modal from './Modal';
-import { XMarkIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 
 export default function Modal_Insurance_Plans({
@@ -80,6 +80,7 @@ export default function Modal_Insurance_Plans({
                   </div>
                   <div className="d-flex gap-1">
                     <button
+                      type="button"
                       className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
                       style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                       onClick={() => onToggle(plan)}
@@ -88,20 +89,22 @@ export default function Modal_Insurance_Plans({
                       {plan.is_active ? 'Deactivate' : 'Activate'}
                     </button>
                     <button
+                      type="button"
                       className="btn btn-sm btn-outline-secondary"
                       style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
                       onClick={() => setEditingPlan({ ...plan })}
                       title="Edit"
                     >
-                      <PlusIcon style={{ width: 12, height: 12 }} />
+                      <PencilSquareIcon style={{ width: 12, height: 12 }} />
                     </button>
                     <button
+                      type="button"
                       className="btn btn-sm btn-outline-danger"
                       style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
                       onClick={() => onDelete(plan.id)}
                       title="Delete"
                     >
-                      <XMarkIcon style={{ width: 12, height: 12 }} />
+                      <TrashIcon style={{ width: 12, height: 12 }} />
                     </button>
                   </div>
                 </div>

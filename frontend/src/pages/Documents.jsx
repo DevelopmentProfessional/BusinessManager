@@ -46,6 +46,7 @@ import {
   TrashIcon,
   EyeIcon,
   PencilIcon,
+  PencilSquareIcon,
   CheckIcon,
   ClockIcon,
   FolderOpenIcon,
@@ -1334,173 +1335,160 @@ export default function Documents() {
         onClose={() => { setIsCategoriesOpen(false); cancelEditCategory(); }}
         noPadding={true}
         fullScreen={true}
-        footer={
-          <div style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {/* Row 1 — Add / edit-save inputs + action button */}
-            <form
-              onSubmit={handleCreateCategory}
-              className="px-3 pt-2 pb-1 d-flex align-items-center gap-2"
-            >
-              <div className="form-floating flex-grow-1" style={{ minWidth: 0 }}>
-                <input
-                  type="text"
-                  id="newCatName"
-                  placeholder="Category Name"
-                  className="form-control form-control-sm"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  required
-                />
-                <label htmlFor="newCatName">Category Name *</label>
-              </div>
-              <div className="form-floating flex-grow-1" style={{ minWidth: 0 }}>
-                <input
-                  type="text"
-                  id="newCatDesc"
-                  placeholder="Description"
-                  className="form-control form-control-sm"
-                  value={newCatDesc}
-                  onChange={(e) => setNewCatDesc(e.target.value)}
-                />
-                <label htmlFor="newCatDesc">Description</label>
-              </div>
-              <button
-                type="submit"
-                className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Add category"
-              >
-                <PlusIcon className="h-5 w-5" />
-              </button>
-            </form>
-
-            {/* Row 2 — Cancel */}
-            <div className="px-3 pb-2 pt-1">
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary rounded-pill"
-                onClick={() => { setIsCategoriesOpen(false); cancelEditCategory(); }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        }
       >
-        {isCategoriesOpen && (
-          <div className="p-4 flex flex-col h-full">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3 flex-shrink-0">
-              Manage Categories
-            </h3>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
+          {/* Header */}
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Categories</h6>
+          </div>
 
-            {/* Scrollable list */}
-            <div
-              className="flex-1 overflow-y-auto min-h-0"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '3.5rem' }}></th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-3 py-2" style={{ width: '8rem' }}></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {categories.map((cat) => (
-                    <tr key={cat.id} className="align-middle">
-                      {/* Delete */}
-                      <td className="px-3 py-1">
-                        <button
-                          type="button"
-                          className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          title="Delete category"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </td>
-                      {/* Name */}
-                      <td className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                        {editingCatId === cat.id ? (
+          {/* Scrollable list */}
+          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+            {categories.length === 0 ? (
+              <p className="text-muted small text-center py-4">No categories yet. Add one below.</p>
+            ) : (
+              <div className="d-flex flex-column gap-2 pb-2">
+                {categories.map((cat) => (
+                  <div key={cat.id} className="d-flex align-items-center justify-content-between p-2 border rounded">
+                    {/* Name + description (or inline edit inputs) */}
+                    <div className="flex-grow-1 me-2" style={{ minWidth: 0 }}>
+                      {editingCatId === cat.id ? (
+                        <div className="d-flex gap-2">
                           <input
                             className="form-control form-control-sm"
                             value={editingCatName}
                             onChange={(e) => setEditingCatName(e.target.value)}
+                            placeholder="Name"
                           />
-                        ) : (
-                          cat.name
-                        )}
-                      </td>
-                      {/* Description */}
-                      <td className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                        {editingCatId === cat.id ? (
                           <input
                             className="form-control form-control-sm"
                             value={editingCatDesc}
                             onChange={(e) => setEditingCatDesc(e.target.value)}
+                            placeholder="Description"
                           />
-                        ) : (
-                          cat.description || <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      {/* Actions */}
-                      <td className="px-3 py-1">
-                        {editingCatId === cat.id ? (
-                          <div className="d-flex gap-1">
-                            <button
-                              type="button"
-                              className="btn btn-sm d-flex align-items-center justify-content-center rounded-circle bg-success text-white border-0"
-                              style={{ width: '3rem', height: '3rem' }}
-                              onClick={() => saveEditCategory(cat.id)}
-                              title="Save"
-                            >
-                              <CheckIcon className="h-5 w-5" />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm d-flex align-items-center justify-content-center rounded-circle btn-outline-secondary border-0 bg-gray-200"
-                              style={{ width: '3rem', height: '3rem' }}
-                              onClick={cancelEditCategory}
-                              title="Cancel edit"
-                            >
-                              <XMarkIcon className="h-5 w-5" />
-                            </button>
-                          </div>
-                        ) : (
+                        </div>
+                      ) : (
+                        <>
+                          <div className="fw-semibold" style={{ fontSize: '0.875rem' }}>{cat.name}</div>
+                          {cat.description && (
+                            <div className="text-muted" style={{ fontSize: '0.78rem' }}>{cat.description}</div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="d-flex gap-1 flex-shrink-0">
+                      {editingCatId === cat.id ? (
+                        <>
                           <button
                             type="button"
-                            className="btn btn-sm d-flex align-items-center justify-content-center rounded-circle btn-outline-secondary"
-                            style={{ width: '3rem', height: '3rem' }}
-                            onClick={() => startEditCategory(cat)}
-                            title="Edit category"
+                            className="btn btn-sm btn-outline-success"
+                            style={{ padding: '0.2rem 0.4rem' }}
+                            onClick={() => saveEditCategory(cat.id)}
+                            title="Save"
                           >
-                            <PencilIcon className="h-5 w-5" />
+                            <CheckIcon style={{ width: 14, height: 14 }} />
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {categories.length === 0 && (
-                    <tr>
-                      <td
-                        className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400"
-                        colSpan={4}
-                      >
-                        No categories yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            style={{ padding: '0.2rem 0.4rem' }}
+                            onClick={cancelEditCategory}
+                            title="Cancel"
+                          >
+                            <XMarkIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            style={{ padding: '0.2rem 0.4rem' }}
+                            onClick={() => startEditCategory(cat)}
+                            title="Edit"
+                          >
+                            <PencilSquareIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            style={{ padding: '0.2rem 0.4rem' }}
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            title="Delete"
+                          >
+                            <TrashIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Footer — Add / Edit form */}
+          <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 pt-2 pb-4">
+            <form onSubmit={handleCreateCategory} className="d-flex flex-column gap-2">
+              <div className="small fw-semibold text-muted">New Category</div>
+              <div className="row g-2">
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input
+                      type="text"
+                      id="newCatName"
+                      className="form-control form-control-sm"
+                      placeholder="Category Name"
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      required
+                    />
+                    <label htmlFor="newCatName">Category Name *</label>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input
+                      type="text"
+                      id="newCatDesc"
+                      className="form-control form-control-sm"
+                      placeholder="Description"
+                      value={newCatDesc}
+                      onChange={(e) => setNewCatDesc(e.target.value)}
+                    />
+                    <label htmlFor="newCatDesc">Description</label>
+                  </div>
+                </div>
+              </div>
+              <div className="d-flex align-items-center">
+                <div style={{ width: 40 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setIsCategoriesOpen(false); cancelEditCategory(); }}
+                    className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    style={{ width: '2.5rem', height: '2.5rem' }}
+                    title="Close"
+                  >
+                    <XMarkIcon style={{ width: 14, height: 14 }} />
+                  </button>
+                </div>
+                <div className="flex-grow-1 d-flex justify-content-center">
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="Add Category"
+                  >
+                    <CheckIcon style={{ width: 18, height: 18 }} />
+                  </button>
+                </div>
+                <div style={{ width: 40 }} />
+              </div>
+            </form>
+          </div>
+        </div>
       </Modal>
     </div>
   );

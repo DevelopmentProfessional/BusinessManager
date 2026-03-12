@@ -15,10 +15,13 @@
  *
  * CHANGE LOG:
  *   2026-03-05 | Claude | Initial implementation
+ *   2026-03-11 | Claude | Accordion headers, trash icon, borderless table,
+ *                         right-aligned add-option row, options preview in header
  * ============================================================
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { featuresAPI, inventoryFeaturesAPI } from '../../services/api';
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
@@ -43,22 +46,24 @@ function calcTotalStock(features) {
 }
 
 // ─── 2 FEATURE TABLE ─────────────────────────────────────────────────────────
+//   • No outer or inner borders — only a single bottom rule under the header row.
+//   • thead th have no vertical borders.
 
 function FeatureTable({ feature, affectsPrice, onOptionChange }) {
   return (
-    <table className="table table-sm table-bordered mb-0">
-      <thead className="table-light">
+    <table className="table table-sm table-borderless mb-0 w-100">
+      <thead style={{ borderBottom: '1px solid #dee2e6' }}>
         <tr>
-          <th style={{ width: 36 }} className="text-center">✓</th>
-          <th>Option</th>
-          <th style={{ width: 90 }}>Qty</th>
-          {affectsPrice && <th style={{ width: 100 }}>Price ($)</th>}
+          <th style={{ border: 'none', width: 36 }} className="text-center">✓</th>
+          <th style={{ border: 'none' }}>Option</th>
+          <th style={{ border: 'none', width: 90 }}>Qty</th>
+          {affectsPrice && <th style={{ border: 'none', width: 100 }}>Price ($)</th>}
         </tr>
       </thead>
       <tbody>
         {feature.options.map(opt => (
           <tr key={opt.option_id} className={opt.is_enabled ? '' : 'opacity-50'}>
-            <td className="text-center align-middle p-1">
+            <td className="text-center align-middle p-1" style={{ border: 'none' }}>
               <input
                 type="checkbox"
                 className="form-check-input"
@@ -68,8 +73,10 @@ function FeatureTable({ feature, affectsPrice, onOptionChange }) {
                 }
               />
             </td>
-            <td className="align-middle" style={{ fontSize: '0.85rem' }}>{opt.option_name}</td>
-            <td className="p-1">
+            <td className="align-middle" style={{ fontSize: '0.85rem', border: 'none' }}>
+              {opt.option_name}
+            </td>
+            <td className="p-1" style={{ border: 'none' }}>
               <input
                 type="number"
                 min={0}
@@ -83,7 +90,7 @@ function FeatureTable({ feature, affectsPrice, onOptionChange }) {
               />
             </td>
             {affectsPrice && (
-              <td className="p-1">
+              <td className="p-1" style={{ border: 'none' }}>
                 {opt.is_enabled ? (
                   <input
                     type="number"
@@ -120,6 +127,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [dirty, setDirty]                     = useState({}); // featureId → bool
   const [saving, setSaving]                   = useState(false);
   const [error, setError]                     = useState(null);
+  const [openFeatures, setOpenFeatures]       = useState({}); // featureId → bool (default open)
 
   // ── Load ──
   const reload = useCallback(async () => {
@@ -143,6 +151,20 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     onPriceRangeChange?.(calcPriceRange(itemFeatures));
   }, [itemFeatures]); // eslint-disable-line
 
+  // ── Default newly-loaded features to open ──
+  useEffect(() => {
+    setOpenFeatures(prev => {
+      const next = { ...prev };
+      itemFeatures.forEach(f => {
+        if (!(f.feature_id in next)) next[f.feature_id] = true;
+      });
+      return next;
+    });
+  }, [itemFeatures]);
+
+  const toggleFeature = (featureId) =>
+    setOpenFeatures(prev => ({ ...prev, [featureId]: !prev[featureId] }));
+
   // ── Local option edits ──
   const handleOptionChange = (featureId, optionId, field, value) => {
     setItemFeatures(prev => prev.map(f =>
@@ -158,7 +180,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   // ── Affects-price radio ──
   const handleAffectsPrice = async (featureId) => {
-    // Optimistic
     setItemFeatures(prev => prev.map(f => ({ ...f, affects_price: f.feature_id === featureId })));
     try {
       await inventoryFeaturesAPI.setAffectsPrice(inventoryId, { feature_id: featureId || null });
@@ -261,7 +282,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   );
   const hasDirty = Object.keys(dirty).length > 0;
 
-  // ── Price range display string ──
   const priceRange = calcPriceRange(itemFeatures);
   const priceDisplay = priceRange
     ? (priceRange.min === priceRange.max
@@ -319,58 +339,104 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         </div>
       )}
 
-      {/* ── Per-feature tables ── */}
-      {itemFeatures.map(f => (
-        <div key={f.feature_id} className="mb-3">
-          <div className="d-flex justify-content-between align-items-center mb-1">
-            <div className="d-flex align-items-center gap-2">
-              <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>{f.feature_name}</span>
+      {/* ── Per-feature accordions ── */}
+      {itemFeatures.map(f => {
+        const isOpen = openFeatures[f.feature_id] !== false;
+        const enabledOptions = f.options.filter(o => o.is_enabled).map(o => o.option_name);
+        const optionsPreview = enabledOptions.length > 0 ? enabledOptions.join(', ') : '—';
+
+        return (
+          <div key={f.feature_id} className="mb-2 border rounded">
+
+            {/* ── Accordion Header: [Trash][Title][mx-auto][Options preview] ── */}
+            <div
+              className="d-flex align-items-center gap-2 px-2 py-1 bg-light rounded-top"
+              style={{ cursor: 'pointer', minHeight: '2.25rem' }}
+              onClick={() => toggleFeature(f.feature_id)}
+            >
+              {/* Trash — stop click from toggling accordion */}
+              <button
+                type="button"
+                className="btn btn-link p-0 text-danger flex-shrink-0 d-flex align-items-center"
+                title="Remove feature"
+                onClick={e => { e.stopPropagation(); handleRemoveFeature(f.feature_id); }}
+              >
+                <TrashIcon style={{ width: 14, height: 14 }} />
+              </button>
+
+              {/* Title + badges */}
+              <span className="fw-semibold flex-shrink-0" style={{ fontSize: '0.85rem' }}>
+                {f.feature_name}
+              </span>
               {f.affects_price && (
-                <span className="badge bg-primary" style={{ fontSize: '0.68rem' }}>Affects Price</span>
+                <span className="badge bg-primary flex-shrink-0" style={{ fontSize: '0.65rem' }}>
+                  Price
+                </span>
               )}
               {dirty[f.feature_id] && (
-                <span className="badge bg-warning text-dark" style={{ fontSize: '0.68rem' }}>Unsaved</span>
+                <span className="badge bg-warning text-dark flex-shrink-0" style={{ fontSize: '0.65rem' }}>
+                  Unsaved
+                </span>
               )}
+
+              {/* Spacer */}
+              <span className="mx-auto" />
+
+              {/* Enabled options preview */}
+              <span
+                className="text-muted text-truncate flex-shrink-1"
+                style={{ fontSize: '0.72rem', maxWidth: '55%', textAlign: 'right' }}
+                title={optionsPreview}
+              >
+                {optionsPreview}
+              </span>
+
+              {/* Chevron */}
+              <ChevronDownIcon
+                className="flex-shrink-0 text-muted"
+                style={{
+                  width: 13, height: 13,
+                  transition: 'transform 0.15s',
+                  transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                }}
+              />
             </div>
-            <button
-              type="button"
-              className="btn btn-link btn-sm text-danger p-0"
-              style={{ fontSize: '0.75rem' }}
-              onClick={() => handleRemoveFeature(f.feature_id)}
-            >
-              Remove
-            </button>
-          </div>
 
-          <FeatureTable
-            feature={f}
-            affectsPrice={f.affects_price}
-            onOptionChange={handleOptionChange}
-          />
+            {/* ── Accordion Body ── */}
+            {isOpen && (
+              <div className="px-2 pt-2 pb-1">
+                <FeatureTable
+                  feature={f}
+                  affectsPrice={f.affects_price}
+                  onOptionChange={handleOptionChange}
+                />
 
-          {/* Add option inline */}
-          <div className="d-flex gap-1 mt-1">
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              style={{ fontSize: '0.78rem', maxWidth: 160 }}
-              placeholder="New option name…"
-              value={newOptionInputs[f.feature_id] ?? ''}
-              onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
-              onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
-            />
-            <button
-              type="button"
-              className="btn btn-outline-secondary btn-sm"
-              style={{ fontSize: '0.75rem' }}
-              onClick={() => handleAddOption(f.feature_id)}
-              disabled={!(newOptionInputs[f.feature_id] ?? '').trim()}
-            >
-              + Option
-            </button>
+                {/* Add option row — right-aligned */}
+                <div className="d-flex justify-content-end gap-1 mt-1">
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    style={{ fontSize: '0.78rem', maxWidth: 160 }}
+                    placeholder="New option name…"
+                    value={newOptionInputs[f.feature_id] ?? ''}
+                    onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => handleAddOption(f.feature_id)}
+                    disabled={!(newOptionInputs[f.feature_id] ?? '').trim()}
+                  >
+                    + Option
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* ── Add feature controls ── */}
       <div className="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">

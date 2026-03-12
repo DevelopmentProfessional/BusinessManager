@@ -413,9 +413,13 @@ export const servicesAPI = {
 export const serviceRelationsAPI = {
   // Consumable resources linked to a service
   getResources: (serviceId) => api.get(`/isud/service_resource?service_id=${serviceId}`),
-  addResource: (serviceId, inventoryId, quantity) =>
-    api.post('/isud/service_resource', { service_id: serviceId, inventory_id: inventoryId, quantity }),
+  addResource: (serviceId, inventoryId, quantity, consumptionRatePct = null) =>
+    api.post('/isud/service_resource', {
+      service_id: serviceId, inventory_id: inventoryId, quantity,
+      ...(consumptionRatePct != null ? { consumption_rate_pct: consumptionRatePct } : {}),
+    }),
   updateResource: (id, quantity) => api.put(`/isud/service_resource/${id}`, { quantity }),
+  updateResourceRate: (id, rate) => api.put(`/isud/service_resource/${id}`, { consumption_rate_pct: rate }),
   removeResource: (id) => api.delete(`/isud/service_resource/${id}`),
 
   // Assets reserved for the full duration of a service

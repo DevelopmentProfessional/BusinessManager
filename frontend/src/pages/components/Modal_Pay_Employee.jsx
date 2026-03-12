@@ -78,6 +78,9 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
   const [availableWeeks, setAvailableWeeks] = useState([]);
   const [payWeeksLoading, setPayWeeksLoading] = useState(false);
 
+  const normalizedEmploymentType = String(employee?.employment_type || '').toLowerCase() || ((Number(employee?.hourly_rate || 0) > 0) ? 'hourly' : 'salary');
+  const normalizedPayFrequency = String(employee?.pay_frequency || '').toLowerCase();
+
   // ─── [2] EFFECT: initialise / reset on open ─────────────────────────────────
   useEffect(() => {
     if (!isOpen || !employee) {
@@ -98,7 +101,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
       notes: '',
     };
 
-    if (employee.pay_frequency === 'weekly') {
+    if (normalizedPayFrequency === 'weekly') {
       setPayForm(baseForm);
       setAvailableWeeks([]);
       setPayWeeksLoading(true);
@@ -113,7 +116,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
     } else {
       const now = new Date();
       let start, end;
-      if (employee.pay_frequency === 'daily') {
+      if (normalizedPayFrequency === 'daily') {
         start = now.toISOString().slice(0, 10);
         end = start;
       } else {
@@ -122,7 +125,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
       }
       setPayForm({ ...baseForm, pay_period_start: start, pay_period_end: end });
     }
-  }, [isOpen, employee?.id]);
+  }, [isOpen, employee?.id, normalizedPayFrequency]);
 
   // ─── [3] SUBMIT ─────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -130,13 +133,13 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
     setPayError('');
     setPayLoading(true);
     try {
-      const isHourly = employee?.employment_type === 'hourly';
+      const isHourly = normalizedEmploymentType === 'hourly';
       const payload = {
         pay_period_start: new Date(payForm.pay_period_start).toISOString(),
         pay_period_end: new Date(payForm.pay_period_end).toISOString(),
         other_deductions: payForm.other_deductions !== '' ? parseFloat(payForm.other_deductions) : 0,
         notes: payForm.notes || null,
-        employment_type: employee?.employment_type || 'salary',
+        employment_type: normalizedEmploymentType || 'salary',
       };
       if (isHourly) {
         payload.hours_worked = payForm.hours_worked !== '' ? parseFloat(payForm.hours_worked) : 0;
@@ -180,9 +183,9 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
               {paySuccess && <div className="alert alert-success py-1 px-2 small mb-2">{paySuccess}</div>}
 
               <div className="mb-2 small text-muted">
-                Type: <strong style={{ textTransform: 'capitalize' }}>{employee.employment_type || 'salary'}</strong>
-                {employee.pay_frequency && (
-                  <> &middot; Freq: <strong style={{ textTransform: 'capitalize' }}>{employee.pay_frequency.replace('_', '-')}</strong></>
+                Type: <strong style={{ textTransform: 'capitalize' }}>{normalizedEmploymentType || 'salary'}</strong>
+                {normalizedPayFrequency && (
+                  <> &middot; Freq: <strong style={{ textTransform: 'capitalize' }}>{normalizedPayFrequency.replace('_', '-')}</strong></>
                 )}
                 {employee.insurance_plan && (
                   <> &middot; Insurance: <strong>{employee.insurance_plan}</strong></>
@@ -190,7 +193,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
               </div>
 
               {/* Period selector — varies by pay frequency */}
-              {employee.pay_frequency === 'weekly' ? (
+              {normalizedPayFrequency === 'weekly' ? (
                 <div className="mb-2">
                   <label className="form-label small mb-1">Select Week</label>
                   {payWeeksLoading ? (
@@ -217,7 +220,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                     <div className="text-muted small mt-1">{payForm.pay_period_start} → {payForm.pay_period_end}</div>
                   )}
                 </div>
-              ) : employee.pay_frequency === 'daily' ? (
+              ) : normalizedPayFrequency === 'daily' ? (
                 <div className="mb-2">
                   <label className="form-label small mb-1">Payment Date</label>
                   <input
@@ -254,7 +257,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                 </>
               )}
 
-              {employee.employment_type === 'hourly' ? (
+              {normalizedEmploymentType === 'hourly' ? (
                 <div className="mb-2">
                   <label className="form-label small mb-1">Hours Worked</label>
                   <input

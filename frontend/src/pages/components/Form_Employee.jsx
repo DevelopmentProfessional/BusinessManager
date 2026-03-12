@@ -64,10 +64,13 @@ export default function Form_Employee({
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [roleHelpKey, setRoleHelpKey] = useState(null);
+  const [roleHelpPos, setRoleHelpPos] = useState({ top: 0, left: 0 });
   const [isEmploymentTypeDropdownOpen, setIsEmploymentTypeDropdownOpen] = useState(false);
   const [employmentTypeHelpKey, setEmploymentTypeHelpKey] = useState(null);
+  const [employmentTypeHelpPos, setEmploymentTypeHelpPos] = useState({ top: 0, left: 0 });
   const [isPayFrequencyDropdownOpen, setIsPayFrequencyDropdownOpen] = useState(false);
   const [payFrequencyHelpKey, setPayFrequencyHelpKey] = useState(null);
+  const [payFrequencyHelpPos, setPayFrequencyHelpPos] = useState({ top: 0, left: 0 });
 
   const roleOptions = [
     { value: 'EMPLOYEE', label: 'Employee', description: 'Standard employee with basic access. Can view their own profile and schedule.' },
@@ -523,37 +526,44 @@ export default function Form_Employee({
                               >
                                 {option.label}
                               </button>
-                              <div className="position-relative flex-shrink-0">
+                              <div className="flex-shrink-0">
                                 <button
                                   type="button"
                                   className="btn btn-link btn-sm p-0 text-primary border-0"
                                   aria-label={`${option.label} help`}
-                                  onMouseEnter={() => setRoleHelpKey(option.value)}
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setRoleHelpPos({ top: rect.top, left: rect.right + 8 });
+                                    setRoleHelpKey(option.value);
+                                  }}
                                   onMouseLeave={() => setRoleHelpKey(prev => prev === option.value ? null : prev)}
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setRoleHelpPos({ top: rect.top, left: rect.right + 8 });
                                     setRoleHelpKey(prev => prev === option.value ? null : option.value);
                                   }}
                                   style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
                                 >?</button>
-                                {isHelpOpen && (
-                                  <div
-                                    className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                                    style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
-                                    onMouseEnter={() => setRoleHelpKey(option.value)}
-                                    onMouseLeave={() => setRoleHelpKey(prev => prev === option.value ? null : prev)}
-                                  >
-                                    <div className="fw-semibold">{option.label}</div>
-                                    <div className="small">{option.description}</div>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           );
                         })}
                       </div>
                     )}
+                    {/* Fixed-position tooltip — escapes overflow:auto container */}
+                    {roleHelpKey && (() => {
+                      const opt = roleOptions.find(o => o.value === roleHelpKey);
+                      if (!opt) return null;
+                      return (
+                        <div style={{ position: 'fixed', top: roleHelpPos.top, left: roleHelpPos.left, width: 240, maxWidth: 'calc(100vw - 1rem)', zIndex: 9999, pointerEvents: 'none' }}
+                          className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
+                          <div className="fw-semibold" style={{ fontSize: '0.8rem' }}>{opt.label}</div>
+                          <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -636,7 +646,7 @@ export default function Form_Employee({
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
-                  className={`btn btn-sm rounded-pill px-3 ${formData.is_active ? 'btn-success' : 'btn-outline-secondary'}`}
+                  className={`btn btn-sm rounded-pill px-3 pb-2 ${formData.is_active ? 'btn-success' : 'btn-outline-secondary'}`}
                 >
                   Active
                 </button>
@@ -696,37 +706,44 @@ export default function Form_Employee({
                               >
                                 {option.label}
                               </button>
-                              <div className="position-relative flex-shrink-0">
+                              <div className="flex-shrink-0">
                                 <button
                                   type="button"
                                   className="btn btn-link btn-sm p-0 text-primary border-0"
                                   aria-label={`${option.label} help`}
-                                  onMouseEnter={() => setEmploymentTypeHelpKey(option.value)}
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
+                                    setEmploymentTypeHelpKey(option.value);
+                                  }}
                                   onMouseLeave={() => setEmploymentTypeHelpKey(prev => prev === option.value ? null : prev)}
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
                                     setEmploymentTypeHelpKey(prev => prev === option.value ? null : option.value);
                                   }}
                                   style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
                                 >?</button>
-                                {isHelpOpen && (
-                                  <div
-                                    className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                                    style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
-                                    onMouseEnter={() => setEmploymentTypeHelpKey(option.value)}
-                                    onMouseLeave={() => setEmploymentTypeHelpKey(prev => prev === option.value ? null : prev)}
-                                  >
-                                    <div className="fw-semibold">{option.label}</div>
-                                    <div className="small">{option.description}</div>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           );
                         })}
                       </div>
                     )}
+                    {/* Fixed-position tooltip */}
+                    {employmentTypeHelpKey && (() => {
+                      const opt = employmentTypeOptions.find(o => o.value === employmentTypeHelpKey);
+                      if (!opt) return null;
+                      return (
+                        <div style={{ position: 'fixed', top: employmentTypeHelpPos.top, left: employmentTypeHelpPos.left, width: 240, maxWidth: 'calc(100vw - 1rem)', zIndex: 9999, pointerEvents: 'none' }}
+                          className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
+                          <div className="fw-semibold" style={{ fontSize: '0.8rem' }}>{opt.label}</div>
+                          <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -770,37 +787,44 @@ export default function Form_Employee({
                               >
                                 {option.label}
                               </button>
-                              <div className="position-relative flex-shrink-0">
+                              <div className="flex-shrink-0">
                                 <button
                                   type="button"
                                   className="btn btn-link btn-sm p-0 text-primary border-0"
                                   aria-label={`${option.label} help`}
-                                  onMouseEnter={() => setPayFrequencyHelpKey(option.value)}
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
+                                    setPayFrequencyHelpKey(option.value);
+                                  }}
                                   onMouseLeave={() => setPayFrequencyHelpKey(prev => prev === option.value ? null : prev)}
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
                                     setPayFrequencyHelpKey(prev => prev === option.value ? null : option.value);
                                   }}
                                   style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
                                 >?</button>
-                                {isHelpOpen && (
-                                  <div
-                                    className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                                    style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
-                                    onMouseEnter={() => setPayFrequencyHelpKey(option.value)}
-                                    onMouseLeave={() => setPayFrequencyHelpKey(prev => prev === option.value ? null : prev)}
-                                  >
-                                    <div className="fw-semibold">{option.label}</div>
-                                    <div className="small">{option.description}</div>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           );
                         })}
                       </div>
                     )}
+                    {/* Fixed-position tooltip */}
+                    {payFrequencyHelpKey && (() => {
+                      const opt = payFrequencyOptions.find(o => o.value === payFrequencyHelpKey);
+                      if (!opt) return null;
+                      return (
+                        <div style={{ position: 'fixed', top: payFrequencyHelpPos.top, left: payFrequencyHelpPos.left, width: 240, maxWidth: 'calc(100vw - 1rem)', zIndex: 9999, pointerEvents: 'none' }}
+                          className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
+                          <div className="fw-semibold" style={{ fontSize: '0.8rem' }}>{opt.label}</div>
+                          <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

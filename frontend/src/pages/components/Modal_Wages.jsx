@@ -29,16 +29,22 @@ function calcAmount(employee, periodStart, periodEnd) {
   const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
   const weeks = days / 7;
 
-  if (employee.employment_type === 'salary' && employee.salary > 0) {
-    switch (employee.pay_frequency) {
-      case 'weekly':    return employee.salary / 52;
-      case 'biweekly':  return employee.salary / 26;
-      case 'monthly':   return employee.salary / 12;
-      default:          return (employee.salary / 365) * days;
+  const employmentTypeRaw = String(employee.employment_type || '').toLowerCase();
+  const payFrequency = String(employee.pay_frequency || '').toLowerCase();
+  const salary = Number(employee.salary || 0);
+  const hourlyRate = Number(employee.hourly_rate || 0);
+  const effectiveEmploymentType = employmentTypeRaw || (hourlyRate > 0 ? 'hourly' : (salary > 0 ? 'salary' : ''));
+
+  if (effectiveEmploymentType === 'salary' && salary > 0) {
+    switch (payFrequency) {
+      case 'weekly':    return salary / 52;
+      case 'biweekly':  return salary / 26;
+      case 'monthly':   return salary / 12;
+      default:          return (salary / 365) * days;
     }
   }
-  if (employee.employment_type === 'hourly' && employee.hourly_rate > 0) {
-    return employee.hourly_rate * 40 * Math.max(1, weeks);
+  if (effectiveEmploymentType === 'hourly' && hourlyRate > 0) {
+    return hourlyRate * 40 * Math.max(1, weeks);
   }
   return null;
 }

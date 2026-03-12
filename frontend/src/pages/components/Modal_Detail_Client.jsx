@@ -30,6 +30,7 @@
  * ============================================================
  */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   XMarkIcon, CheckIcon, TrashIcon,
   ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon,
@@ -43,11 +44,11 @@ import { formatDate, formatDateTime } from '../../utils/dateFormatters';
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
 const MEMBERSHIP_TIERS = [
-  { value: 'none', label: 'None' },
-  { value: 'bronze', label: 'Bronze' },
-  { value: 'silver', label: 'Silver' },
-  { value: 'gold', label: 'Gold' },
-  { value: 'platinum', label: 'Platinum' }
+  { value: 'none',     label: 'None',     description: 'No membership tier. Standard pricing and access apply.' },
+  { value: 'bronze',   label: 'Bronze',   description: 'Entry-level membership with basic benefits and discounts.' },
+  { value: 'silver',   label: 'Silver',   description: 'Mid-tier membership with enhanced benefits and priority booking.' },
+  { value: 'gold',     label: 'Gold',     description: 'Premium membership with exclusive perks and significant discounts.' },
+  { value: 'platinum', label: 'Platinum', description: 'Top-tier membership with maximum benefits and VIP treatment.' },
 ];
 
 const getTierAvatarColor = (tier) => {
@@ -76,7 +77,7 @@ const getTierLabel = (tier) => {
 
 // ─── 2 SERVICE HISTORY SUB-MODAL ───────────────────────────────────────────
 
-function ServiceHistoryModal({ isOpen, onClose, client }) {
+function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
   const [schedules, setSchedules] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -106,14 +107,15 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
 
   const now = new Date();
   const serviceMap = Object.fromEntries(services.map(s => [s.id, s]));
-  const sorted = [...schedules].sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
-  const upcoming = sorted.filter(s => new Date(s.appointment_date) >= now);
+  // Ascending — oldest at top, most recent near the bottom
+  const sorted = [...schedules].sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
   const past = sorted.filter(s => new Date(s.appointment_date) < now);
+  const upcoming = sorted.filter(s => new Date(s.appointment_date) >= now);
 
   const renderRow = (schedule, isUpcoming) => {
     const svc = serviceMap[schedule.service_id];
-    return (
-      <div key={schedule.id} className="d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700">
+    const inner = (
+      <>
         <div
           className="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center"
           style={{
@@ -136,6 +138,29 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
         <span className={`badge rounded-pill flex-shrink-0 ${isUpcoming ? 'bg-primary' : 'bg-secondary'}`}>
           {schedule.status || 'scheduled'}
         </span>
+      </>
+    );
+
+    if (isUpcoming) {
+      return (
+        <button
+          type="button"
+          key={schedule.id}
+          className="w-100 text-start d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700 bg-transparent border-0"
+          style={{ cursor: 'pointer' }}
+          onClick={() => onEditSchedule?.(schedule)}
+        >
+          {inner}
+        </button>
+      );
+    }
+
+    return (
+      <div
+        key={schedule.id}
+        className="d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700"
+      >
+        {inner}
       </div>
     );
   };
@@ -145,21 +170,12 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Service History</h6>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-link text-dark dark:text-gray-200 p-0"
-            style={{ lineHeight: 1 }}
-            title="Close"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
           {loading && (
             <div className="d-flex justify-content-center py-4">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -169,19 +185,16 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
 
           {!loading && !error && (
             <>
-              {/* Upcoming */}
-              {upcoming.length > 0 && (
-                <div className="mb-2">
-                  <div className="fw-semibold small text-primary mb-1 px-3 pt-2">
-                    Upcoming ({upcoming.length})
-                  </div>
-                  {upcoming.map(s => renderRow(s, true))}
+              {schedules.length === 0 && (
+                <div className="text-center text-muted py-4">
+                  <SparklesIcon style={{ width: 32, height: 32, margin: '0 auto 8px' }} />
+                  <div>No service history yet</div>
                 </div>
               )}
 
-              {/* Past */}
+              {/* Past — oldest at top */}
               {past.length > 0 && (
-                <div>
+                <div className="mb-2">
                   <div className="fw-semibold small text-muted mb-1 px-3 pt-2">
                     Past ({past.length})
                   </div>
@@ -189,10 +202,13 @@ function ServiceHistoryModal({ isOpen, onClose, client }) {
                 </div>
               )}
 
-              {schedules.length === 0 && (
-                <div className="text-center text-muted py-4">
-                  <SparklesIcon style={{ width: 32, height: 32, margin: '0 auto 8px' }} />
-                  <div>No service history yet</div>
+              {/* Upcoming — nearest first, furthest at bottom; tap to edit */}
+              {upcoming.length > 0 && (
+                <div>
+                  <div className="fw-semibold small text-primary mb-1 px-3 pt-2">
+                    Upcoming ({upcoming.length}) — tap to edit
+                  </div>
+                  {upcoming.map(s => renderRow(s, true))}
                 </div>
               )}
             </>
@@ -233,7 +249,8 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
       try {
         const res = await clientsAPI.getTransactions(client.id);
         const txns = res?.data ?? [];
-        const sorted = [...txns].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // Ascending — oldest at top, most recent near the bottom
+        const sorted = [...txns].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         setTransactions(sorted);
       } catch {
         setError('Failed to load purchase history.');
@@ -279,7 +296,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
           {loading && (
             <div className="d-flex justify-content-center py-4">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -294,8 +311,10 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
             </div>
           )}
 
-          {!loading && transactions.map(tx => (
-            <div key={tx.id} className="border-bottom border-gray-100 dark:border-gray-700">
+          {!loading && transactions.length > 0 && (
+            <div>
+              {transactions.map(tx => (
+                <div key={tx.id} className="border-bottom border-gray-100 dark:border-gray-700">
               <button
                 type="button"
                 onClick={() => toggleExpand(tx.id)}
@@ -348,8 +367,10 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
                   )}
                 </div>
               )}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
 
         {/* Footer */}
@@ -379,6 +400,7 @@ export default function Modal_Detail_Client({
   onDelete,
   canDelete = false,
 }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -395,6 +417,9 @@ export default function Modal_Detail_Client({
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
+  const [tierHelpKey, setTierHelpKey] = useState(null);
+  const [tierHelpPos, setTierHelpPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (isOpen && client) {
@@ -415,11 +440,20 @@ export default function Modal_Detail_Client({
   }, [isOpen, client?.id]);
 
   // ─── 5 FORM HANDLERS ──────────────────────────────────────────────────────
+  const formatPhone = (raw) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? (parseInt(value, 10) || 0) : value
+      [name]: name === 'phone'
+        ? formatPhone(value)
+        : type === 'number' ? (parseInt(value, 10) || 0) : value
     }));
   };
 
@@ -435,6 +469,13 @@ export default function Modal_Detail_Client({
       onDelete?.(client.id);
       onClose();
     }
+  };
+
+  const handleEditScheduleFromHistory = (schedule) => {
+    if (!schedule?.id) return;
+    setShowServiceHistory(false);
+    onClose?.();
+    navigate(`/schedule?edit_schedule_id=${encodeURIComponent(schedule.id)}`);
   };
 
   const avatarColor = getTierAvatarColor(formData.membership_tier);
@@ -515,7 +556,6 @@ export default function Modal_Detail_Client({
           </div>
 
           {/* ─── 8 EDITABLE FORM FIELDS ──────────────────────────────────── */}
-          {/* Form fields */}
           <div className="form-floating mb-2">
             <input
               type="text"
@@ -552,18 +592,154 @@ export default function Modal_Detail_Client({
               value={formData.phone}
               onChange={handleChange}
               className="form-control form-control-sm"
-              placeholder="Phone"
+              placeholder="(555) 555-5555"
+              pattern="\(\d{3}\) \d{3}-\d{4}"
+              title="Phone number format: (555) 555-5555"
             />
             <label htmlFor="dc_phone">Phone</label>
           </div>
 
+          {/* Membership section */}
+          <hr className="my-2" />
+          <div className="small fw-semibold text-muted mb-2">Membership</div>
+          <div className="row g-2 mb-2">
+            <div className="col-6">
+              <div className="position-relative">
+                <label className="form-label" style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Tier</label>
+                <div className="position-relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextOpen = !isTierDropdownOpen;
+                      setIsTierDropdownOpen(nextOpen);
+                      if (!nextOpen) setTierHelpKey(null);
+                    }}
+                    className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span>{MEMBERSHIP_TIERS.find(opt => opt.value === formData.membership_tier)?.label || 'Select Tier'}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: '8px' }}>
+                      <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                  </button>
+                  {isTierDropdownOpen && (
+                    <div
+                      className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+                      style={{ top: 'calc(100% + 4px)', zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                    >
+                      {MEMBERSHIP_TIERS.map((option) => {
+                        const isHelpOpen = tierHelpKey === option.value;
+                        return (
+                          <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleChange({ target: { name: 'membership_tier', value: option.value } });
+                                setIsTierDropdownOpen(false);
+                                setTierHelpKey(null);
+                              }}
+                              className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                              style={{ fontSize: '0.875rem' }}
+                            >
+                              {option.label}
+                            </button>
+                            <div className="flex-shrink-0">
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0 text-primary border-0"
+                                aria-label={`${option.label} help`}
+                                onMouseEnter={(e) => {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setTierHelpPos({ top: rect.top, left: rect.right + 8 });
+                                  setTierHelpKey(option.value);
+                                }}
+                                onMouseLeave={() => setTierHelpKey(prev => prev === option.value ? null : prev)}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setTierHelpPos({ top: rect.top, left: rect.right + 8 });
+                                  setTierHelpKey(prev => prev === option.value ? null : option.value);
+                                }}
+                                style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
+                              >?</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* Fixed-position tooltip — escapes overflow:auto container */}
+                  {tierHelpKey && (() => {
+                    const opt = MEMBERSHIP_TIERS.find(o => o.value === tierHelpKey);
+                    if (!opt) return null;
+                    return (
+                      <div
+                        style={{ position: 'fixed', top: tierHelpPos.top, left: tierHelpPos.left, width: 240, maxWidth: 'calc(100vw - 1rem)', zIndex: 9999, pointerEvents: 'none' }}
+                        className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="fw-semibold" style={{ fontSize: '0.8rem' }}>{opt.label}</div>
+                        <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className="col-6">
+              <div className="form-floating">
+                <input
+                  type="number"
+                  id="dc_points"
+                  name="membership_points"
+                  min="0"
+                  value={formData.membership_points}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="0"
+                />
+                <label htmlFor="dc_points">Points</label>
+              </div>
+            </div>
+            <div className="col-6">
+              <div className="form-floating">
+                <input
+                  type="date"
+                  id="dc_since"
+                  name="membership_since"
+                  value={formData.membership_since}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="Member Since"
+                />
+                <label htmlFor="dc_since">Member Since</label>
+              </div>
+            </div>
+            <div className="col-6">
+              <div className="form-floating">
+                <input
+                  type="date"
+                  id="dc_expires"
+                  name="membership_expires"
+                  value={formData.membership_expires}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="Expires"
+                />
+                <label htmlFor="dc_expires">Expires</label>
+              </div>
+            </div>
+          </div>
+
+          {/* Address & Notes */}
+          <hr className="my-2" />
           <div className="form-floating mb-2">
             <textarea
               id="dc_address"
               name="address"
               value={formData.address}
               onChange={handleChange}
-              className="form-control form-control-sm"
+              className="form-control form-control-sm border-0"
               placeholder="Address"
               style={{ height: '60px' }}
             />
@@ -576,77 +752,11 @@ export default function Modal_Detail_Client({
               name="notes"
               value={formData.notes}
               onChange={handleChange}
-              className="form-control form-control-sm"
+              className="form-control form-control-sm border-0"
               placeholder="Notes"
-              style={{ height: '60px' }}
+              style={{ height: '80px' }}
             />
             <label htmlFor="dc_notes">Notes</label>
-          </div>
-
-          {/* Membership section */}
-          <div className="border-top pt-2 mt-1 mb-2">
-            <div className="small fw-semibold text-muted mb-2">Membership</div>
-            <div className="row g-2">
-              <div className="col-6">
-                <div className="form-floating">
-                  <select
-                    id="dc_tier"
-                    name="membership_tier"
-                    value={formData.membership_tier}
-                    onChange={handleChange}
-                    className="form-select form-select-sm"
-                  >
-                    {MEMBERSHIP_TIERS.map(t => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
-                  <label htmlFor="dc_tier">Tier</label>
-                </div>
-              </div>
-              <div className="col-6">
-                <div className="form-floating">
-                  <input
-                    type="number"
-                    id="dc_points"
-                    name="membership_points"
-                    min="0"
-                    value={formData.membership_points}
-                    onChange={handleChange}
-                    className="form-control form-control-sm"
-                    placeholder="0"
-                  />
-                  <label htmlFor="dc_points">Points</label>
-                </div>
-              </div>
-              <div className="col-6">
-                <div className="form-floating">
-                  <input
-                    type="date"
-                    id="dc_since"
-                    name="membership_since"
-                    value={formData.membership_since}
-                    onChange={handleChange}
-                    className="form-control form-control-sm"
-                    placeholder="Member Since"
-                  />
-                  <label htmlFor="dc_since">Member Since</label>
-                </div>
-              </div>
-              <div className="col-6">
-                <div className="form-floating">
-                  <input
-                    type="date"
-                    id="dc_expires"
-                    name="membership_expires"
-                    value={formData.membership_expires}
-                    onChange={handleChange}
-                    className="form-control form-control-sm"
-                    placeholder="Expires"
-                  />
-                  <label htmlFor="dc_expires">Expires</label>
-                </div>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -655,11 +765,11 @@ export default function Modal_Detail_Client({
         {/* Fixed footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex align-items-center">
-            <div>
+            <div style={{ minWidth: 40 }}>
               {canDelete && (
                 <Button_Toolbar
                   icon={TrashIcon}
-                  label="Delete Client"
+                  label="Delete"
                   onClick={handleDelete}
                   className="btn-outline-danger"
                 />
@@ -679,8 +789,8 @@ export default function Modal_Detail_Client({
                 className="btn-primary"
               />
             </div>
-     {/* Right spacer to balance delete */}
-          <div style={{ width: 40 }} />          </div>
+            <div style={{ minWidth: 40 }} />
+          </div>
         </div>
 
       </div>
@@ -691,6 +801,7 @@ export default function Modal_Detail_Client({
         isOpen={showServiceHistory}
         onClose={() => setShowServiceHistory(false)}
         client={client}
+        onEditSchedule={handleEditScheduleFromHistory}
       />
 
       {/* Purchase History Sub-modal */}

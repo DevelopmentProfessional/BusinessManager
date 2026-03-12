@@ -343,6 +343,7 @@ class ServiceResource(BaseModel, table=True):
     service_id: UUID = Field(foreign_key="service.id", index=True)
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     quantity: float = Field(default=1.0, ge=0)
+    consumption_rate_pct: Optional[float] = Field(default=None, ge=0, le=100)  # % of inventory item consumed per service
     notes: Optional[str] = Field(default=None)
 
 
@@ -391,6 +392,10 @@ class Schedule(BaseModel, table=True):
     recurrence_count: Optional[int] = Field(default=None)
     parent_schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)
     is_recurring_master: bool = Field(default=False)
+    # Payment fields
+    is_paid: bool = Field(default=False)
+    discount: float = Field(default=0.0, ge=0)  # flat discount amount
+    sale_transaction_id: Optional[UUID] = Field(default=None)  # no FK to avoid circular dependency
 
     # Relationships
     client: Optional[Client] = Relationship(back_populates="schedules")
@@ -646,6 +651,7 @@ class ServiceResourceRead(SQLModel):
     service_id: UUID
     inventory_id: UUID
     quantity: float
+    consumption_rate_pct: Optional[float] = None
     notes: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -981,6 +987,9 @@ class ScheduleCreate(SQLModel):
     recurrence_count: Optional[int] = None
     parent_schedule_id: Optional[UUID] = None
     is_recurring_master: bool = False
+    is_paid: bool = False
+    discount: float = 0.0
+    sale_transaction_id: Optional[UUID] = None
 
 
 class ScheduleUpdate(SQLModel):
@@ -997,6 +1006,9 @@ class ScheduleUpdate(SQLModel):
     recurrence_count: Optional[int] = None
     parent_schedule_id: Optional[UUID] = None
     is_recurring_master: Optional[bool] = None
+    is_paid: Optional[bool] = None
+    discount: Optional[float] = None
+    sale_transaction_id: Optional[UUID] = None
 
 
 class ScheduleRead(SQLModel):
@@ -1015,6 +1027,9 @@ class ScheduleRead(SQLModel):
     recurrence_count: Optional[int] = None
     parent_schedule_id: Optional[UUID] = None
     is_recurring_master: bool = False
+    is_paid: bool = False
+    discount: float = 0.0
+    sale_transaction_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -1432,6 +1447,7 @@ class SaleTransaction(BaseModel, table=True):
     tax_amount: float = Field(default=0)
     total: float = Field(default=0)
     payment_method: str = Field(default="cash")  # "card" or "cash"
+    schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)  # linked appointment
 
 
 class SaleTransactionItem(BaseModel, table=True):
@@ -1453,6 +1469,7 @@ class SaleTransactionRead(SQLModel):
     tax_amount: float
     total: float
     payment_method: str
+    schedule_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -1496,6 +1513,7 @@ class SaleTransactionCreate(SQLModel):
     tax_amount: float = 0
     total: float = 0
     payment_method: str = "cash"
+    schedule_id: Optional[UUID] = None
 
 
 class SaleTransactionItemRead(SQLModel):

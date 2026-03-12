@@ -26,6 +26,9 @@
 #   [13] Migration: AppSettings Columns      — company info columns
 #   [14] Migration: Chat Message Table       — table creation for older databases
 #   [15] Seed Functions                      — user colors, insurance plans
+#   [15b] Migration: Schedule Payment        — is_paid, discount, sale_transaction_id on schedule;
+#                                              schedule_id on sale_transaction;
+#                                              consumption_rate_pct on service_resource
 #   [16] create_db_and_tables()              — orchestrates create_all + all migrations
 #   [17] get_session()                       — FastAPI dependency that yields a DB session
 #
@@ -64,7 +67,7 @@ else:
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.08.1"
+CURRENT_SCHEMA_VERSION = "2026.03.11.1"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -230,6 +233,56 @@ def _migrate_document_entity_type_enum_to_varchar():
         print("✓ Migrated document.entity_type from enum to VARCHAR")
 
 
+# ─── 15b MIGRATION: SCHEDULE PAYMENT + SERVICE RESOURCE RATE ───────────────────
+def _ensure_schedule_payment_columns_if_needed():
+    """Add is_paid, discount, sale_transaction_id to schedule;
+    schedule_id to sale_transaction; consumption_rate_pct to service_resource."""
+    tables = {
+        "schedule": {
+            "is_paid": ("BOOLEAN NOT NULL DEFAULT 0", "BOOLEAN NOT NULL DEFAULT FALSE"),
+            "discount": ("REAL NOT NULL DEFAULT 0.0", "DOUBLE PRECISION NOT NULL DEFAULT 0.0"),
+            "sale_transaction_id": ("TEXT", "UUID"),
+        },
+        "sale_transaction": {
+            "schedule_id": ("TEXT", "UUID"),
+        },
+        "service_resource": {
+            "consumption_rate_pct": ("REAL", "DOUBLE PRECISION"),
+        },
+    }
+
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            for table, cols in tables.items():
+                tbl_exists = conn.execute(text(
+                    f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
+                )).fetchone()
+                if not tbl_exists:
+                    continue
+                existing = {row[1] for row in conn.execute(text(f"PRAGMA table_info('{table}')")).fetchall()}
+                for col, (sqlite_type, _) in cols.items():
+                    if col not in existing:
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {sqlite_type}"))
+                        print(f"  + Added column {table}.{col}")
+    else:
+        with engine.begin() as conn:
+            for table, cols in tables.items():
+                tbl_exists = conn.execute(text(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables "
+                    f"WHERE table_schema='public' AND table_name='{table}')"
+                )).scalar()
+                if not tbl_exists:
+                    continue
+                existing = {row[0] for row in conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_schema='public' AND table_name='{table}'"
+                )).fetchall()}
+                for col, (_, pg_type) in cols.items():
+                    if col not in existing:
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {pg_type}"))
+                        print(f"  + Added column {table}.{col} ({pg_type})")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
@@ -261,6 +314,7 @@ def create_db_and_tables():
     _ensure_chat_message_table_if_needed()
     _ensure_app_settings_company_columns_if_needed()
     _ensure_user_training_mode_if_needed()
+    _ensure_schedule_payment_columns_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

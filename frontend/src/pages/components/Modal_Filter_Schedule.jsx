@@ -39,7 +39,7 @@ const EMPTY_FILTERS = {
 };
 
 // ─── 2 ACCORDIONSECTION SUB-COMPONENT ────────────────────────────────────
-function AccordionSection({ label, count, isOpen, onToggle, onClear, children, helpText, helpKey, showHelp, setShowHelp }) {
+function AccordionSection({ label, count, isOpen, onToggle, onClear, children, helpText, helpKey, showHelp, setShowHelp, helpPos, setHelpPos }) {
   const isHelpOpen = showHelp === helpKey;
   
   return (
@@ -55,33 +55,27 @@ function AccordionSection({ label, count, isOpen, onToggle, onClear, children, h
             <span className="badge bg-primary rounded-pill" style={{ fontSize: '0.65rem' }}>{count}</span>
           )}
           {helpText && (
-            <div className="position-relative flex-shrink-0">
+            <div className="flex-shrink-0">
               <button
                 type="button"
                 className="btn btn-link btn-sm p-0 text-primary border-0"
                 aria-label={`${label} help`}
-                onMouseEnter={() => setShowHelp(helpKey)}
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  if (setHelpPos) setHelpPos({ top: rect.top, left: rect.right + 8 });
+                  setShowHelp(helpKey);
+                }}
                 onMouseLeave={() => setShowHelp(prev => prev === helpKey ? null : prev)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  if (setHelpPos) setHelpPos({ top: rect.top, left: rect.right + 8 });
                   setShowHelp(prev => prev === helpKey ? null : helpKey);
                 }}
                 onClick={(e) => e.stopPropagation()}
                 style={{ width: '1.5rem', height: '1.5rem', lineHeight: 1, fontWeight: 600, fontSize: '0.8rem', border: 'none', outline: 'none' }}
               >?</button>
-              {isHelpOpen && (
-                <div
-                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
-                  onMouseEnter={() => setShowHelp(helpKey)}
-                  onMouseLeave={() => setShowHelp(prev => prev === helpKey ? null : prev)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="fw-semibold mb-1">{label}</div>
-                  <div className="small">{helpText}</div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -132,6 +126,7 @@ export default function Modal_Filter_Schedule({
   const [localFilters, setLocalFilters] = useState(EMPTY_FILTERS);
   const [openSections, setOpenSections] = useState({ employees: true, clients: false, services: false });
   const [showHelp, setShowHelp] = useState(null);
+  const [helpPos, setHelpPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     setLocalFilters(filters || EMPTY_FILTERS);
@@ -219,6 +214,8 @@ export default function Modal_Filter_Schedule({
           helpKey="employees"
           showHelp={showHelp}
           setShowHelp={setShowHelp}
+          helpPos={helpPos}
+          setHelpPos={setHelpPos}
         >
           {employees.map((employee) => (
             <label key={employee.id} className="d-flex align-items-center gap-2 mb-0">
@@ -248,6 +245,8 @@ export default function Modal_Filter_Schedule({
           helpKey="clients"
           showHelp={showHelp}
           setShowHelp={setShowHelp}
+          helpPos={helpPos}
+          setHelpPos={setHelpPos}
         >
           {clients.map((client) => (
             <label key={client.id} className="d-flex align-items-center gap-2 mb-0">
@@ -273,6 +272,8 @@ export default function Modal_Filter_Schedule({
           helpKey="services"
           showHelp={showHelp}
           setShowHelp={setShowHelp}
+          helpPos={helpPos}
+          setHelpPos={setHelpPos}
         >
           {services.map((service) => (
             <label key={service.id} className="d-flex align-items-center gap-2 mb-0">
@@ -327,6 +328,22 @@ export default function Modal_Filter_Schedule({
         </div>
 
       </div>
+      {/* Fixed-position help tooltip — escapes any overflow container */}
+      {showHelp && (
+        <div
+          style={{ position: 'fixed', top: helpPos.top, left: helpPos.left, width: 240, maxWidth: 'calc(100vw - 1rem)', zIndex: 9999, pointerEvents: 'none' }}
+          className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+        >
+          <div className="fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>{showHelp}</div>
+          <div className="small text-gray-600 dark:text-gray-300">
+            {{
+              employees: "Show only appointments for selected employees. Use this to focus on specific team members' schedules.",
+              clients: "Show only appointments for selected clients. Useful for tracking specific client interactions and bookings.",
+              services: "Show only appointments for selected services. Filter by service type to analyze booking patterns or capacity.",
+            }[showHelp]}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }
