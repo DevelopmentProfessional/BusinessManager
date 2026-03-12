@@ -41,7 +41,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import Button_Toolbar from './components/Button_Toolbar';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -271,25 +271,42 @@ export default function Sales() {
     }
   };
 
-  // Auto-select client (and optionally pre-load their cart) when navigated from Clients page
+  const [linkedScheduleId, setLinkedScheduleId] = useState(null);
+
+  // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
   useEffect(() => {
-    const { preSelectedClient, preloadCart } = location.state || {};
+    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId } = location.state || {};
+    if (scheduleId) {
+      setLinkedScheduleId(scheduleId);
+    }
     if (preSelectedClient) {
-      setSelectedClient(preSelectedClient);
-      if (Array.isArray(preloadCart) && preloadCart.length > 0) {
-        setCart(preloadCart);
+      handleSelectClient(preSelectedClient, { preloadCart });
+    }
+    if (preloadServiceId) {
+      // Wait for services to load, then add service to cart
+      const addServiceWhenReady = () => {
+        const svc = services.find(s => String(s.id) === String(preloadServiceId));
+        if (svc) {
+          setCart(prev => {
+            if (prev.some(item => item.id === svc.id && item.itemType === 'service')) return prev;
+            return [...prev, { ...svc, itemType: 'service', quantity: 1 }];
+          });
+        }
+      };
+      if (services.length > 0) {
+        addServiceWhenReady();
       } else {
-        // Load their saved cart from localStorage
-        try {
-          const saved = localStorage.getItem(`client_cart_${preSelectedClient.id}`);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) setCart(parsed);
+        // Retry after services load
+        const interval = setInterval(() => {
+          if (services.length > 0) {
+            addServiceWhenReady();
+            clearInterval(interval);
           }
-        } catch {}
+        }, 300);
+        return () => clearInterval(interval);
       }
     }
-  }, [location.state?.preSelectedClient]);
+  }, [location.state?.preSelectedClient, location.state?.preloadServiceId, services.length]);
 
   // Sync cart to client's localStorage whenever cart or selected client changes
   useEffect(() => {
@@ -314,18 +331,69 @@ export default function Sales() {
     }
   };
 
-  // Select a client and load their saved cart
-  const handleSelectClient = (client) => {
-    setSelectedClient(client);
+  const getNextScheduledService = async (clientId) => {
+    if (!clientId) return null;
     try {
-      const saved = localStorage.getItem(`client_cart_${client.id}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setCart(parsed);
+      const res = await clientsAPI.getSchedules(clientId);
+      const schedules = Array.isArray(res?.data) ? res.data : [];
+      const now = new Date();
+      const next = schedules
+        .filter((s) => {
+          const date = new Date(s.appointment_date);
+          const status = String(s.status || '').toLowerCase();
+          return !Number.isNaN(date.getTime()) && date >= now && status !== 'cancelled';
+        })
+        .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))[0];
+      if (!next?.service_id) return null;
+      const localService = services.find((svc) => String(svc.id) === String(next.service_id));
+      if (localService) return localService;
+      const svcRes = await servicesAPI.getById(next.service_id);
+      return svcRes?.data ?? svcRes ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Select a client, load their saved cart, and include their next scheduled service
+  const handleSelectClient = async (client, options = {}) => {
+    setSelectedClient(client);
+
+    let nextCart = [];
+
+    if (Array.isArray(options.preloadCart) && options.preloadCart.length > 0) {
+      nextCart = options.preloadCart;
+    }
+
+    try {
+      if (nextCart.length === 0) {
+        const saved = localStorage.getItem(`client_cart_${client.id}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) nextCart = parsed;
         }
       }
     } catch {}
+
+    const scheduledService = await getNextScheduledService(client.id);
+    if (scheduledService) {
+      const scheduledCartKey = `service-${scheduledService.id}`;
+      const alreadyInCart = nextCart.some(item => item.cartKey === scheduledCartKey);
+      if (!alreadyInCart) {
+        nextCart = [
+          ...nextCart,
+          {
+            ...scheduledService,
+            cartKey: scheduledCartKey,
+            itemType: 'service',
+            quantity: 1,
+            price: scheduledService.price,
+            selectedOptions: [],
+          },
+        ];
+      }
+    }
+
+    setCart(nextCart);
   };
 
   const loadProducts = async () => {
@@ -467,6 +535,7 @@ export default function Sales() {
         tax_amount: tax,
         total,
         payment_method: paymentMethod,
+        schedule_id: linkedScheduleId || null,
       };
       const txResponse = await saleTransactionsAPI.create(txData);
       const txId = txResponse?.data?.id || txResponse?.id;
@@ -483,13 +552,15 @@ export default function Sales() {
           })
         ));
         // ── Inventory deduction ──────────────────────────────────────────
-        // Products WITH feature selections → deduct from option rows (backend recalcs total)
-        // Products WITHOUT feature selections → update inventory.quantity directly
+        // Plain products: deducted by the backend insert hook automatically.
+        // Feature-option products: call deduct-stock so option quantities and
+        //   the recalculated inventory.quantity are updated correctly.
         const featureDeductions = [];
-        const plainSoldMap = {};
+        const allSoldMap = {};   // used only for immediate local UI update
 
         cart.forEach(item => {
           if (item.itemType !== 'product' || !item.id) return;
+          allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
           if (item.selectedOptions?.length > 0) {
             item.selectedOptions.forEach(opt => {
               featureDeductions.push({
@@ -499,40 +570,35 @@ export default function Sales() {
                 quantity:     item.quantity,
               });
             });
-          } else {
-            plainSoldMap[item.id] = (plainSoldMap[item.id] || 0) + item.quantity;
           }
         });
 
-        const deductionOps = [];
         if (featureDeductions.length > 0) {
-          deductionOps.push(inventoryFeaturesAPI.deductStock(featureDeductions));
-        }
-        if (Object.keys(plainSoldMap).length > 0) {
-          products
-            .filter(p => plainSoldMap[p.id] != null)
-            .forEach(p => deductionOps.push(
-              inventoryAPI.update(p.id, { quantity: Math.max(0, (p.quantity ?? 0) - plainSoldMap[p.id]) })
-            ));
-        }
-        if (deductionOps.length > 0) {
-          await Promise.all(deductionOps);
+          await inventoryFeaturesAPI.deductStock(featureDeductions);
         }
 
         // Update local product quantities for immediate UI feedback
-        const allSoldMap = { ...plainSoldMap };
-        cart.forEach(item => {
-          if (item.itemType === 'product' && item.id && item.selectedOptions?.length > 0) {
-            allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
-          }
-        });
         if (Object.keys(allSoldMap).length > 0) {
           setProducts(prev => prev.map(p =>
             allSoldMap[p.id] != null
               ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - allSoldMap[p.id]) }
               : p
           ));
-          inventoryAPI.invalidateCache();
+        }
+        // Always clear the inventory cache so the Inventory page loads fresh data
+        inventoryAPI.invalidateCache();
+
+        // Mark linked schedule as paid
+        if (linkedScheduleId && txId) {
+          try {
+            await scheduleAPI.update(linkedScheduleId, {
+              is_paid: true,
+              sale_transaction_id: txId,
+            });
+          } catch (err) {
+            console.warn('Could not mark schedule as paid:', err);
+          }
+          setLinkedScheduleId(null);
         }
       }
     } catch (err) {
@@ -799,7 +865,8 @@ export default function Sales() {
                     setShowClientPanelDropdown(false);
                     setShowClientPanel(false);
                   })}
-                  className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                  className="flex-shrink-0 flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                  style={{ width: '3rem', height: '3rem' }}
                   title="Add new client"
                 >
                   <PlusIcon className="h-5 w-5" />

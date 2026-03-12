@@ -75,6 +75,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [typeHelpKey, setTypeHelpKey] = useState(null);
+  const [typeHelpPos, setTypeHelpPos] = useState({ top: 0, left: 0 });
 
   const typeOptions = [
     { value: 'PRODUCT', label: 'Product', description: 'Items sold to customers. Tracks inventory and stock levels.' },
@@ -428,31 +429,26 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                         >
                           {option.label}
                         </button>
-                        <div className="position-relative flex-shrink-0">
+                        <div className="flex-shrink-0">
                           <button
                             type="button"
                             className="btn btn-link btn-sm p-0 text-primary border-0"
                             aria-label={`${option.label} help`}
-                            onMouseEnter={() => setTypeHelpKey(option.value)}
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setTypeHelpPos({ top: rect.top, left: rect.right + 8 });
+                              setTypeHelpKey(option.value);
+                            }}
                             onMouseLeave={() => setTypeHelpKey(prev => prev === option.value ? null : prev)}
                             onMouseDown={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setTypeHelpPos({ top: rect.top, left: rect.right + 8 });
                               setTypeHelpKey(prev => prev === option.value ? null : option.value);
                             }}
                             style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
                           >?</button>
-                          {isHelpOpen && (
-                            <div
-                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                              style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
-                              onMouseEnter={() => setTypeHelpKey(option.value)}
-                              onMouseLeave={() => setTypeHelpKey(prev => prev === option.value ? null : prev)}
-                            >
-                              <div className="fw-semibold">{option.label}</div>
-                              <div className="small">{option.description}</div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
@@ -460,6 +456,28 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 </div>
               )}
             </div>
+            {/* Fixed-position tooltip — renders outside overflow container so it's never clipped */}
+            {typeHelpKey && (() => {
+              const opt = typeOptions.find(o => o.value === typeHelpKey);
+              if (!opt) return null;
+              return (
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: typeHelpPos.top,
+                    left: typeHelpPos.left,
+                    width: 240,
+                    maxWidth: 'calc(100vw - 1rem)',
+                    zIndex: 9999,
+                    pointerEvents: 'none',
+                  }}
+                  className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="fw-semibold" style={{ fontSize: '0.8rem' }}>{opt.label}</div>
+                  <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="mb-2">

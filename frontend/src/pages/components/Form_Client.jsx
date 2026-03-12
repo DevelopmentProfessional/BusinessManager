@@ -53,6 +53,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
   const [fieldErrors, setFieldErrors] = useState({});
   const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
   const [tierHelpKey, setTierHelpKey] = useState(null);
+  const [tierHelpPos, setTierHelpPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (client) {
@@ -71,11 +72,20 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
   }, [client]);
 
   // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
+  const formatPhone = (raw) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value, 10) || 0 : value
+      [name]: name === 'phone'
+        ? formatPhone(value)
+        : type === 'number' ? parseInt(value, 10) || 0 : value
     }));
   };
 
@@ -150,7 +160,9 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
               value={formData.phone}
               onChange={handleChange}
               className="form-control form-control-sm"
-              placeholder="Phone"
+              placeholder="(555) 555-5555"
+              pattern="\(\d{3}\) \d{3}-\d{4}"
+              title="Phone number format: (555) 555-5555"
             />
             <label htmlFor="fc_phone">Phone</label>
           </div>
@@ -200,31 +212,26 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
                             >
                               {option.label}
                             </button>
-                            <div className="position-relative flex-shrink-0">
+                            <div className="flex-shrink-0">
                               <button
                                 type="button"
                                 className="btn btn-link btn-sm p-0 text-primary border-0"
                                 aria-label={`${option.label} help`}
-                                onMouseEnter={() => setTierHelpKey(option.value)}
+                                onMouseEnter={(e) => {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setTierHelpPos({ top: rect.top, left: rect.right + 8 });
+                                  setTierHelpKey(option.value);
+                                }}
                                 onMouseLeave={() => setTierHelpKey(prev => prev === option.value ? null : prev)}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setTierHelpPos({ top: rect.top, left: rect.right + 8 });
                                   setTierHelpKey(prev => prev === option.value ? null : option.value);
                                 }}
                                 style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700, fontSize: '0.75rem', border: 'none', outline: 'none' }}
                               >?</button>
-                              {isHelpOpen && (
-                                <div
-                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                                  style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)', zIndex: 1050 }}
-                                  onMouseEnter={() => setTierHelpKey(option.value)}
-                                  onMouseLeave={() => setTierHelpKey(prev => prev === option.value ? null : prev)}
-                                >
-                                  <div className="fw-semibold">{option.label}</div>
-                                  <div className="small">{option.description}</div>
-                                </div>
-                              )}
                             </div>
                           </div>
                         );
@@ -232,6 +239,20 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
                     </div>
                   )}
                 </div>
+                {/* Fixed-position tooltip — escapes overflow:auto container */}
+                {tierHelpKey && (() => {
+                  const opt = MEMBERSHIP_TIERS.find(o => o.value === tierHelpKey);
+                  if (!opt) return null;
+                  return (
+                    <div
+                      style={{ position: 'fixed', top: tierHelpPos.top, left: tierHelpPos.left, width: 240, maxWidth: 'calc(100vw - 1rem)', zIndex: 9999, pointerEvents: 'none' }}
+                      className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="fw-semibold" style={{ fontSize: '0.8rem' }}>{opt.label}</div>
+                      <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <div className="col-6">

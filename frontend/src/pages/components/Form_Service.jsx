@@ -76,7 +76,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
   const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
 
   // ── "Add" row state ──────────────────────────────────────────────
-  const [newResource, setNewResource] = useState({ inventory_id: '', quantity: '1' });
+  const [newResource, setNewResource] = useState({ inventory_id: '', quantity: '1', consumption_rate_pct: '' });
   const [newAsset, setNewAsset] = useState({ inventory_id: '' });
   const [newEmployee, setNewEmployee] = useState({ user_id: '' });
   const [newLocation, setNewLocation] = useState({ inventory_id: '' });
@@ -203,9 +203,10 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
   const handleAddResource = () => wrap(async () => {
     if (!newResource.inventory_id) { setTabError('Select an item first'); return; }
-    const res = await serviceRelationsAPI.addResource(service.id, newResource.inventory_id, parseFloat(newResource.quantity) || 1);
+    const rate = newResource.consumption_rate_pct !== '' ? parseFloat(newResource.consumption_rate_pct) : null;
+    const res = await serviceRelationsAPI.addResource(service.id, newResource.inventory_id, parseFloat(newResource.quantity) || 1, rate);
     setResources(prev => [...prev, res.data]);
-    setNewResource({ inventory_id: '', quantity: '1' });
+    setNewResource({ inventory_id: '', quantity: '1', consumption_rate_pct: '' });
   });
   const handleRemoveResource = (id) => wrap(async () => {
     await serviceRelationsAPI.removeResource(id);
@@ -216,6 +217,13 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
       await serviceRelationsAPI.updateResource(id, parseFloat(quantity) || 1);
       setResources(prev => prev.map(r => r.id === id ? { ...r, quantity: parseFloat(quantity) || 1 } : r));
     } catch (err) { console.error('Failed to update quantity', err); }
+  };
+  const handleUpdateResourceRate = async (id, rate) => {
+    try {
+      const val = rate !== '' ? parseFloat(rate) : null;
+      await serviceRelationsAPI.updateResourceRate(id, val);
+      setResources(prev => prev.map(r => r.id === id ? { ...r, consumption_rate_pct: val } : r));
+    } catch (err) { console.error('Failed to update consumption rate', err); }
   };
 
   const handleAddAsset = () => wrap(async () => {
@@ -390,7 +398,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <div className="text-muted small fst-italic py-2">No resources linked yet.</div>
               ) : (
                 <table className="table table-sm mb-0">
-                  <thead><tr><th style={{ width: 36 }}></th><th>Item</th><th style={{ width: 96 }}>Qty</th></tr></thead>
+                  <thead><tr><th style={{ width: 36 }}></th><th>Item</th><th style={{ width: 80 }}>Qty</th><th style={{ width: 88 }}>Rate %</th></tr></thead>
                   <tbody>
                     {resources.map(r => (
                       <tr key={r.id} className="align-middle">
@@ -400,13 +408,21 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                             <TrashIcon style={{ width: 13, height: 13 }} />
                           </button>
                         </td>
-                        <td className="text-truncate" style={{ maxWidth: 160 }}>{inventoryName(r.inventory_id)}</td>
+                        <td className="text-truncate" style={{ maxWidth: 140 }}>{inventoryName(r.inventory_id)}</td>
                         <td>
                           <input type="number" min="0" step="0.01"
                             className="form-control form-control-sm"
                             defaultValue={r.quantity}
                             onBlur={e => handleUpdateResourceQty(r.id, e.target.value)}
-                            style={{ width: 80 }} />
+                            style={{ width: 72 }} />
+                        </td>
+                        <td>
+                          <input type="number" min="0" max="100" step="0.1"
+                            className="form-control form-control-sm"
+                            defaultValue={r.consumption_rate_pct ?? ''}
+                            onBlur={e => handleUpdateResourceRate(r.id, e.target.value)}
+                            placeholder="—"
+                            style={{ width: 72 }} />
                         </td>
                       </tr>
                     ))}
@@ -426,10 +442,15 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                   ))}
                 </select>
                 <input type="number" min="0.01" step="0.01"
-                  className="form-control form-control-sm" style={{ width: 72 }}
+                  className="form-control form-control-sm" style={{ width: 64 }}
                   value={newResource.quantity}
                   onChange={e => setNewResource(prev => ({ ...prev, quantity: e.target.value }))}
                   placeholder="Qty" />
+                <input type="number" min="0" max="100" step="0.1"
+                  className="form-control form-control-sm" style={{ width: 72 }}
+                  value={newResource.consumption_rate_pct}
+                  onChange={e => setNewResource(prev => ({ ...prev, consumption_rate_pct: e.target.value }))}
+                  placeholder="Rate %" />
                 <button type="button" className="btn btn-primary btn-sm" onClick={handleAddResource}>
                   <PlusIcon style={{ width: 14, height: 14 }} />
                 </button>

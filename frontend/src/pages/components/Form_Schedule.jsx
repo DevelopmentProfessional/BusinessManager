@@ -32,14 +32,15 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-01 | Claude  | P5-A — Added status field (APPOINTMENT_STATUS_OPTIONS, formData.status, submitData.status)
+ *   2026-03-11 | Claude  | Added is_paid toggle, discount field, Pay-via-Sales button, resource consumption panel
  * ============================================================
  */
 
 import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
-import { isudAPI } from '../../services/api';
+import { isudAPI, serviceRelationsAPI, inventoryAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import Gate_Permission from './Gate_Permission';
 import Dropdown_Custom from './Dropdown_Custom';
@@ -90,6 +91,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsLoaded, setClientsLoaded] = useState(false);
   const [durationError, setDurationError] = useState('');
+  const [serviceResources, setServiceResources] = useState([]);
+  const [inventoryMap, setInventoryMap] = useState({});
   const navigate = useNavigate();
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
@@ -203,6 +206,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         recurrence_count: appointment.recurrence_count || '',
         duration_minutes: appointment.duration_minutes || '',
         status: appointment.status || 'scheduled',
+        is_paid: appointment.is_paid || false,
+        discount: appointment.discount || 0,
+        sale_transaction_id: appointment.sale_transaction_id || null,
       };
     }
     return {
@@ -220,6 +226,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       recurrence_count: '',
       duration_minutes: '',
       status: 'scheduled',
+      is_paid: false,
+      discount: 0,
+      sale_transaction_id: null,
     };
   };
 
@@ -230,6 +239,32 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   useEffect(() => {
     setFormData(getInitialFormData());
   }, [appointment]);
+
+  // Load resource consumption info when service changes
+  const loadServiceResources = async (serviceId) => {
+    if (!serviceId) { setServiceResources([]); return; }
+    try {
+      const res = await serviceRelationsAPI.getResources(serviceId);
+      const resources = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setServiceResources(resources);
+      // Fetch inventory names for each resource
+      const ids = [...new Set(resources.map(r => r.inventory_id).filter(Boolean))];
+      if (ids.length > 0) {
+        const invRes = await inventoryAPI.getAll();
+        const invData = Array.isArray(invRes?.data) ? invRes.data : (Array.isArray(invRes) ? invRes : []);
+        const map = {};
+        invData.forEach(item => { map[item.id] = item.name; });
+        setInventoryMap(map);
+      }
+    } catch (err) {
+      console.error('Failed to load service resources:', err);
+      setServiceResources([]);
+    }
+  };
+
+  useEffect(() => {
+    loadServiceResources(formData.service_id);
+  }, [formData.service_id]);
 
   // Auto-select current user if they can only schedule for themselves
   const isWriteAll = hasPermission('schedule', 'write_all') || hasPermission('schedule', 'admin');
@@ -267,6 +302,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       duration_minutes: selectedService?.duration_minutes ? selectedService.duration_minutes : prev.duration_minutes
     }));
     setDurationManuallySet(false);
+    setServiceResources([]);
     if (selectedService?.duration_minutes) {
       setDurationError('');
     }
@@ -355,6 +391,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       is_recurring_master: isSeries,
       duration_minutes: parseInt(formData.duration_minutes),
       status: formData.status,
+      is_paid: formData.is_paid,
+      discount: parseFloat(formData.discount) || 0,
+      sale_transaction_id: formData.sale_transaction_id || null,
     };
 
     // Only include client_id and service_id if needed for this type
@@ -486,6 +525,79 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               required
               searchable={true}
             />
+          )}
+
+          {/* Payment & Discount — only for appointment types with a service */}
+          {typeConfig.needsService && (
+            <div className="d-flex gap-2 align-items-end">
+              {/* Paid toggle */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, is_paid: !prev.is_paid }))}
+                className={`btn btn-sm fw-semibold px-3 ${formData.is_paid ? 'btn-success' : 'btn-outline-secondary'}`}
+                style={{ minWidth: 90, whiteSpace: 'nowrap' }}
+              >
+                {formData.is_paid ? '✓ Paid' : 'Unpaid'}
+              </button>
+
+              {/* Discount */}
+              <div className="form-floating flex-grow-1">
+                <input
+                  type="number"
+                  id="discount"
+                  name="discount"
+                  min="0"
+                  step="0.01"
+                  value={formData.discount}
+                  onChange={handleChange}
+                  className="form-control form-control-sm"
+                  placeholder="Discount"
+                />
+                <label htmlFor="discount">Discount ($)</label>
+              </div>
+
+              {/* Pay via Sales button — only when editing an existing appointment */}
+              {appointment?.id && formData.service_id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const client = clients.find(c => c.id === (formData.client_ids[0] || appointment?.client_id));
+                    navigate('/sales', {
+                      state: {
+                        scheduleId: appointment.id,
+                        preSelectedClient: client || null,
+                        preloadServiceId: formData.service_id,
+                      }
+                    });
+                  }}
+                  className="btn btn-sm btn-outline-primary"
+                  title="Open Sales checkout for this appointment"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  <CreditCardIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Resource Consumption Panel */}
+          {typeConfig.needsService && serviceResources.length > 0 && (
+            <div className="border rounded p-2" style={{ fontSize: '0.78rem' }}>
+              <p className="mb-1 fw-semibold text-gray-600 dark:text-gray-400">Resources Consumed</p>
+              <div className="d-flex flex-column gap-1">
+                {serviceResources.map(r => (
+                  <div key={r.id} className="d-flex justify-content-between align-items-center">
+                    <span className="text-gray-800 dark:text-gray-200">{inventoryMap[r.inventory_id] || r.inventory_id.slice(0, 8)}</span>
+                    <div className="d-flex gap-2 align-items-center">
+                      <span className="badge bg-secondary">{r.quantity} units</span>
+                      {r.consumption_rate_pct != null && (
+                        <span className="badge bg-info text-dark">{r.consumption_rate_pct}%</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Employee Selection */}

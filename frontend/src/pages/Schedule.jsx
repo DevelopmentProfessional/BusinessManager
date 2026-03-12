@@ -42,11 +42,13 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-01 | Claude  | P5-B — Added STATUS_DOT_COLOR; status dot/strikethrough/opacity on all three calendar views
+ *   2026-03-11 | Claude  | Added is_paid green-$ badge to all three calendar views
  * ============================================================
  */
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useStore from '../services/useStore';
 import useFetchOnce from '../services/useFetchOnce';
 import usePagePermission from '../services/usePagePermission';
@@ -95,6 +97,9 @@ const STATUS_DOT_COLOR = {
 };
 
 export default function Schedule() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // ─── 2 STORE & PERMISSION GUARD ──────────────────────────────────────────────
   const {
     appointments,
@@ -150,6 +155,43 @@ export default function Schedule() {
   const MIN_DATE = new Date(1900, 0, 1); // January 1, 1900
   const MAX_DATE = new Date(2100, 11, 31); // December 31, 2100
   const [swipeOffset, setSwipeOffset] = useState(0); // For visual feedback during swipe
+
+  // Open appointment editor when linked from another page (e.g., client service history)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const editScheduleId = params.get('edit_schedule_id');
+    if (!editScheduleId || !Array.isArray(appointments) || appointments.length === 0) return;
+
+    const targetAppointment = appointments.find(a => String(a.id) === String(editScheduleId));
+    if (!targetAppointment) return;
+
+    const openFromQuery = async () => {
+      setSelectedAttendees([]);
+      setEditingAppointment(targetAppointment);
+
+      if (targetAppointment.appointment_type === 'meeting' && targetAppointment.id) {
+        try {
+          const res = await isudAPI.scheduleAttendees.getBySchedule(targetAppointment.id);
+          const rows = res?.data ?? [];
+          setSelectedAttendees(Array.isArray(rows) ? rows : []);
+        } catch {
+          // silently degrade
+        }
+      }
+
+      if (targetAppointment.appointment_date) {
+        const dt = new Date(targetAppointment.appointment_date);
+        if (!Number.isNaN(dt.getTime())) setCurrentDate(dt);
+      }
+      setCurrentView('day');
+      setIsModalOpen(true);
+
+      params.delete('edit_schedule_id');
+      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+    };
+
+    openFromQuery();
+  }, [location.pathname, location.search, navigate, appointments]);
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   // Update clock every minute
@@ -1022,9 +1064,14 @@ export default function Schedule() {
                                 ? <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>{appointment.notes || 'Meeting'}</div>
                                 : <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>{serviceName}</div>
                               }
-                              {appointment.status && appointment.status !== 'scheduled' && (
-                                <span style={{ display: 'block', width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_DOT_COLOR[appointment.status] || '#9ca3af', position: 'absolute', bottom: 3, right: 3 }} />
-                              )}
+                              <div style={{ position: 'absolute', bottom: 2, right: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {appointment.is_paid && (
+                                  <span style={{ fontSize: '0.55rem', fontWeight: 700, color: '#16a34a', lineHeight: 1 }}>$</span>
+                                )}
+                                {appointment.status && appointment.status !== 'scheduled' && (
+                                  <span style={{ display: 'block', width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_DOT_COLOR[appointment.status] || '#9ca3af' }} />
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -1160,9 +1207,14 @@ export default function Schedule() {
                                 <div className="appointment-client">{clientName}</div>
                               </>
                             )}
-                            {appointment.status && appointment.status !== 'scheduled' && (
-                              <span style={{ display: 'block', width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_DOT_COLOR[appointment.status] || '#9ca3af', position: 'absolute', bottom: 3, right: 3 }} />
-                            )}
+                            <div style={{ position: 'absolute', bottom: 2, right: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                              {appointment.is_paid && (
+                                <span style={{ fontSize: '0.55rem', fontWeight: 700, color: '#16a34a', lineHeight: 1 }}>$</span>
+                              )}
+                              {appointment.status && appointment.status !== 'scheduled' && (
+                                <span style={{ display: 'block', width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_DOT_COLOR[appointment.status] || '#9ca3af' }} />
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1236,8 +1288,13 @@ export default function Schedule() {
                               onDragEnd={handleDragEnd}
                               onClick={(e) => handleAppointmentClick(e, appointment)}
                             >
-                              <div className="appointment-service" style={isCancelled ? { textDecoration: 'line-through' } : undefined}>
-                                {isMeeting ? (appointment.notes || 'Meeting') : serviceName}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
+                                <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: 'line-through' } : {}), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                  {isMeeting ? (appointment.notes || 'Meeting') : serviceName}
+                                </span>
+                                {appointment.is_paid && (
+                                  <span style={{ fontSize: '0.55rem', fontWeight: 700, color: '#16a34a', lineHeight: 1, flexShrink: 0 }}>$</span>
+                                )}
                               </div>
                             </div>
                           );
