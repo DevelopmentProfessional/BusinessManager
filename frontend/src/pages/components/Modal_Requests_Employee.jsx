@@ -44,9 +44,7 @@ export default function Modal_Requests_Employee({
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Requests</h6>
-          <button type="button" onClick={onClose} className="btn btn-link p-0 text-muted">
-            <XMarkIcon style={{ width: 20, height: 20 }} />
-          </button>
+        </div>
         </div>
 
         {/* ─── 2 SCROLLABLE REQUEST LIST ──────────────────────────────────────── */}

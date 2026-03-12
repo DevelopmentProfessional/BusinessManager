@@ -284,15 +284,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-link text-dark dark:text-gray-200 p-0"
-            style={{ lineHeight: 1 }}
-            title="Close"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+         </div>
         </div>
 
         {/* Scrollable body */}
@@ -491,15 +483,7 @@ export default function Modal_Detail_Client({
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Client Details</h6>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-link text-dark dark:text-gray-200 p-0"
-            style={{ lineHeight: 1 }}
-            title="Close"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+         </div>
         </div>
 
         {/* Scrollable content */}
