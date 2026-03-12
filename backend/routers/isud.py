@@ -120,6 +120,8 @@ READ_SCHEMA_MAP = {
     'service_employees': ServiceEmployeeRead,
     'service_location': ServiceLocationRead,
     'service_locations': ServiceLocationRead,
+    'service_recipe': ServiceRecipeRead,
+    'service_recipes': ServiceRecipeRead,
 }
 
 # ─── [4] SERIALIZATION HELPERS ────────────────────────────────────────────────

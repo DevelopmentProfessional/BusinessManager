@@ -82,16 +82,26 @@ export default function PDFViewer({ document, onEdit }) {
   };
 
   // Measure container for responsive width
+  // Falls back to a static clientWidth snapshot on browsers without ResizeObserver
+  // (Firefox < 69, Safari < 13.1, older Edge/Samsung Internet)
   const measuredRef = useCallback((node) => {
     if (node !== null) {
       containerRef.current = node;
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          setContainerWidth(entry.contentRect.width);
-        }
-      });
-      observer.observe(node);
-      return () => observer.disconnect();
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            setContainerWidth(entry.contentRect.width);
+          }
+        });
+        observer.observe(node);
+        return () => observer.disconnect();
+      } else {
+        // Fallback: measure once and re-measure on window resize
+        const measure = () => setContainerWidth(node.clientWidth);
+        measure();
+        window.addEventListener('resize', measure, { passive: true });
+        return () => window.removeEventListener('resize', measure);
+      }
     }
   }, []);
 

@@ -17,10 +17,16 @@ export const getMobileEnvironment = () => {
   }
 
   const ua = window.navigator.userAgent || '';
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // maxTouchPoints > 1 is more reliable than > 0 since some mice report 1
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 1 ||
+    // Older Android/Firefox fallback
+    (window.DocumentTouch && document instanceof window.DocumentTouch);
   const isMobileViewport = hasTouch && window.innerWidth <= MOBILE_BREAKPOINT;
 
-  const isIOS = /iPad|iPhone|iPod/i.test(ua);
+  // iPadOS 13+ dropped "iPad" from the UA and now reports as "Macintosh"
+  // Detect it via touch support + macOS UA + non-desktop screen size
+  const isIPadOS13Plus = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+  const isIOS = /iPad|iPhone|iPod/i.test(ua) || isIPadOS13Plus;
   const isAndroid = /Android/i.test(ua);
 
   const isSamsungInternet = /SamsungBrowser/i.test(ua);

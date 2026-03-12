@@ -67,7 +67,7 @@ else:
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.11.1"
+CURRENT_SCHEMA_VERSION = "2026.03.12.1"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -315,6 +315,7 @@ def create_db_and_tables():
     _ensure_app_settings_company_columns_if_needed()
     _ensure_user_training_mode_if_needed()
     _ensure_schedule_payment_columns_if_needed()
+    _ensure_service_recipe_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
@@ -1215,3 +1216,61 @@ def _ensure_user_training_mode_if_needed():
             if "training_mode" not in col_names:
                 conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE'))
                 print("  + Added column user.training_mode (BOOLEAN)")
+
+
+# ─── 16 MIGRATION: SERVICE RECIPE TABLE + ASSET DURATION ───────────────────────
+def _ensure_service_recipe_if_needed():
+    """Create service_recipe table and add asset_duration_minutes to service_asset."""
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            # Create service_recipe table if it doesn't exist
+            tables = {row[0] for row in conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )).fetchall()}
+            if "service_recipe" not in tables:
+                conn.execute(text("""
+                    CREATE TABLE service_recipe (
+                        id TEXT PRIMARY KEY,
+                        service_id TEXT NOT NULL UNIQUE REFERENCES service(id),
+                        is_produced BOOLEAN NOT NULL DEFAULT 0,
+                        batch_size INTEGER NOT NULL DEFAULT 1,
+                        batch_duration_minutes REAL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                print("✓ Created service_recipe table (SQLite)")
+            # Add asset_duration_minutes to service_asset if missing
+            cols = conn.execute(text("PRAGMA table_info('service_asset')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "asset_duration_minutes" not in col_names:
+                conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes REAL"))
+                print("✓ Added service_asset.asset_duration_minutes (SQLite)")
+    else:
+        with engine.begin() as conn:
+            # Create service_recipe table if it doesn't exist
+            tables = {row[0] for row in conn.execute(text(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+            )).fetchall()}
+            if "service_recipe" not in tables:
+                conn.execute(text("""
+                    CREATE TABLE service_recipe (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        service_id UUID NOT NULL UNIQUE REFERENCES service(id),
+                        is_produced BOOLEAN NOT NULL DEFAULT FALSE,
+                        batch_size INTEGER NOT NULL DEFAULT 1,
+                        batch_duration_minutes DOUBLE PRECISION,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                print("  + Created service_recipe table (PostgreSQL)")
+            # Add asset_duration_minutes to service_asset if missing
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='service_asset'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "asset_duration_minutes" not in col_names:
+                conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes DOUBLE PRECISION"))
+                print("  + Added column service_asset.asset_duration_minutes (DOUBLE PRECISION)")

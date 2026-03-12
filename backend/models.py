@@ -352,6 +352,7 @@ class ServiceAsset(BaseModel, table=True):
     __tablename__ = "service_asset"
     service_id: UUID = Field(foreign_key="service.id", index=True)
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    asset_duration_minutes: Optional[float] = Field(default=None, ge=0)  # How long this asset is used per batch for this service
     notes: Optional[str] = Field(default=None)
 
 
@@ -369,6 +370,16 @@ class ServiceLocation(BaseModel, table=True):
     service_id: UUID = Field(foreign_key="service.id", index=True)
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     notes: Optional[str] = Field(default=None)
+
+
+class ServiceRecipe(BaseModel, table=True):
+    """Production recipe for a manufactured service/product: batch size, batch duration,
+    and per-resource/asset consumption. One record per service (unique service_id)."""
+    __tablename__ = "service_recipe"
+    service_id: UUID = Field(foreign_key="service.id", index=True, unique=True)
+    is_produced: bool = Field(default=False)          # True = manufactured/produced; False = purchased/delivered
+    batch_size: int = Field(default=1, ge=1)           # Units produced per batch
+    batch_duration_minutes: Optional[float] = Field(default=None, ge=0)  # Time for one full batch
 
 
 # ─── 8 SCHEDULE MODELS ─────────────────────────────────────────────────────────
@@ -664,6 +675,7 @@ class ServiceAssetRead(SQLModel):
     id: UUID
     service_id: UUID
     inventory_id: UUID
+    asset_duration_minutes: Optional[float] = None
     notes: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -689,6 +701,19 @@ class ServiceLocationRead(SQLModel):
     service_id: UUID
     inventory_id: UUID
     notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceRecipeRead(SQLModel):
+    """Schema for reading a service production recipe."""
+    id: UUID
+    service_id: UUID
+    is_produced: bool
+    batch_size: int
+    batch_duration_minutes: Optional[float] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

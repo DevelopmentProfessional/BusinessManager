@@ -426,6 +426,8 @@ export const serviceRelationsAPI = {
   getAssets: (serviceId) => api.get(`/isud/service_asset?service_id=${serviceId}`),
   addAsset: (serviceId, inventoryId) =>
     api.post('/isud/service_asset', { service_id: serviceId, inventory_id: inventoryId }),
+  updateAssetDuration: (id, durationMinutes) =>
+    api.put(`/isud/service_asset/${id}`, { asset_duration_minutes: durationMinutes }),
   removeAsset: (id) => api.delete(`/isud/service_asset/${id}`),
 
   // Employees capable of performing a service
@@ -439,6 +441,12 @@ export const serviceRelationsAPI = {
   addLocation: (serviceId, inventoryId) =>
     api.post('/isud/service_location', { service_id: serviceId, inventory_id: inventoryId }),
   removeLocation: (id) => api.delete(`/isud/service_location/${id}`),
+};
+
+export const serviceRecipeAPI = {
+  get: (serviceId) => api.get(`/isud/service_recipe?service_id=${serviceId}`),
+  create: (data) => api.post('/isud/service_recipe', data),
+  update: (id, data) => api.put(`/isud/service_recipe/${id}`, data),
 };
 
 export const suppliersAPI = {

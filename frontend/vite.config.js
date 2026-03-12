@@ -74,7 +74,10 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     build: {
-      outDir: 'dist'
+      outDir: 'dist',
+      // Target modern browsers with broad cross-platform support:
+      // Chrome/Edge 88+, Firefox 78+, Safari 14+, iOS Safari 14+, Samsung Internet 14+, Opera 74+
+      target: ['chrome88', 'firefox78', 'safari14', 'edge88'],
     },
     preview: {
       port: process.env.PORT || 4173,

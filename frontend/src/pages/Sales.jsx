@@ -273,6 +273,18 @@ export default function Sales() {
 
   const [linkedScheduleId, setLinkedScheduleId] = useState(null);
 
+  // On mount: restore walk-in cart from localStorage (only when not navigating with a pre-selected client)
+  useEffect(() => {
+    if (location.state?.preSelectedClient) return;
+    try {
+      const saved = localStorage.getItem('walk_in_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setCart(parsed);
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
   useEffect(() => {
     const { preSelectedClient, preloadCart, scheduleId, preloadServiceId } = location.state || {};
@@ -308,11 +320,15 @@ export default function Sales() {
     }
   }, [location.state?.preSelectedClient, location.state?.preloadServiceId, services.length]);
 
-  // Sync cart to client's localStorage whenever cart or selected client changes
+  // Sync cart to localStorage — client-keyed when a client is selected, walk-in otherwise
   useEffect(() => {
     if (selectedClient?.id) {
       try {
         localStorage.setItem(`client_cart_${selectedClient.id}`, JSON.stringify(cart));
+      } catch {}
+    } else {
+      try {
+        localStorage.setItem('walk_in_cart', JSON.stringify(cart));
       } catch {}
     }
   }, [cart, selectedClient?.id]);
@@ -354,8 +370,21 @@ export default function Sales() {
     }
   };
 
-  // Select a client, load their saved cart, and include their next scheduled service
+  // Select a client, load their saved cart, merge any walk-in items, and include their next scheduled service
   const handleSelectClient = async (client, options = {}) => {
+    // Capture walk-in items before switching — from in-memory state (if no client was selected)
+    // or from localStorage (when navigating to this page fresh with a pre-selected client)
+    let walkInItems = selectedClient == null ? [...cart] : [];
+    if (walkInItems.length === 0) {
+      try {
+        const walkInSaved = localStorage.getItem('walk_in_cart');
+        if (walkInSaved) {
+          const parsed = JSON.parse(walkInSaved);
+          if (Array.isArray(parsed)) walkInItems = parsed;
+        }
+      } catch {}
+    }
+
     setSelectedClient(client);
 
     let nextCart = [];
@@ -373,6 +402,18 @@ export default function Sales() {
         }
       }
     } catch {}
+
+    // Merge walk-in items into client cart — add any not already present
+    walkInItems.forEach(item => {
+      if (!nextCart.some(ci => ci.cartKey === item.cartKey)) {
+        nextCart = [...nextCart, item];
+      }
+    });
+
+    // Clear walk-in cart now that items have been transferred
+    if (walkInItems.length > 0) {
+      try { localStorage.removeItem('walk_in_cart'); } catch {}
+    }
 
     const scheduledService = await getNextScheduledService(client.id);
     if (scheduledService) {

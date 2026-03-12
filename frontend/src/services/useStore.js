@@ -10,16 +10,18 @@ const useStore = create((set, get) => ({
   user: null,
   token: null,
   permissions: [],
+  authReady: false,          // true once initializeUserData has run at least once
+  setAuthReady: () => set({ authReady: true }),
   setUser: (user) => set({ user }),
   setToken: (token) => set({ token }),
   setPermissions: (permissions) => set({ permissions }),
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('permissions');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('permissions');
+    try { localStorage.removeItem('token'); } catch {}
+    try { localStorage.removeItem('user'); } catch {}
+    try { localStorage.removeItem('permissions'); } catch {}
+    try { sessionStorage.removeItem('token'); } catch {}
+    try { sessionStorage.removeItem('user'); } catch {}
+    try { sessionStorage.removeItem('permissions'); } catch {}
     set({ user: null, token: null, permissions: [] });
 
     // Clear persistent data cache on logout
@@ -32,34 +34,49 @@ const useStore = create((set, get) => ({
   },
   isAuthenticated: () => {
     const state = get();
-    return !!(state.token || localStorage.getItem('token') || sessionStorage.getItem('token'));
+    if (state.token) return true;
+    try {
+      return !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
+    } catch {
+      return false;
+    }
   },
   hasPermission: (page, permission) => {
     const state = get();
-    const user = state.user || JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
-    
+
+    // Safe localStorage/sessionStorage reads — iOS Safari private mode throws SecurityError
+    let storedUser = null;
+    let storedPermissions = [];
+    try {
+      storedUser = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+    } catch {}
+    try {
+      storedPermissions = JSON.parse(localStorage.getItem('permissions') || sessionStorage.getItem('permissions') || '[]');
+    } catch {}
+
+    const user = state.user || storedUser;
+
     // Admin users have access to everything
     if (user && user.role === 'admin') {
       return true;
     }
-    
-    // Check user permissions first (from UserPermission table)
-    const userPermissions = state.permissions.length > 0 ? state.permissions : 
-      JSON.parse(localStorage.getItem('permissions') || sessionStorage.getItem('permissions') || '[]');
-    
+
+    // Check user permissions (from UserPermission table)
+    const userPermissions = state.permissions.length > 0 ? state.permissions : storedPermissions;
+
     if (userPermissions.includes(`${page}:${permission}`) || userPermissions.includes(`${page}:admin`)) {
       return true;
     }
-    
-    // No additional permission checks needed - all permissions are now handled via UserPermission table
-    
+
     return false;
   },
 
   // Fetch and update the current user's flat permission strings from the server
   refetchPermissions: async () => {
     try {
-      const token = get().token || localStorage.getItem('token') || sessionStorage.getItem('token');
+      let storageToken = null;
+      try { storageToken = localStorage.getItem('token') || sessionStorage.getItem('token'); } catch {}
+      const token = get().token || storageToken;
       if (!token) return;
       const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
       const response = await fetch(`${API_BASE_URL}/auth/me/permissions`, {
@@ -72,8 +89,8 @@ const useStore = create((set, get) => ({
         const data = await response.json();
         if (Array.isArray(data.permissions)) {
           set({ permissions: data.permissions });
-          localStorage.setItem('permissions', JSON.stringify(data.permissions));
-          sessionStorage.setItem('permissions', JSON.stringify(data.permissions));
+          try { localStorage.setItem('permissions', JSON.stringify(data.permissions)); } catch {}
+          try { sessionStorage.setItem('permissions', JSON.stringify(data.permissions)); } catch {}
         }
       }
     } catch {

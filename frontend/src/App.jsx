@@ -50,13 +50,20 @@ const ClearErrorOnNavigate = () => {
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredPermission = null }) => {
-  const { isAuthenticated, hasPermission, user } = useStore();
-  
+  const { isAuthenticated, hasPermission, authReady } = useStore();
+
+  // Wait for initializeUserData to finish before making routing decisions.
+  // On iOS, the JS engine can render this component before the useEffect in App
+  // has restored the auth state from storage, causing false permission failures.
+  if (!authReady) {
+    return <PageLoader />;
+  }
+
   // Check if user is authenticated
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
-  
+
   // Check if user has required permission
   if (requiredPermission) {
     const [page, permission] = requiredPermission.split(':');
@@ -64,33 +71,40 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
       return <Navigate to="/profile" replace />;
     }
   }
-  
+
   return children;
 };
 
 function App() {
-  const { user, setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
+  const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
   const { setTrainingMode } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
 
   // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {
-    const initializeUserData = () => {
+    const initializeUserData = async () => {
       try {
         // Try to get token and user data from storage
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
         const permissionsData = localStorage.getItem('permissions') || sessionStorage.getItem('permissions');
-        
+
         if (token && userData) {
           const user = JSON.parse(userData);
           const permissions = permissionsData ? JSON.parse(permissionsData) : [];
-          
+
           // Set the data in the store
           setToken(token);
           setUser(user);
           setPermissions(permissions);
+
+          // If permissions are missing (e.g. sessionStorage was cleared by iOS after the app
+          // was backgrounded/killed), silently re-fetch them from the server so all
+          // permission-gated pages work correctly without forcing a new login.
+          if (permissions.length === 0 && user.role !== 'admin') {
+            refetchPermissions();
+          }
 
           // Preload major tables in background for returning users
           preloadMajorTables();
@@ -100,11 +114,15 @@ function App() {
         loadPersistedFilters();
       } catch (error) {
         console.error('Error initializing user data:', error);
+      } finally {
+        // Signal that auth initialization is complete so ProtectedRoute can make
+        // routing decisions — prevents premature redirects on iOS cold-start.
+        setAuthReady();
       }
     };
-    
+
     initializeUserData();
-  }, [setUser, setToken, setPermissions, loadPersistedFilters]);
+  }, [setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady]);
 
   // Initialize dark mode on app startup
   useEffect(() => {
