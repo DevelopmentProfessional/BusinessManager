@@ -284,7 +284,6 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
-         </div>
         </div>
 
         {/* Scrollable body */}
