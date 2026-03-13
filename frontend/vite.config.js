@@ -19,7 +19,7 @@ export default defineConfig(({ command, mode }) => {
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['app-icon.svg'],
+      includeAssets: ['app-icon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'app-icon-192.png', 'app-icon-512.png'],
       manifest: {
         name: 'Business Manager',
         short_name: 'BizManager',
@@ -30,10 +30,22 @@ export default defineConfig(({ command, mode }) => {
         theme_color: '#3B82F6',
         icons: [
           {
-            src: '/app-icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            src: '/app-icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/app-icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/app-icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },
