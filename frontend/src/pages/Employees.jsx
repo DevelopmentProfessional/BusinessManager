@@ -1120,9 +1120,9 @@ export default function Employees() {
             <table className="table table-borderless table-hover mb-0 table-fixed">
               <colgroup>
                 <col />
-                {isAdmin && <col style={{ width: '52px' }} />}
+                {isAdmin && <col style={{ width: '54px' }} />}
                 <col style={{ width: '90px' }} />
-                <col style={{ width: '52px' }} />
+                <col style={{ width: '54px' }} />
               </colgroup>
               <tbody>
                 {filteredEmployees.map((employee, index) => (
@@ -1149,7 +1149,7 @@ export default function Employees() {
 
                     {/* Lock icon — admin only, only visible when account is locked */}
                     {isAdmin && (
-                      <td className="main-page-table-data text-center">
+                      <td className="main-page-table-data text-center p-0">
                         {employee.is_locked && employee.id !== currentUser?.id && (
                           <button
                             type="button"
@@ -1176,7 +1176,7 @@ export default function Employees() {
                     </td>
 
                     {/* Chat */}
-                    <td className="main-page-table-data text-center">
+                    <td className="main-page-table-data text-center p-0">
                       {employee.id !== currentUser?.id && (
                         <button
                           type="button"
@@ -1221,9 +1221,9 @@ export default function Employees() {
         <PageTableFooter
           columns={[
             { label: 'Employee' },
-            ...(isAdmin ? [{ label: '', width: 52, className: 'text-center' }] : []),
+            ...(isAdmin ? [{ label: '', width: 54, className: 'text-center p-0' }] : []),
             { label: 'Role', width: 90 },
-            { label: '', width: 52, className: 'text-center' },
+            { label: '', width: 54, className: 'text-center p-0' },
           ]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
