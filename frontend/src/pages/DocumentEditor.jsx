@@ -91,12 +91,12 @@ export default function DocumentEditor() {
 
   const handleDownload = () => {
     if (document) {
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = documentsAPI.fileUrl(document.id, { download: true });
       link.download = document.original_filename;
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
     }
   };
 
@@ -150,54 +150,6 @@ export default function DocumentEditor() {
               <DocumentIcon className="h-6 w-6 text-blue-600" />
               <span className="font-medium text-gray-900 dark:text-gray-100">{document.original_filename}</span>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`px-3 py-1.5 text-sm rounded border transition-colors ${
-                showPreview 
-                  ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300' 
-                  : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
-              title="Toggle Preview"
-            >
-              <EyeIcon className="h-4 w-4 inline mr-1" />
-              Preview
-            </button>
-            <button
-              onClick={handleDownload}
-              className="px-3 py-1.5 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              title="Download"
-            >
-              <DocumentArrowDownIcon className="h-4 w-4 inline mr-1" />
-              Download
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-4 py-1.5 text-sm rounded bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-              title="Save"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckIcon className="h-4 w-4 mr-1" />
-                  Save
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleClose}
-              className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-              title="Close"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
           </div>
         </div>
 
@@ -263,6 +215,65 @@ export default function DocumentEditor() {
         ) : (
           <Editor_OnlyOffice documentId={document.id} />
         )}
+      </div>
+
+      {/* Bottom controls */}
+      <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          <button
+            onClick={handleClose}
+            className="px-3 py-1.5 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            title="Back to Documents"
+          >
+            <ArrowLeftIcon className="h-4 w-4 inline mr-1" />
+            Back
+          </button>
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+              showPreview
+                ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+            title="Toggle Preview"
+          >
+            <EyeIcon className="h-4 w-4 inline mr-1" />
+            Preview
+          </button>
+          <button
+            onClick={handleDownload}
+            className="px-3 py-1.5 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            title="Download"
+          >
+            <DocumentArrowDownIcon className="h-4 w-4 inline mr-1" />
+            Download
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-4 py-1.5 text-sm rounded bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors d-flex align-items-center"
+            title="Save"
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckIcon className="h-4 w-4 mr-1" />
+                Save
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleClose}
+            className="ms-auto p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            title="Close"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -38,9 +38,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
-import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI } from '../../services/api';
+import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI } from '../../services/api';
 import api from '../../services/api';
 import Widget_Signature from './Widget_Signature';
+import Modal_Pay_Employee from './Modal_Pay_Employee';
+import useStore from '../../services/useStore';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const PAGES = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
@@ -105,6 +107,14 @@ export default function Form_Employee({
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureMessage, setSignatureMessage] = useState('');
   const signatureFileRef = useRef(null);
+
+  // Payments state
+  const [paySlips, setPaySlips] = useState([]);
+  const [paySlipsLoading, setPaySlipsLoading] = useState(false);
+  const [selectedSlip, setSelectedSlip] = useState(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+
+  const { hasPermission } = useStore();
 
   const [formData, setFormData] = useState({
     // Details
@@ -236,6 +246,20 @@ export default function Form_Employee({
         }
       };
       loadSignature();
+    }
+  }, [activeTab, employee?.id]);
+
+  // Load pay slips when switching to payments tab
+  useEffect(() => {
+    if (activeTab === 'payments' && employee?.id) {
+      setPaySlipsLoading(true);
+      payrollAPI.getByEmployee(employee.id)
+        .then(res => {
+          const data = res?.data ?? res;
+          setPaySlips(Array.isArray(data) ? data : []);
+        })
+        .catch(() => setPaySlips([]))
+        .finally(() => setPaySlipsLoading(false));
     }
   }, [activeTab, employee?.id]);
 
@@ -418,6 +442,7 @@ export default function Form_Employee({
     { key: 'signature', label: 'Signature', disabled: !employee },
     { key: 'permissions', label: 'Permissions', disabled: !employee },
     { key: 'performance', label: 'Performance', disabled: !employee },
+    { key: 'payments', label: 'Payments', disabled: !employee },
   ];
 
   return (
@@ -1121,6 +1146,63 @@ export default function Form_Employee({
             )}
           </div>
         )}
+
+        {/* ===== PAYMENTS TAB ===== */}
+        {activeTab === 'payments' && (
+          <div className="tab-pane">
+            {employee ? (
+              <>
+                <h6 className="text-muted text-uppercase small mb-0">Wage History</h6>
+                <hr className="mt-1 mb-2" />
+                {paySlipsLoading ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                  </div>
+                ) : paySlips.length === 0 ? (
+                  <p className="text-muted small text-center py-3">No pay slips on record.</p>
+                ) : (
+                  <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                      <thead className="table-light">
+                        <tr>
+                          <th>Period</th>
+                          <th className="text-end">Gross</th>
+                          <th className="text-end">Deductions</th>
+                          <th className="text-end">Net</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paySlips.map(slip => (
+                          <tr key={slip.id}>
+                            <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : '—'}</td>
+                            <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-secondary py-0 px-1"
+                                style={{ fontSize: '0.7rem' }}
+                                onClick={() => setSelectedSlip(slip)}
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center p-4">
+                <p className="text-muted">Create the employee first to view payment history.</p>
+              </div>
+            )}
+          </div>
+        )}
         </form>
       </div>
 
@@ -1197,6 +1279,19 @@ export default function Form_Employee({
           </div>
         )}
 
+        {/* Payments tab footer controls */}
+        {activeTab === 'payments' && employee && hasPermission('employees', 'write') && (
+          <div className="d-flex justify-content-center mb-2">
+            <button
+              type="button"
+              className="btn btn-success btn-sm rounded-pill px-4"
+              onClick={() => setShowPayModal(true)}
+            >
+              Process Pay
+            </button>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="d-flex align-items-center">
           <div style={{ width: 40 }} className="d-flex align-items-center">
@@ -1234,6 +1329,107 @@ export default function Form_Employee({
           <div style={{ width: 40 }} />
         </div>
       </div>
+
+      {/* Process Pay Modal */}
+      <Modal_Pay_Employee
+        isOpen={showPayModal}
+        onClose={() => setShowPayModal(false)}
+        employee={employee}
+        onPaySuccess={() => {
+          setShowPayModal(false);
+          // Reload pay slips
+          if (employee?.id) {
+            setPaySlipsLoading(true);
+            payrollAPI.getByEmployee(employee.id)
+              .then(res => { const d = res?.data ?? res; setPaySlips(Array.isArray(d) ? d : []); })
+              .catch(() => setPaySlips([]))
+              .finally(() => setPaySlipsLoading(false));
+          }
+        }}
+      />
+
+      {/* Pay Slip Detail Modal */}
+      {selectedSlip && (
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 2000 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedSlip(null); }}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-sm">
+            <div className="modal-content" id="pay-slip-print-area-emp">
+              <div className="modal-header py-2">
+                <h6 className="modal-title mb-0">Pay Slip</h6>
+                <button type="button" className="btn-close" onClick={() => setSelectedSlip(null)} />
+              </div>
+              <div className="modal-body" style={{ fontSize: '0.85rem' }}>
+                <div className="text-center mb-3">
+                  <div className="fw-bold fs-6">{employee?.first_name} {employee?.last_name}</div>
+                  <div className="text-muted small">{employee?.role}</div>
+                </div>
+                <hr className="my-2" />
+                <div className="row g-1 mb-2">
+                  <div className="col-6 text-muted">Pay Period</div>
+                  <div className="col-6 text-end">{selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : '—'} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : '—'}</div>
+                  <div className="col-6 text-muted">Type</div>
+                  <div className="col-6 text-end" style={{ textTransform: 'capitalize' }}>{selectedSlip.employment_type || '—'}</div>
+                  {selectedSlip.employment_type === 'hourly' && (
+                    <>
+                      <div className="col-6 text-muted">Hours</div>
+                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? '—'}</div>
+                      <div className="col-6 text-muted">Rate</div>
+                      <div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                    </>
+                  )}
+                  <div className="col-6 text-muted">Pay Frequency</div>
+                  <div className="col-6 text-end" style={{ textTransform: 'capitalize' }}>{selectedSlip.pay_frequency || '—'}</div>
+                </div>
+                <hr className="my-2" />
+                <div className="row g-1">
+                  <div className="col-6 text-muted">Gross Pay</div>
+                  <div className="col-6 text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  {selectedSlip.insurance_plan_name && (
+                    <>
+                      <div className="col-6 text-muted small">Insurance ({selectedSlip.insurance_plan_name})</div>
+                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                    </>
+                  )}
+                  {(selectedSlip.other_deductions ?? 0) > 0 && (
+                    <>
+                      <div className="col-6 text-muted small">Other Deductions</div>
+                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                    </>
+                  )}
+                  <div className="col-6 fw-bold border-top pt-1 mt-1">Net Pay</div>
+                  <div className="col-6 fw-bold text-end border-top pt-1 mt-1 text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </div>
+                {selectedSlip.notes && (
+                  <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>
+                )}
+              </div>
+              <div className="modal-footer py-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => {
+                    const el = document.getElementById('pay-slip-print-area-emp');
+                    if (el) {
+                      const w = window.open('', '_blank');
+                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + '</body></html>');
+                      w.document.close();
+                      w.focus();
+                      setTimeout(() => { w.print(); }, 500);
+                    }
+                  }}
+                >
+                  Print
+                </button>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
