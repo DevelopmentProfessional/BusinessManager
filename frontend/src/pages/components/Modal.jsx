@@ -40,7 +40,7 @@ export function ModalHeader({ title, onClose, className = '' }) {
   return (
     <div className={`flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-3 py-2 flex-shrink-0 bg-white dark:bg-gray-800 ${className}`}>
       <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{title}</h3>
-      <button type="button" onClick={onClose} title="Close" aria-label="Close" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+      <button type="button" onClick={onClose} title="Close" aria-label="Close" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '3rem', height: '3rem' }}>
         <XMarkIcon className="h-6 w-6" />
       </button>
     </div>

@@ -266,7 +266,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                     type="button"
                     onClick={() => setAddImageMode('camera')}
                     className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0"
-                    style={{ width: '40px', height: '40px', borderRadius: '4px' }}
+                    style={{ width: '3rem', height: '3rem', borderRadius: '4px' }}
                     title="Add photo"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -490,15 +490,15 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 onChange={handleChange}
                 className="form-control form-control-sm"
                 placeholder="SKU"
-                style={showScanner ? { paddingRight: '3.25rem' } : undefined}
+                style={showScanner ? { paddingRight: '3.5rem' } : undefined}
               />
               <label htmlFor="sku">SKU</label>
               {showScanner && (
                 <button
                   type="button"
                   onClick={() => setIsScannerOpen(true)}
-                  className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y"
-                  style={{ right: '0.5rem' }}
+                  className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center"
+                  style={{ right: '0.25rem', width: '3rem', height: '3rem' }}
                   title="Scan Barcode"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">

@@ -149,7 +149,7 @@ export default function PDFViewer({ document, onEdit }) {
           <button
             onClick={goToPrev}
             disabled={pageNumber <= 1}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center" style={{ width: '3rem', height: '3rem' }}
             title="Previous page"
           >
             <ChevronLeftIcon className="h-4 w-4" />
@@ -168,7 +168,7 @@ export default function PDFViewer({ document, onEdit }) {
           <button
             onClick={goToNext}
             disabled={pageNumber >= (numPages || 1)}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center" style={{ width: '3rem', height: '3rem' }}
             title="Next page"
           >
             <ChevronRightIcon className="h-4 w-4" />
@@ -198,7 +198,8 @@ export default function PDFViewer({ document, onEdit }) {
           </button>
           <button
             onClick={fitWidth}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600"
+            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-center"
+            style={{ width: '3rem', height: '3rem' }}
             title="Fit width"
           >
             <ArrowsPointingOutIcon className="h-4 w-4" />

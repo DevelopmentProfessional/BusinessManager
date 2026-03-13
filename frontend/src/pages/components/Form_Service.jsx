@@ -556,14 +556,14 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <div className="text-muted small fst-italic py-2">No resources linked yet.</div>
               ) : (
                 <table className="table table-sm mb-0">
-                  <thead><tr><th style={{ width: 36 }}></th><th>Item</th><th style={{ width: 80 }}>Qty</th><th style={{ width: 88 }}>Rate %</th></tr></thead>
+                  <thead><tr><th style={{ width: 52 }}></th><th>Item</th><th style={{ width: 80 }}>Qty</th><th style={{ width: 88 }}>Rate %</th></tr></thead>
                   <tbody>
                     {resources.map(r => (
                       <tr key={r.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm p-1"
+                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" style={{ width: '3rem', height: '3rem' }}
                             onClick={() => handleRemoveResource(r.id)}>
-                            <TrashIcon style={{ width: 13, height: 13 }} />
+                            <TrashIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
                         <td className="text-truncate" style={{ maxWidth: 140 }}>{inventoryName(r.inventory_id)}</td>
@@ -609,8 +609,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                   value={newResource.consumption_rate_pct}
                   onChange={e => setNewResource(prev => ({ ...prev, consumption_rate_pct: e.target.value }))}
                   placeholder="Rate %" />
-                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddResource}>
-                  <PlusIcon style={{ width: 14, height: 14 }} />
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: '3rem', height: '3rem' }} onClick={handleAddResource}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
             </div>
@@ -628,14 +628,14 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <div className="text-muted small fst-italic py-2">No assets linked yet.</div>
               ) : (
                 <table className="table table-sm mb-0">
-                  <thead><tr><th style={{ width: 36 }}></th><th>Asset</th><th style={{ width: 96 }}>Duration (min)</th></tr></thead>
+                  <thead><tr><th style={{ width: 52 }}></th><th>Asset</th><th style={{ width: 96 }}>Duration (min)</th></tr></thead>
                   <tbody>
                     {assets.map(a => (
                       <tr key={a.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm p-1"
+                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" style={{ width: '3rem', height: '3rem' }}
                             onClick={() => handleRemoveAsset(a.id)}>
-                            <TrashIcon style={{ width: 13, height: 13 }} />
+                            <TrashIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
                         <td className="text-truncate" style={{ maxWidth: 140 }}>{inventoryName(a.inventory_id)}</td>
@@ -664,8 +664,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     <option key={i.id} value={i.id}>{i.name}</option>
                   ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddAsset}>
-                  <PlusIcon style={{ width: 14, height: 14 }} />
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: '3rem', height: '3rem' }} onClick={handleAddAsset}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
             </div>
@@ -685,9 +685,9 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <ul className="list-group list-group-flush mb-0">
                   {svcEmployees.map(se => (
                     <li key={se.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm p-1 flex-shrink-0"
+                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '3rem', height: '3rem' }}
                         onClick={() => handleRemoveEmployee(se.id)}>
-                        <TrashIcon style={{ width: 13, height: 13 }} />
+                        <TrashIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="rounded-circle flex-shrink-0"
                         style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: 'inline-block' }} />
@@ -708,8 +708,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>
                   ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddEmployee}>
-                  <PlusIcon style={{ width: 14, height: 14 }} />
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: '3rem', height: '3rem' }} onClick={handleAddEmployee}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
             </div>
@@ -729,9 +729,9 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <ul className="list-group list-group-flush mb-0">
                   {locations.map(loc => (
                     <li key={loc.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm p-1 flex-shrink-0"
+                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '3rem', height: '3rem' }}
                         onClick={() => handleRemoveLocation(loc.id)}>
-                        <TrashIcon style={{ width: 13, height: 13 }} />
+                        <TrashIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
                     </li>
@@ -750,8 +750,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     <option key={i.id} value={i.id}>{i.name}</option>
                   ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm" onClick={handleAddLocation}>
-                  <PlusIcon style={{ width: 14, height: 14 }} />
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: '3rem', height: '3rem' }} onClick={handleAddLocation}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
             </div>

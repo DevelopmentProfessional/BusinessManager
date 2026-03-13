@@ -165,7 +165,8 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                   <Gate_Permission page="suppliers" permission="delete">
                     <button
                       onClick={() => handleDelete(supplier.id)}
-                      className="btn btn-link btn-sm p-0 text-danger flex-shrink-0"
+                      className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: '3rem', height: '3rem' }}
                       title="Delete"
                     >
                       <TrashIcon className="h-5 w-5" />
@@ -186,7 +187,8 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                   <Gate_Permission page="suppliers" permission="write">
                     <button
                       onClick={() => handleEdit(supplier)}
-                      className="btn btn-link btn-sm p-0 text-secondary flex-shrink-0"
+                      className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: '3rem', height: '3rem' }}
                       title="Edit"
                     >
                       <PencilIcon className="h-5 w-5" />
