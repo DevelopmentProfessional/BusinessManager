@@ -21,13 +21,13 @@ export default defineConfig(({ command, mode }) => {
       registerType: 'autoUpdate',
       includeAssets: ['app-icon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'app-icon-192.png', 'app-icon-512.png'],
       manifest: {
-        name: 'Business Manager',
-        short_name: 'BizManager',
+        name: 'Business',
+        short_name: 'Business',
         description: 'Business Management System',
         start_url: '/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#3B82F6',
+        background_color: '#ffffff00',
+        theme_color: '#ffcc11',
         icons: [
           {
             src: '/app-icon-192.png',
