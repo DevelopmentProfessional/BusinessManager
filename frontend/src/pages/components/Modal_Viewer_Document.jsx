@@ -434,6 +434,7 @@ function EditorArea({ document, documentType }) {
   const [, setTxCount] = useState(0);
   useEffect(() => {
     if (!editorInstance) return;
+    if (typeof editorInstance.on !== 'function' || typeof editorInstance.off !== 'function') return;
     const handler = () => setTxCount((n) => n + 1);
     editorInstance.on('transaction', handler);
     return () => editorInstance.off('transaction', handler);
@@ -506,16 +507,6 @@ function EditorArea({ document, documentType }) {
 
   return (
     <div className="flex flex-col h-full">
-      <EditorToolbar
-        editorType={editorType}
-        editor={editorInstance}
-        onSave={saveContent}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        isDirty={isDirty}
-        isSaving={isSaving}
-        saveStatus={saveStatus}
-      />
       <div className="flex-1 overflow-hidden">
         <Suspense
           fallback={
@@ -540,6 +531,16 @@ function EditorArea({ document, documentType }) {
           )}
         </Suspense>
       </div>
+      <EditorToolbar
+        editorType={editorType}
+        editor={editorInstance}
+        onSave={saveContent}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        isDirty={isDirty}
+        isSaving={isSaving}
+        saveStatus={saveStatus}
+      />
     </div>
   );
 }
@@ -616,50 +617,6 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            {/* View/Edit toggle — only for editable types */}
-            {editable && (
-              <button
-                onClick={handleToggleEdit}
-                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded transition-colors ${
-                  mode === 'edit'
-                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                    : 'text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                <PencilIcon className="h-4 w-4" />
-                {mode === 'edit' ? 'Editing' : 'Edit'}
-              </button>
-            )}
-            {/* Sign / Signed badge */}
-            {document.is_signed ? (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium">
-                Signed
-              </span>
-            ) : onSign && (
-              <button
-                onClick={() => onSign(document)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                Sign
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={() => onDelete(document)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded hover:bg-red-200 dark:hover:bg-red-900/50"
-              >
-                <TrashIcon className="h-4 w-4" />
-                Delete
-              </button>
-            )}
-            <a
-              href={documentsAPI.fileUrl(document.id, { download: true })}
-              download
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              Download
-            </a>
             <button
               type="button"
               onClick={handleClose}
@@ -706,6 +663,55 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
                 )}
               </span>
             )}
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
+            {/* View/Edit toggle — only for editable types */}
+            {editable && (
+              <button
+                onClick={handleToggleEdit}
+                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded transition-colors ${
+                  mode === 'edit'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <PencilIcon className="h-4 w-4" />
+                {mode === 'edit' ? 'Editing' : 'Edit'}
+              </button>
+            )}
+
+            {document.is_signed ? (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium">
+                Signed
+              </span>
+            ) : onSign && (
+              <button
+                onClick={() => onSign(document)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Sign
+              </button>
+            )}
+
+            {onDelete && (
+              <button
+                onClick={() => onDelete(document)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded hover:bg-red-200 dark:hover:bg-red-900/50"
+              >
+                <TrashIcon className="h-4 w-4" />
+                Delete
+              </button>
+            )}
+
+            <a
+              href={documentsAPI.fileUrl(document.id, { download: true })}
+              download
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              Download
+            </a>
           </div>
         </div>
       </div>

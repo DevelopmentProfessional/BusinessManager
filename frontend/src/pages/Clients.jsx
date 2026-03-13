@@ -255,11 +255,11 @@ export default function Clients() {
           style={{ background: 'var(--bs-body-bg)' }}
         >
           {filteredClients.length > 0 ? (
-            <table className="table table-borderless table-hover mb-0 table-fixed">
+            <table className="table table-borderless table-hover mb-0 table-fixed w-100">
               <colgroup>
                 <col />
                 <col style={{ width: '80px' }} />
-                <col style={{ width: '40px' }}/> 
+                <col style={{ width: '56px' }}/> 
               </colgroup>
               <tbody>
                 {filteredClients.map((client, index) => (
@@ -284,12 +284,12 @@ export default function Clients() {
 
                       </div>
                     </td>
-                    <td className="main-page-table-data">
+                    <td className="main-page-table-data p-0 text-center">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setTemplateClient(client); setIsTemplateOpen(true); }}
                           className="btn btn-sm border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded d-flex align-items-center justify-content-center"
-                          style={{ width: '3rem', height: '3rem' }}
+                          style={{ width: '2.5rem', height: '2.5rem', margin: '0 auto' }}
                           title="Use template"
                         >
                           <EnvelopeIcon className="h-6 w-6" />
@@ -308,7 +308,7 @@ export default function Clients() {
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
-          columns={[{ label: 'Client' }, { label: 'Membership', width: 80 }, { label: 'Notify', width: 40 }]}
+          columns={[{ label: 'Client' }, { label: 'Membership', width: 80 }, { label: 'Notify', width: 56 }]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
           searchPlaceholder="Search by name, email, or phone..."

@@ -67,6 +67,15 @@ export default function Modal_Insurance_Plans({
             <div className="d-flex flex-column gap-2 pb-2">
               {insurancePlans.map(plan => (
                 <div key={plan.id} className={`d-flex align-items-center justify-content-between p-2 border rounded ${!plan.is_active ? 'opacity-60' : ''}`}>
+                   <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center me-2"
+                      style={{ width: '3rem', height: '3rem' }}
+                      onClick={() => onDelete(plan.id)}
+                      title="Delete"
+                    >
+                      <TrashIcon style={{ width: 16, height: 16 }} />
+                    </button>
                   <div>
                     <div className="fw-semibold d-flex align-items-center gap-2" style={{ fontSize: '0.875rem' }}>
                       {plan.name}
@@ -79,15 +88,7 @@ export default function Modal_Insurance_Plans({
                     )}
                   </div>
                   <div className="d-flex gap-1">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center"
-                      style={{ width: '3rem', height: '3rem' }}
-                      onClick={() => onDelete(plan.id)}
-                      title="Delete"
-                    >
-                      <TrashIcon style={{ width: 16, height: 16 }} />
-                    </button>
+                  
                     <button
                       type="button"
                       className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
