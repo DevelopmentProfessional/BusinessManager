@@ -663,7 +663,8 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
             <button
               type="button"
               onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded d-flex align-items-center justify-content-center"
+              style={{ width: '3rem', height: '3rem' }}
             >
               <XMarkIcon className="h-6 w-6" />
             </button>

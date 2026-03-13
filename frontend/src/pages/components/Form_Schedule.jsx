@@ -570,9 +570,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                       }
                     });
                   }}
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center"
                   title="Open Sales checkout for this appointment"
-                  style={{ whiteSpace: 'nowrap' }}
+                  style={{ width: '3rem', height: '3rem' }}
                 >
                   <CreditCardIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
                 </button>

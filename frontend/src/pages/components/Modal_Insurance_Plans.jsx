@@ -81,6 +81,15 @@ export default function Modal_Insurance_Plans({
                   <div className="d-flex gap-1">
                     <button
                       type="button"
+                      className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center"
+                      style={{ width: '3rem', height: '3rem' }}
+                      onClick={() => onDelete(plan.id)}
+                      title="Delete"
+                    >
+                      <TrashIcon style={{ width: 16, height: 16 }} />
+                    </button>
+                    <button
+                      type="button"
                       className={`btn btn-sm ${plan.is_active ? 'btn-outline-secondary' : 'btn-outline-success'}`}
                       style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                       onClick={() => onToggle(plan)}
@@ -90,21 +99,12 @@ export default function Modal_Insurance_Plans({
                     </button>
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
+                      className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"
+                      style={{ width: '3rem', height: '3rem' }}
                       onClick={() => setEditingPlan({ ...plan })}
                       title="Edit"
                     >
-                      <PencilSquareIcon style={{ width: 12, height: 12 }} />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger"
-                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.4rem' }}
-                      onClick={() => onDelete(plan.id)}
-                      title="Delete"
-                    >
-                      <TrashIcon style={{ width: 12, height: 12 }} />
+                      <PencilSquareIcon style={{ width: 16, height: 16 }} />
                     </button>
                   </div>
                 </div>
@@ -158,10 +158,10 @@ export default function Modal_Insurance_Plans({
                     type="button"
                     onClick={() => setEditingPlan(null)}
                     className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                    style={{ width: '2.5rem', height: '2.5rem' }}
+                    style={{ width: '3rem', height: '3rem' }}
                     title="Cancel edit"
                   >
-                    <XMarkIcon style={{ width: 14, height: 14 }} />
+                    <XMarkIcon style={{ width: 18, height: 18 }} />
                   </button>
                 )}
                 {!editingPlan && (
@@ -169,10 +169,10 @@ export default function Modal_Insurance_Plans({
                     type="button"
                     onClick={() => onClose()}
                     className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                    style={{ width: '2.5rem', height: '2.5rem' }}
+                    style={{ width: '3rem', height: '3rem' }}
                     title="Close modal"
                   >
-                    <XMarkIcon style={{ width: 14, height: 14 }} />
+                    <XMarkIcon style={{ width: 18, height: 18 }} />
                   </button>
                 )}
               </div>

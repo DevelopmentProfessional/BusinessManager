@@ -23,7 +23,7 @@
 
 import React from 'react';
 import Modal from './Modal';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 
 export default function Modal_Permissions_User({
@@ -162,21 +162,25 @@ export default function Modal_Permissions_User({
                         </span>
                       </td>
                       <td>
-                        <div className="btn-group btn-group-sm">
-                          <button
-                            onClick={() => onUpdatePermission(permission.id, !permission.granted)}
-                            className={`btn btn-sm ${permission.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
-                            title={permission.granted ? 'Deny Permission' : 'Grant Permission'}
-                          >
-                            <i className={`bi ${permission.granted ? 'bi-x-circle' : 'bi-check-circle'}`}></i>
-                          </button>
+                        <div className="d-flex align-items-center gap-1">
                           <button
                             onClick={() => onDeletePermission(permission.id)}
-                            className="btn btn-sm btn-outline-danger hover:bg-red-50"
+                            className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center"
+                            style={{ width: '3rem', height: '3rem' }}
                             title="Delete Permission"
                             type="button"
                           >
-                            <i className="bi bi-trash"></i>
+                            <TrashIcon style={{ width: 16, height: 16 }} />
+                          </button>
+                          <button
+                            onClick={() => onUpdatePermission(permission.id, !permission.granted)}
+                            className={`btn btn-sm d-flex align-items-center justify-content-center ms-auto ${permission.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
+                            style={{ width: '3rem', height: '3rem' }}
+                            title={permission.granted ? 'Deny Permission' : 'Grant Permission'}
+                          >
+                            {permission.granted
+                              ? <XCircleIcon style={{ width: 16, height: 16 }} />
+                              : <CheckCircleIcon style={{ width: 16, height: 16 }} />}
                           </button>
                         </div>
                       </td>

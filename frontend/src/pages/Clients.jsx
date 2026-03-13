@@ -288,7 +288,8 @@ export default function Clients() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setTemplateClient(client); setIsTemplateOpen(true); }}
-                          className="btn btn-sm p-1 border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                          className="btn btn-sm border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded d-flex align-items-center justify-content-center"
+                          style={{ width: '3rem', height: '3rem' }}
                           title="Use template"
                         >
                           <EnvelopeIcon className="h-6 w-6" />

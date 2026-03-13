@@ -1121,7 +1121,8 @@ export default function Employees() {
               <colgroup>
                 <col />
                 {isAdmin && <col style={{ width: '52px' }} />}
-                <col style={{ width: '120px' }} />
+                <col style={{ width: '90px' }} />
+                <col style={{ width: '52px' }} />
               </colgroup>
               <tbody>
                 {filteredEmployees.map((employee, index) => (
@@ -1163,48 +1164,47 @@ export default function Employees() {
                       </td>
                     )}
 
-                    {/* Role + Pay + Chat */}
+                    {/* Role */}
                     <td className="main-page-table-data">
-                      <div className="d-flex align-items-center gap-1 justify-content-between">
-                        <span className={`badge rounded-pill ${
-                          employee.role === 'admin' ? 'bg-danger' :
-                          employee.role === 'manager' ? 'bg-warning text-dark' :
-                          'bg-primary'
-                        }`}>
-                          {employee.role}
-                        </span>
-                        <div className="d-flex align-items-center gap-1">
-                          {employee.id !== currentUser?.id && (
-                            <button
-                              type="button"
-                              className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? 'btn-primary' : 'btn-outline-secondary'}`}
-                              style={{ width: '3rem', height: '3rem' }}
-                              title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setChattingEmployee(employee);
-                                setShowChatModal(true);
-                                // Clear badge immediately, backend will mark as read
-                                setUnreadCounts(prev => {
-                                  const next = { ...prev };
-                                  delete next[employee.id];
-                                  return next;
-                                });
-                              }}
+                      <span className={`badge rounded-pill ${
+                        employee.role === 'admin' ? 'bg-danger' :
+                        employee.role === 'manager' ? 'bg-warning text-dark' :
+                        'bg-primary'
+                      }`}>
+                        {employee.role}
+                      </span>
+                    </td>
+
+                    {/* Chat */}
+                    <td className="main-page-table-data text-center">
+                      {employee.id !== currentUser?.id && (
+                        <button
+                          type="button"
+                          className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? 'btn-primary' : 'btn-outline-secondary'}`}
+                          style={{ width: '3rem', height: '3rem' }}
+                          title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setChattingEmployee(employee);
+                            setShowChatModal(true);
+                            setUnreadCounts(prev => {
+                              const next = { ...prev };
+                              delete next[employee.id];
+                              return next;
+                            });
+                          }}
+                        >
+                          <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
+                          {!!unreadCounts[employee.id] && (
+                            <span
+                              className="badge bg-danger rounded-pill position-absolute"
+                              style={{ top: 2, right: 2, fontSize: '0.6rem', minWidth: 16, padding: '2px 4px' }}
                             >
-                              <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
-                              {!!unreadCounts[employee.id] && (
-                                <span
-                                  className="badge bg-danger rounded-pill position-absolute"
-                                  style={{ top: 2, right: 2, fontSize: '0.6rem', minWidth: 16, padding: '2px 4px' }}
-                                >
-                                  {unreadCounts[employee.id] > 9 ? '9+' : unreadCounts[employee.id]}
-                                </span>
-                              )}
-                            </button>
+                              {unreadCounts[employee.id] > 9 ? '9+' : unreadCounts[employee.id]}
+                            </span>
                           )}
-                        </div>
-                      </div>
+                        </button>
+                      )}
                     </td>
                   </PageTableRow>
                 ))}
@@ -1222,7 +1222,8 @@ export default function Employees() {
           columns={[
             { label: 'Employee' },
             ...(isAdmin ? [{ label: '', width: 52, className: 'text-center' }] : []),
-            { label: 'Role', width: 120 },
+            { label: 'Role', width: 90 },
+            { label: '', width: 52, className: 'text-center' },
           ]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
