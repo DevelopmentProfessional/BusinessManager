@@ -200,7 +200,7 @@ export default function Sales() {
   const { footerAlign } = useViewMode();
   const footerJustify = footerAlign === 'center' ? 'justify-center' : footerAlign === 'right' ? 'justify-end' : 'justify-start';
 
-  usePagePermission('services', hasPermission);
+  usePagePermission('services');
 
   // ─── 4  STATE / REF DECLARATIONS ─────────────────────────────────────────
   // POS State

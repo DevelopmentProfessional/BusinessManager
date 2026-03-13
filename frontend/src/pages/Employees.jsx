@@ -446,7 +446,7 @@ export default function Employees() {
 
   // ─── [12] PERMISSION GUARD ──────────────────────────────────────────────────
   // Redirect any user who lacks every employee permission to their profile page.
-  usePagePermission('employees', hasPermission);
+  usePagePermission('employees');
 
   // ─── [13] DATA LOADERS ──────────────────────────────────────────────────────
   const loadEmployees = async () => {

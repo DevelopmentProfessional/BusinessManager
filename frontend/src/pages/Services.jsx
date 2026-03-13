@@ -50,7 +50,7 @@ export default function Services() {
     isModalOpen, modalContent, openModal, closeModal, hasPermission
   } = useStore();
 
-  usePagePermission('services', hasPermission);
+  usePagePermission('services');
 
   // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
