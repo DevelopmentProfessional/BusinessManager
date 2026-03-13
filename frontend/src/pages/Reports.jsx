@@ -157,7 +157,7 @@ export default function Reports() {
   // ─── 2 COMPONENT SETUP & PERMISSION GUARD ──────────────────────────────
   const {
     loading, setLoading, error, setError, clearError,
-    hasPermission
+    hasPageAccess
   } = useStore();
 
   const { branding } = useBranding();
@@ -199,7 +199,7 @@ export default function Reports() {
       };
       const page = pageMap[table];
       if (page === 'profile') return true;
-      return page && (hasPermission(page, 'read') || hasPermission(page, 'write') || hasPermission(page, 'admin'));
+      return page && hasPageAccess(page);
     });
   });
 
@@ -561,10 +561,7 @@ export default function Reports() {
 
   // ─── 12 RENDER ───────────────────────────────────────────────────────────
   // Permission guard — placed after all hooks to comply with React's Rules of Hooks
-  if (!hasPermission('reports', 'read') &&
-      !hasPermission('schedule', 'read') &&
-      !hasPermission('clients', 'read') &&
-      !hasPermission('services', 'read')) {
+  if (!hasPageAccess('reports')) {
     return <Navigate to="/profile" replace />;
   }
 

@@ -75,6 +75,7 @@ import {
   BookOpenIcon,
   Squares2X2Icon,
   ArrowPathIcon,
+  MagnifyingGlassPlusIcon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, preloadMajorTables } from '../services/api';
@@ -84,6 +85,8 @@ import Manager_DatabaseConnection from './components/Manager_DatabaseConnection'
 import useBranding from '../services/useBranding';
 import { applyActiveColorTheme } from '../services/activeColorTheme';
 import { right } from '@popperjs/core';
+
+const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
 const AlignLeftIcon = () => (
@@ -205,7 +208,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign } = useViewMode();
+  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
   const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
@@ -1609,6 +1612,34 @@ const Profile = () => {
                       </div>
                     </div>
                     <div className="col-12">
+                      <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded mb-2 gap-2 flex-wrap">
+                        <div className="d-flex align-items-center gap-2">
+                          <MagnifyingGlassPlusIcon className="h-4 w-4 text-primary" />
+                          <span className="small fw-medium">App Zoom</span>
+                        </div>
+                        <div className="d-flex align-items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={cycleUiScale}
+                            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                            title="Increase zoom to the next preset"
+                          >
+                            <MagnifyingGlassPlusIcon className="h-4 w-4" />
+                            <span>{uiScale}%</span>
+                          </button>
+                          <select
+                            value={uiScale}
+                            onChange={(e) => setUiScale(Number(e.target.value))}
+                            className="form-select form-select-sm"
+                            style={{ width: '7rem' }}
+                            aria-label="App zoom level"
+                          >
+                            {APP_ZOOM_LEVELS.map((zoomLevel) => (
+                              <option key={zoomLevel} value={zoomLevel}>{zoomLevel}%</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         onClick={handleManualSync}

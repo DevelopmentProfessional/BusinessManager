@@ -39,8 +39,8 @@ export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const location = useLocation();
-  const { hasPermission, isOnline, setOnline } = useStore();
-  const { isTrainingMode } = useViewMode();
+  const { hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
+  const { isTrainingMode, uiScale } = useViewMode();
 
   const employeeUnreadTotal = Object.values(unreadCounts).reduce((total, count) => {
     const numericCount = Number(count) || 0;
@@ -51,6 +51,14 @@ export default function Layout({ children }) {
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('training-mode', isTrainingMode);
   }, [isTrainingMode]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.style.setProperty('--app-ui-scale', String(uiScale / 100));
+    return () => {
+      document.documentElement.style.removeProperty('--app-ui-scale');
+    };
+  }, [uiScale]);
 
   useEffect(() => {
     const handleOnline = () => setOnline(true);
@@ -64,7 +72,7 @@ export default function Layout({ children }) {
   }, [setOnline]);
 
   useEffect(() => {
-    if (!hasPermission('employees', 'read')) return;
+    if (!hasPageAccess('employees')) return;
 
     let cancelled = false;
 
@@ -97,19 +105,15 @@ export default function Layout({ children }) {
       window.removeEventListener('focus', loadUnreadCounts);
       document.removeEventListener('visibilitychange', handleVisibilityRefresh);
     };
-  }, [hasPermission]);
+  }, [hasPageAccess]);
 
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
     if (!item.permission) return true; // Dashboard and Profile don't need specific permissions
     
     const [page, permission] = item.permission.split(':');
-    
-    // Check if user has any permission for this page (read, write, delete, or admin)
-    return hasPermission(page, 'read') || 
-           hasPermission(page, 'write') || 
-           hasPermission(page, 'delete') || 
-           hasPermission(page, 'admin');
+
+    return hasPermission(page, permission);
   });
 
   return (
