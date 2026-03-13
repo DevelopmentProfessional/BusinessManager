@@ -26,8 +26,8 @@ export default defineConfig(({ command, mode }) => {
         description: 'Business Management System',
         start_url: '/',
         display: 'standalone',
-        background_color: '#ffffff00',
-        theme_color: '#ffcc11',
+        background_color: '#000000',
+        theme_color: '#000000',
         icons: [
           {
             src: '/app-icon-192.png',

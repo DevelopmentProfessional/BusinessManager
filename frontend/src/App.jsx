@@ -218,7 +218,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/reports" element={
-            <ProtectedRoute requiredPermission="schedule:read">
+            <ProtectedRoute requiredPermission="reports:read">
               <Layout>
                 <Reports />
               </Layout>

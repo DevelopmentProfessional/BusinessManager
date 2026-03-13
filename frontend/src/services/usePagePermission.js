@@ -16,19 +16,14 @@ export default function usePagePermission(pageName) {
   const navigate = useNavigate();
   // Read authReady and permissions from the store directly so the effect
   // re-runs after permissions are fetched (not just on mount).
-  const { hasPermission, authReady, permissions } = useStore();
+  const { hasPageAccess, authReady, permissions } = useStore();
 
   useEffect(() => {
     // Don't redirect until auth is initialised — prevents false negatives
     // on iOS where permissions are refetched asynchronously after mount.
     if (!authReady) return;
 
-    if (
-      !hasPermission(pageName, 'read') &&
-      !hasPermission(pageName, 'write') &&
-      !hasPermission(pageName, 'delete') &&
-      !hasPermission(pageName, 'admin')
-    ) {
+    if (!hasPageAccess(pageName)) {
       navigate('/profile', { replace: true });
     }
   }, [authReady, permissions]); // eslint-disable-line react-hooks/exhaustive-deps

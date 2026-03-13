@@ -45,7 +45,7 @@ import Modal_Pay_Employee from './Modal_Pay_Employee';
 import useStore from '../../services/useStore';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
-const PAGES = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
+const PAGES = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin'];
 const PERMISSION_TYPES = ['read', 'write', 'admin'];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────

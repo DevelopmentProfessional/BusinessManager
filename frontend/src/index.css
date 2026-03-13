@@ -55,6 +55,7 @@
   --app-active-color: #3B82F6;
   --app-active-color-hover: #2563EB;
   --app-active-color-rgb: 59, 130, 246;
+  --app-ui-scale: 1;
 
   /* Bootstrap primary bridge so existing btn/active variants follow app active color */
   --bs-primary: var(--app-active-color);
@@ -87,6 +88,7 @@ body,
   /* dvh / JS-measured value takes over when available */
   height: var(--mobile-app-height, 100dvh);
   min-height: var(--mobile-app-height, 100dvh);
+  zoom: var(--app-ui-scale, 1);
   overflow: hidden;
 }
 

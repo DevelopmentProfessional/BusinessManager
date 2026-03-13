@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import cacheService from './cacheService';
 
+const IMPLIED_PERMISSIONS = {
+  read: ['read', 'read_all', 'view_all', 'write', 'write_all', 'delete', 'admin'],
+  read_all: ['read_all', 'view_all', 'write_all', 'delete', 'admin'],
+  view_all: ['view_all', 'write_all', 'delete', 'admin'],
+  write: ['write', 'write_all', 'delete', 'admin'],
+  write_all: ['write_all', 'delete', 'admin'],
+  delete: ['delete', 'admin'],
+  admin: ['admin'],
+};
+
 const useStore = create((set, get) => ({
   // Network state
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -57,28 +67,35 @@ const useStore = create((set, get) => ({
     const user = state.user || storedUser;
 
     // Admin users have access to everything
-    if (user && user.role === 'admin') {
+    if (user && String(user.role).toLowerCase() === 'admin') {
       return true;
     }
 
     // Check user permissions (from UserPermission table)
     const userPermissions = state.permissions.length > 0 ? state.permissions : storedPermissions;
 
-    // Permission hierarchy: admin > delete > write > read
-    // Having a higher permission implicitly grants all lower ones.
-    const implied = {
-      read:   ['read', 'write', 'delete', 'admin'],
-      write:  ['write', 'delete', 'admin'],
-      delete: ['delete', 'admin'],
-      admin:  ['admin'],
-    };
-    const satisfies = implied[permission] ?? [permission];
+    const normalizedPage = String(page || '').toLowerCase();
+    const normalizedPermission = String(permission || '').toLowerCase();
+    const normalizedUserPermissions = userPermissions.map((entry) => String(entry).toLowerCase());
+    const satisfies = IMPLIED_PERMISSIONS[normalizedPermission] ?? [normalizedPermission];
 
-    if (satisfies.some(p => userPermissions.includes(`${page}:${p}`))) {
+    if (satisfies.some(p => normalizedUserPermissions.includes(`${normalizedPage}:${p}`))) {
       return true;
     }
 
     return false;
+  },
+  hasPageAccess: (page) => {
+    const { hasPermission } = get();
+    return (
+      hasPermission(page, 'read') ||
+      hasPermission(page, 'write') ||
+      hasPermission(page, 'delete') ||
+      hasPermission(page, 'admin') ||
+      hasPermission(page, 'read_all') ||
+      hasPermission(page, 'view_all') ||
+      hasPermission(page, 'write_all')
+    );
   },
 
   // Fetch and update the current user's flat permission strings from the server

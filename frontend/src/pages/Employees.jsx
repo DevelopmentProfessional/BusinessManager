@@ -1004,7 +1004,7 @@ export default function Employees() {
 
   // ─── [9b] SHARED CONSTANTS & PAYROLL PERIOD HELPERS ────────────────────────
   // pages/permissions/roles are used by both the permission and role modals.
-  const pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin'];
+  const pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin'];
   const permissions = ['read', 'write', 'admin']; // Only use permission types that exist in production DB
   const roles = ['admin', 'manager', 'employee', 'viewer'];
 
