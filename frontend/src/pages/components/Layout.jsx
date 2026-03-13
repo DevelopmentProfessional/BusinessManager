@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import useViewMode from '../../services/useViewMode';
+import { chatAPI } from '../../services/api';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
@@ -36,9 +37,15 @@ function classNames(...classes) {
 
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({});
   const location = useLocation();
   const { hasPermission, isOnline, setOnline } = useStore();
   const { isTrainingMode } = useViewMode();
+
+  const employeeUnreadTotal = Object.values(unreadCounts).reduce((total, count) => {
+    const numericCount = Number(count) || 0;
+    return total + numericCount;
+  }, 0);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -55,6 +62,42 @@ export default function Layout({ children }) {
       window.removeEventListener('offline', handleOffline);
     };
   }, [setOnline]);
+
+  useEffect(() => {
+    if (!hasPermission('employees', 'read')) return;
+
+    let cancelled = false;
+
+    const loadUnreadCounts = async () => {
+      try {
+        const res = await chatAPI.getUnreadCounts();
+        const data = res?.data ?? res;
+        if (!cancelled && data && typeof data === 'object') {
+          setUnreadCounts(data);
+        }
+      } catch {
+        if (!cancelled) setUnreadCounts({});
+      }
+    };
+
+    const handleVisibilityRefresh = () => {
+      if (document.visibilityState === 'visible') {
+        loadUnreadCounts();
+      }
+    };
+
+    loadUnreadCounts();
+    const intervalId = window.setInterval(loadUnreadCounts, 15000);
+    window.addEventListener('focus', loadUnreadCounts);
+    document.addEventListener('visibilitychange', handleVisibilityRefresh);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', loadUnreadCounts);
+      document.removeEventListener('visibilitychange', handleVisibilityRefresh);
+    };
+  }, [hasPermission]);
 
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {
@@ -114,6 +157,7 @@ export default function Layout({ children }) {
             <div className="d-flex flex-column gap-2">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
+                const showEmployeeBadge = item.name === 'Employees' && employeeUnreadTotal > 0;
                 return (
                   <Link
                     key={item.name}
@@ -122,6 +166,7 @@ export default function Layout({ children }) {
                     className={classNames(
                       isActive ? 'btn btn-primary' : 'btn btn-outline-secondary',
                       'd-flex align-items-center text-decoration-none',
+                      'position-relative',
                       isTrainingMode ? 'btn-sm rounded-pill gap-2' : 'rounded-circle justify-content-center p-0'
                     )}
                     style={{ 
@@ -133,6 +178,14 @@ export default function Layout({ children }) {
                   >
                     <item.icon className={classNames('flex-shrink-0', isTrainingMode ? 'h-4 w-4' : 'h-5 w-5')} />
                     {isTrainingMode && <span>{item.name}</span>}
+                    {showEmployeeBadge && (
+                      <span
+                        className="badge bg-danger rounded-pill position-absolute"
+                        style={{ top: -4, right: -4, fontSize: '0.6rem', minWidth: 16, padding: '2px 4px' }}
+                      >
+                        {employeeUnreadTotal > 9 ? '9+' : employeeUnreadTotal}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
