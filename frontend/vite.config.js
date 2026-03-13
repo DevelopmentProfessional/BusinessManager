@@ -19,7 +19,7 @@ export default defineConfig(({ command, mode }) => {
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'],
+      includeAssets: ['app-icon.svg'],
       manifest: {
         name: 'Business Manager',
         short_name: 'BizManager',
@@ -30,7 +30,7 @@ export default defineConfig(({ command, mode }) => {
         theme_color: '#3B82F6',
         icons: [
           {
-            src: '/vite.svg',
+            src: '/app-icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable'
