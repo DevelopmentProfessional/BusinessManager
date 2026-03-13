@@ -64,7 +64,17 @@ const useStore = create((set, get) => ({
     // Check user permissions (from UserPermission table)
     const userPermissions = state.permissions.length > 0 ? state.permissions : storedPermissions;
 
-    if (userPermissions.includes(`${page}:${permission}`) || userPermissions.includes(`${page}:admin`)) {
+    // Permission hierarchy: admin > delete > write > read
+    // Having a higher permission implicitly grants all lower ones.
+    const implied = {
+      read:   ['read', 'write', 'delete', 'admin'],
+      write:  ['write', 'delete', 'admin'],
+      delete: ['delete', 'admin'],
+      admin:  ['admin'],
+    };
+    const satisfies = implied[permission] ?? [permission];
+
+    if (satisfies.some(p => userPermissions.includes(`${page}:${p}`))) {
       return true;
     }
 
