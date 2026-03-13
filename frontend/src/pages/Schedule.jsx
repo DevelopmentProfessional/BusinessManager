@@ -119,7 +119,7 @@ export default function Schedule() {
 
   // Use the permission refresh hook
 
-  usePagePermission('schedule', hasPermission);
+  usePagePermission('schedule');
   
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [currentDate, setCurrentDate] = useState(new Date());

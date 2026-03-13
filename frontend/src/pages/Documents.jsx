@@ -664,7 +664,7 @@ export default function Documents() {
   };
 
   // ─── 15  RENDER / RETURN ──────────────────────────────────────────────────
-  usePagePermission('documents', hasPermission);
+  usePagePermission('documents');
 
   if (loading) {
     return (

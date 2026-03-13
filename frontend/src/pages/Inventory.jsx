@@ -57,7 +57,7 @@ export default function Inventory() {
 
   // Use the permission refresh hook
 
-  usePagePermission('inventory', hasPermission);
+  usePagePermission('inventory');
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);

@@ -53,7 +53,7 @@ export default function Clients() {
     user,
   } = useStore();
 
-  usePagePermission('clients', hasPermission);
+  usePagePermission('clients');
 
   const [editingClient, setEditingClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');

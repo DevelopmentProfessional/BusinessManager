@@ -172,7 +172,7 @@ export default function Attendance() {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [clockActionLoading, setClockActionLoading] = useState(false);
-  usePagePermission('attendance', hasPermission);
+  usePagePermission('attendance');
 
 // ─── [4] LIFECYCLE HOOK ─────────────────────────────────────────────────────
   useFetchOnce(() => {
