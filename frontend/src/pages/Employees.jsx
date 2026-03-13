@@ -1181,7 +1181,7 @@ export default function Employees() {
                         <button
                           type="button"
                           className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? 'btn-primary' : 'btn-outline-secondary'}`}
-                          style={{ width: '3rem', height: '3rem' }}
+                          style={{ width: '3rem', height: '3rem',border: 'none' }}
                           title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ''}`}
                           onClick={(e) => {
                             e.stopPropagation();
