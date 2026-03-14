@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { XMarkIcon, PrinterIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { templatesAPI } from '../../services/api';
+import Modal_Template_Editor from './Modal_Template_Editor';
 import {
   renderTemplate,
   buildClientVariables,
@@ -47,8 +48,13 @@ export default function Modal_Template_Use({
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [renderedHtml, setRenderedHtml] = useState('');
-  const [copied, setCopied] = useState(false);
-  const iframeRef = useRef(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const printIframeRef = useRef(null);
+  const pdfCacheRef = useRef(new Map());
+  const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || 'Invoice';
+  const recipientEmail = (client?.email || entity?.email || '').trim();
 
   useEffect(() => {
     let cancelled = false;
@@ -80,49 +86,200 @@ export default function Modal_Template_Use({
     return {};
   };
 
+  const pdfFileName = useMemo(() => {
+    const safeName = (selected?.name || companyName || 'invoice')
+      .replace(/[^a-z0-9\-_\s]/gi, '')
+      .trim()
+      .replace(/\s+/g, '_')
+      .toLowerCase();
+    return `${safeName || 'invoice'}.pdf`;
+  }, [selected?.name, companyName]);
+
+  const emailSubject = useMemo(
+    () => `${selected?.name || 'Document'} from ${companyName}`,
+    [selected?.name, companyName]
+  );
+
+  const emailBody = useMemo(() => {
+    const customerName = client?.name || entity?.name || 'there';
+    return [
+      `Hello ${customerName},`,
+      '',
+      `Please find your document from ${companyName} attached.`,
+      'If you have any questions, reply to this email and we will help right away.',
+      '',
+      `Thanks,`,
+      companyName,
+    ].join('\n');
+  }, [client?.name, entity?.name, companyName]);
+
+  // Build the full HTML document for print / preview iframe
+  const iframeContent = useMemo(() => {
+    if (!renderedHtml) return '';
+    return `<!DOCTYPE html><html><head>
+      <meta charset="utf-8"/>
+      <title>${companyName}</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+               font-size: 14px; line-height: 1.6; padding: 32px; margin: 0; color: #111; background: #fff; }
+        h1,h2,h3 { margin: 0.5em 0; }
+        p { margin: 0.4em 0; }
+        hr { border: none; border-top: 1px solid #ccc; margin: 1em 0; }
+        ul,ol { padding-left: 1.5em; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { vertical-align: top; }
+        @page { margin: 12mm; }
+        @media print {
+          html, body { margin: 0; padding: 0; }
+          body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      </style>
+    </head><body>${renderedHtml}</body></html>`;
+  }, [renderedHtml, companyName]);
+
+  const createPdfBlob = useCallback(async (htmlContent) => {
+    const html2pdf = (await import('html2pdf.js')).default;
+
+    const root = document.createElement('div');
+    root.innerHTML = htmlContent;
+    root.style.position = 'fixed';
+    root.style.left = '0';
+    root.style.top = '0';
+    root.style.width = '794px';
+    root.style.minHeight = '1123px';
+    root.style.padding = '40px';
+    root.style.background = '#ffffff';
+    root.style.color = '#111111';
+    root.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    root.style.fontSize = '14px';
+    root.style.lineHeight = '1.6';
+    root.style.opacity = '0';
+    root.style.zIndex = '0';
+    root.style.pointerEvents = 'none';
+    document.body.appendChild(root);
+
+    try {
+      if (document.fonts?.ready) {
+        try { await document.fonts.ready; } catch {}
+      }
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      const imgs = Array.from(root.querySelectorAll('img'));
+      await Promise.all(
+        imgs.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            const done = () => resolve();
+            img.addEventListener('load', done, { once: true });
+            img.addEventListener('error', done, { once: true });
+            setTimeout(done, 3000);
+          });
+        })
+      );
+
+      const blob = await html2pdf()
+        .set({
+          margin: 0,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: Math.max(root.scrollWidth, 794),
+            windowHeight: Math.max(root.scrollHeight, 1123),
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] },
+        })
+        .from(root)
+        .outputPdf('blob');
+
+      if (!blob || blob.size < 2500) {
+        throw new Error('PDF output appears empty');
+      }
+      return blob;
+    } finally {
+      document.body.removeChild(root);
+    }
+  }, []);
+
+  const downloadBlob = useCallback((blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, []);
+
   const handlePrint = () => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
+    const iframe = printIframeRef.current;
+    if (!iframe?.contentWindow) return;
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
   };
 
-  const handleCopyHtml = async () => {
+  const handleDownloadPdf = async () => {
+    if (!selected || !renderedHtml || isDownloadingPdf) return;
+    setIsDownloadingPdf(true);
     try {
-      await navigator.clipboard.writeText(renderedHtml);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback
+      const cacheKey = selected.id;
+      let blob = pdfCacheRef.current.get(cacheKey);
+      if (!blob) {
+        blob = await createPdfBlob(renderedHtml);
+        pdfCacheRef.current.set(cacheKey, blob);
+      }
+      downloadBlob(blob, pdfFileName);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
-  const handleCopyText = async () => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = renderedHtml;
-    const text = tmp.innerText || tmp.textContent || '';
+  const handleOpenEmailDraft = async () => {
+    if (!selected) return;
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback
+      let blob = pdfCacheRef.current.get(selected.id);
+      if (!blob && renderedHtml) {
+        blob = await createPdfBlob(renderedHtml);
+        pdfCacheRef.current.set(selected.id, blob);
+      }
+
+      if (blob && navigator.share && navigator.canShare) {
+        const file = new File([blob], pdfFileName, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: emailSubject, text: emailBody, files: [file] });
+          return;
+        }
+      }
+
+      const to = recipientEmail ? encodeURIComponent(recipientEmail) : '';
+      const subject = encodeURIComponent(emailSubject);
+      const body = encodeURIComponent(`${emailBody}\n\nAttachment: ${pdfFileName}`);
+      window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_self');
+    } catch (error) {
+      console.error('Failed to prepare email draft:', error);
     }
   };
 
-  // Build the full HTML page for the iframe
-  const iframeContent = `<!DOCTYPE html><html><head>
-    <meta charset="utf-8"/>
-    <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-             font-size: 14px; line-height: 1.6; padding: 24px; margin: 0; color: #111; }
-      h1,h2,h3 { margin: 0.5em 0; }
-      p { margin: 0.4em 0; }
-      hr { border: none; border-top: 1px solid #ccc; margin: 1em 0; }
-      ul,ol { padding-left: 1.5em; }
-      @media print { body { padding: 0; } }
-    </style>
-  </head><body>${renderedHtml}</body></html>`;
+  const handleSaveTemplate = async (data) => {
+    if (!selected?.id) return;
+    // Invalidate cached PDF for this template
+    pdfCacheRef.current.delete(selected.id);
+    const res = await templatesAPI.update(selected.id, data);
+    const updated = res?.data ?? res;
+    setTemplates((prev) => prev.map((tpl) => (tpl.id === selected.id ? updated : tpl)));
+    setSelected(updated);
+    setIsEditorOpen(false);
+  };
+
+  const visibleTemplates = filterType
+    ? templates.filter((t) => t.template_type === filterType)
+    : templates;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900">
@@ -131,12 +288,6 @@ export default function Modal_Template_Use({
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">
           Use Template
         </h2>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-full text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          <XMarkIcon className="h-5 w-5" />
-        </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
@@ -147,11 +298,11 @@ export default function Modal_Template_Use({
         >
           {loading ? (
             <div className="p-4 text-sm text-gray-500">Loading...</div>
-          ) : templates.length === 0 ? (
+          ) : visibleTemplates.length === 0 ? (
             <div className="p-4 text-sm text-gray-500">No templates available for this page.</div>
           ) : (
             <ul className="py-1">
-              {(filterType ? templates.filter(t => t.template_type === filterType) : templates).map((tpl) => (
+              {visibleTemplates.map((tpl) => (
                 <li key={tpl.id}>
                   <button
                     type="button"
@@ -183,47 +334,27 @@ export default function Modal_Template_Use({
         <div className="flex-1 flex flex-col overflow-hidden">
           {selected ? (
             <>
-              {/* Preview toolbar */}
+              {/* Preview title bar */}
               <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs text-gray-500 flex-1 truncate">{selected.name}</span>
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-primary-600 text-white hover:bg-primary-700"
-                  title="Print"
-                >
-                  <PrinterIcon className="h-3.5 w-3.5" /> Print
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyHtml}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                  title="Copy HTML"
-                >
-                  <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                  {copied ? 'Copied!' : 'Copy HTML'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyText}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                  title="Copy plain text"
-                >
-                  Copy Text
-                </button>
-                {/* TODO: Email sending — wire emailAPI.sendEmail({ to: client.email, subject: selected.name, html_body: renderedHtml })
-                    Requires backend SMTP router (backend/routers/email.py) and env vars:
-                    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM */}
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
+                  {selected.name}
+                </span>
+                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
+                  {selected.template_type}
+                </span>
               </div>
-              {/* iframe preview */}
-              <div className="flex-1 overflow-hidden">
-                <iframe
-                  ref={iframeRef}
-                  srcDoc={iframeContent}
-                  className="w-full h-full border-0"
-                  title="Template preview"
-                  sandbox="allow-same-origin allow-modals"
-                />
+
+              {/* Live HTML preview in iframe — same content used by Print */}
+              <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-800 p-3">
+                <div className="h-full rounded shadow-sm overflow-hidden bg-white">
+                  <iframe
+                    ref={printIframeRef}
+                    srcDoc={iframeContent}
+                    className="w-full h-full border-0"
+                    title="Template preview"
+                    sandbox="allow-same-origin allow-modals"
+                  />
+                </div>
               </div>
             </>
           ) : (
@@ -233,6 +364,122 @@ export default function Modal_Template_Use({
           )}
         </div>
       </div>
+
+      {/* Footer actions */}
+      <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="position-relative d-flex align-items-center" style={{ minHeight: '3rem' }}>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditorOpen(true)}
+              disabled={!selected}
+              className="btn btn-outline-secondary d-flex align-items-center gap-1"
+            >
+              <PencilSquareIcon className="h-4 w-4" />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={!selected}
+              className="btn btn-primary d-flex align-items-center gap-1"
+            >
+              <PrinterIcon className="h-4 w-4" />
+              Print
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={!selected || isDownloadingPdf}
+              className="btn btn-outline-primary d-flex align-items-center gap-1"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              {isDownloadingPdf ? 'Downloading...' : 'Download'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEmailPreviewOpen(true)}
+              disabled={!selected}
+              className="btn btn-outline-secondary d-flex align-items-center gap-1"
+            >
+              <EnvelopeIcon className="h-4 w-4" />
+              Email
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute"
+            style={{ left: '50%', transform: 'translateX(-50%)' }}
+          >
+            <XMarkIcon className="h-4 w-4" />
+            Close
+          </button>
+        </div>
+      </div>
+
+      {isEditorOpen && selected && (
+        <Modal_Template_Editor
+          template={selected}
+          onSave={handleSaveTemplate}
+          onClose={() => setIsEditorOpen(false)}
+        />
+      )}
+
+      {isEmailPreviewOpen && selected && (
+        <div className="fixed inset-0 z-[60] d-flex align-items-center justify-content-center bg-black/50 px-3">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded w-100" style={{ maxWidth: '760px' }}>
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Email Preview</h3>
+            </div>
+
+            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-bottom border-gray-200 dark:border-gray-700">
+              <div className="small text-gray-500 mb-1">To</div>
+              <div className="text-sm text-gray-900 dark:text-white">{recipientEmail || 'No client email available'}</div>
+
+              <div className="small text-gray-500 mt-3 mb-1">Subject</div>
+              <div className="text-sm text-gray-900 dark:text-white">{emailSubject}</div>
+
+              <div className="small text-gray-500 mt-3 mb-1">Attachment</div>
+              <div className="text-sm text-gray-900 dark:text-white">
+                {pdfFileName} (generated on send)
+              </div>
+            </div>
+
+            <div className="px-4 py-3 bg-white dark:bg-gray-900" style={{ maxHeight: '42vh', overflowY: 'auto' }}>
+              <div className="small text-gray-500 mb-2">Body</div>
+              <pre className="m-0 text-sm text-gray-800 dark:text-gray-200" style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                {emailBody}
+              </pre>
+            </div>
+
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="position-relative d-flex align-items-center" style={{ minHeight: '2.5rem' }}>
+                <button
+                  type="button"
+                  onClick={handleOpenEmailDraft}
+                  disabled={!selected}
+                  className="btn btn-primary d-flex align-items-center gap-1"
+                >
+                  <EnvelopeIcon className="h-4 w-4" />
+                  Open Email Draft
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEmailPreviewOpen(false)}
+                  className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute"
+                  style={{ left: '50%', transform: 'translateX(-50%)' }}
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
