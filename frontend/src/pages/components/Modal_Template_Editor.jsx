@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { XMarkIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { TEMPLATE_VARIABLES } from './templateVariables';
+import { documentsAPI } from '../../services/api';
 
 const RichTextEditor = lazy(() =>
   import('./editors/RichTextEditor')
@@ -41,6 +42,9 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const [content, setContent] = useState(template?.content || '');
   const [showVarPicker, setShowVarPicker] = useState(false);
   const [openScope, setOpenScope] = useState(null);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [images, setImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -57,6 +61,38 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     if (editor) {
       editor.chain().focus().insertContent(`{{${key}}}`).run();
     }
+  };
+
+  const loadImages = async () => {
+    setLoadingImages(true);
+    try {
+      const res = await documentsAPI.getAll();
+      const docs = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setImages(docs.filter((d) => (d.content_type || '').startsWith('image/')));
+    } catch {
+      setImages([]);
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  const toggleImagePicker = () => {
+    if (!showImagePicker && images.length === 0) loadImages();
+    setShowImagePicker((v) => !v);
+    if (showVarPicker) setShowVarPicker(false);
+  };
+
+  const toggleVarPicker = () => {
+    setShowVarPicker((v) => !v);
+    if (showImagePicker) setShowImagePicker(false);
+  };
+
+  const insertImage = (doc) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const src = documentsAPI.fileUrl(doc.id);
+    const alt = doc.original_filename || doc.filename || '';
+    editor.chain().focus().setImage({ src, alt }).run();
   };
 
   const handleSave = async () => {
@@ -179,15 +215,23 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
         {/* Editor area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Variable picker toggle */}
-          <div className="flex-shrink-0 flex items-center justify-between px-4 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          {/* Toolbar: Variables + Images toggles */}
+          <div className="flex-shrink-0 flex items-center gap-3 px-4 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <button
               type="button"
-              onClick={() => setShowVarPicker((v) => !v)}
+              onClick={toggleVarPicker}
               className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
             >
               {showVarPicker ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
               Variables
+            </button>
+            <button
+              type="button"
+              onClick={toggleImagePicker}
+              className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              <PhotoIcon className="h-4 w-4" />
+              {showImagePicker ? 'Hide Images' : 'Insert Image'}
             </button>
           </div>
 
@@ -227,6 +271,41 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Image picker panel */}
+          {showImagePicker && (
+            <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-y-auto max-h-48">
+              {loadingImages ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Loading images...</p>
+              ) : images.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  No images found. Upload images in the Documents section first.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {images.map((doc) => (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      onClick={() => insertImage(doc)}
+                      title={`Insert: ${doc.original_filename || doc.filename}`}
+                      className="flex flex-col items-center gap-1 p-1 rounded border border-gray-200 dark:border-gray-600 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                    >
+                      <img
+                        src={documentsAPI.fileUrl(doc.id)}
+                        alt={doc.original_filename || ''}
+                        className="h-16 w-16 object-cover rounded"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <span className="text-xs text-gray-600 dark:text-gray-400 max-w-[64px] truncate">
+                        {doc.original_filename || doc.filename}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
