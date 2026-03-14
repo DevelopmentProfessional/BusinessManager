@@ -38,9 +38,9 @@
 
 import React, { useState, useEffect } from 'react';
 import useStore from '../../services/useStore';
-import { isudAPI, serviceRelationsAPI, inventoryAPI } from '../../services/api';
+import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import Gate_Permission from './Gate_Permission';
 import Dropdown_Custom from './Dropdown_Custom';
@@ -93,6 +93,12 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [durationError, setDurationError] = useState('');
   const [serviceResources, setServiceResources] = useState([]);
   const [inventoryMap, setInventoryMap] = useState({});
+  // Production task state
+  const [productItems, setProductItems] = useState([]);
+  const [productionInfo, setProductionInfo] = useState(null); // from GET /production/tasks/{id}/info
+  const [productionLoading, setProductionLoading] = useState(false);
+  const [productionError, setProductionError] = useState('');
+  const [completeResult, setCompleteResult] = useState(null);
   const navigate = useNavigate();
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
@@ -209,6 +215,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         is_paid: appointment.is_paid || false,
         discount: appointment.discount || 0,
         sale_transaction_id: appointment.sale_transaction_id || null,
+        task_type: appointment.task_type || 'service',
+        production_item_id: appointment.production_item_id || '',
+        production_quantity: appointment.production_quantity || 1,
       };
     }
     return {
@@ -229,6 +238,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       is_paid: false,
       discount: 0,
       sale_transaction_id: null,
+      task_type: 'service',
+      production_item_id: '',
+      production_quantity: 1,
     };
   };
 
@@ -239,6 +251,27 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   useEffect(() => {
     setFormData(getInitialFormData());
   }, [appointment]);
+
+  // Load product inventory items once (for the production task selector)
+  useEffect(() => {
+    inventoryAPI.getAll().then(res => {
+      const all = Array.isArray(res?.data) ? res.data : [];
+      setProductItems(all.filter(i => (i.type || '').toUpperCase() === 'PRODUCT'));
+    }).catch(() => {});
+  }, []);
+
+  // Load production info when viewing/editing an existing production task
+  useEffect(() => {
+    if (!appointment?.id || formData.task_type !== 'production' || !formData.production_item_id) {
+      setProductionInfo(null);
+      return;
+    }
+    let cancelled = false;
+    productionAPI.getInfo(appointment.id).then(res => {
+      if (!cancelled) setProductionInfo(res?.data ?? res);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [appointment?.id, formData.task_type, formData.production_item_id]);
 
   // Load resource consumption info when service changes
   const loadServiceResources = async (serviceId) => {
@@ -394,6 +427,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       is_paid: formData.is_paid,
       discount: parseFloat(formData.discount) || 0,
       sale_transaction_id: formData.sale_transaction_id || null,
+      task_type: formData.task_type || 'service',
+      production_item_id: formData.production_item_id || null,
+      production_quantity: parseInt(formData.production_quantity) || 1,
     };
 
     // Only include client_id and service_id if needed for this type
@@ -490,6 +526,161 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               />
               <label htmlFor="task_description">Task Description</label>
             </div>
+          )}
+
+          {/* ── Production Task fields (task type only) ── */}
+          {formData.appointment_type === 'task' && (
+            <>
+              {/* Task sub-type toggle: generic vs production */}
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, task_type: 'service', production_item_id: '', production_quantity: 1 }))}
+                  className={`btn btn-sm flex-1 ${formData.task_type !== 'production' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                >
+                  General Task
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, task_type: 'production' }))}
+                  className={`btn btn-sm flex-1 ${formData.task_type === 'production' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                >
+                  <CogIcon style={{ width: 14, height: 14, marginRight: 4, verticalAlign: 'middle' }} />
+                  Production Run
+                </button>
+              </div>
+
+              {/* Product selector + batch count (production tasks only) */}
+              {formData.task_type === 'production' && (
+                <>
+                  <Dropdown_Custom
+                    name="production_item_id"
+                    value={formData.production_item_id}
+                    onChange={handleChange}
+                    options={productItems.map(p => ({ value: p.id, label: `${p.name}${p.sku ? ` (${p.sku})` : ''}` }))}
+                    placeholder="Select product to produce"
+                    searchable
+                    label="Product"
+                  />
+                  <div className="form-floating">
+                    <input
+                      type="number" id="production_quantity" name="production_quantity"
+                      min="1" value={formData.production_quantity}
+                      onChange={handleChange}
+                      className="form-control form-control-sm"
+                      placeholder="Batches"
+                    />
+                    <label htmlFor="production_quantity">Number of Batches</label>
+                  </div>
+                </>
+              )}
+
+              {/* Production info panel — shown when editing an existing production task */}
+              {formData.task_type === 'production' && appointment?.id && productionInfo && (
+                <div className="border rounded p-2" style={{ fontSize: '0.78rem', background: '#f8faff' }}>
+                  <p className="mb-2 fw-semibold" style={{ color: '#4338ca', fontSize: '0.8rem' }}>
+                    <CogIcon style={{ width: 13, height: 13, marginRight: 4, verticalAlign: 'middle' }} />
+                    Production Summary
+                  </p>
+
+                  {/* Product */}
+                  {productionInfo.product && (
+                    <div className="d-flex justify-content-between mb-1">
+                      <span className="text-muted">Product</span>
+                      <span className="fw-semibold">{productionInfo.product.name}</span>
+                    </div>
+                  )}
+
+                  {/* Batches */}
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-muted">Batches to run</span>
+                    <span className="fw-semibold">{formData.production_quantity}</span>
+                  </div>
+
+                  {/* Asset info */}
+                  {productionInfo.assets?.length > 0 && productionInfo.assets.map(a => (
+                    <div key={a.id} className="mb-2 p-1 rounded" style={{ background: '#eef2ff' }}>
+                      <div className="d-flex align-items-center gap-1 mb-1">
+                        <WrenchScrewdriverIcon style={{ width: 12, height: 12, color: '#4338ca' }} />
+                        <span className="fw-semibold">{a.name}</span>
+                      </div>
+                      <div className="d-flex gap-3" style={{ fontSize: '0.74rem', color: '#374151' }}>
+                        <span>Batch size: <strong>{a.batch_size} units</strong></span>
+                        {a.duration_minutes && <span>Duration: <strong>{a.duration_minutes} min / batch</strong></span>}
+                        {a.duration_minutes && formData.production_quantity > 1 && (
+                          <span>Total: <strong>{a.duration_minutes * formData.production_quantity} min</strong></span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Resources consumed */}
+                  {productionInfo.resources?.length > 0 && (
+                    <>
+                      <p className="mb-1 fw-semibold text-muted" style={{ fontSize: '0.74rem' }}>Resources consumed:</p>
+                      {productionInfo.resources.map(r => (
+                        <div key={r.id} className="d-flex justify-content-between align-items-center">
+                          <span className="d-flex align-items-center gap-1">
+                            <BeakerIcon style={{ width: 11, height: 11, color: '#6b7280' }} />{r.name}
+                          </span>
+                          <span className="badge bg-secondary">
+                            {r.quantity_per_batch * (formData.production_quantity || 1)} units
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Locations */}
+                  {productionInfo.locations?.length > 0 && (
+                    <div className="mt-1 d-flex gap-1 flex-wrap">
+                      {productionInfo.locations.map(l => (
+                        <span key={l.id} className="badge bg-light text-dark border" style={{ fontSize: '0.7rem' }}>📍 {l.name}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Complete button */}
+                  {appointment.status !== 'completed' && (
+                    <>
+                      {completeResult ? (
+                        <div className="mt-2 p-2 rounded" style={{ background: '#d1fae5', fontSize: '0.76rem', color: '#065f46' }}>
+                          ✓ Completed! Produced <strong>{completeResult.units_produced}</strong> units of {completeResult.product_name}.
+                          Stock now: <strong>{completeResult.new_product_quantity}</strong>.
+                          {completeResult.low_stock_warnings?.length > 0 && (
+                            <div className="mt-1 text-danger">
+                              ⚠ Low stock: {completeResult.low_stock_warnings.map(w => w.name).join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={productionLoading}
+                          className="btn btn-success btn-sm mt-2 w-100"
+                          onClick={async () => {
+                            setProductionLoading(true);
+                            setProductionError('');
+                            try {
+                              const res = await productionAPI.completeTask(appointment.id);
+                              setCompleteResult(res?.data ?? res);
+                            } catch (err) {
+                              setProductionError(err?.response?.data?.detail || 'Failed to complete production task.');
+                            } finally { setProductionLoading(false); }
+                          }}
+                        >
+                          {productionLoading ? 'Processing…' : '✓ Complete Production Run'}
+                        </button>
+                      )}
+                      {productionError && <div className="text-danger mt-1" style={{ fontSize: '0.74rem' }}>{productionError}</div>}
+                    </>
+                  )}
+                  {appointment.status === 'completed' && (
+                    <div className="mt-2 text-success" style={{ fontSize: '0.76rem' }}>✓ This production task is already completed.</div>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           {/* Client Selection */}

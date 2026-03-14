@@ -67,7 +67,7 @@ else:
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.12.1"
+CURRENT_SCHEMA_VERSION = "2026.03.13.1"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -317,8 +317,145 @@ def create_db_and_tables():
     _ensure_user_training_mode_if_needed()
     _ensure_schedule_payment_columns_if_needed()
     _ensure_service_recipe_if_needed()
+    _ensure_production_tables_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
+
+# ─── 18 MIGRATION: PRODUCTION TABLES & SCHEDULE PRODUCTION COLUMNS ─────────────
+def _ensure_production_tables_if_needed():
+    """Create product_resource, product_asset, product_location tables and
+    add production columns to the schedule table for existing databases."""
+
+    sqlite = DATABASE_URL.startswith("sqlite")
+
+    with engine.begin() as conn:
+
+        def table_exists(name: str) -> bool:
+            if sqlite:
+                return conn.execute(text(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=:n"
+                ), {"n": name}).fetchone() is not None
+            else:
+                return conn.execute(text(
+                    "SELECT to_regclass(:n)"
+                ), {"n": name}).scalar() is not None
+
+        def col_exists(tbl: str, col: str) -> bool:
+            if sqlite:
+                rows = conn.execute(text(f"PRAGMA table_info('{tbl}')")).fetchall()
+                return any(r[1] == col for r in rows)
+            else:
+                r = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name=:t AND column_name=:c"
+                ), {"t": tbl, "c": col}).fetchone()
+                return r is not None
+
+        # ── product_resource ──────────────────────────────────────────────────
+        if not table_exists("product_resource"):
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE product_resource (
+                        id TEXT PRIMARY KEY,
+                        created_at DATETIME NOT NULL,
+                        updated_at DATETIME,
+                        inventory_id TEXT NOT NULL,
+                        resource_id  TEXT NOT NULL,
+                        quantity_per_batch REAL NOT NULL DEFAULT 1.0,
+                        notes TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE product_resource (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP,
+                        inventory_id UUID NOT NULL,
+                        resource_id  UUID NOT NULL,
+                        quantity_per_batch REAL NOT NULL DEFAULT 1.0,
+                        notes TEXT
+                    )
+                """))
+            print("  + Created table product_resource")
+
+        # ── product_asset ─────────────────────────────────────────────────────
+        if not table_exists("product_asset"):
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE product_asset (
+                        id TEXT PRIMARY KEY,
+                        created_at DATETIME NOT NULL,
+                        updated_at DATETIME,
+                        inventory_id UUID NOT NULL,
+                        asset_id     TEXT NOT NULL,
+                        batch_size   INTEGER NOT NULL DEFAULT 1,
+                        duration_minutes REAL,
+                        notes TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE product_asset (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP,
+                        inventory_id UUID NOT NULL,
+                        asset_id     UUID NOT NULL,
+                        batch_size   INTEGER NOT NULL DEFAULT 1,
+                        duration_minutes REAL,
+                        notes TEXT
+                    )
+                """))
+            print("  + Created table product_asset")
+
+        # ── product_location ──────────────────────────────────────────────────
+        if not table_exists("product_location"):
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE product_location (
+                        id TEXT PRIMARY KEY,
+                        created_at DATETIME NOT NULL,
+                        updated_at DATETIME,
+                        inventory_id TEXT NOT NULL,
+                        location_id  TEXT NOT NULL,
+                        notes TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE product_location (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP,
+                        inventory_id UUID NOT NULL,
+                        location_id  UUID NOT NULL,
+                        notes TEXT
+                    )
+                """))
+            print("  + Created table product_location")
+
+        # ── schedule production columns ───────────────────────────────────────
+        if table_exists("schedule"):
+            cols_to_add = [
+                ("task_type",           "VARCHAR DEFAULT 'service'"),
+                ("production_item_id",  "TEXT"),
+                ("production_quantity", "INTEGER DEFAULT 1"),
+            ]
+            pg_types = {
+                "task_type":           ("VARCHAR", "VARCHAR DEFAULT 'service'"),
+                "production_item_id":  ("UUID",    "UUID"),
+                "production_quantity": ("INTEGER", "INTEGER DEFAULT 1"),
+            }
+            for col, sqlite_type in cols_to_add:
+                if not col_exists("schedule", col):
+                    if sqlite:
+                        conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {sqlite_type}"))
+                    else:
+                        _, pg_type = pg_types[col]
+                        conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {pg_type}"))
+                    print(f"  + Added column schedule.{col}")
+
 
 # ─── 17 SESSION DEPENDENCY ─────────────────────────────────────────────────────
 def get_session() -> Generator[Session, None, None]:
