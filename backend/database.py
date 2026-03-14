@@ -67,7 +67,7 @@ else:
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.13.1"
+CURRENT_SCHEMA_VERSION = "2026.03.13.3"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -318,6 +318,8 @@ def create_db_and_tables():
     _ensure_schedule_payment_columns_if_needed()
     _ensure_service_recipe_if_needed()
     _ensure_production_tables_if_needed()
+    _ensure_schedule_client_nullable_if_needed()
+    _ensure_document_template_name_unique_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
@@ -455,6 +457,44 @@ def _ensure_production_tables_if_needed():
                         _, pg_type = pg_types[col]
                         conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {pg_type}"))
                     print(f"  + Added column schedule.{col}")
+
+
+# ─── 19 MIGRATION: SCHEDULE CLIENT_ID NULLABLE ──────────────────────────────────
+def _ensure_schedule_client_nullable_if_needed():
+    """Make schedule.client_id and service_id nullable so meetings and tasks can exist without a client/service."""
+    if DATABASE_URL.startswith("sqlite"):
+        return  # SQLite already allows NULL for Optional fields; no ALTER needed
+    try:
+        with engine.begin() as conn:
+            for col in ("client_id", "service_id"):
+                row = conn.execute(text(
+                    "SELECT is_nullable FROM information_schema.columns "
+                    f"WHERE table_name='schedule' AND column_name='{col}'"
+                )).fetchone()
+                if row and row[0] == "NO":
+                    conn.execute(text(f"ALTER TABLE schedule ALTER COLUMN {col} DROP NOT NULL"))
+                    print(f"  + Dropped NOT NULL constraint on schedule.{col}")
+    except Exception as e:
+        print(f"  [WARN] Could not make schedule columns nullable: {e}")
+
+
+# ─── 20 MIGRATION: DOCUMENT TEMPLATE NAME UNIQUE CONSTRAINT ─────────────────────
+def _ensure_document_template_name_unique_if_needed():
+    """Add a unique constraint on document_template.name to prevent duplicate seeds."""
+    if DATABASE_URL.startswith("sqlite"):
+        return  # SQLite unique index via CREATE UNIQUE INDEX IF NOT EXISTS
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT 1 FROM pg_indexes WHERE tablename='document_template' AND indexname='uq_document_template_name'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX uq_document_template_name ON document_template (name)"
+                ))
+                print("  + Added unique index on document_template.name")
+    except Exception as e:
+        print(f"  [WARN] Could not add unique index on document_template.name: {e}")
 
 
 # ─── 17 SESSION DEPENDENCY ─────────────────────────────────────────────────────
