@@ -1565,6 +1565,47 @@ class SaleTransactionItemCreate(SQLModel):
     line_total: float = 0
 
 
+# Client persistent cart models
+class ClientCartItem(BaseModel, table=True):
+    __tablename__ = "client_cart_item"
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    cart_key: str = Field(index=True)   # e.g. "service-{uuid}" or "product-{uuid}"
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str                       # "product" or "service"
+    item_name: str
+    unit_price: float = Field(default=0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0)
+    options_json: Optional[str] = Field(default=None)  # JSON-encoded selectedOptions
+
+
+class ClientCartItemRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    cart_key: str
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    options_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ClientCartItemUpsert(SQLModel):
+    cart_key: str
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float = 0
+    quantity: int = 1
+    line_total: float = 0
+    options_json: Optional[str] = None
+
+
 # Document Template model
 class DocumentTemplate(BaseModel, table=True):
     __tablename__ = "document_template"

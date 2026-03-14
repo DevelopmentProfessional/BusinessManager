@@ -37,12 +37,21 @@ export default function Manager_MobileAddressBar() {
       }
     };
 
+    let blurTimeout = null;
     const onFocusOut = (event) => {
       const target = event.target;
       if (target && target.classList?.contains('app-search-input')) {
         focusActive = false;
-        root.classList.remove('search-focus');
-        updateKeyboardOffset();
+        // Debounce removal so a tap on a footer button fires its click before the
+        // layout shifts back (search-hide-on-focus elements reappearing would
+        // otherwise eat the first tap, requiring a second tap to activate).
+        clearTimeout(blurTimeout);
+        blurTimeout = setTimeout(() => {
+          if (!focusActive) {
+            root.classList.remove('search-focus');
+            updateKeyboardOffset();
+          }
+        }, 200);
       }
     };
 
@@ -59,6 +68,7 @@ export default function Manager_MobileAddressBar() {
     window.visualViewport?.addEventListener('scroll', onViewportChange, { passive: true });
 
     return () => {
+      clearTimeout(blurTimeout);
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
       window.removeEventListener('resize', onViewportChange);

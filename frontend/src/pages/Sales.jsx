@@ -37,11 +37,11 @@ import {
   PlusIcon, MinusIcon,
   MagnifyingGlassIcon, SparklesIcon, CubeIcon,
   ChevronDownIcon, ChevronUpIcon, FunnelIcon,
-  UserCircleIcon, ArrowTrendingUpIcon
+  UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import Button_Toolbar from './components/Button_Toolbar';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -49,6 +49,7 @@ import Modal_Checkout_Sales from './components/Modal_Checkout_Sales';
 import Modal_Cart_Sales from './components/Modal_Cart_Sales';
 import Modal_History_Sales from './components/Modal_History_Sales';
 import Modal_Feature_Select_Sales from './components/Modal_Feature_Select_Sales';
+import Modal_Template_Use from './components/Modal_Template_Use';
 import { getDisplayImageUrl } from './components/imageUtils';
 import useViewMode from '../services/useViewMode';
 
@@ -232,6 +233,8 @@ export default function Sales() {
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [appSettings, setAppSettings] = useState(null);
+  // Invoice template modal
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [historyFilters, setHistoryFilters] = useState({
     showServices: true,
     showProducts: true,
@@ -323,18 +326,46 @@ export default function Sales() {
     }
   }, [location.state?.preSelectedClient, location.state?.preloadServiceId, services.length]);
 
-  // Sync cart to localStorage — client-keyed when a client is selected, walk-in otherwise
+  // Walk-in cart persisted to localStorage (no client selected)
   useEffect(() => {
-    if (selectedClient?.id) {
-      try {
-        localStorage.setItem(`client_cart_${selectedClient.id}`, JSON.stringify(cart));
-      } catch {}
-    } else {
-      try {
-        localStorage.setItem('walk_in_cart', JSON.stringify(cart));
-      } catch {}
+    if (!selectedClient?.id) {
+      try { localStorage.setItem('walk_in_cart', JSON.stringify(cart)); } catch {}
     }
   }, [cart, selectedClient?.id]);
+
+  // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
+  const mapCartItemToDb = (item) => ({
+    cart_key:    item.cartKey,
+    item_id:     item.id || null,
+    item_type:   item.itemType,
+    item_name:   item.name,
+    unit_price:  item.price,
+    quantity:    item.quantity,
+    line_total:  item.price * item.quantity,
+    options_json: item.selectedOptions?.length > 0
+      ? JSON.stringify(item.selectedOptions)
+      : null,
+  });
+
+  const mapDbItemToCart = (dbItem) => ({
+    cartKey:         dbItem.cart_key,
+    id:              dbItem.item_id,
+    itemType:        dbItem.item_type,
+    name:            dbItem.item_name,
+    price:           dbItem.unit_price,
+    quantity:        dbItem.quantity,
+    selectedOptions: dbItem.options_json ? JSON.parse(dbItem.options_json) : [],
+  });
+
+  const syncItemToDb = (item, clientId) => {
+    if (!clientId) return;
+    clientCartAPI.upsertItem(clientId, mapCartItemToDb(item)).catch(() => {});
+  };
+
+  const removeItemFromDb = (cartKey, clientId) => {
+    if (!clientId) return;
+    clientCartAPI.removeItem(clientId, cartKey).catch(() => {});
+  };
 
   const loadClients = async () => {
     if (clientsLoaded) return; // Already loaded, skip
@@ -398,10 +429,23 @@ export default function Sales() {
 
     try {
       if (nextCart.length === 0) {
-        const saved = localStorage.getItem(`client_cart_${client.id}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) nextCart = parsed;
+        // Load persistent cart from DB (source of truth)
+        const res = await clientCartAPI.getItems(client.id);
+        const dbItems = Array.isArray(res?.data) ? res.data : [];
+        if (dbItems.length > 0) {
+          nextCart = dbItems.map(mapDbItemToCart);
+        } else {
+          // Fallback: migrate from localStorage once if DB is empty
+          const saved = localStorage.getItem(`client_cart_${client.id}`);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              nextCart = parsed;
+              // Migrate to DB
+              parsed.forEach(item => syncItemToDb(item, client.id));
+              localStorage.removeItem(`client_cart_${client.id}`);
+            }
+          }
         }
       }
     } catch {}
@@ -479,15 +523,15 @@ export default function Sales() {
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find(c => c.cartKey === cartKey);
     const price = overridePrice != null ? overridePrice : item.price;
+    let updatedItem;
     if (existing) {
-      setCart(cart.map(c =>
-        c.cartKey === cartKey
-          ? { ...c, quantity, price, ...(selectedOptions ? { selectedOptions } : {}) }
-          : c
-      ));
+      updatedItem = { ...existing, quantity, price, ...(selectedOptions ? { selectedOptions } : {}) };
+      setCart(cart.map(c => c.cartKey === cartKey ? updatedItem : c));
     } else {
-      setCart([...cart, { ...item, cartKey, itemType, quantity, price, selectedOptions: selectedOptions ?? [] }]);
+      updatedItem = { ...item, cartKey, itemType, quantity, price, selectedOptions: selectedOptions ?? [] };
+      setCart([...cart, updatedItem]);
     }
+    syncItemToDb(updatedItem, selectedClient?.id);
   };
 
   // Route add-to-cart through feature check for products
@@ -509,15 +553,19 @@ export default function Sales() {
 
   const removeFromCart = (cartKey) => {
     setCart(cart.filter(item => item.cartKey !== cartKey));
+    removeItemFromDb(cartKey, selectedClient?.id);
   };
 
   const updateCartQuantity = (cartKey, quantity) => {
     if (quantity <= 0) {
       removeFromCart(cartKey);
     } else {
-      setCart(cart.map(item => 
+      const updated = cart.map(item =>
         item.cartKey === cartKey ? { ...item, quantity } : item
-      ));
+      );
+      setCart(updated);
+      const updatedItem = updated.find(i => i.cartKey === cartKey);
+      if (updatedItem) syncItemToDb(updatedItem, selectedClient?.id);
     }
   };
 
@@ -650,6 +698,10 @@ export default function Sales() {
       // Continue — local sale record is already saved
     }
 
+    // Clear DB cart now that transaction is complete
+    if (selectedClient?.id) {
+      clientCartAPI.clearCart(selectedClient.id).catch(() => {});
+    }
     setCart([]);
     setSelectedClient(null);
     setShowCheckout(false);
@@ -959,6 +1011,17 @@ export default function Sales() {
               </span>
             ) : null}
           />
+
+          {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
+          {cartItemCount > 0 && selectedClient && (
+            <Button_Toolbar
+              icon={DocumentTextIcon}
+              label="Invoice"
+              onClick={() => setShowInvoiceModal(true)}
+              className="btn-outline-secondary"
+              title="Generate invoice for current cart"
+            />
+          )}
         </div>
 
         {/* Controls Row 2 - Client, Clear, Filters */}
@@ -1098,6 +1161,35 @@ export default function Sales() {
         historyFilters={historyFilters}
         setHistoryFilters={setHistoryFilters}
       />
+
+      {/* Pre-checkout Invoice Generator */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 z-50">
+          <Modal_Template_Use
+            page="sales"
+            entity={{
+              id: `DRAFT-${Date.now()}`,
+              created_at: new Date().toISOString(),
+              subtotal: cartTotal,
+              tax_amount: cartTotal * (appSettings?.tax_rate ?? 0.08),
+              total: cartTotal * (1 + (appSettings?.tax_rate ?? 0.08)),
+              payment_method: 'pending',
+            }}
+            client={selectedClient}
+            items={cart.map(i => ({
+              item_name: i.name,
+              item_type: i.itemType,
+              quantity: i.quantity,
+              unit_price: i.price,
+              line_total: i.price * i.quantity,
+            }))}
+            currentUser={user}
+            settings={appSettings}
+            filterType="invoice"
+            onClose={() => setShowInvoiceModal(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

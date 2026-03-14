@@ -40,6 +40,7 @@ import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import { clientsAPI, servicesAPI } from '../../services/api';
 import Modal_Client_Cart, { getClientCartCount } from './Modal_Client_Cart';
+import Modal_Template_Use from './Modal_Template_Use';
 import { formatDate, formatDateTime } from '../../utils/dateFormatters';
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
@@ -234,12 +235,13 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
 
 // ─── 3 PURCHASE HISTORY SUB-MODAL ──────────────────────────────────────────
 
-function PurchaseHistoryModal({ isOpen, onClose, client }) {
+function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSettings }) {
   const [transactions, setTransactions] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [items, setItems] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [invoiceTx, setInvoiceTx] = useState(null); // tx + items for invoice modal
 
   useEffect(() => {
     if (!isOpen || !client) return;
@@ -277,6 +279,11 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
     loadItems(txId);
   };
 
+  const handleOpenInvoice = async (tx) => {
+    if (!items[tx.id]) await loadItems(tx.id);
+    setInvoiceTx(tx);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
@@ -306,23 +313,34 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
             <div>
               {transactions.map(tx => (
                 <div key={tx.id} className="border-bottom border-gray-100 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={() => toggleExpand(tx.id)}
-                className="w-100 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0"
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="flex-grow-1">
-                  <div className="fw-medium">${tx.total?.toFixed(2) ?? '0.00'}</div>
-                  <div className="small text-muted">{formatDate(tx.created_at)}</div>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                  <span className="badge bg-secondary-subtle text-secondary text-capitalize">
-                    {tx.payment_method || 'cash'}
-                  </span>
-                  <span className="text-muted small">{expandedId === tx.id ? '▲' : '▼'}</span>
-                </div>
-              </button>
+              <div className="d-flex align-items-center">
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(tx.id)}
+                  className="flex-grow-1 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="flex-grow-1">
+                    <div className="fw-medium">${tx.total?.toFixed(2) ?? '0.00'}</div>
+                    <div className="small text-muted">{formatDate(tx.created_at)}</div>
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="badge bg-secondary-subtle text-secondary text-capitalize">
+                      {tx.payment_method || 'cash'}
+                    </span>
+                    <span className="text-muted small">{expandedId === tx.id ? '▲' : '▼'}</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenInvoice(tx)}
+                  className="btn btn-outline-secondary btn-sm me-2 flex-shrink-0"
+                  title="Generate invoice for this transaction"
+                  style={{ fontSize: 10, padding: '2px 6px' }}
+                >
+                  Invoice
+                </button>
+              </div>
 
               {expandedId === tx.id && (
                 <div className="pb-2 px-3">
@@ -377,6 +395,22 @@ function PurchaseHistoryModal({ isOpen, onClose, client }) {
         </div>
 
       </div>
+
+      {/* Invoice template modal (nested, full-screen) */}
+      {invoiceTx && (
+        <div className="fixed inset-0 z-[60]">
+          <Modal_Template_Use
+            page="sales"
+            entity={invoiceTx}
+            client={client}
+            items={items[invoiceTx.id] || []}
+            currentUser={currentUser}
+            settings={appSettings}
+            filterType="invoice"
+            onClose={() => setInvoiceTx(null)}
+          />
+        </div>
+      )}
     </Modal>
   );
 }
@@ -390,6 +424,8 @@ export default function Modal_Detail_Client({
   onUpdate,
   onDelete,
   canDelete = false,
+  currentUser = null,
+  appSettings = null,
 }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -426,7 +462,7 @@ export default function Modal_Detail_Client({
         membership_points: client.membership_points || 0,
       });
       setFieldErrors({});
-      setCartCount(getClientCartCount(client.id));
+      getClientCartCount(client.id).then(setCartCount).catch(() => setCartCount(0));
     }
   }, [isOpen, client?.id]);
 
@@ -791,6 +827,8 @@ export default function Modal_Detail_Client({
         isOpen={showPurchaseHistory}
         onClose={() => setShowPurchaseHistory(false)}
         client={client}
+        currentUser={currentUser}
+        appSettings={appSettings}
       />
 
       {/* Client Cart Modal */}
