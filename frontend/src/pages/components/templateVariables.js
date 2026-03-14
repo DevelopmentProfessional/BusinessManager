@@ -38,7 +38,8 @@ export const TEMPLATE_VARIABLES = {
     { key: 'invoice.total', label: 'Total', description: 'Total amount' },
     { key: 'invoice.subtotal', label: 'Subtotal', description: 'Subtotal before tax' },
     { key: 'invoice.tax', label: 'Tax', description: 'Tax amount' },
-    { key: 'invoice.items', label: 'Line Items', description: 'List of purchased items' },
+    { key: 'invoice.items', label: 'Line Items (list)', description: 'Purchased items as a bullet list' },
+    { key: 'invoice.items.table', label: 'Line Items (table)', description: 'Purchased items as a formatted table', isLayout: true },
     { key: 'invoice.payment_method', label: 'Payment Method', description: 'Cash or card' },
   ],
   appointment: [
@@ -59,6 +60,108 @@ export const PAGE_VARIABLE_SCOPES = {
   sales: ['system', 'company', 'sender', 'client', 'invoice'],
   schedule: ['system', 'company', 'sender', 'client', 'appointment'],
 };
+
+/**
+ * Metadata about each scope — which pages it is populated on,
+ * so the editor can surface this to the user.
+ */
+export const SCOPE_PAGE_CONTEXT = {
+  system:      { label: 'System',      pages: ['clients', 'employees', 'sales', 'schedule'], color: 'gray' },
+  company:     { label: 'Company',     pages: ['clients', 'employees', 'sales', 'schedule'], color: 'gray' },
+  sender:      { label: 'Sender',      pages: ['clients', 'employees', 'sales', 'schedule'], color: 'gray' },
+  client:      { label: 'Client',      pages: ['clients', 'sales', 'schedule'], color: 'blue' },
+  employee:    { label: 'Employee',    pages: ['employees'], color: 'green' },
+  invoice:     { label: 'Invoice / Sales', pages: ['sales'], color: 'amber' },
+  appointment: { label: 'Appointment', pages: ['schedule'], color: 'purple' },
+};
+
+/**
+ * Pre-built layout blocks that can be inserted into templates.
+ * `html` is inserted verbatim into the editor.
+ * `pages` indicates which pages supply the required data.
+ */
+export const LAYOUT_TEMPLATES = [
+  {
+    id: 'invoice_items_table',
+    label: 'Invoice Line Items Table',
+    description: 'A formatted table of purchased items (Item, Qty, Unit Price, Total)',
+    pages: ['sales'],
+    scopeHint: 'invoice',
+    html: '{{invoice.items.table}}',
+  },
+  {
+    id: 'invoice_summary',
+    label: 'Invoice Totals Summary',
+    description: 'Subtotal, tax, and grand total block',
+    pages: ['sales'],
+    scopeHint: 'invoice',
+    html: `<table style="width:100%;border-collapse:collapse;margin-top:1rem;font-family:inherit;">
+  <tr><td style="padding:4px 8px;text-align:right;">Subtotal:</td><td style="padding:4px 8px;text-align:right;">{{invoice.subtotal}}</td></tr>
+  <tr><td style="padding:4px 8px;text-align:right;">Tax:</td><td style="padding:4px 8px;text-align:right;">{{invoice.tax}}</td></tr>
+  <tr style="border-top:2px solid #000;font-weight:bold;"><td style="padding:8px;text-align:right;">Total:</td><td style="padding:8px;text-align:right;">{{invoice.total}}</td></tr>
+</table>`,
+  },
+  {
+    id: 'invoice_header',
+    label: 'Invoice Header Block',
+    description: 'Invoice number, date, client, and payment method in a clean header',
+    pages: ['sales'],
+    scopeHint: 'invoice',
+    html: `<table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem;font-family:inherit;">
+  <tr>
+    <td style="padding:4px 0;font-weight:600;width:140px;">Invoice #</td>
+    <td style="padding:4px 0;">{{invoice.number}}</td>
+    <td style="padding:4px 0;font-weight:600;width:140px;">Date</td>
+    <td style="padding:4px 0;">{{invoice.date}}</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 0;font-weight:600;">Client</td>
+    <td style="padding:4px 0;">{{client.name}}</td>
+    <td style="padding:4px 0;font-weight:600;">Payment</td>
+    <td style="padding:4px 0;">{{invoice.payment_method}}</td>
+  </tr>
+</table>`,
+  },
+  {
+    id: 'company_header',
+    label: 'Company Header',
+    description: 'Company name, address, email, and phone at the top of a document',
+    pages: ['clients', 'employees', 'sales', 'schedule'],
+    scopeHint: 'company',
+    html: `<div style="margin-bottom:1.5rem;font-family:inherit;">
+  <h2 style="margin:0 0 4px;font-size:1.4rem;font-weight:700;">{{company.name}}</h2>
+  <p style="margin:0;font-size:0.875rem;color:#6b7280;">{{company.address}}</p>
+  <p style="margin:0;font-size:0.875rem;color:#6b7280;">{{company.email}} · {{company.phone}}</p>
+</div>`,
+  },
+  {
+    id: 'client_info',
+    label: 'Client Info Block',
+    description: 'Client name, email, and phone as a compact block',
+    pages: ['clients', 'sales', 'schedule'],
+    scopeHint: 'client',
+    html: `<div style="margin-bottom:1rem;font-family:inherit;">
+  <p style="margin:0;font-weight:600;">{{client.name}}</p>
+  <p style="margin:0;font-size:0.875rem;color:#6b7280;">{{client.email}}</p>
+  <p style="margin:0;font-size:0.875rem;color:#6b7280;">{{client.phone}}</p>
+</div>`,
+  },
+  {
+    id: 'appointment_summary',
+    label: 'Appointment Summary',
+    description: 'Date, time, service, employee, and notes in a table',
+    pages: ['schedule'],
+    scopeHint: 'appointment',
+    html: `<table style="width:100%;border-collapse:collapse;margin-bottom:1rem;font-family:inherit;">
+  <tr><td style="padding:4px 0;font-weight:600;width:140px;">Date</td><td style="padding:4px 0;">{{appointment.date}}</td></tr>
+  <tr><td style="padding:4px 0;font-weight:600;">Time</td><td style="padding:4px 0;">{{appointment.time}}</td></tr>
+  <tr><td style="padding:4px 0;font-weight:600;">Service</td><td style="padding:4px 0;">{{appointment.service}}</td></tr>
+  <tr><td style="padding:4px 0;font-weight:600;">Duration</td><td style="padding:4px 0;">{{appointment.duration}}</td></tr>
+  <tr><td style="padding:4px 0;font-weight:600;">Employee</td><td style="padding:4px 0;">{{appointment.employee_name}}</td></tr>
+  <tr><td style="padding:4px 0;font-weight:600;">Notes</td><td style="padding:4px 0;">{{appointment.notes}}</td></tr>
+</table>`,
+  },
+];
 
 /**
  * Replace all {{key}} placeholders in html with values from the variables dict.
@@ -123,6 +226,33 @@ function formatDuration(minutes) {
   return rem > 0 ? `${h} hour ${rem} min` : `${h} hour${h !== 1 ? 's' : ''}`;
 }
 
+/** Build a styled HTML table for invoice line items */
+function buildItemsTableHtml(items) {
+  if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
+  const rows = items.map((i) => {
+    const qty = i.quantity ?? '';
+    const unit = i.unit_price != null ? `$${Number(i.unit_price).toFixed(2)}` : '';
+    const total = i.line_total != null ? `$${Number(i.line_total).toFixed(2)}` : '';
+    return `<tr style="border-bottom:1px solid #e5e7eb;">
+  <td style="padding:6px 8px;">${i.item_name || ''}</td>
+  <td style="padding:6px 8px;text-align:center;">${qty}</td>
+  <td style="padding:6px 8px;text-align:right;">${unit}</td>
+  <td style="padding:6px 8px;text-align:right;font-weight:500;">${total}</td>
+</tr>`;
+  }).join('');
+  return `<table style="width:100%;border-collapse:collapse;font-family:inherit;font-size:0.9rem;">
+  <thead>
+    <tr style="border-bottom:2px solid #d1d5db;background:#f9fafb;">
+      <th style="padding:6px 8px;text-align:left;font-weight:600;">Item</th>
+      <th style="padding:6px 8px;text-align:center;font-weight:600;">Qty</th>
+      <th style="padding:6px 8px;text-align:right;font-weight:600;">Unit Price</th>
+      <th style="padding:6px 8px;text-align:right;font-weight:600;">Total</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
+}
+
 /** Build a flat variable dict from a sale transaction + client + current user + settings */
 export function buildSalesVariables(transaction, client, currentUser, settings, items = []) {
   const now = new Date();
@@ -150,6 +280,7 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
     'invoice.subtotal': transaction?.subtotal != null ? `$${Number(transaction.subtotal).toFixed(2)}` : '',
     'invoice.tax': transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '',
     'invoice.items': itemsHtml,
+    'invoice.items.table': buildItemsTableHtml(items),
     'invoice.payment_method': transaction?.payment_method || '',
   };
 }

@@ -732,6 +732,15 @@ export const saleTransactionsAPI = {
   getItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
 };
 
+/** Persistent client cart — database-backed, shared across employees/sessions */
+export const clientCartAPI = {
+  getItems: (clientId) => api.get(`/client-cart/${clientId}`),
+  upsertItem: (clientId, itemData) => api.put(`/client-cart/${clientId}/item`, itemData),
+  removeItem: (clientId, cartKey) =>
+    api.delete(`/client-cart/${clientId}/item/${encodeURIComponent(cartKey)}`),
+  clearCart: (clientId) => api.delete(`/client-cart/${clientId}`),
+};
+
 export const insurancePlansAPI = {
   getAll: () => getCachedOrFetch('insurance-plans', () => api.get('/isud/insurance_plan')),
   create: (data) => {

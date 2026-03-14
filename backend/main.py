@@ -48,11 +48,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.regtest", "backend.routers.features"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.regtest", "backend.routers.features", "backend.routers.client_cart"}:
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart  # type: ignore
     else:
         raise
 
@@ -266,6 +266,7 @@ app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
 app.include_router(regtest.router, prefix="/api/v1/regtest", tags=["regtest"])
 app.include_router(features.router, prefix="/api/v1", tags=["features"])
+app.include_router(client_cart.router, prefix="/api/v1", tags=["client-cart"])
 
 # ─── 8 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
 # Document file operations only: upload (create record + file) and download (serve file).
