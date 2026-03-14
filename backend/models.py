@@ -407,6 +407,10 @@ class Schedule(BaseModel, table=True):
     is_paid: bool = Field(default=False)
     discount: float = Field(default=0.0, ge=0)  # flat discount amount
     sale_transaction_id: Optional[UUID] = Field(default=None)  # no FK to avoid circular dependency
+    # Production task fields
+    task_type: str = Field(default="service")          # "service" | "production"
+    production_item_id: Optional[UUID] = Field(default=None)  # inventory item being produced (no FK to keep things simple)
+    production_quantity: int = Field(default=1)         # number of batches to run
 
     # Relationships
     client: Optional[Client] = Relationship(back_populates="schedules")
@@ -1055,6 +1059,9 @@ class ScheduleRead(SQLModel):
     is_paid: bool = False
     discount: float = 0.0
     sale_transaction_id: Optional[UUID] = None
+    task_type: str = "service"
+    production_item_id: Optional[UUID] = None
+    production_quantity: int = 1
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -1604,6 +1611,65 @@ class ClientCartItemUpsert(SQLModel):
     quantity: int = 1
     line_total: float = 0
     options_json: Optional[str] = None
+
+
+# ─── 18 PRODUCT PRODUCTION MODELS ─────────────────────────────────────────────
+
+class ProductResource(BaseModel, table=True):
+    """Resources (consumables) used when producing a batch of a product."""
+    __tablename__ = "product_resource"
+    inventory_id: UUID = Field(index=True)           # the PRODUCT being made (no FK — inventory self-ref is complex)
+    resource_id: UUID = Field(index=True)            # the RESOURCE inventory item consumed per batch
+    quantity_per_batch: float = Field(default=1.0, ge=0)  # how many units of this resource consumed per batch
+    notes: Optional[str] = Field(default=None)
+
+
+class ProductAsset(BaseModel, table=True):
+    """Asset (equipment) used when producing a batch of a product."""
+    __tablename__ = "product_asset"
+    inventory_id: UUID = Field(index=True)           # the PRODUCT being made
+    asset_id: UUID = Field(index=True)               # the ASSET inventory item used
+    batch_size: int = Field(default=1, ge=1)         # units produced per one asset run
+    duration_minutes: Optional[float] = Field(default=None, ge=0)  # time per batch
+    notes: Optional[str] = Field(default=None)
+
+
+class ProductLocation(BaseModel, table=True):
+    """Location where a product is manufactured."""
+    __tablename__ = "product_location"
+    inventory_id: UUID = Field(index=True)           # the PRODUCT being made
+    location_id: UUID = Field(index=True)            # the LOCATION inventory item
+    notes: Optional[str] = Field(default=None)
+
+
+class ProductResourceRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    resource_id: UUID
+    quantity_per_batch: float
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class ProductAssetRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    asset_id: UUID
+    batch_size: int
+    duration_minutes: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class ProductLocationRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    location_id: UUID
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
 
 
 # Document Template model

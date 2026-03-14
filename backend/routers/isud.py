@@ -122,6 +122,12 @@ READ_SCHEMA_MAP = {
     'service_locations': ServiceLocationRead,
     'service_recipe': ServiceRecipeRead,
     'service_recipes': ServiceRecipeRead,
+    'product_resource': ProductResourceRead,
+    'product_resources': ProductResourceRead,
+    'product_asset': ProductAssetRead,
+    'product_assets': ProductAssetRead,
+    'product_location': ProductLocationRead,
+    'product_locations': ProductLocationRead,
 }
 
 # ─── [4] SERIALIZATION HELPERS ────────────────────────────────────────────────

@@ -28,22 +28,266 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   XMarkIcon, ShoppingCartIcon, TagIcon,
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon,
   MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon,
-  TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon
+  TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon,
+  BeakerIcon, CogIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI, inventoryFeaturesAPI } from '../../services/api';
+import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI } from '../../services/api';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
 import FeatureSection from './FeatureSection';
+
+// ─── Production Relations Panel ────────────────────────────────────────────────
+// Shown only for PRODUCT type items in inventory mode
+function ProductionRelationsPanel({ productId }) {
+  const [activeTab, setActiveTab] = useState('resources');
+  const [resources, setResources]   = useState([]);
+  const [assets, setAssets]         = useState([]);
+  const [locations, setLocations]   = useState([]);
+  const [allInventory, setAllInventory] = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+
+  // Add-row state
+  const [addingResource, setAddingResource] = useState(false);
+  const [newResourceId, setNewResourceId]   = useState('');
+  const [newResourceQty, setNewResourceQty] = useState(1);
+  const [addingAsset, setAddingAsset]       = useState(false);
+  const [newAssetId, setNewAssetId]         = useState('');
+  const [newAssetBatch, setNewAssetBatch]   = useState(1);
+  const [newAssetDur, setNewAssetDur]       = useState('');
+  const [addingLocation, setAddingLocation] = useState(false);
+  const [newLocationId, setNewLocationId]   = useState('');
+
+  const load = useCallback(async () => {
+    if (!productId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const [rRes, aRes, lRes, invRes] = await Promise.all([
+        productRelationsAPI.getResources(productId),
+        productRelationsAPI.getAssets(productId),
+        productRelationsAPI.getLocations(productId),
+        inventoryAPI.getAll(),
+      ]);
+      setResources(Array.isArray(rRes?.data) ? rRes.data : []);
+      setAssets(Array.isArray(aRes?.data) ? aRes.data : []);
+      setLocations(Array.isArray(lRes?.data) ? lRes.data : []);
+      setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
+    } catch { setError('Failed to load production relations.'); }
+    finally { setLoading(false); }
+  }, [productId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
+  const resourceItems  = allInventory.filter(i => (i.type || '').toUpperCase() === 'RESOURCE');
+  const assetItems     = allInventory.filter(i => (i.type || '').toUpperCase() === 'ASSET');
+  const locationItems  = allInventory.filter(i => (i.type || '').toUpperCase() === 'LOCATION');
+
+  const handleAddResource = async () => {
+    if (!newResourceId) return;
+    try { await productRelationsAPI.addResource(productId, newResourceId, newResourceQty); load(); setAddingResource(false); setNewResourceId(''); setNewResourceQty(1); }
+    catch { setError('Failed to add resource.'); }
+  };
+  const handleRemoveResource = async (id) => {
+    try { await productRelationsAPI.removeResource(id); load(); }
+    catch { setError('Failed to remove resource.'); }
+  };
+  const handleUpdateResourceQty = async (id, qty) => {
+    try { await productRelationsAPI.updateResource(id, { quantity_per_batch: parseFloat(qty) || 1 }); load(); }
+    catch { setError('Failed to update resource.'); }
+  };
+
+  const handleAddAsset = async () => {
+    if (!newAssetId) return;
+    try {
+      await productRelationsAPI.addAsset(productId, newAssetId, parseInt(newAssetBatch) || 1, newAssetDur ? parseFloat(newAssetDur) : null);
+      load(); setAddingAsset(false); setNewAssetId(''); setNewAssetBatch(1); setNewAssetDur('');
+    } catch { setError('Failed to add asset.'); }
+  };
+  const handleRemoveAsset = async (id) => {
+    try { await productRelationsAPI.removeAsset(id); load(); }
+    catch { setError('Failed to remove asset.'); }
+  };
+  const handleUpdateAsset = async (id, data) => {
+    try { await productRelationsAPI.updateAsset(id, data); load(); }
+    catch { setError('Failed to update asset.'); }
+  };
+
+  const handleAddLocation = async () => {
+    if (!newLocationId) return;
+    try { await productRelationsAPI.addLocation(productId, newLocationId); load(); setAddingLocation(false); setNewLocationId(''); }
+    catch { setError('Failed to add location.'); }
+  };
+  const handleRemoveLocation = async (id) => {
+    try { await productRelationsAPI.removeLocation(id); load(); }
+    catch { setError('Failed to remove location.'); }
+  };
+
+  const tabStyle = (t) => ({
+    padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600,
+    borderBottom: activeTab === t ? '2px solid #6366f1' : '2px solid transparent',
+    color: activeTab === t ? '#6366f1' : '#6b7280',
+    background: 'none', border: 'none', cursor: 'pointer',
+  });
+
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: '1px solid #e5e7eb', fontSize: '0.8rem' };
+  const inputSm = { fontSize: '0.75rem', padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' };
+  const btnDanger = { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontSize: 14 };
+  const btnPrimary = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer' };
+  const btnOutline = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: 'none', color: '#6366f1', border: '1px solid #6366f1', cursor: 'pointer' };
+
+  return (
+    <div className="mt-3" style={{ border: '1px solid #e5e7eb', borderRadius: 8 }}>
+      {/* Header */}
+      <div style={{ padding: '6px 10px 0', background: '#f9fafb', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <CogIcon style={{ width: 14, height: 14, color: '#6366f1' }} />
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Production Setup</span>
+        </div>
+        <div style={{ display: 'flex' }}>
+          {[
+            { key: 'resources', label: 'Resources' },
+            { key: 'assets',    label: 'Assets'    },
+            { key: 'locations', label: 'Locations' },
+          ].map(({ key, label }) => (
+            <button key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: '8px 10px', minHeight: 80 }}>
+        {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Loading…</div>}
+        {error   && <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{error}</div>}
+
+        {/* ── Resources tab ── */}
+        {activeTab === 'resources' && !loading && (
+          <>
+            {resources.length === 0 && !addingResource && (
+              <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No resources linked. Add resources that are consumed when making a batch.</div>
+            )}
+            {resources.map(r => (
+              <div key={r.id} style={rowStyle}>
+                <BeakerIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
+                <span style={{ flex: 1 }}>{invMap[r.resource_id]?.name || r.resource_id?.slice(0, 8)}</span>
+                <input
+                  type="number" min="0.01" step="0.01"
+                  defaultValue={r.quantity_per_batch}
+                  onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)}
+                  style={{ ...inputSm, width: 60 }}
+                  title="Quantity consumed per batch"
+                />
+                <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>/ batch</span>
+                <button style={btnDanger} onClick={() => handleRemoveResource(r.id)} title="Remove">×</button>
+              </div>
+            ))}
+
+            {addingResource ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                <select value={newResourceId} onChange={e => setNewResourceId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
+                  <option value="">Select resource…</option>
+                  {resourceItems.filter(i => !resources.some(r => r.resource_id === i.id)).map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+                <input type="number" min="0.01" step="0.01" value={newResourceQty}
+                  onChange={e => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
+                <button style={btnPrimary} onClick={handleAddResource}>Add</button>
+                <button style={btnOutline} onClick={() => { setAddingResource(false); setNewResourceId(''); setNewResourceQty(1); }}>Cancel</button>
+              </div>
+            ) : (
+              <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingResource(true)}>+ Add Resource</button>
+            )}
+          </>
+        )}
+
+        {/* ── Assets tab ── */}
+        {activeTab === 'assets' && !loading && (
+          <>
+            {assets.length === 0 && !addingAsset && (
+              <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No assets linked. Add equipment used to produce this item.</div>
+            )}
+            {assets.map(a => (
+              <div key={a.id} style={rowStyle}>
+                <WrenchScrewdriverIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
+                <span style={{ flex: 1 }}>{invMap[a.asset_id]?.name || a.asset_id?.slice(0, 8)}</span>
+                <input type="number" min="1" step="1" defaultValue={a.batch_size}
+                  onBlur={(e) => handleUpdateAsset(a.id, { batch_size: parseInt(e.target.value) || 1 })}
+                  style={{ ...inputSm, width: 55 }} title="Units produced per batch" />
+                <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>units/batch</span>
+                <input type="number" min="0" step="1" defaultValue={a.duration_minutes ?? ''}
+                  onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })}
+                  style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
+                <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>min</span>
+                <button style={btnDanger} onClick={() => handleRemoveAsset(a.id)} title="Remove">×</button>
+              </div>
+            ))}
+
+            {addingAsset ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                <select value={newAssetId} onChange={e => setNewAssetId(e.target.value)} style={{ ...inputSm, flex: '1 1 120px' }}>
+                  <option value="">Select asset…</option>
+                  {assetItems.filter(i => !assets.some(a => a.asset_id === i.id)).map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+                <input type="number" min="1" value={newAssetBatch} onChange={e => setNewAssetBatch(e.target.value)}
+                  style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
+                <input type="number" min="0" value={newAssetDur} onChange={e => setNewAssetDur(e.target.value)}
+                  style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
+                <button style={btnPrimary} onClick={handleAddAsset}>Add</button>
+                <button style={btnOutline} onClick={() => { setAddingAsset(false); setNewAssetId(''); setNewAssetBatch(1); setNewAssetDur(''); }}>Cancel</button>
+              </div>
+            ) : (
+              <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingAsset(true)}>+ Add Asset</button>
+            )}
+          </>
+        )}
+
+        {/* ── Locations tab ── */}
+        {activeTab === 'locations' && !loading && (
+          <>
+            {locations.length === 0 && !addingLocation && (
+              <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No production locations linked.</div>
+            )}
+            {locations.map(l => (
+              <div key={l.id} style={rowStyle}>
+                <MapPinIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
+                <span style={{ flex: 1 }}>{invMap[l.location_id]?.name || l.location_id?.slice(0, 8)}</span>
+                <button style={btnDanger} onClick={() => handleRemoveLocation(l.id)} title="Remove">×</button>
+              </div>
+            ))}
+
+            {addingLocation ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                <select value={newLocationId} onChange={e => setNewLocationId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
+                  <option value="">Select location…</option>
+                  {locationItems.filter(i => !locations.some(l => l.location_id === i.id)).map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+                <button style={btnPrimary} onClick={handleAddLocation}>Add</button>
+                <button style={btnOutline} onClick={() => { setAddingLocation(false); setNewLocationId(''); }}>Cancel</button>
+              </div>
+            ) : (
+              <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingLocation(true)}>+ Add Location</button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Detail_Item({
@@ -916,6 +1160,11 @@ export default function Modal_Detail_Item({
               onStockChange={setFeatureStock}
               onPriceRangeChange={setFeaturesPriceRange}
             />
+          )}
+
+          {/* Production Setup — PRODUCT type only */}
+          {item?.id && upperType === 'PRODUCT' && (
+            <ProductionRelationsPanel productId={item.id} />
           )}
 
           <hr className="my-2" />

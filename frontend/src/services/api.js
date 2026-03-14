@@ -741,6 +741,35 @@ export const clientCartAPI = {
   clearCart: (clientId) => api.delete(`/client-cart/${clientId}`),
 };
 
+// Product production relations (resources / assets / locations linked to a manufactured product)
+export const productRelationsAPI = {
+  // Resources consumed per batch
+  getResources:   (inventoryId) => api.get(`/isud/product_resource?inventory_id=${inventoryId}`),
+  addResource:    (inventoryId, resourceId, quantityPerBatch, notes = null) =>
+    api.post('/isud/product_resource', { inventory_id: inventoryId, resource_id: resourceId, quantity_per_batch: quantityPerBatch, notes }),
+  updateResource: (id, data)    => api.put(`/isud/product_resource/${id}`, data),
+  removeResource: (id)          => api.delete(`/isud/product_resource/${id}`),
+
+  // Assets used during production
+  getAssets:   (inventoryId) => api.get(`/isud/product_asset?inventory_id=${inventoryId}`),
+  addAsset:    (inventoryId, assetId, batchSize = 1, durationMinutes = null) =>
+    api.post('/isud/product_asset', { inventory_id: inventoryId, asset_id: assetId, batch_size: batchSize, duration_minutes: durationMinutes }),
+  updateAsset: (id, data)    => api.put(`/isud/product_asset/${id}`, data),
+  removeAsset: (id)          => api.delete(`/isud/product_asset/${id}`),
+
+  // Locations where the product is manufactured
+  getLocations:   (inventoryId) => api.get(`/isud/product_location?inventory_id=${inventoryId}`),
+  addLocation:    (inventoryId, locationId) =>
+    api.post('/isud/product_location', { inventory_id: inventoryId, location_id: locationId }),
+  removeLocation: (id) => api.delete(`/isud/product_location/${id}`),
+};
+
+// Production task completion
+export const productionAPI = {
+  getInfo:      (scheduleId) => api.get(`/production/tasks/${scheduleId}/info`),
+  completeTask: (scheduleId) => api.post(`/production/tasks/${scheduleId}/complete`),
+};
+
 export const insurancePlansAPI = {
   getAll: () => getCachedOrFetch('insurance-plans', () => api.get('/isud/insurance_plan')),
   create: (data) => {
