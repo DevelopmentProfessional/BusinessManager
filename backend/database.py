@@ -298,6 +298,7 @@ def create_db_and_tables():
     _ensure_document_extra_columns_if_needed()
     _ensure_employee_user_id_column_if_needed()
     _ensure_employee_supervisor_column_if_needed()
+    _ensure_employee_color_column_if_needed()
     _normalize_item_types_if_needed()
     _ensure_inventory_image_table_if_needed()
     _ensure_service_duration_column_if_needed()
@@ -552,6 +553,40 @@ def _ensure_employee_supervisor_column_if_needed():
             col_names = {row[0] for row in cols}
             if "supervisor" not in col_names:
                 conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor VARCHAR"))
+
+
+def _ensure_employee_color_column_if_needed():
+    """Ensure the legacy 'employee' table has a 'color' column.
+
+    Profile color is stored on `user.color` in current schema, but some older
+    deployments still depend on data mirrored in `employee.color`.
+    """
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='employee'"
+            )).fetchone()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text("PRAGMA table_info('employee')")).fetchall()
+            col_names = {row[1] for row in cols}
+            if "color" not in col_names:
+                conn.execute(text("ALTER TABLE employee ADD COLUMN color VARCHAR"))
+    else:
+        with engine.begin() as conn:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='employee')"
+            )).scalar()
+            if not tbl_exists:
+                return
+            cols = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='employee'"
+            )).fetchall()
+            col_names = {row[0] for row in cols}
+            if "color" not in col_names:
+                conn.execute(text("ALTER TABLE employee ADD COLUMN color VARCHAR"))
 
 
 # ─── 8 MIGRATION: INVENTORYIMAGE TABLE ─────────────────────────────────────────

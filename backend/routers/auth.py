@@ -377,6 +377,47 @@ def get_current_user_info(
     session: Session = Depends(get_session)
 ):
     """Get current user information"""
+    # Self-heal legacy deployments: if user.color is missing, attempt fallback
+    # from legacy employee.color keyed by user_id or employee.id.
+    if not current_user.color:
+        legacy_color = None
+        try:
+            row = session.exec(
+                text(
+                    "SELECT color FROM employee "
+                    "WHERE user_id = :user_id AND color IS NOT NULL AND TRIM(color) <> '' "
+                    "LIMIT 1"
+                ),
+                {"user_id": str(current_user.id)},
+            ).first()
+            if row:
+                legacy_color = row[0]
+        except Exception:
+            # Legacy table/column may not exist; ignore and keep normal flow.
+            legacy_color = None
+
+        if not legacy_color:
+            try:
+                row = session.exec(
+                    text(
+                        "SELECT color FROM employee "
+                        "WHERE id = :employee_id AND color IS NOT NULL AND TRIM(color) <> '' "
+                        "LIMIT 1"
+                    ),
+                    {"employee_id": str(current_user.id)},
+                ).first()
+                if row:
+                    legacy_color = row[0]
+            except Exception:
+                legacy_color = None
+
+        if legacy_color:
+            current_user.color = legacy_color
+            current_user.updated_at = datetime.utcnow()
+            session.add(current_user)
+            session.commit()
+            session.refresh(current_user)
+
     # Return user data directly; granular permissions are returned via separate endpoint
     return UserRead.from_orm(current_user)
 

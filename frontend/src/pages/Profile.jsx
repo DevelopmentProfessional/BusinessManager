@@ -210,6 +210,12 @@ const Profile = () => {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
   const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
+  const FooterAlignIcon = footerAlign === 'center' ? AlignCenterIcon : footerAlign === 'right' ? AlignRightIcon : AlignLeftIcon;
+
+  const cycleFooterAlign = useCallback(() => {
+    const next = footerAlign === 'left' ? 'center' : footerAlign === 'center' ? 'right' : 'left';
+    setFooterAlign(next);
+  }, [footerAlign, setFooterAlign]);
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
   // Log Profile component mount if performance session is active
@@ -322,6 +328,13 @@ const Profile = () => {
     appointmentReminders: true,
     dailyDigest: false,
   });
+
+  // Keep color button state aligned to the persisted user color.
+  useEffect(() => {
+    const savedColor = user?.color || '#3B82F6';
+    setEmployeeColor(savedColor);
+    if (!colorPickerOpen) setPendingColor(savedColor);
+  }, [user?.color, colorPickerOpen]);
 
   // ─── 5 LAYOUT MEASUREMENT EFFECTS ────────────────────────────────────────
   useEffect(() => {
@@ -637,6 +650,12 @@ const Profile = () => {
       // silently degrade
     }
   };
+
+  useEffect(() => {
+    // If a persisted session is missing color, refresh once from server.
+    if (!user?.id || user?.color) return;
+    syncCurrentUser();
+  }, [user?.id, user?.color]);
 
   // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
   // Load pay slips when wages accordion opens
@@ -1393,39 +1412,14 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Footer Align Triple Toggle */}
-            <div
-              className="d-flex overflow-hidden"
-              style={{ border: '1px solid var(--bs-border-color, #dee2e6)', borderRadius: '0.5rem', height: '3rem' }}
-              title="Footer button alignment"
-            >
-              {[
-                { value: 'left',   Icon: AlignLeftIcon,   label: 'Align left'   },
-                { value: 'center', Icon: AlignCenterIcon, label: 'Align center' },
-                { value: 'right',  Icon: AlignRightIcon,  label: 'Align right'  },
-              ].map(({ value, Icon, label }, idx) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setFooterAlign(value)}
-                  title={label}
-                  className={`btn btn-sm ${footerAlign === value ? 'btn-primary' : 'btn-outline-secondary'}`}
-                  style={{
-                    width: '2.75rem',
-                    height: '100%',
-                    border: 'none',
-                    borderRadius: 0,
-                    borderRight: idx < 2 ? '1px solid var(--bs-border-color, #dee2e6)' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon />
-                </button>
-              ))}
-            </div>
+            {/* Footer Align Cycle */}
+            <Button_Toolbar
+              icon={FooterAlignIcon}
+              label="Align"
+              onClick={cycleFooterAlign}
+              className="settings-accordion-btn btn-outline-secondary"
+              title="Cycle footer alignment"
+            />
 
             {/* Signature */}
             <Button_Toolbar
