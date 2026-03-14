@@ -34,6 +34,7 @@ import { TextStyle, Color, FontFamily, FontSize, LineHeight } from '@tiptap/exte
 import { Highlight } from '@tiptap/extension-highlight';
 import { Superscript } from '@tiptap/extension-superscript';
 import { Subscript } from '@tiptap/extension-subscript';
+import Image from '@tiptap/extension-image';
 import { Indent } from './extensions/Indent';
 import { SearchAndReplace } from './extensions/SearchAndReplace';
 
@@ -67,6 +68,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
       Subscript,
       Indent,
       SearchAndReplace,
+      Image.configure({ inline: false, allowBase64: true }),
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
@@ -166,6 +168,8 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
           pointer-events: none;
           height: 0;
         }
+        .tiptap-editor .tiptap img { max-width: 100%; height: auto; border-radius: 0.25rem; display: block; margin: 0.5rem 0; }
+        .tiptap-editor .tiptap img.ProseMirror-selectednode { outline: 2px solid #6366f1; }
         /* Search result highlights */
         .tiptap-editor .tiptap .search-result {
           background-color: #fef08a;

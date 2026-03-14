@@ -140,7 +140,15 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
       >
         {formData.file ? (
           <div className="space-y-2">
-            <DocumentIcon className="h-12 w-12 text-primary-500 mx-auto" />
+            {formData.file.type.startsWith('image/') ? (
+              <img
+                src={URL.createObjectURL(formData.file)}
+                alt="preview"
+                className="mx-auto max-h-32 rounded shadow"
+              />
+            ) : (
+              <DocumentIcon className="h-12 w-12 text-primary-500 mx-auto" />
+            )}
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {formData.file.name}
             </p>

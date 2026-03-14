@@ -60,7 +60,8 @@
       "Bash(netsh advfirewall firewall show rule name=\"Vite\")",
       "Bash(netsh advfirewall firewall show rule name=\"Node\")",
       "Bash(netsh advfirewall firewall show rule name=\"port 5173\")",
-      "Bash(grep -E \"\\\\.py$\")"
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(cd \"C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\" && npm list @tiptap/extension-image 2>&1)"
     ]
   }
 }
