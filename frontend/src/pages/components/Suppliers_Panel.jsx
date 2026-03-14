@@ -20,6 +20,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Created — extracted from Suppliers.jsx for Inventory integration
+ *   2026-03-14 | Cascade | Moved Add Supplier to header in list mode and centered footer Close button
  * ============================================================
  */
 
@@ -125,16 +126,26 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
         {/* ── HEADER ── */}
-        <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center gap-2 bg-white dark:bg-gray-900">
+        <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center justify-content-between gap-2 bg-white dark:bg-gray-900">
           {showForm ? (
             <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
               {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
             </h6>
           ) : (
-            <>
+            <div className="d-flex align-items-center gap-2">
               <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Suppliers</h6>
               <span className="text-muted small">({suppliers.length})</span>
-            </>
+            </div>
+          )}
+          {!showForm && (
+            <Gate_Permission page="suppliers" permission="write">
+              <Button_Toolbar
+                icon={PlusIcon}
+                label="Add Supplier"
+                onClick={handleCreate}
+                className="btn-app-primary"
+              />
+            </Gate_Permission>
           )}
         </div>
 
@@ -201,7 +212,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 d-flex justify-content-between align-items-center gap-3">
+        <div className={`flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 d-flex align-items-center gap-3 ${showForm ? 'justify-content-between' : 'justify-content-center'}`}>
           {showForm ? (
             <>
               <Button_Toolbar
@@ -219,22 +230,12 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               />
             </>
           ) : (
-            <>
-              <Gate_Permission page="suppliers" permission="write">
-                <Button_Toolbar
-                  icon={PlusIcon}
-                  label="Add Supplier"
-                  onClick={handleCreate}
-                  className="btn-app-primary"
-                />
-              </Gate_Permission>
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Close"
-                onClick={onClose}
-                className="btn-outline-secondary"
-              />
-            </>
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
+              onClick={onClose}
+              className="btn-outline-secondary"
+            />
           )}
         </div>
       </div>

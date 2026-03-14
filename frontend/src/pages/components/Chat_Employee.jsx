@@ -323,8 +323,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
 
         {/* ── Input ── */}
         <div className={`flex-shrink-0 pt-2 pb-4 px-3 border-top ${dm ? 'bg-dark border-secondary' : 'bg-white border-gray-200'}`} style={{ margin: 0 }}>
-          <div className="d-flex align-items-center">
-            <div style={{ width: 40 }} className="d-flex align-items-center">
+          <div className="d-flex align-items-center gap-1">
+            <div className="d-flex align-items-center flex-shrink-0">
               <button
                 type="button"
                 onClick={onClose}
@@ -336,7 +336,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
               </button>
             </div>
             <div className="flex-grow-1">
-              <form onSubmit={handleSend} className="d-flex align-items-center gap-3 justify-content-center">
+              <form onSubmit={handleSend} className="d-flex align-items-center gap-1 justify-content-center">
                 <button
                   type="button"
                   title="Share a document"
@@ -380,7 +380,6 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                 </button>
               </form>
             </div>
-            <div style={{ width: 40 }} />
           </div>
         </div>
       </div>
