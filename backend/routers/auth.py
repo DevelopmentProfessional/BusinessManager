@@ -244,8 +244,8 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
             detail="Invalid credentials"
         )
 
-    # Validate company_id if provided
-    if login_data.company_id:
+    # Validate company_id if both sides are set (skip check if DB record not yet assigned)
+    if login_data.company_id and user.company_id and user.company_id not in ("DEFAULT", ""):
         if user.company_id != login_data.company_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
