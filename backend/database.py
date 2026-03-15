@@ -425,6 +425,68 @@ def _ensure_company_multitenancy_if_needed():
                     print(f"  Warning: Could not drop unique constraint on {table}.{col}: {e}")
 
 
+# ─── MIGRATION: ENSURE userrole ENUM HAS ALL EXPECTED VALUES ────────────────────
+def _ensure_userrole_enum_values_if_needed():
+    """Add any missing values to the userrole PostgreSQL enum (idempotent)."""
+    if IS_SQLITE:
+        return
+    required_values = ["admin", "manager", "employee", "viewer"]
+    try:
+        with engine.begin() as conn:
+            for val in required_values:
+                conn.execute(text(f"ALTER TYPE userrole ADD VALUE IF NOT EXISTS '{val}'"))
+    except Exception as e:
+        print(f"  Warning: Could not patch userrole enum: {e}")
+
+
+# ─── MIGRATION: COMPOSITE UNIQUE CONSTRAINT ON (company_id, username) ───────────
+def _ensure_user_username_composite_unique_if_needed():
+    """
+    Drop the old single-column unique constraint on user.username (and user.email)
+    and replace with a composite unique constraint on (company_id, username) so
+    the same username can exist across different companies.
+    """
+    if DATABASE_URL.startswith("sqlite"):
+        return  # SQLite doesn't support ALTER CONSTRAINT; fresh DBs won't have the old constraint
+
+    try:
+        with engine.begin() as conn:
+            # Drop old single-column unique constraint on username if it exists
+            for col in ("username", "email"):
+                result = conn.execute(text(f"""
+                    SELECT tc.constraint_name
+                    FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                       AND tc.table_schema = kcu.table_schema
+                    WHERE tc.table_schema = 'public'
+                      AND tc.table_name = 'user'
+                      AND kcu.column_name = '{col}'
+                      AND tc.constraint_type = 'UNIQUE'
+                      AND (SELECT COUNT(*) FROM information_schema.key_column_usage k2
+                           WHERE k2.constraint_name = tc.constraint_name) = 1
+                """)).fetchone()
+                if result:
+                    conn.execute(text(f'ALTER TABLE "user" DROP CONSTRAINT IF EXISTS "{result[0]}"'))
+                    print(f"  + Dropped single-column unique constraint on user.{col}: {result[0]}")
+
+            # Add composite unique constraint on (company_id, username) if not already present
+            exists = conn.execute(text("""
+                SELECT 1 FROM information_schema.table_constraints
+                WHERE table_schema = 'public'
+                  AND table_name = 'user'
+                  AND constraint_name = 'uq_user_company_username'
+            """)).fetchone()
+            if not exists:
+                conn.execute(text(
+                    'ALTER TABLE "user" ADD CONSTRAINT uq_user_company_username '
+                    'UNIQUE (company_id, username)'
+                ))
+                print("  + Added composite unique constraint uq_user_company_username on (company_id, username)")
+    except Exception as e:
+        print(f"  Warning: Could not migrate user username uniqueness: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
@@ -463,6 +525,8 @@ def create_db_and_tables():
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()
     _ensure_company_multitenancy_if_needed()
+    _ensure_user_username_composite_unique_if_needed()
+    _ensure_userrole_enum_values_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

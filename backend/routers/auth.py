@@ -231,26 +231,35 @@ def initialize_admin(session: Session = Depends(get_session)):
 @router.post("/login", response_model=LoginResponse)
 def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     """User login endpoint"""
-    # Find user by username or email
-    user = session.exec(
-        select(User).where(
-            (User.username == login_data.username) | (User.email == login_data.username)
-        )
-    ).first()
-    
+    # Find user by (username + company_id) when company_id is provided, else by username/email globally
+    if login_data.company_id:
+        user = session.exec(
+            select(User).where(
+                ((User.username == login_data.username) | (User.email == login_data.username)),
+                User.company_id == login_data.company_id,
+            )
+        ).first()
+        # Fallback: allow login if record hasn't been assigned a company yet (migration in progress)
+        if not user:
+            candidate = session.exec(
+                select(User).where(
+                    (User.username == login_data.username) | (User.email == login_data.username)
+                )
+            ).first()
+            if candidate and candidate.company_id in (None, "", "DEFAULT"):
+                user = candidate
+    else:
+        user = session.exec(
+            select(User).where(
+                (User.username == login_data.username) | (User.email == login_data.username)
+            )
+        ).first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
-
-    # Validate company_id if both sides are set (skip check if DB record not yet assigned)
-    if login_data.company_id and user.company_id and user.company_id not in ("DEFAULT", ""):
-        if user.company_id != login_data.company_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
 
     # Check if account is locked
     if user.is_locked:
