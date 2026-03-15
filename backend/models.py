@@ -123,6 +123,14 @@ class BaseModel(SQLModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default=None)
 
+# ─── 3b COMPANY MODEL ───────────────────────────────────────────────────────────
+class Company(BaseModel, table=True):
+    """Registry of all companies that use this application."""
+    __tablename__ = "company"
+    company_id: str = Field(unique=True, index=True)  # User-facing code like "ACME"
+    name: str = Field(index=True)                      # Full company name
+    is_active: bool = Field(default=True)
+
 # ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
 # User model for authentication (consolidated user/employee)
 class User(BaseModel, table=True):
@@ -172,6 +180,7 @@ class User(BaseModel, table=True):
     vacation_days_used: Optional[int] = Field(default=0)
     sick_days: Optional[int] = Field(default=None)
     sick_days_used: Optional[int] = Field(default=0)
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
@@ -194,6 +203,7 @@ class UserPermission(BaseModel, table=True):
     page: str  # e.g., "clients", "inventory", "employees"
     permission: PermissionType
     granted: bool = Field(default=True)
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     user: User = Relationship(back_populates="permissions")
@@ -201,9 +211,10 @@ class UserPermission(BaseModel, table=True):
 
 # Role model - defines a role with attached permissions
 class Role(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # e.g., "Manager", "Receptionist"
+    name: str = Field(index=True)  # e.g., "Manager", "Receptionist"
     description: Optional[str] = Field(default=None)
     is_system: bool = Field(default=False)  # System roles cannot be deleted
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     role_permissions: List["RolePermission"] = Relationship(back_populates="role")
@@ -215,6 +226,7 @@ class RolePermission(BaseModel, table=True):
     role_id: UUID = Field(foreign_key="role.id")
     page: str  # e.g., "clients", "inventory", "employees"
     permission: PermissionType
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     role: Role = Relationship(back_populates="role_permissions")
@@ -223,7 +235,7 @@ class RolePermission(BaseModel, table=True):
 # ─── 5 CLIENT MODELS ───────────────────────────────────────────────────────────
 # Client model
 class Client(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # Client names must be unique
+    name: str = Field(index=True)  # Client names must be unique per company
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
@@ -234,6 +246,7 @@ class Client(BaseModel, table=True):
     membership_since: Optional[datetime] = Field(default=None)
     membership_expires: Optional[datetime] = Field(default=None)
     membership_points: int = Field(default=0)
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="client")
@@ -244,21 +257,22 @@ class Client(BaseModel, table=True):
 class Inventory(BaseModel, table=True):
     # Product/Item fields (merged from former Item model)
     name: str = Field(index=True)
-    sku: str = Field(unique=True, index=True)
+    sku: str = Field(index=True)
     price: float = Field(ge=0, default=0)
     description: Optional[str] = Field(default=None)
     type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
     image_url: Optional[str] = Field(default=None)  # Legacy field - kept for backward compatibility
-    
+
     # Inventory-specific fields
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
     quantity: int = Field(ge=0, default=0)
     min_stock_level: int = Field(ge=0, default=10)
     location: Optional[str] = Field(default=None)
-    
+
     # Service link - for resources/assets tied to specific services
     service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
     images: List["InventoryImage"] = Relationship(back_populates="inventory_item")
@@ -272,7 +286,8 @@ class InventoryImage(BaseModel, table=True):
     file_name: Optional[str] = Field(default=None)  # Original filename
     is_primary: bool = Field(default=False)  # Whether this is the primary image
     sort_order: int = Field(default=0)  # For ordering images
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     inventory_item: Inventory = Relationship(back_populates="images")
 
@@ -285,7 +300,8 @@ class Supplier(BaseModel, table=True):
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     inventory_items: List[Inventory] = Relationship(back_populates="supplier")
 
@@ -294,7 +310,8 @@ class Supplier(BaseModel, table=True):
 class DescriptiveFeature(BaseModel, table=True):
     """Global reusable feature template (e.g. 'Size', 'Color')"""
     __tablename__ = "descriptive_feature"
-    name: str = Field(unique=True, index=True)
+    name: str = Field(index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class FeatureOption(BaseModel, table=True):
@@ -302,6 +319,7 @@ class FeatureOption(BaseModel, table=True):
     __tablename__ = "feature_option"
     feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
     name: str = Field(index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class InventoryFeature(BaseModel, table=True):
@@ -310,6 +328,7 @@ class InventoryFeature(BaseModel, table=True):
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
     affects_price: bool = Field(default=False)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class InventoryFeatureOptionData(BaseModel, table=True):
@@ -321,17 +340,19 @@ class InventoryFeatureOptionData(BaseModel, table=True):
     is_enabled: bool = Field(default=False)
     quantity: int = Field(default=0, ge=0)
     price: Optional[float] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 7 SERVICE MODELS ──────────────────────────────────────────────────────────
 # Service model
 class Service(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # Service names must be unique
+    name: str = Field(index=True)  # Service names must be unique per company
     description: Optional[str] = Field(default=None)
     category: Optional[str] = Field(default=None)
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
     image_url: Optional[str] = Field(default=None)  # URL or path to service image
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="service")
@@ -345,6 +366,7 @@ class ServiceResource(BaseModel, table=True):
     quantity: float = Field(default=1.0, ge=0)
     consumption_rate_pct: Optional[float] = Field(default=None, ge=0, le=100)  # % of inventory item consumed per service
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ServiceAsset(BaseModel, table=True):
@@ -354,6 +376,7 @@ class ServiceAsset(BaseModel, table=True):
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     asset_duration_minutes: Optional[float] = Field(default=None, ge=0)  # How long this asset is used per batch for this service
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ServiceEmployee(BaseModel, table=True):
@@ -362,6 +385,7 @@ class ServiceEmployee(BaseModel, table=True):
     service_id: UUID = Field(foreign_key="service.id", index=True)
     user_id: UUID = Field(foreign_key="user.id", index=True)
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ServiceLocation(BaseModel, table=True):
@@ -370,6 +394,7 @@ class ServiceLocation(BaseModel, table=True):
     service_id: UUID = Field(foreign_key="service.id", index=True)
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ServiceRecipe(BaseModel, table=True):
@@ -380,6 +405,7 @@ class ServiceRecipe(BaseModel, table=True):
     is_produced: bool = Field(default=False)          # True = manufactured/produced; False = purchased/delivered
     batch_size: int = Field(default=1, ge=1)           # Units produced per batch
     batch_duration_minutes: Optional[float] = Field(default=None, ge=0)  # Time for one full batch
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 8 SCHEDULE MODELS ─────────────────────────────────────────────────────────
@@ -411,6 +437,7 @@ class Schedule(BaseModel, table=True):
     task_type: str = Field(default="service")          # "service" | "production"
     production_item_id: Optional[UUID] = Field(default=None)  # inventory item being produced (no FK to keep things simple)
     production_quantity: int = Field(default=1)         # number of batches to run
+    company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
     client: Optional[Client] = Relationship(back_populates="schedules")
@@ -425,6 +452,7 @@ class ScheduleAttendee(BaseModel, table=True):
     user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
     attendance_status: str = Field(default="pending")
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # Schedule Document link model
@@ -432,6 +460,7 @@ class ScheduleDocument(BaseModel, table=True):
     __tablename__ = "schedule_document"
     schedule_id: UUID = Field(foreign_key="schedule.id")
     document_id: UUID = Field(foreign_key="document.id")
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 9 ATTENDANCE MODELS ───────────────────────────────────────────────────────
@@ -446,7 +475,8 @@ class Attendance(BaseModel, table=True):
     clock_out: Optional[datetime] = Field(default=None)
     total_hours: Optional[float] = Field(ge=0, default=None)
     notes: Optional[str] = Field(default=None)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     user: User = Relationship(back_populates="attendance_records")
 
@@ -473,6 +503,7 @@ class AppSettings(BaseModel, table=True):
     company_address: Optional[str] = Field(default=None)
     # Tax
     tax_rate: Optional[float] = Field(default=0.0)  # Percentage, e.g. 8.5 = 8.5%
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 11 DOCUMENT MODELS ────────────────────────────────────────────────────────
@@ -498,6 +529,7 @@ class Document(BaseModel, table=True):
     owner_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     review_date: Optional[datetime] = Field(default=None)
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class DocumentBlob(SQLModel, table=True):
@@ -512,6 +544,7 @@ class DocumentCategory(BaseModel, table=True):
     __tablename__ = "document_category"
     name: str = Field(index=True)
     description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class DocumentRead(SQLModel):
@@ -547,6 +580,7 @@ class DocumentAssignment(BaseModel, table=True):
     entity_id: UUID = Field(index=True)
     assigned_by: Optional[UUID] = Field(foreign_key="user.id", default=None)
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class DocumentAssignmentRead(SQLModel):
@@ -930,6 +964,7 @@ class UserRead(SQLModel):
     vacation_days_used: Optional[int] = 0
     sick_days: Optional[int] = None
     sick_days_used: Optional[int] = 0
+    company_id: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -1091,10 +1126,27 @@ class ScheduleDocumentLink(SQLModel):
     document_id: UUID
 
 
+class CompanyRead(SQLModel):
+    id: UUID
+    company_id: str
+    name: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class CompanyCreate(SQLModel):
+    company_id: str
+    name: str
+    is_active: bool = True
+
+
 class LoginRequest(SQLModel):
     username: str
     password: str
     remember_me: bool = False
+    company_id: str = ""  # Company identifier - required for multi-tenant login
 
 
 class LoginResponse(SQLModel):
@@ -1256,7 +1308,8 @@ class TaskLink(BaseModel, table=True):
     source_task_id: UUID = Field(foreign_key="task.id")
     target_task_id: UUID = Field(foreign_key="task.id")
     link_type: Optional[str] = Field(default="related")  # related, blocks, blocked_by, depends_on, etc.
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     source_task: Optional["Task"] = Relationship(
         back_populates="linked_tasks",
@@ -1275,7 +1328,8 @@ class Task(BaseModel, table=True):
     priority: Optional[str] = Field(default="medium")  # low, medium, high
     due_date: Optional[datetime] = Field(default=None)
     assigned_to_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     assigned_to: Optional["User"] = Relationship()
     linked_tasks: List["TaskLink"] = Relationship(
@@ -1338,6 +1392,7 @@ class LeaveRequest(BaseModel, table=True):
     days_requested: Optional[float] = Field(default=None)
     status: str = Field(default="pending")  # pending, approved, denied
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class LeaveRequestRead(SQLModel):
@@ -1362,6 +1417,7 @@ class OnboardingRequest(BaseModel, table=True):
     request_date: Optional[str] = Field(default=None)
     status: str = Field(default="pending")
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class OnboardingRequestRead(SQLModel):
@@ -1383,6 +1439,7 @@ class OffboardingRequest(BaseModel, table=True):
     request_date: Optional[str] = Field(default=None)
     status: str = Field(default="pending")
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class OffboardingRequestRead(SQLModel):
@@ -1400,10 +1457,11 @@ class OffboardingRequestRead(SQLModel):
 # Insurance plan reference table
 class InsurancePlan(BaseModel, table=True):
     __tablename__ = "insurance_plan"
-    name: str = Field(unique=True, index=True)
+    name: str = Field(index=True)
     description: Optional[str] = Field(default=None)
     is_active: bool = Field(default=True)
     monthly_deduction: Optional[float] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class InsurancePlanRead(SQLModel):
@@ -1435,6 +1493,7 @@ class PaySlip(BaseModel, table=True):
     notes: Optional[str] = Field(default=None)
     status: str = Field(default="paid")
     insurance_plan_name: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class PaySlipCreate(SQLModel):
@@ -1480,6 +1539,7 @@ class SaleTransaction(BaseModel, table=True):
     total: float = Field(default=0)
     payment_method: str = Field(default="cash")  # "card" or "cash"
     schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)  # linked appointment
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class SaleTransactionItem(BaseModel, table=True):
@@ -1491,6 +1551,7 @@ class SaleTransactionItem(BaseModel, table=True):
     unit_price: float = Field(default=0)
     quantity: int = Field(default=1)
     line_total: float = Field(default=0)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class SaleTransactionRead(SQLModel):
@@ -1517,6 +1578,7 @@ class ChatMessage(BaseModel, table=True):
     message_type: str = Field(default="text")  # "text" or "document"
     document_id: Optional[UUID] = Field(default=None, foreign_key="document.id")
     is_read: bool = Field(default=False)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ChatMessageCreate(SQLModel):
@@ -1682,6 +1744,7 @@ class DocumentTemplate(BaseModel, table=True):
     is_standard: bool = Field(default=False)      # standard = cannot delete
     is_active: bool = Field(default=True)
     accessible_pages: Optional[str] = Field(default='[]')  # JSON string: '["clients"]'
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class DocumentTemplateCreate(SQLModel):

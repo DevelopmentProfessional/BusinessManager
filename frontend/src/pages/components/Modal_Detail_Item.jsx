@@ -739,7 +739,10 @@ export default function Modal_Detail_Item({
               </div>
             </div>
 
-            <div className="d-flex align-items-center gap-3">
+            <div
+              className="d-grid align-items-center gap-2"
+              style={{ gridTemplateColumns: '1fr auto 1fr' }}
+            >
               <div>
                 <small className="text-muted">Total</small>
                 <div className="fs-3 fw-bold text-primary">
@@ -749,8 +752,14 @@ export default function Modal_Detail_Item({
                 </div>
               </div>
               <button
+                onClick={onClose}
+                className="btn btn-outline-secondary"
+              >
+                Close
+              </button>
+              <button
                 onClick={handleAddToCart}
-                className={`btn flex-grow-1 d-flex align-items-center justify-content-center gap-2 ${inCart ? 'btn-secondary' : 'btn-primary'}`}
+                className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${inCart ? 'btn-secondary' : 'btn-primary'}`}
               >
                 <ShoppingCartIcon className="h-5 w-5" />
                 {inCart ? `Update (${cartQuantity} → ${quantity})` : `Add ${quantity} to Cart`}

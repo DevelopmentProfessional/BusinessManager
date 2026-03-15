@@ -191,9 +191,12 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
               </div>
             </div>
 
-            {/* Total + Add to Cart */}
-            <div className="d-flex align-items-center gap-3">
-              <div className="flex-shrink-0">
+            {/* Footer actions */}
+            <div
+              className="d-grid align-items-center gap-2"
+              style={{ gridTemplateColumns: '1fr auto 1fr' }}
+            >
+              <div className="justify-self-start">
                 <div className="small text-muted">Total</div>
                 <div className="fw-bold text-primary" style={{ fontSize: '1.25rem' }}>
                   ${(resolvedPrice * quantity).toFixed(2)}
@@ -201,7 +204,14 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
               </div>
               <button
                 type="button"
-                className="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-outline-secondary btn-sm px-3"
+                onClick={onClose}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary d-flex align-items-center justify-content-center gap-2"
                 onClick={handleConfirm}
                 disabled={!allSelected}
               >

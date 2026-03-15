@@ -144,6 +144,12 @@ def get_current_user(
     
     return user
 
+def get_current_company_id(
+    payload: dict = Depends(verify_token),
+) -> str:
+    """Extract company_id from JWT token payload."""
+    return payload.get("company_id") or ""
+
 def get_user_permissions_list(user: User, session: Session) -> List[str]:
     """Get user permissions as list of strings (including inherited role permissions)"""
     # Admin users have access to everything
@@ -237,7 +243,15 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
-    
+
+    # Validate company_id if provided
+    if login_data.company_id:
+        if user.company_id != login_data.company_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+
     # Check if account is locked
     if user.is_locked:
         if user.locked_until and user.locked_until > datetime.utcnow():
@@ -283,7 +297,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     # Create access token
     expires_delta = timedelta(days=REMEMBER_ME_EXPIRE_DAYS) if login_data.remember_me else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id), "username": user.username, "role": user.role},
+        data={"sub": str(user.id), "username": user.username, "role": user.role, "company_id": user.company_id or ""},
         expires_delta=expires_delta
     )
     
@@ -305,6 +319,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
         force_password_reset=user.force_password_reset,
         last_login=user.last_login,
         supervisor=user.supervisor,
+        company_id=user.company_id,
         created_at=user.created_at,
         updated_at=user.updated_at
     )
@@ -467,7 +482,8 @@ def create_user(
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         role=user_data.role,
-        supervisor=user_data.supervisor
+        supervisor=user_data.supervisor,
+        company_id=current_user.company_id,  # inherit company from creator
     )
     
     session.add(user)
@@ -488,7 +504,10 @@ def get_users(
             detail="Admin access required"
         )
     
-    users = session.exec(select(User)).all()
+    stmt = select(User)
+    if current_user.company_id:
+        stmt = stmt.where(User.company_id == current_user.company_id)
+    users = session.exec(stmt).all()
     return [UserRead.from_orm(user) for user in users]
 
 @router.get("/users/{user_id}", response_model=UserRead)

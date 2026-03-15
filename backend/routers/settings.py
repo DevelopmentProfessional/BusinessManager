@@ -41,9 +41,6 @@ except ModuleNotFoundError:
 
 router = APIRouter()
 
-# Singleton UUID for app settings - always use this ID
-SETTINGS_SINGLETON_ID = UUID("00000000-0000-0000-0000-000000000001")
-
 
 class SeedRequest(BaseModel):
     force: bool = True
@@ -51,15 +48,19 @@ class SeedRequest(BaseModel):
 
 # ─── 1 SETTINGS SINGLETON HELPER ───────────────────────────────────────────────
 
-def get_or_create_settings(session: Session) -> AppSettings:
-    """Get existing settings or create defaults if none exist."""
-    settings = session.get(AppSettings, SETTINGS_SINGLETON_ID)
+def get_or_create_settings(session: Session, company_id: str = "") -> AppSettings:
+    """Get existing settings for the company, or create defaults if none exist."""
+    # Look up settings by company_id
+    stmt = select(AppSettings)
+    if company_id:
+        stmt = stmt.where(AppSettings.company_id == company_id)
+    settings = session.exec(stmt).first()
     if not settings:
         settings = AppSettings(
-            id=SETTINGS_SINGLETON_ID,
             start_of_day="06:00",
             end_of_day="21:00",
-            attendance_check_in_required=True
+            attendance_check_in_required=True,
+            company_id=company_id or None,
         )
         session.add(settings)
         try:
@@ -74,19 +75,23 @@ def get_or_create_settings(session: Session) -> AppSettings:
 # ─── 2 SCHEDULE SETTINGS ROUTES ────────────────────────────────────────────────
 
 @router.get("/schedule", response_model=AppSettingsRead)
-def get_schedule_settings(session: Session = Depends(get_session)):
+def get_schedule_settings(
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
     """Get schedule settings (auto-creates defaults if none exist)."""
-    settings = get_or_create_settings(session)
+    settings = get_or_create_settings(session, current_user.company_id or "")
     return AppSettingsRead.model_validate(settings)
 
 
 @router.put("/schedule", response_model=AppSettingsRead)
 def update_schedule_settings(
     settings_data: AppSettingsUpdate,
-    session: Session = Depends(get_session)
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
 ):
     """Update schedule settings."""
-    settings = get_or_create_settings(session)
+    settings = get_or_create_settings(session, current_user.company_id or "")
 
     # Update fields if provided
     update_data = settings_data.model_dump(exclude_unset=True)

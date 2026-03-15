@@ -88,6 +88,7 @@ def send_message(
         content=data.content,
         message_type=data.message_type,
         document_id=data.document_id,
+        company_id=current_user.company_id,
     )
     session.add(msg)
     try:

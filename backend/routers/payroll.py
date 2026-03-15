@@ -131,9 +131,10 @@ def get_all_pay_slips(
     current_user: User = Depends(get_current_user),
 ):
     """Return all pay slips across all employees (admin use)."""
-    slips = session.exec(
-        select(PaySlip).order_by(PaySlip.pay_period_start.desc())
-    ).all()
+    stmt = select(PaySlip)
+    if current_user.company_id:
+        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    slips = session.exec(stmt.order_by(PaySlip.pay_period_start.desc())).all()
     return slips
 
 
