@@ -461,17 +461,19 @@ def create_user(
             detail="Admin access required"
         )
     
-    # Check if username or email already exists
+    # Check if username or email already exists within this company
+    company_id = current_user.company_id or ""
     existing_user = session.exec(
         select(User).where(
             (User.username == user_data.username) | (User.email == user_data.email)
-        )
+        ).where(User.company_id == company_id)
     ).first()
-    
+
     if existing_user:
+        field = "Username" if existing_user.username == user_data.username else "Email"
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already exists"
+            detail=f"{field} '{existing_user.username if field == 'Username' else user_data.email}' is already taken"
         )
     
     # Create new user

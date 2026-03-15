@@ -734,6 +734,29 @@ async def delete_by_id(
         if blob:
             session.delete(blob)
 
+    # For user deletion, cascade-remove dependent records first to avoid FK violations
+    if table_name.lower() in ("user", "users"):
+        user_id = record.id
+        for dep_model, dep_col in [
+            (UserPermission, "user_id"),
+            (ScheduleAttendee, "user_id"),
+            (Attendance, "user_id"),
+            (LeaveRequest, "user_id"),
+            (OnboardingRequest, "user_id"),
+            (OffboardingRequest, "user_id"),
+            (PaySlip, "employee_id"),
+            (ChatMessage, "sender_id"),
+            (ChatMessage, "receiver_id"),
+        ]:
+            try:
+                dep_records = session.exec(
+                    sql_select(dep_model).where(getattr(dep_model, dep_col) == user_id)
+                ).all()
+                for dep in dep_records:
+                    session.delete(dep)
+            except Exception:
+                pass
+
     session.delete(record)
     try:
         session.commit()
