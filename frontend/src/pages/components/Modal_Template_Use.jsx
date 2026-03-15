@@ -137,45 +137,42 @@ export default function Modal_Template_Use({
     </head><body>${renderedHtml}</body></html>`;
   }, [renderedHtml, companyName]);
 
-  const createPdfBlob = useCallback(async (htmlContent) => {
+  const createPdfBlob = useCallback(async (fullHtml) => {
     const html2pdf = (await import('html2pdf.js')).default;
 
-    const root = document.createElement('div');
-    root.innerHTML = htmlContent;
-    root.style.position = 'fixed';
-    root.style.left = '0';
-    root.style.top = '0';
-    root.style.width = '794px';
-    root.style.minHeight = '1123px';
-    root.style.padding = '40px';
-    root.style.background = '#ffffff';
-    root.style.color = '#111111';
-    root.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-    root.style.fontSize = '14px';
-    root.style.lineHeight = '1.6';
-    root.style.opacity = '0';
-    root.style.zIndex = '0';
-    root.style.pointerEvents = 'none';
-    document.body.appendChild(root);
+    // Render the full HTML document in a hidden iframe so all styles apply correctly.
+    // z-index: -1 keeps it behind the modal; no opacity tricks that would make html2canvas capture blank pages.
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1px;z-index:-1;pointer-events:none;border:none;visibility:hidden;';
+    document.body.appendChild(iframe);
 
     try {
-      if (document.fonts?.ready) {
-        try { await document.fonts.ready; } catch {}
-      }
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(fullHtml);
+      doc.close();
+
+      // Let fonts and layout settle
+      try { await iframe.contentWindow.document.fonts?.ready; } catch {}
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-      const imgs = Array.from(root.querySelectorAll('img'));
-      await Promise.all(
-        imgs.map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((resolve) => {
-            const done = () => resolve();
-            img.addEventListener('load', done, { once: true });
-            img.addEventListener('error', done, { once: true });
-            setTimeout(done, 3000);
-          });
-        })
-      );
+      // Wait for images
+      const imgs = Array.from(doc.querySelectorAll('img'));
+      await Promise.all(imgs.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+          setTimeout(resolve, 3000);
+        });
+      }));
+
+      const contentHeight = Math.max(doc.body.scrollHeight, 1123);
+      iframe.style.height = `${contentHeight}px`;
+      iframe.style.visibility = 'visible';
+
+      // One more frame after resizing so layout is finalised
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       const blob = await html2pdf()
         .set({
@@ -186,13 +183,13 @@ export default function Modal_Template_Use({
             useCORS: true,
             backgroundColor: '#ffffff',
             logging: false,
-            windowWidth: Math.max(root.scrollWidth, 794),
-            windowHeight: Math.max(root.scrollHeight, 1123),
+            windowWidth: 794,
+            windowHeight: contentHeight,
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] },
         })
-        .from(root)
+        .from(doc.body)
         .outputPdf('blob');
 
       if (!blob || blob.size < 2500) {
@@ -200,7 +197,7 @@ export default function Modal_Template_Use({
       }
       return blob;
     } finally {
-      document.body.removeChild(root);
+      document.body.removeChild(iframe);
     }
   }, []);
 
@@ -223,13 +220,13 @@ export default function Modal_Template_Use({
   };
 
   const handleDownloadPdf = async () => {
-    if (!selected || !renderedHtml || isDownloadingPdf) return;
+    if (!selected || !iframeContent || isDownloadingPdf) return;
     setIsDownloadingPdf(true);
     try {
       const cacheKey = selected.id;
       let blob = pdfCacheRef.current.get(cacheKey);
       if (!blob) {
-        blob = await createPdfBlob(renderedHtml);
+        blob = await createPdfBlob(iframeContent);
         pdfCacheRef.current.set(cacheKey, blob);
       }
       downloadBlob(blob, pdfFileName);
@@ -244,8 +241,8 @@ export default function Modal_Template_Use({
     if (!selected) return;
     try {
       let blob = pdfCacheRef.current.get(selected.id);
-      if (!blob && renderedHtml) {
-        blob = await createPdfBlob(renderedHtml);
+      if (!blob && iframeContent) {
+        blob = await createPdfBlob(iframeContent);
         pdfCacheRef.current.set(selected.id, blob);
       }
 
