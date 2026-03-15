@@ -1,7 +1,8 @@
-import React, { useState, useRef, lazy, Suspense } from 'react';
-import { XMarkIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from 'react';
+import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from './templateVariables';
 import { documentsAPI } from '../../services/api';
+import EditorToolbar from './editors/EditorToolbar';
 
 const RichTextEditor = lazy(() => import('./editors/RichTextEditor'));
 
@@ -57,14 +58,29 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const [content, setContent] = useState(template?.content || '');
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
+  const [saveStatus, setSaveStatus] = useState('idle');
 
   // ── Picker state ─────────────────────────────────────────────────────────────
   const [activeTab,   setActiveTab]   = useState(TAB_NONE);
   const [openScope,   setOpenScope]   = useState(null);
   const [images,      setImages]      = useState([]);
   const [loadingImgs, setLoadingImgs] = useState(false);
+  const [showDescriptionHelp, setShowDescriptionHelp] = useState(false);
+  const [showPagesDropup, setShowPagesDropup] = useState(false);
+  const [showInsertDropup, setShowInsertDropup] = useState(false);
+  const [editorInstance, setEditorInstance] = useState(null);
 
   const editorRef = useRef(null);
+  const originalPages = useMemo(() => {
+    try { return JSON.parse(template?.accessible_pages || '[]'); }
+    catch { return []; }
+  }, [template?.accessible_pages]);
+  const isDirty =
+    name !== (template?.name || '') ||
+    description !== (template?.description || '') ||
+    templateType !== (template?.template_type || 'custom') ||
+    JSON.stringify([...accessiblePages].sort()) !== JSON.stringify([...originalPages].sort()) ||
+    content !== (template?.content || '');
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,8 +101,14 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     if (!editor) return;
     const src = documentsAPI.fileUrl(doc.id);
     const alt = doc.original_filename || doc.filename || '';
-    editor.chain().focus().setImage({ src, alt }).run();
+    editor.chain().focus().setImage({ src, alt, width: 320, float: 'none' }).run();
+    setActiveTab(TAB_NONE);
   };
+
+  const editorCallbackRef = useCallback((instance) => {
+    editorRef.current = instance;
+    setEditorInstance(instance || null);
+  }, []);
 
   const loadImages = async () => {
     setLoadingImgs(true);
@@ -114,6 +136,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const handleSave = async () => {
     if (!name.trim()) { setError('Template name is required'); return; }
     setSaving(true);
+    setSaveStatus('saving');
     setError('');
     try {
       await onSave({
@@ -124,10 +147,21 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         content,
         is_standard:      isStandard,
       });
+      setSaveStatus('saved');
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to save template');
+      setSaveStatus('error');
+    } finally {
       setSaving(false);
     }
+  };
+
+  const handleUndo = () => {
+    editorInstance?.chain().focus().undo().run();
+  };
+
+  const handleRedo = () => {
+    editorInstance?.chain().focus().redo().run();
   };
 
   // ── Toolbar tab button ───────────────────────────────────────────────────────
@@ -209,72 +243,23 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-            {isNew ? 'New Template' : 'Edit Template'}
-          </h2>
-          {isStandard && (
-            <span className="text-xs text-amber-600 dark:text-amber-400">Editing Standard Template</span>
-          )}
-        </div>
-        <button onClick={onClose} className="p-1 rounded-full text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-          <XMarkIcon className="h-5 w-5" />
-        </button>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+          {isNew ? 'New Template' : 'Edit Template'}
+        </h2>
       </div>
 
       {/* ── Body ───────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
-        {/* Meta fields */}
-        <div className="flex-shrink-0 px-4 pt-3 pb-2 border-b border-gray-200 dark:border-gray-700 space-y-2">
+        {/* Error banner */}
+        <div className="flex-shrink-0 px-4 pt-3 pb-2">
           {error && (
             <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">{error}</div>
           )}
-          <div className="flex gap-2">
-            <div className="form-floating flex-1">
-              <input type="text" id="tpl-name" value={name} onChange={(e) => setName(e.target.value)}
-                className="form-control form-control-sm" placeholder="Template name" />
-              <label htmlFor="tpl-name">Template Name</label>
-            </div>
-            <div className="form-floating" style={{ width: '130px' }}>
-              <select id="tpl-type" value={templateType} onChange={(e) => setTemplateType(e.target.value)}
-                className="form-select form-select-sm">
-                {TEMPLATE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-              <label htmlFor="tpl-type">Type</label>
-            </div>
-          </div>
-
-          <div className="form-floating">
-            <input type="text" id="tpl-desc" value={description} onChange={(e) => setDescription(e.target.value)}
-              className="form-control form-control-sm" placeholder="Description (optional)" />
-            <label htmlFor="tpl-desc">Description (optional)</label>
-          </div>
-
-          <div>
-            <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Available on pages:</div>
-            <div className="flex gap-2 flex-wrap">
-              {PAGE_OPTIONS.map((pg) => (
-                <label key={pg.value} className="flex items-center gap-1 cursor-pointer text-sm">
-                  <input type="checkbox" checked={accessiblePages.includes(pg.value)}
-                    onChange={() => handlePageToggle(pg.value)} className="rounded" />
-                  <span>{pg.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* ── Editor area ─────────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
-
-          {/* Picker toolbar */}
-          <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <span className="text-xs text-gray-400 dark:text-gray-500 mr-1">Insert:</span>
-            <TabBtn id={TAB_VARS}    icon={VariableIcon}    label="Variables" />
-            <TabBtn id={TAB_LAYOUTS} icon={TableCellsIcon}  label="Layouts" />
-            <TabBtn id={TAB_IMAGES}  icon={PhotoIcon}       label="Images" />
-          </div>
 
           {/* ── Variables panel ─────────────────────────────────────────── */}
           {activeTab === TAB_VARS && (
@@ -363,7 +348,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           <div className="flex-1 overflow-hidden p-2">
             <div className="h-full border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
               <Suspense fallback={<div className="flex items-center justify-center h-full text-sm text-gray-500">Loading editor…</div>}>
-                <RichTextEditor ref={editorRef} content={content} onChange={setContent} />
+                <RichTextEditor ref={editorCallbackRef} content={content} onChange={setContent} />
               </Suspense>
             </div>
           </div>
@@ -371,11 +356,179 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 flex justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <button type="button" onClick={onClose} className="btn btn-secondary btn-sm" disabled={saving}>Cancel</button>
-        <button type="button" onClick={handleSave} className="btn btn-primary btn-sm" disabled={saving}>
-          {saving ? 'Saving…' : 'Save Template'}
-        </button>
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        {/* Row 1: contextual editor controls */}
+        <EditorToolbar
+          editorType="richtext"
+          editor={editorInstance}
+          onSave={handleSave}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          isDirty={isDirty}
+          isSaving={saving}
+          saveStatus={saveStatus}
+          showDesignTab={false}
+        />
+
+        {/* Row 2: template metadata + dropups */}
+        <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 d-flex align-items-center gap-2 flex-wrap">
+          <div className="d-flex align-items-center gap-1" style={{ minWidth: '240px', flex: '1 1 240px' }}>
+            <div className="d-flex align-items-center gap-1">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setSaveStatus('idle'); }}
+                className="form-control form-control-sm"
+                style={{ minWidth: '160px', maxWidth: '260px' }}
+                placeholder="Template name"
+              />
+              <div className="position-relative">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center"
+                  style={{ width: '2rem', height: '2rem' }}
+                  onClick={() => setShowDescriptionHelp((prev) => !prev)}
+                  title="Template description"
+                >
+                  <QuestionMarkCircleIcon className="h-4 w-4" />
+                </button>
+                {showDescriptionHelp && (
+                  <div
+                    className="position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow"
+                    style={{ width: '280px', zIndex: 20 }}
+                  >
+                    <label className="form-label text-xs mb-1">Template description</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => { setDescription(e.target.value); setSaveStatus('idle'); }}
+                      className="form-control form-control-sm"
+                      rows={3}
+                      placeholder="Describe this template"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <select
+              value={templateType}
+              onChange={(e) => { setTemplateType(e.target.value); setSaveStatus('idle'); }}
+              className="form-select form-select-sm"
+              style={{ width: '120px' }}
+              title="Template type"
+            >
+              {TEMPLATE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+
+            <div className="position-relative">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                onClick={() => setShowPagesDropup((prev) => !prev)}
+                title="Available pages"
+              >
+                Pages <ChevronUpIcon className="h-3 w-3" />
+              </button>
+              {showPagesDropup && (
+                <div
+                  className="position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow"
+                  style={{ minWidth: '180px', zIndex: 20 }}
+                >
+                  {PAGE_OPTIONS.map((pg) => (
+                    <label key={pg.value} className="d-flex align-items-center gap-2 small py-1">
+                      <input
+                        type="checkbox"
+                        checked={accessiblePages.includes(pg.value)}
+                        onChange={() => { handlePageToggle(pg.value); setSaveStatus('idle'); }}
+                      />
+                      <span>{pg.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="position-relative">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                onClick={() => setShowInsertDropup((prev) => !prev)}
+                title="Insert options"
+              >
+                Insert <ChevronUpIcon className="h-3 w-3" />
+              </button>
+              {showInsertDropup && (
+                <div
+                  className="position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow"
+                  style={{ minWidth: '180px', zIndex: 20 }}
+                >
+                  <button
+                    type="button"
+                    className="btn btn-sm w-100 text-start"
+                    onClick={() => { handleTabClick(TAB_VARS); setShowInsertDropup(false); }}
+                  >
+                    <VariableIcon className="h-3.5 w-3.5 me-1" /> Variables
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm w-100 text-start"
+                    onClick={() => { handleTabClick(TAB_LAYOUTS); setShowInsertDropup(false); }}
+                  >
+                    <TableCellsIcon className="h-3.5 w-3.5 me-1" /> Layouts
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm w-100 text-start"
+                    onClick={() => { handleTabClick(TAB_IMAGES); setShowInsertDropup(false); }}
+                  >
+                    <PhotoIcon className="h-3.5 w-3.5 me-1" /> Images
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: actions */}
+        <div
+          className="px-3 pt-2 pb-4 border-t border-gray-200 dark:border-gray-700 align-items-center gap-2"
+          style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr' }}
+        >
+          <div className="d-flex align-items-center">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="btn btn-primary btn-sm d-flex align-items-center gap-1"
+              disabled={saving}
+              title="Save Template"
+            >
+              {saving ? (
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <CheckIcon className="h-4 w-4 flex-shrink-0" />
+              )}
+              <span className="d-none d-sm-inline">{saving ? 'Saving…' : 'Save'}</span>
+            </button>
+          </div>
+
+          <div className="d-flex align-items-center justify-content-center">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-secondary btn-sm d-flex align-items-center gap-1"
+              disabled={saving}
+              title="Cancel"
+            >
+              <XMarkIcon className="h-4 w-4 flex-shrink-0" />
+              <span className="d-none d-sm-inline">Cancel</span>
+            </button>
+          </div>
+
+          <div />
+        </div>
       </div>
     </div>
   );

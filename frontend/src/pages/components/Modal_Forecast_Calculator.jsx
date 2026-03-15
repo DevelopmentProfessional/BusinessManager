@@ -15,9 +15,15 @@
  *   [3] Chart Generation — displays projections as interactive charts
  *   [4] Parameter Sections — organized input groups for better UX
  *
- * CHANGE LOG:
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-14 | Cascade | Removed header close button, moved view controls to footer, and wrapped summary tags in collapsible section
+ *   2026-03-14 | Copilot | Remapped footer ranges: Year now shows 12 monthly points; Decade now shows 10 yearly points
  *   2026-03-09 | Claude  | Initial creation - comprehensive forecast calculator
  *   2026-03-09 | Claude  | Restructured to calculate base values from components
+ *   2026-03-09 | Claude  | Recorded latest UI adjustments
  * ============================================================
  */
 
@@ -56,7 +62,7 @@ ChartJS.register(
 
 export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
   // ─── TIME PERIOD SETTINGS ───────────────────────────────────────────────
-  const [timeView, setTimeView] = useState('year'); // month, year, decade
+  const [timeView, setTimeView] = useState('month'); // month (12 monthly points), year (10 yearly points)
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [revenueGrowthRate, setRevenueGrowthRate] = useState(5); // % per period
   const [discountRate, setDiscountRate] = useState(10); // % for NPV calculations
@@ -75,6 +81,7 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
   const [showCustomerSection, setShowCustomerSection] = useState(false);
   const [showEconomicSection, setShowEconomicSection] = useState(false);
   const [showOperationalSection, setShowOperationalSection] = useState(false);
+  const [showSummarySection, setShowSummarySection] = useState(false);
   const [showAdvancedSection, setShowAdvancedSection] = useState(false);
   const [showRiskSection, setShowRiskSection] = useState(false);
 
@@ -147,7 +154,8 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
 
   // ─── CALCULATION ENGINE ─────────────────────────────────────────────────
   const forecastData = useMemo(() => {
-    const periods = timeView === 'month' ? 12 : timeView === 'year' ? 10 : 10;
+    const isMonthlyView = timeView === 'month';
+    const periods = isMonthlyView ? 12 : 10;
     const labels = [];
     const revenueData = [];
     const expensesData = [];
@@ -181,25 +189,23 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
     for (let i = 0; i < periods; i++) {
       // Generate label based on time view
       let label = '';
-      if (timeView === 'month') {
+      if (isMonthlyView) {
         const date = new Date(startYear, startMonth - 1 + i, 1);
         label = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      } else if (timeView === 'year') {
-        label = `${startYear + i}`;
       } else {
-        label = `${startYear + i * 10}s`;
+        label = `${startYear + i}`;
       }
       labels.push(label);
 
       // Calculate growth factor considering time view
-      const periodsPerYear = timeView === 'month' ? 12 : timeView === 'year' ? 1 : 0.1;
+      const periodsPerYear = isMonthlyView ? 12 : 1;
       const growthMultiplier = Math.pow(1 + revenueGrowthRate / 100, i / periodsPerYear);
 
       // Base revenue with growth from components
       let periodRevenue = baseRevenue * growthMultiplier;
 
       // Phase 2: Apply seasonality multiplier (if enabled and viewing by month)
-      if (seasonalityEnabled && timeView === 'month') {
+      if (seasonalityEnabled && isMonthlyView) {
         const monthIndex = (startMonth - 1 + i) % 12;
         periodRevenue *= seasonalityMultipliers[monthIndex];
       }
@@ -469,9 +475,10 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
       const adjustedUnits = random(unitsPerPeriod, variancePercent);
       
       // Simple projection with randomized parameters
-      const periods = timeView === 'month' ? 12 : timeView === 'year' ? 10 : 10;
+      const isMonthlyView = timeView === 'month';
+      const periods = isMonthlyView ? 12 : 10;
       for (let i = 0; i < periods; i++) {
-        const periodsPerYear = timeView === 'month' ? 12 : timeView === 'year' ? 1 : 0.1;
+        const periodsPerYear = isMonthlyView ? 12 : 1;
         const growthMult = Math.pow(1 + adjustedGrowth / 100, i / periodsPerYear);
         const revenue = (adjustedPrice * adjustedUnits) * growthMult;
         const expenses = revenue * expenseRatio * random(1, variancePercent * 0.5);
@@ -986,109 +993,78 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
         
         {/* Header */}
-        <div className="flex-shrink-0 px-3 py-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center justify-content-between">
+        <div className="flex-shrink-0 px-3 py-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
           <div className="d-flex align-items-center gap-2">
             <CalculatorIcon className="h-5 w-5 text-blue-600" />
             <h5 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Forecaster</h5>
           </div>
-          <button
-            onClick={onClose}
-            className="btn btn-link p-0 text-gray-400 hover:text-gray-600"
-            title="Close"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
         </div>
 
-        {/* Time Period Selector */}
-        <div className="flex-shrink-0 px-3 py-2 bg-gray-50 dark:bg-gray-800 border-bottom border-gray-200 dark:border-gray-700">
-          <div className="d-flex align-items-center gap-2 flex-wrap">
-            <label className="text-sm fw-medium text-gray-700 dark:text-gray-300">View:</label>
-            <div className="btn-group btn-group-sm" role="group">
-              <button
-                type="button"
-                className={`btn ${timeView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                onClick={() => setTimeView('month')}
-              >
-                12 Months
-              </button>
-              <button
-                type="button"
-                className={`btn ${timeView === 'year' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                onClick={() => setTimeView('year')}
-              >
-                10 Years
-              </button>
-              <button
-                type="button"
-                className={`btn ${timeView === 'decade' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                onClick={() => setTimeView('decade')}
-              >
-                Century
-              </button>
-            </div>
-            <input
-              type="month"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="form-control form-control-sm"
-              style={{ width: 'auto' }}
-            />
-          </div>
-        </div>
+        {/* Main Content: Chart (pinned) + Scrollable Inputs */}
+        <div className="flex-grow-1 d-flex flex-column px-3 py-2" style={{ minHeight: 0 }}>
 
-        {/* Summary Cards */}
-        <div className="flex-shrink-0 px-3 py-2 bg-white dark:bg-gray-900">
-          <div className="d-flex gap-2 flex-wrap">
-            <div className="flex-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-              <div className="text-sm fw-bold text-green-700 dark:text-green-300">${summary.finalCumulativeProfit.toLocaleString()}</div>
-              <div className="text-xs text-green-600 dark:text-green-400">Total Profit</div>
-            </div>
-            <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-              <div className="text-sm fw-bold text-blue-700 dark:text-blue-300">${Math.round(summary.avgProfit).toLocaleString()}</div>
-              <div className="text-xs text-blue-600 dark:text-blue-400">Avg Profit/Period</div>
-            </div>
-            <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-              <div className="text-sm fw-bold text-purple-700 dark:text-purple-300">${summary.lastPeriodRevenue.toLocaleString()}</div>
-              <div className="text-xs text-purple-600 dark:text-purple-400">Final Revenue</div>
-            </div>
-            <div className="flex-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-              <div className="text-sm fw-bold text-orange-700 dark:text-orange-300">${summary.lastPeriodProfit.toLocaleString()}</div>
-              <div className="text-xs text-orange-600 dark:text-orange-400">Final Profit</div>
-            </div>
-            <div className="flex-1 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-              <div className="text-sm fw-bold text-cyan-700 dark:text-cyan-300">${summary.npv.toLocaleString()}</div>
-              <div className="text-xs text-cyan-600 dark:text-cyan-400">NPV ({discountRate}%)</div>
-            </div>
-            <div className="flex-1 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-              <div className="text-sm fw-bold text-teal-700 dark:text-teal-300">${summary.finalCashFlow.toLocaleString()}</div>
-              <div className="text-xs text-teal-600 dark:text-teal-400">Cash Flow</div>
-            </div>
-            {summary.roi !== null && (
-              <div className="flex-1 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-                <div className="text-sm fw-bold text-indigo-700 dark:text-indigo-300">{summary.roi}%</div>
-                <div className="text-xs text-indigo-600 dark:text-indigo-400">ROI</div>
-              </div>
-            )}
-            {summary.breakEvenPeriod !== null && (
-              <div className="flex-1 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
-                <div className="text-sm fw-bold text-pink-700 dark:text-pink-300">Period {summary.breakEvenPeriod + 1}</div>
-                <div className="text-xs text-pink-600 dark:text-pink-400">Break-even</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Main Content: Chart + Parameters */}
-        <div className="flex-grow-1 overflow-auto px-3 py-2" style={{ minHeight: 0 }}>
-          
           {/* Chart */}
-          <div className="mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3" style={{ height: '300px' }}>
+          <div className="flex-shrink-0 mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3" style={{ height: '300px' }}>
             <Line ref={chartRef} data={forecastData} options={chartOptions} />
           </div>
 
-          {/* Parameters */}
-          <div className="row g-2">
+          {/* Summary Cards (Accordion) */}
+          <div className="flex-shrink-0 mb-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setShowSummarySection((prev) => !prev)}
+              className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none"
+            >
+              <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Forecast Summary</span>
+              {showSummarySection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+            </button>
+            {showSummarySection && (
+              <div className="p-2 border-top border-gray-200 dark:border-gray-700 d-flex gap-2 flex-wrap">
+                <div className="flex-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                  <div className="text-sm fw-bold text-green-700 dark:text-green-300">${summary.finalCumulativeProfit.toLocaleString()}</div>
+                  <div className="text-xs text-green-600 dark:text-green-400">Total Profit</div>
+                </div>
+                <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                  <div className="text-sm fw-bold text-blue-700 dark:text-blue-300">${Math.round(summary.avgProfit).toLocaleString()}</div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Avg Profit/Period</div>
+                </div>
+                <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                  <div className="text-sm fw-bold text-purple-700 dark:text-purple-300">${summary.lastPeriodRevenue.toLocaleString()}</div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400">Final Revenue</div>
+                </div>
+                <div className="flex-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                  <div className="text-sm fw-bold text-orange-700 dark:text-orange-300">${summary.lastPeriodProfit.toLocaleString()}</div>
+                  <div className="text-xs text-orange-600 dark:text-orange-400">Final Profit</div>
+                </div>
+                <div className="flex-1 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                  <div className="text-sm fw-bold text-cyan-700 dark:text-cyan-300">${summary.npv.toLocaleString()}</div>
+                  <div className="text-xs text-cyan-600 dark:text-cyan-400">NPV ({discountRate}%)</div>
+                </div>
+                <div className="flex-1 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                  <div className="text-sm fw-bold text-teal-700 dark:text-teal-300">${summary.finalCashFlow.toLocaleString()}</div>
+                  <div className="text-xs text-teal-600 dark:text-teal-400">Cash Flow</div>
+                </div>
+                {summary.roi !== null && (
+                  <div className="flex-1 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                    <div className="text-sm fw-bold text-indigo-700 dark:text-indigo-300">{summary.roi}%</div>
+                    <div className="text-xs text-indigo-600 dark:text-indigo-400">ROI</div>
+                  </div>
+                )}
+                {summary.breakEvenPeriod !== null && (
+                  <div className="flex-1 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg px-2 py-1" style={{ minWidth: '8rem' }}>
+                    <div className="text-sm fw-bold text-pink-700 dark:text-pink-300">Period {summary.breakEvenPeriod + 1}</div>
+                    <div className="text-xs text-pink-600 dark:text-pink-400">Break-even</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Scrollable Inputs */}
+          <div className="flex-grow-1 overflow-auto no-scrollbar" style={{ minHeight: 0 }}>
+
+            {/* Parameters */}
+            <div className="row g-2">
             
             {/* Calculated Base Values Display */}
             <div className="col-12">
@@ -1987,18 +1963,42 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
               </div>
             </div>
 
+            </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex justify-content-center">
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Close"
-              onClick={onClose}
-              className="btn-outline-secondary"
-            />
+          <div className="d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center">
+              <div className="btn-group btn-group-sm" role="group">
+                <button
+                  type="button"
+                  className={`btn ${timeView === 'month' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setTimeView('month')}
+                >
+                  Year
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${timeView === 'year' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setTimeView('year')}
+                >
+                  Decade
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-grow-1 d-flex justify-content-center">
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Close"
+                onClick={onClose}
+                className="btn-outline-secondary"
+              />
+            </div>
+
+            <div style={{ width: '6rem' }} />
           </div>
         </div>
 

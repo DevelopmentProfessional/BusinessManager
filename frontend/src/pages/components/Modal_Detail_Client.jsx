@@ -39,8 +39,9 @@ import {
 import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import { clientsAPI, servicesAPI } from '../../services/api';
-import Modal_Client_Cart, { getClientCartCount } from './Modal_Client_Cart';
+import Modal_Client_Cart from './Modal_Client_Cart';
 import Modal_Template_Use from './Modal_Template_Use';
+import { clientCartAPI } from '../../services/api';
 import { formatDate, formatDateTime } from '../../utils/dateFormatters';
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
@@ -443,7 +444,8 @@ export default function Modal_Detail_Client({
   const [showServiceHistory, setShowServiceHistory] = useState(false);
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCart, setShowCart] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartItems, setCartItems] = useState([]);
+  const [cartLoading, setCartLoading] = useState(false);
   const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
   const [tierHelpKey, setTierHelpKey] = useState(null);
   const [tierHelpPos, setTierHelpPos] = useState({ top: 0, left: 0 });
@@ -462,7 +464,16 @@ export default function Modal_Detail_Client({
         membership_points: client.membership_points || 0,
       });
       setFieldErrors({});
-      getClientCartCount(client.id).then(setCartCount).catch(() => setCartCount(0));
+      // Load full cart items for inline display
+      setCartItems([]);
+      setCartLoading(true);
+      clientCartAPI.getItems(client.id)
+        .then((res) => {
+          const items = Array.isArray(res?.data) ? res.data : [];
+          setCartItems(items);
+        })
+        .catch(() => setCartItems([]))
+        .finally(() => setCartLoading(false));
     }
   }, [isOpen, client?.id]);
 
@@ -505,6 +516,8 @@ export default function Modal_Detail_Client({
     navigate(`/schedule?edit_schedule_id=${encodeURIComponent(schedule.id)}`);
   };
 
+  const cartCount = cartItems.reduce((s, i) => s + (i.quantity || 1), 0);
+  const cartTotal = cartItems.reduce((s, i) => s + (i.unit_price || 0) * (i.quantity || 1), 0);
   const avatarColor = getTierAvatarColor(formData.membership_tier);
   const initials = (formData.name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -572,6 +585,66 @@ export default function Modal_Detail_Client({
               )}
             </button>
           </div>
+
+          {/* ─── 7b INLINE CART PREVIEW ───────────────────────────────────── */}
+          {(cartLoading || cartItems.length > 0) && (
+            <div className="mb-3">
+              <hr className="my-2" />
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <div className="small fw-semibold text-muted d-flex align-items-center gap-1">
+                  <ShoppingCartIcon style={{ width: 14, height: 14 }} />
+                  Cart{cartCount > 0 ? ` (${cartCount} item${cartCount !== 1 ? 's' : ''})` : ''}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCart(true)}
+                  className="btn btn-link btn-sm p-0 text-primary text-decoration-none"
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  Edit
+                </button>
+              </div>
+              {cartLoading ? (
+                <div className="d-flex justify-content-center py-2">
+                  <div className="spinner-border spinner-border-sm text-secondary" role="status" />
+                </div>
+              ) : (
+                <div className="d-flex flex-column gap-1">
+                  {cartItems.map((item) => (
+                    <div key={item.cart_key} className="d-flex align-items-center justify-content-between py-1 px-2 rounded" style={{ background: 'var(--bs-tertiary-bg, #f8f9fa)' }}>
+                      <div className="min-w-0 flex-grow-1">
+                        <div className="small fw-medium text-truncate">{item.item_name}</div>
+                        {item.item_type && (
+                          <div className="text-muted" style={{ fontSize: '0.7rem' }}>{item.item_type}</div>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 text-end ms-2">
+                        <div className="small text-muted">×{item.quantity}</div>
+                        <div className="small fw-medium">${((item.unit_price || 0) * item.quantity).toFixed(2)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {cartTotal > 0 && (
+                    <div className="d-flex justify-content-between pt-1 px-2">
+                      <span className="small fw-semibold">Total</span>
+                      <span className="small fw-semibold">${cartTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/sales', { state: { preSelectedClient: client, preloadCart: cartItems } });
+                      onClose();
+                    }}
+                    className="btn btn-sm btn-outline-primary w-100 mt-1"
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    Continue in Sales
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ─── 8 EDITABLE FORM FIELDS ──────────────────────────────────── */}
           <div className="form-floating mb-2">
@@ -836,7 +909,12 @@ export default function Modal_Detail_Client({
         isOpen={showCart}
         onClose={() => {
           setShowCart(false);
-          setCartCount(getClientCartCount(client?.id));
+          // Reload inline cart items after editing
+          if (client?.id) {
+            clientCartAPI.getItems(client.id)
+              .then((res) => setCartItems(Array.isArray(res?.data) ? res.data : []))
+              .catch(() => {});
+          }
         }}
         client={client}
       />

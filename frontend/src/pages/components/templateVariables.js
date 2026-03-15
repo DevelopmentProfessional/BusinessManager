@@ -253,13 +253,34 @@ function buildItemsTableHtml(items) {
 </table>`;
 }
 
+function buildInvoiceTotalsHtml(transaction) {
+  const subtotal = transaction?.subtotal != null ? `$${Number(transaction.subtotal).toFixed(2)}` : '$0.00';
+  const tax = transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '$0.00';
+  const total = transaction?.total != null ? `$${Number(transaction.total).toFixed(2)}` : '$0.00';
+  return `<table style="width:100%;border-collapse:collapse;margin-top:0.75rem;font-family:inherit;font-size:0.9rem;">
+  <tbody>
+    <tr>
+      <td style="padding:4px 8px;text-align:right;color:#374151;">Subtotal</td>
+      <td style="padding:4px 8px;text-align:right;white-space:nowrap;">${subtotal}</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;text-align:right;color:#374151;">Tax</td>
+      <td style="padding:4px 8px;text-align:right;white-space:nowrap;">${tax}</td>
+    </tr>
+    <tr style="border-top:2px solid #111827;">
+      <td style="padding:6px 8px;text-align:right;font-weight:700;">Total</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;">${total}</td>
+    </tr>
+  </tbody>
+</table>`;
+}
+
 /** Build a flat variable dict from a sale transaction + client + current user + settings */
 export function buildSalesVariables(transaction, client, currentUser, settings, items = []) {
   const now = new Date();
   const txDate = transaction?.created_at ? formatDateISO(transaction.created_at) : formatDateISO(now);
-  const itemsHtml = items.length
-    ? '<ul>' + items.map(i => `<li>${i.item_name} × ${i.quantity} — $${Number(i.line_total).toFixed(2)}</li>`).join('') + '</ul>'
-    : '';
+  const itemsTableHtml = buildItemsTableHtml(items);
+  const itemsHtml = `${itemsTableHtml}${buildInvoiceTotalsHtml(transaction)}`;
   return {
     date: formatDateISO(now),
     time: formatTime(now),
@@ -280,7 +301,7 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
     'invoice.subtotal': transaction?.subtotal != null ? `$${Number(transaction.subtotal).toFixed(2)}` : '',
     'invoice.tax': transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '',
     'invoice.items': itemsHtml,
-    'invoice.items.table': buildItemsTableHtml(items),
+    'invoice.items.table': itemsTableHtml,
     'invoice.payment_method': transaction?.payment_method || '',
   };
 }

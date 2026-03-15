@@ -41,11 +41,11 @@ import {
   WrenchScrewdriverIcon,
   ArchiveBoxIcon,
   ClockIcon,
-  ArrowPathIcon,
   ArrowDownTrayIcon,
   ChevronUpDownIcon,
   CalculatorIcon
 } from '@heroicons/react/24/outline';
+
 import useStore from '../services/useStore';
 import { reportsAPI, employeesAPI, servicesAPI } from '../services/api';
 import useBranding from '../services/useBranding';
@@ -140,17 +140,16 @@ const AVAILABLE_REPORTS = [
 
 const DATE_RANGE_OPTIONS = [
   { value: 'last7days', label: '7D' },
-  { value: 'last30days', label: '30D' },
+  { value: 'last30days', label: '1M' },
   { value: 'last3months', label: '3M' },
   { value: 'last6months', label: '6M' },
-  { value: 'lastyear', label: '1Y' },
-  { value: 'custom', label: 'Custom' }
+  { value: 'lastyear', label: '1Y' }
 ];
 
 const GROUP_BY_OPTIONS = [
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' }
+  { value: 'day', label: '1D' },
+  { value: 'week', label: '2W' },
+  { value: 'month', label: '1M' }
 ];
 
 export default function Reports() {
@@ -173,8 +172,6 @@ export default function Reports() {
   const [showForecastCalculator, setShowForecastCalculator] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     dateRange: 'last30days',
-    startDate: null,
-    endDate: null,
     groupBy: 'month',
     chartType: 'line',
     status: 'all',
@@ -228,8 +225,8 @@ export default function Reports() {
     try {
       let response;
       const apiParams = {
-        start_date: getStartDate(filters.dateRange, filters.startDate),
-        end_date: getEndDate(filters.dateRange, filters.endDate),
+        start_date: getStartDate(filters.dateRange),
+        end_date: getEndDate(filters.dateRange),
         group_by: filters.groupBy,
         ...(filters.status && filters.status !== 'all' ? { status: filters.status } : {}),
         ...(filters.employeeId && filters.employeeId !== 'all' ? { employee_id: filters.employeeId } : {}),
@@ -287,9 +284,7 @@ export default function Reports() {
   };
 
   // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
-  const getStartDate = (dateRange, customStart) => {
-    if (dateRange === 'custom' && customStart) return customStart;
-    
+  const getStartDate = (dateRange) => {
     const now = new Date();
     switch (dateRange) {
       case 'last7days':
@@ -307,8 +302,7 @@ export default function Reports() {
     }
   };
 
-  const getEndDate = (dateRange, customEnd) => {
-    if (dateRange === 'custom' && customEnd) return customEnd;
+  const getEndDate = (dateRange) => {
     return new Date().toISOString().split('T')[0];
   };
 
@@ -457,7 +451,7 @@ export default function Reports() {
     if (selectedReport) {
       loadReportData(selectedReport.id, reportFilters);
     }
-  }, [selectedReport?.id, reportFilters.dateRange, reportFilters.startDate, reportFilters.endDate, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId]);
+  }, [selectedReport?.id, reportFilters.dateRange, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId]);
 
   const canUseStatus = selectedReport?.id === 'appointments';
   const canUseService = ['appointments', 'services', 'revenue'].includes(selectedReport?.id || '');
@@ -498,9 +492,7 @@ export default function Reports() {
     const chartCanvas = reportEl.querySelector('canvas');
     const chartImg = chartCanvas ? chartCanvas.toDataURL('image/png') : '';
 
-    const prettyRange = reportFilters.dateRange === 'custom'
-      ? `${reportFilters.startDate || 'N/A'} to ${reportFilters.endDate || 'N/A'}`
-      : reportFilters.dateRange;
+    const prettyRange = reportFilters.dateRange;
 
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     if (!printWindow) return;
@@ -547,7 +539,7 @@ export default function Reports() {
     const datasetLabel = reportData.datasets?.[0]?.label || 'Value';
     const rows = [
       ['Period', datasetLabel],
-      ...reportData.labels.map((label, i) => [label, reportData.datasets[0].data[i] ?? '']),
+      ...reportData.labels.map((label, i) => [label, reportData.datasets?.[0]?.data?.[i] ?? '']),
     ];
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -579,10 +571,29 @@ export default function Reports() {
       style={{ minHeight: 0 }}
     >
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
-      <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700">
+      <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Live reports powered by your current database data.</p>
-      </div>
+        <div className="d-flex align-items-center gap-2">
+                <Button_Toolbar
+                  icon={CalculatorIcon}
+                  label="Forecast"
+                  onClick={() => setShowForecastCalculator(true)}
+                  className="btn-app-primary"
+                />
+                <Button_Toolbar
+                  icon={ArrowDownTrayIcon}
+                  label="PDF"
+                  onClick={handleExportPdf}
+                  className="btn-outline-secondary"
+                />
+                <Button_Toolbar
+                  icon={ArrowDownTrayIcon}
+                  label="CSV"
+                  onClick={handleExportCsv}
+                  className="btn-outline-secondary"
+                />
+              </div>
+       </div>
 
       <div className="flex-grow-1 overflow-auto p-3" style={{ minHeight: 0, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {error && (
@@ -599,27 +610,6 @@ export default function Reports() {
           </div>
         ) : (
           <>
-            <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
-              <div className="d-flex align-items-center gap-2">
-                <selectedReport.icon className="h-5 w-5 text-primary-600" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-0">{selectedReport.title}</h2>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <Button_Toolbar
-                  icon={CalculatorIcon}
-                  label="Forecast"
-                  onClick={() => setShowForecastCalculator(true)}
-                  className="btn-app-primary"
-                />
-                <Button_Toolbar
-                  icon={ArrowDownTrayIcon}
-                  label="Export PDF"
-                  onClick={handleExportPdf}
-                  className="btn-outline-secondary"
-                />
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{selectedReport.description}</p>
 
             {/* ── KPI SUMMARY CARDS ── */}
             {kpis && (
@@ -685,13 +675,7 @@ export default function Reports() {
               </div>
             )}
 
-            <div className="mt-3 pt-2 border-top border-gray-200 dark:border-gray-700 d-flex flex-wrap align-items-center justify-content-between gap-2">
-              <div className="d-flex align-items-center gap-2">
-                {branding.logoUrl && <img src={branding.logoUrl} alt="logo" style={{ height: '1rem', objectFit: 'contain' }} />}
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{branding.companyName || 'Business Manager'}</span>
-              </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Generated {new Date().toLocaleDateString()}</span>
-            </div>
+            
           </>
         )}
       </div>
@@ -702,35 +686,36 @@ export default function Reports() {
           <div className="d-flex flex-wrap align-items-center gap-2">
             <select
               className="form-select form-select-sm"
-              style={{ width: 'auto' }}
+              style={{
+                width: '3rem',
+                height: '3rem',
+                minWidth: '3rem',
+                borderRadius: '50%',
+                paddingLeft: 0,
+                paddingRight: 0,
+                textAlign: 'center',
+                appearance: 'none',
+                backgroundImage: 'none'
+              }}
               value={reportFilters.dateRange}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
             >
               {DATE_RANGE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
 
-            {reportFilters.dateRange === 'custom' && (
-              <>
-                <input
-                  type="date"
-                  className="form-control form-control-sm"
-                  style={{ width: 'auto' }}
-                  value={reportFilters.startDate || ''}
-                  onChange={(e) => setReportFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                />
-                <input
-                  type="date"
-                  className="form-control form-control-sm"
-                  style={{ width: 'auto' }}
-                  value={reportFilters.endDate || ''}
-                  onChange={(e) => setReportFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                />
-              </>
-            )}
-
             <select
               className="form-select form-select-sm"
-              style={{ width: 'auto' }}
+              style={{
+                width: '3rem',
+                height: '3rem',
+                minWidth: '3rem',
+                borderRadius: '50%',
+                paddingLeft: 0,
+                paddingRight: 0,
+                textAlign: 'center',
+                appearance: 'none',
+                backgroundImage: 'none'
+              }}
               value={reportFilters.groupBy}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
             >
@@ -739,19 +724,33 @@ export default function Reports() {
 
             <select
               className="form-select form-select-sm"
-              style={{ width: 'auto' }}
+              style={{
+                width: '3rem',
+                height: '3rem',
+                minWidth: '3rem',
+                borderRadius: '50%',
+                paddingLeft: 0,
+                paddingRight: 0,
+                textAlign: 'center',
+                appearance: 'none',
+                backgroundImage: 'none'
+              }}
               value={reportFilters.chartType}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
             >
               {selectedReport.chartTypes.map((chartType) => (
-                <option key={chartType} value={chartType}>{chartType}</option>
+                <option key={chartType} value={chartType}>{chartType === 'doughnut' ? 'Ring' : chartType}</option>
               ))}
             </select>
 
             {canUseStatus && (
               <select
                 className="form-select form-select-sm"
-                style={{ width: 'auto' }}
+                style={{
+                  width: 'auto',
+                  appearance: 'none',
+                  backgroundImage: 'none'
+                }}
                 value={reportFilters.status}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
               >
@@ -765,7 +764,11 @@ export default function Reports() {
             {canUseService && (
               <select
                 className="form-select form-select-sm"
-                style={{ width: 'auto' }}
+                style={{
+                  width: 'auto',
+                  appearance: 'none',
+                  backgroundImage: 'none'
+                }}
                 value={reportFilters.serviceId}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
               >
@@ -779,7 +782,11 @@ export default function Reports() {
             {canUseEmployee && (
               <select
                 className="form-select form-select-sm"
-                style={{ width: 'auto' }}
+                style={{
+                  width: 'auto',
+                  appearance: 'none',
+                  backgroundImage: 'none'
+                }}
                 value={reportFilters.employeeId}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
               >
@@ -789,26 +796,6 @@ export default function Reports() {
                 ))}
               </select>
             )}
-
-            <button
-              type="button"
-              onClick={() => loadReportData(selectedReport.id, reportFilters)}
-              className="btn btn-primary btn-sm d-flex align-items-center gap-1"
-            >
-              <ArrowPathIcon className="h-4 w-4" />
-              <span>Refresh</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              disabled={!reportData?.labels?.length}
-              className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
-              title="Download data as CSV"
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              <span>CSV</span>
-            </button>
           </div>
 
           {/* Row 2: centered report dropup selector */}

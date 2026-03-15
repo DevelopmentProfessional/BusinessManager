@@ -67,6 +67,7 @@ export default function Button_Toolbar({ icon: Icon, label, onClick, className =
     : normalizedLabel;
   const displayLabel = simplifyTrainingLabel(baseTrainingLabel, training);
   const showTextLabel = training && displayLabel.length > 0;
+  const iconClassName = `flex-shrink-0 ${compact ? 'h-4 p-0' : 'h-5 px-1'} ${showTextLabel ? ' me-0' : ''}`;
 
   return (
     <button
@@ -78,10 +79,10 @@ export default function Button_Toolbar({ icon: Icon, label, onClick, className =
       className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
         ${training ? 'rounded-pill ps-0 pe-1' : 'rounded-circle p-0'}
         ${effectiveClassName}`}
-      style={training ? { height: '3rem', ...style } : { width: '3rem', height: '3rem', ...style }}
+      style={training ? { height: '3rem', ...style } : { width: '3rem', height: '3rem', minWidth: '3rem', minHeight: '3rem', ...style }}
       {...rest}
     >
-      <Icon className={`flex-shrink-0 h-5 px-1 ${showTextLabel ? ' me-0' : ''}`} />
+      <Icon className={iconClassName} />
       {showTextLabel && <span className="text-nowrap" style={{ fontSize: '0.78rem', lineHeight: 1, marginLeft: '-0.125rem' }}>{displayLabel}</span>}
       {badge}
     </button>
