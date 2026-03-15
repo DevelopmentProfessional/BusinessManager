@@ -157,15 +157,36 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
   const currentFontSize = editor.getAttributes('textStyle').fontSize || '';
   const currentColor = editor.getAttributes('textStyle').color || '#000000';
   const currentHighlight = editor.getAttributes('highlight').color || '#ffff00';
+  const isImageSelected = editor.isActive('image');
+  const currentImageFloat = editor.getAttributes('image').float || 'none';
   // Read current line-height from the active block node (paragraph or heading)
   const currentLineHeight = editor.getAttributes('paragraph').lineHeight
     || editor.getAttributes('heading').lineHeight
     || '';
 
+  const setHorizontalAlignment = (align) => {
+    if (editor.isActive('image')) {
+      const nextFloat = align === 'center' ? 'none' : align;
+      editor.chain().focus().updateAttributes('image', { float: nextFloat }).run();
+      return;
+    }
+    editor.chain().focus().setTextAlign(align).run();
+  };
+
+  const isAlignmentActive = (align) => {
+    if (editor.isActive('image')) {
+      const float = editor.getAttributes('image').float || 'none';
+      if (align === 'center') return float === 'none';
+      return float === align;
+    }
+    return editor.isActive({ textAlign: align });
+  };
+
   return (
     <div className="flex flex-col gap-1">
       {/* Row 1: Save, Undo/Redo, Font controls, Inline formatting */}
-      <div className="flex items-center gap-1 flex-wrap">
+      <div className="overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 flex-nowrap min-w-max pb-1">
         {/* Save */}
         <ToolButton onClick={onSave} disabled={!isDirty || isSaving} title="Save (Ctrl+S)">
           {isSaving ? (
@@ -310,10 +331,12 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
             <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636" />
           </svg>
         </ToolButton>
+        </div>
       </div>
 
       {/* Row 2: Headings, Lists, Indent, Alignment, Line Spacing, HR */}
-      <div className="flex items-center gap-1 flex-wrap">
+      <div className="overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 flex-nowrap min-w-max pb-1">
         {/* Heading */}
         <select
           className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -387,27 +410,27 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
         {/* Text Alignment */}
         <ToolButton
-          active={editor.isActive({ textAlign: 'left' })}
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          title="Align Left"
+          active={isAlignmentActive('left')}
+          onClick={() => setHorizontalAlignment('left')}
+          title={isImageSelected ? 'Align image left' : 'Align Left'}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M3 6h18M3 12h10M3 18h14" />
           </svg>
         </ToolButton>
         <ToolButton
-          active={editor.isActive({ textAlign: 'center' })}
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          title="Align Center"
+          active={isAlignmentActive('center')}
+          onClick={() => setHorizontalAlignment('center')}
+          title={isImageSelected ? 'Align image center' : 'Align Center'}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M3 6h18M7 12h10M5 18h14" />
           </svg>
         </ToolButton>
         <ToolButton
-          active={editor.isActive({ textAlign: 'right' })}
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          title="Align Right"
+          active={isAlignmentActive('right')}
+          onClick={() => setHorizontalAlignment('right')}
+          title={isImageSelected ? 'Align image right' : 'Align Right'}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M3 6h18M11 12h10M7 18h14" />
@@ -416,6 +439,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
         <ToolButton
           active={editor.isActive({ textAlign: 'justify' })}
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+          disabled={isImageSelected}
           title="Justify"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -475,6 +499,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
             <path strokeLinecap="round" d="M3 12h18" />
           </svg>
         </ToolButton>
+        </div>
       </div>
     </div>
   );
@@ -694,8 +719,15 @@ export default function EditorToolbar({
   isDirty,
   isSaving,
   saveStatus,
+  showDesignTab = true,
 }) {
   const [activeTab, setActiveTab] = useState('home');
+
+  useEffect(() => {
+    if (!showDesignTab && activeTab === 'design') {
+      setActiveTab('home');
+    }
+  }, [showDesignTab, activeTab]);
 
   // Ctrl+F opens Find tab
   useEffect(() => {
@@ -748,7 +780,7 @@ export default function EditorToolbar({
     <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
       {/* Tab bar */}
       <div className="flex items-center gap-0 border-b border-gray-200 dark:border-gray-700 px-2">
-        {['home', 'find', 'design'].map((tab) => (
+        {['home', 'find', ...(showDesignTab ? ['design'] : [])].map((tab) => (
           <button
             key={tab}
             type="button"
@@ -778,7 +810,7 @@ export default function EditorToolbar({
           />
         )}
         {activeTab === 'find' && <FindTab editor={editor} />}
-        {activeTab === 'design' && <DesignTab editor={editor} />}
+        {showDesignTab && activeTab === 'design' && <DesignTab editor={editor} />}
       </div>
     </div>
   );

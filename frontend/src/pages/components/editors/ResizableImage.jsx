@@ -1,14 +1,14 @@
 /**
  * ResizableImage — Custom Tiptap image extension with:
  *   - Corner resize handle (drag to resize width)
- *   - Float toolbar (none / left / right) shown when selected
+ *   - Alignment toolbar (left / center / right) shown when selected
  *   - Rotate CW / CCW (90° increments)
  *   - Flip horizontal / vertical
  *   - ProseMirror drag-and-drop via data-drag-handle
  *
  * Replaces the stock @tiptap/extension-image in RichTextEditor.
  */
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 
@@ -62,9 +62,11 @@ const tbDivider = {
 
 // ─── Node View ────────────────────────────────────────────────────────────────
 
-function ResizableImageView({ node, updateAttributes, selected }) {
+function ResizableImageView({ node, updateAttributes, selected, deleteNode }) {
   const { src, alt, width, float: imgFloat, rotation, flipH, flipV } = node.attrs;
   const imgRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [activeDropZone, setActiveDropZone] = useState(null);
 
   // ── Resize (bottom-right corner drag) ──────────────────────────────────────
   const startResize = useCallback((e) => {
@@ -85,8 +87,68 @@ function ResizableImageView({ node, updateAttributes, selected }) {
     window.addEventListener('mouseup', onUp);
   }, [width, updateAttributes]);
 
-  // ── Float ──────────────────────────────────────────────────────────────────
-  const setFloat = useCallback((f) => updateAttributes({ float: f }), [updateAttributes]);
+  // ── Alignment ──────────────────────────────────────────────────────────────
+  const isLeft = imgFloat === 'left';
+  const isRight = imgFloat === 'right';
+  const isCenter = !isLeft && !isRight;
+  const justifyContent = isLeft ? 'flex-start' : isRight ? 'flex-end' : 'center';
+  const setAlignment = useCallback((align) => {
+    if (align === 'left') updateAttributes({ float: 'left' });
+    else if (align === 'right') updateAttributes({ float: 'right' });
+    else updateAttributes({ float: 'none' });
+  }, [updateAttributes]);
+
+  const handleDragStart = useCallback((event) => {
+    if (!selected) return;
+    setIsDragging(true);
+    setActiveDropZone(null);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      try {
+        event.dataTransfer.setData('text/plain', 'image-align');
+      } catch {}
+    }
+  }, [selected]);
+
+  const handleDragEnd = useCallback(() => {
+    if (activeDropZone) {
+      setAlignment(activeDropZone);
+    }
+    setIsDragging(false);
+    setActiveDropZone(null);
+  }, [activeDropZone, setAlignment]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+
+    const updateZoneFromPointer = (clientX) => {
+      const width = window.innerWidth || 1;
+      const third = width / 3;
+      if (clientX < third) {
+        setActiveDropZone('left');
+      } else if (clientX < third * 2) {
+        setActiveDropZone('center');
+      } else {
+        setActiveDropZone('right');
+      }
+    };
+
+    const handleWindowDragOver = (event) => {
+      updateZoneFromPointer(event.clientX);
+    };
+
+    const handleWindowDrop = (event) => {
+      updateZoneFromPointer(event.clientX);
+    };
+
+    window.addEventListener('dragover', handleWindowDragOver);
+    window.addEventListener('drop', handleWindowDrop);
+
+    return () => {
+      window.removeEventListener('dragover', handleWindowDragOver);
+      window.removeEventListener('drop', handleWindowDrop);
+    };
+  }, [isDragging]);
 
   // ── Rotate ─────────────────────────────────────────────────────────────────
   const rotateCW  = useCallback(() => updateAttributes({ rotation: ((rotation || 0) + 90)  % 360 }), [rotation, updateAttributes]);
@@ -101,12 +163,9 @@ function ResizableImageView({ node, updateAttributes, selected }) {
   const displayWidth = width ? `${width}px` : 'auto';
 
   const wrapStyle = {
-    display: 'inline-block',
+    display: 'block',
     position: 'relative',
-    float: (imgFloat === 'left' || imgFloat === 'right') ? imgFloat : 'none',
-    margin: imgFloat === 'left'  ? '0.5rem 1.5rem 0.5rem 0'
-          : imgFloat === 'right' ? '0.5rem 0 0.5rem 1.5rem'
-          : '0.5rem auto',
+    margin: '0.5rem 0',
     width: displayWidth,
     maxWidth: '100%',
     // When rotated 90/270, add vertical padding equal to half the width delta so the
@@ -119,16 +178,75 @@ function ResizableImageView({ node, updateAttributes, selected }) {
   };
 
   const outerStyle = {
-    display: 'block',
-    overflow: (imgFloat === 'left' || imgFloat === 'right') ? 'visible' : 'auto',
+    display: 'flex',
+    justifyContent,
+    width: '100%',
+    overflow: 'visible',
   };
 
   const transform = buildTransform(rotation || 0, !!flipH, !!flipV);
 
   return (
     <NodeViewWrapper as="div" style={outerStyle}>
+      {isDragging && (
+        <div
+          contentEditable={false}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            zIndex: 999,
+            pointerEvents: 'none',
+          }}
+        >
+          {[
+            { key: 'left', label: 'Align Left' },
+            { key: 'center', label: 'Align Center' },
+            { key: 'right', label: 'Align Right' },
+          ].map((zone) => {
+            const isActive = activeDropZone === zone.key;
+            return (
+              <div
+                key={zone.key}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isActive ? 'rgba(99, 102, 241, 0.28)' : 'rgba(17, 24, 39, 0.12)',
+                  borderLeft: zone.key !== 'left' ? '1px solid rgba(255,255,255,0.35)' : 'none',
+                  borderRight: zone.key !== 'right' ? '1px solid rgba(255,255,255,0.35)' : 'none',
+                  color: isActive ? '#312e81' : '#111827',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  transition: 'background-color 0.12s ease, color 0.12s ease',
+                }}
+              >
+                <span
+                  style={{
+                    background: 'rgba(255,255,255,0.82)',
+                    borderRadius: 999,
+                    padding: '0.45rem 0.8rem',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                  }}
+                >
+                  {zone.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* data-drag-handle lets ProseMirror treat the whole div as a draggable node */}
-      <div style={wrapStyle} data-drag-handle draggable="true">
+      <div
+        style={wrapStyle}
+        data-drag-handle
+        draggable="true"
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
 
         {/* ── Toolbar (shown when node is selected) ── */}
         {selected && (
@@ -136,8 +254,9 @@ function ResizableImageView({ node, updateAttributes, selected }) {
             contentEditable={false}
             style={{
               position: 'absolute',
-              top: -38,
-              left: 0,
+              bottom: -38,
+              left: '50%',
+              transform: 'translateX(-50%)',
               display: 'flex',
               alignItems: 'center',
               gap: 1,
@@ -150,17 +269,19 @@ function ResizableImageView({ node, updateAttributes, selected }) {
               userSelect: 'none',
             }}
           >
-            {/* Float */}
+            {/* Alignment */}
             {[
-              { label: 'Block', val: 'none',  title: 'Block (no float)',  symbol: '▪' },
-              { label: 'Left',  val: 'left',  title: 'Float left',        symbol: '◧' },
-              { label: 'Right', val: 'right', title: 'Float right',       symbol: '◨' },
+              { label: 'L', val: 'left', title: 'Align left', symbol: '◧' },
+              { label: 'C', val: 'center', title: 'Align center', symbol: '▣' },
+              { label: 'R', val: 'right', title: 'Align right', symbol: '◨' },
             ].map(({ label, val, title, symbol }) => (
               <button
                 key={val}
                 title={title}
-                onMouseDown={(e) => { e.preventDefault(); setFloat(val); }}
-                style={tbBtn(imgFloat === val)}
+                onMouseDown={(e) => { e.preventDefault(); setAlignment(val); }}
+                style={tbBtn(
+                  val === 'left' ? isLeft : val === 'right' ? isRight : isCenter
+                )}
               >
                 <span style={{ fontSize: 12 }}>{symbol}</span>
                 <span style={{ fontSize: 10, marginLeft: 2 }}>{label}</span>
@@ -217,6 +338,38 @@ function ResizableImageView({ node, updateAttributes, selected }) {
           </div>
         )}
 
+        {/* ── Delete button (top-left, shown when selected) ── */}
+        {selected && (
+          <button
+            contentEditable={false}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteNode(); }}
+            title="Remove image"
+            style={{
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              width: 20,
+              height: 20,
+              background: '#ef4444',
+              border: 'none',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              zIndex: 15,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 14,
+              lineHeight: 1,
+              padding: 0,
+              userSelect: 'none',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            }}
+          >
+            ×
+          </button>
+        )}
+
         {/* ── The image ── */}
         <img
           ref={imgRef}
@@ -225,7 +378,7 @@ function ResizableImageView({ node, updateAttributes, selected }) {
           draggable={false}
           style={{
             display: 'block',
-            width: width ? `${width}px` : '100%',
+            width: width ? `${width}px` : 'auto',
             maxWidth: '100%',
             height: 'auto',
             borderRadius: 4,
@@ -245,15 +398,16 @@ function ResizableImageView({ node, updateAttributes, selected }) {
             title="Drag to resize"
             style={{
               position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: 14,
-              height: 14,
+              bottom: -2,
+              right: -2,
+              width: 18,
+              height: 18,
               background: '#6366f1',
               borderRadius: '0 0 4px 0',
               cursor: 'se-resize',
               zIndex: 10,
               userSelect: 'none',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
             }}
           />
         )}
@@ -312,10 +466,10 @@ export const ResizableImage = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     const { width, float: f, rotation, flipH, flipV, ...rest } = HTMLAttributes;
-    let style = 'max-width:100%;height:auto;display:block;border-radius:4px;';
+    let style = 'max-width:100%;height:auto;display:block;border-radius:4px;margin:0.5rem auto;';
     if (width) style += `width:${width}px;`;
-    if (f === 'left')  style += 'float:left;margin:0.5rem 1.5rem 0.5rem 0;';
-    if (f === 'right') style += 'float:right;margin:0.5rem 0 0.5rem 1.5rem;';
+    if (f === 'left')  style += 'margin:0.5rem auto 0.5rem 0;';
+    if (f === 'right') style += 'margin:0.5rem 0 0.5rem auto;';
     const transform = buildTransform(rotation || 0, !!flipH, !!flipV);
     if (transform !== 'none') style += `transform:${transform};transform-origin:center center;`;
     return ['img', mergeAttributes(rest, { style })];

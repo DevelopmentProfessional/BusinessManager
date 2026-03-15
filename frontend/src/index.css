@@ -195,10 +195,16 @@ div[role="combobox"] {
 
 /* Footer nav/filter buttons — scale up icon when active/selected */
 .app-footer-search .btn svg,
-.schedule-footer .btn svg,
 .profile-footer-nav .btn svg {
   width: 1.5rem;
   height: 1.5rem;
+  transition: width 0.15s ease, height 0.15s ease;
+}
+
+/* Schedule footer icons: slightly smaller so 3rem buttons don't feel cramped */
+.schedule-footer .btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
   transition: width 0.15s ease, height 0.15s ease;
 }
 
@@ -209,10 +215,15 @@ div[role="combobox"] {
 }
 
 .app-footer-search .btn.rounded-circle[data-active="true"] svg,
-.schedule-footer .btn.rounded-circle[data-active="true"] svg,
 .profile-footer-nav .btn.rounded-circle[data-active="true"] svg {
   width: 2.1rem !important;
   height: 2.1rem !important;
+}
+
+/* Schedule footer active icon bump: smaller than other footers */
+.schedule-footer .btn.rounded-circle[data-active="true"] svg {
+  width: 1.6rem !important;
+  height: 1.6rem !important;
 }
 
 /* ========================================
