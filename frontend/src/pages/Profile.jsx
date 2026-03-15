@@ -1663,6 +1663,19 @@ const Profile = () => {
               </button>
               {openAccordions.companyInfo && (
                 <div className="accordion-popup py-3">
+                  {/* Company ID — read-only identifier used at login */}
+                  {user?.company_id && (
+                    <div className="d-flex align-items-center gap-2 mb-3 px-1">
+                      <span className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>Company ID</span>
+                      <span
+                        className="fw-bold text-sm px-3 py-1 rounded-pill"
+                        style={{ background: 'var(--bs-primary-bg-subtle, #1e3a5f)', color: 'var(--bs-primary, #6366f1)', border: '1px solid var(--bs-primary, #6366f1)', letterSpacing: '0.08em', fontFamily: 'monospace' }}
+                      >
+                        {user.company_id}
+                      </span>
+                      <span className="text-xs text-muted">(used at login)</span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="form-floating">
                       <input type="text" id="company_name" value={companyInfo.company_name}

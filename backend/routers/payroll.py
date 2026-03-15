@@ -101,6 +101,7 @@ def process_payment(
         notes=data.notes,
         status="paid",
         insurance_plan_name=insurance_plan_name,
+        company_id=current_user.company_id or "",
     )
     session.add(slip)
     session.commit()
@@ -117,11 +118,10 @@ def get_employee_pay_slips(
     current_user: User = Depends(get_current_user),
 ):
     """Return all pay slips for a specific employee, newest first."""
-    slips = session.exec(
-        select(PaySlip)
-        .where(PaySlip.employee_id == employee_id)
-        .order_by(PaySlip.pay_period_start.desc())
-    ).all()
+    stmt = select(PaySlip).where(PaySlip.employee_id == employee_id)
+    if current_user.company_id:
+        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    slips = session.exec(stmt.order_by(PaySlip.pay_period_start.desc())).all()
     return slips
 
 
@@ -153,13 +153,14 @@ def check_payment_eligibility(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid period_start — use ISO format (YYYY-MM-DD)")
 
-    existing = session.exec(
-        select(PaySlip).where(
-            PaySlip.employee_id == employee_id,
-            PaySlip.pay_period_start == period_dt,
-            PaySlip.status == "paid",
-        )
-    ).first()
+    stmt = select(PaySlip).where(
+        PaySlip.employee_id == employee_id,
+        PaySlip.pay_period_start == period_dt,
+        PaySlip.status == "paid",
+    )
+    if current_user.company_id:
+        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    existing = session.exec(stmt).first()
     return {
         "can_pay": existing is None,
         "existing_slip_id": str(existing.id) if existing else None,

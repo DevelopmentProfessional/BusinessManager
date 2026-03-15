@@ -25,7 +25,8 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel
 from backend.database import get_session
-from backend.models import Task, TaskCreate, TaskUpdate, TaskRead, TaskLink, TaskLinkRead
+from backend.models import Task, TaskCreate, TaskUpdate, TaskRead, TaskLink, TaskLinkRead, User
+from backend.routers.auth import get_current_user
 
 # ─── 1 REQUEST MODELS ──────────────────────────────────────────────────────────
 
@@ -37,9 +38,15 @@ router = APIRouter()
 # ─── 2 TASK READ ROUTES ────────────────────────────────────────────────────────
 
 @router.get("/tasks", response_model=List[TaskRead])
-async def get_tasks(session: Session = Depends(get_session)):
+async def get_tasks(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
     """Get all tasks"""
-    tasks = session.exec(select(Task)).all()
+    stmt = select(Task)
+    if current_user.company_id:
+        stmt = stmt.where(Task.company_id == current_user.company_id)
+    tasks = session.exec(stmt).all()
     result = []
     for task in tasks:
         # Get linked task titles
@@ -57,7 +64,7 @@ async def get_tasks(session: Session = Depends(get_session)):
     return result
 
 @router.get("/tasks/{task_id}", response_model=TaskRead)
-async def get_task(task_id: UUID, session: Session = Depends(get_session)):
+async def get_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Get a specific task by ID"""
     task = session.get(Task, task_id)
     if not task:
@@ -77,9 +84,12 @@ async def get_task(task_id: UUID, session: Session = Depends(get_session)):
     return TaskRead(**task_dict)
 
 @router.get("/tasks/by-title/{title}", response_model=List[TaskRead])
-async def get_tasks_by_title(title: str, session: Session = Depends(get_session)):
+async def get_tasks_by_title(title: str, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Get tasks by title"""
-    tasks = session.exec(select(Task).where(Task.title == title)).all()
+    stmt = select(Task).where(Task.title == title)
+    if current_user.company_id:
+        stmt = stmt.where(Task.company_id == current_user.company_id)
+    tasks = session.exec(stmt).all()
     result = []
     for task in tasks:
         # Get linked task titles
@@ -99,10 +109,11 @@ async def get_tasks_by_title(title: str, session: Session = Depends(get_session)
 # ─── 3 TASK WRITE ROUTES ───────────────────────────────────────────────────────
 
 @router.post("/tasks", response_model=TaskRead)
-async def create_task(task_data: TaskCreate, session: Session = Depends(get_session)):
+async def create_task(task_data: TaskCreate, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Create a new task"""
     # Create the task
     task_dict = task_data.dict(exclude={"linked_task_titles"})
+    task_dict['company_id'] = current_user.company_id or ""
     task = Task(**task_dict)
     session.add(task)
     session.commit()
@@ -148,7 +159,8 @@ async def create_task(task_data: TaskCreate, session: Session = Depends(get_sess
 async def update_task(
     task_id: UUID,
     task_data: TaskUpdate,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a task"""
     task = session.get(Task, task_id)
@@ -205,7 +217,7 @@ async def update_task(
 # ─── 4 TASK DELETE ROUTE ───────────────────────────────────────────────────────
 
 @router.delete("/tasks/{task_id}")
-async def delete_task(task_id: UUID, session: Session = Depends(get_session)):
+async def delete_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Delete a task"""
     task = session.get(Task, task_id)
     if not task:
@@ -232,7 +244,8 @@ async def delete_task(task_id: UUID, session: Session = Depends(get_session)):
 async def link_task_by_title(
     task_id: UUID,
     link_request: TaskLinkRequest,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Link a task to another task by title"""
     target_task_title = link_request.target_task_title
@@ -290,7 +303,8 @@ async def link_task_by_title(
 async def unlink_task(
     task_id: UUID,
     target_task_id: UUID,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Unlink a task from another task"""
     link = session.exec(

@@ -52,6 +52,8 @@ def leave_request_action(
     req = session.get(LeaveRequest, req_uuid)
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
+    if current_user.company_id and req.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Leave request not found")
 
     action = action_data.get("action")
     if action not in ("approved", "denied"):
@@ -116,6 +118,8 @@ def onboarding_request_action(
     req = session.get(OnboardingRequest, req_uuid)
     if not req:
         raise HTTPException(status_code=404, detail="Onboarding request not found")
+    if current_user.company_id and req.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Onboarding request not found")
 
     action = action_data.get("action")
     if action not in ("approved", "denied"):
@@ -152,6 +156,8 @@ def offboarding_request_action(
 
     req = session.get(OffboardingRequest, req_uuid)
     if not req:
+        raise HTTPException(status_code=404, detail="Offboarding request not found")
+    if current_user.company_id and req.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="Offboarding request not found")
 
     action = action_data.get("action")

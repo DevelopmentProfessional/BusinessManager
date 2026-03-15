@@ -26,14 +26,16 @@ try:
     from backend.database import get_session
     from backend.models import (
         Schedule, Inventory,
-        ProductResource, ProductAsset, ProductLocation,
+        ProductResource, ProductAsset, ProductLocation, User,
     )
+    from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session           # type: ignore
     from models import (                       # type: ignore
         Schedule, Inventory,
-        ProductResource, ProductAsset, ProductLocation,
+        ProductResource, ProductAsset, ProductLocation, User,
     )
+    from routers.auth import get_current_user  # type: ignore
 
 router = APIRouter()
 
@@ -45,7 +47,7 @@ def _inventory_by_id(session: Session, item_id: UUID):
 # ─── Info endpoint ─────────────────────────────────────────────────────────────
 
 @router.get("/production/tasks/{schedule_id}/info")
-def get_production_info(schedule_id: UUID, session: Session = Depends(get_session)):
+def get_production_info(schedule_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Return full production info for a scheduled production task."""
     schedule = session.get(Schedule, schedule_id)
     if not schedule:
@@ -118,7 +120,7 @@ def get_production_info(schedule_id: UUID, session: Session = Depends(get_sessio
 # ─── Complete endpoint ─────────────────────────────────────────────────────────
 
 @router.post("/production/tasks/{schedule_id}/complete")
-def complete_production_task(schedule_id: UUID, session: Session = Depends(get_session)):
+def complete_production_task(schedule_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """
     Complete a production task:
       - Consume each linked resource proportional to batches produced
