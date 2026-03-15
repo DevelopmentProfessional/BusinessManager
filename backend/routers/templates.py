@@ -22,16 +22,19 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+from sqlalchemy import or_
 from datetime import datetime
 from uuid import UUID
 import re
 
 try:
     from backend.database import get_session
-    from backend.models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead
+    from backend.models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead, User
+    from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
-    from models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead
+    from models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead, User
+    from routers.auth import get_current_user
 
 router = APIRouter()
 
@@ -229,10 +232,18 @@ def _render_template(html: str, variables: dict) -> str:
 @router.get("/templates", response_model=list[DocumentTemplateRead])
 def list_templates(
     page: str | None = None,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """List all templates, optionally filtered by accessible page."""
-    stmt = select(DocumentTemplate).where(DocumentTemplate.is_active == True)
+    """List all templates: standard (global) + company-specific ones."""
+    company_id = current_user.company_id or ""
+    stmt = select(DocumentTemplate).where(
+        DocumentTemplate.is_active == True,
+        or_(
+            DocumentTemplate.is_standard == True,
+            DocumentTemplate.company_id == company_id,
+        )
+    )
     templates = session.exec(stmt).all()
     if page:
         templates = [
@@ -245,6 +256,7 @@ def list_templates(
 @router.get("/templates/{template_id}", response_model=DocumentTemplateRead)
 def get_template(
     template_id: UUID,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     tpl = session.get(DocumentTemplate, template_id)
@@ -256,9 +268,12 @@ def get_template(
 @router.post("/templates", response_model=DocumentTemplateRead)
 def create_template(
     data: DocumentTemplateCreate,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    tpl = DocumentTemplate(**data.model_dump())
+    tpl_data = data.model_dump()
+    tpl_data['company_id'] = current_user.company_id or ""
+    tpl = DocumentTemplate(**tpl_data)
     session.add(tpl)
     try:
         session.commit()
@@ -273,6 +288,7 @@ def create_template(
 def update_template(
     template_id: UUID,
     data: DocumentTemplateUpdate,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     tpl = session.get(DocumentTemplate, template_id)
@@ -294,6 +310,7 @@ def update_template(
 @router.delete("/templates/{template_id}")
 def delete_template(
     template_id: UUID,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     tpl = session.get(DocumentTemplate, template_id)
@@ -316,6 +333,7 @@ def delete_template(
 def render_template(
     template_id: UUID,
     body: dict,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Render a template server-side with provided variables."""

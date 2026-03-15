@@ -51,6 +51,7 @@ from sqlmodel import SQLModel, select as sql_select
 
 from ..database import get_session
 from ..models import *
+from .auth import get_current_user, get_current_company_id
 
 # ─── [2] CONSTANTS ─────────────────────────────────────────────────────────────
 # Upload dir for document file cleanup on delete (used when table is "document")
@@ -58,6 +59,9 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 
 # Ensure upload directory exists
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Tables without company_id (system tables, never filter by company)
+SYSTEM_TABLES = {"company", "database_connection", "document_blob", "schema_migration"}
 
 def _resolve_document_path(file_path: str, upload_dir: str) -> str:
     """Resolve path for a document file (stored path or upload_dir + basename)."""
@@ -300,6 +304,7 @@ async def insert_with_file(
     table_name: str,
     request: Request,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Flexible insert endpoint that handles both JSON and multipart/form-data.
@@ -371,6 +376,10 @@ async def insert_with_file(
         if plain_password:
             record_data['password_hash'] = User.hash_password(plain_password)
 
+    # Auto-inject company_id for tenant-scoped tables
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        record_data['company_id'] = current_user.company_id or ""
+
     try:
         record = model_class(**record_data)
     except Exception as e:
@@ -403,6 +412,7 @@ async def insert(
     table_name: str,
     record_data: Dict[str, Any],
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Standard JSON insert endpoint."""
     model_class = get_model_class(table_name)
@@ -412,6 +422,10 @@ async def insert(
         plain_password = record_data.pop('password')
         if plain_password:
             record_data['password_hash'] = User.hash_password(plain_password)
+
+    # Auto-inject company_id for tenant-scoped tables
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        record_data['company_id'] = current_user.company_id or ""
 
     try:
         record = model_class(**record_data)
@@ -453,10 +467,13 @@ async def update_by_id(
     record_id: UUID,
     record_data: Dict[str, Any],
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
@@ -484,14 +501,22 @@ async def update_by_id(
 
 @router.get("/inventory/locations")
 async def get_inventory_locations(
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Get all unique locations from inventory items"""
     try:
         # Query distinct locations from inventory table
-        result = session.execute(
-            sql_select(Inventory.location).where(Inventory.location.isnot(None)).distinct()
-        )
+        if current_user.company_id:
+            result = session.execute(
+                sql_select(Inventory.location).where(
+                    and_(Inventory.location.isnot(None), Inventory.company_id == current_user.company_id)
+                ).distinct()
+            )
+        else:
+            result = session.execute(
+                sql_select(Inventory.location).where(Inventory.location.isnot(None)).distinct()
+            )
         locations = [row[0] for row in result.fetchall() if row[0]]
         return {"locations": sorted(locations)}
     except Exception as e:
@@ -504,6 +529,7 @@ async def get_inventory_locations(
 async def sync_check(
     table_name: str,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return a lightweight summary (row count + latest created_at) so the
@@ -511,16 +537,18 @@ async def sync_check(
     """
     model_class = get_model_class(table_name)
 
-    count_result = session.execute(
-        sql_select(func.count()).select_from(model_class.__table__)
-    )
+    base_stmt = sql_select(func.count()).select_from(model_class.__table__)
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        base_stmt = base_stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+    count_result = session.execute(base_stmt)
     total = count_result.scalar() or 0
 
     max_created_at = None
     if hasattr(model_class, "created_at"):
-        max_result = session.execute(
-            sql_select(func.max(model_class.created_at))
-        )
+        max_stmt = sql_select(func.max(model_class.created_at))
+        if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+            max_stmt = max_stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+        max_result = session.execute(max_stmt)
         val = max_result.scalar()
         if val is not None:
             max_created_at = val.isoformat() if hasattr(val, "isoformat") else str(val)
@@ -534,6 +562,7 @@ async def select(
     table_name: str,
     request: Request,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
 
@@ -573,6 +602,10 @@ async def select(
     if conditions:
         stmt = stmt.where(and_(*conditions))
 
+    # Auto-filter by company_id for tenant-scoped tables
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+
     if any(k == "id" for k, _ in user_filters):
         record = session.exec(stmt).first()
         if not record:
@@ -592,10 +625,13 @@ async def select_by_id(
     table_name: str,
     record_id: UUID,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
@@ -607,6 +643,7 @@ async def update(
     request: Request,
     record_data: Dict[str, Any],
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
 
@@ -632,6 +669,8 @@ async def update(
         conditions.append(col_attr == value)
 
     stmt = stmt.where(and_(*conditions))
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
 
     update_many = not any(k == "id" for k, _ in raw_filters)
 
@@ -668,10 +707,13 @@ async def delete_by_id(
     table_name: str,
     record_id: UUID,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
@@ -708,12 +750,13 @@ async def delete_by_id(
 async def add_inventory_image_url(
     inventory_id: UUID,
     image_data: dict,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Add an image URL to an inventory item"""
-    # Verify inventory exists
+    # Verify inventory exists and belongs to user's company
     inventory = session.get(Inventory, inventory_id)
-    if not inventory:
+    if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Inventory item not found")
     
     # Get current image count to set sort order
@@ -746,12 +789,13 @@ async def upload_inventory_image_file(
     inventory_id: UUID,
     file: UploadFile,
     is_primary: bool = False,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Upload an image file for an inventory item"""
-    # Verify inventory exists
+    # Verify inventory exists and belongs to user's company
     inventory = session.get(Inventory, inventory_id)
-    if not inventory:
+    if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Inventory item not found")
     
     # Validate file type
@@ -812,7 +856,8 @@ async def upload_inventory_image_file(
 @router.get("/inventory/{inventory_id}/images")
 async def get_inventory_images(
     inventory_id: UUID,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Get all images for an inventory item"""
     stmt = sql_select(InventoryImage).where(
@@ -827,7 +872,8 @@ async def get_inventory_images(
 async def update_inventory_image(
     image_id: UUID,
     image_data: InventoryImageUpdate,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Update an inventory image"""
     image = session.get(InventoryImage, image_id)
@@ -862,7 +908,8 @@ async def update_inventory_image(
 @router.delete("/inventory/images/{image_id}")
 async def delete_inventory_image(
     image_id: UUID,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete an inventory image"""
     image = session.get(InventoryImage, image_id)
@@ -885,7 +932,8 @@ async def delete_inventory_image(
 @router.get("/inventory/images/{image_id}/file")
 async def serve_inventory_image_file(
     image_id: UUID,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Serve an uploaded inventory image file"""
     image = session.get(InventoryImage, image_id)

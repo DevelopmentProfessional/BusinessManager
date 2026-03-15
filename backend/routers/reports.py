@@ -23,6 +23,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-03-15 | Claude  | Added authentication + company_id scoping to all endpoints
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query
@@ -31,6 +32,7 @@ from datetime import datetime
 from typing import Optional
 from backend.database import get_session
 from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip
+from backend.routers.auth import get_current_user
 
 router = APIRouter()
 
@@ -79,12 +81,16 @@ def get_appointments_report(
     status: Optional[str] = Query(None),
     employee_id: Optional[str] = Query(None),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Appointments over time grouped by day/week/month."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    schedules = session.exec(select(Schedule)).all()
+    stmt = select(Schedule)
+    if current_user.company_id:
+        stmt = stmt.where(Schedule.company_id == current_user.company_id)
+    schedules = session.exec(stmt).all()
 
     grouped: dict = {}
     for s in schedules:
@@ -112,19 +118,26 @@ def get_revenue_report(
     end_date: Optional[str] = Query(None),
     group_by: str = Query("day"),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Revenue from completed appointments (service price) and sale transactions."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
     # Load services for lookup
-    services = session.exec(select(Service)).all()
+    stmt_service = select(Service)
+    if current_user.company_id:
+        stmt_service = stmt_service.where(Service.company_id == current_user.company_id)
+    services = session.exec(stmt_service).all()
     service_map = {str(s.id): s.price for s in services}
 
     grouped: dict = {}
 
     # Appointment-based revenue
-    schedules = session.exec(select(Schedule)).all()
+    stmt_schedule = select(Schedule)
+    if current_user.company_id:
+        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    schedules = session.exec(stmt_schedule).all()
     for s in schedules:
         if s.status != "completed":
             continue
@@ -139,7 +152,10 @@ def get_revenue_report(
 
     # Sale transaction revenue
     try:
-        transactions = session.exec(select(SaleTransaction)).all()
+        stmt_tx = select(SaleTransaction)
+        if current_user.company_id:
+            stmt_tx = stmt_tx.where(SaleTransaction.company_id == current_user.company_id)
+        transactions = session.exec(stmt_tx).all()
         for tx in transactions:
             dt = tx.created_at
             if dt is None:
@@ -165,12 +181,16 @@ def get_clients_report(
     end_date: Optional[str] = Query(None),
     group_by: str = Query("day"),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Client activity: new clients registered over time."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    clients = session.exec(select(Client)).all()
+    stmt_client = select(Client)
+    if current_user.company_id:
+        stmt_client = stmt_client.where(Client.company_id == current_user.company_id)
+    clients = session.exec(stmt_client).all()
 
     new_clients: dict = {}
     for c in clients:
@@ -185,7 +205,10 @@ def get_clients_report(
         new_clients[label] = new_clients.get(label, 0) + 1
 
     # Appointments per time period
-    schedules = session.exec(select(Schedule)).all()
+    stmt_schedule = select(Schedule)
+    if current_user.company_id:
+        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    schedules = session.exec(stmt_schedule).all()
     appt_counts: dict = {}
     for a in schedules:
         dt = a.appointment_date
@@ -214,15 +237,22 @@ def get_services_report(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Service popularity: count of appointments per service."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    services = session.exec(select(Service)).all()
+    stmt_service = select(Service)
+    if current_user.company_id:
+        stmt_service = stmt_service.where(Service.company_id == current_user.company_id)
+    services = session.exec(stmt_service).all()
     service_name_map = {str(s.id): s.name for s in services}
 
-    schedules = session.exec(select(Schedule)).all()
+    stmt_schedule = select(Schedule)
+    if current_user.company_id:
+        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    schedules = session.exec(stmt_schedule).all()
     service_counts: dict = {}
     for s in schedules:
         dt = s.appointment_date
@@ -244,9 +274,13 @@ def get_services_report(
 @router.get("/reports/inventory")
 def get_inventory_report(
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Inventory analytics: current stock levels per item."""
-    items = session.exec(select(Inventory)).all()
+    stmt = select(Inventory)
+    if current_user.company_id:
+        stmt = stmt.where(Inventory.company_id == current_user.company_id)
+    items = session.exec(stmt).all()
     labels = [item.name for item in items]
     data = [item.quantity for item in items]
     low_stock = [item.name for item in items if item.quantity <= item.min_stock_level]
@@ -268,15 +302,22 @@ def get_employees_report(
     end_date: Optional[str] = Query(None),
     group_by: str = Query("day"),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Employee performance: appointments per employee."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    users = session.exec(select(User)).all()
+    stmt_user = select(User)
+    if current_user.company_id:
+        stmt_user = stmt_user.where(User.company_id == current_user.company_id)
+    users = session.exec(stmt_user).all()
     user_name_map = {str(u.id): f"{u.first_name} {u.last_name}" for u in users}
 
-    schedules = session.exec(select(Schedule)).all()
+    stmt_schedule = select(Schedule)
+    if current_user.company_id:
+        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    schedules = session.exec(stmt_schedule).all()
     emp_counts: dict = {}
     for s in schedules:
         dt = s.appointment_date
@@ -302,12 +343,16 @@ def get_attendance_report(
     group_by: str = Query("day"),
     employee_id: Optional[str] = Query(None),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Attendance analytics: attendance records grouped over time."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    rows = session.exec(select(Attendance)).all()
+    stmt = select(Attendance)
+    if current_user.company_id:
+        stmt = stmt.where(Attendance.company_id == current_user.company_id)
+    rows = session.exec(stmt).all()
     grouped: dict = {}
 
     for row in rows:
@@ -336,12 +381,16 @@ def get_sales_report(
     end_date: Optional[str] = Query(None),
     group_by: str = Query("day"),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Sales analytics: transaction totals grouped over time."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    txs = session.exec(select(SaleTransaction)).all()
+    stmt = select(SaleTransaction)
+    if current_user.company_id:
+        stmt = stmt.where(SaleTransaction.company_id == current_user.company_id)
+    txs = session.exec(stmt).all()
     grouped: dict = {}
 
     for tx in txs:
@@ -368,12 +417,16 @@ def get_payroll_report(
     end_date: Optional[str] = Query(None),
     group_by: str = Query("month"),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Payroll analytics: total net pay grouped over time."""
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    slips = session.exec(select(PaySlip)).all()
+    stmt = select(PaySlip)
+    if current_user.company_id:
+        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    slips = session.exec(stmt).all()
     grouped: dict = {}
 
     for slip in slips:

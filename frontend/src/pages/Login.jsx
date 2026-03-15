@@ -47,6 +47,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    company_id: '',
     remember_me: false
   });
   const [loading, setLoading] = useState(false);
@@ -79,14 +80,16 @@ const Login = () => {
     const savedRememberMe = getCookie('rememberMe') === 'true';
     const savedUsername = getCookie('savedUsername');
     const savedPassword = getCookie('savedPassword');
-    
-    console.log('Saved data found in cookies:', { savedRememberMe, savedUsername, savedPassword });
-    
+    const savedCompanyId = getCookie('savedCompanyId');
+
+    console.log('Saved data found in cookies:', { savedRememberMe, savedUsername, savedPassword, savedCompanyId });
+
     // If remember me is true, set the form values
     if (savedRememberMe) {
       setFormData({
         username: savedUsername || '',
         password: savedPassword || '',
+        company_id: savedCompanyId || '',
         remember_me: true
       });
     }
@@ -101,19 +104,23 @@ const Login = () => {
 // ─── [4] FORM VALIDATION ────────────────────────────────────────────────────
   const validateForm = () => {
     const errors = {};
-    
+
+    if (!formData.company_id.trim()) {
+      errors.company_id = 'Company ID is required';
+    }
+
     if (!formData.username.trim()) {
       errors.username = 'Username is required';
     } else if (formData.username.length < 2) {
       errors.username = 'Username must be at least 2 characters';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 3) {
       errors.password = 'Password must be at least 3 characters';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -143,20 +150,22 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
-  const saveUserCredentials = (username, password, rememberMe) => { // (part of [6] COOKIE HELPERS)
+  const saveUserCredentials = (username, password, companyId, rememberMe) => { // (part of [6] COOKIE HELPERS)
     try {
       if (rememberMe) {
-        console.log('Saving user credentials:', { username, rememberMe });
+        console.log('Saving user credentials:', { username, companyId, rememberMe });
         const expireDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
         document.cookie = `rememberMe=true; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedUsername=${encodeURIComponent(username)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedPassword=${encodeURIComponent(password)}; expires=${expireDate}; path=/; secure; samesite=strict`;
+        document.cookie = `savedCompanyId=${encodeURIComponent(companyId)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         console.log('Data saved to cookies');
       } else {
         console.log('Clearing saved credentials');
         document.cookie = 'rememberMe=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'savedUsername=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'savedPassword=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'savedCompanyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       }
       return true;
     } catch (error) {
@@ -197,6 +206,7 @@ const Login = () => {
     const loginData = {
       username: formData.username.trim(),
       password: formData.password,
+      company_id: formData.company_id.trim(),
     };
 
     try {
@@ -246,7 +256,7 @@ const Login = () => {
         }
         
         // Save credentials if remember me is checked
-        saveUserCredentials(formData.username.trim(), formData.password, formData.remember_me);
+        saveUserCredentials(formData.username.trim(), formData.password, formData.company_id.trim(), formData.remember_me);
 
         // Preload major tables in background (fire-and-forget)
         preloadMajorTables();
@@ -345,6 +355,24 @@ const Login = () => {
             )}
 
             <div className="space-y-2">
+              {/* Company ID Field */}
+              <div className="form-floating mb-2">
+                <input
+                  id="company_id"
+                  name="company_id"
+                  type="text"
+                  required
+                  className={`form-control ${validationErrors.company_id ? 'is-invalid' : ''}`}
+                  placeholder="Company ID"
+                  value={formData.company_id}
+                  onChange={handleInputChange}
+                />
+                <label htmlFor="company_id">Company ID</label>
+                {validationErrors.company_id && (
+                  <p className="mt-1 text-sm text-red-400">{validationErrors.company_id}</p>
+                )}
+              </div>
+
               {/* Username Field */}
               <div className="form-floating mb-2">
                 <input

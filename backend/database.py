@@ -67,7 +67,7 @@ else:
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.13.3"
+CURRENT_SCHEMA_VERSION = "2026.03.15.1"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -283,6 +283,145 @@ def _ensure_schedule_payment_columns_if_needed():
                         print(f"  + Added column {table}.{col} ({pg_type})")
 
 
+# ─── MIGRATION: MULTI-TENANCY COMPANY_ID COLUMNS ────────────────────────────────
+def _ensure_company_multitenancy_if_needed():
+    """Add company_id column to all tenant-scoped tables, create default company,
+    and migrate existing data to the default company."""
+
+    # Tables that need company_id (excludes: company, document_blob, database_connection, schema_migration)
+    tenant_tables = [
+        "user", "user_permission", "role", "role_permission",
+        "client", "inventory", "inventory_image", "supplier",
+        "descriptive_feature", "feature_option", "inventory_feature", "inventory_feature_option_data",
+        "service", "service_resource", "service_asset", "service_employee",
+        "service_location", "service_recipe",
+        "schedule", "schedule_attendee", "schedule_document",
+        "attendance", "app_settings", "document", "document_category", "document_assignment",
+        "task", "task_link", "leave_request", "onboarding_request", "offboarding_request",
+        "insurance_plan", "pay_slip", "sale_transaction", "sale_transaction_item",
+        "chat_message", "document_template",
+    ]
+
+    DEFAULT_COMPANY_ID = "DEFAULT"
+    DEFAULT_COMPANY_NAME = "Default Company"
+
+    if DATABASE_URL.startswith("sqlite"):
+        with engine.begin() as conn:
+            # Ensure company table exists
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS company (
+                    id TEXT PRIMARY KEY,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME,
+                    company_id TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    is_active BOOLEAN NOT NULL DEFAULT 1
+                )
+            """))
+
+            # Create default company if none exists
+            existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
+            if not existing:
+                import uuid as _uuid
+                from datetime import datetime as _dt
+                default_id = str(_uuid.uuid4())
+                conn.execute(text(
+                    "INSERT INTO company (id, created_at, company_id, name, is_active) "
+                    "VALUES (:id, :created_at, :company_id, :name, 1)"
+                ), {"id": default_id, "created_at": _dt.utcnow().isoformat(), "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
+                print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
+
+            # Get the default company_id value
+            default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
+            default_cid = default_row[0] if default_row else DEFAULT_COMPANY_ID
+
+            # Add company_id to each tenant table
+            for table in tenant_tables:
+                tbl_exists = conn.execute(text(
+                    f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
+                )).fetchone()
+                if not tbl_exists:
+                    continue
+                existing_cols = {row[1] for row in conn.execute(text(f"PRAGMA table_info('{table}')")).fetchall()}
+                if "company_id" not in existing_cols:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN company_id TEXT"))
+                    # Set existing rows to default company
+                    conn.execute(text(f"UPDATE {table} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
+                    print(f"  + Added company_id to {table}, set existing rows to '{default_cid}'")
+    else:
+        # PostgreSQL
+        with engine.begin() as conn:
+            # Ensure company table exists
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS company (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP,
+                    company_id VARCHAR UNIQUE NOT NULL,
+                    name VARCHAR NOT NULL,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE
+                )
+            """))
+
+            # Create default company if none exists
+            existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
+            if not existing:
+                import uuid as _uuid
+                from datetime import datetime as _dt
+                default_id = str(_uuid.uuid4())
+                conn.execute(text(
+                    "INSERT INTO company (id, created_at, company_id, name, is_active) "
+                    "VALUES (:id, :created_at, :company_id, :name, TRUE)"
+                ), {"id": default_id, "created_at": _dt.utcnow(), "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
+                print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
+
+            # Get the default company_id value
+            default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
+            default_cid = default_row[0] if default_row else DEFAULT_COMPANY_ID
+
+            # Add company_id to each tenant table
+            for table in tenant_tables:
+                tbl_exists = conn.execute(text(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables "
+                    f"WHERE table_schema='public' AND table_name='{table}')"
+                )).scalar()
+                if not tbl_exists:
+                    continue
+                existing_cols = {row[0] for row in conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_schema='public' AND table_name='{table}'"
+                )).fetchall()}
+                if "company_id" not in existing_cols:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN company_id VARCHAR"))
+                    conn.execute(text(f"UPDATE {table} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
+                    print(f"  + Added company_id to {table} ({table}), set existing rows to '{default_cid}'")
+
+            # Drop old unique constraints that conflict with multi-tenancy
+            # (client.name, service.name, role.name, insurance_plan.name, inventory.sku, descriptive_feature.name)
+            for table, col in [
+                ("client", "name"), ("service", "name"), ("role", "name"),
+                ("insurance_plan", "name"), ("inventory", "sku"), ("descriptive_feature", "name"),
+            ]:
+                try:
+                    # Find unique constraint name
+                    result = conn.execute(text(f"""
+                        SELECT tc.constraint_name
+                        FROM information_schema.table_constraints tc
+                        JOIN information_schema.key_column_usage kcu
+                            ON tc.constraint_name = kcu.constraint_name
+                        WHERE tc.table_schema = 'public'
+                          AND tc.table_name = '{table}'
+                          AND kcu.column_name = '{col}'
+                          AND tc.constraint_type = 'UNIQUE'
+                    """)).fetchone()
+                    if result:
+                        constraint_name = result[0]
+                        conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {constraint_name}"))
+                        print(f"  + Dropped unique constraint {constraint_name} on {table}.{col}")
+                except Exception as e:
+                    print(f"  Warning: Could not drop unique constraint on {table}.{col}: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
@@ -320,6 +459,7 @@ def create_db_and_tables():
     _ensure_production_tables_if_needed()
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()
+    _ensure_company_multitenancy_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
