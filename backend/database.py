@@ -470,6 +470,16 @@ def _ensure_user_username_composite_unique_if_needed():
                     conn.execute(text(f'ALTER TABLE "user" DROP CONSTRAINT IF EXISTS "{result[0]}"'))
                     print(f"  + Dropped single-column unique constraint on user.{col}: {result[0]}")
 
+            # Also drop SQLAlchemy-created unique indexes (ix_user_username, ix_user_email)
+            for idx in ("ix_user_username", "ix_user_email"):
+                idx_exists = conn.execute(text("""
+                    SELECT 1 FROM pg_indexes
+                    WHERE schemaname = 'public' AND tablename = 'user' AND indexname = :idx
+                """), {"idx": idx}).fetchone()
+                if idx_exists:
+                    conn.execute(text(f'DROP INDEX IF EXISTS "{idx}"'))
+                    print(f"  + Dropped unique index {idx} on user")
+
             # Add composite unique constraint on (company_id, username) if not already present
             exists = conn.execute(text("""
                 SELECT 1 FROM information_schema.table_constraints
