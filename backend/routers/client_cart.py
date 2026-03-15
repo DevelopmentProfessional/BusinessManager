@@ -20,19 +20,22 @@ from uuid import UUID
 
 try:
     from backend.database import get_session
-    from backend.models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert
+    from backend.models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, User
+    from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session          # type: ignore
-    from models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert  # type: ignore
+    from models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, User  # type: ignore
+    from routers.auth import get_current_user  # type: ignore
 
 router = APIRouter()
 
 
 @router.get("/client-cart/{client_id}", response_model=list[ClientCartItemRead])
-def get_client_cart(client_id: UUID, session: Session = Depends(get_session)):
-    items = session.exec(
-        select(ClientCartItem).where(ClientCartItem.client_id == client_id)
-    ).all()
+def get_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id)
+    if current_user.company_id:
+        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
+    items = session.exec(stmt).all()
     return items
 
 
@@ -41,13 +44,15 @@ def upsert_cart_item(
     client_id: UUID,
     data: ClientCartItemUpsert,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
-    existing = session.exec(
-        select(ClientCartItem).where(
-            ClientCartItem.client_id == client_id,
-            ClientCartItem.cart_key == data.cart_key,
-        )
-    ).first()
+    stmt = select(ClientCartItem).where(
+        ClientCartItem.client_id == client_id,
+        ClientCartItem.cart_key == data.cart_key,
+    )
+    if current_user.company_id:
+        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
+    existing = session.exec(stmt).first()
 
     if existing:
         existing.item_id = data.item_id
@@ -66,7 +71,7 @@ def upsert_cart_item(
             raise
         return existing
 
-    new_item = ClientCartItem(client_id=client_id, **data.model_dump())
+    new_item = ClientCartItem(client_id=client_id, company_id=current_user.company_id or "", **data.model_dump())
     session.add(new_item)
     try:
         session.commit()
@@ -82,13 +87,15 @@ def remove_cart_item(
     client_id: UUID,
     cart_key: str,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
-    item = session.exec(
-        select(ClientCartItem).where(
-            ClientCartItem.client_id == client_id,
-            ClientCartItem.cart_key == cart_key,
-        )
-    ).first()
+    stmt = select(ClientCartItem).where(
+        ClientCartItem.client_id == client_id,
+        ClientCartItem.cart_key == cart_key,
+    )
+    if current_user.company_id:
+        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
+    item = session.exec(stmt).first()
     if not item:
         raise HTTPException(status_code=404, detail="Cart item not found")
     session.delete(item)
@@ -101,10 +108,11 @@ def remove_cart_item(
 
 
 @router.delete("/client-cart/{client_id}")
-def clear_client_cart(client_id: UUID, session: Session = Depends(get_session)):
-    items = session.exec(
-        select(ClientCartItem).where(ClientCartItem.client_id == client_id)
-    ).all()
+def clear_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id)
+    if current_user.company_id:
+        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
+    items = session.exec(stmt).all()
     for item in items:
         session.delete(item)
     try:

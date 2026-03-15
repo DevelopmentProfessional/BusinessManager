@@ -46,7 +46,7 @@ def get_chat_history(
     current_user: User = Depends(get_current_user),
 ):
     """Get chat history between the current user and another user (newest 100 messages)."""
-    messages = session.exec(
+    stmt = (
         select(ChatMessage)
         .where(
             or_(
@@ -62,7 +62,10 @@ def get_chat_history(
         )
         .order_by(ChatMessage.created_at.asc())
         .limit(100)
-    ).all()
+    )
+    if current_user.company_id:
+        stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
+    messages = session.exec(stmt).all()
     return messages
 
 
@@ -110,13 +113,14 @@ def mark_as_read(
     current_user: User = Depends(get_current_user),
 ):
     """Mark all messages from another user as read."""
-    messages = session.exec(
-        select(ChatMessage).where(
-            ChatMessage.sender_id == other_user_id,
-            ChatMessage.receiver_id == current_user.id,
-            ChatMessage.is_read == False,
-        )
-    ).all()
+    stmt = select(ChatMessage).where(
+        ChatMessage.sender_id == other_user_id,
+        ChatMessage.receiver_id == current_user.id,
+        ChatMessage.is_read == False,
+    )
+    if current_user.company_id:
+        stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
+    messages = session.exec(stmt).all()
     for msg in messages:
         msg.is_read = True
     try:
@@ -136,12 +140,13 @@ def get_unread_counts(
     current_user: User = Depends(get_current_user),
 ):
     """Return a dict of {sender_id: unread_count} for the current user."""
-    messages = session.exec(
-        select(ChatMessage).where(
-            ChatMessage.receiver_id == current_user.id,
-            ChatMessage.is_read == False,
-        )
-    ).all()
+    stmt = select(ChatMessage).where(
+        ChatMessage.receiver_id == current_user.id,
+        ChatMessage.is_read == False,
+    )
+    if current_user.company_id:
+        stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
+    messages = session.exec(stmt).all()
     counts: dict[str, int] = {}
     for msg in messages:
         key = str(msg.sender_id)

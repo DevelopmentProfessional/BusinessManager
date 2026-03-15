@@ -529,7 +529,12 @@ def get_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+    if current_user.company_id and user.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
     return UserRead.from_orm(user)
 
 @router.put("/users/{user_id}", response_model=UserRead)

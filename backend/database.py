@@ -300,6 +300,7 @@ def _ensure_company_multitenancy_if_needed():
         "task", "task_link", "leave_request", "onboarding_request", "offboarding_request",
         "insurance_plan", "pay_slip", "sale_transaction", "sale_transaction_item",
         "chat_message", "document_template",
+        "product_resource", "product_asset", "product_location", "client_cart_item",
     ]
 
     DEFAULT_COMPANY_ID = "DEFAULT"
@@ -392,9 +393,11 @@ def _ensure_company_multitenancy_if_needed():
                     f"WHERE table_schema='public' AND table_name='{table}'"
                 )).fetchall()}
                 if "company_id" not in existing_cols:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN company_id VARCHAR"))
-                    conn.execute(text(f"UPDATE {table} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
-                    print(f"  + Added company_id to {table} ({table}), set existing rows to '{default_cid}'")
+                    # Quote the table name to handle reserved words (e.g. "user")
+                    quoted = f'"{table}"'
+                    conn.execute(text(f"ALTER TABLE {quoted} ADD COLUMN company_id VARCHAR"))
+                    conn.execute(text(f"UPDATE {quoted} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
+                    print(f"  + Added company_id to {table}, set existing rows to '{default_cid}'")
 
             # Drop old unique constraints that conflict with multi-tenancy
             # (client.name, service.name, role.name, insurance_plan.name, inventory.sku, descriptive_feature.name)

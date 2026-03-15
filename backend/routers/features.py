@@ -44,19 +44,21 @@ try:
     from backend.models import (
         DescriptiveFeature, FeatureOption,
         InventoryFeature, InventoryFeatureOptionData,
-        Inventory,
+        Inventory, User,
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
     )
+    from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
     from models import (
         DescriptiveFeature, FeatureOption,
         InventoryFeature, InventoryFeatureOptionData,
-        Inventory,
+        Inventory, User,
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
     )
+    from routers.auth import get_current_user
 
 router = APIRouter()
 
@@ -144,9 +146,12 @@ def _build_feature_read(session: Session, inventory_id: UUID) -> List[InventoryF
 # ─── GLOBAL FEATURE ROUTES ──────────────────────────────────────────────────────
 
 @router.get("/features", response_model=List[DescriptiveFeatureRead])
-async def list_features(session: Session = Depends(get_session)):
+async def list_features(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """List all global descriptive features with their options."""
-    features = session.exec(select(DescriptiveFeature)).all()
+    stmt = select(DescriptiveFeature)
+    if current_user.company_id:
+        stmt = stmt.where(DescriptiveFeature.company_id == current_user.company_id)
+    features = session.exec(stmt).all()
     result = []
     for feat in features:
         options = session.exec(
@@ -161,14 +166,15 @@ async def list_features(session: Session = Depends(get_session)):
 
 
 @router.post("/features", response_model=DescriptiveFeatureRead)
-async def create_feature(body: FeatureNameBody, session: Session = Depends(get_session)):
+async def create_feature(body: FeatureNameBody, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Create a new global descriptive feature."""
-    existing = session.exec(
-        select(DescriptiveFeature).where(DescriptiveFeature.name == body.name.strip())
-    ).first()
+    stmt = select(DescriptiveFeature).where(DescriptiveFeature.name == body.name.strip())
+    if current_user.company_id:
+        stmt = stmt.where(DescriptiveFeature.company_id == current_user.company_id)
+    existing = session.exec(stmt).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
-    feat = DescriptiveFeature(name=body.name.strip())
+    feat = DescriptiveFeature(name=body.name.strip(), company_id=current_user.company_id or "")
     session.add(feat)
     session.commit()
     session.refresh(feat)
@@ -180,6 +186,7 @@ async def rename_feature(
     feature_id: UUID,
     body: FeatureNameBody,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Rename a global descriptive feature (propagates instantly via FK join)."""
     feat = session.get(DescriptiveFeature, feature_id)
@@ -205,7 +212,7 @@ async def rename_feature(
 
 
 @router.delete("/features/{feature_id}")
-async def delete_feature(feature_id: UUID, session: Session = Depends(get_session)):
+async def delete_feature(feature_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Delete a global feature. Blocked if any inventory item has it added."""
     feat = session.get(DescriptiveFeature, feature_id)
     if not feat:
@@ -235,7 +242,7 @@ async def delete_feature(feature_id: UUID, session: Session = Depends(get_sessio
 # ─── AGGREGATE SUMMARY ROUTE ────────────────────────────────────────────────────
 
 @router.get("/features/inventory-summary")
-async def get_inventory_summary(session: Session = Depends(get_session)):
+async def get_inventory_summary(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """
     Returns a dict keyed by inventory_id with feature names and price range.
     Used by inventory list and sales page to avoid N+1 per-row fetches.
@@ -248,6 +255,9 @@ async def get_inventory_summary(session: Session = Depends(get_session)):
         inv_id = str(inv_feat.inventory_id)
         feat = session.get(DescriptiveFeature, inv_feat.feature_id)
         if not feat:
+            continue
+        # Only include features belonging to the current company
+        if current_user.company_id and feat.company_id != current_user.company_id:
             continue
 
         if inv_id not in summary:
@@ -277,6 +287,7 @@ async def get_inventory_summary(session: Session = Depends(get_session)):
 async def deduct_feature_stock(
     items: List[DeductStockItem],
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Decrement feature option quantities after a sale.
@@ -308,6 +319,7 @@ async def add_option(
     feature_id: UUID,
     body: FeatureNameBody,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Add a new option to a global feature. Auto-seeds qty=0 rows for all items using this feature."""
     feat = session.get(DescriptiveFeature, feature_id)
@@ -359,6 +371,7 @@ async def rename_option(
     option_id: UUID,
     body: FeatureNameBody,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Rename a feature option (propagates instantly via FK)."""
     opt = session.get(FeatureOption, option_id)
@@ -385,6 +398,7 @@ async def delete_option(
     feature_id: UUID,
     option_id: UUID,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a feature option. Blocked if any inventory item has quantity > 0 for this option."""
     opt = session.get(FeatureOption, option_id)
@@ -427,6 +441,7 @@ async def delete_option(
 async def get_inventory_features(
     inventory_id: UUID,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Get all features (with option data) for a specific inventory item."""
     inv = session.get(Inventory, inventory_id)
@@ -440,6 +455,7 @@ async def add_feature_to_inventory(
     inventory_id: UUID,
     feature_id: UUID,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Add a global feature to an inventory item and seed option data rows."""
     inv = session.get(Inventory, inventory_id)
@@ -493,6 +509,7 @@ async def remove_feature_from_inventory(
     inventory_id: UUID,
     feature_id: UUID,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Remove a feature from an inventory item. Blocked if any option has quantity > 0."""
     inv_feat = session.exec(
@@ -539,6 +556,7 @@ async def set_affects_price(
     inventory_id: UUID,
     body: AffectsPriceBody,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Set which feature (or none) affects price for an inventory item. Clears all others."""
     all_links = session.exec(
@@ -557,6 +575,7 @@ async def save_option_data(
     feature_id: UUID,
     rows: List[OptionDataRow],
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Bulk-save option data (is_enabled, quantity, price) for one feature on one item."""
     for row in rows:

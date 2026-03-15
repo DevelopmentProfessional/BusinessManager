@@ -262,6 +262,9 @@ def get_template(
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
+    company_id = current_user.company_id or ""
+    if not tpl.is_standard and tpl.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Template not found")
     return DocumentTemplateRead.model_validate(tpl)
 
 
@@ -294,6 +297,9 @@ def update_template(
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
+    company_id = current_user.company_id or ""
+    if not tpl.is_standard and tpl.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Template not found")
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(tpl, field, value)
@@ -318,6 +324,9 @@ def delete_template(
         raise HTTPException(status_code=404, detail="Template not found")
     if tpl.is_standard:
         raise HTTPException(status_code=403, detail="Standard templates cannot be deleted")
+    company_id = current_user.company_id or ""
+    if tpl.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Template not found")
     session.delete(tpl)
     try:
         session.commit()
@@ -339,6 +348,9 @@ def render_template(
     """Render a template server-side with provided variables."""
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    company_id = current_user.company_id or ""
+    if not tpl.is_standard and tpl.company_id != company_id:
         raise HTTPException(status_code=404, detail="Template not found")
     variables = body.get("variables", {})
     rendered = _render_template(tpl.content, variables)

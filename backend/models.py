@@ -1646,6 +1646,7 @@ class ClientCartItem(BaseModel, table=True):
     quantity: int = Field(default=1)
     line_total: float = Field(default=0)
     options_json: Optional[str] = Field(default=None)  # JSON-encoded selectedOptions
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ClientCartItemRead(SQLModel):
@@ -1684,6 +1685,7 @@ class ProductResource(BaseModel, table=True):
     resource_id: UUID = Field(index=True)            # the RESOURCE inventory item consumed per batch
     quantity_per_batch: float = Field(default=1.0, ge=0)  # how many units of this resource consumed per batch
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ProductAsset(BaseModel, table=True):
@@ -1694,6 +1696,7 @@ class ProductAsset(BaseModel, table=True):
     batch_size: int = Field(default=1, ge=1)         # units produced per one asset run
     duration_minutes: Optional[float] = Field(default=None, ge=0)  # time per batch
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ProductLocation(BaseModel, table=True):
@@ -1702,6 +1705,7 @@ class ProductLocation(BaseModel, table=True):
     inventory_id: UUID = Field(index=True)           # the PRODUCT being made
     location_id: UUID = Field(index=True)            # the LOCATION inventory item
     notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ProductResourceRead(SQLModel):
