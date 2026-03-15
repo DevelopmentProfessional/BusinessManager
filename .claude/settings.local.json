@@ -66,7 +66,10 @@
       "Bash(do)",
       "Bash(echo \"=== $f ===\")",
       "Read(//c/Users/dpint/Documents/Development/BusinessManager/backend/routers/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(netstat:*)",
+      "Bash(cmd.exe /c \"taskkill /PID 16116 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 16116 /F\" 2>&1; echo \"exit: $?\")"
     ]
   }
 }

@@ -43,7 +43,7 @@
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, LargeBinary
+from sqlalchemy import Column, LargeBinary, UniqueConstraint
 from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -134,8 +134,11 @@ class Company(BaseModel, table=True):
 # ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
 # User model for authentication (consolidated user/employee)
 class User(BaseModel, table=True):
-    username: str = Field(unique=True, index=True)
-    email: Optional[str] = Field(default=None, unique=True, index=True)  # Made optional
+    __table_args__ = (
+        UniqueConstraint("company_id", "username", name="uq_user_company_username"),
+    )
+    username: str = Field(index=True)
+    email: Optional[str] = Field(default=None, index=True)  # Made optional; unique per company enforced at app level
     password_hash: str
     first_name: str
     last_name: str
