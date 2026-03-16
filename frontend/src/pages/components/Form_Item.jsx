@@ -79,6 +79,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
   const typeOptions = [
     { value: 'PRODUCT', label: 'Product', description: 'Items sold to customers. Tracks inventory and stock levels.' },
+    { value: 'BUNDLE', label: 'Bundle', description: 'Pre-defined set of products sold together at a fixed or percentage price.' },
+    { value: 'MIX', label: 'Mix', description: 'Client picks a fixed total quantity from a list of products.' },
     { value: 'RESOURCE', label: 'Resource', description: 'Consumable materials used in services. Links to specific service offerings.' },
     { value: 'ASSET', label: 'Asset', description: 'Reusable equipment or tools. No stock tracking, managed by location/service.' },
     { value: 'LOCATION', label: 'Location', description: 'Physical place within your business (room, station, area). No stock tracking.' },
@@ -94,7 +96,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         price: item.price || 0,
         description: item.description || '',
         type: (typeof item.type === 'string'
-          ? (['PRODUCT','RESOURCE','ASSET','LOCATION','ITEM'].includes(item.type.toUpperCase())
+          ? (['PRODUCT','BUNDLE','MIX','RESOURCE','ASSET','LOCATION','ITEM'].includes(item.type.toUpperCase())
               ? item.type.toUpperCase()
               : 'PRODUCT')
           : 'PRODUCT'),
