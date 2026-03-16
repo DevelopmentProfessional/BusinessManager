@@ -46,7 +46,7 @@ import Button_Toolbar from './Button_Toolbar';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
 import cacheService from '../../services/cacheService';
-import { servicesAPI, suppliersAPI } from '../../services/api';
+import { servicesAPI, suppliersAPI, inventoryAPI } from '../../services/api';
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
@@ -76,6 +76,23 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [typeHelpKey, setTypeHelpKey] = useState(null);
   const [typeHelpPos, setTypeHelpPos] = useState({ top: 0, left: 0 });
+
+  // Bundle / Mix state (local — saved after item creation)
+  const [allProducts, setAllProducts] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
+  // Bundle
+  const [bundleComponents, setBundleComponents] = useState([]); // [{id, name, price, quantity}]
+  const [bundlePriceType, setBundlePriceType] = useState('fixed');
+  const [bundlePricePercentage, setBundlePricePercentage] = useState(100);
+  const [bundleNewProductId, setBundleNewProductId] = useState('');
+  const [bundleNewQty, setBundleNewQty] = useState(1);
+  // Mix
+  const [mixTotalQty, setMixTotalQty] = useState(10);
+  const [mixHasMax, setMixHasMax] = useState(false);
+  const [mixMaxPerProduct, setMixMaxPerProduct] = useState('');
+  const [mixComponents, setMixComponents] = useState([]); // [{id, name, price, max_quantity}]
+  const [mixNewProductId, setMixNewProductId] = useState('');
+  const [mixNewMax, setMixNewMax] = useState('');
 
   const typeOptions = [
     { value: 'PRODUCT', label: 'Product', description: 'Items sold to customers. Tracks inventory and stock levels.' },
@@ -129,6 +146,27 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     return () => { if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl); };
   }, []);
 
+  // Load products when type changes to BUNDLE or MIX
+  useEffect(() => {
+    const upper = (formData.type || '').toUpperCase();
+    if (upper === 'BUNDLE' || upper === 'MIX') {
+      inventoryAPI.getAll().then(res => {
+        const items = res?.data ?? res ?? [];
+        setAllProducts(Array.isArray(items) ? items.filter(i => (i.type || '').toUpperCase() === 'PRODUCT') : []);
+      }).catch(() => {});
+    } else {
+      // Reset when leaving bundle/mix
+      setBundleComponents([]);
+      setBundlePriceType('fixed');
+      setBundlePricePercentage(100);
+      setMixComponents([]);
+      setMixTotalQty(10);
+      setMixHasMax(false);
+      setMixMaxPerProduct('');
+      setProductSearch('');
+    }
+  }, [formData.type]);
+
   // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
   const handlePhotoCapture = (blob) => {
     setIsCameraOpen(false);
@@ -161,8 +199,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     e.preventDefault();
     const name = (formData.name || '').trim();
     const sku = (formData.sku || '').trim();
-    if (!name || !sku) {
-      alert('Name and SKU are required.');
+    if (!name) {
+      alert('Name is required.');
       return;
     }
     const price = parseFloat(formData.price) || 0;
@@ -189,9 +227,26 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     const qty = parseInt(formData.quantity) || 0;
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
 
+    // Include bundle/mix pricing in payload
+    if (type === 'BUNDLE') {
+      payload.price_type = bundlePriceType;
+      payload.price_percentage = bundlePriceType === 'percentage' ? (parseFloat(bundlePricePercentage) || 100) : null;
+    }
+
     try {
       if (onSubmitWithExtras) {
-        onSubmitWithExtras(payload, { initialQuantity: safeQty, pendingPhoto: pendingPhoto || null });
+        const extras = { initialQuantity: safeQty, pendingPhoto: pendingPhoto || null };
+        if (type === 'BUNDLE') {
+          extras.bundleComponents = bundleComponents;
+        }
+        if (type === 'MIX') {
+          extras.mixConfig = {
+            total_quantity: parseInt(mixTotalQty) || 10,
+            max_per_product: mixHasMax && mixMaxPerProduct !== '' ? (parseInt(mixMaxPerProduct) || null) : null,
+          };
+          extras.mixComponents = mixComponents;
+        }
+        onSubmitWithExtras(payload, extras);
       } else {
         onSubmit(payload);
       }
@@ -603,6 +658,200 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
             />
             <label htmlFor="description">Description</label>
           </div>
+
+          {/* ─── BUNDLE COMPONENTS INLINE ─── */}
+          {upperType === 'BUNDLE' && (
+            <div className="mt-3 p-3 rounded-3 border" style={{ borderColor: '#fb923c', background: '#fff7ed' }}>
+              <div className="fw-semibold mb-2" style={{ color: '#c2410c', fontSize: '0.85rem' }}>Bundle Components</div>
+
+              {/* Price type */}
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <label className="small text-muted mb-0">Pricing:</label>
+                <select
+                  className="form-select form-select-sm w-auto"
+                  value={bundlePriceType}
+                  onChange={e => setBundlePriceType(e.target.value)}
+                >
+                  <option value="fixed">Fixed price (use Price above)</option>
+                  <option value="percentage">% of component total</option>
+                </select>
+                {bundlePriceType === 'percentage' && (
+                  <div className="d-flex align-items-center gap-1">
+                    <input
+                      type="number"
+                      min="1" max="500"
+                      className="form-control form-control-sm"
+                      style={{ width: 70 }}
+                      value={bundlePricePercentage}
+                      onChange={e => setBundlePricePercentage(e.target.value)}
+                    />
+                    <span className="small text-muted">%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Added components */}
+              {bundleComponents.length > 0 && (
+                <div className="mb-2">
+                  {bundleComponents.map(comp => (
+                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-2 rounded bg-white border" style={{ borderColor: '#fed7aa' }}>
+                      <span className="flex-grow-1 small">{comp.name}</span>
+                      <span className="small text-muted">${comp.price?.toFixed(2)}</span>
+                      <input
+                        type="number" min="0.1" step="0.1"
+                        className="form-control form-control-sm"
+                        style={{ width: 60 }}
+                        value={comp.quantity}
+                        onChange={e => setBundleComponents(prev => prev.map(c => c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c))}
+                      />
+                      <button type="button" className="btn btn-sm btn-link text-danger p-0" onClick={() => setBundleComponents(prev => prev.filter(c => c.id !== comp.id))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add component row */}
+              <div className="d-flex gap-2 align-items-center">
+                <input
+                  type="text"
+                  className="form-control form-control-sm flex-grow-1"
+                  placeholder="Search products…"
+                  value={productSearch}
+                  onChange={e => setProductSearch(e.target.value)}
+                />
+                <input
+                  type="number" min="0.1" step="0.1"
+                  className="form-control form-control-sm"
+                  style={{ width: 60 }}
+                  value={bundleNewQty}
+                  onChange={e => setBundleNewQty(e.target.value)}
+                  placeholder="Qty"
+                />
+                <select
+                  className="form-select form-select-sm"
+                  style={{ maxWidth: 160 }}
+                  value={bundleNewProductId}
+                  onChange={e => setBundleNewProductId(e.target.value)}
+                >
+                  <option value="">Select…</option>
+                  {allProducts
+                    .filter(p => !bundleComponents.some(c => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
+                    .map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-warning flex-shrink-0"
+                  onClick={() => {
+                    const prod = allProducts.find(p => p.id === bundleNewProductId);
+                    if (!prod) return;
+                    setBundleComponents(prev => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, quantity: parseFloat(bundleNewQty) || 1 }]);
+                    setBundleNewProductId('');
+                    setBundleNewQty(1);
+                    setProductSearch('');
+                  }}
+                >Add</button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MIX CONFIG INLINE ─── */}
+          {upperType === 'MIX' && (
+            <div className="mt-3 p-3 rounded-3 border" style={{ borderColor: '#f472b6', background: '#fdf2f8' }}>
+              <div className="fw-semibold mb-2" style={{ color: '#be185d', fontSize: '0.85rem' }}>Mix Setup</div>
+
+              {/* Total quantity + max per product */}
+              <div className="d-flex gap-3 align-items-center mb-2 flex-wrap">
+                <div className="d-flex align-items-center gap-2">
+                  <label className="small text-muted mb-0">Total qty:</label>
+                  <input
+                    type="number" min="1"
+                    className="form-control form-control-sm"
+                    style={{ width: 70 }}
+                    value={mixTotalQty}
+                    onChange={e => setMixTotalQty(e.target.value)}
+                  />
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <input type="checkbox" id="mix-has-max-inline" checked={mixHasMax} onChange={e => setMixHasMax(e.target.checked)} />
+                  <label htmlFor="mix-has-max-inline" className="small text-muted mb-0" style={{ cursor: 'pointer' }}>Max per product</label>
+                  {mixHasMax && (
+                    <input
+                      type="number" min="1"
+                      className="form-control form-control-sm"
+                      style={{ width: 70 }}
+                      value={mixMaxPerProduct}
+                      onChange={e => setMixMaxPerProduct(e.target.value)}
+                      placeholder="Max"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Added mix products */}
+              {mixComponents.length > 0 && (
+                <div className="mb-2">
+                  {mixComponents.map(comp => (
+                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-2 rounded bg-white border" style={{ borderColor: '#fbcfe8' }}>
+                      <span className="flex-grow-1 small">{comp.name}</span>
+                      <span className="small text-muted">${comp.price?.toFixed(2)}</span>
+                      <input
+                        type="number" min="1"
+                        className="form-control form-control-sm"
+                        style={{ width: 60 }}
+                        value={comp.max_quantity || ''}
+                        placeholder="Max"
+                        onChange={e => setMixComponents(prev => prev.map(c => c.id === comp.id ? { ...c, max_quantity: e.target.value !== '' ? parseInt(e.target.value) : null } : c))}
+                      />
+                      <button type="button" className="btn btn-sm btn-link text-danger p-0" onClick={() => setMixComponents(prev => prev.filter(c => c.id !== comp.id))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add product row */}
+              <div className="d-flex gap-2 align-items-center">
+                <input
+                  type="text"
+                  className="form-control form-control-sm flex-grow-1"
+                  placeholder="Search products…"
+                  value={productSearch}
+                  onChange={e => setProductSearch(e.target.value)}
+                />
+                <select
+                  className="form-select form-select-sm"
+                  style={{ maxWidth: 180 }}
+                  value={mixNewProductId}
+                  onChange={e => setMixNewProductId(e.target.value)}
+                >
+                  <option value="">Select…</option>
+                  {allProducts
+                    .filter(p => !mixComponents.some(c => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
+                    .map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <input
+                  type="number" min="1"
+                  className="form-control form-control-sm"
+                  style={{ width: 60 }}
+                  value={mixNewMax}
+                  onChange={e => setMixNewMax(e.target.value)}
+                  placeholder="Max"
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm flex-shrink-0"
+                  style={{ background: '#ec4899', color: '#fff', border: 'none' }}
+                  onClick={() => {
+                    const prod = allProducts.find(p => p.id === mixNewProductId);
+                    if (!prod) return;
+                    setMixComponents(prev => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, max_quantity: mixNewMax !== '' ? parseInt(mixNewMax) : null }]);
+                    setMixNewProductId('');
+                    setMixNewMax('');
+                    setProductSearch('');
+                  }}
+                >Add</button>
+              </div>
+            </div>
+          )}
 
         </form>
       </div>
