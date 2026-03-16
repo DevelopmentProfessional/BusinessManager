@@ -428,7 +428,7 @@ def _ensure_company_multitenancy_if_needed():
 # ─── MIGRATION: ENSURE userrole ENUM HAS ALL EXPECTED VALUES ────────────────────
 def _ensure_userrole_enum_values_if_needed():
     """Add any missing values to the userrole PostgreSQL enum (idempotent)."""
-    if IS_SQLITE:
+    if DATABASE_URL.startswith("sqlite"):
         return
     required_values = ["admin", "manager", "employee", "viewer"]
     try:
