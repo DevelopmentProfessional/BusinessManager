@@ -32,7 +32,14 @@ import {
 // ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const isService = item.itemType === 'service';
-  const imageUrl = getDisplayImageUrl(item);
+  const isBundle  = item.itemType === 'bundle';
+  const isMix     = item.itemType === 'mix';
+  const imageUrl  = getDisplayImageUrl(item);
+
+  // Build a compact mix selection summary: "3× White, 7× Black"
+  const mixSummary = isMix && item.mixSelections?.length > 0
+    ? item.mixSelections.map(s => `${s.quantity}× ${s.product_name}`).join(', ')
+    : null;
 
   return (
     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -40,7 +47,11 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
       <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${
         isService
           ? 'bg-primary-100 dark:bg-primary-900'
-          : 'bg-secondary-100 dark:bg-secondary-900'
+          : isBundle
+            ? 'bg-orange-100 dark:bg-orange-900'
+            : isMix
+              ? 'bg-pink-100 dark:bg-pink-900'
+              : 'bg-secondary-100 dark:bg-secondary-900'
       }`}>
         {imageUrl ? (
           <img
@@ -54,15 +65,11 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
             }}
           />
         ) : null}
-        <div
-          className={`w-full h-full flex items-center justify-center ${
-            imageUrl ? 'hidden' : 'flex'
-          }`}
-        >
+        <div className={`w-full h-full flex items-center justify-center ${imageUrl ? 'hidden' : 'flex'}`}>
           {isService ? (
             <SparklesIcon className="h-6 w-6 text-primary-500" />
           ) : (
-            <CubeIcon className="h-6 w-6 text-secondary-500" />
+            <CubeIcon className={`h-6 w-6 ${isBundle ? 'text-orange-500' : isMix ? 'text-pink-500' : 'text-secondary-500'}`} />
           )}
         </div>
       </div>
@@ -70,6 +77,9 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
       {/* Item Info */}
       <div className="flex-1 min-w-0">
         <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">{item.name}</h4>
+        {mixSummary && (
+          <p className="text-xs text-pink-600 dark:text-pink-400 truncate" title={mixSummary}>{mixSummary}</p>
+        )}
         <p className="text-xs text-gray-500 dark:text-gray-400">
           ${item.price?.toFixed(2)} × {item.quantity}
         </p>

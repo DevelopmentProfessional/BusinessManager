@@ -41,7 +41,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import Button_Toolbar from './components/Button_Toolbar';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, mixAPI, bundleAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -190,6 +190,164 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
   );
 };
 
+// ─── 2b  MIX SELECTION MODAL ────────────────────────────────────────────────
+function MixSelectionModal({ mix, onConfirm, onClose }) {
+  const [config, setConfig]         = useState(null);
+  const [components, setComponents] = useState([]);
+  const [allInventory, setAllInventory] = useState([]);
+  const [selections, setSelections] = useState({});  // { product_id: qty }
+  const [loading, setLoading]       = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [cfgRes, compRes, invRes] = await Promise.all([
+          mixAPI.getConfig(mix.id),
+          mixAPI.getComponents(mix.id),
+          inventoryAPI.getAll(),
+        ]);
+        const cfgList = Array.isArray(cfgRes?.data) ? cfgRes.data : [];
+        setConfig(cfgList[0] || null);
+        setComponents(Array.isArray(compRes?.data) ? compRes.data : []);
+        setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
+      } catch {}
+      finally { setLoading(false); }
+    })();
+  }, [mix.id]);
+
+  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
+  const totalQty = config?.total_quantity || 1;
+  const globalMax = config?.has_max_per_product ? (config.max_per_product || Infinity) : Infinity;
+  const totalSelected = Object.values(selections).reduce((a, b) => a + b, 0);
+  const remaining = totalQty - totalSelected;
+
+  const getMaxForComp = (comp) => {
+    const perProductMax = comp.max_quantity != null ? comp.max_quantity : globalMax;
+    const stock = invMap[comp.component_id]?.quantity ?? 999;
+    return Math.min(perProductMax, stock);
+  };
+
+  const adjust = (compId, delta) => {
+    setSelections(prev => {
+      const cur = prev[compId] || 0;
+      const comp = components.find(c => c.component_id === compId);
+      const maxAllowed = getMaxForComp(comp);
+      let next = cur + delta;
+      next = Math.max(0, next);
+      next = Math.min(next, maxAllowed);
+      // Can't exceed total quota
+      if (delta > 0 && totalSelected >= totalQty) return prev;
+      const updated = { ...prev };
+      if (next === 0) delete updated[compId];
+      else updated[compId] = next;
+      return updated;
+    });
+  };
+
+  const computedPrice = () => {
+    if (mix.price_type === 'percentage' && mix.price_percentage) {
+      const base = Object.entries(selections).reduce((sum, [pid, qty]) => {
+        return sum + (invMap[pid]?.price || 0) * qty;
+      }, 0);
+      return base * (mix.price_percentage / 100);
+    }
+    return mix.price || 0;
+  };
+
+  const handleConfirm = () => {
+    if (remaining !== 0) return;
+    const mixSelections = Object.entries(selections).map(([pid, qty]) => ({
+      product_id: pid,
+      product_name: invMap[pid]?.name || pid,
+      quantity: qty,
+    }));
+    onConfirm(mix, 'mix', 1, computedPrice(), mixSelections);
+  };
+
+  const s = {
+    row: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #f3e8ff', fontSize: '0.85rem' },
+    btn: (color) => ({ width: 26, height: 26, borderRadius: '50%', border: `1px solid ${color}`, background: 'none', color, cursor: 'pointer', fontWeight: 700, fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bs-body-bg)', borderRadius: 12, width: '100%', maxWidth: 460, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        {/* Header */}
+        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>{mix.name}</div>
+              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
+                Pick any <strong>{totalQty}</strong> product{totalQty !== 1 ? 's' : ''}
+                {config?.has_max_per_product && config?.max_per_product && ` · max ${config.max_per_product} per type`}
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b7280' }}>×</button>
+          </div>
+          {/* Progress bar */}
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#6b7280', marginBottom: 3 }}>
+              <span>{totalSelected} selected</span>
+              <span style={{ color: remaining === 0 ? '#22c55e' : '#f97316', fontWeight: 600 }}>
+                {remaining === 0 ? '✓ Ready' : `${remaining} remaining`}
+              </span>
+            </div>
+            <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${Math.min(100, (totalSelected / totalQty) * 100)}%`, background: remaining === 0 ? '#22c55e' : '#ec4899', borderRadius: 3, transition: 'width 0.2s' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Product list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px' }}>
+          {loading && <div style={{ color: '#6b7280', fontSize: '0.85rem', padding: '12px 0' }}>Loading products…</div>}
+          {!loading && components.length === 0 && (
+            <div style={{ color: '#9ca3af', fontSize: '0.85rem', padding: '12px 0' }}>No products configured for this mix.</div>
+          )}
+          {components.map(comp => {
+            const product = invMap[comp.component_id];
+            if (!product) return null;
+            const selected = selections[comp.component_id] || 0;
+            const maxAllowed = getMaxForComp(comp);
+            const canAdd = remaining > 0 && selected < maxAllowed;
+            return (
+              <div key={comp.id} style={s.row}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{product.name}</div>
+                  <div style={{ fontSize: '0.73rem', color: '#6b7280' }}>
+                    ${product.price?.toFixed(2)} · stock: {product.quantity}
+                    {comp.max_quantity != null ? ` · max ${comp.max_quantity}` : config?.has_max_per_product && config?.max_per_product ? ` · max ${config.max_per_product}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => adjust(comp.component_id, -1)} disabled={selected === 0}
+                  style={{ ...s.btn('#ec4899'), opacity: selected === 0 ? 0.3 : 1 }}>−</button>
+                <span style={{ width: 24, textAlign: 'center', fontWeight: 700 }}>{selected}</span>
+                <button onClick={() => adjust(comp.component_id, 1)} disabled={!canAdd}
+                  style={{ ...s.btn('#ec4899'), opacity: canAdd ? 1 : 0.3 }}>+</button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+            Price: <strong>${computedPrice().toFixed(2)}</strong>
+            {mix.price_type === 'percentage' && <span style={{ fontSize: '0.72rem', marginLeft: 4 }}>({mix.price_percentage}% of selections)</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #d1d5db', background: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
+            <button onClick={handleConfirm} disabled={remaining !== 0}
+              style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: remaining === 0 ? '#ec4899' : '#d1d5db', color: '#fff', cursor: remaining === 0 ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: '0.85rem' }}>
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── 3  SALES PAGE COMPONENT ───────────────────────────────────────────────
 export default function Sales() {
   const {
@@ -229,6 +387,8 @@ export default function Sales() {
   // Feature Selection Modal State
   const [featureModalItem, setFeatureModalItem] = useState(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+  // Mix Selection Modal State
+  const [mixModalItem, setMixModalItem] = useState(null);
   // Sales History State
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -342,20 +502,36 @@ export default function Sales() {
     unit_price:  item.price,
     quantity:    item.quantity,
     line_total:  item.price * item.quantity,
-    options_json: item.selectedOptions?.length > 0
-      ? JSON.stringify(item.selectedOptions)
-      : null,
+    // For mix items, persist selections in options_json so cart survives page refresh
+    options_json: item.itemType === 'mix' && item.mixSelections?.length > 0
+      ? JSON.stringify(item.mixSelections)
+      : (item.selectedOptions?.length > 0 ? JSON.stringify(item.selectedOptions) : null),
   });
 
-  const mapDbItemToCart = (dbItem) => ({
-    cartKey:         dbItem.cart_key,
-    id:              dbItem.item_id,
-    itemType:        dbItem.item_type,
-    name:            dbItem.item_name,
-    price:           dbItem.unit_price,
-    quantity:        dbItem.quantity,
-    selectedOptions: dbItem.options_json ? JSON.parse(dbItem.options_json) : [],
-  });
+  const mapDbItemToCart = (dbItem) => {
+    let parsedOptions = [];
+    let mixSelections = undefined;
+    if (dbItem.options_json) {
+      try {
+        const parsed = JSON.parse(dbItem.options_json);
+        if (dbItem.item_type === 'mix') {
+          mixSelections = parsed;
+        } else {
+          parsedOptions = parsed;
+        }
+      } catch {}
+    }
+    return {
+      cartKey:         dbItem.cart_key,
+      id:              dbItem.item_id,
+      itemType:        dbItem.item_type,
+      name:            dbItem.item_name,
+      price:           dbItem.unit_price,
+      quantity:        dbItem.quantity,
+      selectedOptions: parsedOptions,
+      ...(mixSelections !== undefined ? { mixSelections } : {}),
+    };
+  };
 
   const syncItemToDb = (item, clientId) => {
     if (!clientId) return;
@@ -534,9 +710,29 @@ export default function Sales() {
     syncItemToDb(updatedItem, selectedClient?.id);
   };
 
-  // Route add-to-cart through feature check for products
-  const addToCartWithFeatureCheck = (item, itemType, quantity = 1) => {
-    if (itemType === 'product' && item.feature_names?.length > 0) {
+  // Route add-to-cart through feature check for products, or mix selection modal for mixes
+  const addToCartWithFeatureCheck = async (item, itemType, quantity = 1) => {
+    if (itemType === 'mix') {
+      setMixModalItem(item);
+    } else if (itemType === 'bundle') {
+      // Resolve price: percentage of component prices, or fixed
+      let price = item.price || 0;
+      if (item.price_type === 'percentage' && item.price_percentage) {
+        try {
+          const [compRes, invRes] = await Promise.all([
+            bundleAPI.getComponents(item.id),
+            inventoryAPI.getAll(),
+          ]);
+          const comps = Array.isArray(compRes?.data) ? compRes.data : [];
+          const invMap = Object.fromEntries(
+            (Array.isArray(invRes?.data) ? invRes.data : []).map(i => [i.id, i])
+          );
+          const base = comps.reduce((sum, c) => sum + (invMap[c.component_id]?.price || 0) * c.quantity, 0);
+          price = base * (item.price_percentage / 100);
+        } catch { /* fall back to item.price */ }
+      }
+      addToCart(item, itemType, quantity, price);
+    } else if (itemType === 'product' && item.feature_names?.length > 0) {
       setFeatureModalItem(item);
       setShowFeatureModal(true);
     } else {
@@ -641,6 +837,9 @@ export default function Sales() {
             unit_price: item.price,
             quantity: item.quantity,
             line_total: item.price * item.quantity,
+            ...(item.itemType === 'mix' && item.mixSelections
+              ? { mix_selections: JSON.stringify(item.mixSelections) }
+              : {}),
           })
         ));
         // ── Inventory deduction ──────────────────────────────────────────
@@ -844,19 +1043,22 @@ export default function Sales() {
                 </h3>
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {filteredProducts.map(product => (
-                  <ItemCard
-                    key={`product-${product.id}`}
-                    item={product}
-                    itemType="product"
-                    onSelect={handleSelectItem}
-                    inCart={isInCart(product.id, 'product')}
-                    cartQuantity={getCartQuantity(product.id, 'product')}
-                    onIncrement={incrementCartItem}
-                    onDecrement={decrementCartItem}
-                    onAddToCart={addToCartWithFeatureCheck}
-                  />
-                ))}
+                {filteredProducts.map(product => {
+                  const pType = (product.type || 'product').toLowerCase();
+                  return (
+                    <ItemCard
+                      key={`${pType}-${product.id}`}
+                      item={product}
+                      itemType={pType}
+                      onSelect={handleSelectItem}
+                      inCart={isInCart(product.id, pType)}
+                      cartQuantity={getCartQuantity(product.id, pType)}
+                      onIncrement={incrementCartItem}
+                      onDecrement={decrementCartItem}
+                      onAddToCart={addToCartWithFeatureCheck}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1189,6 +1391,18 @@ export default function Sales() {
             onClose={() => setShowInvoiceModal(false)}
           />
         </div>
+      )}
+
+      {/* Mix Selection Modal */}
+      {mixModalItem && (
+        <MixSelectionModal
+          mix={mixModalItem}
+          onClose={() => setMixModalItem(null)}
+          onConfirm={(item, itemType, quantity, price, mixSelections) => {
+            addToCart({ ...item, mixSelections }, itemType, quantity, price);
+            setMixModalItem(null);
+          }}
+        />
       )}
     </div>
   );

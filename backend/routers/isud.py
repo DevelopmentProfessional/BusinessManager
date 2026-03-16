@@ -132,6 +132,13 @@ READ_SCHEMA_MAP = {
     'product_assets': ProductAssetRead,
     'product_location': ProductLocationRead,
     'product_locations': ProductLocationRead,
+    'bundle_component': BundleComponentRead,
+    'bundle_components': BundleComponentRead,
+    'mix_config': MixConfigRead,
+    'mix_component': MixComponentRead,
+    'mix_components': MixComponentRead,
+    'discount_rule': DiscountRuleRead,
+    'discount_rules': DiscountRuleRead,
 }
 
 # ─── [4] SERIALIZATION HELPERS ────────────────────────────────────────────────
@@ -447,16 +454,70 @@ async def insert(
         item_type = getattr(record, 'item_type', None)
         item_id = getattr(record, 'item_id', None)
         qty_sold = getattr(record, 'quantity', 1) or 1
+
+        def _consume_resources(product_id, units_sold: float):
+            """Decrement resource inventory for each ProductResource linked to product_id."""
+            try:
+                res_links = session.exec(
+                    sql_select(ProductResource).where(ProductResource.inventory_id == product_id)
+                ).all()
+                for pr in res_links:
+                    res_inv = session.get(Inventory, pr.resource_id)
+                    if res_inv is not None:
+                        res_inv.quantity = max(0, (res_inv.quantity or 0) - (pr.quantity_per_batch * units_sold))
+                        session.add(res_inv)
+            except Exception as e:
+                print(f"Warning: resource consumption failed for product {product_id}: {e}")
+
         if item_type == 'product' and item_id:
             try:
                 inv = session.get(Inventory, item_id)
                 if inv is not None:
                     inv.quantity = max(0, inv.quantity - qty_sold)
                     session.add(inv)
-                    session.commit()
+                _consume_resources(item_id, qty_sold)
+                session.commit()
             except Exception as e:
                 session.rollback()
                 print(f"Warning: stock decrement failed for inventory {item_id}: {e}")
+
+        elif item_type == 'mix' and item_id:
+            # Decrement stock for each product the client picked × how many mixes were sold
+            try:
+                import json as _json
+                raw = getattr(record, 'mix_selections', None)
+                selections = _json.loads(raw) if raw else []
+                for sel in selections:
+                    pid = sel.get('product_id')
+                    qty = int(sel.get('quantity', 0)) * qty_sold  # multiply by mixes sold
+                    if pid and qty > 0:
+                        comp_inv = session.get(Inventory, pid)
+                        if comp_inv is not None:
+                            comp_inv.quantity = max(0, comp_inv.quantity - qty)
+                            session.add(comp_inv)
+                        _consume_resources(pid, qty)
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                print(f"Warning: mix stock decrement failed for mix {item_id}: {e}")
+
+        elif item_type == 'bundle' and item_id:
+            # Decrement stock for each component product × qty_sold bundles
+            try:
+                components = session.exec(
+                    sql_select(BundleComponent).where(BundleComponent.bundle_id == item_id)
+                ).all()
+                for comp in components:
+                    comp_inv = session.get(Inventory, comp.component_id)
+                    if comp_inv is not None and (comp_inv.type or '').lower() == 'product':
+                        units = comp.quantity * qty_sold
+                        comp_inv.quantity = max(0, comp_inv.quantity - units)
+                        session.add(comp_inv)
+                        _consume_resources(comp.component_id, units)
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                print(f"Warning: bundle stock decrement failed for bundle {item_id}: {e}")
 
     return _serialize_record(record, table_name)
 
