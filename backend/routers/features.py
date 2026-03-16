@@ -174,7 +174,7 @@ async def create_feature(body: FeatureNameBody, session: Session = Depends(get_s
     existing = session.exec(stmt).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
-    feat = DescriptiveFeature(name=body.name.strip(), company_id=current_user.company_id or "")
+    feat = DescriptiveFeature(name=body.name.strip(), company_id=current_user.company_id or None)
     session.add(feat)
     session.commit()
     session.refresh(feat)
@@ -192,12 +192,15 @@ async def rename_feature(
     feat = session.get(DescriptiveFeature, feature_id)
     if not feat:
         raise HTTPException(status_code=404, detail="Feature not found.")
-    conflict = session.exec(
-        select(DescriptiveFeature).where(
-            DescriptiveFeature.name == body.name.strip(),
-            DescriptiveFeature.id != feature_id,
-        )
-    ).first()
+    if current_user.company_id and feat.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Feature not found.")
+    conflict_stmt = select(DescriptiveFeature).where(
+        DescriptiveFeature.name == body.name.strip(),
+        DescriptiveFeature.id != feature_id,
+    )
+    if current_user.company_id:
+        conflict_stmt = conflict_stmt.where(DescriptiveFeature.company_id == current_user.company_id)
+    conflict = session.exec(conflict_stmt).first()
     if conflict:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
     feat.name = body.name.strip()
@@ -248,16 +251,25 @@ async def get_inventory_summary(session: Session = Depends(get_session), current
     Used by inventory list and sales page to avoid N+1 per-row fetches.
     Response: { "<inventory_id>": { feature_names: [], price_min: float|null, price_max: float|null } }
     """
-    inv_features = session.exec(select(InventoryFeature)).all()
+    # Filter by company via the parent Inventory record (handles both new scoped rows and legacy unscoped rows)
+    if current_user.company_id:
+        company_inv_ids = {
+            inv.id for inv in session.exec(
+                select(Inventory).where(Inventory.company_id == current_user.company_id)
+            ).all()
+        }
+        inv_features = [
+            r for r in session.exec(select(InventoryFeature)).all()
+            if r.inventory_id in company_inv_ids
+        ]
+    else:
+        inv_features = session.exec(select(InventoryFeature)).all()
 
     summary = {}
     for inv_feat in inv_features:
         inv_id = str(inv_feat.inventory_id)
         feat = session.get(DescriptiveFeature, inv_feat.feature_id)
         if not feat:
-            continue
-        # Only include features belonging to the current company
-        if current_user.company_id and feat.company_id != current_user.company_id:
             continue
 
         if inv_id not in summary:
@@ -334,7 +346,7 @@ async def add_option(
     if conflict:
         raise HTTPException(status_code=409, detail=f"Option '{body.name}' already exists on this feature.")
 
-    opt = FeatureOption(feature_id=feature_id, name=body.name.strip())
+    opt = FeatureOption(feature_id=feature_id, name=body.name.strip(), company_id=current_user.company_id)
     session.add(opt)
     session.commit()
     session.refresh(opt)
@@ -359,6 +371,7 @@ async def add_option(
                 is_enabled=False,
                 quantity=0,
                 price=None,
+                company_id=current_user.company_id,
             ))
     session.commit()
 
@@ -478,6 +491,7 @@ async def add_feature_to_inventory(
         inventory_id=inventory_id,
         feature_id=feature_id,
         affects_price=False,
+        company_id=current_user.company_id,
     )
     session.add(inv_feat)
 
@@ -499,6 +513,7 @@ async def add_feature_to_inventory(
                 is_enabled=False,
                 quantity=0,
                 price=None,
+                company_id=current_user.company_id,
             ))
     session.commit()
     return {"added": True}
@@ -598,6 +613,7 @@ async def save_option_data(
                 option_id=row.option_id,
                 is_enabled=row.is_enabled,
                 quantity=max(0, row.quantity),
+                company_id=current_user.company_id,
                 price=row.price,
             ))
     session.commit()

@@ -216,6 +216,9 @@ class UserPermission(BaseModel, table=True):
 
 # Role model - defines a role with attached permissions
 class Role(BaseModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_role_company_name"),
+    )
     name: str = Field(index=True)  # e.g., "Manager", "Receptionist"
     description: Optional[str] = Field(default=None)
     is_system: bool = Field(default=False)  # System roles cannot be deleted
@@ -265,6 +268,7 @@ class Inventory(BaseModel, table=True):
     sku: Optional[str] = Field(default=None, index=True)
     price: float = Field(ge=0, default=0)
     description: Optional[str] = Field(default=None)
+    category: Optional[str] = Field(default=None)
     type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
     image_url: Optional[str] = Field(default=None)  # Legacy field - kept for backward compatibility
 
@@ -318,6 +322,9 @@ class Supplier(BaseModel, table=True):
 class DescriptiveFeature(BaseModel, table=True):
     """Global reusable feature template (e.g. 'Size', 'Color')"""
     __tablename__ = "descriptive_feature"
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_descriptive_feature_company_name"),
+    )
     name: str = Field(index=True)
     company_id: Optional[str] = Field(default=None, index=True)
 
@@ -678,6 +685,7 @@ class InventoryCreate(SQLModel):
     sku: Optional[str] = None
     price: float = 0
     description: Optional[str] = None
+    category: Optional[str] = None
     type: Optional[Union[ItemType, str]] = "product"
     image_url: Optional[str] = None
     quantity: int = 0
@@ -805,6 +813,7 @@ class InventoryRead(SQLModel):
     sku: Optional[str] = None
     price: float
     description: Optional[str] = None
+    category: Optional[str] = None
     type: str
     image_url: Optional[str] = None  # Legacy field
     supplier_id: Optional[UUID] = None

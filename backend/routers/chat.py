@@ -82,6 +82,8 @@ def send_message(
     receiver = session.get(User, receiver_id)
     if not receiver:
         raise HTTPException(status_code=404, detail="Recipient not found")
+    if current_user.company_id and receiver.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Recipient not found")
     if not data.content and not data.document_id:
         raise HTTPException(status_code=400, detail="Message must have content or a document")
 
