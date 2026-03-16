@@ -497,6 +497,24 @@ def _ensure_user_username_composite_unique_if_needed():
         print(f"  Warning: Could not migrate user username uniqueness: {e}")
 
 
+# ─── MIGRATION: MAKE inventory.sku NULLABLE ─────────────────────────────────────
+def _ensure_inventory_sku_nullable_if_needed():
+    """Drop NOT NULL constraint on inventory.sku so handmade products don't need a SKU."""
+    if DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("""
+                SELECT is_nullable FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'inventory' AND column_name = 'sku'
+            """)).fetchone()
+            if result and result[0] == 'NO':
+                conn.execute(text('ALTER TABLE inventory ALTER COLUMN sku DROP NOT NULL'))
+                print("  + Made inventory.sku nullable")
+    except Exception as e:
+        print(f"  Warning: Could not make inventory.sku nullable: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
@@ -537,6 +555,7 @@ def create_db_and_tables():
     _ensure_company_multitenancy_if_needed()
     _ensure_user_username_composite_unique_if_needed()
     _ensure_userrole_enum_values_if_needed()
+    _ensure_inventory_sku_nullable_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

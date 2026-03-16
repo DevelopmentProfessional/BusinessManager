@@ -260,7 +260,7 @@ class Client(BaseModel, table=True):
 class Inventory(BaseModel, table=True):
     # Product/Item fields (merged from former Item model)
     name: str = Field(index=True)
-    sku: str = Field(index=True)
+    sku: Optional[str] = Field(default=None, index=True)
     price: float = Field(ge=0, default=0)
     description: Optional[str] = Field(default=None)
     type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
@@ -670,7 +670,7 @@ class ClientRead(SQLModel):
 class InventoryCreate(SQLModel):
     """Schema for creating inventory items (replaces ItemCreate)"""
     name: str
-    sku: str
+    sku: Optional[str] = None
     price: float = 0
     description: Optional[str] = None
     type: Optional[Union[ItemType, str]] = "product"
@@ -797,7 +797,7 @@ class InventoryRead(SQLModel):
     """Schema for reading inventory items (includes images and supplier name)"""
     id: UUID
     name: str
-    sku: str
+    sku: Optional[str] = None
     price: float
     description: Optional[str] = None
     type: str
