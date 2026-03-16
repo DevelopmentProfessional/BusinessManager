@@ -472,7 +472,7 @@ async def update_by_id(
     model_class = get_model_class(table_name)
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
-    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     record = session.exec(stmt).first()
     if not record:
@@ -506,17 +506,12 @@ async def get_inventory_locations(
 ):
     """Get all unique locations from inventory items"""
     try:
-        # Query distinct locations from inventory table
-        if current_user.company_id:
-            result = session.execute(
-                sql_select(Inventory.location).where(
-                    and_(Inventory.location.isnot(None), Inventory.company_id == current_user.company_id)
-                ).distinct()
-            )
-        else:
-            result = session.execute(
-                sql_select(Inventory.location).where(Inventory.location.isnot(None)).distinct()
-            )
+        # Query distinct locations from inventory table — always scoped to company
+        result = session.execute(
+            sql_select(Inventory.location).where(
+                and_(Inventory.location.isnot(None), Inventory.company_id == current_user.company_id)
+            ).distinct()
+        )
         locations = [row[0] for row in result.fetchall() if row[0]]
         return {"locations": sorted(locations)}
     except Exception as e:
@@ -538,7 +533,7 @@ async def sync_check(
     model_class = get_model_class(table_name)
 
     base_stmt = sql_select(func.count()).select_from(model_class.__table__)
-    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         base_stmt = base_stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     count_result = session.execute(base_stmt)
     total = count_result.scalar() or 0
@@ -546,7 +541,7 @@ async def sync_check(
     max_created_at = None
     if hasattr(model_class, "created_at"):
         max_stmt = sql_select(func.max(model_class.created_at))
-        if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+        if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
             max_stmt = max_stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
         max_result = session.execute(max_stmt)
         val = max_result.scalar()
@@ -603,7 +598,7 @@ async def select(
         stmt = stmt.where(and_(*conditions))
 
     # Auto-filter by company_id for tenant-scoped tables
-    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
 
     if any(k == "id" for k, _ in user_filters):
@@ -630,7 +625,7 @@ async def select_by_id(
     model_class = get_model_class(table_name)
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
-    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     record = session.exec(stmt).first()
     if not record:
@@ -669,7 +664,7 @@ async def update(
         conditions.append(col_attr == value)
 
     stmt = stmt.where(and_(*conditions))
-    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
 
     update_many = not any(k == "id" for k, _ in raw_filters)
@@ -712,7 +707,7 @@ async def delete_by_id(
     model_class = get_model_class(table_name)
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
-    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id') and current_user.company_id:
+    if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     record = session.exec(stmt).first()
     if not record:
