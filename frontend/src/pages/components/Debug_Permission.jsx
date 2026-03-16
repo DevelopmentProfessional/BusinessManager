@@ -9,7 +9,7 @@ const Debug_Permission = () => {
   const { user, hasPermission } = useStore();
   const [permissions, setPermissions] = useState({});
 
-  const pages = ['clients', 'inventory', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin'];
+  const pages = ['clients', 'inventory', 'sales', 'services', 'employees', 'schedule', 'documents', 'templates', 'insurance', 'tasks', 'leave', 'reports', 'admin'];
   const permissionTypes = ['read', 'write', 'delete', 'admin'];
 
   useEffect(() => {

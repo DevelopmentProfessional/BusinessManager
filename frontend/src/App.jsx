@@ -169,7 +169,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/sales" element={
-            <ProtectedRoute requiredPermission="services:read">
+            <ProtectedRoute requiredPermission="sales:read">
               <Layout>
                 <Sales />
               </Layout>
