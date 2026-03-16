@@ -62,29 +62,35 @@ const tbDivider = {
 
 // ─── Node View ────────────────────────────────────────────────────────────────
 
-function ResizableImageView({ node, updateAttributes, selected, deleteNode }) {
+function ResizableImageView({ node, updateAttributes, selected, deleteNode, getPos, editor }) {
   const { src, alt, width, float: imgFloat, rotation, flipH, flipV } = node.attrs;
   const imgRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [activeDropZone, setActiveDropZone] = useState(null);
+  const touchDragRef = useRef(null);
 
-  // ── Resize (bottom-right corner drag) ──────────────────────────────────────
+  // ── Resize (bottom-right corner drag — mouse + touch) ──────────────────────
   const startResize = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    const startX = e.clientX;
+    const startX = e.touches ? e.touches[0].clientX : e.clientX;
     const startWidth = imgRef.current ? imgRef.current.offsetWidth : (width || 200);
 
     const onMove = (mv) => {
-      const newWidth = Math.max(40, startWidth + (mv.clientX - startX));
+      const x = mv.touches ? mv.touches[0].clientX : mv.clientX;
+      const newWidth = Math.max(40, startWidth + (x - startX));
       updateAttributes({ width: Math.round(newWidth) });
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
   }, [width, updateAttributes]);
 
   // ── Alignment ──────────────────────────────────────────────────────────────
@@ -117,6 +123,67 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode }) {
     setIsDragging(false);
     setActiveDropZone(null);
   }, [activeDropZone, setAlignment]);
+
+  // ── Touch drag (mobile) ────────────────────────────────────────────────────
+  const handleTouchStart = useCallback((e) => {
+    if (e.touches.length !== 1) return;
+    e.stopPropagation();
+    const touch = e.touches[0];
+    touchDragRef.current = { startX: touch.clientX, startY: touch.clientY, active: false };
+
+    const onMove = (mv) => {
+      if (!touchDragRef.current || mv.touches.length !== 1) return;
+      const t = mv.touches[0];
+      const dx = t.clientX - touchDragRef.current.startX;
+      const dy = t.clientY - touchDragRef.current.startY;
+      if (!touchDragRef.current.active && Math.hypot(dx, dy) > 8) {
+        touchDragRef.current.active = true;
+      }
+      if (touchDragRef.current.active) {
+        mv.preventDefault();
+        setIsDragging(true);
+        const w = window.innerWidth || 1;
+        const third = w / 3;
+        setActiveDropZone(t.clientX < third ? 'left' : t.clientX < third * 2 ? 'center' : 'right');
+      }
+    };
+
+    const onEnd = (up) => {
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+      if (!touchDragRef.current?.active) {
+        touchDragRef.current = null;
+        return;
+      }
+      const t = up.changedTouches[0];
+      const w = window.innerWidth || 1;
+      const third = w / 3;
+      const align = t.clientX < third ? 'left' : t.clientX < third * 2 ? 'center' : 'right';
+      setAlignment(align);
+      // Reposition node in document at the touch drop point
+      if (editor && typeof getPos === 'function') {
+        const docPos = editor.view.posAtCoords({ left: t.clientX, top: t.clientY });
+        if (docPos) {
+          const from = getPos();
+          const { state, dispatch } = editor.view;
+          const resolvedNode = state.doc.nodeAt(from);
+          if (resolvedNode && from !== docPos.pos) {
+            const adjustedTo = docPos.pos > from ? docPos.pos - resolvedNode.nodeSize : docPos.pos;
+            const tr = state.tr;
+            tr.delete(from, from + resolvedNode.nodeSize);
+            tr.insert(adjustedTo, resolvedNode);
+            dispatch(tr);
+          }
+        }
+      }
+      setIsDragging(false);
+      setActiveDropZone(null);
+      touchDragRef.current = null;
+    };
+
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+  }, [setAlignment, editor, getPos]);
 
   useEffect(() => {
     if (!isDragging) return undefined;
@@ -246,6 +313,7 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode }) {
         draggable="true"
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onTouchStart={handleTouchStart}
       >
 
         {/* ── Toolbar (shown when node is selected) ── */}
@@ -395,6 +463,7 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode }) {
           <div
             contentEditable={false}
             onMouseDown={startResize}
+            onTouchStart={startResize}
             title="Drag to resize"
             style={{
               position: 'absolute',
@@ -423,6 +492,17 @@ export const ResizableImage = Node.create({
   group: 'block',
   atom: true,
   draggable: true,
+
+  addCommands() {
+    return {
+      setImage: (options) => ({ commands }) => {
+        return commands.insertContent({
+          type: this.name,
+          attrs: options,
+        });
+      },
+    };
+  },
 
   addAttributes() {
     return {
