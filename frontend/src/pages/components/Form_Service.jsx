@@ -35,16 +35,17 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from '../../services/api';
 import Widget_Camera from './Widget_Camera';
+import Modal_BulkImport from './Modal_BulkImport';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const TABS = ['details', 'resources', 'assets', 'employees', 'locations'];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Service({ service, onSubmit, onCancel, onDelete, canDelete }) {
+export default function Form_Service({ service, onSubmit, onCancel, onDelete, canDelete, onBulkImport = null }) {
   const [activeTab, setActiveTab] = useState('details');
 
   // ── Basic form fields ────────────────────────────────────────────
@@ -84,6 +85,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
   const [newEmployee, setNewEmployee] = useState({ user_id: '' });
   const [newLocation, setNewLocation] = useState({ inventory_id: '' });
   const [tabError, setTabError] = useState('');
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Populate form when editing
@@ -306,11 +308,34 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
           {service ? 'Edit Service' : 'Add Service'}
         </h6>
+        {!service && onBulkImport && (
+          <button
+            type="button"
+            title="Bulk Import"
+            onClick={() => setIsBulkImportOpen(true)}
+            className="btn btn-sm p-1 text-gray-500 dark:text-gray-400"
+            style={{ lineHeight: 1 }}
+          >
+            <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
+          </button>
+        )}
       </div>
+
+      {isBulkImportOpen && (
+        <Modal_BulkImport
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          entityLabel="Services"
+          onImport={async (rows) => {
+            await onBulkImport(rows.map(r => r.name));
+            setIsBulkImportOpen(false);
+          }}
+        />
+      )}
 
       {/* Camera modal */}
       {isCameraOpen && (

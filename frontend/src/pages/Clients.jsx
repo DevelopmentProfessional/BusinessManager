@@ -165,6 +165,15 @@ export default function Clients() {
     }
   };
 
+  const handleBulkImportClients = async (names) => {
+    for (const name of names) {
+      const response = await clientsAPI.create({ name });
+      const newClient = response?.data ?? response;
+      addClient(newClient);
+    }
+    closeModal();
+  };
+
   const handleUpdateClient = async (clientId, clientData) => {
     try {
       const response = await clientsAPI.update(clientId, clientData);
@@ -422,6 +431,7 @@ export default function Clients() {
             onSubmit={handleSubmitCreate}
             onCancel={closeModal}
             error={error}
+            onBulkImport={handleBulkImportClients}
           />
         )}
       </Modal>
