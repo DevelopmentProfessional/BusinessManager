@@ -345,6 +345,7 @@ async def document_upload(
         entity_id=parsed_entity_id,
         category_id=parsed_category_id,
         owner_id=current_user.id,
+        company_id=current_user.company_id or "",
     )
     session.add(doc)
     try:
@@ -752,6 +753,7 @@ async def document_onlyoffice_callback(
 async def list_document_assignments(
     document_id: UUID,
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """List all entity assignments for a document."""
     doc = session.get(Document, document_id)
@@ -760,6 +762,8 @@ async def list_document_assignments(
     stmt = sql_select(DocumentAssignment).where(
         DocumentAssignment.document_id == document_id
     )
+    if current_user.company_id:
+        stmt = stmt.where(DocumentAssignment.company_id == current_user.company_id)
     assignments = session.exec(stmt).all()
     return [DocumentAssignmentRead.model_validate(a).model_dump(mode="json") for a in assignments]
 
@@ -769,6 +773,7 @@ async def add_document_assignment(
     document_id: UUID,
     body: dict,
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Link a document to an entity (employee, client, or inventory item)."""
     doc = session.get(Document, document_id)
@@ -786,6 +791,7 @@ async def add_document_assignment(
         entity_id=UUID(entity_id) if isinstance(entity_id, str) else entity_id,
         assigned_by=body.get("assigned_by"),
         notes=body.get("notes"),
+        company_id=current_user.company_id or "",
     )
     session.add(assignment)
     session.commit()
@@ -799,6 +805,7 @@ async def remove_document_assignment(
     entity_id: UUID,
     entity_type: str = Query("employee"),
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Remove an entity assignment from a document."""
     stmt = sql_select(DocumentAssignment).where(
@@ -806,6 +813,8 @@ async def remove_document_assignment(
         DocumentAssignment.entity_id == entity_id,
         DocumentAssignment.entity_type == entity_type,
     )
+    if current_user.company_id:
+        stmt = stmt.where(DocumentAssignment.company_id == current_user.company_id)
     assignment = session.exec(stmt).first()
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")

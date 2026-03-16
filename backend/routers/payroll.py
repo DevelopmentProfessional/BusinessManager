@@ -48,15 +48,18 @@ def process_payment(
     employee = session.get(User, employee_id)
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
+    if current_user.company_id and employee.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Employee not found")
 
-    # Duplicate check: same employee + same period start + status paid
-    existing = session.exec(
-        select(PaySlip).where(
-            PaySlip.employee_id == employee_id,
-            PaySlip.pay_period_start == data.pay_period_start,
-            PaySlip.status == "paid",
-        )
-    ).first()
+    # Duplicate check: same employee + same period start + status paid (scoped to company)
+    dup_stmt = select(PaySlip).where(
+        PaySlip.employee_id == employee_id,
+        PaySlip.pay_period_start == data.pay_period_start,
+        PaySlip.status == "paid",
+    )
+    if current_user.company_id:
+        dup_stmt = dup_stmt.where(PaySlip.company_id == current_user.company_id)
+    existing = session.exec(dup_stmt).first()
     if existing:
         raise HTTPException(
             status_code=400,

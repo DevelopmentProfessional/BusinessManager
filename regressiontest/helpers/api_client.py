@@ -2,6 +2,7 @@
 api_client.py — AuthedClient wrapping httpx.Client with Bearer token injection.
 """
 import httpx
+import os
 from typing import Any, Optional
 from config import BASE_URL, REQUEST_TIMEOUT
 
@@ -57,10 +58,15 @@ class AuthedClient:
 
 def login(username: str, password: str) -> str:
     """Perform a login and return the access token string."""
+    company_id = os.getenv("REGRESSION_COMPANY_ID", "").strip()
+    payload = {"username": username, "password": password}
+    if company_id:
+        payload["company_id"] = company_id
+
     with httpx.Client(base_url=BASE_URL, timeout=REQUEST_TIMEOUT) as c:
         resp = c.post(
             "/api/v1/auth/login",
-            json={"username": username, "password": password},
+            json=payload,
         )
     if resp.status_code != 200:
         raise RuntimeError(

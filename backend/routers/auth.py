@@ -1206,7 +1206,10 @@ def get_roles(
             detail="Admin access required"
         )
 
-    roles = session.exec(select(Role)).all()
+    stmt = select(Role)
+    if current_user.company_id:
+        stmt = stmt.where(Role.company_id == current_user.company_id)
+    roles = session.exec(stmt).all()
     return roles
 
 @router.post("/roles", response_model=RoleRead)
@@ -1222,8 +1225,11 @@ def create_role(
             detail="Admin access required"
         )
 
-    # Check if role name already exists
-    existing = session.exec(select(Role).where(Role.name == role_data.name)).first()
+    # Check if role name already exists within this company
+    existing_stmt = select(Role).where(Role.name == role_data.name)
+    if current_user.company_id:
+        existing_stmt = existing_stmt.where(Role.company_id == current_user.company_id)
+    existing = session.exec(existing_stmt).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1232,7 +1238,8 @@ def create_role(
 
     role = Role(
         name=role_data.name,
-        description=role_data.description
+        description=role_data.description,
+        company_id=current_user.company_id,
     )
     session.add(role)
     session.commit()
@@ -1306,10 +1313,11 @@ def update_role(
         )
 
     if role_data.name is not None:
-        # Check if name is taken by another role
-        existing = session.exec(
-            select(Role).where(Role.name == role_data.name, Role.id != role_uuid)
-        ).first()
+        # Check if name is taken by another role within this company
+        conflict_stmt = select(Role).where(Role.name == role_data.name, Role.id != role_uuid)
+        if current_user.company_id:
+            conflict_stmt = conflict_stmt.where(Role.company_id == current_user.company_id)
+        existing = session.exec(conflict_stmt).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

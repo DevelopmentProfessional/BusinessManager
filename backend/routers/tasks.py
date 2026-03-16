@@ -122,8 +122,11 @@ async def create_task(task_data: TaskCreate, session: Session = Depends(get_sess
     # Link tasks by title if provided
     if task_data.linked_task_titles:
         for linked_title in task_data.linked_task_titles:
-            # Find tasks with matching title
-            linked_tasks = session.exec(select(Task).where(Task.title == linked_title)).all()
+            # Find tasks with matching title within same company
+            linked_stmt = select(Task).where(Task.title == linked_title)
+            if current_user.company_id:
+                linked_stmt = linked_stmt.where(Task.company_id == current_user.company_id)
+            linked_tasks = session.exec(linked_stmt).all()
             for linked_task in linked_tasks:
                 if linked_task.id != task.id:  # Don't link to self
                     # Check if link already exists
@@ -185,9 +188,10 @@ async def update_task(
         # Create new links by title
         if task_data.linked_task_titles:
             for linked_title in task_data.linked_task_titles:
-                linked_tasks = session.exec(
-                    select(Task).where(Task.title == linked_title)
-                ).all()
+                linked_stmt = select(Task).where(Task.title == linked_title)
+                if current_user.company_id:
+                    linked_stmt = linked_stmt.where(Task.company_id == current_user.company_id)
+                linked_tasks = session.exec(linked_stmt).all()
                 for linked_task in linked_tasks:
                     if linked_task.id != task.id:
                         link = TaskLink(
@@ -254,10 +258,11 @@ async def link_task_by_title(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    # Find tasks with matching title
-    target_tasks = session.exec(
-        select(Task).where(Task.title == target_task_title)
-    ).all()
+    # Find tasks with matching title within same company
+    target_tasks_stmt = select(Task).where(Task.title == target_task_title)
+    if current_user.company_id:
+        target_tasks_stmt = target_tasks_stmt.where(Task.company_id == current_user.company_id)
+    target_tasks = session.exec(target_tasks_stmt).all()
     
     if not target_tasks:
         raise HTTPException(
