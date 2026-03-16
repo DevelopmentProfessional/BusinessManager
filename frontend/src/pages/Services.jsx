@@ -137,6 +137,15 @@ export default function Services() {
     }
   };
 
+  const handleBulkImportServices = async (names) => {
+    for (const name of names) {
+      const response = await servicesAPI.create({ name });
+      const newService = response?.data ?? response;
+      addService(newService);
+    }
+    closeModal();
+  };
+
   // ─── 7  DERIVED / COMPUTED VALUES ────────────────────────────────────────
   // Get unique categories for filter
   const categories = useMemo(() => {
@@ -362,6 +371,7 @@ export default function Services() {
             onCancel={closeModal}
             onDelete={editingService && hasPermission('services', 'delete') ? handleDeleteService : null}
             canDelete={editingService && hasPermission('services', 'delete')}
+            onBulkImport={!editingService ? handleBulkImportServices : null}
           />
         )}
       </Modal>

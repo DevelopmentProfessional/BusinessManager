@@ -237,6 +237,21 @@ export default function Inventory() {
     }
   }; 
 
+  const handleBulkImportItems = async (rows) => {
+    for (const row of rows) {
+      const result = await inventoryAPI.create({ name: row.name, type: row.type || 'PRODUCT', quantity: 0, price: 0 });
+      const newItemId = result?.data?.id;
+      if (newItemId && row.photo) {
+        const file = row.photo instanceof File
+          ? row.photo
+          : new File([row.photo], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        await inventoryAPI.uploadImageFile(newItemId, file, true);
+      }
+    }
+    await loadInventoryData();
+    closeModal();
+  };
+
   // ─── 7 DISPLAY UTILITIES ─────────────────────────────────────────────────────
   const getItemTypeLabel = (type) => {
     const labels = { 
@@ -638,6 +653,7 @@ return (
           onCancel={closeModal}
           showScanner
           existingSkus={inventory.map(i => i.sku).filter(Boolean)}
+          onBulkImport={handleBulkImportItems}
         />
       )}
     </Modal>

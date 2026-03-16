@@ -25,8 +25,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
+import Modal_BulkImport from './Modal_BulkImport';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const MEMBERSHIP_TIERS = [
@@ -38,7 +39,7 @@ const MEMBERSHIP_TIERS = [
 ];
 
 // ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
-export default function Form_Client({ client, onSubmit, onCancel, error = null }) {
+export default function Form_Client({ client, onSubmit, onCancel, error = null, onBulkImport = null }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -54,6 +55,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
   const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
   const [tierHelpKey, setTierHelpKey] = useState(null);
   const [tierHelpPos, setTierHelpPos] = useState({ top: 0, left: 0 });
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   useEffect(() => {
     if (client) {
@@ -113,11 +115,34 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null }
     <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
           {client ? 'Edit Client' : 'Add Client'}
         </h6>
+        {!client && onBulkImport && (
+          <button
+            type="button"
+            title="Bulk Import"
+            onClick={() => setIsBulkImportOpen(true)}
+            className="btn btn-sm p-1 text-gray-500 dark:text-gray-400"
+            style={{ lineHeight: 1 }}
+          >
+            <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
+          </button>
+        )}
       </div>
+
+      {isBulkImportOpen && (
+        <Modal_BulkImport
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          entityLabel="Clients"
+          onImport={async (rows) => {
+            await onBulkImport(rows.map(r => r.name));
+            setIsBulkImportOpen(false);
+          }}
+        />
+      )}
 
       {/* ─── 5 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable content */}

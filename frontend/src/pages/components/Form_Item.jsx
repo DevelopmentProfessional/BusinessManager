@@ -34,22 +34,24 @@
  * ============================================================
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Modal from './Modal';
 import {
   XMarkIcon, CheckIcon,
   SparklesIcon, CubeIcon,
-  WrenchScrewdriverIcon, BuildingOfficeIcon
+  WrenchScrewdriverIcon, BuildingOfficeIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
+import Modal_BulkImport from './Modal_BulkImport';
 import cacheService from '../../services/cacheService';
 import { servicesAPI, suppliersAPI, inventoryAPI } from '../../services/api';
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [] }) {
+export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = '', showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
   const [formData, setFormData] = useState({
     name: '',
     sku: initialSku || '',
@@ -76,6 +78,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [typeHelpKey, setTypeHelpKey] = useState(null);
   const [typeHelpPos, setTypeHelpPos] = useState({ top: 0, left: 0 });
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Bundle / Mix state (local — saved after item creation)
   const [allProducts, setAllProducts] = useState([]);
@@ -168,12 +171,25 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   }, [formData.type]);
 
   // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
+  const fileInputRef = useRef(null);
+
   const handlePhotoCapture = (blob) => {
     setIsCameraOpen(false);
     setAddImageMode(null);
     if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
     setPendingPhoto(blob);
     setPendingPhotoUrl(URL.createObjectURL(blob));
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+    setPendingPhoto(file);
+    setPendingPhotoUrl(URL.createObjectURL(file));
+    setAddImageMode(null);
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = '';
   };
 
   const handleChange = (e) => {
@@ -277,8 +293,41 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? 'Edit' : 'Add Item'}</h6>
-        
+        {!item && onBulkImport && (
+          <button
+            type="button"
+            title="Bulk Import"
+            onClick={() => setIsBulkImportOpen(true)}
+            className="btn btn-sm p-1 text-gray-500 dark:text-gray-400"
+            style={{ lineHeight: 1 }}
+          >
+            <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
+          </button>
+        )}
       </div>
+
+      {isBulkImportOpen && (
+        <Modal_BulkImport
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          entityLabel="Items"
+          allowPhotoUpload
+          itemTypes={[
+            { value: 'PRODUCT',  label: 'Product'  },
+            { value: 'RESOURCE', label: 'Resource' },
+            { value: 'ASSET',    label: 'Asset'    },
+            { value: 'LOCATION', label: 'Location' },
+            { value: 'ITEM',     label: 'Item'     },
+            { value: 'BUNDLE',   label: 'Bundle'   },
+            { value: 'MIX',      label: 'Mix'      },
+          ]}
+          defaultItemType="PRODUCT"
+          onImport={async (rows) => {
+            await onBulkImport(rows);
+            setIsBulkImportOpen(false);
+          }}
+        />
+      )}
 
       {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
       {/* Container_Scrollable Content Area */}
@@ -340,6 +389,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   <div className="d-flex align-items-center gap-2 mb-2">
                     <div className="btn-group btn-group-sm">
                       <button type="button" className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('camera')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>Camera</button>
+                      <button type="button" className={`btn ${addImageMode === 'upload' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('upload')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>Upload</button>
                       <button type="button" className={`btn ${addImageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setAddImageMode('url')} style={{ fontSize: '0.72rem', padding: '2px 10px' }}>URL</button>
                     </div>
                     <button type="button" onClick={() => { setAddImageMode(null); }} className="btn btn-link btn-sm p-0 ms-auto" style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}>✕</button>
@@ -352,6 +402,29 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                       </svg>
                       {pendingPhotoUrl ? 'Retake Photo' : 'Open Camera'}
                     </button>
+                  )}
+                  {addImageMode === 'upload' && (
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleFileSelect}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z"/>
+                        </svg>
+                        {pendingPhotoUrl ? 'Replace Photo' : 'Choose from Device'}
+                      </button>
+                    </div>
                   )}
                   {addImageMode === 'url' && (
                     <div className="d-flex gap-1">
