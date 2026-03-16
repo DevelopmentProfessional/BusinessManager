@@ -52,7 +52,7 @@ from sqlmodel import SQLModel, select as sql_select
 
 from ..database import get_session
 from ..models import *
-from .auth import get_current_user, get_current_company_id
+from .auth import get_current_user, get_current_company_id, get_user_permissions_list
 
 # ─── [2] CONSTANTS ─────────────────────────────────────────────────────────────
 # Upload dir for document file cleanup on delete (used when table is "document")
@@ -63,6 +63,37 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Tables without company_id (system tables, never filter by company)
 SYSTEM_TABLES = {"company", "database_connection", "document_blob", "schema_migration"}
+
+
+def _resolve_permission_pages(table_name: str) -> set[str]:
+    """Return candidate permission page names for a table endpoint."""
+    base = (table_name or "").strip().lower()
+    pages = {base}
+    if base.endswith("s"):
+        pages.add(base[:-1])
+    else:
+        pages.add(f"{base}s")
+    if base in {"user", "users"}:
+        pages.add("employees")
+    return {p for p in pages if p}
+
+
+def _require_isud_permission(
+    current_user: User,
+    session: Session,
+    table_name: str,
+    action: str,
+) -> None:
+    """Require page permission for non-admin users on generic ISUD endpoints."""
+    if current_user.role == UserRole.ADMIN:
+        return
+
+    permissions = set(get_user_permissions_list(current_user, session))
+    for page in _resolve_permission_pages(table_name):
+        if f"{page}:{action}" in permissions or f"{page}:admin" in permissions:
+            return
+
+    raise HTTPException(status_code=403, detail=f"Missing permission: {table_name}:{action}")
 
 def _resolve_document_path(file_path: str, upload_dir: str) -> str:
     """Resolve path for a document file (stored path or upload_dir + basename)."""
@@ -320,6 +351,7 @@ async def insert_with_file(
     extracts form fields. Otherwise, it parses JSON body.
     """
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "write")
     record_data: Dict[str, Any] = {}
 
     content_type = request.headers.get("content-type", "")
@@ -424,6 +456,7 @@ async def insert(
 ):
     """Standard JSON insert endpoint."""
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "write")
 
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
@@ -532,6 +565,7 @@ async def update_by_id(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "write")
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
@@ -593,6 +627,7 @@ async def sync_check(
     frontend cache can decide whether an incremental fetch is needed.
     """
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "read")
 
     base_stmt = sql_select(func.count()).select_from(model_class.__table__)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
@@ -622,6 +657,7 @@ async def select(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "read")
 
     raw_filters = [(k, v) for k, v in request.query_params.multi_items()]
     if len(raw_filters) > 10:
@@ -685,6 +721,7 @@ async def select_by_id(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "read")
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
@@ -703,6 +740,7 @@ async def update(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "write")
 
     raw_filters = [(k, v) for k, v in request.query_params.multi_items()]
     if not raw_filters:
@@ -767,6 +805,7 @@ async def delete_by_id(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _require_isud_permission(current_user, session, table_name, "delete")
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
@@ -848,7 +887,8 @@ async def add_inventory_image_url(
         inventory_id=inventory_id,
         image_url=image_data.get("image_url"),
         is_primary=image_data.get("is_primary", len(existing_images) == 0),  # First image is primary
-        sort_order=image_data.get("sort_order", len(existing_images))
+        sort_order=image_data.get("sort_order", len(existing_images)),
+        company_id=inventory.company_id,
     )
     
     # If this is set as primary, unset others
@@ -917,7 +957,8 @@ async def upload_inventory_image_file(
         file_path=file_path,
         file_name=file.filename,
         is_primary=is_primary or len(existing_images) == 0,
-        sort_order=len(existing_images)
+        sort_order=len(existing_images),
+        company_id=inventory.company_id,
     )
     
     # If this is set as primary, unset others
@@ -940,8 +981,16 @@ async def get_inventory_images(
     current_user: User = Depends(get_current_user),
 ):
     """Get all images for an inventory item"""
+    inventory = session.get(Inventory, inventory_id)
+    if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
     stmt = sql_select(InventoryImage).where(
-        InventoryImage.inventory_id == inventory_id
+        and_(
+            InventoryImage.inventory_id == inventory_id,
+            # Keep compatibility with older rows where company_id may be null.
+            (InventoryImage.company_id == inventory.company_id) | (InventoryImage.company_id.is_(None))
+        )
     ).order_by(InventoryImage.sort_order)
     
     images = session.exec(stmt).all()
@@ -958,6 +1007,10 @@ async def update_inventory_image(
     """Update an inventory image"""
     image = session.get(InventoryImage, image_id)
     if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    inventory = session.get(Inventory, image.inventory_id)
+    if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Image not found")
     
     # Update fields
@@ -994,6 +1047,10 @@ async def delete_inventory_image(
     """Delete an inventory image"""
     image = session.get(InventoryImage, image_id)
     if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    inventory = session.get(Inventory, image.inventory_id)
+    if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Image not found")
     
     # Delete file if it exists
@@ -1034,12 +1091,20 @@ async def serve_inventory_image_file(
 
     _secret = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
     try:
-        pyjwt.decode(raw_token, _secret, algorithms=["HS256"])
+        claims = pyjwt.decode(raw_token, _secret, algorithms=["HS256"])
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     image = session.get(InventoryImage, image_id)
     if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    inventory = session.get(Inventory, image.inventory_id)
+    if not inventory:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
+    token_company_id = claims.get("company_id") if isinstance(claims, dict) else None
+    if token_company_id and inventory.company_id != token_company_id:
         raise HTTPException(status_code=404, detail="Image not found")
 
     if not image.file_path:
