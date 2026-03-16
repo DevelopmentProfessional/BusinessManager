@@ -67,7 +67,7 @@ else:
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.15.1"
+CURRENT_SCHEMA_VERSION = "2026.03.16.1"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -691,6 +691,34 @@ def _ensure_inventory_sku_nullable_if_needed():
         print(f"  Warning: Could not make inventory.sku nullable: {e}")
 
 
+def _ensure_inventory_category_column_if_needed():
+    """Ensure inventory.category exists for environments that predate this column."""
+    try:
+        with engine.begin() as conn:
+            if DATABASE_URL.startswith("sqlite"):
+                cols = conn.execute(text("PRAGMA table_info('inventory')")).fetchall()
+                has_category = any(c[1] == "category" for c in cols)
+                if not has_category:
+                    conn.execute(text("ALTER TABLE inventory ADD COLUMN category VARCHAR"))
+                    print("  + Added inventory.category")
+                return
+
+            exists = conn.execute(text(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'inventory'
+                  AND column_name = 'category'
+                """
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE inventory ADD COLUMN category VARCHAR"))
+                print("  + Added inventory.category")
+    except Exception as e:
+        print(f"  Warning: Could not ensure inventory.category: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
@@ -737,6 +765,7 @@ def create_db_and_tables():
     _ensure_user_username_composite_unique_if_needed()
     _ensure_userrole_enum_values_if_needed()
     _ensure_inventory_sku_nullable_if_needed()
+    _ensure_inventory_category_column_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

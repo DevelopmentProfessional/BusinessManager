@@ -88,6 +88,10 @@ api.interceptors.response.use(
   (response) => {
     // Log successful responses in development
     if (import.meta.env.DEV) {
+      const isNoisyUnreadPoll = response.config?.url?.includes('/chat/unread-counts');
+      if (isNoisyUnreadPoll) {
+        return response;
+      }
       console.log(`API Success [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
         status: response.status,
         dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
