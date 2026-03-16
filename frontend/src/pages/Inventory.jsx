@@ -41,7 +41,7 @@ import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, Tag
 import Modal_Discount_Rules from './components/Modal_Discount_Rules';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
-import { inventoryAPI, featuresAPI } from '../services/api';
+import { inventoryAPI, featuresAPI, bundleAPI, mixAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Item from './components/Form_Item';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -202,19 +202,30 @@ export default function Inventory() {
     }
   };
 
-  const handleSubmitNewItem = async (itemData, { initialQuantity, pendingPhoto = null }) => {
+  const handleSubmitNewItem = async (itemData, { initialQuantity, pendingPhoto = null, bundleComponents = [], mixConfig = null, mixComponents = [] }) => {
     try {
-      // Create inventory item directly (inventory now contains all product fields)
       const inventoryData = {
         ...itemData,
         quantity: Number.isFinite(initialQuantity) ? initialQuantity : 0,
       };
       const result = await inventoryAPI.create(inventoryData);
-      // Upload captured photo if one was taken
       const newItemId = result?.data?.id;
       if (pendingPhoto && newItemId) {
         const file = new File([pendingPhoto], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
         await inventoryAPI.uploadImageFile(newItemId, file, true);
+      }
+      // Save bundle components
+      if (newItemId && bundleComponents.length > 0) {
+        for (const comp of bundleComponents) {
+          await bundleAPI.addComponent(newItemId, comp.id, comp.quantity);
+        }
+      }
+      // Save mix config + components
+      if (newItemId && mixConfig) {
+        await mixAPI.saveConfig({ inventory_id: newItemId, ...mixConfig });
+        for (const comp of mixComponents) {
+          await mixAPI.addComponent(newItemId, comp.id, comp.max_quantity || null);
+        }
       }
       await loadInventoryData();
       closeModal();
