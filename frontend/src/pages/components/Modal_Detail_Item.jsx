@@ -38,7 +38,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI } from '../../services/api';
+import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI } from '../../services/api';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
@@ -289,6 +289,266 @@ function ProductionRelationsPanel({ productId }) {
   );
 }
 
+// ─── Mix Setup Panel ─────────────────────────────────────────────────────────────
+// Shown only for MIX type items in inventory mode
+function MixSetupPanel({ mixId }) {
+  const [config, setConfig]         = useState(null);   // MixConfig record or null
+  const [components, setComponents] = useState([]);
+  const [allInventory, setAllInventory] = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [adding, setAdding]         = useState(false);
+  const [newCompId, setNewCompId]   = useState('');
+  const [newMaxQty, setNewMaxQty]   = useState('');
+  // local config edit state
+  const [totalQty, setTotalQty]     = useState(1);
+  const [hasMax, setHasMax]         = useState(false);
+  const [maxPer, setMaxPer]         = useState('');
+  const [configSaving, setConfigSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!mixId) return;
+    setLoading(true); setError('');
+    try {
+      const [cfgRes, compRes, invRes] = await Promise.all([
+        mixAPI.getConfig(mixId),
+        mixAPI.getComponents(mixId),
+        inventoryAPI.getAll(),
+      ]);
+      const cfgList = Array.isArray(cfgRes?.data) ? cfgRes.data : [];
+      const cfg = cfgList[0] || null;
+      setConfig(cfg);
+      if (cfg) { setTotalQty(cfg.total_quantity); setHasMax(cfg.has_max_per_product); setMaxPer(cfg.max_per_product ?? ''); }
+      setComponents(Array.isArray(compRes?.data) ? compRes.data : []);
+      setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
+    } catch { setError('Failed to load mix setup.'); }
+    finally { setLoading(false); }
+  }, [mixId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const productItems = allInventory.filter(i => (i.type || '').toUpperCase() === 'PRODUCT');
+  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
+
+  const handleSaveConfig = async () => {
+    setConfigSaving(true);
+    try {
+      const payload = {
+        inventory_id: mixId,
+        total_quantity: parseInt(totalQty) || 1,
+        has_max_per_product: hasMax,
+        max_per_product: hasMax && maxPer !== '' ? parseInt(maxPer) : null,
+      };
+      if (config?.id) {
+        await mixAPI.updateConfig(config.id, payload);
+      } else {
+        await mixAPI.saveConfig(payload);
+      }
+      load();
+    } catch { setError('Failed to save mix config.'); }
+    finally { setConfigSaving(false); }
+  };
+
+  const handleAddComponent = async () => {
+    if (!newCompId) return;
+    try {
+      await mixAPI.addComponent(mixId, newCompId, newMaxQty !== '' ? parseInt(newMaxQty) : null);
+      load(); setAdding(false); setNewCompId(''); setNewMaxQty('');
+    } catch { setError('Failed to add component.'); }
+  };
+  const handleRemoveComponent = async (id) => {
+    try { await mixAPI.removeComponent(id); load(); }
+    catch { setError('Failed to remove component.'); }
+  };
+  const handleUpdateMax = async (id, val) => {
+    try { await mixAPI.updateComponent(id, { max_quantity: val !== '' ? parseInt(val) : null }); load(); }
+    catch { setError('Failed to update.'); }
+  };
+
+  const s = {
+    row: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: '1px solid #fce7f3', fontSize: '0.8rem' },
+    input: { fontSize: '0.75rem', padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' },
+    del: { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontSize: 14 },
+    btn: { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: '#ec4899', color: '#fff', border: 'none', cursor: 'pointer' },
+    out: { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: 'none', color: '#ec4899', border: '1px solid #ec4899', cursor: 'pointer' },
+    label: { fontSize: '0.75rem', color: '#374151', fontWeight: 600 },
+  };
+
+  return (
+    <div className="mt-3" style={{ border: '1px solid #fbcfe8', borderRadius: 8 }}>
+      {/* Header */}
+      <div style={{ padding: '6px 10px 8px', background: '#fdf2f8', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #fbcfe8', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <SparklesIcon style={{ width: 14, height: 14, color: '#ec4899' }} />
+        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Mix Setup</span>
+        <span style={{ fontSize: '0.72rem', color: '#9ca3af', marginLeft: 4 }}>Client picks from a list</span>
+      </div>
+
+      <div style={{ padding: '8px 10px' }}>
+        {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Loading…</div>}
+        {error   && <div style={{ fontSize: '0.75rem', color: '#ef4444', marginBottom: 4 }}>{error}</div>}
+
+        {/* ── Config section ── */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #fbcfe8' }}>
+          <div>
+            <div style={s.label}>Total to pick</div>
+            <input type="number" min="1" value={totalQty} onChange={e => setTotalQty(e.target.value)}
+              style={{ ...s.input, width: 60 }} title="How many products the client must pick total" />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input type="checkbox" id="mix-has-max" checked={hasMax} onChange={e => setHasMax(e.target.checked)} />
+            <label htmlFor="mix-has-max" style={{ ...s.label, fontWeight: 400, cursor: 'pointer' }}>Max per product</label>
+          </div>
+          {hasMax && (
+            <div>
+              <div style={s.label}>Max each</div>
+              <input type="number" min="1" value={maxPer} onChange={e => setMaxPer(e.target.value)}
+                style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
+            </div>
+          )}
+          <button style={s.btn} disabled={configSaving} onClick={handleSaveConfig}>
+            {configSaving ? 'Saving…' : config ? 'Update' : 'Save Config'}
+          </button>
+        </div>
+
+        {/* ── Products available in mix ── */}
+        <div style={{ ...s.label, marginBottom: 4 }}>Products available in this mix</div>
+        {components.length === 0 && !adding && !loading && (
+          <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No products yet. Add products the client can choose from.</div>
+        )}
+        {components.map(c => (
+          <div key={c.id} style={s.row}>
+            <CubeIcon style={{ width: 13, height: 13, color: '#ec4899', flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
+            <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>max override:</span>
+            <input type="number" min="1" defaultValue={c.max_quantity ?? ''}
+              onBlur={e => handleUpdateMax(c.id, e.target.value)}
+              style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
+            <button style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">×</button>
+          </div>
+        ))}
+        {adding ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+            <select value={newCompId} onChange={e => setNewCompId(e.target.value)} style={{ ...s.input, flex: 1 }}>
+              <option value="">Select product…</option>
+              {productItems.filter(i => i.id !== mixId && !components.some(c => c.component_id === i.id)).map(i => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </select>
+            <input type="number" min="1" value={newMaxQty} onChange={e => setNewMaxQty(e.target.value)}
+              style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
+            <button style={s.btn} onClick={handleAddComponent}>Add</button>
+            <button style={s.out} onClick={() => { setAdding(false); setNewCompId(''); setNewMaxQty(''); }}>Cancel</button>
+          </div>
+        ) : (
+          <button style={{ ...s.out, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Product</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Bundle Components Panel ────────────────────────────────────────────────────
+// Shown only for BUNDLE type items in inventory mode
+function BundleComponentsPanel({ bundleId }) {
+  const [components, setComponents] = useState([]);
+  const [allInventory, setAllInventory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [newComponentId, setNewComponentId] = useState('');
+  const [newQty, setNewQty] = useState(1);
+
+  const load = useCallback(async () => {
+    if (!bundleId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const [cRes, invRes] = await Promise.all([
+        bundleAPI.getComponents(bundleId),
+        inventoryAPI.getAll(),
+      ]);
+      setComponents(Array.isArray(cRes?.data) ? cRes.data : []);
+      setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
+    } catch { setError('Failed to load bundle components.'); }
+    finally { setLoading(false); }
+  }, [bundleId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const productItems = allInventory.filter(i => (i.type || '').toUpperCase() === 'PRODUCT');
+  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
+
+  const handleAdd = async () => {
+    if (!newComponentId) return;
+    try {
+      await bundleAPI.addComponent(bundleId, newComponentId, parseFloat(newQty) || 1);
+      load(); setAdding(false); setNewComponentId(''); setNewQty(1);
+    } catch { setError('Failed to add component.'); }
+  };
+  const handleRemove = async (id) => {
+    try { await bundleAPI.removeComponent(id); load(); }
+    catch { setError('Failed to remove component.'); }
+  };
+  const handleUpdateQty = async (id, qty) => {
+    try { await bundleAPI.updateComponent(id, { quantity: parseFloat(qty) || 1 }); load(); }
+    catch { setError('Failed to update quantity.'); }
+  };
+
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: '1px solid #e5e7eb', fontSize: '0.8rem' };
+  const inputSm = { fontSize: '0.75rem', padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' };
+  const btnDanger = { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontSize: 14 };
+  const btnPrimary = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: '#f97316', color: '#fff', border: 'none', cursor: 'pointer' };
+  const btnOutline = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: 'none', color: '#f97316', border: '1px solid #f97316', cursor: 'pointer' };
+
+  return (
+    <div className="mt-3" style={{ border: '1px solid #fed7aa', borderRadius: 8 }}>
+      <div style={{ padding: '6px 10px 8px', background: '#fff7ed', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <CubeIcon style={{ width: 14, height: 14, color: '#f97316' }} />
+        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Bundle Components</span>
+        <span style={{ fontSize: '0.72rem', color: '#9ca3af', marginLeft: 4 }}>Products included per unit sold</span>
+      </div>
+      <div style={{ padding: '8px 10px', minHeight: 60 }}>
+        {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Loading…</div>}
+        {error   && <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{error}</div>}
+        {components.length === 0 && !adding && !loading && (
+          <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No components yet. Add products that make up this bundle.</div>
+        )}
+        {components.map(c => (
+          <div key={c.id} style={rowStyle}>
+            <CubeIcon style={{ width: 13, height: 13, color: '#f97316', flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
+            <input
+              type="number" min="0.01" step="0.01"
+              defaultValue={c.quantity}
+              onBlur={(e) => handleUpdateQty(c.id, e.target.value)}
+              style={{ ...inputSm, width: 60 }}
+              title="Quantity per bundle unit"
+            />
+            <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>× each</span>
+            <button style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">×</button>
+          </div>
+        ))}
+        {adding ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+            <select value={newComponentId} onChange={e => setNewComponentId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
+              <option value="">Select product…</option>
+              {productItems.filter(i => i.id !== bundleId && !components.some(c => c.component_id === i.id)).map(i => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </select>
+            <input type="number" min="0.01" step="0.01" value={newQty}
+              onChange={e => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
+            <button style={btnPrimary} onClick={handleAdd}>Add</button>
+            <button style={btnOutline} onClick={() => { setAdding(false); setNewComponentId(''); setNewQty(1); }}>Cancel</button>
+          </div>
+        ) : (
+          <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Component</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Detail_Item({
   isOpen,
@@ -336,6 +596,8 @@ export default function Modal_Detail_Item({
   const isAsset = upperType === 'ASSET';
   const isLocation = upperType === 'LOCATION';
   const isResource = upperType === 'RESOURCE';
+  const isBundle = upperType === 'BUNDLE';
+  const isMix = upperType === 'MIX';
   const hasLegacyImage = formData.image_url;
   const hasImages = images.length > 0;
   const currentImage = hasImages ? images[currentImageIndex] : null;
@@ -1068,6 +1330,8 @@ export default function Modal_Detail_Item({
                 className="form-select form-select-sm"
               >
                 <option value="PRODUCT">Product</option>
+                <option value="BUNDLE">Bundle</option>
+                <option value="MIX">Mix</option>
                 <option value="RESOURCE">Resource</option>
                 <option value="ASSET">Asset</option>
                 <option value="LOCATION">Location</option>
@@ -1174,6 +1438,16 @@ export default function Modal_Detail_Item({
           {/* Production Setup — PRODUCT type only */}
           {item?.id && upperType === 'PRODUCT' && (
             <ProductionRelationsPanel productId={item.id} />
+          )}
+
+          {/* Bundle Components — BUNDLE type only */}
+          {item?.id && isBundle && (
+            <BundleComponentsPanel bundleId={item.id} />
+          )}
+
+          {/* Mix Setup — MIX type only */}
+          {item?.id && isMix && (
+            <MixSetupPanel mixId={item.id} />
           )}
 
           <hr className="my-2" />

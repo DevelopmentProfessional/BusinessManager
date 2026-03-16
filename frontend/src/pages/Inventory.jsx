@@ -38,6 +38,7 @@ import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
 import PageTableRow from './components/PageTableRow';
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
+import Modal_Discount_Rules from './components/Modal_Discount_Rules';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
 import { inventoryAPI, featuresAPI } from '../services/api';
@@ -63,6 +64,7 @@ export default function Inventory() {
   const [editingInventory, setEditingInventory] = useState(null);
   const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
   const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
+  const [showDiscountRules, setShowDiscountRules] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
@@ -103,6 +105,16 @@ export default function Inventory() {
       value: 'ITEM',
       label: 'Items',
       description: 'Shows generic item records that are not categorized as Product, Resource, Asset, or Location.',
+    },
+    {
+      value: 'BUNDLE',
+      label: 'Bundles',
+      description: 'Shows bundle items — pre-defined sets of products sold together at a fixed price. When a bundle is sold, each component product\'s stock decrements automatically.',
+    },
+    {
+      value: 'MIX',
+      label: 'Mixes',
+      description: 'Shows mix items — client picks a fixed number of products from a predefined list (e.g. any 10 blankets). Supports per-product maximums and fixed or percentage pricing.',
     },
   ];
 
@@ -217,7 +229,7 @@ export default function Inventory() {
   // ─── 7 DISPLAY UTILITIES ─────────────────────────────────────────────────────
   const getItemTypeLabel = (type) => {
     const labels = { 
-      PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', LOCATION: 'Location', ITEM: 'Item',
+      PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', LOCATION: 'Location', ITEM: 'Item', BUNDLE: 'Bundle', MIX: 'Mix',
       product: 'Product', resource: 'Resource', asset: 'Asset', location: 'Location', item: 'Item'
     };
     return labels[type] || type || 'Product';
@@ -228,7 +240,9 @@ export default function Inventory() {
     if (upperType === 'RESOURCE') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
     if (upperType === 'ASSET') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
     if (upperType === 'LOCATION') return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
-    if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    if (upperType === 'BUNDLE') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+    if (upperType === 'MIX') return 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300';
+if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
     return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'; // PRODUCT
   };
 
@@ -413,12 +427,20 @@ return (
         onSearch={setSearchTerm}
         searchPlaceholder="Search by name or SKU..."
         beforeSearch={
-          <Button_Toolbar
-            icon={TruckIcon}
-            label="Suppliers"
-            onClick={() => setShowSuppliersPanel(true)}
-            className="btn-app-secondary"
-          />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Button_Toolbar
+              icon={TruckIcon}
+              label="Suppliers"
+              onClick={() => setShowSuppliersPanel(true)}
+              className="btn-app-secondary"
+            />
+            <Button_Toolbar
+              icon={TagIcon}
+              label="Discounts"
+              onClick={() => setShowDiscountRules(true)}
+              className="btn-app-secondary"
+            />
+          </div>
         }
       >
         <Gate_Permission page="inventory" permission="write">
@@ -612,6 +634,11 @@ return (
     <Suppliers_Panel
       isOpen={showSuppliersPanel}
       onClose={() => setShowSuppliersPanel(false)}
+    />
+
+    <Modal_Discount_Rules
+      isOpen={showDiscountRules}
+      onClose={() => setShowDiscountRules(false)}
     />
 
   </PageLayout>

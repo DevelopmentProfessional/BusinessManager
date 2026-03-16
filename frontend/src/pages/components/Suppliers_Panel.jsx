@@ -20,8 +20,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Created — extracted from Suppliers.jsx for Inventory integration
- *   2026-03-14 | Cascade | Moved Add Supplier to header in list mode and centered footer Close button
- * ============================================================
+ *   2026-03-14 | Cascade | Moved Add Supplier to header in list mode and centered footer Close button   *   2026-03-15 | Copilot | Wrapped footer buttons in col-10/row g-0 to avoid overlap with bottom-right menu button * ============================================================
  */
 
 import React, { useEffect, useState } from 'react';
@@ -212,31 +211,35 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
         </div>
 
         {/* ── FOOTER ── */}
-        <div className={`flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 d-flex align-items-center gap-3 ${showForm ? 'justify-content-between' : 'justify-content-center'}`}>
-          {showForm ? (
-            <>
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Cancel"
-                onClick={handleCancelForm}
-                className="btn-outline-secondary"
-              />
-              <Button_Toolbar
-                icon={CheckIcon}
-                label={editingSupplier ? 'Save' : 'Save'}
-                type="submit"
-                form="supplier-panel-form"
-                className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
-              />
-            </>
-          ) : (
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Close"
-              onClick={onClose}
-              className="btn-outline-secondary"
-            />
-          )}
+        <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="row g-0">
+            <div className={`col-10 d-flex align-items-center gap-3 px-4 flex-wrap ${showForm ? 'justify-content-between' : 'justify-content-center'}`}>
+              {showForm ? (
+                <>
+                  <Button_Toolbar
+                    icon={XMarkIcon}
+                    label="Cancel"
+                    onClick={handleCancelForm}
+                    className="btn-outline-secondary"
+                  />
+                  <Button_Toolbar
+                    icon={CheckIcon}
+                    label="Save"
+                    type="submit"
+                    form="supplier-panel-form"
+                    className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
+                  />
+                </>
+              ) : (
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Close"
+                  onClick={onClose}
+                  className="btn-outline-secondary"
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </Modal>

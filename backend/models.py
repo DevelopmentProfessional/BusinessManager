@@ -64,6 +64,8 @@ class ItemType(str, Enum):
     ASSET = "asset"
     LOCATION = "location"
     ITEM = "item"  # Legacy value for backward compatibility
+    BUNDLE = "bundle"
+    MIX = "mix"
 
 
 class AttendanceStatus(str, Enum):
@@ -274,6 +276,9 @@ class Inventory(BaseModel, table=True):
 
     # Service link - for resources/assets tied to specific services
     service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
+    # Pricing mode for bundles/mixes: "fixed" (use price field) or "percentage" (% of components)
+    price_type: Optional[str] = Field(default="fixed")
+    price_percentage: Optional[float] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -808,6 +813,8 @@ class InventoryRead(SQLModel):
     quantity: int
     min_stock_level: int
     location: Optional[str] = None
+    price_type: Optional[str] = "fixed"
+    price_percentage: Optional[float] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     images: List["InventoryImageRead"] = []
@@ -1554,6 +1561,7 @@ class SaleTransactionItem(BaseModel, table=True):
     unit_price: float = Field(default=0)
     quantity: int = Field(default=1)
     line_total: float = Field(default=0)
+    mix_selections: Optional[str] = Field(default=None)  # JSON: [{product_id, product_name, quantity}]
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1622,6 +1630,7 @@ class SaleTransactionItemRead(SQLModel):
     unit_price: float
     quantity: int
     line_total: float
+    mix_selections: Optional[str] = None
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
@@ -1737,6 +1746,143 @@ class ProductLocationRead(SQLModel):
     inventory_id: UUID
     location_id: UUID
     notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class BundleComponent(BaseModel, table=True):
+    """A component product or service within a bundle item."""
+    __tablename__ = "bundle_component"
+    bundle_id: UUID = Field(index=True)        # the BUNDLE inventory item
+    component_id: UUID = Field(index=True)     # component inventory item (product or service)
+    quantity: float = Field(default=1.0, ge=0) # how many per 1 bundle unit sold
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class BundleComponentRead(SQLModel):
+    id: UUID
+    bundle_id: UUID
+    component_id: UUID
+    quantity: float
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class BundleComponentCreate(SQLModel):
+    bundle_id: UUID
+    component_id: UUID
+    quantity: float = 1.0
+    notes: Optional[str] = None
+
+
+class BundleComponentUpdate(SQLModel):
+    quantity: Optional[float] = None
+    notes: Optional[str] = None
+
+
+class MixConfig(BaseModel, table=True):
+    """Configuration for a mix inventory item (one per mix item)."""
+    __tablename__ = "mix_config"
+    inventory_id: UUID = Field(index=True)          # the MIX inventory item
+    total_quantity: int = Field(default=1, ge=1)    # total products client must pick
+    has_max_per_product: bool = Field(default=False)
+    max_per_product: Optional[int] = Field(default=None)  # global cap per product in mix
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class MixComponent(BaseModel, table=True):
+    """A product available for selection within a mix."""
+    __tablename__ = "mix_component"
+    mix_id: UUID = Field(index=True)               # inventory_id of the MIX item
+    component_id: UUID = Field(index=True)         # product inventory item
+    max_quantity: Optional[int] = Field(default=None)  # per-product override (overrides global)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class MixConfigRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    total_quantity: int
+    has_max_per_product: bool
+    max_per_product: Optional[int] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class MixConfigCreate(SQLModel):
+    inventory_id: UUID
+    total_quantity: int = 1
+    has_max_per_product: bool = False
+    max_per_product: Optional[int] = None
+
+
+class MixConfigUpdate(SQLModel):
+    total_quantity: Optional[int] = None
+    has_max_per_product: Optional[bool] = None
+    max_per_product: Optional[int] = None
+
+
+class MixComponentRead(SQLModel):
+    id: UUID
+    mix_id: UUID
+    component_id: UUID
+    max_quantity: Optional[int] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class MixComponentCreate(SQLModel):
+    mix_id: UUID
+    component_id: UUID
+    max_quantity: Optional[int] = None
+
+
+class MixComponentUpdate(SQLModel):
+    max_quantity: Optional[int] = None
+
+
+class DiscountRule(BaseModel, table=True):
+    """A scheduled discount rule applied to all or selected inventory items."""
+    __tablename__ = "discount_rule"
+    name: str = Field(index=True)
+    applies_to: str = Field(default="all")           # "all" or "selected"
+    item_ids: Optional[str] = Field(default=None)    # JSON: ["uuid1", "uuid2", ...]
+    discount_type: str = Field(default="percentage") # "percentage" or "fixed"
+    discount_value: float = Field(default=0.0, ge=0) # % value or fixed amount
+    # Date window
+    start_date: Optional[datetime] = Field(default=None)
+    end_date: Optional[datetime] = Field(default=None)
+    # Recurring schedule
+    is_recurring: bool = Field(default=False)
+    recur_frequency: Optional[str] = Field(default=None)  # "daily" | "weekly" | "monthly"
+    recur_days: Optional[str] = Field(default=None)        # JSON: ["Mon","Tue"] for weekly
+    recur_count: Optional[int] = Field(default=None)       # max repetitions (null = indefinite)
+    times_per_day: Optional[int] = Field(default=None)     # how many times per day it applies
+    day_start_time: Optional[str] = Field(default=None)    # "HH:MM"
+    day_end_time: Optional[str] = Field(default=None)      # "HH:MM"
+    is_active: bool = Field(default=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DiscountRuleRead(SQLModel):
+    id: UUID
+    name: str
+    applies_to: str
+    item_ids: Optional[str] = None
+    discount_type: str
+    discount_value: float
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_recurring: bool
+    recur_frequency: Optional[str] = None
+    recur_days: Optional[str] = None
+    recur_count: Optional[int] = None
+    times_per_day: Optional[int] = None
+    day_start_time: Optional[str] = None
+    day_end_time: Optional[str] = None
+    is_active: bool
     created_at: Optional[datetime] = None
     model_config = {"from_attributes": True}
 

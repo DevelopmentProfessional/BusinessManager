@@ -764,6 +764,34 @@ export const productRelationsAPI = {
   removeLocation: (id) => api.delete(`/isud/product_location/${id}`),
 };
 
+export const discountRulesAPI = {
+  getAll:  ()         => api.get('/isud/discount_rule'),
+  create:  (data)     => api.post('/isud/discount_rule', data),
+  update:  (id, data) => api.put(`/isud/discount_rule/${id}`, data),
+  delete:  (id)       => api.delete(`/isud/discount_rule/${id}`),
+};
+
+export const mixAPI = {
+  // Mix config (one record per mix inventory item)
+  getConfig:    (inventoryId) => api.get(`/isud/mix_config?inventory_id=${inventoryId}`),
+  saveConfig:   (data)        => api.post('/isud/mix_config', data),
+  updateConfig: (id, data)    => api.put(`/isud/mix_config/${id}`, data),
+  // Mix components (products selectable within the mix)
+  getComponents:   (mixId)                    => api.get(`/isud/mix_component?mix_id=${mixId}`),
+  addComponent:    (mixId, componentId, maxQty = null) =>
+    api.post('/isud/mix_component', { mix_id: mixId, component_id: componentId, max_quantity: maxQty }),
+  updateComponent: (id, data)  => api.put(`/isud/mix_component/${id}`, data),
+  removeComponent: (id)        => api.delete(`/isud/mix_component/${id}`),
+};
+
+export const bundleAPI = {
+  getComponents:   (bundleId) => api.get(`/isud/bundle_component?bundle_id=${bundleId}`),
+  addComponent:    (bundleId, componentId, quantity, notes = null) =>
+    api.post('/isud/bundle_component', { bundle_id: bundleId, component_id: componentId, quantity, notes }),
+  updateComponent: (id, data)  => api.put(`/isud/bundle_component/${id}`, data),
+  removeComponent: (id)        => api.delete(`/isud/bundle_component/${id}`),
+};
+
 // Production task completion
 export const productionAPI = {
   getInfo:      (scheduleId) => api.get(`/production/tasks/${scheduleId}/info`),

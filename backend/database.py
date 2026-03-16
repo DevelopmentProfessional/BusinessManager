@@ -497,6 +497,182 @@ def _ensure_user_username_composite_unique_if_needed():
         print(f"  Warning: Could not migrate user username uniqueness: {e}")
 
 
+# ─── MIGRATION: BUNDLE COMPONENT TABLE ──────────────────────────────────────────
+def _ensure_bundle_component_table_if_needed():
+    """Create the bundle_component table for bundle item type support."""
+    sqlite = DATABASE_URL.startswith("sqlite")
+    with engine.begin() as conn:
+        if sqlite:
+            exists = conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='bundle_component'"
+            )).fetchone()
+        else:
+            exists = conn.execute(text(
+                "SELECT to_regclass('bundle_component')"
+            )).scalar()
+        if not exists:
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE bundle_component (
+                        id TEXT PRIMARY KEY,
+                        created_at DATETIME NOT NULL,
+                        updated_at DATETIME,
+                        bundle_id TEXT NOT NULL,
+                        component_id TEXT NOT NULL,
+                        quantity REAL NOT NULL DEFAULT 1.0,
+                        notes TEXT,
+                        company_id TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE bundle_component (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP,
+                        bundle_id UUID NOT NULL,
+                        component_id UUID NOT NULL,
+                        quantity REAL NOT NULL DEFAULT 1.0,
+                        notes TEXT,
+                        company_id VARCHAR
+                    )
+                """))
+            print("  + Created table bundle_component")
+
+
+# ─── MIGRATION: MIX TABLES ───────────────────────────────────────────────────────
+def _ensure_mix_tables_if_needed():
+    """Create mix_config and mix_component tables for the mix item type."""
+    sqlite = DATABASE_URL.startswith("sqlite")
+    with engine.begin() as conn:
+        def tbl_exists(name):
+            if sqlite:
+                return conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name=:n"), {"n": name}).fetchone() is not None
+            return conn.execute(text("SELECT to_regclass(:n)"), {"n": name}).scalar() is not None
+
+        if not tbl_exists("mix_config"):
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE mix_config (
+                        id TEXT PRIMARY KEY, created_at DATETIME NOT NULL, updated_at DATETIME,
+                        inventory_id TEXT NOT NULL, total_quantity INTEGER NOT NULL DEFAULT 1,
+                        has_max_per_product BOOLEAN NOT NULL DEFAULT 0,
+                        max_per_product INTEGER, company_id TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE mix_config (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                        inventory_id UUID NOT NULL, total_quantity INTEGER NOT NULL DEFAULT 1,
+                        has_max_per_product BOOLEAN NOT NULL DEFAULT FALSE,
+                        max_per_product INTEGER, company_id VARCHAR
+                    )
+                """))
+            print("  + Created table mix_config")
+
+        if not tbl_exists("mix_component"):
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE mix_component (
+                        id TEXT PRIMARY KEY, created_at DATETIME NOT NULL, updated_at DATETIME,
+                        mix_id TEXT NOT NULL, component_id TEXT NOT NULL,
+                        max_quantity INTEGER, company_id TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE mix_component (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                        mix_id UUID NOT NULL, component_id UUID NOT NULL,
+                        max_quantity INTEGER, company_id VARCHAR
+                    )
+                """))
+            print("  + Created table mix_component")
+
+
+def _ensure_inventory_price_columns_if_needed():
+    """Add price_type and price_percentage columns to inventory for bundle/mix pricing."""
+    if DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with engine.begin() as conn:
+            for col, coltype, default in [
+                ("price_type", "VARCHAR", "'fixed'"),
+                ("price_percentage", "DOUBLE PRECISION", "NULL"),
+            ]:
+                exists = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='inventory' AND column_name=:c"
+                ), {"c": col}).fetchone()
+                if not exists:
+                    conn.execute(text(f"ALTER TABLE inventory ADD COLUMN {col} {coltype} DEFAULT {default}"))
+                    print(f"  + Added inventory.{col}")
+    except Exception as e:
+        print(f"  Warning: Could not add inventory price columns: {e}")
+
+
+def _ensure_sale_transaction_item_mix_selections_if_needed():
+    """Add mix_selections TEXT column to sale_transaction_item for storing mix pick data."""
+    if DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='sale_transaction_item' AND column_name='mix_selections'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE sale_transaction_item ADD COLUMN mix_selections TEXT"))
+                print("  + Added sale_transaction_item.mix_selections")
+    except Exception as e:
+        print(f"  Warning: Could not add mix_selections column: {e}")
+
+
+# ─── MIGRATION: DISCOUNT RULE TABLE ─────────────────────────────────────────────
+def _ensure_discount_rule_table_if_needed():
+    """Create the discount_rule table for scheduled inventory discounts."""
+    sqlite = DATABASE_URL.startswith("sqlite")
+    with engine.begin() as conn:
+        if sqlite:
+            exists = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='discount_rule'")).fetchone()
+        else:
+            exists = conn.execute(text("SELECT to_regclass('discount_rule')")).scalar()
+        if not exists:
+            if sqlite:
+                conn.execute(text("""
+                    CREATE TABLE discount_rule (
+                        id TEXT PRIMARY KEY, created_at DATETIME NOT NULL, updated_at DATETIME,
+                        name TEXT NOT NULL, applies_to TEXT NOT NULL DEFAULT 'all',
+                        item_ids TEXT, discount_type TEXT NOT NULL DEFAULT 'percentage',
+                        discount_value REAL NOT NULL DEFAULT 0,
+                        start_date DATETIME, end_date DATETIME,
+                        is_recurring BOOLEAN NOT NULL DEFAULT 0,
+                        recur_frequency TEXT, recur_days TEXT, recur_count INTEGER,
+                        times_per_day INTEGER, day_start_time TEXT, day_end_time TEXT,
+                        is_active BOOLEAN NOT NULL DEFAULT 1, company_id TEXT
+                    )
+                """))
+            else:
+                conn.execute(text("""
+                    CREATE TABLE discount_rule (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                        name VARCHAR NOT NULL, applies_to VARCHAR NOT NULL DEFAULT 'all',
+                        item_ids TEXT, discount_type VARCHAR NOT NULL DEFAULT 'percentage',
+                        discount_value DOUBLE PRECISION NOT NULL DEFAULT 0,
+                        start_date TIMESTAMP, end_date TIMESTAMP,
+                        is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+                        recur_frequency VARCHAR, recur_days TEXT, recur_count INTEGER,
+                        times_per_day INTEGER, day_start_time VARCHAR, day_end_time VARCHAR,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE, company_id VARCHAR
+                    )
+                """))
+            print("  + Created table discount_rule")
+
+
 # ─── MIGRATION: MAKE inventory.sku NULLABLE ─────────────────────────────────────
 def _ensure_inventory_sku_nullable_if_needed():
     """Drop NOT NULL constraint on inventory.sku so handmade products don't need a SKU."""
@@ -550,6 +726,11 @@ def create_db_and_tables():
     _ensure_schedule_payment_columns_if_needed()
     _ensure_service_recipe_if_needed()
     _ensure_production_tables_if_needed()
+    _ensure_bundle_component_table_if_needed()
+    _ensure_mix_tables_if_needed()
+    _ensure_inventory_price_columns_if_needed()
+    _ensure_sale_transaction_item_mix_selections_if_needed()
+    _ensure_discount_rule_table_if_needed()
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()
     _ensure_company_multitenancy_if_needed()
