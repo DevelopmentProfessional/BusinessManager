@@ -358,8 +358,11 @@ export const inventoryAPI = {
     clearCache('inventory');
     return api.delete(`/isud/inventory/images/${imageId}`);
   },
-  getImageFileUrl: (imageId) =>
-    `${api.defaults.baseURL}/isud/inventory/images/${imageId}/file`,
+  getImageFileUrl: (imageId) => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    const base = `${api.defaults.baseURL}/isud/inventory/images/${imageId}/file`;
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+  },
   getLocations: () => api.get('/isud/inventory/locations'),
 };
 

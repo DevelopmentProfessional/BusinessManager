@@ -28,7 +28,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   XMarkIcon, ShoppingCartIcon, TagIcon,
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon,
@@ -569,9 +569,10 @@ export default function Modal_Detail_Item({
   const [availableLocations, setAvailableLocations] = useState([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
-  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
+  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera' | 'upload'
   const [newImageUrl, setNewImageUrl] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const fileInputRef = useRef(null);
   const [imageError, setImageError] = useState('');
   const [editingImageId, setEditingImageId] = useState(null);
   const [editingImageUrl, setEditingImageUrl] = useState('');
@@ -725,6 +726,21 @@ export default function Modal_Detail_Item({
     setImageError('');
     try {
       const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
+      await loadImages(item.id);
+    } catch {
+      setImageError('Failed to upload photo.');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAddImageMode(null);
+    setImageError('');
+    // Reset so the same file can be re-selected
+    e.target.value = '';
+    try {
       await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
       await loadImages(item.id);
     } catch {
@@ -1050,6 +1066,12 @@ export default function Modal_Detail_Item({
                       >Camera</button>
                       <button
                         type="button"
+                        className={`btn ${addImageMode === 'upload' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setAddImageMode('upload')}
+                        style={{ fontSize: '0.72rem', padding: '2px 10px' }}
+                      >Upload</button>
+                      <button
+                        type="button"
                         className={`btn ${addImageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`}
                         onClick={() => setAddImageMode('url')}
                         style={{ fontSize: '0.72rem', padding: '2px 10px' }}
@@ -1076,6 +1098,30 @@ export default function Modal_Detail_Item({
                       </svg>
                       Open Camera
                     </button>
+                  )}
+
+                  {addImageMode === 'upload' && (
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleFileUpload}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z"/>
+                        </svg>
+                        Choose from Device
+                      </button>
+                    </div>
                   )}
 
                   {addImageMode === 'url' && (
