@@ -39,6 +39,7 @@
 import os
 import inspect
 import uuid as uuid_module
+import jwt as pyjwt
 from typing import Type, Dict, Any, Optional
 from uuid import UUID
 
@@ -1011,10 +1012,32 @@ async def delete_inventory_image(
 @router.get("/inventory/images/{image_id}/file")
 async def serve_inventory_image_file(
     image_id: UUID,
+    request: Request,
+    token: Optional[str] = None,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user),
 ):
-    """Serve an uploaded inventory image file"""
+    """Serve an uploaded inventory image file.
+
+    Accepts auth via Authorization: Bearer header (normal API calls) OR
+    via ?token=<jwt> query parameter so that <img src="..."> tags can load
+    uploaded images without a custom fetcher.
+    """
+    # Resolve token from query param or Authorization header
+    raw_token = token
+    if not raw_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            raw_token = auth_header[7:]
+
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    _secret = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    try:
+        pyjwt.decode(raw_token, _secret, algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
     image = session.get(InventoryImage, image_id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
