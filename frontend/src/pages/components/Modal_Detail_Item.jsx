@@ -1233,20 +1233,46 @@ export default function Modal_Detail_Item({
               <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: '44px' }}>
                 {images.map((img, idx) => (
                   <div key={img.id} style={{ position: 'relative', flexShrink: 0 }}>
-                    <img
-                      src={getImageSrc(img)}
-                      alt=""
+                    <div
+                      onClick={() => setCurrentImageIndex(idx)}
                       style={{
-                        width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        position: 'relative',
                         cursor: 'pointer',
                         border: editingImageId === img.id
                           ? '2px solid var(--bs-warning)'
                           : idx === currentImageIndex
                             ? '2px solid var(--bs-primary)'
-                            : '2px solid #dee2e6'
+                            : '2px solid #dee2e6',
+                        background: 'var(--bs-secondary-bg)'
                       }}
-                      onClick={() => setCurrentImageIndex(idx)}
-                    />
+                    >
+                      <img
+                        src={getImageSrc(img)}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const placeholder = e.currentTarget.nextElementSibling;
+                          if (placeholder) placeholder.style.display = 'flex';
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: 'none',
+                          width: '100%',
+                          height: '100%',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#9ca3af'
+                        }}
+                      >
+                        <CubeIcon style={{ width: 14, height: 14 }} />
+                      </div>
+                    </div>
                     {/* Delete button — top right */}
                     <button
                       type="button"

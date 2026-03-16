@@ -106,7 +106,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
         ) : null}
         {/* Fallback icon - always present but conditionally visible */}
         <div 
-          className={`absolute inset-0 flex items-center justify-content center ${
+          className={`absolute inset-0 items-center justify-center ${
             hasImage ? 'hidden' : 'flex'
           }`}
         >
