@@ -950,6 +950,7 @@ const Profile = () => {
   };
 
   const canAccessSettings = hasPermission('settings', 'read');
+  const canAccessGeneralSettings = ['manager', 'admin'].includes((user?.role || '').toLowerCase());
 
   // All panels clear the entire footer so every tab row stays visible and tappable.
   const totalFooterHeight = row1Height + row2Height;
@@ -1570,7 +1571,7 @@ const Profile = () => {
       )}
 
       {/* ── General Panel ─────────────────────────────────────────────────────── */}
-      {openAccordion === 'general' && canAccessSettings && (
+      {openAccordion === 'general' && canAccessGeneralSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
           <div style={{ flexGrow: 1 }} />
           <div style={{ flexShrink: 0, width: '100%' }}>
@@ -2101,7 +2102,7 @@ const Profile = () => {
         className="flex-shrink-0 bg-body profile-footer-nav ps-3"
         style={{ zIndex: 10 }}
       >
-        {/* Row 1 — Admin/Settings: Schedule, General, Database */}
+        {/* Row 1 — Admin/Settings: Schedule, Database */}
         {canAccessSettings && (
           <div ref={handleRow2Ref} className="pt-2 pb-0">
             {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
@@ -2111,7 +2112,6 @@ const Profile = () => {
                   <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                     {[
                       { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
-                      { id: 'general',  Icon: CogIcon,          title: 'General'  },
                       { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
                     ].map(({ id, Icon, title }) => (
                       <Button_Toolbar
@@ -2135,7 +2135,6 @@ const Profile = () => {
                 <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
                   {[
                     { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
-                    { id: 'general',  Icon: CogIcon,          title: 'General'  },
                     { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
@@ -2154,7 +2153,7 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Row 2 — Personal: Profile, Benefits, Wages, Settings */}
+        {/* Row 2 — Personal/Manager: Profile, Benefits, Wages, Settings, General */}
         <div ref={row1Ref} className="pt-2 pb-4">
           {/* Small/Medium screens: Grid layout with space reserved on right for floating menu */}
           <div className="d-lg-none">
@@ -2166,6 +2165,7 @@ const Profile = () => {
                     { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
                     { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
                     { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
+                    ...(canAccessGeneralSettings ? [{ id: 'general', Icon: CogIcon, title: 'General' }] : []),
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
@@ -2191,6 +2191,7 @@ const Profile = () => {
                   { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
                   { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
                   { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
+                  ...(canAccessGeneralSettings ? [{ id: 'general', Icon: CogIcon, title: 'General' }] : []),
                 ].map(({ id, Icon, title }) => (
                   <Button_Toolbar
                     key={id}
