@@ -235,21 +235,6 @@ async def startup_event():
         print("Standard templates seeded")
     except Exception as e:
         print(f"Warning: Could not seed standard templates: {e}")
-    # Auto-purge any [REGTEST] data left over from regression test runs
-    try:
-        try:
-            from backend.routers.regtest import cascade_delete_regtest_users
-        except ModuleNotFoundError:
-            from routers.regtest import cascade_delete_regtest_users  # type: ignore
-        session = next(get_session())
-        result = cascade_delete_regtest_users(session)
-        session.close()
-        if result["users_removed"]:
-            print(f"[REGTEST] auto-sweep: removed {result['users_removed']} test user(s) and {sum(result['deleted'].values())} linked row(s)")
-        else:
-            print("[REGTEST] auto-sweep: no test data found")
-    except Exception as e:
-        print(f"Warning: Could not auto-sweep regtest data: {e}")
     print("All routers loaded successfully")
 
 # ─── 7 ROUTER REGISTRATION ─────────────────────────────────────────────────────
