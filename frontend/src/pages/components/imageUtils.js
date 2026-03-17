@@ -21,6 +21,7 @@ export function getDisplayImageUrl(item) {
 export function getImageSrc(image) {
   if (!image) return null;
   if (image.image_url) return image.image_url;
-  if (image.file_path) return inventoryAPI.getImageFileUrl(image.id);
+  // has_file = true means bytes are stored in the DB (or legacy disk file); use the /file endpoint
+  if (image.has_file || image.file_path) return inventoryAPI.getImageFileUrl(image.id);
   return null;
 }

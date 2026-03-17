@@ -293,11 +293,13 @@ class Inventory(BaseModel, table=True):
 class InventoryImage(BaseModel, table=True):
     """Model for storing multiple images per inventory item"""
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
-    image_url: Optional[str] = Field(default=None)  # For URL-based images
-    file_path: Optional[str] = Field(default=None)  # For uploaded file images
-    file_name: Optional[str] = Field(default=None)  # Original filename
-    is_primary: bool = Field(default=False)  # Whether this is the primary image
-    sort_order: int = Field(default=0)  # For ordering images
+    image_url: Optional[str] = Field(default=None)       # For external URL-based images
+    file_path: Optional[str] = Field(default=None)        # Legacy: disk path (no longer used for new uploads)
+    file_name: Optional[str] = Field(default=None)        # Original filename
+    mime_type: Optional[str] = Field(default=None)        # MIME type of uploaded file (e.g. image/jpeg)
+    image_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))  # Binary stored in DB
+    is_primary: bool = Field(default=False)
+    sort_order: int = Field(default=0)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -848,6 +850,8 @@ class InventoryImageRead(SQLModel):
     image_url: Optional[str] = None
     file_path: Optional[str] = None
     file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    has_file: bool = False  # True when image bytes are stored in DB (use /file endpoint to load)
     is_primary: bool
     sort_order: int
     created_at: Optional[datetime] = None

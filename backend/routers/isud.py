@@ -44,7 +44,7 @@ from typing import Type, Dict, Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
@@ -193,7 +193,7 @@ def _serialize_record(record, table_name: str, session=None):
                 # Convert record to dict and add images
                 record_dict = record.model_dump() if hasattr(record, 'model_dump') else record.__dict__.copy()
                 record_dict['images'] = [
-                    InventoryImageRead.model_validate(img).model_dump(mode='json')
+                    _image_to_read(img).model_dump(mode='json')
                     for img in images
                 ]
 
@@ -865,6 +865,22 @@ async def delete_by_id(
 # ─── [13] INVENTORY IMAGE MANAGEMENT ENDPOINTS ────────────────────────────────
 # ===== INVENTORY IMAGE MANAGEMENT ENDPOINTS =====
 
+def _image_to_read(img: InventoryImage) -> InventoryImageRead:
+    """Build InventoryImageRead from an ORM instance, setting has_file correctly."""
+    return InventoryImageRead(
+        id=img.id,
+        inventory_id=img.inventory_id,
+        image_url=img.image_url,
+        file_path=img.file_path,
+        file_name=img.file_name,
+        mime_type=img.mime_type,
+        has_file=bool(img.image_data) or bool(img.file_path),
+        is_primary=img.is_primary,
+        sort_order=img.sort_order,
+        created_at=img.created_at,
+        updated_at=img.updated_at,
+    )
+
 @router.post("/inventory/{inventory_id}/images/url")
 async def add_inventory_image_url(
     inventory_id: UUID,
@@ -901,7 +917,7 @@ async def add_inventory_image_url(
     session.commit()
     session.refresh(image)
     
-    return InventoryImageRead.model_validate(image)
+    return _image_to_read(image)
 
 
 @router.post("/inventory/{inventory_id}/images/upload")
@@ -912,66 +928,47 @@ async def upload_inventory_image_file(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload an image file for an inventory item"""
-    # Verify inventory exists and belongs to user's company
+    """Upload an image file for an inventory item. Bytes are stored directly in the database."""
     inventory = session.get(Inventory, inventory_id)
     if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Inventory item not found")
-    
-    # Validate file type
+
     allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.")
-    
-    # Validate file size (max 5MB)
+
     max_size_bytes = 5 * 1024 * 1024  # 5MB
     content = await file.read()
     if len(content) > max_size_bytes:
         raise HTTPException(
-            status_code=400, 
-            detail=f"File size too large. Maximum allowed size is 5MB. Current file size: {len(content) / 1024 / 1024:.1f}MB"
+            status_code=400,
+            detail=f"File too large. Max 5MB. Current: {len(content) / 1024 / 1024:.1f}MB",
         )
-    
-    # Reset file pointer for reading again
-    await file.seek(0)
-    
-    # Generate unique filename
-    file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-    unique_filename = f"inventory_{inventory_id}_{uuid_module.uuid4().hex}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    # Save file
-    try:
-        with open(file_path, "wb") as f:
-            f.write(content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
-    
-    # Get current image count for sort order
+
     stmt = sql_select(InventoryImage).where(InventoryImage.inventory_id == inventory_id)
     existing_images = session.exec(stmt).all()
-    
-    # Create new image record
+
     image = InventoryImage(
         inventory_id=inventory_id,
-        file_path=file_path,
         file_name=file.filename,
+        mime_type=file.content_type,
+        image_data=content,          # Store bytes in the database — survives redeployments
+        file_path=None,              # No longer written to disk
         is_primary=is_primary or len(existing_images) == 0,
         sort_order=len(existing_images),
         company_id=inventory.company_id,
     )
-    
-    # If this is set as primary, unset others
+
     if image.is_primary:
         for existing_image in existing_images:
             existing_image.is_primary = False
             session.add(existing_image)
-    
+
     session.add(image)
     session.commit()
     session.refresh(image)
-    
-    return InventoryImageRead.model_validate(image)
+
+    return _image_to_read(image)
 
 
 @router.get("/inventory/{inventory_id}/images")
@@ -994,7 +991,7 @@ async def get_inventory_images(
     ).order_by(InventoryImage.sort_order)
     
     images = session.exec(stmt).all()
-    return [InventoryImageRead.model_validate(img) for img in images]
+    return [_image_to_read(img) for img in images]
 
 
 @router.put("/inventory/images/{image_id}")
@@ -1035,7 +1032,7 @@ async def update_inventory_image(
     session.commit()
     session.refresh(image)
     
-    return InventoryImageRead.model_validate(image)
+    return _image_to_read(image)
 
 
 @router.delete("/inventory/images/{image_id}")
@@ -1073,19 +1070,17 @@ async def serve_inventory_image_file(
     token: Optional[str] = None,
     session: Session = Depends(get_session),
 ):
-    """Serve an uploaded inventory image file.
+    """Serve an inventory image.
 
-    Accepts auth via Authorization: Bearer header (normal API calls) OR
-    via ?token=<jwt> query parameter so that <img src="..."> tags can load
-    uploaded images without a custom fetcher.
+    Reads bytes from the database (image_data column) so images persist across
+    redeployments. Falls back to disk (file_path) for legacy pre-migration records.
+    Accepts auth via Authorization: Bearer header OR ?token=<jwt> query param.
     """
-    # Resolve token from query param or Authorization header
     raw_token = token
     if not raw_token:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             raw_token = auth_header[7:]
-
     if not raw_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -1107,11 +1102,19 @@ async def serve_inventory_image_file(
     if token_company_id and inventory.company_id != token_company_id:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    if not image.file_path:
-        raise HTTPException(status_code=404, detail="No file associated with this image")
+    # Primary path: bytes stored in the database
+    if image.image_data:
+        media_type = image.mime_type or "image/jpeg"
+        return Response(
+            content=image.image_data,
+            media_type=media_type,
+            headers={"Cache-Control": "private, max-age=86400"},
+        )
 
-    path = _resolve_document_path(image.file_path, UPLOAD_DIR)
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="Image file not found on disk")
+    # Legacy fallback: file stored on disk (pre-migration uploads)
+    if image.file_path:
+        path = _resolve_document_path(image.file_path, UPLOAD_DIR)
+        if os.path.exists(path):
+            return FileResponse(path, media_type=image.mime_type or None, filename=image.file_name)
 
-    return FileResponse(path, media_type=None, filename=image.file_name)
+    raise HTTPException(status_code=404, detail="Image data not found")
