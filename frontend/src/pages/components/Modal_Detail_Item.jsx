@@ -161,7 +161,7 @@ function ProductionRelationsPanel({ productId }) {
             { key: 'assets',    label: 'Assets'    },
             { key: 'locations', label: 'Locations' },
           ].map(({ key, label }) => (
-            <button key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>{label}</button>
+            <button type="button" key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>{label}</button>
           ))}
         </div>
       </div>
@@ -188,7 +188,7 @@ function ProductionRelationsPanel({ productId }) {
                   title="Quantity consumed per batch"
                 />
                 <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>/ batch</span>
-                <button style={btnDanger} onClick={() => handleRemoveResource(r.id)} title="Remove">×</button>
+                <button type="button" style={btnDanger} onClick={() => handleRemoveResource(r.id)} title="Remove">×</button>
               </div>
             ))}
 
@@ -202,11 +202,11 @@ function ProductionRelationsPanel({ productId }) {
                 </select>
                 <input type="number" min="0.01" step="0.01" value={newResourceQty}
                   onChange={e => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-                <button style={btnPrimary} onClick={handleAddResource}>Add</button>
-                <button style={btnOutline} onClick={() => { setAddingResource(false); setNewResourceId(''); setNewResourceQty(1); }}>Cancel</button>
+                <button type="button" style={btnPrimary} onClick={handleAddResource}>Add</button>
+                <button type="button" style={btnOutline} onClick={() => { setAddingResource(false); setNewResourceId(''); setNewResourceQty(1); }}>Cancel</button>
               </div>
             ) : (
-              <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingResource(true)}>+ Add Resource</button>
+              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingResource(true)}>+ Add Resource</button>
             )}
           </>
         )}
@@ -229,7 +229,7 @@ function ProductionRelationsPanel({ productId }) {
                   onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })}
                   style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
                 <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>min</span>
-                <button style={btnDanger} onClick={() => handleRemoveAsset(a.id)} title="Remove">×</button>
+                <button type="button" style={btnDanger} onClick={() => handleRemoveAsset(a.id)} title="Remove">×</button>
               </div>
             ))}
 
@@ -245,11 +245,11 @@ function ProductionRelationsPanel({ productId }) {
                   style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <input type="number" min="0" value={newAssetDur} onChange={e => setNewAssetDur(e.target.value)}
                   style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
-                <button style={btnPrimary} onClick={handleAddAsset}>Add</button>
-                <button style={btnOutline} onClick={() => { setAddingAsset(false); setNewAssetId(''); setNewAssetBatch(1); setNewAssetDur(''); }}>Cancel</button>
+                <button type="button" style={btnPrimary} onClick={handleAddAsset}>Add</button>
+                <button type="button" style={btnOutline} onClick={() => { setAddingAsset(false); setNewAssetId(''); setNewAssetBatch(1); setNewAssetDur(''); }}>Cancel</button>
               </div>
             ) : (
-              <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingAsset(true)}>+ Add Asset</button>
+              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingAsset(true)}>+ Add Asset</button>
             )}
           </>
         )}
@@ -264,7 +264,7 @@ function ProductionRelationsPanel({ productId }) {
               <div key={l.id} style={rowStyle}>
                 <MapPinIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{invMap[l.location_id]?.name || l.location_id?.slice(0, 8)}</span>
-                <button style={btnDanger} onClick={() => handleRemoveLocation(l.id)} title="Remove">×</button>
+                <button type="button" style={btnDanger} onClick={() => handleRemoveLocation(l.id)} title="Remove">×</button>
               </div>
             ))}
 
@@ -276,11 +276,11 @@ function ProductionRelationsPanel({ productId }) {
                     <option key={i.id} value={i.id}>{i.name}</option>
                   ))}
                 </select>
-                <button style={btnPrimary} onClick={handleAddLocation}>Add</button>
-                <button style={btnOutline} onClick={() => { setAddingLocation(false); setNewLocationId(''); }}>Cancel</button>
+                <button type="button" style={btnPrimary} onClick={handleAddLocation}>Add</button>
+                <button type="button" style={btnOutline} onClick={() => { setAddingLocation(false); setNewLocationId(''); }}>Cancel</button>
               </div>
             ) : (
-              <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingLocation(true)}>+ Add Location</button>
+              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingLocation(true)}>+ Add Location</button>
             )}
           </>
         )}
@@ -405,7 +405,7 @@ function MixSetupPanel({ mixId }) {
                 style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
             </div>
           )}
-          <button style={s.btn} disabled={configSaving} onClick={handleSaveConfig}>
+          <button type="button" style={s.btn} disabled={configSaving} onClick={handleSaveConfig}>
             {configSaving ? 'Saving…' : config ? 'Update' : 'Save Config'}
           </button>
         </div>
@@ -423,7 +423,7 @@ function MixSetupPanel({ mixId }) {
             <input type="number" min="1" defaultValue={c.max_quantity ?? ''}
               onBlur={e => handleUpdateMax(c.id, e.target.value)}
               style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
-            <button style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">×</button>
+            <button type="button" style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">×</button>
           </div>
         ))}
         {adding ? (
@@ -436,11 +436,11 @@ function MixSetupPanel({ mixId }) {
             </select>
             <input type="number" min="1" value={newMaxQty} onChange={e => setNewMaxQty(e.target.value)}
               style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
-            <button style={s.btn} onClick={handleAddComponent}>Add</button>
-            <button style={s.out} onClick={() => { setAdding(false); setNewCompId(''); setNewMaxQty(''); }}>Cancel</button>
+            <button type="button" style={s.btn} onClick={handleAddComponent}>Add</button>
+            <button type="button" style={s.out} onClick={() => { setAdding(false); setNewCompId(''); setNewMaxQty(''); }}>Cancel</button>
           </div>
         ) : (
-          <button style={{ ...s.out, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Product</button>
+          <button type="button" style={{ ...s.out, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Product</button>
         )}
       </div>
     </div>
@@ -525,7 +525,7 @@ function BundleComponentsPanel({ bundleId }) {
               title="Quantity per bundle unit"
             />
             <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>× each</span>
-            <button style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">×</button>
+            <button type="button" style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">×</button>
           </div>
         ))}
         {adding ? (
@@ -538,11 +538,11 @@ function BundleComponentsPanel({ bundleId }) {
             </select>
             <input type="number" min="0.01" step="0.01" value={newQty}
               onChange={e => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-            <button style={btnPrimary} onClick={handleAdd}>Add</button>
-            <button style={btnOutline} onClick={() => { setAdding(false); setNewComponentId(''); setNewQty(1); }}>Cancel</button>
+            <button type="button" style={btnPrimary} onClick={handleAdd}>Add</button>
+            <button type="button" style={btnOutline} onClick={() => { setAdding(false); setNewComponentId(''); setNewQty(1); }}>Cancel</button>
           </div>
         ) : (
-          <button style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Component</button>
+          <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Component</button>
         )}
       </div>
     </div>

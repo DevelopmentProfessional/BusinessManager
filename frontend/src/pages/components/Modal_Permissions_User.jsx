@@ -173,6 +173,7 @@ export default function Modal_Permissions_User({
                             <TrashIcon style={{ width: 16, height: 16 }} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => onUpdatePermission(permission.id, !permission.granted)}
                             className={`btn btn-sm d-flex align-items-center justify-content-center ms-auto ${permission.granted ? 'btn-outline-warning' : 'btn-outline-success'}`}
                             style={{ width: '3rem', height: '3rem' }}
