@@ -33,6 +33,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-03-17 | GitHub Copilot | Fixed inventory image upload compatibility with legacy check constraints
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -958,7 +959,9 @@ async def upload_inventory_image_file(
         file_name=file.filename,
         mime_type=file.content_type,
         image_data=content,          # Store bytes in the database — survives redeployments
-        file_path=None,              # No longer written to disk
+        # Legacy DBs may still enforce check_image_source requiring file_path when image_url is null.
+        # Keep a non-null marker path for compatibility; actual bytes remain in image_data.
+        file_path=f"db://inventory-image/{uuid_module.uuid4()}",
         is_primary=is_primary or is_first,
         sort_order=existing_count,
         company_id=inventory.company_id,
