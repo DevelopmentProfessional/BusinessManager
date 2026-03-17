@@ -152,15 +152,10 @@ function ProductionRelationsPanel({ productId }) {
     <div className="mt-3" style={{ border: '1px solid #e5e7eb', borderRadius: 8 }}>
       {/* Header */}
       <div style={{ padding: '6px 10px 0', background: '#f9fafb', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <CogIcon style={{ width: 14, height: 14, color: '#6366f1' }} />
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Production Setup</span>
-        </div>
         <div style={{ display: 'flex' }}>
           {[
             { key: 'resources', label: 'Resources' },
             { key: 'assets',    label: 'Assets'    },
-            { key: 'locations', label: 'Locations' },
           ].map(({ key, label }) => (
             <button type="button" key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>{label}</button>
           ))}
@@ -255,36 +250,6 @@ function ProductionRelationsPanel({ productId }) {
           </>
         )}
 
-        {/* ── Locations tab ── */}
-        {activeTab === 'locations' && !loading && (
-          <>
-            {locations.length === 0 && !addingLocation && (
-              <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No production locations linked.</div>
-            )}
-            {locations.map(l => (
-              <div key={l.id} style={rowStyle}>
-                <MapPinIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>{invMap[l.location_id]?.name || l.location_id?.slice(0, 8)}</span>
-                <button type="button" style={btnDanger} onClick={() => handleRemoveLocation(l.id)} title="Remove">×</button>
-              </div>
-            ))}
-
-            {addingLocation ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-                <select value={newLocationId} onChange={e => setNewLocationId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
-                  <option value="">Select location…</option>
-                  {locationItems.filter(i => !locations.some(l => l.location_id === i.id)).map(i => (
-                    <option key={i.id} value={i.id}>{i.name}</option>
-                  ))}
-                </select>
-                <button type="button" style={btnPrimary} onClick={handleAddLocation}>Add</button>
-                <button type="button" style={btnOutline} onClick={() => { setAddingLocation(false); setNewLocationId(''); }}>Cancel</button>
-              </div>
-            ) : (
-              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingLocation(true)}>+ Add Location</button>
-            )}
-          </>
-        )}
       </div>
     </div>
   );

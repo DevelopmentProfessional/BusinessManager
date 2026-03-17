@@ -588,18 +588,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         </div>
       </div>
 
-      {/* ── Auto-save status ── */}
-      <div className="mt-3 d-flex align-items-center gap-2">
-        <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-          {saving
-            ? 'Auto-saving changes...'
-            : hasDirty
-              ? `Changes queued in ${Object.keys(dirty).length} feature(s)`
-              : lastSavedAt
-                ? 'All changes saved'
-                : 'Auto-save is on'}
-        </span>
-        {hasDirty && (
+      {hasDirty && (
+        <div className="mt-3">
           <button
             type="button"
             className="btn btn-outline-primary btn-sm"
@@ -608,8 +598,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           >
             Save now
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
