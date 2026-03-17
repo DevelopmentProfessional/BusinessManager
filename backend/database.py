@@ -719,6 +719,45 @@ def _ensure_inventory_category_column_if_needed():
         print(f"  Warning: Could not ensure inventory.category: {e}")
 
 
+def _ensure_inventory_image_db_storage_if_needed():
+    """Add image_data (bytea) and mime_type columns to inventory_image.
+
+    Before this migration images were written to the local filesystem (uploads/)
+    which is ephemeral on cloud deployments. Now bytes are stored in the database
+    so they survive redeployments indefinitely.
+    """
+    try:
+        with engine.begin() as conn:
+            if DATABASE_URL.startswith("sqlite"):
+                cols = [c[1] for c in conn.execute(text("PRAGMA table_info('inventory_image')")).fetchall()]
+                if "image_data" not in cols:
+                    conn.execute(text("ALTER TABLE inventory_image ADD COLUMN image_data BLOB"))
+                    print("  + Added inventory_image.image_data (SQLite BLOB)")
+                if "mime_type" not in cols:
+                    conn.execute(text("ALTER TABLE inventory_image ADD COLUMN mime_type VARCHAR"))
+                    print("  + Added inventory_image.mime_type")
+                return
+
+            # PostgreSQL
+            exists_data = conn.execute(text("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='inventory_image' AND column_name='image_data'
+            """)).fetchone()
+            if not exists_data:
+                conn.execute(text("ALTER TABLE inventory_image ADD COLUMN image_data BYTEA"))
+                print("  + Added inventory_image.image_data (BYTEA)")
+
+            exists_mime = conn.execute(text("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='inventory_image' AND column_name='mime_type'
+            """)).fetchone()
+            if not exists_mime:
+                conn.execute(text("ALTER TABLE inventory_image ADD COLUMN mime_type VARCHAR"))
+                print("  + Added inventory_image.mime_type")
+    except Exception as e:
+        print(f"  Warning: Could not add inventory_image storage columns: {e}")
+
+
 def _drop_descriptive_feature_name_unique_index_if_needed():
     """Drop the old single-column unique index on descriptive_feature.name.
 
@@ -794,6 +833,7 @@ def create_db_and_tables():
     _ensure_userrole_enum_values_if_needed()
     _ensure_inventory_sku_nullable_if_needed()
     _ensure_inventory_category_column_if_needed()
+    _ensure_inventory_image_db_storage_if_needed()
     _drop_descriptive_feature_name_unique_index_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
