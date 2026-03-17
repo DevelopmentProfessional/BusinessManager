@@ -121,11 +121,13 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [globalFeatures, setGlobalFeatures]   = useState([]);
   const [itemFeatures, setItemFeatures]       = useState([]);
   const [searchTerm, setSearchTerm]           = useState('');
+  const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
   const [newFeatureName, setNewFeatureName]   = useState('');
   const [newOptionInputs, setNewOptionInputs] = useState({}); // featureId → string
   const [newOptionQtyInputs, setNewOptionQtyInputs] = useState({}); // featureId → string qty
   const [dirty, setDirty]                     = useState({}); // featureId → bool
   const [saving, setSaving]                   = useState(false);
+  const [lastSavedAt, setLastSavedAt]         = useState(null);
   const [error, setError]                     = useState(null);
   const [openFeatures, setOpenFeatures]       = useState({}); // featureId → bool (default open)
 
@@ -205,11 +207,13 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   };
 
   // ── Save dirty features ──
-  const handleSave = async () => {
+  const persistFeatures = useCallback(async (featureIds) => {
+    if (!featureIds?.length) return;
     setSaving(true);
     setError(null);
     try {
-      const dirtyFeatures = itemFeatures.filter(f => dirty[f.feature_id]);
+      const idSet = new Set(featureIds.map(id => String(id)));
+      const dirtyFeatures = itemFeatures.filter(f => idSet.has(String(f.feature_id)));
       await Promise.all(
         dirtyFeatures.map(f =>
           inventoryFeaturesAPI.saveOptionData(inventoryId, f.feature_id, f.options.map(o => ({
@@ -220,23 +224,55 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           })))
         )
       );
-      setDirty({});
-      await reload();
+      setDirty(prev => {
+        const next = { ...prev };
+        featureIds.forEach(id => {
+          delete next[id];
+          delete next[String(id)];
+        });
+        return next;
+      });
+      setLastSavedAt(Date.now());
     } catch (e) {
       setError(e?.response?.data?.detail?.message ?? e?.response?.data?.detail ?? 'Save failed');
     } finally {
       setSaving(false);
     }
+  }, [inventoryId, itemFeatures]);
+
+  const handleSave = async () => {
+    await persistFeatures(Object.keys(dirty));
   };
+
+  useEffect(() => {
+    if (saving || Object.keys(dirty).length === 0) return;
+    const timer = setTimeout(() => {
+      persistFeatures(Object.keys(dirty));
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [dirty, itemFeatures, saving, persistFeatures]);
 
   // ── Add existing global feature to item ──
   const handleAddFeature = async (featureId) => {
     setError(null);
     try {
       await inventoryFeaturesAPI.addFeature(inventoryId, featureId);
+      setIsAddExistingOpen(false);
       await reload();
     } catch (e) {
       setError(e?.response?.data?.detail ?? 'Could not add feature');
+    }
+  };
+
+  const handleDeleteGlobalFeature = async (featureId, featureName) => {
+    if (!window.confirm(`Delete feature '${featureName}' from database?`)) return;
+    setError(null);
+    try {
+      await featuresAPI.delete(featureId);
+      await reload();
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      setError((detail && typeof detail === 'object' && detail.message) ? detail.message : (detail ?? 'Could not delete feature'));
     }
   };
 
@@ -476,19 +512,57 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
             style={{ fontSize: '0.78rem', maxWidth: 130 }}
             placeholder="Search features…"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={e => {
+              setSearchTerm(e.target.value);
+              if (!isAddExistingOpen) setIsAddExistingOpen(true);
+            }}
           />
-          <select
-            className="form-select form-select-sm"
-            style={{ fontSize: '0.78rem', maxWidth: 170 }}
-            value=""
-            onChange={e => { if (e.target.value) { handleAddFeature(e.target.value); e.target.value = ''; } }}
-          >
-            <option value="" disabled>+ Add existing…</option>
-            {addableFeatures.map(gf => (
-              <option key={gf.id} value={gf.id}>{gf.name}</option>
-            ))}
-          </select>
+          <div className="position-relative" style={{ minWidth: 190 }}>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center"
+              style={{ fontSize: '0.78rem' }}
+              onClick={() => setIsAddExistingOpen(prev => !prev)}
+            >
+              <span>+ Add existing…</span>
+              <span className="text-muted">▾</span>
+            </button>
+            {isAddExistingOpen && (
+              <div
+                className="position-absolute bg-white border rounded shadow-sm mt-1 w-100"
+                style={{ zIndex: 20, maxHeight: 220, overflowY: 'auto' }}
+              >
+                {addableFeatures.length === 0 ? (
+                  <div className="px-2 py-2 text-muted" style={{ fontSize: '0.75rem' }}>
+                    No matching features
+                  </div>
+                ) : addableFeatures.map(gf => (
+                  <div key={gf.id} className="d-flex align-items-center gap-1 px-1 py-1 border-bottom">
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-danger d-flex align-items-center"
+                      title={`Delete ${gf.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteGlobalFeature(gf.id, gf.name);
+                      }}
+                    >
+                      <TrashIcon style={{ width: 13, height: 13 }} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-start text-decoration-none text-body flex-grow-1"
+                      style={{ fontSize: '0.78rem' }}
+                      onClick={() => handleAddFeature(gf.id)}
+                      title={`Add ${gf.name}`}
+                    >
+                      {gf.name}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Create new global feature */}
@@ -514,22 +588,28 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         </div>
       </div>
 
-      {/* ── Save button ── */}
-      {hasDirty && (
-        <div className="mt-3">
+      {/* ── Auto-save status ── */}
+      <div className="mt-3 d-flex align-items-center gap-2">
+        <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+          {saving
+            ? 'Auto-saving changes...'
+            : hasDirty
+              ? `Changes queued in ${Object.keys(dirty).length} feature(s)`
+              : lastSavedAt
+                ? 'All changes saved'
+                : 'Auto-save is on'}
+        </span>
+        {hasDirty && (
           <button
             type="button"
-            className="btn btn-primary btn-sm"
+            className="btn btn-outline-primary btn-sm"
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? 'Saving…' : 'Save Feature Data'}
+            Save now
           </button>
-          <span className="text-muted ms-2" style={{ fontSize: '0.75rem' }}>
-            Unsaved changes in {Object.keys(dirty).length} feature(s)
-          </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
