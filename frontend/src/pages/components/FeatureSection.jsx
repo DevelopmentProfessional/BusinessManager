@@ -83,7 +83,6 @@ function FeatureTable({ feature, affectsPrice, onOptionChange }) {
                 className="form-control form-control-sm"
                 style={{ fontSize: '0.8rem' }}
                 value={opt.quantity}
-                disabled={!opt.is_enabled}
                 onChange={e =>
                   onOptionChange(feature.feature_id, opt.option_id, 'quantity', e.target.value)
                 }
@@ -124,6 +123,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [searchTerm, setSearchTerm]           = useState('');
   const [newFeatureName, setNewFeatureName]   = useState('');
   const [newOptionInputs, setNewOptionInputs] = useState({}); // featureId → string
+  const [newOptionQtyInputs, setNewOptionQtyInputs] = useState({}); // featureId → string qty
   const [dirty, setDirty]                     = useState({}); // featureId → bool
   const [saving, setSaving]                   = useState(false);
   const [error, setError]                     = useState(null);
@@ -147,7 +147,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   // ── Notify parent ──
   useEffect(() => {
-    onStockChange?.(calcTotalStock(itemFeatures));
+    onStockChange?.(itemFeatures.length > 0 ? calcTotalStock(itemFeatures) : null);
     onPriceRangeChange?.(calcPriceRange(itemFeatures));
   }, [itemFeatures]); // eslint-disable-line
 
@@ -170,9 +170,16 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     setItemFeatures(prev => prev.map(f =>
       f.feature_id !== featureId ? f : {
         ...f,
-        options: f.options.map(o =>
-          o.option_id !== optionId ? o : { ...o, [field]: value }
-        ),
+        options: f.options.map(o => {
+          if (o.option_id !== optionId) return o;
+          if (field !== 'quantity') return { ...o, [field]: value };
+          const nextQty = Math.max(0, parseInt(value, 10) || 0);
+          return {
+            ...o,
+            quantity: value,
+            is_enabled: nextQty > 0 ? true : o.is_enabled,
+          };
+        }),
       }
     ));
     setDirty(d => ({ ...d, [featureId]: true }));
@@ -263,11 +270,22 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   // ── Add new option to a global feature ──
   const handleAddOption = async (featureId) => {
     const name = (newOptionInputs[featureId] ?? '').trim();
+    const qty = Math.max(0, parseInt(newOptionQtyInputs[featureId], 10) || 0);
     if (!name) return;
     setError(null);
     try {
-      await featuresAPI.addOption(featureId, { name });
+      const createdRes = await featuresAPI.addOption(featureId, { name });
+      const created = createdRes?.data ?? createdRes;
+      if (created?.id) {
+        await inventoryFeaturesAPI.saveOptionData(inventoryId, featureId, [{
+          option_id: created.id,
+          is_enabled: qty > 0,
+          quantity: qty,
+          price: null,
+        }]);
+      }
       setNewOptionInputs(prev => ({ ...prev, [featureId]: '' }));
+      setNewOptionQtyInputs(prev => ({ ...prev, [featureId]: '' }));
       await reload();
     } catch (e) {
       setError(e?.response?.data?.detail ?? 'Could not add option');
@@ -420,6 +438,16 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                     placeholder="New option name…"
                     value={newOptionInputs[f.feature_id] ?? ''}
                     onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    className="form-control form-control-sm"
+                    style={{ fontSize: '0.78rem', maxWidth: 80 }}
+                    placeholder="Qty"
+                    value={newOptionQtyInputs[f.feature_id] ?? ''}
+                    onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
                   />
                   <button
