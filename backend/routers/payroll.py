@@ -57,8 +57,7 @@ def process_payment(
         PaySlip.pay_period_start == data.pay_period_start,
         PaySlip.status == "paid",
     )
-    if current_user.company_id:
-        dup_stmt = dup_stmt.where(PaySlip.company_id == current_user.company_id)
+    dup_stmt = dup_stmt.where(PaySlip.company_id == current_user.company_id)
     existing = session.exec(dup_stmt).first()
     if existing:
         raise HTTPException(
@@ -121,9 +120,7 @@ def get_employee_pay_slips(
     current_user: User = Depends(get_current_user),
 ):
     """Return all pay slips for a specific employee, newest first."""
-    stmt = select(PaySlip).where(PaySlip.employee_id == employee_id)
-    if current_user.company_id:
-        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    stmt = select(PaySlip).where(PaySlip.employee_id == employee_id, PaySlip.company_id == current_user.company_id)
     slips = session.exec(stmt.order_by(PaySlip.pay_period_start.desc())).all()
     return slips
 
@@ -134,9 +131,7 @@ def get_all_pay_slips(
     current_user: User = Depends(get_current_user),
 ):
     """Return all pay slips across all employees (admin use)."""
-    stmt = select(PaySlip)
-    if current_user.company_id:
-        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    stmt = select(PaySlip).where(PaySlip.company_id == current_user.company_id)
     slips = session.exec(stmt.order_by(PaySlip.pay_period_start.desc())).all()
     return slips
 
@@ -161,8 +156,7 @@ def check_payment_eligibility(
         PaySlip.pay_period_start == period_dt,
         PaySlip.status == "paid",
     )
-    if current_user.company_id:
-        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    stmt = stmt.where(PaySlip.company_id == current_user.company_id)
     existing = session.exec(stmt).first()
     return {
         "can_pay": existing is None,

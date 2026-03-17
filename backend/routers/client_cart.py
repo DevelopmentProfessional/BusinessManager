@@ -32,9 +32,7 @@ router = APIRouter()
 
 @router.get("/client-cart/{client_id}", response_model=list[ClientCartItemRead])
 def get_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
-    stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id)
-    if current_user.company_id:
-        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
+    stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id, ClientCartItem.company_id == current_user.company_id)
     items = session.exec(stmt).all()
     return items
 
@@ -49,9 +47,8 @@ def upsert_cart_item(
     stmt = select(ClientCartItem).where(
         ClientCartItem.client_id == client_id,
         ClientCartItem.cart_key == data.cart_key,
+        ClientCartItem.company_id == current_user.company_id,
     )
-    if current_user.company_id:
-        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
     existing = session.exec(stmt).first()
 
     if existing:
@@ -92,9 +89,8 @@ def remove_cart_item(
     stmt = select(ClientCartItem).where(
         ClientCartItem.client_id == client_id,
         ClientCartItem.cart_key == cart_key,
+        ClientCartItem.company_id == current_user.company_id,
     )
-    if current_user.company_id:
-        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
     item = session.exec(stmt).first()
     if not item:
         raise HTTPException(status_code=404, detail="Cart item not found")
@@ -109,9 +105,7 @@ def remove_cart_item(
 
 @router.delete("/client-cart/{client_id}")
 def clear_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
-    stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id)
-    if current_user.company_id:
-        stmt = stmt.where(ClientCartItem.company_id == current_user.company_id)
+    stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id, ClientCartItem.company_id == current_user.company_id)
     items = session.exec(stmt).all()
     for item in items:
         session.delete(item)

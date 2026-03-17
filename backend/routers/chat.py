@@ -63,8 +63,7 @@ def get_chat_history(
         .order_by(ChatMessage.created_at.asc())
         .limit(100)
     )
-    if current_user.company_id:
-        stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
+    stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
     messages = session.exec(stmt).all()
     return messages
 
@@ -120,8 +119,7 @@ def mark_as_read(
         ChatMessage.receiver_id == current_user.id,
         ChatMessage.is_read == False,
     )
-    if current_user.company_id:
-        stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
+    stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
     messages = session.exec(stmt).all()
     for msg in messages:
         msg.is_read = True
@@ -146,8 +144,7 @@ def get_unread_counts(
         ChatMessage.receiver_id == current_user.id,
         ChatMessage.is_read == False,
     )
-    if current_user.company_id:
-        stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
+    stmt = stmt.where(ChatMessage.company_id == current_user.company_id)
     messages = session.exec(stmt).all()
     counts: dict[str, int] = {}
     for msg in messages:

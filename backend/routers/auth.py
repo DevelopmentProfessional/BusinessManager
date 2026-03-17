@@ -515,9 +515,7 @@ def get_users(
             detail="Admin access required"
         )
     
-    stmt = select(User)
-    if current_user.company_id:
-        stmt = stmt.where(User.company_id == current_user.company_id)
+    stmt = select(User).where(User.company_id == current_user.company_id)
     users = session.exec(stmt).all()
     return [UserRead.from_orm(user) for user in users]
 
@@ -1206,9 +1204,7 @@ def get_roles(
             detail="Admin access required"
         )
 
-    stmt = select(Role)
-    if current_user.company_id:
-        stmt = stmt.where(Role.company_id == current_user.company_id)
+    stmt = select(Role).where(Role.company_id == current_user.company_id)
     roles = session.exec(stmt).all()
     return roles
 
@@ -1226,9 +1222,7 @@ def create_role(
         )
 
     # Check if role name already exists within this company
-    existing_stmt = select(Role).where(Role.name == role_data.name)
-    if current_user.company_id:
-        existing_stmt = existing_stmt.where(Role.company_id == current_user.company_id)
+    existing_stmt = select(Role).where(Role.name == role_data.name, Role.company_id == current_user.company_id)
     existing = session.exec(existing_stmt).first()
     if existing:
         raise HTTPException(
@@ -1314,9 +1308,7 @@ def update_role(
 
     if role_data.name is not None:
         # Check if name is taken by another role within this company
-        conflict_stmt = select(Role).where(Role.name == role_data.name, Role.id != role_uuid)
-        if current_user.company_id:
-            conflict_stmt = conflict_stmt.where(Role.company_id == current_user.company_id)
+        conflict_stmt = select(Role).where(Role.name == role_data.name, Role.id != role_uuid, Role.company_id == current_user.company_id)
         existing = session.exec(conflict_stmt).first()
         if existing:
             raise HTTPException(
