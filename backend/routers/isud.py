@@ -874,7 +874,7 @@ def _image_to_read(img: InventoryImage) -> InventoryImageRead:
         file_path=img.file_path,
         file_name=img.file_name,
         mime_type=img.mime_type,
-        has_file=bool(img.image_data) or bool(img.file_path),
+        has_file=(img.image_data is not None) or bool(img.file_path),
         is_primary=img.is_primary,
         sort_order=img.sort_order,
         created_at=img.created_at,
@@ -894,24 +894,25 @@ async def add_inventory_image_url(
     if not inventory or (current_user.company_id and inventory.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Inventory item not found")
     
-    # Get current image count to set sort order
-    stmt = sql_select(InventoryImage).where(InventoryImage.inventory_id == inventory_id)
-    existing_images = session.exec(stmt).all()
-    
-    # Create new image record
+    from sqlalchemy import func as sa_func, update as sa_update
+    existing_count = session.exec(
+        sql_select(sa_func.count()).select_from(InventoryImage).where(InventoryImage.inventory_id == inventory_id)
+    ).one()
+
     image = InventoryImage(
         inventory_id=inventory_id,
         image_url=image_data.get("image_url"),
-        is_primary=image_data.get("is_primary", len(existing_images) == 0),  # First image is primary
-        sort_order=image_data.get("sort_order", len(existing_images)),
+        is_primary=image_data.get("is_primary", existing_count == 0),
+        sort_order=image_data.get("sort_order", existing_count),
         company_id=inventory.company_id,
     )
-    
-    # If this is set as primary, unset others
+
     if image.is_primary:
-        for existing_image in existing_images:
-            existing_image.is_primary = False
-            session.add(existing_image)
+        session.execute(
+            sa_update(InventoryImage)
+            .where(InventoryImage.inventory_id == inventory_id)
+            .values(is_primary=False)
+        )
     
     session.add(image)
     session.commit()
@@ -945,8 +946,12 @@ async def upload_inventory_image_file(
             detail=f"File too large. Max 5MB. Current: {len(content) / 1024 / 1024:.1f}MB",
         )
 
-    stmt = sql_select(InventoryImage).where(InventoryImage.inventory_id == inventory_id)
-    existing_images = session.exec(stmt).all()
+    # COUNT only — avoids loading binary blobs of existing images into memory
+    from sqlalchemy import func as sa_func
+    existing_count = session.exec(
+        sql_select(sa_func.count()).select_from(InventoryImage).where(InventoryImage.inventory_id == inventory_id)
+    ).one()
+    is_first = existing_count == 0
 
     image = InventoryImage(
         inventory_id=inventory_id,
@@ -954,15 +959,19 @@ async def upload_inventory_image_file(
         mime_type=file.content_type,
         image_data=content,          # Store bytes in the database — survives redeployments
         file_path=None,              # No longer written to disk
-        is_primary=is_primary or len(existing_images) == 0,
-        sort_order=len(existing_images),
+        is_primary=is_primary or is_first,
+        sort_order=existing_count,
         company_id=inventory.company_id,
     )
 
     if image.is_primary:
-        for existing_image in existing_images:
-            existing_image.is_primary = False
-            session.add(existing_image)
+        # Bulk-unset without loading binary blobs
+        from sqlalchemy import update as sa_update
+        session.execute(
+            sa_update(InventoryImage)
+            .where(InventoryImage.inventory_id == inventory_id)
+            .values(is_primary=False)
+        )
 
     session.add(image)
     session.commit()
@@ -1103,10 +1112,11 @@ async def serve_inventory_image_file(
         raise HTTPException(status_code=404, detail="Image not found")
 
     # Primary path: bytes stored in the database
-    if image.image_data:
+    # Cast to bytes explicitly — psycopg2 may return memoryview for BYTEA columns
+    if image.image_data is not None:
         media_type = image.mime_type or "image/jpeg"
         return Response(
-            content=image.image_data,
+            content=bytes(image.image_data),
             media_type=media_type,
             headers={"Cache-Control": "private, max-age=86400"},
         )

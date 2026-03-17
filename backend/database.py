@@ -720,8 +720,9 @@ def _ensure_inventory_category_column_if_needed():
 
 
 def _ensure_inventory_image_db_storage_if_needed():
-    """Add image_data (bytea) and mime_type columns to inventory_image.
+    """Add image_data (bytea) and mime_type columns to inventoryimage.
 
+    SQLModel auto-names the table 'inventoryimage' (no underscore) from the class name.
     Before this migration images were written to the local filesystem (uploads/)
     which is ephemeral on cloud deployments. Now bytes are stored in the database
     so they survive redeployments indefinitely.
@@ -729,33 +730,33 @@ def _ensure_inventory_image_db_storage_if_needed():
     try:
         with engine.begin() as conn:
             if DATABASE_URL.startswith("sqlite"):
-                cols = [c[1] for c in conn.execute(text("PRAGMA table_info('inventory_image')")).fetchall()]
+                cols = [c[1] for c in conn.execute(text("PRAGMA table_info('inventoryimage')")).fetchall()]
                 if "image_data" not in cols:
-                    conn.execute(text("ALTER TABLE inventory_image ADD COLUMN image_data BLOB"))
-                    print("  + Added inventory_image.image_data (SQLite BLOB)")
+                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN image_data BLOB"))
+                    print("  + Added inventoryimage.image_data (SQLite BLOB)")
                 if "mime_type" not in cols:
-                    conn.execute(text("ALTER TABLE inventory_image ADD COLUMN mime_type VARCHAR"))
-                    print("  + Added inventory_image.mime_type")
+                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
+                    print("  + Added inventoryimage.mime_type")
                 return
 
-            # PostgreSQL
+            # PostgreSQL — table is 'inventoryimage' (SQLModel auto-name, no underscore)
             exists_data = conn.execute(text("""
                 SELECT 1 FROM information_schema.columns
-                WHERE table_schema='public' AND table_name='inventory_image' AND column_name='image_data'
+                WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='image_data'
             """)).fetchone()
             if not exists_data:
-                conn.execute(text("ALTER TABLE inventory_image ADD COLUMN image_data BYTEA"))
-                print("  + Added inventory_image.image_data (BYTEA)")
+                conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN image_data BYTEA"))
+                print("  + Added inventoryimage.image_data (BYTEA)")
 
             exists_mime = conn.execute(text("""
                 SELECT 1 FROM information_schema.columns
-                WHERE table_schema='public' AND table_name='inventory_image' AND column_name='mime_type'
+                WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='mime_type'
             """)).fetchone()
             if not exists_mime:
-                conn.execute(text("ALTER TABLE inventory_image ADD COLUMN mime_type VARCHAR"))
-                print("  + Added inventory_image.mime_type")
+                conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
+                print("  + Added inventoryimage.mime_type")
     except Exception as e:
-        print(f"  Warning: Could not add inventory_image storage columns: {e}")
+        print(f"  Warning: Could not add inventoryimage storage columns: {e}")
 
 
 def _drop_descriptive_feature_name_unique_index_if_needed():
