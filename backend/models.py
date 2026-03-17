@@ -325,7 +325,7 @@ class DescriptiveFeature(BaseModel, table=True):
     __table_args__ = (
         UniqueConstraint("company_id", "name", name="uq_descriptive_feature_company_name"),
     )
-    name: str = Field(index=True)
+    name: str  # No solo index — the composite unique constraint (company_id, name) covers lookups
     company_id: Optional[str] = Field(default=None, index=True)
 
 
