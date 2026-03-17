@@ -48,11 +48,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart, production
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart, production, assets
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.regtest", "backend.routers.features", "backend.routers.client_cart", "backend.routers.production"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart, production  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.regtest", "backend.routers.features", "backend.routers.client_cart", "backend.routers.production", "backend.routers.assets"}:
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart, production, assets  # type: ignore
     else:
         raise
 
@@ -268,6 +268,7 @@ app.include_router(regtest.router, prefix="/api/v1/regtest", tags=["regtest"])
 app.include_router(features.router, prefix="/api/v1", tags=["features"])
 app.include_router(client_cart.router, prefix="/api/v1", tags=["client-cart"])
 app.include_router(production.router, prefix="/api/v1", tags=["production"])
+app.include_router(assets.router, prefix="/api/v1", tags=["assets"])
 
 # ─── 8 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
 # Document file operations only: upload (create record + file) and download (serve file).

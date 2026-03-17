@@ -45,6 +45,7 @@ import { getImageSrc } from './imageUtils';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
 import FeatureSection from './FeatureSection';
+import AssetUnitsPanel from './AssetUnitsPanel';
 
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode
@@ -584,6 +585,7 @@ export default function Modal_Detail_Item({
     name: '',
     sku: '',
     price: 0,
+    cost: '',
     description: '',
     quantity: 0,
     min_stock_level: 10,
@@ -599,12 +601,49 @@ export default function Modal_Detail_Item({
   const isResource = upperType === 'RESOURCE';
   const isBundle = upperType === 'BUNDLE';
   const isMix = upperType === 'MIX';
-  const hasLegacyImage = formData.image_url;
   const hasImages = images.length > 0;
   const currentImage = hasImages ? images[currentImageIndex] : null;
-  const displayImage = currentImage ? getImageSrc(currentImage) : (hasLegacyImage ? formData.image_url : null);
+  const displayImage = currentImage ? getImageSrc(currentImage) : null;
   const inCart = cartQuantity > 0;
   const isSalesMode = mode === 'sales';
+
+  const loadAvailableLocations = useCallback(async () => {
+    try {
+      const [inventoryRes, distinctRes] = await Promise.all([
+        inventoryAPI.getAll(),
+        inventoryAPI.getLocations(),
+      ]);
+      const inventoryRows = inventoryRes?.data ?? inventoryRes ?? [];
+      const rawDistinct = distinctRes?.data;
+      const distinctRows = Array.isArray(rawDistinct)
+        ? rawDistinct
+        : Array.isArray(rawDistinct?.locations)
+          ? rawDistinct.locations
+          : [];
+
+      const all = new Set(cacheService.getLocations());
+
+      distinctRows.forEach((loc) => {
+        const value = String(loc || '').trim();
+        if (value) all.add(value);
+      });
+
+      if (Array.isArray(inventoryRows)) {
+        inventoryRows.forEach((row) => {
+          const rowLocation = String(row?.location || '').trim();
+          if (rowLocation) all.add(rowLocation);
+          if (String(row?.type || '').toUpperCase() === 'LOCATION') {
+            const locationName = String(row?.name || '').trim();
+            if (locationName) all.add(locationName);
+          }
+        });
+      }
+
+      setAvailableLocations([...all].sort((a, b) => a.localeCompare(b)));
+    } catch {
+      setAvailableLocations(cacheService.getLocations());
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen && item) {
@@ -612,6 +651,7 @@ export default function Modal_Detail_Item({
         name: item.name || '',
         sku: item.sku || '',
         price: item.price || 0,
+        cost: item.cost ?? '',
         description: item.description || '',
         quantity: item.quantity || 0,
         min_stock_level: item.min_stock_level || 10,
@@ -643,13 +683,15 @@ export default function Modal_Detail_Item({
         }).catch(() => {});
       }
 
-      // Load images for this inventory item
+      // Seed images immediately from already-fetched item data, then refresh async
+      setImages(Array.isArray(item.images) ? item.images : []);
+      setCurrentImageIndex(0);
       loadImages(item.id);
 
-      // Load available locations from cache (no API call)
-      setAvailableLocations(cacheService.getLocations());
+      // Load latest available locations from inventory + distinct location endpoint
+      loadAvailableLocations();
     }
-  }, [isOpen, item?.id, cartQuantity, isSalesMode]);
+  }, [isOpen, item?.id, cartQuantity, isSalesMode, loadAvailableLocations]);
 
   // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
   const loadImages = async (inventoryId) => {
@@ -792,6 +834,7 @@ export default function Modal_Detail_Item({
       sku: formData.sku,
       // When features manage price, preserve the existing fixed price (don't override with range)
       price: parseFloat(formData.price) || 0,
+      cost: formData.cost !== '' && formData.cost != null ? parseFloat(formData.cost) : null,
       description: formData.description,
       // When features manage stock, use the feature-computed total
       quantity: featureStock != null ? featureStock : parseInt(formData.quantity) || 0,
@@ -875,17 +918,7 @@ export default function Modal_Detail_Item({
         </>
       )}
 
-      {hasLegacyImage && !hasImages && (
-        <div className="position-absolute bottom-0 start-0 bg-warning bg-opacity-75 text-dark px-2 py-1" style={{ fontSize: '0.65rem', borderTopRightRadius: '4px' }}>
-          Legacy
-        </div>
-      )}
 
-      {currentImage && currentImage.is_primary && (
-        <div className="position-absolute top-0 start-0 bg-primary text-white px-2 py-1" style={{ fontSize: '0.65rem', borderBottomRightRadius: '4px' }}>
-          Primary
-        </div>
-      )}
     </div>
   );
 
@@ -1219,6 +1252,26 @@ export default function Modal_Detail_Item({
               )}
             </div>
 
+            {/* Cost field — ASSET type only */}
+            {isAsset && (
+              <div className="mb-2">
+                <div className="form-floating">
+                  <input
+                    type="number"
+                    id="detail_cost"
+                    name="cost"
+                    value={formData.cost}
+                    onChange={handleChange}
+                    className="form-control form-control-sm"
+                    placeholder="Cost"
+                    step="0.01"
+                    min="0"
+                  />
+                  <label htmlFor="detail_cost">Cost (purchase / rental)</label>
+                </div>
+              </div>
+            )}
+
                   </>
                 ) : (
                   <div className="d-flex align-items-center gap-2 text-success">
@@ -1502,13 +1555,18 @@ export default function Modal_Detail_Item({
 
           </form>
 
-          {/* Descriptive Features — PRODUCT and ITEM types only, shown after item is saved */}
-          {item?.id && !isResource && !isAsset && !isLocation && !isService && (
+          {/* Descriptive Features — most types, shown after item is saved */}
+          {item?.id && !isResource && !isLocation && !isService && (
             <FeatureSection
               inventoryId={item.id}
               onStockChange={setFeatureStock}
               onPriceRangeChange={setFeaturesPriceRange}
             />
+          )}
+
+          {/* Asset Unit Management — ASSET type only */}
+          {item?.id && isAsset && (
+            <AssetUnitsPanel assetId={item.id} />
           )}
 
           {/* Production Setup — PRODUCT type only */}

@@ -56,6 +56,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     name: '',
     sku: initialSku || '',
     price: 0,
+    cost: '',
     description: '',
     type: 'PRODUCT',
     image_url: '',
@@ -114,6 +115,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         name: item.name || '',
         sku: item.sku || initialSku || '',
         price: item.price || 0,
+        cost: item.cost ?? '',
         description: item.description || '',
         type: (typeof item.type === 'string'
           ? (['PRODUCT','BUNDLE','MIX','RESOURCE','ASSET','LOCATION','ITEM'].includes(item.type.toUpperCase())
@@ -133,7 +135,46 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   }, [item, initialSku]);
 
   useEffect(() => {
-    setAvailableLocations(cacheService.getLocations());
+    const loadAvailableLocations = async () => {
+      try {
+        const [inventoryRes, distinctRes] = await Promise.all([
+          inventoryAPI.getAll(),
+          inventoryAPI.getLocations(),
+        ]);
+        const inventoryRows = inventoryRes?.data ?? inventoryRes ?? [];
+        const rawDistinct = distinctRes?.data;
+        const distinctRows = Array.isArray(rawDistinct)
+          ? rawDistinct
+          : Array.isArray(rawDistinct?.locations)
+            ? rawDistinct.locations
+            : [];
+
+        const all = new Set(cacheService.getLocations());
+
+        distinctRows.forEach((loc) => {
+          const value = String(loc || '').trim();
+          if (value) all.add(value);
+        });
+
+        if (Array.isArray(inventoryRows)) {
+          inventoryRows.forEach((row) => {
+            const rowLocation = String(row?.location || '').trim();
+            if (rowLocation) all.add(rowLocation);
+            if (String(row?.type || '').toUpperCase() === 'LOCATION') {
+              const locationName = String(row?.name || '').trim();
+              if (locationName) all.add(locationName);
+            }
+          });
+        }
+
+        setAvailableLocations([...all].sort((a, b) => a.localeCompare(b)));
+      } catch {
+        setAvailableLocations(cacheService.getLocations());
+      }
+    };
+
+    loadAvailableLocations();
+
     servicesAPI.getAll().then(res => {
       const data = res?.data ?? res;
       if (Array.isArray(data)) setAvailableServices(data);
@@ -224,6 +265,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       alert('Please enter a valid non-negative price.');
       return;
     }
+    const cost = formData.cost !== '' && formData.cost != null ? parseFloat(formData.cost) : null;
     const type = typeof formData.type === 'string' ? formData.type.toUpperCase() : 'PRODUCT';
     const description = (formData.description || '').trim();
     const image_url = addImageMode === 'url' || !pendingPhotoUrl ? (formData.image_url || '').trim() : '';
@@ -232,6 +274,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       name,
       sku,
       price,
+      cost: cost ?? undefined,
       description: description || undefined,
       type,
       image_url: image_url || undefined,
@@ -490,6 +533,28 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               </div>
             </div>
           </div>
+
+          {/* Cost — ASSET type only */}
+          {isAsset && (
+            <div className="mb-2">
+              <div className="input-group">
+                <div className="form-floating">
+                  <input
+                    type="number"
+                    id="cost"
+                    name="cost"
+                    value={formData.cost}
+                    onChange={handleChange}
+                    className="form-control form-control-sm"
+                    placeholder="Cost"
+                    step="0.01"
+                    min="0"
+                  />
+                  <label htmlFor="cost">Cost (purchase / rental)</label>
+                </div>
+              </div>
+            </div>
+          )}
 
                 </>
               ) : (
