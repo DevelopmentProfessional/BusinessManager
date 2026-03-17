@@ -38,7 +38,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI } from '../../services/api';
+import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from '../../services/api';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
@@ -591,8 +591,10 @@ export default function Modal_Detail_Item({
     min_stock_level: 10,
     location: '',
     image_url: '',
-    type: 'PRODUCT'
+    type: 'PRODUCT',
+    supplier_id: ''
   });
+  const [availableSuppliers, setAvailableSuppliers] = useState([]);
 
   const upperType = (itemType || item?.type || 'product').toUpperCase();
   const isService = upperType === 'SERVICE';
@@ -657,7 +659,8 @@ export default function Modal_Detail_Item({
         min_stock_level: item.min_stock_level || 10,
         location: item.location || '',
         image_url: item.image_url || '',
-        type: item.type || 'PRODUCT'
+        type: item.type || 'PRODUCT',
+        supplier_id: item.supplier_id || ''
       });
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
@@ -690,6 +693,12 @@ export default function Modal_Detail_Item({
 
       // Load latest available locations from inventory + distinct location endpoint
       loadAvailableLocations();
+
+      // Load suppliers for dropdown
+      suppliersAPI.getAll().then(res => {
+        const data = res?.data ?? res;
+        setAvailableSuppliers(Array.isArray(data) ? data : []);
+      }).catch(() => {});
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode, loadAvailableLocations]);
 
@@ -841,7 +850,8 @@ export default function Modal_Detail_Item({
       min_stock_level: parseInt(formData.min_stock_level) || 10,
       location: formData.location,
       image_url: formData.image_url,
-      type: formData.type
+      type: formData.type,
+      supplier_id: formData.supplier_id || null
     });
   };
 
@@ -1523,16 +1533,20 @@ export default function Modal_Detail_Item({
               <label htmlFor="detail_location">Location</label>
             </div>
 
-            {/* Supplier (read-only display) */}
+            {/* Supplier dropdown */}
             <div className="form-floating mb-2">
-              <input
-                type="text"
+              <select
                 id="detail_supplier"
-                readOnly
-                value={item?.supplier_name || '— None —'}
-                className="form-control form-control-sm bg-transparent border-0 text-muted"
-                placeholder="Supplier"
-              />
+                name="supplier_id"
+                value={formData.supplier_id}
+                onChange={handleChange}
+                className="form-select form-select-sm"
+              >
+                <option value="">— None —</option>
+                {availableSuppliers.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
               <label htmlFor="detail_supplier">Supplier</label>
             </div>
 
