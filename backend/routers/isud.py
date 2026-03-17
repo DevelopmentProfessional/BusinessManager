@@ -831,6 +831,14 @@ async def delete_by_id(
         if blob:
             session.delete(blob)
 
+    # For inventory deletion, delete all associated images first to avoid FK violations
+    if table_name.lower() in ("inventory",):
+        images = session.exec(
+            sql_select(InventoryImage).where(InventoryImage.inventory_id == record_id)
+        ).all()
+        for img in images:
+            session.delete(img)
+
     # For user deletion, cascade-remove dependent records first to avoid FK violations
     if table_name.lower() in ("user", "users"):
         user_id = record.id

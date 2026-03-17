@@ -938,6 +938,14 @@ export const reportsAPI = {
  * Components that need isud data should import isudAPI and call it directly
  * so they work independently on any page (no dependency on parent/page loading store).
  */
+export const assetUnitsAPI = {
+  list:         (invId)            => api.get(`/inventory/${invId}/asset-units`),
+  add:          (invId, data)      => api.post(`/inventory/${invId}/asset-units`, data),
+  update:       (invId, uid, data) => api.put(`/inventory/${invId}/asset-units/${uid}`, data),
+  remove:       (invId, uid)       => api.delete(`/inventory/${invId}/asset-units/${uid}`),
+  availability: (invId, params)    => api.get(`/inventory/${invId}/asset-units/availability`, { params }),
+};
+
 export const isudAPI = {
   clients: clientsAPI,
   inventory: inventoryAPI,

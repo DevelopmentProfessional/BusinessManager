@@ -283,6 +283,8 @@ class Inventory(BaseModel, table=True):
     # Pricing mode for bundles/mixes: "fixed" (use price field) or "percentage" (% of components)
     price_type: Optional[str] = Field(default="fixed")
     price_percentage: Optional[float] = Field(default=None)
+    # Asset cost tracking (purchase/acquisition cost per unit, for future cost analysis)
+    cost: Optional[float] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -304,6 +306,21 @@ class InventoryImage(BaseModel, table=True):
 
     # Relationships
     inventory_item: Inventory = Relationship(back_populates="images")
+
+
+# ─── 6c ASSET UNIT MODEL ───────────────────────────────────────────────────────
+
+ASSET_UNIT_STATES = {"available", "in_use", "maintenance", "arriving_soon"}
+
+class AssetUnit(BaseModel, table=True):
+    """Tracks one individual physical unit of an ASSET inventory item."""
+    __tablename__ = "asset_unit"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    label: Optional[str] = Field(default=None)          # e.g. "Unit #3", "SN-9921"
+    state: str = Field(default="available", index=True)  # available | in_use | maintenance | arriving_soon
+    schedule_id: Optional[UUID] = Field(default=None)    # set when state=in_use and linked to appt
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 6b SUPPLIER MODEL ─────────────────────────────────────────────────────────
@@ -826,6 +843,7 @@ class InventoryRead(SQLModel):
     location: Optional[str] = None
     price_type: Optional[str] = "fixed"
     price_percentage: Optional[float] = None
+    cost: Optional[float] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     images: List["InventoryImageRead"] = []
@@ -1898,6 +1916,33 @@ class DiscountRuleRead(SQLModel):
     is_active: bool
     created_at: Optional[datetime] = None
     model_config = {"from_attributes": True}
+
+
+# ─── AssetUnit Schemas ───────────────────────────────────────────────────────
+
+class AssetUnitRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    label: Optional[str] = None
+    state: str
+    schedule_id: Optional[UUID] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class AssetUnitCreate(SQLModel):
+    label: Optional[str] = None
+    state: str = "available"
+    notes: Optional[str] = None
+
+
+class AssetUnitUpdate(SQLModel):
+    label: Optional[str] = None
+    state: Optional[str] = None
+    schedule_id: Optional[UUID] = None
+    notes: Optional[str] = None
 
 
 # Document Template model
