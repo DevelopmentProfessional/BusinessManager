@@ -27,14 +27,14 @@ from pydantic import BaseModel
 try:
     from backend.database import get_session
     from backend.models import (
-        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, UserRole
+        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, Company, UserRole
     )
     from backend.routers.auth import get_current_user
     from backend.seed_data import seed_demo_data
 except ModuleNotFoundError:
     from database import get_session
     from models import (
-        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, UserRole
+        AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, Company, UserRole
     )
     from routers.auth import get_current_user
     from seed_data import seed_demo_data
@@ -48,6 +48,53 @@ class SeedRequest(BaseModel):
 
 # ─── 1 SETTINGS SINGLETON HELPER ───────────────────────────────────────────────
 
+def get_company(session: Session, company_id: str = "") -> Company | None:
+    """Return the company row for the active tenant when available."""
+    if not company_id:
+        return None
+
+    return session.exec(
+        select(Company).where(Company.company_id == company_id)
+    ).first()
+
+
+def sync_settings_from_company(settings: AppSettings, company: Company | None) -> bool:
+    """Copy canonical company metadata into settings when settings are still blank."""
+    if not company:
+        return False
+
+    changed = False
+    if not (settings.company_name or "").strip() and (company.name or "").strip():
+        settings.company_name = company.name.strip()
+        changed = True
+
+    return changed
+
+
+def upsert_company_from_settings(session: Session, company_id: str, settings: AppSettings) -> None:
+    """Keep the company registry aligned with the settings company name."""
+    if not company_id:
+        return
+
+    company_name = (settings.company_name or "").strip()
+    if not company_name:
+        return
+
+    company = get_company(session, company_id)
+    if company:
+        if (company.name or "").strip() != company_name:
+            company.name = company_name
+            company.updated_at = datetime.utcnow()
+        return
+
+    session.add(
+        Company(
+            company_id=company_id,
+            name=company_name,
+            is_active=True,
+        )
+    )
+
 def get_or_create_settings(session: Session, company_id: str = "") -> AppSettings:
     """Get existing settings for the company, or create defaults if none exist."""
     # Look up settings by company_id
@@ -55,11 +102,14 @@ def get_or_create_settings(session: Session, company_id: str = "") -> AppSetting
     if company_id:
         stmt = stmt.where(AppSettings.company_id == company_id)
     settings = session.exec(stmt).first()
+    company = get_company(session, company_id)
+
     if not settings:
         settings = AppSettings(
             start_of_day="06:00",
             end_of_day="21:00",
             attendance_check_in_required=True,
+            company_name=(company.name.strip() if company and (company.name or "").strip() else None),
             company_id=company_id or None,
         )
         session.add(settings)
@@ -69,6 +119,15 @@ def get_or_create_settings(session: Session, company_id: str = "") -> AppSetting
         except Exception as e:
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Failed to create default settings: {str(e)}")
+    elif sync_settings_from_company(settings, company):
+        settings.updated_at = datetime.utcnow()
+        try:
+            session.commit()
+            session.refresh(settings)
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to sync company settings: {str(e)}")
+
     return settings
 
 
@@ -99,6 +158,7 @@ def update_schedule_settings(
         setattr(settings, field, value)
 
     settings.updated_at = datetime.utcnow()
+    upsert_company_from_settings(session, current_user.company_id or "", settings)
     try:
         session.commit()
         session.refresh(settings)
