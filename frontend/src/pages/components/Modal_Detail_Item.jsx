@@ -854,6 +854,7 @@ export default function Modal_Detail_Item({
       {hasImages && images.length > 1 && (
         <>
           <button
+            type="button"
             onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
             className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1"
             style={{ width: '28px', height: '28px', padding: 0 }}
@@ -861,6 +862,7 @@ export default function Modal_Detail_Item({
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
           <button
+            type="button"
             onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
             className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1"
             style={{ width: '28px', height: '28px', padding: 0 }}
@@ -929,6 +931,7 @@ export default function Modal_Detail_Item({
           {hasImages && images.length > 1 && (
             <>
               <button
+                type="button"
                 onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
                 className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2"
                 style={{ width: '32px', height: '32px' }}
@@ -936,6 +939,7 @@ export default function Modal_Detail_Item({
                 <ChevronLeftIcon className="h-4 w-4" />
               </button>
               <button
+                type="button"
                 onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
                 className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2"
                 style={{ width: '32px', height: '32px' }}
