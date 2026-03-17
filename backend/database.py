@@ -719,6 +719,34 @@ def _ensure_inventory_category_column_if_needed():
         print(f"  Warning: Could not ensure inventory.category: {e}")
 
 
+def _drop_descriptive_feature_name_unique_index_if_needed():
+    """Drop the old single-column unique index on descriptive_feature.name.
+
+    Before multi-tenancy, this index was UNIQUE which prevents two companies from
+    having a feature with the same name (e.g. both having 'Size'). The composite
+    unique constraint uq_descriptive_feature_company_name(company_id, name) is the
+    correct constraint now.
+    """
+    try:
+        with engine.begin() as conn:
+            if DATABASE_URL.startswith("sqlite"):
+                conn.execute(text("DROP INDEX IF EXISTS ix_descriptive_feature_name"))
+                print("  + Dropped legacy unique index ix_descriptive_feature_name (SQLite)")
+                return
+            # PostgreSQL: only drop if the index actually exists
+            exists = conn.execute(text("""
+                SELECT 1 FROM pg_indexes
+                WHERE schemaname = 'public'
+                  AND tablename = 'descriptive_feature'
+                  AND indexname = 'ix_descriptive_feature_name'
+            """)).fetchone()
+            if exists:
+                conn.execute(text("DROP INDEX IF EXISTS ix_descriptive_feature_name"))
+                print("  + Dropped legacy unique index ix_descriptive_feature_name")
+    except Exception as e:
+        print(f"  Warning: Could not drop ix_descriptive_feature_name: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Create database tables and run safe migrations."""
@@ -766,6 +794,7 @@ def create_db_and_tables():
     _ensure_userrole_enum_values_if_needed()
     _ensure_inventory_sku_nullable_if_needed()
     _ensure_inventory_category_column_if_needed()
+    _drop_descriptive_feature_name_unique_index_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
@@ -926,21 +955,36 @@ def _ensure_schedule_client_nullable_if_needed():
 
 # ─── 20 MIGRATION: DOCUMENT TEMPLATE NAME UNIQUE CONSTRAINT ─────────────────────
 def _ensure_document_template_name_unique_if_needed():
-    """Add a unique constraint on document_template.name to prevent duplicate seeds."""
+    """Ensure document_template name uniqueness is scoped per company.
+
+    The old migration created a single-column unique index on (name) alone, which
+    prevents two companies from having templates with the same name (e.g. both
+    wanting an "Invoice" template). This migration drops that index and replaces it
+    with a composite index on (company_id, name).
+    """
     if DATABASE_URL.startswith("sqlite"):
-        return  # SQLite unique index via CREATE UNIQUE INDEX IF NOT EXISTS
+        return
     try:
         with engine.begin() as conn:
-            exists = conn.execute(text(
+            # Drop the old single-column unique index if it exists
+            old_exists = conn.execute(text(
                 "SELECT 1 FROM pg_indexes WHERE tablename='document_template' AND indexname='uq_document_template_name'"
             )).fetchone()
-            if not exists:
+            if old_exists:
+                conn.execute(text("DROP INDEX IF EXISTS uq_document_template_name"))
+                print("  + Dropped legacy single-column unique index uq_document_template_name")
+
+            # Create composite unique index on (company_id, name) if not already present
+            new_exists = conn.execute(text(
+                "SELECT 1 FROM pg_indexes WHERE tablename='document_template' AND indexname='uq_document_template_company_name'"
+            )).fetchone()
+            if not new_exists:
                 conn.execute(text(
-                    "CREATE UNIQUE INDEX uq_document_template_name ON document_template (name)"
+                    "CREATE UNIQUE INDEX uq_document_template_company_name ON document_template (company_id, name)"
                 ))
-                print("  + Added unique index on document_template.name")
+                print("  + Added composite unique index on document_template (company_id, name)")
     except Exception as e:
-        print(f"  [WARN] Could not add unique index on document_template.name: {e}")
+        print(f"  [WARN] Could not update unique index on document_template: {e}")
 
 
 # ─── 17 SESSION DEPENDENCY ─────────────────────────────────────────────────────
