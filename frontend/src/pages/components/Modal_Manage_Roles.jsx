@@ -128,6 +128,7 @@ export default function Modal_Manage_Roles({
                       </div>
                       {!role.is_system && (
                         <button
+                          type="button"
                           onClick={() => onDeleteRole(role.id)}
                           className="btn btn-sm btn-outline-danger"
                           title="Delete Role"
@@ -148,6 +149,7 @@ export default function Modal_Manage_Roles({
                             <span key={perm.id} className="badge bg-secondary d-flex align-items-center gap-1">
                               {perm.page}:{perm.permission}
                               <button
+                                type="button"
                                 onClick={() => onRemoveRolePermission(role.id, perm.id)}
                                 className="btn-close btn-close-white ms-1"
                                 style={{ fontSize: '0.5rem' }}
@@ -191,6 +193,7 @@ export default function Modal_Manage_Roles({
                           ))}
                         </select>
                         <button
+                          type="button"
                           onClick={() => onAddRolePermission(role.id)}
                           className="btn btn-sm btn-outline-primary"
                           disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}
