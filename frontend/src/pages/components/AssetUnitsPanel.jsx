@@ -52,7 +52,7 @@ function InlineText({ value, onSave, placeholder = '—' }) {
   );
 }
 
-export default function AssetUnitsPanel({ assetId }) {
+export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState(null);
@@ -68,7 +68,9 @@ export default function AssetUnitsPanel({ assetId }) {
     setError(null);
     try {
       const res = await assetUnitsAPI.list(assetId);
-      setUnits(res?.data ?? res ?? []);
+      const list = res?.data ?? res ?? [];
+      setUnits(list);
+      onCountChange?.(list.length);
     } catch {
       setError('Failed to load asset units.');
     } finally {
@@ -132,7 +134,7 @@ export default function AssetUnitsPanel({ assetId }) {
     if (!window.confirm('Remove this unit? This cannot be undone.')) return;
     try {
       await assetUnitsAPI.remove(assetId, unitId);
-      await load();
+      await load();  // load() already calls onCountChange
     } catch {
       setError('Failed to remove unit.');
     }

@@ -798,6 +798,125 @@ async def update(
     return _serialize_record(record, table_name)
 
 # ─── [12] DELETE ENDPOINT ──────────────────────────────────────────────────────
+
+def _cascade_delete(session: Session, table_name: str, record_id: UUID, record) -> None:
+    """
+    Remove or nullify all FK-dependent rows before deleting the parent record,
+    so that no FK-constraint violation is raised.
+
+    Rules:
+    • Rows whose entire meaning is tied to the deleted parent  → delete them.
+    • Rows that belong to another entity but reference this one via an optional FK
+      → set that FK column to NULL so the row survives.
+    • Shared/historical data (sale transactions, documents owned by others, etc.)
+      → only nullify the reference, never delete the other entity.
+    """
+    tn = table_name.lower()
+
+    def _del(model, **filters):
+        """Delete all rows of `model` matching given column=value filters."""
+        rows = session.exec(
+            sql_select(model).where(
+                and_(*[getattr(model, k) == v for k, v in filters.items()])
+            )
+        ).all()
+        for r in rows:
+            session.delete(r)
+
+    def _null(model, filter_col: str, filter_val, null_col: str):
+        """Set null_col = None on all rows of `model` where filter_col = filter_val."""
+        rows = session.exec(
+            sql_select(model).where(getattr(model, filter_col) == filter_val)
+        ).all()
+        for r in rows:
+            setattr(r, null_col, None)
+            session.add(r)
+
+    # ── INVENTORY ────────────────────────────────────────────────────────────
+    if tn == "inventory":
+        iid = record_id
+        # Owned sub-records: delete entirely
+        _del(InventoryImage,              inventory_id=iid)
+        _del(AssetUnit,                   inventory_id=iid)
+        _del(InventoryFeature,            inventory_id=iid)
+        _del(InventoryFeatureOptionData,  inventory_id=iid)
+        # Cross-entity links: delete the *link* row, the service/product survives
+        _del(ServiceResource,  inventory_id=iid)
+        _del(ServiceAsset,     inventory_id=iid)
+        _del(ServiceLocation,  inventory_id=iid)
+
+    # ── SERVICE ──────────────────────────────────────────────────────────────
+    elif tn == "service":
+        sid = record_id
+        _del(ServiceResource, service_id=sid)
+        _del(ServiceAsset,    service_id=sid)
+        _del(ServiceEmployee, service_id=sid)
+        _del(ServiceLocation, service_id=sid)
+        _del(ServiceRecipe,   service_id=sid)
+        # Schedules/inventory keep their records but lose the service FK reference
+        _null(Schedule,   "service_id", sid, "service_id")
+        _null(Inventory,  "service_id", sid, "service_id")
+
+    # ── CLIENT ───────────────────────────────────────────────────────────────
+    elif tn in ("client", "clients"):
+        cid = record_id
+        _null(Schedule, "client_id", cid, "client_id")
+        _del(ScheduleAttendee, client_id=cid)
+        _del(ClientCartItem,   client_id=cid)
+        _null(SaleTransaction, "client_id", cid, "client_id")
+
+    # ── SCHEDULE ─────────────────────────────────────────────────────────────
+    elif tn in ("schedule", "schedules"):
+        scid = record_id
+        _del(ScheduleAttendee,  schedule_id=scid)
+        _del(ScheduleDocument,  schedule_id=scid)
+        _null(Schedule,         "parent_schedule_id", scid, "parent_schedule_id")
+        _null(SaleTransaction,  "schedule_id", scid, "schedule_id")
+
+    # ── DOCUMENT ─────────────────────────────────────────────────────────────
+    elif tn in ("document", "documents"):
+        did = record_id
+        # File cleanup is handled by the caller before this function
+        _del(DocumentBlob,       document_id=did)
+        _del(DocumentAssignment, document_id=did)
+        _del(ScheduleDocument,   document_id=did)
+        _null(ChatMessage, "document_id", did, "document_id")
+
+    # ── USER / EMPLOYEE ──────────────────────────────────────────────────────
+    elif tn in ("user", "users"):
+        uid = record_id
+        _del(UserPermission,    user_id=uid)
+        _del(ScheduleAttendee,  user_id=uid)
+        _del(Attendance,        user_id=uid)
+        _del(LeaveRequest,      user_id=uid)
+        _del(OnboardingRequest, user_id=uid)
+        _del(OffboardingRequest, user_id=uid)
+        _del(PaySlip,           employee_id=uid)
+        # ChatMessage sender_id / receiver_id are NOT NULL — delete the messages
+        _del(ChatMessage, sender_id=uid)
+        _del(ChatMessage, receiver_id=uid)
+        # Self-referential: clear reports_to for direct reports
+        _null(User, "reports_to", uid, "reports_to")
+
+    # ── SALE TRANSACTION ─────────────────────────────────────────────────────
+    elif tn in ("sale_transaction",):
+        _del(SaleTransactionItem, sale_transaction_id=record_id)
+
+    # ── DESCRIPTIVE FEATURE ──────────────────────────────────────────────────
+    elif tn in ("descriptive_feature",):
+        _del(InventoryFeatureOptionData, feature_id=record_id)
+        _del(InventoryFeature,           feature_id=record_id)
+        _del(FeatureOption,              feature_id=record_id)
+
+    # ── FEATURE OPTION ───────────────────────────────────────────────────────
+    elif tn in ("feature_option",):
+        _del(InventoryFeatureOptionData, option_id=record_id)
+
+    # ── DOCUMENT CATEGORY ────────────────────────────────────────────────────
+    elif tn in ("document_category",):
+        _null(Document, "category_id", record_id, "category_id")
+
+
 @router.delete("/{table_name}/{record_id}")
 async def delete_by_id(
     table_name: str,
@@ -815,7 +934,7 @@ async def delete_by_id(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
-    # When deleting a document, also remove the file from disk and the DB blob
+    # Remove file from disk before the DB transaction for document deletes
     if table_name.lower() in ("document", "documents"):
         if hasattr(record, "file_path") and record.file_path:
             path = _resolve_document_path(record.file_path, UPLOAD_DIR)
@@ -824,43 +943,9 @@ async def delete_by_id(
                     os.remove(path)
                 except OSError:
                     pass
-        # Remove associated DocumentBlob
-        blob = session.exec(
-            sql_select(DocumentBlob).where(DocumentBlob.document_id == record_id)
-        ).first()
-        if blob:
-            session.delete(blob)
 
-    # For inventory deletion, delete all associated images first to avoid FK violations
-    if table_name.lower() in ("inventory",):
-        images = session.exec(
-            sql_select(InventoryImage).where(InventoryImage.inventory_id == record_id)
-        ).all()
-        for img in images:
-            session.delete(img)
-
-    # For user deletion, cascade-remove dependent records first to avoid FK violations
-    if table_name.lower() in ("user", "users"):
-        user_id = record.id
-        for dep_model, dep_col in [
-            (UserPermission, "user_id"),
-            (ScheduleAttendee, "user_id"),
-            (Attendance, "user_id"),
-            (LeaveRequest, "user_id"),
-            (OnboardingRequest, "user_id"),
-            (OffboardingRequest, "user_id"),
-            (PaySlip, "employee_id"),
-            (ChatMessage, "sender_id"),
-            (ChatMessage, "receiver_id"),
-        ]:
-            try:
-                dep_records = session.exec(
-                    sql_select(dep_model).where(getattr(dep_model, dep_col) == user_id)
-                ).all()
-                for dep in dep_records:
-                    session.delete(dep)
-            except Exception:
-                pass
+    # Cascade-delete / nullify all FK-dependent rows first
+    _cascade_delete(session, table_name, record_id, record)
 
     session.delete(record)
     try:
