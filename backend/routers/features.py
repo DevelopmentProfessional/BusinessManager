@@ -148,9 +148,7 @@ def _build_feature_read(session: Session, inventory_id: UUID) -> List[InventoryF
 @router.get("/features", response_model=List[DescriptiveFeatureRead])
 async def list_features(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """List all global descriptive features with their options."""
-    stmt = select(DescriptiveFeature)
-    if current_user.company_id:
-        stmt = stmt.where(DescriptiveFeature.company_id == current_user.company_id)
+    stmt = select(DescriptiveFeature).where(DescriptiveFeature.company_id == current_user.company_id)
     features = session.exec(stmt).all()
     result = []
     for feat in features:
@@ -168,13 +166,14 @@ async def list_features(session: Session = Depends(get_session), current_user: U
 @router.post("/features", response_model=DescriptiveFeatureRead)
 async def create_feature(body: FeatureNameBody, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Create a new global descriptive feature."""
-    stmt = select(DescriptiveFeature).where(DescriptiveFeature.name == body.name.strip())
-    if current_user.company_id:
-        stmt = stmt.where(DescriptiveFeature.company_id == current_user.company_id)
+    stmt = select(DescriptiveFeature).where(
+        DescriptiveFeature.name == body.name.strip(),
+        DescriptiveFeature.company_id == current_user.company_id,
+    )
     existing = session.exec(stmt).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
-    feat = DescriptiveFeature(name=body.name.strip(), company_id=current_user.company_id or None)
+    feat = DescriptiveFeature(name=body.name.strip(), company_id=current_user.company_id)
     session.add(feat)
     session.commit()
     session.refresh(feat)
@@ -197,9 +196,8 @@ async def rename_feature(
     conflict_stmt = select(DescriptiveFeature).where(
         DescriptiveFeature.name == body.name.strip(),
         DescriptiveFeature.id != feature_id,
+        DescriptiveFeature.company_id == current_user.company_id,
     )
-    if current_user.company_id:
-        conflict_stmt = conflict_stmt.where(DescriptiveFeature.company_id == current_user.company_id)
     conflict = session.exec(conflict_stmt).first()
     if conflict:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
@@ -335,7 +333,7 @@ async def add_option(
 ):
     """Add a new option to a global feature. Auto-seeds qty=0 rows for all items using this feature."""
     feat = session.get(DescriptiveFeature, feature_id)
-    if not feat:
+    if not feat or (current_user.company_id and feat.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Feature not found.")
     conflict = session.exec(
         select(FeatureOption).where(
@@ -351,9 +349,12 @@ async def add_option(
     session.commit()
     session.refresh(opt)
 
-    # Auto-seed data rows for all inventory items that already have this feature
+    # Auto-seed data rows for all inventory items (same company) that already have this feature
     usages = session.exec(
-        select(InventoryFeature).where(InventoryFeature.feature_id == feature_id)
+        select(InventoryFeature).where(
+            InventoryFeature.feature_id == feature_id,
+            InventoryFeature.company_id == current_user.company_id,
+        )
     ).all()
     for usage in usages:
         existing = session.exec(
@@ -475,7 +476,7 @@ async def add_feature_to_inventory(
     if not inv:
         raise HTTPException(status_code=404, detail="Inventory item not found.")
     feat = session.get(DescriptiveFeature, feature_id)
-    if not feat:
+    if not feat or (current_user.company_id and feat.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Feature not found.")
 
     existing = session.exec(
