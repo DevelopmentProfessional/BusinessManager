@@ -54,16 +54,16 @@ except ImportError:
 # Database URL from db_config (supports environment switching)
 DATABASE_URL = get_database_url()
 
-# Create engine with appropriate settings
+# PostgreSQL-only runtime: reject SQLite URLs up front.
 if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
-else:
-    # PostgreSQL - normalize URL to use psycopg driver
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-    elif DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
-    engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
+    raise RuntimeError("SQLite is not supported in this deployment. Configure PostgreSQL DATABASE_URL.")
+
+# PostgreSQL - normalize URL to use psycopg driver
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
@@ -291,7 +291,9 @@ def _ensure_company_multitenancy_if_needed():
     # Tables that need company_id (excludes: company, document_blob, database_connection, schema_migration)
     tenant_tables = [
         "user", "user_permission", "role", "role_permission",
-        "client", "inventory", "inventory_image", "supplier",
+        # SQLModel auto-names InventoryImage table as 'inventoryimage' (no underscore).
+        # Keep 'inventory_image' as a legacy fallback for older/manual schemas.
+        "client", "inventory", "inventoryimage", "inventory_image", "supplier",
         "descriptive_feature", "feature_option", "inventory_feature", "inventory_feature_option_data",
         "service", "service_resource", "service_asset", "service_employee",
         "service_location", "service_recipe",

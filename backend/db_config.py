@@ -2,7 +2,7 @@
 # FILE: db_config.py
 #
 # PURPOSE:
-#   Manages database environment selection (local SQLite, local Postgres,
+#   Manages database environment selection (local Postgres,
 #   Render development/test/production). Provides helpers for reading and
 #   writing the active environment, resolving the connection URL, and
 #   inspecting or extending the environment registry.
@@ -204,5 +204,5 @@ def validate_database_url(url: str) -> bool:
     if not url:
         return False
     
-    valid_prefixes = ["postgresql://", "postgres://", "sqlite:///"]
+    valid_prefixes = ["postgresql://", "postgres://"]
     return any(url.startswith(prefix) for prefix in valid_prefixes)
