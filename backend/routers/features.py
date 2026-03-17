@@ -249,19 +249,10 @@ async def get_inventory_summary(session: Session = Depends(get_session), current
     Used by inventory list and sales page to avoid N+1 per-row fetches.
     Response: { "<inventory_id>": { feature_names: [], price_min: float|null, price_max: float|null } }
     """
-    # Filter by company via the parent Inventory record (handles both new scoped rows and legacy unscoped rows)
-    if current_user.company_id:
-        company_inv_ids = {
-            inv.id for inv in session.exec(
-                select(Inventory).where(Inventory.company_id == current_user.company_id)
-            ).all()
-        }
-        inv_features = [
-            r for r in session.exec(select(InventoryFeature)).all()
-            if r.inventory_id in company_inv_ids
-        ]
-    else:
-        inv_features = session.exec(select(InventoryFeature)).all()
+    # Filter by company via the InventoryFeature.company_id
+    inv_features = session.exec(
+        select(InventoryFeature).where(InventoryFeature.company_id == current_user.company_id)
+    ).all()
 
     summary = {}
     for inv_feat in inv_features:

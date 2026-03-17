@@ -87,9 +87,7 @@ def get_appointments_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt = select(Schedule)
-    if current_user.company_id:
-        stmt = stmt.where(Schedule.company_id == current_user.company_id)
+    stmt = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt).all()
 
     grouped: dict = {}
@@ -125,18 +123,14 @@ def get_revenue_report(
     end = _parse_date(end_date)
 
     # Load services for lookup
-    stmt_service = select(Service)
-    if current_user.company_id:
-        stmt_service = stmt_service.where(Service.company_id == current_user.company_id)
+    stmt_service = select(Service).where(Service.company_id == current_user.company_id)
     services = session.exec(stmt_service).all()
     service_map = {str(s.id): s.price for s in services}
 
     grouped: dict = {}
 
     # Appointment-based revenue
-    stmt_schedule = select(Schedule)
-    if current_user.company_id:
-        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    stmt_schedule = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt_schedule).all()
     for s in schedules:
         if s.status != "completed":
@@ -152,9 +146,7 @@ def get_revenue_report(
 
     # Sale transaction revenue
     try:
-        stmt_tx = select(SaleTransaction)
-        if current_user.company_id:
-            stmt_tx = stmt_tx.where(SaleTransaction.company_id == current_user.company_id)
+        stmt_tx = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
         transactions = session.exec(stmt_tx).all()
         for tx in transactions:
             dt = tx.created_at
@@ -187,9 +179,7 @@ def get_clients_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt_client = select(Client)
-    if current_user.company_id:
-        stmt_client = stmt_client.where(Client.company_id == current_user.company_id)
+    stmt_client = select(Client).where(Client.company_id == current_user.company_id)
     clients = session.exec(stmt_client).all()
 
     new_clients: dict = {}
@@ -205,9 +195,7 @@ def get_clients_report(
         new_clients[label] = new_clients.get(label, 0) + 1
 
     # Appointments per time period
-    stmt_schedule = select(Schedule)
-    if current_user.company_id:
-        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    stmt_schedule = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt_schedule).all()
     appt_counts: dict = {}
     for a in schedules:
@@ -243,15 +231,11 @@ def get_services_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt_service = select(Service)
-    if current_user.company_id:
-        stmt_service = stmt_service.where(Service.company_id == current_user.company_id)
+    stmt_service = select(Service).where(Service.company_id == current_user.company_id)
     services = session.exec(stmt_service).all()
     service_name_map = {str(s.id): s.name for s in services}
 
-    stmt_schedule = select(Schedule)
-    if current_user.company_id:
-        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    stmt_schedule = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt_schedule).all()
     service_counts: dict = {}
     for s in schedules:
@@ -277,9 +261,7 @@ def get_inventory_report(
     current_user: User = Depends(get_current_user),
 ):
     """Inventory analytics: current stock levels per item."""
-    stmt = select(Inventory)
-    if current_user.company_id:
-        stmt = stmt.where(Inventory.company_id == current_user.company_id)
+    stmt = select(Inventory).where(Inventory.company_id == current_user.company_id)
     items = session.exec(stmt).all()
     labels = [item.name for item in items]
     data = [item.quantity for item in items]
@@ -308,15 +290,11 @@ def get_employees_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt_user = select(User)
-    if current_user.company_id:
-        stmt_user = stmt_user.where(User.company_id == current_user.company_id)
+    stmt_user = select(User).where(User.company_id == current_user.company_id)
     users = session.exec(stmt_user).all()
     user_name_map = {str(u.id): f"{u.first_name} {u.last_name}" for u in users}
 
-    stmt_schedule = select(Schedule)
-    if current_user.company_id:
-        stmt_schedule = stmt_schedule.where(Schedule.company_id == current_user.company_id)
+    stmt_schedule = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt_schedule).all()
     emp_counts: dict = {}
     for s in schedules:
@@ -349,9 +327,7 @@ def get_attendance_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt = select(Attendance)
-    if current_user.company_id:
-        stmt = stmt.where(Attendance.company_id == current_user.company_id)
+    stmt = select(Attendance).where(Attendance.company_id == current_user.company_id)
     rows = session.exec(stmt).all()
     grouped: dict = {}
 
@@ -387,9 +363,7 @@ def get_sales_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt = select(SaleTransaction)
-    if current_user.company_id:
-        stmt = stmt.where(SaleTransaction.company_id == current_user.company_id)
+    stmt = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
     txs = session.exec(stmt).all()
     grouped: dict = {}
 
@@ -423,9 +397,7 @@ def get_payroll_report(
     start = _parse_date(start_date)
     end = _parse_date(end_date)
 
-    stmt = select(PaySlip)
-    if current_user.company_id:
-        stmt = stmt.where(PaySlip.company_id == current_user.company_id)
+    stmt = select(PaySlip).where(PaySlip.company_id == current_user.company_id)
     slips = session.exec(stmt).all()
     grouped: dict = {}
 

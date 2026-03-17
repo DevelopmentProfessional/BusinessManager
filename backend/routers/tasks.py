@@ -43,9 +43,7 @@ async def get_tasks(
     current_user: User = Depends(get_current_user),
 ):
     """Get all tasks"""
-    stmt = select(Task)
-    if current_user.company_id:
-        stmt = stmt.where(Task.company_id == current_user.company_id)
+    stmt = select(Task).where(Task.company_id == current_user.company_id)
     tasks = session.exec(stmt).all()
     result = []
     for task in tasks:
@@ -67,9 +65,9 @@ async def get_tasks(
 async def get_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Get a specific task by ID"""
     task = session.get(Task, task_id)
-    if not task:
+    if not task or (current_user.company_id and task.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     # Get linked task titles
     linked_titles = []
     for link in task.linked_tasks:
@@ -86,9 +84,7 @@ async def get_task(task_id: UUID, session: Session = Depends(get_session), curre
 @router.get("/tasks/by-title/{title}", response_model=List[TaskRead])
 async def get_tasks_by_title(title: str, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Get tasks by title"""
-    stmt = select(Task).where(Task.title == title)
-    if current_user.company_id:
-        stmt = stmt.where(Task.company_id == current_user.company_id)
+    stmt = select(Task).where(Task.title == title, Task.company_id == current_user.company_id)
     tasks = session.exec(stmt).all()
     result = []
     for task in tasks:
@@ -123,9 +119,7 @@ async def create_task(task_data: TaskCreate, session: Session = Depends(get_sess
     if task_data.linked_task_titles:
         for linked_title in task_data.linked_task_titles:
             # Find tasks with matching title within same company
-            linked_stmt = select(Task).where(Task.title == linked_title)
-            if current_user.company_id:
-                linked_stmt = linked_stmt.where(Task.company_id == current_user.company_id)
+            linked_stmt = select(Task).where(Task.title == linked_title, Task.company_id == current_user.company_id)
             linked_tasks = session.exec(linked_stmt).all()
             for linked_task in linked_tasks:
                 if linked_task.id != task.id:  # Don't link to self
@@ -167,9 +161,9 @@ async def update_task(
 ):
     """Update a task"""
     task = session.get(Task, task_id)
-    if not task:
+    if not task or (current_user.company_id and task.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     task_dict = task_data.dict(exclude_unset=True, exclude={"linked_task_titles"})
     
     # Update task fields
@@ -188,9 +182,7 @@ async def update_task(
         # Create new links by title
         if task_data.linked_task_titles:
             for linked_title in task_data.linked_task_titles:
-                linked_stmt = select(Task).where(Task.title == linked_title)
-                if current_user.company_id:
-                    linked_stmt = linked_stmt.where(Task.company_id == current_user.company_id)
+                linked_stmt = select(Task).where(Task.title == linked_title, Task.company_id == current_user.company_id)
                 linked_tasks = session.exec(linked_stmt).all()
                 for linked_task in linked_tasks:
                     if linked_task.id != task.id:
@@ -224,9 +216,9 @@ async def update_task(
 async def delete_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Delete a task"""
     task = session.get(Task, task_id)
-    if not task:
+    if not task or (current_user.company_id and task.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     # Delete all links involving this task
     links_as_source = session.exec(
         select(TaskLink).where(TaskLink.source_task_id == task_id)
@@ -255,13 +247,11 @@ async def link_task_by_title(
     target_task_title = link_request.target_task_title
     """Link a task to another task by title"""
     task = session.get(Task, task_id)
-    if not task:
+    if not task or (current_user.company_id and task.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     # Find tasks with matching title within same company
-    target_tasks_stmt = select(Task).where(Task.title == target_task_title)
-    if current_user.company_id:
-        target_tasks_stmt = target_tasks_stmt.where(Task.company_id == current_user.company_id)
+    target_tasks_stmt = select(Task).where(Task.title == target_task_title, Task.company_id == current_user.company_id)
     target_tasks = session.exec(target_tasks_stmt).all()
     
     if not target_tasks:
