@@ -795,7 +795,11 @@ def create_db_and_tables():
     # Always run create_all — idempotent metadata check, required for fresh deploys
     SQLModel.metadata.create_all(engine)
 
-    # Always run migrations - idempotent functions ensure no duplicates
+    # Skip all migrations if schema is already at the current version
+    if _schema_is_current():
+        print(f"Schema already at {CURRENT_SCHEMA_VERSION}, skipping migrations.")
+        return
+
     print(f"Running migrations to schema version {CURRENT_SCHEMA_VERSION}...")
     _migrate_products_and_inventory_to_items_if_needed()
     _migrate_document_entity_type_enum_to_varchar()
