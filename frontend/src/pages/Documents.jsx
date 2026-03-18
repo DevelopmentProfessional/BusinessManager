@@ -297,6 +297,7 @@ export default function Documents() {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
   const [templateTypeFilter, setTemplateTypeFilter] = useState('all');
+  const [isTemplateTypeFilterOpen, setIsTemplateTypeFilterOpen] = useState(false);
 
   // ─── 6  DERIVED / COMPUTED VALUES ────────────────────────────────────────
   const categoryNameById = useMemo(() => {
@@ -737,13 +738,25 @@ export default function Documents() {
               return filtered.length > 0 ? (
                 <table className="table table-borderless table-hover mb-0 table-fixed">
                   <colgroup>
+                    <col style={{ width: '56px' }} />
                     <col />
-                    <col style={{ width: '80px' }} />
+                    <col style={{ width: '56px' }} />
                   </colgroup>
                   <tbody>
                     {filtered.map((tpl) => (
                       <tr key={tpl.id} className="align-middle border-bottom" style={{ height: '56px' }}>
-                        <td className="px-3">
+                        <td className="text-center px-1">
+                          <button
+                            onClick={() => handleDeleteTemplate(tpl)}
+                            className="btn btn-sm btn-outline-danger border-0 p-1 d-flex align-items-center justify-content-center"
+                            style={{ width: '3rem', height: '3rem' }}
+                            title={tpl.is_standard ? 'Standard templates cannot be deleted' : 'Delete'}
+                            disabled={tpl.is_standard}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </td>
+                        <td className="px-2">
                           <div className="d-flex align-items-center gap-2">
                             <span className="fw-medium text-truncate">{tpl.name}</span>
                             {tpl.is_standard && (
@@ -754,24 +767,15 @@ export default function Documents() {
                             {tpl.template_type}
                           </span>
                         </td>
-                        <td className="text-center px-2">
-                          <div className="d-flex gap-1 justify-content-center">
-                            <button
-                              onClick={() => handleEditTemplate(tpl)}
-                              className="btn btn-sm btn-outline-primary border-0 p-1"
-                              title="Edit"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTemplate(tpl)}
-                              className="btn btn-sm btn-outline-danger border-0 p-1"
-                              title={tpl.is_standard ? 'Standard templates cannot be deleted' : 'Delete'}
-                              disabled={tpl.is_standard}
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </div>
+                        <td className="text-center px-1">
+                          <button
+                            onClick={() => handleEditTemplate(tpl)}
+                            className="btn btn-sm btn-outline-primary border-0 p-1 d-flex align-items-center justify-content-center"
+                            style={{ width: '3rem', height: '3rem' }}
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -867,20 +871,48 @@ export default function Documents() {
                 <PlusIcon className="h-5 w-5" />
               </button>
               {/* Type filter for templates */}
-              {['all', 'email', 'invoice', 'receipt', 'memo', 'quote', 'custom'].map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTemplateTypeFilter(t)}
-                  className={`btn btn-sm rounded-pill px-3 border-0 ${
-                    templateTypeFilter === t
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              <div className="position-relative">
+                <Button_Toolbar
+                  icon={TagIcon}
+                  label="Type"
+                  onClick={() => setIsTemplateTypeFilterOpen((prev) => !prev)}
+                  className={`border-0 shadow-lg transition-all ${
+                    templateTypeFilter !== 'all'
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'btn-app-secondary'
                   }`}
-                >
-                  {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+                  data-active={templateTypeFilter !== 'all'}
+                />
+                {isTemplateTypeFilterOpen && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+                    {[
+                      { value: 'all', label: 'All Types' },
+                      { value: 'email', label: 'Email' },
+                      { value: 'invoice', label: 'Invoice' },
+                      { value: 'receipt', label: 'Receipt' },
+                      { value: 'memo', label: 'Memo' },
+                      { value: 'quote', label: 'Quote' },
+                      { value: 'custom', label: 'Custom' },
+                    ].map((option, index, arr) => {
+                      const isLast = index === arr.length - 1;
+                      const isSelected = templateTypeFilter === option.value;
+                      return (
+                        <div key={option.value} className={isLast ? '' : 'mb-1'}>
+                          <button
+                            onClick={() => {
+                              setTemplateTypeFilter(option.value);
+                              setIsTemplateTypeFilterOpen(false);
+                            }}
+                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-50 text-gray-900'}`}
+                          >
+                            {option.label}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             /* Documents mode controls */

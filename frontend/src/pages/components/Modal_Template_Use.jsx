@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import { templatesAPI } from '../../services/api';
+import { templatesAPI, clientsAPI, clientCartAPI } from '../../services/api';
 import Modal_Template_Editor from './Modal_Template_Editor';
 import {
   renderTemplate,
@@ -51,10 +51,44 @@ export default function Modal_Template_Use({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [clientInvoiceTx, setClientInvoiceTx] = useState(null);
+  const [clientInvoiceItems, setClientInvoiceItems] = useState([]);
+  const [clientCartItems, setClientCartItems] = useState([]);
   const printIframeRef = useRef(null);
   const pdfCacheRef = useRef(new Map());
   const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || 'Invoice';
   const recipientEmail = (client?.email || entity?.email || '').trim();
+
+  const normalizeImageAlignment = useCallback((html) => {
+    if (!html) return '';
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const imgs = doc.querySelectorAll('img[data-float]');
+
+      imgs.forEach((img) => {
+        const imageFloat = img.getAttribute('data-float') || 'none';
+        img.style.display = 'block';
+        if (imageFloat === 'left') {
+          img.style.margin = '0.5rem auto 0.5rem 0';
+        } else if (imageFloat === 'right') {
+          img.style.margin = '0.5rem 0 0.5rem auto';
+        } else {
+          img.style.margin = '0.5rem auto';
+        }
+      });
+
+      return doc.body.innerHTML;
+    } catch {
+      return html;
+    }
+  }, []);
+
+  const toTaxRateDecimal = useCallback((value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num) || num <= 0) return 0;
+    return num > 1 ? num / 100 : num;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,11 +109,105 @@ export default function Modal_Template_Use({
   useEffect(() => {
     if (!selected) { setRenderedHtml(''); return; }
     const vars = buildVars();
-    setRenderedHtml(renderTemplate(selected.content, vars));
-  }, [selected]);
+    const rendered = renderTemplate(selected.content, vars);
+    setRenderedHtml(normalizeImageAlignment(rendered));
+  }, [selected, page, entity, currentUser, settings, items, client, employee, service, clientInvoiceTx, clientInvoiceItems, normalizeImageAlignment]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLatestClientInvoice = async () => {
+      if (page !== 'clients' || !entity?.id) {
+        setClientInvoiceTx(null);
+        setClientInvoiceItems([]);
+        setClientCartItems([]);
+        return;
+      }
+
+      try {
+        const [txRes, cartRes] = await Promise.all([
+          clientsAPI.getTransactions(entity.id),
+          clientCartAPI.getItems(entity.id),
+        ]);
+
+        const txList = Array.isArray(txRes?.data) ? txRes.data : (Array.isArray(txRes) ? txRes : []);
+        const cartList = Array.isArray(cartRes?.data) ? cartRes.data : (Array.isArray(cartRes) ? cartRes : []);
+        if (!cancelled) setClientCartItems(cartList);
+
+        if (!txList.length) {
+          if (!cancelled) {
+            setClientInvoiceTx(null);
+            setClientInvoiceItems([]);
+          }
+          return;
+        }
+
+        const sorted = [...txList].sort((a, b) => {
+          const aTs = new Date(a?.created_at || 0).getTime();
+          const bTs = new Date(b?.created_at || 0).getTime();
+          return bTs - aTs;
+        });
+        const latestTx = sorted[0] || null;
+
+        let lineItems = [];
+        if (latestTx?.id != null) {
+          const itemsRes = await clientsAPI.getTransactionItems(latestTx.id);
+          lineItems = Array.isArray(itemsRes?.data) ? itemsRes.data : (Array.isArray(itemsRes) ? itemsRes : []);
+        }
+
+        if (!cancelled) {
+          setClientInvoiceTx(latestTx);
+          setClientInvoiceItems(lineItems);
+        }
+      } catch {
+        if (!cancelled) {
+          setClientInvoiceTx(null);
+          setClientInvoiceItems([]);
+          setClientCartItems([]);
+        }
+      }
+    };
+
+    loadLatestClientInvoice();
+    return () => { cancelled = true; };
+  }, [page, entity?.id]);
 
   const buildVars = () => {
-    if (page === 'clients') return buildClientVariables(entity, currentUser, settings);
+    if (page === 'clients') {
+      const baseVars = buildClientVariables(entity, currentUser, settings);
+      const cartItems = (clientCartItems || []).map((item) => {
+        const qty = Number(item?.quantity) || 1;
+        const unitPrice = Number(item?.unit_price ?? item?.price) || 0;
+        return {
+          item_name: item?.item_name || item?.name || '',
+          item_type: item?.item_type || item?.itemType || '',
+          quantity: qty,
+          unit_price: unitPrice,
+          line_total: unitPrice * qty,
+        };
+      });
+
+      let txForInvoice = clientInvoiceTx;
+      let itemsForInvoice = clientInvoiceItems;
+
+      if (cartItems.length > 0) {
+        const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0);
+        const taxRate = toTaxRateDecimal(settings?.tax_rate);
+        const taxAmount = subtotal * taxRate;
+        txForInvoice = {
+          id: `CART-${entity?.id || 'CLIENT'}`,
+          created_at: new Date().toISOString(),
+          subtotal,
+          tax_amount: taxAmount,
+          total: subtotal + taxAmount,
+          payment_method: 'pending',
+        };
+        itemsForInvoice = cartItems;
+      }
+
+      const invoiceVars = buildSalesVariables(txForInvoice, entity, currentUser, settings, itemsForInvoice);
+      return { ...invoiceVars, ...baseVars };
+    }
     if (page === 'employees') return buildEmployeeVariables(entity, currentUser, settings);
     if (page === 'sales') return buildSalesVariables(entity, client || entity, currentUser, settings, items);
     if (page === 'schedule') return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
@@ -368,6 +496,14 @@ export default function Modal_Template_Use({
           <div className="d-flex gap-2">
             <button
               type="button"
+              onClick={onClose}
+              className="btn btn-outline-secondary d-flex align-items-center gap-1"
+            >
+              <XMarkIcon className="h-4 w-4" />
+              Close
+            </button>
+            <button
+              type="button"
               onClick={() => setIsEditorOpen(true)}
               disabled={!selected}
               className="btn btn-outline-secondary d-flex align-items-center gap-1"
@@ -403,16 +539,6 @@ export default function Modal_Template_Use({
               Email
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute"
-            style={{ left: '50%', transform: 'translateX(-50%)' }}
-          >
-            <XMarkIcon className="h-4 w-4" />
-            Close
-          </button>
         </div>
       </div>
 
