@@ -545,14 +545,22 @@ export const ResizableImage = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { width, float: f, rotation, flipH, flipV, ...rest } = HTMLAttributes;
+    const {
+      width,
+      float: floatAttr,
+      rotation,
+      flipH,
+      flipV,
+      ...rest
+    } = HTMLAttributes;
+    const imageFloat = floatAttr || HTMLAttributes['data-float'] || 'none';
     let style = 'max-width:100%;height:auto;display:block;border-radius:4px;margin:0.5rem auto;';
     if (width) style += `width:${width}px;`;
-    if (f === 'left')  style += 'margin:0.5rem auto 0.5rem 0;';
-    if (f === 'right') style += 'margin:0.5rem 0 0.5rem auto;';
+    if (imageFloat === 'left')  style += 'margin:0.5rem auto 0.5rem 0;';
+    if (imageFloat === 'right') style += 'margin:0.5rem 0 0.5rem auto;';
     const transform = buildTransform(rotation || 0, !!flipH, !!flipV);
     if (transform !== 'none') style += `transform:${transform};transform-origin:center center;`;
-    return ['img', mergeAttributes(rest, { style })];
+    return ['img', mergeAttributes(rest, { style, 'data-float': imageFloat })];
   },
 
   addNodeView() {
