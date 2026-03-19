@@ -70,7 +70,8 @@
       "Bash(netstat:*)",
       "Bash(cmd.exe /c \"taskkill /PID 16116 /F\")",
       "Bash(cmd.exe /c \"taskkill /PID 16116 /F\" 2>&1; echo \"exit: $?\")",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(ssh:*)"
     ]
   }
 }
