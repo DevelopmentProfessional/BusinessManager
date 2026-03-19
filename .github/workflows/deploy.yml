@@ -1,0 +1,42 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - Document-Management
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            # Pull latest code
+            cd /home/ubuntu/BusinessManager
+            git fetch origin
+            git checkout Document-Management
+            git pull origin Document-Management
+
+            # Build frontend
+            cd /home/ubuntu/BusinessManager/frontend
+            npm install
+            npm run build
+            sudo cp -r dist/. /var/www/html/
+
+            # Install backend dependencies
+            cd /home/ubuntu/BusinessManager/backend
+            source /home/ubuntu/BusinessManager/venv/bin/activate
+            pip install -r requirements.txt
+
+            # Restart backend service
+            sudo systemctl restart businessmanager
+
+            echo "Deployment complete"
