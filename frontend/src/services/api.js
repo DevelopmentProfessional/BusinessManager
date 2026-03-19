@@ -368,6 +368,10 @@ export const inventoryAPI = {
     return token ? `${base}?token=${encodeURIComponent(token)}` : base;
   },
   getLocations: () => api.get('/isud/inventory/locations'),
+  bulkImport: (products) => {
+    clearCache('inventory');
+    return api.post('/products/bulk-import', { products });
+  },
 };
 
 // ─── Descriptive Features API ────────────────────────────────────────────────

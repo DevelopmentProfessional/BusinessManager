@@ -12,8 +12,8 @@
  *   [2]  State & Refs         — Editing target, search term, type/stock filter toggles, scroll ref
  *   [3]  Lifecycle            — One-shot data fetch on mount; auto-scroll to bottom on data change
  *   [4]  Data Loading         — loadInventoryData fetches all inventory items from the API
- *   [5]  CRUD Handlers        — handleUpdateInventory, handleCreateItem, handleSubmitUpdate,
- *                               handleSubmitNewItem, handleDeleteItem
+ *   [5]  CRUD Handlers        — handleUpdateInventory, handleOpenBulkImport, handleSubmitUpdate,
+ *                               handleBulkImportItems, handleDeleteItem
  *   [6]  Display Utilities    — getItemTypeLabel, getItemTypeColor, isLocationOrAsset,
  *                               isLowStock, getTypeFilterButtonClass, getStockFilterButtonClass,
  *                               getStockColor — helpers for rendering badges and filter buttons
@@ -26,6 +26,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added type filter help popover trigger (`?`) in footer dropdown
+ *   2026-03-19 | GitHub Copilot | Replaced single-add with spreadsheet-style bulk import modal flow
  * ============================================================
  */
 
@@ -41,12 +42,11 @@ import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, Tag
 import Modal_Discount_Rules from './components/Modal_Discount_Rules';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
-import { inventoryAPI, featuresAPI, bundleAPI, mixAPI } from '../services/api';
-import Modal from './components/Modal';
-import Form_Item from './components/Form_Item';
+import { inventoryAPI, featuresAPI } from '../services/api';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
 import Gate_Permission from './components/Gate_Permission';
 import Suppliers_Panel from './components/Suppliers_Panel';
+import Modal_Bulk_Import_Items from './components/Modal_Bulk_Import_Items';
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
@@ -65,6 +65,7 @@ export default function Inventory() {
   const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
   const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
   const [showDiscountRules, setShowDiscountRules] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
@@ -180,12 +181,12 @@ export default function Inventory() {
     openModal('inventory-form');
   };
 
-  const handleCreateItem = () => {
+  const handleOpenBulkImport = () => {
     if (!hasPermission('inventory', 'write')) {
-      setError('You do not have permission to create items');
+      setError('You do not have permission to import items');
       return;
     }
-    openModal('item-form');
+    setShowBulkImport(true);
   };
 
   const handleSubmitUpdate = async (inventoryId, updateData) => {
@@ -202,54 +203,12 @@ export default function Inventory() {
     }
   };
 
-  const handleSubmitNewItem = async (itemData, { initialQuantity, pendingPhoto = null, bundleComponents = [], mixConfig = null, mixComponents = [] }) => {
-    try {
-      const inventoryData = {
-        ...itemData,
-        quantity: Number.isFinite(initialQuantity) ? initialQuantity : 0,
-      };
-      const result = await inventoryAPI.create(inventoryData);
-      const newItemId = result?.data?.id;
-      if (pendingPhoto && newItemId) {
-        const file = new File([pendingPhoto], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        await inventoryAPI.uploadImageFile(newItemId, file, true);
-      }
-      // Save bundle components
-      if (newItemId && bundleComponents.length > 0) {
-        for (const comp of bundleComponents) {
-          await bundleAPI.addComponent(newItemId, comp.id, comp.quantity);
-        }
-      }
-      // Save mix config + components
-      if (newItemId && mixConfig) {
-        await mixAPI.saveConfig({ inventory_id: newItemId, ...mixConfig });
-        for (const comp of mixComponents) {
-          await mixAPI.addComponent(newItemId, comp.id, comp.max_quantity || null);
-        }
-      }
-      await loadInventoryData();
-      closeModal();
-      clearError();
-    } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'Failed to save item';
-      setError(String(detail));
-      console.error('Inventory create error:', err?.response || err);
-    }
-  }; 
-
   const handleBulkImportItems = async (rows) => {
-    for (const row of rows) {
-      const result = await inventoryAPI.create({ name: row.name, type: row.type || 'PRODUCT', quantity: 0, price: 0 });
-      const newItemId = result?.data?.id;
-      if (newItemId && row.photo) {
-        const file = row.photo instanceof File
-          ? row.photo
-          : new File([row.photo], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        await inventoryAPI.uploadImageFile(newItemId, file, true);
-      }
-    }
+    const res = await inventoryAPI.bulkImport(rows);
     await loadInventoryData();
-    closeModal();
+    setShowBulkImport(false);
+    clearError();
+    return res?.data ?? res;
   };
 
   // ─── 7 DISPLAY UTILITIES ─────────────────────────────────────────────────────
@@ -472,8 +431,8 @@ return (
         <Gate_Permission page="inventory" permission="write">
           <Button_Toolbar
             icon={PlusIcon}
-            label="Add Item"
-            onClick={handleCreateItem}
+            label="Bulk Add Items"
+            onClick={handleOpenBulkImport}
             className="btn-app-primary"
           />
         </Gate_Permission>
@@ -644,19 +603,12 @@ return (
       existingSkus={inventory.map(i => i.sku).filter(Boolean)}
     />
 
-    <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal} noPadding={true} fullScreen={true}>
-      {isModalOpen && modalContent === 'item-form' && (
-        <Form_Item
-          showInitialQuantity
-          onSubmitWithExtras={handleSubmitNewItem}
-          onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
-          onCancel={closeModal}
-          showScanner
-          existingSkus={inventory.map(i => i.sku).filter(Boolean)}
-          onBulkImport={handleBulkImportItems}
-        />
-      )}
-    </Modal>
+    <Modal_Bulk_Import_Items
+      isOpen={showBulkImport}
+      onClose={() => setShowBulkImport(false)}
+      onImport={handleBulkImportItems}
+      existingSkus={inventory.map(i => i.sku).filter(Boolean)}
+    />
 
     <Suppliers_Panel
       isOpen={showSuppliersPanel}
