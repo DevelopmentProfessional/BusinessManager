@@ -23,8 +23,8 @@ const getApiBaseUrl = () => {
     return '/api/v1';
   }
 
-  // Production uses direct backend URL
-  return 'https://businessmanager-reference-api.onrender.com/api/v1';
+  // Production: Nginx proxies /api to FastAPI on the same server
+  return '/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
