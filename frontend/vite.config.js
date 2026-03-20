@@ -9,6 +9,7 @@ export default defineConfig(({ command, mode }) => {
   // Always enable HTTPS in dev so phones on the LAN can use the camera (requires secure context)
   const isDev = command === 'serve'
   const enablePwa = process.env.VITE_ENABLE_PWA !== 'false'
+  const buildTimestamp = new Date().toISOString()
 
   // Use custom cert (includes LAN IP SAN) so other devices on the network can connect
   const sslDir = path.resolve(__dirname, '../ssl')
@@ -67,6 +68,9 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
+    define: {
+      __APP_BUILD_TIMESTAMP__: JSON.stringify(buildTimestamp),
+    },
     plugins,
     server: {
       // HTTPS in dev: use custom cert (LAN IP in SAN) when available, else fall back to basic ssl
