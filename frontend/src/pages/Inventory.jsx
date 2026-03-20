@@ -76,8 +76,10 @@ export default function Inventory() {
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
+  const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
+  const deleteInFlightRef = useRef(new Set());
 
   const typeFilterOptions = [
     {
@@ -300,11 +302,20 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
   };
 
   const handleDeleteItem = async (inventoryId) => {
+    if (deleteInFlightRef.current.has(inventoryId)) {
+      return;
+    }
+
     if (!hasPermission('inventory', 'delete')) {
       setError('You do not have permission to delete items');
       return;
     }
+
     if (!window.confirm('Are you sure you want to delete this item?')) return;
+
+    deleteInFlightRef.current.add(inventoryId);
+    setDeletingInventoryId(inventoryId);
+
     try {
       await inventoryAPI.delete(inventoryId);
       await loadInventoryData();
@@ -312,6 +323,9 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to delete item';
       setError(String(detail));
+    } finally {
+      deleteInFlightRef.current.delete(inventoryId);
+      setDeletingInventoryId((prev) => (prev === inventoryId ? null : prev));
     }
   };
 
@@ -641,6 +655,7 @@ return (
       onUpdateInventory={handleSubmitUpdate}
       onDelete={handleDeleteItem}
       canDelete={hasPermission('inventory', 'delete')}
+      isDeleting={deletingInventoryId === editingInventory?.id}
       existingSkus={inventory.map(i => i.sku).filter(Boolean)}
     />
 

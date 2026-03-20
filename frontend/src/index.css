@@ -101,6 +101,29 @@ body,
   display: none;               /* Chrome / Safari / Opera */
 }
 
+/* Bulk import grid: keep horizontal scrollbar visible, hide vertical scrollbar */
+.bulk-import-grid-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.bulk-import-grid-scroll::-webkit-scrollbar:vertical {
+  width: 0;
+}
+
+.bulk-import-grid-scroll::-webkit-scrollbar-track:horizontal {
+  background: transparent;
+}
+
+.bulk-import-grid-scroll::-webkit-scrollbar-thumb:horizontal {
+  background: rgba(107, 114, 128, 0.5);
+  border-radius: 999px;
+}
+
+.bulk-import-grid-scroll::-webkit-scrollbar-thumb:horizontal:hover {
+  background: rgba(107, 114, 128, 0.7);
+}
+
 .app-shell-main {
   padding-top: env(safe-area-inset-top);
 }
