@@ -3,6 +3,11 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { runAppSync } from '../../services/appSync';
 
 export default function PageLayout({ title, error, children }) {
+  const rawBuildStamp = typeof __APP_BUILD_TIMESTAMP__ === 'string' ? __APP_BUILD_TIMESTAMP__ : '';
+  const buildStamp = rawBuildStamp
+    ? rawBuildStamp.replace('T', ' ').replace(/:\d\d\.\d{3}Z$/, 'Z')
+    : 'unknown';
+
   const [syncLoading, setSyncLoading] = useState(false);
 
   const handleSync = async () => {
@@ -20,14 +25,15 @@ export default function PageLayout({ title, error, children }) {
         <h1 className="h4 mb-0 fw-bold text-body-emphasis">{title}</h1>
         <button
           type="button"
-          className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"
+          className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
           onClick={handleSync}
           disabled={syncLoading}
           title="Sync app"
           aria-label="Sync app"
-          style={{ width: '2.5rem', height: '2.5rem' }}
+          style={{ minHeight: '2.5rem' }}
         >
           <ArrowPathIcon className={syncLoading ? 'animate-spin' : ''} style={{ width: 18, height: 18 }} />
+          <span style={{ fontSize: '0.65rem', lineHeight: 1 }}>{buildStamp}</span>
         </button>
       </div>
       {error && (
