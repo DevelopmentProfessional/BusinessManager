@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import cacheService from './cacheService';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://businessmanager-reference-api.onrender.com/api/v1';
+
 const IMPLIED_PERMISSIONS = {
   read: ['read', 'read_all', 'view_all', 'write', 'write_all', 'delete', 'admin'],
   read_all: ['read_all', 'view_all', 'write_all', 'delete', 'admin'],
@@ -105,7 +107,6 @@ const useStore = create((set, get) => ({
       try { storageToken = localStorage.getItem('token') || sessionStorage.getItem('token'); } catch {}
       const token = get().token || storageToken;
       if (!token) return;
-      const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
       const response = await fetch(`${API_BASE_URL}/auth/me/permissions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -131,7 +132,6 @@ const useStore = create((set, get) => ({
       const token = get().token || localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) return;
 
-      const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
