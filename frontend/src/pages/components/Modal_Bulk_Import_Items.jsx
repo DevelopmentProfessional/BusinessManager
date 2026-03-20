@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
-import { ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ArrowsUpDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useViewMode from '../../services/useViewMode';
 
 const FIELD_OPTIONS = [
@@ -106,6 +106,25 @@ function parseNumber(value, fieldLabel) {
   return { ok: true, value: numeric };
 }
 
+function compareCellValues(leftValue, rightValue, direction) {
+  const left = String(leftValue || '').trim();
+  const right = String(rightValue || '').trim();
+
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+
+  const leftNumber = Number(left.replace(/,/g, ''));
+  const rightNumber = Number(right.replace(/,/g, ''));
+  const bothNumeric = Number.isFinite(leftNumber) && Number.isFinite(rightNumber);
+
+  const comparison = bothNumeric
+    ? leftNumber - rightNumber
+    : left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
+
+  return direction === 'desc' ? comparison * -1 : comparison;
+}
+
 export default function Modal_Bulk_Import_Items({
   isOpen,
   onClose,
@@ -120,6 +139,7 @@ export default function Modal_Bulk_Import_Items({
   const [mappings, setMappings] = useState(() => createDefaultMappings(DEFAULT_COLUMN_COUNT));
   const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
   const [areMappingsCleared, setAreMappingsCleared] = useState(false);
+  const [sortState, setSortState] = useState({ colIndex: null, direction: 'asc' });
   const [status, setStatus] = useState({ type: null, message: '' });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -130,6 +150,7 @@ export default function Modal_Bulk_Import_Items({
     setMappings(createDefaultMappings(DEFAULT_COLUMN_COUNT));
     setSelectedCell({ row: 0, col: 0 });
     setAreMappingsCleared(false);
+    setSortState({ colIndex: null, direction: 'asc' });
     setStatus({ type: null, message: '' });
     setIsSaving(false);
   }, [isOpen]);
@@ -249,7 +270,24 @@ export default function Modal_Bulk_Import_Items({
 
   const handleClearGrid = () => {
     setRows(makeRows(DEFAULT_ROW_COUNT, columns.length));
+    setSortState({ colIndex: null, direction: 'asc' });
     setStatus({ type: null, message: '' });
+  };
+
+  const handleSortColumn = (colIndex) => {
+    const nextDirection = sortState.colIndex === colIndex && sortState.direction === 'asc' ? 'desc' : 'asc';
+
+    setRows((prevRows) => {
+      const sortedRows = [...prevRows];
+      sortedRows.sort((leftRow, rightRow) => compareCellValues(leftRow[colIndex], rightRow[colIndex], nextDirection));
+      return sortedRows;
+    });
+
+    setSortState({ colIndex, direction: nextDirection });
+    setStatus({
+      type: 'info',
+      message: `Sorted column ${colIndex + 1} ${nextDirection === 'asc' ? 'ascending' : 'descending'}.`,
+    });
   };
 
   const setMapping = (colIndex, field) => {
@@ -459,6 +497,14 @@ export default function Modal_Bulk_Import_Items({
                         onClick={() => handleClearColumn(colIndex)}
                       >
                         <TrashIcon style={{ width: 12, height: 12 }} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-sm p-1 ${sortState.colIndex === colIndex ? 'btn-secondary text-white' : 'btn-outline-secondary'}`}
+                        title={`Sort this column ${sortState.colIndex === colIndex && sortState.direction === 'asc' ? 'descending' : 'ascending'}`}
+                        onClick={() => handleSortColumn(colIndex)}
+                      >
+                        <ArrowsUpDownIcon style={{ width: 12, height: 12 }} />
                       </button>
                       <select
                         className="form-select form-select-sm border-0 shadow-none"
