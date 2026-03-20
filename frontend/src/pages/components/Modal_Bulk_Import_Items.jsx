@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const FIELD_OPTIONS = [
   { value: '__ignore__', label: 'Ignore / Skip this column' },
@@ -235,6 +235,28 @@ export default function Modal_Bulk_Import_Items({
     setRows((prev) => [...prev, Array.from({ length: columns.length }, () => '')]);
   };
 
+  const handleDeleteRow = (rowIndex) => {
+    setRows((prev) => {
+      if (prev.length <= 1) {
+        return [Array.from({ length: columns.length }, () => '')];
+      }
+      return prev.filter((_, idx) => idx !== rowIndex);
+    });
+    setSelectedCell((prev) => ({
+      row: Math.max(0, Math.min(prev.row, rows.length - 2)),
+      col: prev.col,
+    }));
+  };
+
+  const handleClearColumn = (colIndex) => {
+    setRows((prevRows) => prevRows.map((row) => {
+      const next = [...row];
+      next[colIndex] = '';
+      return next;
+    }));
+    setStatus({ type: 'info', message: `Cleared column ${colIndex + 1}.` });
+  };
+
   const handleClearGrid = () => {
     setRows(makeRows(DEFAULT_ROW_COUNT, columns.length));
     setStatus({ type: null, message: '' });
@@ -413,10 +435,18 @@ export default function Modal_Bulk_Import_Items({
                 </th>
                 {columns.map((col, colIndex) => (
                   <th key={col.id} style={{ minWidth: 170 }}>
-                    <div className="d-flex flex-column gap-1">
-                      <div className="small text-muted">{col.label}</div>
+                    <div className="d-flex align-items-center gap-1">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary p-1"
+                        title="Clear this column"
+                        onClick={() => handleClearColumn(colIndex)}
+                      >
+                        <TrashIcon style={{ width: 12, height: 12 }} />
+                      </button>
                       <select
-                        className="form-select form-select-sm"
+                        className="form-select form-select-sm border-0 shadow-none"
+                        style={{ backgroundColor: 'transparent' }}
                         value={mappings[colIndex] || '__ignore__'}
                         onChange={(e) => setMapping(colIndex, e.target.value)}
                       >
@@ -432,7 +462,19 @@ export default function Modal_Bulk_Import_Items({
             <tbody>
               {rows.map((row, rowIndex) => (
                 <tr key={`r_${rowIndex}`}>
-                  <td className="text-muted small">{rowIndex + 1}</td>
+                  <td className="text-muted small">
+                    <div className="d-flex align-items-center gap-1">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-link text-danger p-0"
+                        title="Delete this row"
+                        onClick={() => handleDeleteRow(rowIndex)}
+                      >
+                        <TrashIcon style={{ width: 12, height: 12 }} />
+                      </button>
+                      <span>{rowIndex + 1}</span>
+                    </div>
+                  </td>
                   {columns.map((col, colIndex) => (
                     <td key={`${col.id}_${rowIndex}`}>
                       <input

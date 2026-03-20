@@ -520,8 +520,14 @@ const Profile = () => {
         // best-effort ping only
       }
 
-      setSettingsSuccess('Sync complete. Latest server data has been refreshed.');
-      setTimeout(() => setSettingsSuccess(''), 3000);
+      if (typeof window !== 'undefined' && typeof window.forceServiceWorkerRefresh === 'function') {
+        setSettingsSuccess('Sync complete. Refreshing app shell...');
+        await window.forceServiceWorkerRefresh();
+        return;
+      }
+
+      setSettingsSuccess('Sync complete. Reloading page...');
+      window.location.reload();
     } catch (err) {
       setSettingsError('Sync failed. Please try again.');
     } finally {

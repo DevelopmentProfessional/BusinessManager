@@ -8,6 +8,7 @@ import path from 'path'
 export default defineConfig(({ command, mode }) => {
   // Always enable HTTPS in dev so phones on the LAN can use the camera (requires secure context)
   const isDev = command === 'serve'
+  const enablePwa = process.env.VITE_ENABLE_PWA !== 'false'
 
   // Use custom cert (includes LAN IP SAN) so other devices on the network can connect
   const sslDir = path.resolve(__dirname, '../ssl')
@@ -17,43 +18,48 @@ export default defineConfig(({ command, mode }) => {
 
   const plugins = [
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['app-icon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'app-icon-192.png', 'app-icon-512.png'],
-      manifest: {
-        name: 'Business',
-        short_name: 'Business',
-        description: 'Business Management System',
-        start_url: '/',
-        display: 'standalone',
-        background_color: '#000000',
-        theme_color: '#000000',
-        icons: [
-          {
-            src: '/app-icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/app-icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/app-icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
-          }
-        ]
-      },
-      devOptions: {
-        enabled: false
-      }
-    })
   ]
+
+  if (enablePwa) {
+    plugins.push(
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['app-icon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'app-icon-192.png', 'app-icon-512.png'],
+        manifest: {
+          name: 'Business',
+          short_name: 'Business',
+          description: 'Business Management System',
+          start_url: '/',
+          display: 'standalone',
+          background_color: '#000000',
+          theme_color: '#000000',
+          icons: [
+            {
+              src: '/app-icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
+            }
+          ]
+        },
+        devOptions: {
+          enabled: false
+        }
+      })
+    )
+  }
 
   return {
     plugins,
