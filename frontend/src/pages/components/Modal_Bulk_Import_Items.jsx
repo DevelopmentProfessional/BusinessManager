@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 const FIELD_OPTIONS = [
   { value: '__ignore__', label: 'Ignore / Skip this column' },
@@ -17,6 +18,7 @@ const FIELD_OPTIONS = [
 
 const DEFAULT_COLUMN_COUNT = 8;
 const DEFAULT_ROW_COUNT = 20;
+const DEFAULT_FIELD_SEQUENCE = ['name', 'sku', 'price', 'quantity', 'type', 'category', 'description', 'min_stock_level'];
 
 function makeColumns(count) {
   return Array.from({ length: count }, (_, i) => ({
@@ -29,11 +31,12 @@ function makeRows(rowCount, colCount) {
   return Array.from({ length: rowCount }, () => Array.from({ length: colCount }, () => ''));
 }
 
-function moveArrayItem(items, fromIndex, toIndex) {
-  const next = [...items];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
+function getDefaultMappingForIndex(index) {
+  return DEFAULT_FIELD_SEQUENCE[index] || '__ignore__';
+}
+
+function createDefaultMappings(count) {
+  return Array.from({ length: count }, (_, index) => getDefaultMappingForIndex(index));
 }
 
 function parseCsvLine(line) {
@@ -110,40 +113,19 @@ export default function Modal_Bulk_Import_Items({
 }) {
   const [columns, setColumns] = useState(() => makeColumns(DEFAULT_COLUMN_COUNT));
   const [rows, setRows] = useState(() => makeRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMN_COUNT));
-  const [mappings, setMappings] = useState(() => {
-    const initial = Array.from({ length: DEFAULT_COLUMN_COUNT }, () => '__ignore__');
-    initial[0] = 'name';
-    initial[1] = 'sku';
-    initial[2] = 'price';
-    initial[3] = 'quantity';
-    initial[4] = 'type';
-    return initial;
-  });
+  const [mappings, setMappings] = useState(() => createDefaultMappings(DEFAULT_COLUMN_COUNT));
   const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
-  const [dragIndex, setDragIndex] = useState(null);
-  const [dropIndex, setDropIndex] = useState(null);
+  const [areMappingsCleared, setAreMappingsCleared] = useState(false);
   const [status, setStatus] = useState({ type: null, message: '' });
   const [isSaving, setIsSaving] = useState(false);
-
-  const pointerStateRef = useRef(null);
-  const tableWrapRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setColumns(makeColumns(DEFAULT_COLUMN_COUNT));
     setRows(makeRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMN_COUNT));
-    setMappings((prev) => {
-      const next = Array.from({ length: DEFAULT_COLUMN_COUNT }, () => '__ignore__');
-      next[0] = prev?.[0] || 'name';
-      next[1] = prev?.[1] || 'sku';
-      next[2] = prev?.[2] || 'price';
-      next[3] = prev?.[3] || 'quantity';
-      next[4] = prev?.[4] || 'type';
-      return next;
-    });
+    setMappings(createDefaultMappings(DEFAULT_COLUMN_COUNT));
     setSelectedCell({ row: 0, col: 0 });
-    setDragIndex(null);
-    setDropIndex(null);
+    setAreMappingsCleared(false);
     setStatus({ type: null, message: '' });
     setIsSaving(false);
   }, [isOpen]);
@@ -175,7 +157,9 @@ export default function Modal_Bulk_Import_Items({
 
     setMappings((prev) => {
       const next = [...prev];
-      while (next.length < requiredCols) next.push('__ignore__');
+      while (next.length < requiredCols) {
+        next.push(getDefaultMappingForIndex(next.length));
+      }
       return next;
     });
 
@@ -256,75 +240,25 @@ export default function Modal_Bulk_Import_Items({
     setStatus({ type: null, message: '' });
   };
 
-  const applyColumnMove = (fromIndex, toIndex) => {
-    if (fromIndex == null || toIndex == null || fromIndex === toIndex) return;
-
-    setColumns((prev) => moveArrayItem(prev, fromIndex, toIndex));
-    setMappings((prev) => moveArrayItem(prev, fromIndex, toIndex));
-    setRows((prevRows) => {
-      return prevRows.map((row) => moveArrayItem(row, fromIndex, toIndex));
-    });
-
-    setStatus({ type: 'info', message: `Moved column ${fromIndex + 1} to position ${toIndex + 1}.` });
-  };
-
-  const startDesktopDrag = (event, index) => {
-    setDragIndex(index);
-    setDropIndex(index);
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(index));
-  };
-
-  const onDesktopDrop = (event, index) => {
-    event.preventDefault();
-    const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-    applyColumnMove(fromIndex, index);
-    setDragIndex(null);
-    setDropIndex(null);
-  };
-
-  const startPointerDrag = (event, index) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    pointerStateRef.current = {
-      pointerId: event.pointerId,
-      fromIndex: index,
-      toIndex: index,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragIndex(index);
-    setDropIndex(index);
-  };
-
-  const movePointerDrag = (event) => {
-    const state = pointerStateRef.current;
-    if (!state || state.pointerId !== event.pointerId) return;
-
-    const node = document.elementFromPoint(event.clientX, event.clientY);
-    const th = node?.closest?.('[data-col-index]');
-    if (!th) return;
-
-    const idx = Number(th.getAttribute('data-col-index'));
-    if (Number.isNaN(idx)) return;
-
-    state.toIndex = idx;
-    setDropIndex(idx);
-  };
-
-  const endPointerDrag = (event) => {
-    const state = pointerStateRef.current;
-    if (!state || state.pointerId !== event.pointerId) return;
-    pointerStateRef.current = null;
-    applyColumnMove(state.fromIndex, state.toIndex);
-    setDragIndex(null);
-    setDropIndex(null);
-  };
-
   const setMapping = (colIndex, field) => {
     setMappings((prev) => {
       const next = [...prev];
       next[colIndex] = field;
       return next;
     });
+  };
+
+  const handleToggleClearMappings = () => {
+    if (areMappingsCleared) {
+      setMappings(createDefaultMappings(columns.length));
+      setAreMappingsCleared(false);
+      setStatus({ type: 'info', message: 'Column mappings restored to defaults.' });
+      return;
+    }
+
+    setMappings(Array.from({ length: columns.length }, () => '__ignore__'));
+    setAreMappingsCleared(true);
+    setStatus({ type: 'info', message: 'Column mappings cleared. Click again to restore defaults.' });
   };
 
   const buildPayload = () => {
@@ -441,16 +375,11 @@ export default function Modal_Bulk_Import_Items({
         <div className="border-bottom border-gray-200 dark:border-gray-700 px-3 py-2 d-flex justify-content-between align-items-center">
           <div>
             <div className="fw-semibold">Bulk Add Items</div>
-            <div className="small text-muted">Paste your product list from Excel/Google Sheets, map columns, then import in one click.</div>
-          </div>
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>
-            Close
-          </button>
+           </div> 
         </div>
 
         <div className="px-3 py-2 border-bottom border-gray-200 dark:border-gray-700 bg-light-subtle">
-          <div className="small mb-2">Paste shortcut: click any cell then press Ctrl+V. You can also paste CSV directly.</div>
-          <div className="d-flex flex-wrap gap-2">
+           <div className="d-flex flex-wrap gap-2">
             <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleAddRow}>
               Add Row
             </button>
@@ -468,80 +397,36 @@ export default function Modal_Bulk_Import_Items({
           )}
         </div>
 
-        <div className="px-3 py-2 border-bottom border-gray-200 dark:border-gray-700">
-          <div className="fw-semibold mb-2">Column Mapping</div>
-          <div className="d-flex gap-2 overflow-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
-            {columns.map((col, idx) => (
-              <div key={col.id} className="border rounded p-2" style={{ minWidth: 190 }}>
-                <div className="small fw-semibold mb-1 text-muted">{col.label}</div>
-                <select
-                  className="form-select form-select-sm"
-                  value={mappings[idx] || '__ignore__'}
-                  onChange={(e) => setMapping(idx, e.target.value)}
-                >
-                  {FIELD_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div ref={tableWrapRef} className="flex-grow-1 overflow-auto px-3 py-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex-grow-1 overflow-auto px-3 py-2" style={{ WebkitOverflowScrolling: 'touch' }}>
           <table className="table table-sm table-bordered align-middle" style={{ minWidth: Math.max(900, columns.length * 150) }}>
             <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 2 }}>
               <tr>
-                <th style={{ width: 56 }}>#</th>
-                {columns.map((col, colIndex) => {
-                  const isDragSource = dragIndex === colIndex;
-                  const isDropTarget = dropIndex === colIndex && dragIndex !== null && dropIndex !== dragIndex;
-                  return (
-                    <th
-                      key={col.id}
-                      data-col-index={colIndex}
-                      draggable
-                      onDragStart={(e) => startDesktopDrag(e, colIndex)}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setDropIndex(colIndex);
-                      }}
-                      onDrop={(e) => onDesktopDrop(e, colIndex)}
-                      onDragEnd={() => {
-                        setDragIndex(null);
-                        setDropIndex(null);
-                      }}
-                      onPointerDown={(e) => startPointerDrag(e, colIndex)}
-                      onPointerMove={movePointerDrag}
-                      onPointerUp={endPointerDrag}
-                      onPointerCancel={endPointerDrag}
-                      className={isDropTarget ? 'table-primary' : ''}
-                      style={{
-                        minWidth: 140,
-                        cursor: 'grab',
-                        opacity: isDragSource ? 0.7 : 1,
-                        userSelect: 'none',
-                        touchAction: 'none',
-                      }}
-                    >
-                      <div className="d-flex justify-content-between align-items-center gap-2">
-                        <input
-                          className="form-control form-control-sm"
-                          value={col.label}
-                          onChange={(e) => {
-                            const label = e.target.value;
-                            setColumns((prev) => {
-                              const next = [...prev];
-                              next[colIndex] = { ...next[colIndex], label };
-                              return next;
-                            });
-                          }}
-                        />
-                        <span className="text-muted small">::</span>
-                      </div>
-                    </th>
-                  );
-                })}
+                <th style={{ width: 56 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary p-1"
+                    title={areMappingsCleared ? 'Restore default column mappings' : 'Clear all column mappings'}
+                    onClick={handleToggleClearMappings}
+                  >
+                    <ArrowPathIcon style={{ width: 14, height: 14 }} />
+                  </button>
+                </th>
+                {columns.map((col, colIndex) => (
+                  <th key={col.id} style={{ minWidth: 170 }}>
+                    <div className="d-flex flex-column gap-1">
+                      <div className="small text-muted">{col.label}</div>
+                      <select
+                        className="form-select form-select-sm"
+                        value={mappings[colIndex] || '__ignore__'}
+                        onChange={(e) => setMapping(colIndex, e.target.value)}
+                      >
+                        {FIELD_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -551,7 +436,8 @@ export default function Modal_Bulk_Import_Items({
                   {columns.map((col, colIndex) => (
                     <td key={`${col.id}_${rowIndex}`}>
                       <input
-                        className="form-control form-control-sm"
+                        className="form-control form-control-sm border-0 shadow-none"
+                        style={{ backgroundColor: 'transparent' }}
                         value={row[colIndex] || ''}
                         onFocus={() => setSelectedCell({ row: rowIndex, col: colIndex })}
                         onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
