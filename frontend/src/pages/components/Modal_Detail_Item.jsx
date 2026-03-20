@@ -671,13 +671,24 @@ export default function Modal_Detail_Item({
   // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
   const loadImages = async (inventoryId) => {
     try {
+      // Always try to fetch fresh from database first (direct API call, not cached)
       const response = await inventoryAPI.getImages(inventoryId);
       const imageList = response.data || [];
       setImages(imageList);
       setCurrentImageIndex(0);
     } catch (error) {
-      console.error('Error loading images:', error);
-      setImages([]);
+      // Network error or offline — fall back to item's embedded images if available
+      // These might be stale if images were updated since the item was loaded,
+      // but they're better than nothing in offline mode
+      if (item?.images && Array.isArray(item.images) && item.images.length > 0) {
+        setImages(item.images);
+        setCurrentImageIndex(0);
+        console.warn('Using cached images from item (offline mode or network error):', error?.message);
+      } else {
+        // No fallback available — truly offline with no cached images
+        console.error('Error loading images and no cached images available:', error);
+        setImages([]);
+      }
     }
   };
 
@@ -731,8 +742,9 @@ export default function Modal_Detail_Item({
       await inventoryAPI.addImageUrl(item.id, { image_url: url, is_primary: images.length === 0 });
       setNewImageUrl('');
       setAddImageMode(null);
+      // Fetch fresh images from database (not cached)
       await loadImages(item.id);
-    } catch {
+    } catch (err) {
       setImageError('Failed to add image URL.');
     }
   };
@@ -744,8 +756,9 @@ export default function Modal_Detail_Item({
     try {
       const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
       await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
+      // Fetch fresh images from database (not cached)
       await loadImages(item.id);
-    } catch {
+    } catch (err) {
       setImageError('Failed to upload photo.');
     }
   };
@@ -759,8 +772,9 @@ export default function Modal_Detail_Item({
     e.target.value = '';
     try {
       await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
+      // Fetch fresh images from database (not cached)
       await loadImages(item.id);
-    } catch {
+    } catch (err) {
       setImageError('Failed to upload photo.');
     }
   };

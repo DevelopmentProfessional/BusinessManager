@@ -337,14 +337,12 @@ export const inventoryAPI = {
   
   invalidateCache: () => clearCache('inventory'),
 
-  // Image management
+  // Image management — always fetches fresh from database; uses cache only for offline mode
   getImages: (inventoryId) => api.get(`/isud/inventory/${inventoryId}/images`),
   addImageUrl: (inventoryId, imageData) => {
-    clearCache('inventory');
     return api.post(`/isud/inventory/${inventoryId}/images/url`, imageData);
   },
   uploadImageFile: (inventoryId, file, isPrimary = false) => {
-    clearCache('inventory');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('is_primary', isPrimary);
@@ -355,11 +353,9 @@ export const inventoryAPI = {
     });
   },
   updateImage: (imageId, imageData) => {
-    clearCache('inventory');
     return api.put(`/isud/inventory/images/${imageId}`, imageData);
   },
   deleteImage: (imageId) => {
-    clearCache('inventory');
     return api.delete(`/isud/inventory/images/${imageId}`);
   },
   getImageFileUrl: (imageId) => {
