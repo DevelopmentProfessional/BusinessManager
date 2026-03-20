@@ -47,6 +47,8 @@ import Modal_Detail_Item from './components/Modal_Detail_Item';
 import Gate_Permission from './components/Gate_Permission';
 import Suppliers_Panel from './components/Suppliers_Panel';
 import Modal_Bulk_Import_Items from './components/Modal_Bulk_Import_Items';
+import Modal from './components/Modal';
+import Form_Item from './components/Form_Item';
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
@@ -66,6 +68,7 @@ export default function Inventory() {
   const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
   const [showDiscountRules, setShowDiscountRules] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
@@ -187,6 +190,26 @@ export default function Inventory() {
       return;
     }
     setShowBulkImport(true);
+  };
+
+  const handleOpenAddItem = () => {
+    if (!hasPermission('inventory', 'write')) {
+      setError('You do not have permission to add items');
+      return;
+    }
+    setShowAddItemModal(true);
+  };
+
+  const handleCreateInventory = async (createData) => {
+    try {
+      await inventoryAPI.create(createData);
+      await loadInventoryData();
+      setShowAddItemModal(false);
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to create inventory item';
+      setError(String(detail));
+    }
   };
 
   const handleSubmitUpdate = async (inventoryId, updateData) => {
@@ -431,27 +454,24 @@ return (
         <Gate_Permission page="inventory" permission="write">
           <Button_Toolbar
             icon={PlusIcon}
-            label="Bulk Add Items"
-            onClick={handleOpenBulkImport}
+            label="Add"
+            onClick={handleOpenAddItem}
             className="btn-app-primary"
           />
-        </Gate_Permission>
 
-        {/* Clear Filters Button */}
-        {(typeFilter !== 'all' || stockFilter !== 'all') && (
           <Button_Toolbar
-            icon={XMarkIcon}
-            label="Clear"
-            onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
-            className="btn-app-danger"
+            icon={PlusIcon}
+            label="Bulk"
+            onClick={handleOpenBulkImport}
+            className="btn-app-secondary"
           />
-        )}
+        </Gate_Permission>
 
         {/* Type Filter */}
         <div className="position-relative">
           <Button_Toolbar
             icon={TagIcon}
-            label="Filter Type"
+            label="Type"
             onClick={() => {
               const nextOpen = !isTypeFilterOpen;
               setIsTypeFilterOpen(nextOpen);
@@ -522,7 +542,7 @@ return (
         <div className="position-relative">
           <Button_Toolbar
             icon={CircleStackIcon}
-            label="Filter Stock"
+            label="Stock"
             onClick={() => {
               const nextOpen = !isStockFilterOpen;
               setIsStockFilterOpen(nextOpen);
@@ -588,7 +608,28 @@ return (
             </div>
           )}
         </div>
+
+        {/* Clear Filters Button */}
+        {(typeFilter !== 'all' || stockFilter !== 'all') && (
+          <Button_Toolbar
+            icon={XMarkIcon}
+            label="Clear"
+            onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
+            className="btn-app-danger"
+          />
+        )}
       </PageTableFooter>
+
+    <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding>
+      <Form_Item
+        item={null}
+        showInitialQuantity
+        showScanner
+        existingSkus={inventory.map(i => i.sku).filter(Boolean)}
+        onCancel={() => setShowAddItemModal(false)}
+        onSubmit={handleCreateInventory}
+      />
+    </Modal>
 
     {/* Modals remain unchanged */}
     <Modal_Detail_Item
