@@ -526,6 +526,7 @@ export default function Modal_Detail_Item({
   onUpdateInventory,
   onDelete,
   canDelete = false,
+  isDeleting = false,
   cartQuantity = 0,
   existingSkus = []
 }) {
@@ -821,6 +822,7 @@ export default function Modal_Detail_Item({
   };
 
   const handleDelete = () => {
+    if (isDeleting) return;
     if (window.confirm('Are you sure you want to delete this item?')) {
       onDelete?.(item.id);
       onClose();
@@ -1588,9 +1590,10 @@ export default function Modal_Detail_Item({
               {canDelete && (
                 <Button_Toolbar
                   icon={TrashIcon}
-                  label="Delete Item"
+                  label={isDeleting ? 'Deleting...' : 'Delete Item'}
                   onClick={handleDelete}
                   className="btn-outline-danger"
+                  disabled={isDeleting}
                 />
               )}
             </div>

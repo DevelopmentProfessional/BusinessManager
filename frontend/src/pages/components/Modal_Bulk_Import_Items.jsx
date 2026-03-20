@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from './Modal';
 import { ArrowPathIcon, ArrowsUpDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 import useViewMode from '../../services/useViewMode';
@@ -142,6 +142,14 @@ export default function Modal_Bulk_Import_Items({
   const [sortState, setSortState] = useState({ colIndex: null, direction: 'asc' });
   const [status, setStatus] = useState({ type: null, message: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const scrollContainerRef = useRef(null);
+  const dragPanRef = useRef({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    scrollLeft: 0,
+    scrollTop: 0,
+  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -154,6 +162,50 @@ export default function Modal_Bulk_Import_Items({
     setStatus({ type: null, message: '' });
     setIsSaving(false);
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleWindowMouseUp = () => {
+      if (!dragPanRef.current.isDragging) return;
+      dragPanRef.current.isDragging = false;
+      document.body.style.userSelect = '';
+      const el = scrollContainerRef.current;
+      if (el) el.style.cursor = 'grab';
+    };
+
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, []);
+
+  const handlePanMouseDown = (event) => {
+    if (event.button !== 0) return;
+    const target = event.target;
+    if (target.closest('input, textarea, select, button, a, label')) return;
+
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    dragPanRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    };
+    el.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+  };
+
+  const handlePanMouseMove = (event) => {
+    const el = scrollContainerRef.current;
+    if (!el || !dragPanRef.current.isDragging) return;
+
+    const dx = event.clientX - dragPanRef.current.startX;
+    const dy = event.clientY - dragPanRef.current.startY;
+    el.scrollLeft = dragPanRef.current.scrollLeft - dx;
+    el.scrollTop = dragPanRef.current.scrollTop - dy;
+  };
 
   const ensureGridSize = (requiredRows, requiredCols) => {
     setColumns((prevCols) => {
@@ -428,7 +480,13 @@ export default function Modal_Bulk_Import_Items({
            </div> 
         </div>
 
-        <div className="flex-grow-1 d-flex flex-column justify-content-end overflow-auto px-3 py-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div
+          ref={scrollContainerRef}
+          className="flex-grow-1 overflow-auto bulk-import-grid-scroll"
+          style={{ WebkitOverflowScrolling: 'touch', position: 'relative', cursor: 'grab' }}
+          onMouseDown={handlePanMouseDown}
+          onMouseMove={handlePanMouseMove}
+        >
           <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
             <colgroup>
               <col style={{ width: 56 }} />
@@ -475,7 +533,7 @@ export default function Modal_Bulk_Import_Items({
                 </tr>
               ))}
             </tbody>
-            <tfoot className="table-light" style={{ position: 'sticky', bottom: 0, zIndex: 2 }}>
+            <tfoot className="table-light" style={{ position: 'sticky', bottom: 0, zIndex: 3 }}>
               <tr>
                 <th style={{ width: 56 }}>
                   <button
@@ -498,14 +556,7 @@ export default function Modal_Bulk_Import_Items({
                       >
                         <TrashIcon style={{ width: 12, height: 12 }} />
                       </button>
-                      <button
-                        type="button"
-                        className={`btn btn-sm p-1 ${sortState.colIndex === colIndex ? 'btn-secondary text-white' : 'btn-outline-secondary'}`}
-                        title={`Sort this column ${sortState.colIndex === colIndex && sortState.direction === 'asc' ? 'descending' : 'ascending'}`}
-                        onClick={() => handleSortColumn(colIndex)}
-                      >
-                        <ArrowsUpDownIcon style={{ width: 12, height: 12 }} />
-                      </button>
+                   
                       <select
                         className="form-select form-select-sm border-0 shadow-none"
                         style={{ backgroundColor: 'transparent' }}
@@ -516,6 +567,14 @@ export default function Modal_Bulk_Import_Items({
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
+                         <button
+                        type="button"
+                        className={`btn btn-sm p-1 ${sortState.colIndex === colIndex ? 'btn-secondary text-white' : 'btn-outline-secondary'}`}
+                        title={`Sort this column ${sortState.colIndex === colIndex && sortState.direction === 'asc' ? 'descending' : 'ascending'}`}
+                        onClick={() => handleSortColumn(colIndex)}
+                      >
+                        <ArrowsUpDownIcon style={{ width: 12, height: 12 }} />
+                      </button>
                     </div>
                   </th>
                 ))}
