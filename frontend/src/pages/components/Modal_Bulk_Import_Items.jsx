@@ -392,11 +392,17 @@ export default function Modal_Bulk_Import_Items({
 
         <div className="flex-grow-1 d-flex flex-column justify-content-end overflow-auto px-3 py-2" style={{ WebkitOverflowScrolling: 'touch' }}>
           <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
+            <colgroup>
+              <col style={{ width: 56 }} />
+              {columns.map((col) => (
+                <col key={col.id} style={{ minWidth: 170 }} />
+              ))}
+            </colgroup>
             <tbody>
               {rows.map((row, rowIndex) => (
                 <tr key={`r_${rowIndex}`}>
-                  <td className="text-muted small">
-                    <div className="d-flex align-items-center gap-1">
+                  <td className="text-muted small text-center align-middle">
+                    <div className="d-flex align-items-center justify-content-center gap-1">
                       <button
                         type="button"
                         className="btn btn-sm btn-link text-danger p-0"
@@ -431,55 +437,48 @@ export default function Modal_Bulk_Import_Items({
                 </tr>
               ))}
             </tbody>
+            <tfoot className="table-light" style={{ position: 'sticky', bottom: 0, zIndex: 2 }}>
+              <tr>
+                <th style={{ width: 56 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary p-1"
+                    title={areMappingsCleared ? 'Restore default column mappings' : 'Clear all column mappings'}
+                    onClick={handleToggleClearMappings}
+                  >
+                    <ArrowPathIcon style={{ width: 14, height: 14 }} />
+                  </button>
+                </th>
+                {columns.map((col, colIndex) => (
+                  <th key={col.id} style={{ minWidth: 170 }}>
+                    <div className="d-flex align-items-center gap-1">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary p-1"
+                        title="Clear this column"
+                        onClick={() => handleClearColumn(colIndex)}
+                      >
+                        <TrashIcon style={{ width: 12, height: 12 }} />
+                      </button>
+                      <select
+                        className="form-select form-select-sm border-0 shadow-none"
+                        style={{ backgroundColor: 'transparent' }}
+                        value={mappings[colIndex] || '__ignore__'}
+                        onChange={(e) => setMapping(colIndex, e.target.value)}
+                      >
+                        {FIELD_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </tfoot>
           </table>
         </div>
 
         <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="px-3 pb-2 border-bottom border-gray-200 dark:border-gray-700">
-            <div className="overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
-                <tfoot>
-                  <tr className="table-light">
-                    <th style={{ width: 56 }}>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary p-1"
-                        title={areMappingsCleared ? 'Restore default column mappings' : 'Clear all column mappings'}
-                        onClick={handleToggleClearMappings}
-                      >
-                        <ArrowPathIcon style={{ width: 14, height: 14 }} />
-                      </button>
-                    </th>
-                    {columns.map((col, colIndex) => (
-                      <th key={col.id} style={{ minWidth: 170 }}>
-                        <div className="d-flex align-items-center gap-1">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-secondary p-1"
-                            title="Clear this column"
-                            onClick={() => handleClearColumn(colIndex)}
-                          >
-                            <TrashIcon style={{ width: 12, height: 12 }} />
-                          </button>
-                          <select
-                            className="form-select form-select-sm border-0 shadow-none"
-                            style={{ backgroundColor: 'transparent' }}
-                            value={mappings[colIndex] || '__ignore__'}
-                            onChange={(e) => setMapping(colIndex, e.target.value)}
-                          >
-                            {FIELD_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
           {status.message && (
             <div className={`px-4 pt-2 small ${status.type === 'error' ? 'text-danger' : status.type === 'success' ? 'text-success' : 'text-muted'}`}>
               {status.message}
