@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
 import { ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline';
+import useViewMode from '../../services/useViewMode';
 
 const FIELD_OPTIONS = [
   { value: '__ignore__', label: 'Ignore / Skip this column' },
@@ -111,6 +112,9 @@ export default function Modal_Bulk_Import_Items({
   onImport,
   existingSkus = [],
 }) {
+  const { footerAlign } = useViewMode();
+  const alignClass = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
+
   const [columns, setColumns] = useState(() => makeColumns(DEFAULT_COLUMN_COUNT));
   const [rows, setRows] = useState(() => makeRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMN_COUNT));
   const [mappings, setMappings] = useState(() => createDefaultMappings(DEFAULT_COLUMN_COUNT));
@@ -501,15 +505,16 @@ export default function Modal_Bulk_Import_Items({
           </table>
         </div>
 
-        <div className="border-top border-gray-200 dark:border-gray-700 px-3 py-2 d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <div className="small text-muted">One button save: validate, map, and import in a single action.</div>
-          <div className="d-flex gap-2">
-            <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={isSaving}>
-              Cancel
-            </button>
-            <button type="button" className="btn btn-primary" onClick={handleImport} disabled={isSaving}>
-              {isSaving ? 'Importing...' : 'Save Imported Items'}
-            </button>
+        <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="row g-0">
+            <div className={`col-10 d-flex align-items-center gap-2 px-4 flex-wrap ${alignClass}`}>
+              <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={isSaving}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleImport} disabled={isSaving}>
+                {isSaving ? 'Importing...' : 'Save Imported Items'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
