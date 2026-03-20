@@ -80,6 +80,7 @@ import {
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, preloadMajorTables } from '../services/api';
 import api from '../services/api';
+import { runAppSync } from '../services/appSync';
 import Modal_Signature from './components/Modal_Signature';
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
 import useBranding from '../services/useBranding';
@@ -508,26 +509,8 @@ const Profile = () => {
     setSettingsError('');
     setSettingsSuccess('');
     try {
-      if (typeof window !== 'undefined' && typeof window.clearApiCache === 'function') {
-        window.clearApiCache();
-      }
-
-      await preloadMajorTables();
-
-      try {
-        await settingsAPI.getScheduleSettings();
-      } catch {
-        // best-effort ping only
-      }
-
-      if (typeof window !== 'undefined' && typeof window.forceServiceWorkerRefresh === 'function') {
-        setSettingsSuccess('Sync complete. Refreshing app shell...');
-        await window.forceServiceWorkerRefresh();
-        return;
-      }
-
-      setSettingsSuccess('Sync complete. Reloading page...');
-      window.location.reload();
+      setSettingsSuccess('Sync complete. Refreshing app shell...');
+      await runAppSync();
     } catch (err) {
       setSettingsError('Sync failed. Please try again.');
     } finally {

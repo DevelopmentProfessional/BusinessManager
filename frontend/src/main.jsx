@@ -18,26 +18,44 @@ if (pwaEnabled) {
 
   window.forceServiceWorkerRefresh = async () => {
     if (!('serviceWorker' in navigator)) {
-      window.location.reload()
+      const nextUrl = new URL(window.location.href)
+      nextUrl.searchParams.set('__sync', String(Date.now()))
+      window.location.replace(nextUrl.toString())
       return
     }
 
     try {
+      const registrations = await navigator.serviceWorker.getRegistrations()
+
       if (typeof updateSW === 'function') {
         updateSW(true)
       }
 
-      const registrations = await navigator.serviceWorker.getRegistrations()
       await Promise.all(registrations.map((registration) => registration.update()))
 
-      if (registrations.length === 0) {
-        await navigator.serviceWorker.register('/sw.js')
+      await Promise.all(registrations.map((registration) => registration.unregister()))
+
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys()
+        await Promise.all(
+          cacheKeys.map((key) => {
+            const normalized = key.toLowerCase()
+            if (normalized.includes('workbox') || normalized.includes('pwa') || normalized.includes('precache')) {
+              return caches.delete(key)
+            }
+            return Promise.resolve(false)
+          })
+        )
       }
+
+      await fetch(`/sw.js?sync=${Date.now()}`, { cache: 'no-store' }).catch(() => undefined)
     } catch {
       // Best effort only; reload still proceeds.
     }
 
-    window.location.reload()
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.set('__sync', String(Date.now()))
+    window.location.replace(nextUrl.toString())
   }
 } else if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
