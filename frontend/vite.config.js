@@ -24,6 +24,11 @@ export default defineConfig(({ command, mode }) => {
     plugins.push(
       VitePWA({
         registerType: 'autoUpdate',
+        workbox: {
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+        },
         includeAssets: ['app-icon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'app-icon-192.png', 'app-icon-512.png'],
         manifest: {
           name: 'Business',

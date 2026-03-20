@@ -8,13 +8,39 @@ import { registerSW } from 'virtual:pwa-register'
 
 const pwaEnabled = import.meta.env.VITE_ENABLE_PWA !== 'false'
 
+if (typeof window !== 'undefined') {
+  const currentUrl = new URL(window.location.href)
+  if (currentUrl.searchParams.has('__sync')) {
+    currentUrl.searchParams.delete('__sync')
+    window.history.replaceState({}, '', currentUrl.toString())
+  }
+}
+
 if (pwaEnabled) {
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
       updateSW(true)
     },
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return
+
+      registration.update().catch(() => undefined)
+
+      window.setInterval(() => {
+        registration.update().catch(() => undefined)
+      }, 15000)
+    },
   })
+
+  if ('serviceWorker' in navigator) {
+    let reloadedForController = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadedForController) return
+      reloadedForController = true
+      window.location.reload()
+    })
+  }
 
   window.forceServiceWorkerRefresh = async () => {
     if (!('serviceWorker' in navigator)) {
