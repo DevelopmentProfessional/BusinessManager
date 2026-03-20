@@ -12,10 +12,12 @@ import {
   ChartBarIcon,
   ShoppingCartIcon,
   SparklesIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import useViewMode from '../../services/useViewMode';
 import { chatAPI } from '../../services/api';
+import { runAppSync } from '../../services/appSync';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
@@ -37,6 +39,7 @@ function classNames(...classes) {
 
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const unreadRequestInFlightRef = useRef(false);
   const unreadLastLoadedAtRef = useRef(0);
@@ -130,6 +133,20 @@ export default function Layout({ children }) {
 
     return hasPermission(page, permission);
   });
+
+  const rawBuildStamp = typeof __APP_BUILD_TIMESTAMP__ === 'string' ? __APP_BUILD_TIMESTAMP__ : '';
+  const buildStamp = rawBuildStamp
+    ? rawBuildStamp.replace('T', ' ').replace(/:\d\d\.\d{3}Z$/, 'Z')
+    : 'unknown';
+
+  const handleGlobalSync = async () => {
+    setSyncLoading(true);
+    try {
+      await runAppSync();
+    } finally {
+      setSyncLoading(false);
+    }
+  };
 
   return (
     <div className="app-shell bg-body d-flex flex-column">
@@ -236,6 +253,28 @@ export default function Layout({ children }) {
         }}
       >
         <EllipsisHorizontalIcon className="h-5 w-5" />
+      </button>
+
+      {/* Global sync button - Top-right */}
+      <button
+        type="button"
+        onClick={handleGlobalSync}
+        disabled={syncLoading}
+        title="Sync app"
+        aria-label="Sync app"
+        className="btn btn-sm btn-outline-secondary position-fixed d-flex align-items-center gap-1"
+        style={{
+          zIndex: 1200,
+          top: !isOnline ? '2.75rem' : '0.75rem',
+          right: '1rem',
+          minHeight: '2.5rem',
+          backgroundColor: 'var(--bs-tertiary-bg)',
+          borderColor: 'var(--bs-border-color)',
+          color: 'var(--bs-body-color)',
+        }}
+      >
+        <ArrowPathIcon className={syncLoading ? 'animate-spin' : ''} style={{ width: 18, height: 18 }} />
+        <span style={{ fontSize: '0.65rem', lineHeight: 1 }}>{buildStamp}</span>
       </button>
 
     </div>
