@@ -25,6 +25,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { XMarkIcon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import useViewMode from '../../services/useViewMode';
 
 export default function Modal_BulkImport({
   isOpen,
@@ -35,6 +36,9 @@ export default function Modal_BulkImport({
   itemTypes = null,       // e.g. [{ value: 'PRODUCT', label: 'Product' }, ...]
   defaultItemType = '',
 }) {
+  const { footerAlign } = useViewMode();
+  const alignClass = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
+
   const [text, setText] = useState('');
   const [photos, setPhotos] = useState({});       // { [index]: { file: File, url: string } }
   const [types, setTypes] = useState({});          // { [index]: string }
@@ -251,19 +255,23 @@ export default function Modal_BulkImport({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 d-flex justify-content-end gap-2 p-3 border-top border-gray-200 dark:border-gray-700">
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose} disabled={saving}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-            onClick={handleSave}
-            disabled={saving || parsedNames.length === 0}
-          >
-            <CheckIcon style={{ width: 14, height: 14 }} />
-            {saving ? 'Saving…' : `Save${parsedNames.length > 0 ? ` (${parsedNames.length})` : ''}`}
-          </button>
+        <div className="flex-shrink-0 py-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="row g-0">
+            <div className={`col-10 d-flex align-items-center gap-2 px-4 flex-wrap ${alignClass}`}>
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose} disabled={saving}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                onClick={handleSave}
+                disabled={saving || parsedNames.length === 0}
+              >
+                <CheckIcon style={{ width: 14, height: 14 }} />
+                {saving ? 'Saving…' : `Save${parsedNames.length > 0 ? ` (${parsedNames.length})` : ''}`}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
