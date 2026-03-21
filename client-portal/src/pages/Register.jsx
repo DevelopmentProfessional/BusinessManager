@@ -47,18 +47,9 @@ export default function Register() {
           <ArrowLeftIcon className="w-4 h-4" />All businesses
         </button>
         <div className="text-center mb-8">
-          {preselected ? (
+          {preselected && logoSrc && (
             <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
-              {logoSrc
-                ? <img src={logoSrc} alt={preselected.name} className="w-full h-full object-contain" />
-                : <div className="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <span className="text-white font-black text-3xl">{preselected.name?.[0]?.toUpperCase()}</span>
-                  </div>
-              }
-            </div>
-          ) : (
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <span className="text-white font-bold text-2xl">C</span>
+              <img src={logoSrc} alt={preselected.name} className="w-full h-full object-contain" />
             </div>
           )}
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>

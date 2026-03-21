@@ -66,17 +66,11 @@ export default function Login() {
         <div className="text-center mb-8">
           {preselected ? (
             <>
-              <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
-                {logoSrc ? (
+              {logoSrc && (
+                <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
                   <img src={logoSrc} alt={preselected.name} className="w-full h-full object-contain" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <span className="text-white font-black text-3xl">
-                      {preselected.name?.[0]?.toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
               <h1 className="text-2xl font-bold text-gray-900">{preselected.name}</h1>
               <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
             </>
