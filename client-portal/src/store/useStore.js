@@ -68,6 +68,13 @@ const useStore = create((set, get) => ({
   cartTotal: () => get().cart.reduce((sum, c) => sum + c.price * c.quantity, 0),
   cartCount: () => get().cart.reduce((sum, c) => sum + c.quantity, 0),
 
+  // Nav alignment preference
+  navAlignment: localStorage.getItem('cp_nav_align') || 'right',
+  setNavAlignment: (val) => {
+    set({ navAlignment: val })
+    localStorage.setItem('cp_nav_align', val)
+  },
+
   // Toast
   toasts: [],
   addToast: (message, type = 'success') => {

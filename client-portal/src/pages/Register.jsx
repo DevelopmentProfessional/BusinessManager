@@ -30,7 +30,7 @@ export default function Register() {
         data.access_token,
         form.company_id
       )
-      navigate('/dashboard')
+      navigate('/shop')
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed.')
     } finally {

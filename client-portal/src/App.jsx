@@ -6,8 +6,7 @@ import Toasts from './pages/components/Toasts'
 const CompanySelect = lazy(() => import('./pages/CompanySelect'))
 const Login         = lazy(() => import('./pages/Login'))
 const Register      = lazy(() => import('./pages/Register'))
-const Dashboard     = lazy(() => import('./pages/Dashboard'))
-const Catalog       = lazy(() => import('./pages/Catalog'))
+const Shop          = lazy(() => import('./pages/Shop'))
 const MyAccount     = lazy(() => import('./pages/MyAccount'))
 const Cart          = lazy(() => import('./pages/Cart'))
 const OrderHistory  = lazy(() => import('./pages/OrderHistory'))
@@ -21,8 +20,8 @@ function ProtectedRoute({ children }) {
 
 function Spinner() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
+      <div className="spinner-border text-primary" />
     </div>
   )
 }
@@ -47,8 +46,9 @@ export default function App() {
           <Route path="/register" element={<Register />} />
 
           {/* Protected */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/catalog"   element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+          <Route path="/shop"      element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<Navigate to="/shop" replace />} />
+          <Route path="/catalog"   element={<Navigate to="/shop" replace />} />
           <Route path="/cart"      element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="/orders"    element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
           <Route path="/account"   element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />

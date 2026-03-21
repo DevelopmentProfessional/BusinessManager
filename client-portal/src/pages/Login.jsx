@@ -41,7 +41,7 @@ export default function Login() {
         data.access_token,
         form.company_id
       )
-      navigate('/dashboard')
+      navigate('/shop')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Check your credentials.')
     } finally {
