@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       // Proxy client-api calls during local development
       '/api/client': {
-        target: process.env.VITE_CLIENT_API_URL || 'http://localhost:8001',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
     },
