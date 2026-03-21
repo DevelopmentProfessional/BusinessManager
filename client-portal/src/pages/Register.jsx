@@ -8,6 +8,7 @@ export default function Register() {
   const navigate    = useNavigate()
   const location    = useLocation()
   const setAuth     = useStore(s => s.setAuth)
+  const loadCart    = useStore(s => s.loadCart)
   const preselected = location.state?.company || null
   const logoSrc     = preselected?.has_logo_data
     ? companiesAPI.logoUrl(preselected.company_id)
@@ -30,6 +31,7 @@ export default function Register() {
         data.access_token,
         form.company_id
       )
+      await loadCart()
       navigate('/shop')
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed.')

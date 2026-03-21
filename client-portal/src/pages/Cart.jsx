@@ -59,6 +59,8 @@ export default function Cart() {
   const companyId      = useStore(s => s.companyId)
   const addToast       = useStore(s => s.addToast)
 
+  const isOnline   = useStore(s => s.isOnline)
+
   const [checking, setChecking]         = useState(false)
   const [clientSecret, setClientSecret] = useState(null)
   const [currentOrderId, setCurrentOrderId] = useState(null)
@@ -209,6 +211,12 @@ export default function Cart() {
                   <span>${cartTotal.toFixed(2)}</span>
                 </div>
 
+                {!isOnline && (
+                  <div className="alert alert-warning py-2 px-3 small mt-3 mb-0">
+                    You're offline. Connect to the internet to checkout.
+                  </div>
+                )}
+
                 {error && (
                   <div className="alert alert-danger py-2 px-3 small mt-3 mb-0">{error}</div>
                 )}
@@ -217,7 +225,8 @@ export default function Cart() {
                   <button
                     className="btn btn-primary w-100 mt-3"
                     onClick={handleCheckout}
-                    disabled={checking}
+                    disabled={checking || !isOnline}
+                    title={!isOnline ? 'You are offline' : undefined}
                   >
                     {checking ? 'Preparing checkout…' : 'Proceed to Checkout'}
                   </button>

@@ -15,6 +15,7 @@ export default function Shop() {
   const companyId = useStore(s => s.companyId)
   const addToCart = useStore(s => s.addToCart)
   const addToast  = useStore(s => s.addToast)
+  const isOnline  = useStore(s => s.isOnline)
 
   const [products, setProducts] = useState([])
   const [services, setServices] = useState([])
@@ -73,6 +74,13 @@ export default function Shop() {
   return (
     <Layout>
       <div className="p-3" style={{ paddingBottom: '5rem' }}>
+
+        {/* ── Offline banner ──────────────────────────────────────── */}
+        {!isOnline && (
+          <div className="alert alert-warning py-2 px-3 small mb-3">
+            You're offline. Items added to cart will sync when you reconnect.
+          </div>
+        )}
 
         {/* ── Search + filters ───────────────────────────────────── */}
         <div className="d-flex flex-wrap gap-2 mb-4">

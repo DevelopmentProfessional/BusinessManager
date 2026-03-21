@@ -13,6 +13,7 @@ export default function Login() {
   const navigate   = useNavigate()
   const location   = useLocation()
   const setAuth    = useStore(s => s.setAuth)
+  const loadCart   = useStore(s => s.loadCart)
   const addToast   = useStore(s => s.addToast)
 
   // Company passed from CompanySelect page
@@ -41,6 +42,7 @@ export default function Login() {
         data.access_token,
         form.company_id
       )
+      await loadCart()
       navigate('/shop')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Check your credentials.')

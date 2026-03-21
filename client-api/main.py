@@ -36,7 +36,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from database import create_client_tables
-from routers import auth, catalog, bookings, orders, companies
+from routers import auth, catalog, bookings, orders, companies, cart
 
 # ── Logging ─────────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -107,6 +107,7 @@ PREFIX = "/api/client"
 app.include_router(companies.router, prefix=PREFIX)
 app.include_router(auth.router,      prefix=PREFIX)
 app.include_router(catalog.router,   prefix=PREFIX)
+app.include_router(cart.router,      prefix=PREFIX)
 app.include_router(bookings.router,  prefix=PREFIX)
 app.include_router(orders.router,    prefix=PREFIX)
 
