@@ -36,7 +36,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from database import create_client_tables
-from routers import auth, catalog, bookings, orders
+from routers import auth, catalog, bookings, orders, companies
 
 # ── Logging ─────────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -104,10 +104,11 @@ def health():
 # ── Routers ──────────────────────────────────────────────────────────────────────
 PREFIX = "/api/client"
 
-app.include_router(auth.router,     prefix=PREFIX)
-app.include_router(catalog.router,  prefix=PREFIX)
-app.include_router(bookings.router, prefix=PREFIX)
-app.include_router(orders.router,   prefix=PREFIX)
+app.include_router(companies.router, prefix=PREFIX)
+app.include_router(auth.router,      prefix=PREFIX)
+app.include_router(catalog.router,   prefix=PREFIX)
+app.include_router(bookings.router,  prefix=PREFIX)
+app.include_router(orders.router,    prefix=PREFIX)
 
 # Stripe webhook is registered under /api/client/orders/webhooks/stripe
 # (already prefixed inside orders.router)
