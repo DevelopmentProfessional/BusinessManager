@@ -62,6 +62,14 @@ class OrderStatus(str, Enum):
 
 # ─── EXISTING TABLES (read-only mirrors) ───────────────────────────────────────
 
+class Company(BaseModel, table=True):
+    """Registry of all companies. Authoritative source for company selection screen."""
+    __tablename__ = "company"
+    company_id: str = Field(unique=True, index=True)
+    name: str = Field(index=True)
+    is_active: bool = Field(default=True)
+
+
 class Client(BaseModel, table=True):
     """
     Maps to the existing 'client' table.
