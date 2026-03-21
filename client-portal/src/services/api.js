@@ -35,6 +35,12 @@ api.interceptors.response.use(
   }
 )
 
+// ── Companies (public) ───────────────────────────────────────────────────────
+export const companiesAPI = {
+  getAll: () => api.get('/companies').then(r => r.data),
+  logoUrl: (companyId) => `${BASE}/companies/${companyId}/logo`,
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
   register: (data)   => api.post('/auth/register', data).then(r => r.data),

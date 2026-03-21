@@ -1,13 +1,19 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { authAPI } from '../services/api'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { authAPI, companiesAPI } from '../services/api'
 import useStore from '../store/useStore'
 
 export default function Register() {
-  const navigate = useNavigate()
-  const setAuth  = useStore(s => s.setAuth)
+  const navigate    = useNavigate()
+  const location    = useLocation()
+  const setAuth     = useStore(s => s.setAuth)
+  const preselected = location.state?.company || null
+  const logoSrc     = preselected?.has_logo_data
+    ? companiesAPI.logoUrl(preselected.company_id)
+    : preselected?.logo_url
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', phone: '', company_id: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', phone: '', company_id: preselected?.company_id || '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -37,12 +43,26 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
+        <button onClick={() => navigate('/')} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-6">
+          <ArrowLeftIcon className="w-4 h-4" />All businesses
+        </button>
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-white font-bold text-2xl">C</span>
-          </div>
+          {preselected ? (
+            <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
+              {logoSrc
+                ? <img src={logoSrc} alt={preselected.name} className="w-full h-full object-contain" />
+                : <div className="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <span className="text-white font-black text-3xl">{preselected.name?.[0]?.toUpperCase()}</span>
+                  </div>
+              }
+            </div>
+          ) : (
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span className="text-white font-bold text-2xl">C</span>
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-sm text-gray-500 mt-1">Join the client portal</p>
+          <p className="text-sm text-gray-500 mt-1">{preselected ? `Join ${preselected.name}` : 'Join the client portal'}</p>
         </div>
 
         <div className="card">
@@ -59,10 +79,12 @@ export default function Register() {
               <label className="form-label">Phone (optional)</label>
               <input className="form-input" placeholder="555-1234" {...f('phone')} />
             </div>
-            <div>
-              <label className="form-label">Company ID</label>
-              <input className="form-input" placeholder="acme-corp" required {...f('company_id')} />
-            </div>
+            {!preselected && (
+              <div>
+                <label className="form-label">Company ID</label>
+                <input className="form-input" placeholder="acme-corp" required {...f('company_id')} />
+              </div>
+            )}
             <div>
               <label className="form-label">Password</label>
               <input className="form-input" type="password" placeholder="••••••••" required {...f('password')} />

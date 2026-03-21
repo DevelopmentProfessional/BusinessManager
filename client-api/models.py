@@ -114,6 +114,10 @@ class AppSettings(BaseModel, table=True):
     cancellation_percentage: float = Field(default=10.0)
     refund_percentage: float = Field(default=80.0)
 
+    # Company logo (added by migration)
+    logo_url: Optional[str] = Field(default=None)
+    logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
+
     company_id: Optional[str] = Field(default=None, index=True)
 
 

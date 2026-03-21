@@ -4,18 +4,31 @@
  * single-card centered layout with brand gradient header.
  */
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { authAPI } from '../services/api'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { authAPI, companiesAPI } from '../services/api'
 import useStore from '../store/useStore'
 
 export default function Login() {
-  const navigate  = useNavigate()
-  const setAuth   = useStore(s => s.setAuth)
-  const addToast  = useStore(s => s.addToast)
+  const navigate   = useNavigate()
+  const location   = useLocation()
+  const setAuth    = useStore(s => s.setAuth)
+  const addToast   = useStore(s => s.addToast)
 
-  const [form, setForm] = useState({ email: '', password: '', company_id: '' })
+  // Company passed from CompanySelect page
+  const preselected = location.state?.company || null
+
+  const [form, setForm] = useState({
+    email:      '',
+    password:   '',
+    company_id: preselected?.company_id || '',
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  const logoSrc = preselected?.has_logo_data
+    ? companiesAPI.logoUrl(preselected.company_id)
+    : preselected?.logo_url
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -39,13 +52,43 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
-        {/* Brand header */}
+
+        {/* Back to company select */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-6"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          All businesses
+        </button>
+
+        {/* Company header */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-white font-bold text-2xl">C</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Client Portal</h1>
-          <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
+          {preselected ? (
+            <>
+              <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
+                {logoSrc ? (
+                  <img src={logoSrc} alt={preselected.name} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <span className="text-white font-black text-3xl">
+                      {preselected.name?.[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">{preselected.name}</h1>
+              <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
+            </>
+          ) : (
+            <>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span className="text-white font-bold text-2xl">C</span>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Client Portal</h1>
+              <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
+            </>
+          )}
         </div>
 
         <div className="card">
@@ -59,6 +102,7 @@ export default function Login() {
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 required
+                autoFocus
               />
             </div>
             <div>
@@ -72,17 +116,23 @@ export default function Login() {
                 required
               />
             </div>
-            <div>
-              <label className="form-label">Company ID</label>
-              <input
-                className="form-input"
-                type="text"
-                placeholder="acme-corp"
-                value={form.company_id}
-                onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))}
-                required
-              />
-            </div>
+
+            {/* Company ID — hidden if pre-selected, editable otherwise */}
+            {!preselected ? (
+              <div>
+                <label className="form-label">Company ID</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="acme-corp"
+                  value={form.company_id}
+                  onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))}
+                  required
+                />
+              </div>
+            ) : (
+              <input type="hidden" value={form.company_id} readOnly />
+            )}
 
             {error && (
               <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
@@ -99,7 +149,11 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-500 mt-4">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary font-medium hover:underline">
+            <Link
+              to="/register"
+              state={{ company: preselected }}
+              className="text-primary font-medium hover:underline"
+            >
               Register
             </Link>
           </p>
