@@ -38,6 +38,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
+import { showConfirm } from '../../services/showConfirm';
 import { clientsAPI, servicesAPI } from '../../services/api';
 import Modal_Client_Cart from './Modal_Client_Cart';
 import Modal_Template_Use from './Modal_Template_Use';
@@ -502,11 +503,10 @@ export default function Modal_Detail_Client({
     onUpdate?.(client.id, submitData);
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this client?')) {
-      onDelete?.(client.id);
-      onClose();
-    }
+  const handleDelete = async () => {
+    if (!await showConfirm('Are you sure you want to delete this client?')) return;
+    onDelete?.(client.id);
+    onClose();
   };
 
   const handleEditScheduleFromHistory = (schedule) => {

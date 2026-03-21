@@ -39,6 +39,7 @@ import {
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
 import { getImageSrc } from './imageUtils';
@@ -780,7 +781,7 @@ export default function Modal_Detail_Item({
   };
 
   const handleDeleteImage = async (imageId) => {
-    if (!window.confirm('Delete this image?')) return;
+    if (!await showConfirm('Delete this image?')) return;
     setImageError('');
     try {
       await inventoryAPI.deleteImage(imageId);
@@ -835,12 +836,11 @@ export default function Modal_Detail_Item({
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (isDeleting) return;
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      onDelete?.(item.id);
-      onClose();
-    }
+    if (!await showConfirm('Are you sure you want to delete this item?')) return;
+    onDelete?.(item.id);
+    onClose();
   };
 
   // ─── 6 DISPLAY HELPERS ────────────────────────────────────────────────────

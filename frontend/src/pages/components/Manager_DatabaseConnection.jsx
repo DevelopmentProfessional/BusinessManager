@@ -10,6 +10,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 
 export default function Manager_DatabaseConnection() {
   const [connections, setConnections] = useState([]);
@@ -73,7 +74,7 @@ export default function Manager_DatabaseConnection() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this database connection?')) return;
+    if (!await showConfirm('Are you sure you want to delete this database connection?')) return;
 
     try {
       await api.delete(`/database-connections/${id}`);

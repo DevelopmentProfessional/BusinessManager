@@ -37,6 +37,7 @@ import PageTableRow from './components/PageTableRow';
 import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
+import { showConfirm } from '../services/showConfirm';
 import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Service from './components/Form_Service';
@@ -108,7 +109,7 @@ export default function Services() {
       setError('You do not have permission to delete services');
       return;
     }
-    if (!window.confirm('Are you sure you want to delete this service?')) return;
+    if (!await showConfirm('Are you sure you want to delete this service?')) return;
     try {
       await servicesAPI.delete(serviceId);
       removeService(serviceId);

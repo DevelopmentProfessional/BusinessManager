@@ -23,6 +23,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { featuresAPI, inventoryFeaturesAPI } from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -265,7 +266,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   };
 
   const handleDeleteGlobalFeature = async (featureId, featureName) => {
-    if (!window.confirm(`Delete feature '${featureName}' from database?`)) return;
+    if (!await showConfirm(`Delete feature '${featureName}' from database?`)) return;
     setError(null);
     try {
       await featuresAPI.delete(featureId);

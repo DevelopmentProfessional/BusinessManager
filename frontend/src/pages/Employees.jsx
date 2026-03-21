@@ -54,6 +54,7 @@ import usePagePermission from '../services/usePagePermission';
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
+import { showConfirm } from '../services/showConfirm';
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
@@ -406,7 +407,7 @@ export default function Employees() {
   };
 
   const handleDeleteRole = async (roleId) => {
-    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    if (!await showConfirm('Are you sure you want to delete this role?')) return;
     try {
       await rolesAPI.delete(roleId);
       setSuccess('Role deleted successfully!');
@@ -522,9 +523,7 @@ export default function Employees() {
   const handleDelete = async (employeeId) => {
 
     
-    if (!window.confirm('Are you sure you want to delete this employee?')) {
-      return;
-    }
+    if (!await showConfirm('Are you sure you want to delete this employee?', { confirmLabel: 'Delete Employee' })) return;
 
 
     try {
@@ -653,9 +652,7 @@ export default function Employees() {
     const permissionToDelete = userPermissions.find(p => p.id === permissionId);
     
     // Add confirmation dialog
-    if (!window.confirm('Are you sure you want to delete this permission? This action cannot be undone.')) {
-      return;
-    }
+    if (!await showConfirm('Are you sure you want to delete this permission? This action cannot be undone.')) return;
 
     if (!selectedUser || !selectedUser.id) {
       setError('No user selected. Please close and reopen the permissions modal.');
@@ -969,7 +966,7 @@ export default function Employees() {
   };
 
   const handleInsurancePlanDelete = async (id) => {
-    if (!window.confirm('Delete this insurance plan?')) return;
+    if (!await showConfirm('Delete this insurance plan?')) return;
     try {
       await insurancePlansAPI.delete(id);
       setInsurancePlans(prev => prev.filter(p => p.id !== id));

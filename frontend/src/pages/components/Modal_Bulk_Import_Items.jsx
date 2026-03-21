@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from './Modal';
-import { ArrowPathIcon, ArrowsUpDownIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon } from '@heroicons/react/24/outline';
+import { showConfirm } from '../../services/showConfirm';
 import useViewMode from '../../services/useViewMode';
 
 const FIELD_OPTIONS = [
-  { value: '__ignore__', label: 'Ignore / Skip this column' },
   { value: 'name', label: 'Name (required)' },
   { value: 'sku', label: 'SKU' },
   { value: 'price', label: 'Price' },
@@ -18,7 +18,8 @@ const FIELD_OPTIONS = [
 ];
 
 const DEFAULT_COLUMN_COUNT = 8;
-const DEFAULT_ROW_COUNT = 20;
+const DEFAULT_ROW_COUNT = 100;
+const DEFAULT_ADD_ROW_COUNT = 100;
 const DEFAULT_FIELD_SEQUENCE = ['name', 'sku', 'price', 'quantity', 'type', 'category', 'description', 'min_stock_level'];
 
 function makeColumns(count) {
@@ -33,7 +34,7 @@ function makeRows(rowCount, colCount) {
 }
 
 function getDefaultMappingForIndex(index) {
-  return DEFAULT_FIELD_SEQUENCE[index] || '__ignore__';
+  return DEFAULT_FIELD_SEQUENCE[index] || 'name';
 }
 
 function createDefaultMappings(count) {
@@ -106,24 +107,6 @@ function parseNumber(value, fieldLabel) {
   return { ok: true, value: numeric };
 }
 
-function compareCellValues(leftValue, rightValue, direction) {
-  const left = String(leftValue || '').trim();
-  const right = String(rightValue || '').trim();
-
-  if (!left && !right) return 0;
-  if (!left) return 1;
-  if (!right) return -1;
-
-  const leftNumber = Number(left.replace(/,/g, ''));
-  const rightNumber = Number(right.replace(/,/g, ''));
-  const bothNumeric = Number.isFinite(leftNumber) && Number.isFinite(rightNumber);
-
-  const comparison = bothNumeric
-    ? leftNumber - rightNumber
-    : left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
-
-  return direction === 'desc' ? comparison * -1 : comparison;
-}
 
 export default function Modal_Bulk_Import_Items({
   isOpen,
@@ -137,9 +120,9 @@ export default function Modal_Bulk_Import_Items({
   const [columns, setColumns] = useState(() => makeColumns(DEFAULT_COLUMN_COUNT));
   const [rows, setRows] = useState(() => makeRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMN_COUNT));
   const [mappings, setMappings] = useState(() => createDefaultMappings(DEFAULT_COLUMN_COUNT));
-  const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
-  const [areMappingsCleared, setAreMappingsCleared] = useState(false);
-  const [sortState, setSortState] = useState({ colIndex: null, direction: 'asc' });
+  const [addRowCount, setAddRowCount] = useState(DEFAULT_ADD_ROW_COUNT);
+  const [dragOverCol, setDragOverCol] = useState(null);
+  const dragColRef = useRef(null);
   const [status, setStatus] = useState({ type: null, message: '' });
   const [isSaving, setIsSaving] = useState(false);
   const scrollContainerRef = useRef(null);
@@ -156,9 +139,7 @@ export default function Modal_Bulk_Import_Items({
     setColumns(makeColumns(DEFAULT_COLUMN_COUNT));
     setRows(makeRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMN_COUNT));
     setMappings(createDefaultMappings(DEFAULT_COLUMN_COUNT));
-    setSelectedCell({ row: 0, col: 0 });
-    setAreMappingsCleared(false);
-    setSortState({ colIndex: null, direction: 'asc' });
+    setDragOverCol(null);
     setStatus({ type: null, message: '' });
     setIsSaving(false);
   }, [isOpen]);
@@ -283,7 +264,7 @@ export default function Modal_Bulk_Import_Items({
     const matrix = parseClipboardTable(text);
     if (!matrix.length) return;
 
-    applyPastedMatrix(matrix, selectedCell.row, selectedCell.col);
+    applyPastedMatrix(matrix, 0, 0);
   };
 
   const handleCellChange = (rowIdx, colIdx, value) => {
@@ -294,8 +275,12 @@ export default function Modal_Bulk_Import_Items({
     });
   };
 
-  const handleAddRow = () => {
-    setRows((prev) => [...prev, Array.from({ length: columns.length }, () => '')]);
+  const handleAddRows = () => {
+    const count = Math.max(1, Math.min(10000, Number(addRowCount) || 1));
+    setRows((prev) => [
+      ...prev,
+      ...Array.from({ length: count }, () => Array.from({ length: columns.length }, () => '')),
+    ]);
   };
 
   const handleDeleteRow = (rowIndex) => {
@@ -305,10 +290,6 @@ export default function Modal_Bulk_Import_Items({
       }
       return prev.filter((_, idx) => idx !== rowIndex);
     });
-    setSelectedCell((prev) => ({
-      row: Math.max(0, Math.min(prev.row, rows.length - 2)),
-      col: prev.col,
-    }));
   };
 
   const handleClearColumn = (colIndex) => {
@@ -322,24 +303,39 @@ export default function Modal_Bulk_Import_Items({
 
   const handleClearGrid = () => {
     setRows(makeRows(DEFAULT_ROW_COUNT, columns.length));
-    setSortState({ colIndex: null, direction: 'asc' });
     setStatus({ type: null, message: '' });
   };
 
-  const handleSortColumn = (colIndex) => {
-    const nextDirection = sortState.colIndex === colIndex && sortState.direction === 'asc' ? 'desc' : 'asc';
+  const handleColDragStart = (colIndex) => {
+    dragColRef.current = colIndex;
+  };
 
-    setRows((prevRows) => {
-      const sortedRows = [...prevRows];
-      sortedRows.sort((leftRow, rightRow) => compareCellValues(leftRow[colIndex], rightRow[colIndex], nextDirection));
-      return sortedRows;
-    });
+  const handleColDragOver = (e, colIndex) => {
+    e.preventDefault();
+    setDragOverCol(colIndex);
+  };
 
-    setSortState({ colIndex, direction: nextDirection });
-    setStatus({
-      type: 'info',
-      message: `Sorted column ${colIndex + 1} ${nextDirection === 'asc' ? 'ascending' : 'descending'}.`,
-    });
+  const handleColDrop = (colIndex) => {
+    const from = dragColRef.current;
+    setDragOverCol(null);
+    dragColRef.current = null;
+    if (from === null || from === colIndex) return;
+
+    const reorder = (arr) => {
+      const next = [...arr];
+      const [item] = next.splice(from, 1);
+      next.splice(colIndex, 0, item);
+      return next;
+    };
+
+    setColumns((prev) => reorder(prev));
+    setMappings((prev) => reorder(prev));
+    setStatus({ type: 'info', message: `Moved column header ${from + 1} to position ${colIndex + 1}.` });
+  };
+
+  const handleColDragEnd = () => {
+    setDragOverCol(null);
+    dragColRef.current = null;
   };
 
   const setMapping = (colIndex, field) => {
@@ -350,17 +346,9 @@ export default function Modal_Bulk_Import_Items({
     });
   };
 
-  const handleToggleClearMappings = () => {
-    if (areMappingsCleared) {
-      setMappings(createDefaultMappings(columns.length));
-      setAreMappingsCleared(false);
-      setStatus({ type: 'info', message: 'Column mappings restored to defaults.' });
-      return;
-    }
-
-    setMappings(Array.from({ length: columns.length }, () => '__ignore__'));
-    setAreMappingsCleared(true);
-    setStatus({ type: 'info', message: 'Column mappings cleared. Click again to restore defaults.' });
+  const handleResetMappings = () => {
+    setMappings(createDefaultMappings(columns.length));
+    setStatus({ type: 'info', message: 'Column mappings reset to defaults.' });
   };
 
   const buildPayload = () => {
@@ -453,7 +441,7 @@ export default function Modal_Bulk_Import_Items({
     }
 
     if (products.length > 1000) {
-      const proceed = window.confirm('You are importing more than 1000 rows. Continue?');
+      const proceed = await showConfirm('You are importing more than 1000 rows. Continue?', { confirmLabel: 'Continue', danger: false });
       if (!proceed) return;
     }
 
@@ -494,6 +482,64 @@ export default function Modal_Bulk_Import_Items({
                 <col key={col.id} style={{ minWidth: 170 }} />
               ))}
             </colgroup>
+            <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 3 }}>
+              <tr>
+                <th style={{ width: 56 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary p-1"
+                    title="Reset column mappings to defaults"
+                    onClick={handleResetMappings}
+                  >
+                    <ArrowPathIcon style={{ width: 14, height: 14 }} />
+                  </button>
+                </th>
+                {columns.map((col, colIndex) => (
+                  <th
+                    key={col.id}
+                    style={{
+                      minWidth: 170,
+                      background: dragOverCol === colIndex ? 'var(--bs-primary-bg-subtle, #cfe2ff)' : undefined,
+                      transition: 'background 0.15s',
+                    }}
+                    onDragOver={(e) => handleColDragOver(e, colIndex)}
+                    onDrop={() => handleColDrop(colIndex)}
+                  >
+                    <div className="d-flex align-items-center gap-1">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary p-1"
+                        title="Clear this column"
+                        onClick={() => handleClearColumn(colIndex)}
+                      >
+                        <TrashIcon style={{ width: 12, height: 12 }} />
+                      </button>
+
+                      <select
+                        className="form-select form-select-sm border-0 shadow-none"
+                        style={{ backgroundColor: 'transparent' }}
+                        value={mappings[colIndex] || 'name'}
+                        onChange={(e) => setMapping(colIndex, e.target.value)}
+                      >
+                        {FIELD_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+
+                      <span
+                        draggable
+                        onDragStart={() => handleColDragStart(colIndex)}
+                        onDragEnd={handleColDragEnd}
+                        title="Drag to reorder this column"
+                        style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'var(--bs-secondary-color, #6c757d)' }}
+                      >
+                        <Bars3Icon style={{ width: 14, height: 14 }} />
+                      </span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
               {rows.map((row, rowIndex) => (
                 <tr key={`r_${rowIndex}`}>
@@ -516,16 +562,12 @@ export default function Modal_Bulk_Import_Items({
                         className="form-control form-control-sm border-0 shadow-none"
                         style={{ backgroundColor: 'transparent' }}
                         value={row[colIndex] || ''}
-                        onFocus={() => setSelectedCell({ row: rowIndex, col: colIndex })}
-                        onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
                         onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
                         onPaste={(e) => {
                           const text = e.clipboardData?.getData('text/plain');
                           if (!text) return;
                           e.preventDefault();
-                          setSelectedCell({ row: rowIndex, col: colIndex });
-                          const matrix = parseClipboardTable(text);
-                          applyPastedMatrix(matrix, rowIndex, colIndex);
+                          applyPastedMatrix(parseClipboardTable(text), 0, 0);
                         }}
                       />
                     </td>
@@ -533,53 +575,6 @@ export default function Modal_Bulk_Import_Items({
                 </tr>
               ))}
             </tbody>
-            <tfoot className="table-light" style={{ position: 'sticky', bottom: 0, zIndex: 3 }}>
-              <tr>
-                <th style={{ width: 56 }}>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary p-1"
-                    title={areMappingsCleared ? 'Restore default column mappings' : 'Clear all column mappings'}
-                    onClick={handleToggleClearMappings}
-                  >
-                    <ArrowPathIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                </th>
-                {columns.map((col, colIndex) => (
-                  <th key={col.id} style={{ minWidth: 170 }}>
-                    <div className="d-flex align-items-center gap-1">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary p-1"
-                        title="Clear this column"
-                        onClick={() => handleClearColumn(colIndex)}
-                      >
-                        <TrashIcon style={{ width: 12, height: 12 }} />
-                      </button>
-                   
-                      <select
-                        className="form-select form-select-sm border-0 shadow-none"
-                        style={{ backgroundColor: 'transparent' }}
-                        value={mappings[colIndex] || '__ignore__'}
-                        onChange={(e) => setMapping(colIndex, e.target.value)}
-                      >
-                        {FIELD_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                         <button
-                        type="button"
-                        className={`btn btn-sm p-1 ${sortState.colIndex === colIndex ? 'btn-secondary text-white' : 'btn-outline-secondary'}`}
-                        title={`Sort this column ${sortState.colIndex === colIndex && sortState.direction === 'asc' ? 'descending' : 'ascending'}`}
-                        onClick={() => handleSortColumn(colIndex)}
-                      >
-                        <ArrowsUpDownIcon style={{ width: 12, height: 12 }} />
-                      </button>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </tfoot>
           </table>
         </div>
 
@@ -590,11 +585,33 @@ export default function Modal_Bulk_Import_Items({
             </div>
           )}
 
-          <div className="row g-0">
-            <div className={`col-10 d-flex align-items-center gap-2 px-4 flex-wrap ${alignClass}`}>
-              <button type="button" className="btn btn-outline-secondary" onClick={handleAddRow} disabled={isSaving}>
-                Add Row
+          <div className="row g-0 align-items-center">
+            <div className="col-auto px-3">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                title="Scroll to top"
+                onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+              >
+                <ArrowUpIcon style={{ width: 16, height: 16 }} />
               </button>
+            </div>
+            <div className={`col d-flex align-items-center gap-2 px-1 flex-wrap ${alignClass}`}>
+              <div className="d-flex align-items-center gap-1">
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
+                  style={{ width: 72 }}
+                  min={1}
+                  max={10000}
+                  value={addRowCount}
+                  onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))}
+                  disabled={isSaving}
+                />
+                <button type="button" className="btn btn-outline-secondary" onClick={handleAddRows} disabled={isSaving}>
+                  Add Rows
+                </button>
+              </div>
               <button type="button" className="btn btn-outline-secondary" onClick={handleClearGrid} disabled={isSaving}>
                 Clear Grid
               </button>
@@ -602,7 +619,7 @@ export default function Modal_Bulk_Import_Items({
                 Cancel
               </button>
               <button type="button" className="btn btn-primary" onClick={handleImport} disabled={isSaving}>
-                {isSaving ? 'Importing...' : 'Save Imported Items'}
+                {isSaving ? 'Importing...' : 'Save'}
               </button>
             </div>
           </div>

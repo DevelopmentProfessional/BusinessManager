@@ -40,6 +40,7 @@ import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI } from '../../services/api';
 import api from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 import Widget_Signature from './Widget_Signature';
 import Modal_Pay_Employee from './Modal_Pay_Employee';
 import useStore from '../../services/useStore';
@@ -425,7 +426,7 @@ export default function Form_Employee({
 
   const handleDeletePermission = async (permissionId) => {
     if (!employee?.id) return;
-    if (!window.confirm('Delete this permission?')) return;
+    if (!await showConfirm('Delete this permission?')) return;
     setPermError('');
     try {
       await api.delete(`/auth/users/${employee.id}/permissions/${permissionId}`);
@@ -1298,8 +1299,8 @@ export default function Form_Employee({
             {employee && canDelete && (
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete this employee?')) onDelete(employee.id);
+                onClick={async () => {
+                  if (await showConfirm('Are you sure you want to delete this employee?', { confirmLabel: 'Delete Employee' })) onDelete(employee.id);
                 }}
                 className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center rounded-circle"
                 style={{ width: '2rem', height: '2rem' }}
