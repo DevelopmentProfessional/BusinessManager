@@ -18,6 +18,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import func
 from sqlmodel import Session, select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -62,10 +63,7 @@ def _image_url_for(inventory_id: UUID, session: Session, company_id: str) -> Opt
     """Return the primary image URL (or first image) for an inventory item."""
     img = session.exec(
         select(InventoryImage)
-        .where(
-            InventoryImage.inventory_id == inventory_id,
-            InventoryImage.company_id == company_id,
-        )
+        .where(InventoryImage.inventory_id == inventory_id)
         .order_by(InventoryImage.is_primary.desc(), InventoryImage.sort_order)
     ).first()
     if img:
@@ -97,8 +95,7 @@ def list_products(
     """
     stmt = select(Inventory).where(
         Inventory.company_id == company_id,
-        Inventory.type == "product",
-        Inventory.quantity > 0,   # Only in-stock items
+        func.lower(Inventory.type) == "product",
     )
     if category:
         stmt = stmt.where(Inventory.category == category)

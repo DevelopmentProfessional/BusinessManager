@@ -159,7 +159,7 @@ class Inventory(BaseModel, table=True):
 
 
 class InventoryImage(BaseModel, table=True):
-    __tablename__ = "inventory_image"
+    __tablename__ = "inventoryimage"
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     image_url: Optional[str] = Field(default=None)
     file_path: Optional[str] = Field(default=None)

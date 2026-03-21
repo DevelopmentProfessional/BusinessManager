@@ -1,7 +1,6 @@
 /**
  * CART PAGE — Persistent cart with Stripe checkout.
  * Supports both physical products and bookable services.
- * Stripe Elements are embedded via @stripe/react-stripe-js.
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -16,7 +15,7 @@ const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   : null
 
-// ── Stripe payment form (shown after clientSecret is returned) ───────────────
+// ── Stripe payment form ───────────────────────────────────────────────────────
 function StripeCheckoutForm({ clientSecret, orderId, onSuccess, onError }) {
   const stripe   = useStripe()
   const elements = useElements()
@@ -40,9 +39,9 @@ function StripeCheckoutForm({ clientSecret, orderId, onSuccess, onError }) {
   }
 
   return (
-    <form onSubmit={handlePay} className="space-y-4">
-      <PaymentElement />
-      <button type="submit" disabled={submitting || !stripe} className="btn-primary w-full justify-center py-3 disabled:opacity-50">
+    <form onSubmit={handlePay}>
+      <PaymentElement className="mb-3" />
+      <button type="submit" disabled={submitting || !stripe} className="btn btn-primary w-100">
         {submitting ? 'Processing…' : 'Pay Now'}
       </button>
     </form>
@@ -60,17 +59,16 @@ export default function Cart() {
   const companyId      = useStore(s => s.companyId)
   const addToast       = useStore(s => s.addToast)
 
-  const [checking, setChecking]     = useState(false)
+  const [checking, setChecking]         = useState(false)
   const [clientSecret, setClientSecret] = useState(null)
   const [currentOrderId, setCurrentOrderId] = useState(null)
-  const [error, setError]           = useState(null)
+  const [error, setError]               = useState(null)
 
   async function handleCheckout() {
     if (cart.length === 0) return
     setChecking(true)
     setError(null)
     try {
-      // For any service cart items that have a booking_slot, create the booking first
       const items = []
       for (const c of cart) {
         if (c.item_type === 'service' && c.booking_slot) {
@@ -102,11 +100,9 @@ export default function Cart() {
       const result = await ordersAPI.checkout({ items, payment_method: 'card' })
 
       if (result.client_secret) {
-        // Stripe payment required
         setClientSecret(result.client_secret)
         setCurrentOrderId(result.order_id)
       } else {
-        // No payment needed (e.g. soft bookings only)
         clearCart()
         addToast('Order placed successfully!', 'success')
         navigate('/orders')
@@ -127,11 +123,11 @@ export default function Cart() {
   if (cart.length === 0 && !clientSecret) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center h-96 text-gray-400">
-          <ShoppingBagIcon className="w-16 h-16 mb-4 opacity-30" />
-          <p className="text-lg font-medium">Your cart is empty</p>
-          <p className="text-sm mt-1 mb-6">Add products or book services to get started.</p>
-          <button onClick={() => navigate('/dashboard')} className="btn-primary">
+        <div className="d-flex flex-column align-items-center justify-content-center text-muted" style={{ height: 380 }}>
+          <ShoppingBagIcon style={{ width: 56, height: 56, opacity: 0.2, marginBottom: 16 }} />
+          <p className="fw-medium mb-1">Your cart is empty</p>
+          <p className="small mb-4">Add products or book services to get started.</p>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/shop')}>
             Browse Catalog
           </button>
         </div>
@@ -141,110 +137,117 @@ export default function Cart() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Cart</h1>
+      <div className="p-3" style={{ paddingBottom: '5rem' }}>
+        <h5 className="fw-bold mb-4">Your Cart</h5>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Line items ────────────────────────────────────── */}
-        <div className="lg:col-span-2 space-y-3">
-          {cart.map(item => (
-            <div key={item._key} className="card flex items-center gap-4">
-              {/* Image */}
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
-                {item.image_url
-                  ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                      <span className="text-white font-bold">{item.name?.[0]}</span>
-                    </div>
-                }
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 truncate">{item.name}</p>
-                <p className="text-xs text-gray-400 capitalize">{item.item_type}</p>
-                {item.booking_slot && (
-                  <p className="text-xs text-primary mt-0.5">
-                    Booked: {new Date(item.booking_slot.start).toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              {/* Qty + price */}
-              <div className="flex items-center gap-4">
-                {item.item_type !== 'service' && (
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => updateCartQty(item._key, item.quantity - 1)}
-                      className="w-7 h-7 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold flex items-center justify-center">−</button>
-                    <span className="w-6 text-center text-sm font-semibold">{item.quantity}</span>
-                    <button onClick={() => updateCartQty(item._key, item.quantity + 1)}
-                      className="w-7 h-7 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold flex items-center justify-center">+</button>
+        <div className="row g-3">
+          {/* ── Line items ─────────────────────────────────────── */}
+          <div className="col-12 col-lg-8">
+            {cart.map(item => (
+              <div key={item._key} className="card mb-3">
+                <div className="card-body d-flex align-items-center gap-3">
+                  {/* Image */}
+                  <div
+                    className="rounded flex-shrink-0 overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                    style={{ width: 60, height: 60 }}
+                  >
+                    {item.image_url
+                      ? <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span className="fw-bold text-secondary" style={{ fontSize: 22 }}>{item.name?.[0]}</span>
+                    }
                   </div>
-                )}
-                <span className="font-bold text-gray-900 w-20 text-right">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </span>
-                <button onClick={() => removeFromCart(item._key)} className="text-gray-300 hover:text-danger transition-colors">
-                  <TrashIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
 
-        {/* ── Summary + checkout ────────────────────────────── */}
-        <div className="space-y-4">
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">Order Summary</h2>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>${cartTotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>Calculated at checkout</span>
-              </div>
-            </div>
-            <div className="border-t border-gray-100 mt-4 pt-4 flex justify-between font-bold text-gray-900">
-              <span>Estimated Total</span>
-              <span>${cartTotal.toFixed(2)}</span>
-            </div>
+                  {/* Info */}
+                  <div className="flex-grow-1 min-w-0">
+                    <p className="fw-semibold mb-0 text-truncate">{item.name}</p>
+                    <p className="text-muted small text-capitalize mb-0">{item.item_type}</p>
+                    {item.booking_slot && (
+                      <p className="text-primary small mb-0">
+                        Booked: {new Date(item.booking_slot.start).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
 
-            {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-4">{error}</p>}
-
-            {!clientSecret && (
-              <button
-                onClick={handleCheckout}
-                disabled={checking}
-                className="btn-primary w-full justify-center py-3 mt-4 disabled:opacity-50"
-              >
-                {checking ? 'Preparing checkout…' : 'Proceed to Checkout'}
-              </button>
-            )}
+                  {/* Qty + price */}
+                  <div className="d-flex align-items-center gap-3">
+                    {item.item_type !== 'service' && (
+                      <div className="d-flex align-items-center gap-1">
+                        <button className="btn btn-outline-secondary btn-sm px-2 py-0"
+                          onClick={() => updateCartQty(item._key, item.quantity - 1)}>−</button>
+                        <span className="fw-semibold" style={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
+                        <button className="btn btn-outline-secondary btn-sm px-2 py-0"
+                          onClick={() => updateCartQty(item._key, item.quantity + 1)}>+</button>
+                      </div>
+                    )}
+                    <span className="fw-bold" style={{ minWidth: 70, textAlign: 'right' }}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
+                    <button className="btn btn-link text-danger p-0" onClick={() => removeFromCart(item._key)}>
+                      <TrashIcon style={{ width: 18, height: 18 }} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Stripe Payment Element */}
-          {clientSecret && stripePromise && (
-            <div className="card">
-              <h2 className="font-semibold text-gray-900 mb-4">Payment</h2>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <StripeCheckoutForm
-                  clientSecret={clientSecret}
-                  orderId={currentOrderId}
-                  onSuccess={handlePaySuccess}
-                  onError={(msg) => { setError(msg); setClientSecret(null) }}
-                />
-              </Elements>
-            </div>
-          )}
+          {/* ── Summary + checkout ──────────────────────────────── */}
+          <div className="col-12 col-lg-4">
+            <div className="card mb-3">
+              <div className="card-body">
+                <h6 className="fw-semibold mb-3">Order Summary</h6>
+                <div className="d-flex justify-content-between small text-muted mb-1">
+                  <span>Subtotal</span>
+                  <span>${cartTotal.toFixed(2)}</span>
+                </div>
+                <div className="d-flex justify-content-between small text-muted mb-3">
+                  <span>Tax</span>
+                  <span>Calculated at checkout</span>
+                </div>
+                <div className="d-flex justify-content-between fw-bold border-top pt-3">
+                  <span>Estimated Total</span>
+                  <span>${cartTotal.toFixed(2)}</span>
+                </div>
 
-          {clientSecret && !stripePromise && (
-            <div className="card">
-              <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
-                Stripe is not configured. Set VITE_STRIPE_PUBLISHABLE_KEY to enable payments.
-              </p>
+                {error && (
+                  <div className="alert alert-danger py-2 px-3 small mt-3 mb-0">{error}</div>
+                )}
+
+                {!clientSecret && (
+                  <button
+                    className="btn btn-primary w-100 mt-3"
+                    onClick={handleCheckout}
+                    disabled={checking}
+                  >
+                    {checking ? 'Preparing checkout…' : 'Proceed to Checkout'}
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+
+            {/* Stripe Payment Element */}
+            {clientSecret && stripePromise && (
+              <div className="card">
+                <div className="card-body">
+                  <h6 className="fw-semibold mb-3">Payment</h6>
+                  <Elements stripe={stripePromise} options={{ clientSecret }}>
+                    <StripeCheckoutForm
+                      clientSecret={clientSecret}
+                      orderId={currentOrderId}
+                      onSuccess={handlePaySuccess}
+                      onError={(msg) => { setError(msg); setClientSecret(null) }}
+                    />
+                  </Elements>
+                </div>
+              </div>
+            )}
+
+            {clientSecret && !stripePromise && (
+              <div className="alert alert-warning small">
+                Stripe is not configured. Set VITE_STRIPE_PUBLISHABLE_KEY to enable payments.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Layout>
