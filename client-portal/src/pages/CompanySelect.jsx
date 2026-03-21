@@ -8,56 +8,36 @@ import { useNavigate } from 'react-router-dom'
 import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import { companiesAPI } from '../services/api'
 
-// Gradient fallbacks when no logo is set — cycles by company name
-const GRADIENTS = [
-  ['from-violet-500', 'to-purple-600'],
-  ['from-sky-500',    'to-blue-600'],
-  ['from-emerald-500','to-green-600'],
-  ['from-rose-500',   'to-pink-600'],
-  ['from-amber-500',  'to-orange-600'],
-  ['from-cyan-500',   'to-teal-600'],
-]
-function gradientFor(name = '') {
-  const [from, to] = GRADIENTS[name.charCodeAt(0) % GRADIENTS.length]
-  return `${from} ${to}`
-}
-
 function CompanyCard({ company, onClick }) {
-  const hasLogo  = company.logo_url || company.has_logo_data
-  const logoSrc  = company.has_logo_data
+  const logoSrc = company.has_logo_data
     ? companiesAPI.logoUrl(company.company_id)
     : company.logo_url
 
   const [imgError, setImgError] = useState(false)
-  const showFallback = !hasLogo || imgError
+  const showLogo = logoSrc && !imgError
 
   return (
     <button
       onClick={() => onClick(company)}
-      className="group flex flex-col items-center gap-4 p-6 rounded-2xl border-2 border-gray-100
+      className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-gray-100
                  bg-white hover:border-primary hover:shadow-lg transition-all duration-200
-                 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/40
+                 min-w-[140px]"
     >
-      {/* Logo / fallback */}
-      <div className="w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center shadow-sm flex-shrink-0">
-        {!showFallback ? (
+      {/* Logo — only shown if one exists */}
+      {showLogo && (
+        <div className="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
           <img
             src={logoSrc}
             alt={company.name}
             className="w-full h-full object-contain"
             onError={() => setImgError(true)}
           />
-        ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${gradientFor(company.name)} flex items-center justify-center`}>
-            <span className="text-white text-3xl font-black select-none">
-              {company.name?.[0]?.toUpperCase()}
-            </span>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Name */}
-      <span className="text-sm font-semibold text-gray-800 text-center leading-tight group-hover:text-primary transition-colors">
+      {/* Company name */}
+      <span className="text-sm font-semibold text-gray-800 text-center leading-snug group-hover:text-primary transition-colors">
         {company.name}
       </span>
     </button>
