@@ -4,7 +4,6 @@ import Layout from './pages/components/Layout';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
-import { preloadMajorTables } from './services/api';
 import useDarkMode from './services/useDarkMode';
 import useViewMode from './services/useViewMode';
 import useBranding from './services/useBranding';
@@ -106,8 +105,6 @@ function App() {
             refetchPermissions();
           }
 
-          // Preload major tables in background for returning users
-          preloadMajorTables();
         }
 
         // Load persisted filters

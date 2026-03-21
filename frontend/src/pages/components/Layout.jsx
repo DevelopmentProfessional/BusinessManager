@@ -42,7 +42,6 @@ export default function Layout({ children }) {
   const [syncLoading, setSyncLoading] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const unreadRequestInFlightRef = useRef(false);
-  const unreadLastLoadedAtRef = useRef(0);
   const location = useLocation();
   const { hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
   const { isTrainingMode, uiScale } = useViewMode();
@@ -78,22 +77,18 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (!hasPageAccess('employees')) return;
+    if (location.pathname !== '/employees') return;
 
     let cancelled = false;
-    const MIN_UNREAD_REFRESH_MS = 10000;
 
-    const loadUnreadCounts = async (force = false) => {
-      const now = Date.now();
-      if (!force && now - unreadLastLoadedAtRef.current < MIN_UNREAD_REFRESH_MS) return;
+    const loadUnreadCounts = async () => {
       if (unreadRequestInFlightRef.current) return;
-
       unreadRequestInFlightRef.current = true;
       try {
         const res = await chatAPI.getUnreadCounts();
         const data = res?.data ?? res;
         if (!cancelled && data && typeof data === 'object') {
           setUnreadCounts(data);
-          unreadLastLoadedAtRef.current = Date.now();
         }
       } catch {
         if (!cancelled) setUnreadCounts({});
@@ -102,28 +97,10 @@ export default function Layout({ children }) {
       }
     };
 
-    const handleVisibilityRefresh = () => {
-      if (document.visibilityState === 'visible') {
-        loadUnreadCounts(true);
-      }
-    };
+    loadUnreadCounts();
 
-    const handleFocusRefresh = () => {
-      loadUnreadCounts(true);
-    };
-
-    loadUnreadCounts(true);
-    const intervalId = window.setInterval(loadUnreadCounts, 15000);
-    window.addEventListener('focus', handleFocusRefresh);
-    document.addEventListener('visibilitychange', handleVisibilityRefresh);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocusRefresh);
-      document.removeEventListener('visibilitychange', handleVisibilityRefresh);
-    };
-  }, [hasPageAccess]);
+    return () => { cancelled = true; };
+  }, [location.pathname, hasPageAccess]);
 
   // Filter navigation items based on user permissions - show if user has ANY permission for the page
   const filteredNavigation = allNavigation.filter(item => {

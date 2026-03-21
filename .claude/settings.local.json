@@ -71,7 +71,10 @@
       "Bash(cmd.exe /c \"taskkill /PID 16116 /F\")",
       "Bash(cmd.exe /c \"taskkill /PID 16116 /F\" 2>&1; echo \"exit: $?\")",
       "Bash(pip install:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(mkdir -p /c/Users/dpint/Documents/Development/BusinessManager/client-api/routers /c/Users/dpint/Documents/Development/BusinessManager/client-api/migrations)",
+      "Bash(mkdir -p /c/Users/dpint/Documents/Development/BusinessManager/client-portal/src/pages/components /c/Users/dpint/Documents/Development/BusinessManager/client-portal/src/services /c/Users/dpint/Documents/Development/BusinessManager/client-portal/src/store)",
+      "Bash(DATABASE_URL=\"postgresql://db_reference_user:AGONHh5kBrXztl8hwYUEIGpCZncxK06j@dpg-d5scoucoud1c73b1s5tg-a.oregon-postgres.render.com/db_reference_name\" python migrations/client_portal_migration.py)"
     ]
   }
 }

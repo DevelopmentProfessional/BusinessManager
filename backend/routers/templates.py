@@ -179,22 +179,17 @@ _STANDARD_TEMPLATES = [
 # ─── 2 SEED HELPER ─────────────────────────────────────────────────────────────
 
 def seed_standard_templates(session: Session) -> None:
-    """Upsert standard templates — insert if missing, update content/pages if already exists."""
-    existing = {
-        row.name: row
+    """Insert standard templates that are missing — never overwrites user edits."""
+    existing_names = {
+        row.name
         for row in session.exec(
             select(DocumentTemplate).where(DocumentTemplate.is_standard == True)
         ).all()
     }
+    new_templates = []
     for tpl in _STANDARD_TEMPLATES:
-        if tpl["name"] in existing:
-            obj = existing[tpl["name"]]
-            obj.content = tpl["content"]
-            obj.accessible_pages = tpl["accessible_pages"]
-            obj.description = tpl.get("description", obj.description)
-            obj.template_type = tpl["template_type"]
-        else:
-            obj = DocumentTemplate(
+        if tpl["name"] not in existing_names:
+            new_templates.append(DocumentTemplate(
                 name=tpl["name"],
                 template_type=tpl["template_type"],
                 accessible_pages=tpl["accessible_pages"],
@@ -202,8 +197,11 @@ def seed_standard_templates(session: Session) -> None:
                 content=tpl["content"],
                 is_standard=True,
                 is_active=True,
-            )
-            session.add(obj)
+            ))
+    if not new_templates:
+        return
+    for obj in new_templates:
+        session.add(obj)
     try:
         session.commit()
     except Exception:

@@ -78,7 +78,7 @@ import {
   MagnifyingGlassPlusIcon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
-import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, preloadMajorTables } from '../services/api';
+import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
 import api from '../services/api';
 import { runAppSync } from '../services/appSync';
 import Modal_Signature from './components/Modal_Signature';

@@ -56,6 +56,7 @@ import {
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
+import { showConfirm } from '../services/showConfirm';
 import Button_Toolbar from './components/Button_Toolbar';
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI } from '../services/api';
 import Modal from './components/Modal';
@@ -389,7 +390,7 @@ export default function Documents() {
   };
 
   const handleDeleteTemplate = async (tpl) => {
-    if (!window.confirm(`Delete template "${tpl.name}"?`)) return;
+    if (!await showConfirm(`Delete template "${tpl.name}"?`)) return;
     try {
       await templatesAPI.delete(tpl.id);
       setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
@@ -602,8 +603,7 @@ export default function Documents() {
       return;
     }
 
-    if (!window.confirm('Are you sure you want to delete this document?'))
-      return;
+    if (!await showConfirm('Are you sure you want to delete this document?')) return;
 
     try {
       await documentsAPI.delete(documentId);
@@ -663,7 +663,7 @@ export default function Documents() {
   };
 
   const handleDeleteCategory = async (catId) => {
-    if (!window.confirm('Delete this category?')) return;
+    if (!await showConfirm('Delete this category?')) return;
     try {
       await documentCategoriesAPI.delete(catId);
       setCategories((prev) => prev.filter((c) => c.id !== catId));

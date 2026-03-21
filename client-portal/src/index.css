@@ -1,0 +1,105 @@
+/* ============================================================
+   CLIENT PORTAL — Global Styles
+   Mirrors the internal app's CSS conventions exactly.
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  background: #f9fafb;
+  margin: 0;
+}
+
+/* ── App shell (mirrors internal Layout) ──────────────────── */
+.app-shell        { display: flex; min-height: 100vh; }
+.app-shell-main   { flex: 1; padding: 1.5rem; overflow-y: auto; }
+.app-nav          { width: 64px; background: #1f2937; flex-shrink: 0; }
+
+/* ── Cards ─────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  padding: 1.25rem;
+}
+
+/* ── Buttons (match internal app) ──────────────────────────── */
+.btn-primary {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+         text-white bg-primary hover:bg-primary-hover transition-colors;
+}
+.btn-secondary {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+         text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors;
+}
+.btn-danger {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+         text-white bg-danger hover:bg-danger-hover transition-colors;
+}
+
+/* ── Form inputs (match internal app) ──────────────────────── */
+.form-input {
+  @apply w-full px-3 py-2 text-sm border border-gray-200 rounded-lg
+         focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
+         placeholder-gray-400 bg-white;
+}
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+.badge-green  { @apply badge bg-success-light  text-green-700; }
+.badge-blue   { @apply badge bg-secondary-light text-sky-700; }
+.badge-amber  { @apply badge bg-warning-light  text-amber-700; }
+.badge-red    { @apply badge bg-danger-light   text-red-700; }
+.badge-purple { @apply badge bg-primary-light  text-indigo-700; }
+.badge-gray   { @apply badge bg-gray-100       text-gray-600; }
+
+/* ── Cart badge ─────────────────────────────────────────────── */
+.cart-badge {
+  @apply absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center
+         rounded-full bg-danger text-white text-xs font-bold;
+}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.toast {
+  @apply flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium
+         bg-white border border-gray-200 text-gray-800;
+  animation: slideIn 0.2s ease-out;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+/* ── Calendar overrides ─────────────────────────────────────── */
+.rbc-calendar { font-family: inherit; font-size: 13px; }
+.rbc-event    { background-color: #4F46E5 !important; border-radius: 4px; font-size: 12px; }
+.rbc-today    { background: #EEF2FF !important; }
+
+/* ── Dark mode ──────────────────────────────────────────────── */
+.dark body                { background: #111827; color: #f9fafb; }
+.dark .card               { background: #1f2937; border-color: #374151; }
+.dark .form-input         { background: #1f2937; border-color: #374151; color: #f9fafb; }
+.dark .app-nav            { background: #111827; }

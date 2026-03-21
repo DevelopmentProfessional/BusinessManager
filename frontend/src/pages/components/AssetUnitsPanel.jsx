@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { assetUnitsAPI } from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 
 const STATE_LABELS = {
   available:     'Available',
@@ -131,7 +132,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
   };
 
   const handleRemove = async (unitId) => {
-    if (!window.confirm('Remove this unit? This cannot be undone.')) return;
+    if (!await showConfirm('Remove this unit? This cannot be undone.', { confirmLabel: 'Remove' })) return;
     try {
       await assetUnitsAPI.remove(assetId, unitId);
       await load();  // load() already calls onCountChange

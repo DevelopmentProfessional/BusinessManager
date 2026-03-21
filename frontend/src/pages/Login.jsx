@@ -39,7 +39,7 @@ import {
   ArrowPathIcon 
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
-import api, { preloadMajorTables } from '../services/api';
+import api from '../services/api';
 import { startPerformanceSession } from '../services/performanceTracker';
 
 const Login = () => {
@@ -257,9 +257,6 @@ const Login = () => {
         
         // Save credentials if remember me is checked
         saveUserCredentials(formData.username.trim(), formData.password, formData.company_id.trim(), formData.remember_me);
-
-        // Preload major tables in background (fire-and-forget)
-        preloadMajorTables();
 
         // Show success message briefly
         setSuccess('Login successful! Redirecting...');

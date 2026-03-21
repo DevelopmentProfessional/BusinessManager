@@ -30,6 +30,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../../services/useStore';
 import { suppliersAPI } from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import Gate_Permission from './Gate_Permission';
@@ -87,7 +88,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   };
 
   const handleDelete = async (supplierId) => {
-    if (!window.confirm('Are you sure you want to delete this supplier?')) return;
+    if (!await showConfirm('Are you sure you want to delete this supplier?')) return;
     try {
       await suppliersAPI.delete(supplierId);
       setSuppliers(prev => prev.filter(s => s.id !== supplierId));

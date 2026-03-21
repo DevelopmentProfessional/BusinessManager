@@ -311,8 +311,6 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
       return;
     }
 
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
-
     deleteInFlightRef.current.add(inventoryId);
     setDeletingInventoryId(inventoryId);
 

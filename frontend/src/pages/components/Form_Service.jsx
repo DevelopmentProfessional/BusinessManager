@@ -38,6 +38,7 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 import Widget_Camera from './Widget_Camera';
 import Modal_BulkImport from './Modal_BulkImport';
 
@@ -823,7 +824,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
               <Button_Toolbar
                 icon={TrashIcon}
                 label="Delete service"
-                onClick={() => { if (window.confirm('Delete this service?')) onDelete(service.id); }}
+                onClick={async () => { if (await showConfirm('Delete this service?')) onDelete(service.id); }}
                 className="btn-outline-danger"
               />
             )}

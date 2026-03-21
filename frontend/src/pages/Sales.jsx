@@ -670,10 +670,7 @@ export default function Sales() {
       const summary = summaryRes?.data ?? summaryRes ?? {};
       if (Array.isArray(data)) {
         const productItems = data
-          .filter(item => {
-            const itemType = (item.type || '').toUpperCase();
-            return itemType !== 'RESOURCE' && itemType !== 'ASSET';
-          })
+          .filter(item => (item.type || '').toUpperCase() === 'PRODUCT')
           .map(item => ({
             ...item,
             ...(summary[item.id] || {}),

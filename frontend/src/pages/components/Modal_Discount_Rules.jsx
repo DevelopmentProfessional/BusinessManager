@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { XMarkIcon, PlusIcon, TrashIcon, TagIcon, CheckIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { discountRulesAPI, inventoryAPI } from '../../services/api';
+import { showConfirm } from '../../services/showConfirm';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -89,7 +90,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this discount rule?')) return;
+    if (!await showConfirm('Delete this discount rule?')) return;
     try {
       await discountRulesAPI.delete(id);
       if (editingId === id) resetForm();
