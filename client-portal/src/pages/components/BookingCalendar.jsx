@@ -12,11 +12,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addDays } from 'date-fns'
+import { enUS } from 'date-fns/locale'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { catalogAPI } from '../../services/api'
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline'
 
-const locales = { 'en-US': require('date-fns/locale/en-US') }
+const locales = { 'en-US': enUS }
 const localizer = dateFnsLocalizer({
   format,
   parse,

@@ -249,8 +249,8 @@ class Client(BaseModel, table=True):
     address: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
 
-    # Membership fields
-    membership_tier: MembershipTier = Field(default=MembershipTier.NONE)
+    # Membership fields — stored as plain str to avoid PostgreSQL enum name/value mismatch
+    membership_tier: str = Field(default="none")
     membership_since: Optional[datetime] = Field(default=None)
     membership_expires: Optional[datetime] = Field(default=None)
     membership_points: int = Field(default=0)
