@@ -59,6 +59,14 @@ export const catalogAPI = {
     api.get(`/catalog/services/${serviceId}/availability`, { params: { company_id: companyId, ...params } }).then(r => r.data),
 }
 
+// ── Cart (DB-backed) ──────────────────────────────────────────────────────────
+export const cartAPI = {
+  getAll:     ()       => api.get('/cart').then(r => r.data),
+  upsert:     (item)   => api.put('/cart/item', item).then(r => r.data),
+  remove:     (key)    => api.delete(`/cart/item/${encodeURIComponent(key)}`).then(r => r.data),
+  clear:      ()       => api.delete('/cart').then(r => r.data),
+}
+
 // ── Bookings ──────────────────────────────────────────────────────────────────
 export const bookingsAPI = {
   create: (data)   => api.post('/bookings', data).then(r => r.data),

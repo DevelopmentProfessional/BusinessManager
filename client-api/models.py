@@ -216,6 +216,49 @@ class AssetUnit(BaseModel, table=True):
     company_id: Optional[str] = Field(default=None, index=True)
 
 
+# ─── SHARED CART TABLE (read/write from client portal) ─────────────────────────
+
+class ClientCartItem(BaseModel, table=True):
+    """Persistent cart items — same table used by internal app's client_cart router."""
+    __tablename__ = "client_cart_item"
+    client_id: UUID = Field(index=True)
+    cart_key: str = Field(index=True)   # "{item_type}-{item_id}"
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str                       # "product" or "service"
+    item_name: str
+    unit_price: float = Field(default=0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0)
+    options_json: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientCartItemRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    cart_key: str
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    options_json: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ClientCartItemUpsert(SQLModel):
+    cart_key: str
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float = 0
+    quantity: int = 1
+    line_total: float = 0
+    options_json: Optional[str] = None
+
+
 # ─── NEW CLIENT-PORTAL TABLES ──────────────────────────────────────────────────
 
 class ClientBooking(BaseModel, table=True):
