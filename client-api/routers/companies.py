@@ -1,26 +1,24 @@
 """
-COMPANIES ROUTER  — /api/client/companies
-==========================================
-PUBLIC endpoint — no authentication required.
-Returns all active companies so the client portal can show
-the company selection screen on first visit.
+COMPANIES ROUTER  --  /api/client/companies
+============================================
+PUBLIC endpoints -- no authentication required.
 
-GET /companies          — List all active companies (name + logo)
-GET /companies/{id}/logo — Serve binary logo image
+GET /companies              -- List all active companies
+GET /companies/{id}/logo    -- Serve binary logo image
+
+Queries the Company table (authoritative) and joins AppSettings
+for logo and extra info. Works even if AppSettings has no entry yet.
 """
 
-import base64
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Response
-from fastapi.responses import Response as FastAPIResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response, RedirectResponse
 from sqlmodel import Session, select, SQLModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from fastapi import Request
-from uuid import UUID
 
 from database import get_session
-from models import AppSettings
+from models import AppSettings, Company
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 limiter = Limiter(key_func=get_remote_address)
@@ -30,84 +28,71 @@ class CompanyListItem(SQLModel):
     company_id: str
     name: str
     logo_url: Optional[str] = None
-    has_logo_data: bool = False   # True = use /companies/{id}/logo for binary logo
+    has_logo_data: bool = False
 
 
-@router.get("", response_model=List[CompanyListItem], summary="List all companies")
+@router.get("", response_model=List[CompanyListItem])
 @limiter.limit("60/minute")
 def list_companies(
     request: Request,
     session: Session = Depends(get_session),
 ):
     """
-    Returns all companies that have app settings configured.
-    Used by the client portal company selection screen.
-
-    Response:
-    ```json
-    [
-      {
-        "company_id": "acme-corp",
-        "name": "Acme Corporation",
-        "logo_url": "https://...",
-        "has_logo_data": false
-      }
-    ]
-    ```
+    Returns all active companies for the company selection screen.
+    Pulls name from the Company table and logo from AppSettings (if set).
     """
-    rows = session.exec(
-        select(AppSettings).where(AppSettings.company_name != None)
+    companies = session.exec(
+        select(Company).where(Company.is_active == True)
     ).all()
 
     result = []
-    for row in rows:
-        if not row.company_id or not row.company_name:
-            continue
+    for company in companies:
+        # Try to find matching AppSettings for logo
+        settings = session.exec(
+            select(AppSettings).where(AppSettings.company_id == company.company_id)
+        ).first()
+
+        logo_url      = settings.logo_url  if settings and settings.logo_url  else None
+        has_logo_data = bool(settings.logo_data) if settings else False
+
         result.append(CompanyListItem(
-            company_id=row.company_id,
-            name=row.company_name,
-            logo_url=row.logo_url if row.logo_url else None,
-            has_logo_data=bool(row.logo_data),
+            company_id    = company.company_id,
+            name          = company.name,
+            logo_url      = logo_url,
+            has_logo_data = has_logo_data,
         ))
+
     return result
 
 
-@router.get("/{company_id}/logo", summary="Serve company logo binary")
+@router.get("/{company_id}/logo")
 @limiter.limit("120/minute")
 def get_logo(
     request: Request,
     company_id: str,
     session: Session = Depends(get_session),
 ):
-    """
-    Serves the binary logo stored in app_settings.logo_data.
-    Returns the image directly for use in <img src="/api/client/companies/acme/logo">.
-    """
-    row = session.exec(
+    """Serve the binary logo stored in app_settings.logo_data."""
+    settings = session.exec(
         select(AppSettings).where(AppSettings.company_id == company_id)
     ).first()
 
-    if not row:
+    if not settings:
         raise HTTPException(status_code=404, detail="Company not found.")
 
-    if row.logo_data:
-        # Detect image type from magic bytes
-        data = row.logo_data
+    if settings.logo_data:
+        data = settings.logo_data
         if data[:4] == b'\x89PNG':
             media_type = "image/png"
         elif data[:2] == b'\xff\xd8':
             media_type = "image/jpeg"
         elif data[:4] == b'GIF8':
             media_type = "image/gif"
-        elif data[:4] == b'RIFF':
-            media_type = "image/webp"
         else:
             media_type = "image/png"
-        return FastAPIResponse(content=data, media_type=media_type)
+        return Response(content=data, media_type=media_type)
 
-    if row.logo_url:
-        # Redirect to external URL
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url=row.logo_url)
+    if settings.logo_url:
+        return RedirectResponse(url=settings.logo_url)
 
     raise HTTPException(status_code=404, detail="No logo configured for this company.")
