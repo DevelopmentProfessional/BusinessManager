@@ -61,6 +61,7 @@ import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
 import Gate_Permission from './components/Gate_Permission';
 import PageTableFooter from './components/PageTableFooter';
+import PageTableHeader from './components/PageTableHeader';
 import PageTableRow from './components/PageTableRow';
 import useDarkMode from '../services/useDarkMode';
 import Modal_Create_User from './components/Modal_Create_User';
@@ -1108,6 +1109,13 @@ export default function Employees() {
       {/* Main upside-down table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
+        <PageTableHeader columns={[
+          { label: 'Employee' },
+          ...(isAdmin ? [{ label: '', width: 54, className: 'text-center p-0' }] : []),
+          { label: 'Role', width: 90 },
+          { label: '', width: 54, className: 'text-center p-0' },
+        ]} />
+
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
@@ -1216,12 +1224,6 @@ export default function Employees() {
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
-          columns={[
-            { label: 'Employee' },
-            ...(isAdmin ? [{ label: '', width: 54, className: 'text-center p-0' }] : []),
-            { label: 'Role', width: 90 },
-            { label: '', width: 54, className: 'text-center p-0' },
-          ]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
           searchPlaceholder="Search by name, email, or role..."

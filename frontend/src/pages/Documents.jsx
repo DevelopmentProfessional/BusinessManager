@@ -67,6 +67,7 @@ import Modal_Viewer_Document from './components/Modal_Viewer_Document';
 import Modal_Edit_Document from './components/Modal_Edit_Document';
 import Modal_Template_Editor from './components/Modal_Template_Editor';
 import PageTableFooter from './components/PageTableFooter';
+import PageTableHeader from './components/PageTableHeader';
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -716,6 +717,11 @@ export default function Documents() {
       {/* Main table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
+        <PageTableHeader columns={[
+          { label: showTemplates ? 'Template' : 'Document' },
+          { label: showTemplates ? 'Actions' : 'View', width: showTemplates ? 80 : 60, className: 'text-center' },
+        ]} />
+
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
@@ -836,10 +842,6 @@ export default function Documents() {
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
-          columns={[
-            { label: showTemplates ? 'Template' : 'Document' },
-            { label: showTemplates ? 'Actions' : 'View', width: showTemplates ? 80 : 60, className: 'text-center' },
-          ]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
           searchPlaceholder="Search by name, type, or description..."

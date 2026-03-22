@@ -33,6 +33,7 @@ import usePagePermission from '../services/usePagePermission';
 import useViewMode from '../services/useViewMode';
 import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
+import PageTableHeader from './components/PageTableHeader';
 import PageTableRow from './components/PageTableRow';
 import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
@@ -190,6 +191,8 @@ export default function Services() {
   return (
     <PageLayout title="Services" error={error}>
 
+        <PageTableHeader columns={[{ label: 'Service' }, { label: 'Price', width: 80 }, { label: 'Duration', width: 70 }]} />
+
         {/* Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
@@ -250,7 +253,6 @@ export default function Services() {
 
         {/* Fixed footer – headers + controls */}
         <PageTableFooter
-          columns={[{ label: 'Service' }, { label: 'Price', width: 80 }, { label: 'Duration', width: 70 }]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
           searchPlaceholder="Search services..."

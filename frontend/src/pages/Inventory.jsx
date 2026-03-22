@@ -37,6 +37,7 @@ import usePagePermission from '../services/usePagePermission';
 import useViewMode from '../services/useViewMode';
 import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
+import PageTableHeader from './components/PageTableHeader';
 import PageTableRow from './components/PageTableRow';
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
 import Modal_Discount_Rules from './components/Modal_Discount_Rules';
@@ -372,6 +373,8 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
 return (
   <PageLayout title="Inventory" error={error}>
 
+      <PageTableHeader columns={[{ label: 'Item' }, { label: 'Type', width: 80 }, { label: 'Stock', width: 50 }]} />
+
       {/* Container_Scrollable rows – grow upwards from bottom */}
       <div
         ref={scrollRef}
@@ -442,7 +445,6 @@ return (
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter
-        columns={[{ label: 'Item' }, { label: 'Type', width: 80 }, { label: 'Stock', width: 50 }]}
         searchTerm={searchTerm}
         onSearch={setSearchTerm}
         searchPlaceholder="Search by name or SKU..."
