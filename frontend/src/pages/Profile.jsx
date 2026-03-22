@@ -209,7 +209,13 @@ const statusColor = (status) => {
 };
 
 const Profile = () => {
-  // ...
+  const navigate = useNavigate();
+  const { user, logout, setUser, hasPermission } = useStore();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign } = useViewMode();
+  const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
+  const FooterAlignIcon = footerAlign === 'center' ? AlignCenterIcon : footerAlign === 'right' ? AlignRightIcon : AlignLeftIcon;
+
   const cycleFooterAlign = useCallback(() => {
     const next = footerAlign === 'left' ? 'center' : footerAlign === 'center' ? 'right' : 'left';
     setFooterAlign(next);
@@ -1010,7 +1016,7 @@ const Profile = () => {
     left: 0,
     right: 0,
     width: '100%',
-    height: `calc(100dvh - ${totalFooterHeight}px)`,
+    height: `calc(var(--vvp-height, 100dvh) - ${totalFooterHeight}px)`,
     overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1026,7 +1032,7 @@ const Profile = () => {
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: '100%' }}>
       
       {/* Main Content Area */}
       <div className="flex-grow-1"></div>
@@ -1043,7 +1049,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100dvh - ${row1PanelBottom}px)`,
+            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1137,7 +1143,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100dvh - ${row1PanelBottom}px)`,
+            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1280,7 +1286,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100dvh - ${row1PanelBottom}px)`,
+            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -1353,7 +1359,7 @@ const Profile = () => {
             left: 0,
             right: 0,
             width: '100%',
-            height: `calc(100dvh - ${row1PanelBottom}px)`,
+            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
