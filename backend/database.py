@@ -791,10 +791,7 @@ def _drop_descriptive_feature_name_unique_index_if_needed():
 
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
-    """Create database tables and run safe migrations."""
-    # Always run create_all — idempotent metadata check, required for fresh deploys
-    SQLModel.metadata.create_all(engine)
-
+    """Run safe migrations to bring schema to current version."""
     # Skip all migrations if schema is already at the current version
     if _schema_is_current():
         print(f"Schema already at {CURRENT_SCHEMA_VERSION}, skipping migrations.")

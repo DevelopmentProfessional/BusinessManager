@@ -15,7 +15,6 @@ services:
         value: https://businessmanager-reference.onrender.com,http://localhost:5173
       - key: ENVIRONMENT
         value: production
-    healthCheckPath: /health
 
   # Frontend Service
   - type: static
