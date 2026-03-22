@@ -65,6 +65,23 @@ export default function Layout({ children }) {
   }, [uiScale]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+    const update = () => {
+      const vv = window.visualViewport;
+      const keyboardOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--keyboard-offset', `${keyboardOffset}px`);
+      document.documentElement.style.setProperty('--vvp-height', `${vv.height}px`);
+    };
+    window.visualViewport.addEventListener('resize', update);
+    window.visualViewport.addEventListener('scroll', update);
+    update();
+    return () => {
+      window.visualViewport.removeEventListener('resize', update);
+      window.visualViewport.removeEventListener('scroll', update);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleOnline = () => setOnline(true);
     const handleOffline = () => setOnline(false);
     window.addEventListener('online', handleOnline);
@@ -163,8 +180,8 @@ export default function Layout({ children }) {
             style={{ 
               minWidth: '3rem', 
               zIndex: 1051, 
-              bottom: '5rem', 
-              right: '1rem' 
+              bottom: 'calc(5rem + var(--keyboard-offset, 0px))',
+              right: '1rem'
             }}
           >
             <div className="d-flex flex-column gap-2">
@@ -218,11 +235,11 @@ export default function Layout({ children }) {
             : 'btn btn-outline-secondary',
           'p-0 position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center'
         )}
-        style={{ 
-          width: '3rem', 
-          height: '3rem', 
-          zIndex: 1100, 
-          bottom: '1.5rem', 
+        style={{
+          width: '3rem',
+          height: '3rem',
+          zIndex: 1100,
+          bottom: 'calc(1.5rem + var(--keyboard-offset, 0px))',
           right: '1rem',
           backgroundColor: expandedMenuOpen ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
           color: expandedMenuOpen ? 'var(--bs-white)' : 'var(--bs-body-color)',

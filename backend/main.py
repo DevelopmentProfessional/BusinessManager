@@ -170,39 +170,18 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# ─── 5 HEALTH ENDPOINT ─────────────────────────────────────────────────────────
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    try:
-        from backend.database import engine
-        from sqlalchemy import text
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return {
-            "status": "healthy",
-            "message": "Business Management API is running",
-            "database": "connected"
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "message": "Database connection failed",
-            "error": str(e)
-        }
+# ─── 5 STARTUP EVENT ───────────────────────────────────────────────────────────
+import asyncio
 
-# ─── 6 STARTUP EVENT ───────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup_event():
     print("Business Management API is starting...")
-    # Initialize database tables
     try:
         from backend.database import create_db_and_tables, get_session
     except ModuleNotFoundError:
         from database import create_db_and_tables, get_session
-    create_db_and_tables()
-    print("Database tables initialized")
-    # Unlock any locked admin accounts (self-healing on redeploy)
+    await asyncio.to_thread(create_db_and_tables)
+    print("Database migrations complete")
     try:
         from backend.models import User, UserRole
     except ModuleNotFoundError:
@@ -219,23 +198,22 @@ async def startup_event():
             admin.locked_until = None
             print(f"Unlocked admin account: {admin.username}")
         if locked_admins:
-            session.commit()
+            await asyncio.to_thread(session.commit)
         session.close()
     except Exception as e:
         print(f"Warning: Could not unlock admin accounts: {e}")
-    # Seed standard templates
     try:
         from backend.routers.templates import seed_standard_templates
     except ModuleNotFoundError:
         from routers.templates import seed_standard_templates
     try:
         session = next(get_session())
-        seed_standard_templates(session)
+        await asyncio.to_thread(seed_standard_templates, session)
         session.close()
         print("Standard templates seeded")
     except Exception as e:
         print(f"Warning: Could not seed standard templates: {e}")
-    print("All routers loaded successfully")
+    print("Startup complete")
 
 # ─── 7 ROUTER REGISTRATION ─────────────────────────────────────────────────────
 # Include routers (documents + document_category CRUD go through isud)
