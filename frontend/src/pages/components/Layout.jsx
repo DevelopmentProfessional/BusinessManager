@@ -67,17 +67,12 @@ export default function Layout({ children }) {
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
     const update = () => {
-      const vv = window.visualViewport;
-      const keyboardOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      document.documentElement.style.setProperty('--keyboard-offset', `${keyboardOffset}px`);
-      document.documentElement.style.setProperty('--vvp-height', `${vv.height}px`);
+      document.documentElement.style.setProperty('--vvp-height', `${window.visualViewport.height}px`);
     };
     window.visualViewport.addEventListener('resize', update);
-    window.visualViewport.addEventListener('scroll', update);
     update();
     return () => {
       window.visualViewport.removeEventListener('resize', update);
-      window.visualViewport.removeEventListener('scroll', update);
     };
   }, []);
 
@@ -147,7 +142,7 @@ export default function Layout({ children }) {
       {/* Offline banner */}
       {!isOnline && (
         <div
-          className="position-fixed start-0 end-0 top-0 d-flex align-items-center justify-content-center gap-2 px-3 py-2 text-sm"
+          className="position-absolute start-0 end-0 top-0 d-flex align-items-center justify-content-center gap-2 px-3 py-2 text-sm"
           style={{ zIndex: 2000, backgroundColor: '#f59e0b', color: '#1c1917' }}
         >
           <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
@@ -166,21 +161,21 @@ export default function Layout({ children }) {
 
       {/* Navigation menu overlay */}
       {expandedMenuOpen && (
-        <div className="position-fixed top-0 start-0 w-100 h-100" 
+        <div className="position-absolute top-0 start-0 w-100 h-100"
         style={{ zIndex: 1050 }}>
           {/* Backdrop */}
-          <div 
-            className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-25" 
+          <div
+            className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25"
             onClick={() => setExpandedMenuOpen(false)}
           />
-          
+
           {/* Menu positioned bottom-right */}
-          <div 
-            className="position-fixed rounded-3 ps-2" 
-            style={{ 
-              minWidth: '3rem', 
-              zIndex: 1051, 
-              bottom: 'calc(5rem + var(--keyboard-offset, 0px))',
+          <div
+            className="position-absolute rounded-3 ps-2"
+            style={{
+              minWidth: '3rem',
+              zIndex: 1051,
+              bottom: '5rem',
               right: '1rem'
             }}
           >
@@ -233,13 +228,13 @@ export default function Layout({ children }) {
           expandedMenuOpen
             ? 'btn btn-primary'
             : 'btn btn-outline-secondary',
-          'p-0 position-fixed rounded-circle shadow-lg d-flex align-items-center justify-content-center'
+          'p-0 position-absolute rounded-circle shadow-lg d-flex align-items-center justify-content-center'
         )}
         style={{
           width: '3rem',
           height: '3rem',
           zIndex: 1100,
-          bottom: 'calc(1.5rem + var(--keyboard-offset, 0px))',
+          bottom: '1.5rem',
           right: '1rem',
           backgroundColor: expandedMenuOpen ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
           color: expandedMenuOpen ? 'var(--bs-white)' : 'var(--bs-body-color)',
@@ -256,7 +251,7 @@ export default function Layout({ children }) {
         disabled={syncLoading}
         title="Sync app"
         aria-label="Sync app"
-        className="btn btn-sm btn-outline-secondary position-fixed d-flex align-items-center gap-1"
+        className="btn btn-sm btn-outline-secondary position-absolute d-flex align-items-center gap-1"
         style={{
           zIndex: 1200,
           top: !isOnline ? '2.75rem' : '0.75rem',
