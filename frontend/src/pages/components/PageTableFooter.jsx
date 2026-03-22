@@ -1,43 +1,52 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import useViewMode from '../../services/useViewMode';
 
 /**
  * PageTableFooter
  *
  * Props:
- *   columns: Array<{ label: string, width?: number, className?: string }>
  *   searchTerm: string
  *   onSearch: (value: string) => void
  *   searchPlaceholder?: string
  *   beforeSearch?: ReactNode  — optional row rendered above the search input
  *   hideSearch?: boolean      — when true, the search input is not rendered
  *   children: Button_Toolbar buttons and filter dropdowns (rendered below search)
+ *
+ * On mobile the footer is position:fixed (floats above content like the nav "..." button).
+ * A sibling spacer div reserves the same height in the flex flow so content doesn't
+ * scroll all the way behind the footer.
  */
-export default function PageTableFooter({ columns, searchTerm, onSearch, searchPlaceholder = 'Search...', beforeSearch, hideSearch, children }) {
+export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholder = 'Search...', beforeSearch, hideSearch, children }) {
   const { footerAlign } = useViewMode();
+  const footerRef = useRef(null);
+  // Start at 140 so the spacer reserves space before the first ResizeObserver tick
+  const [footerHeight, setFooterHeight] = useState(140);
+
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      const h = entries[0]?.borderBoxSize?.[0]?.blockSize ?? entries[0]?.contentRect?.height ?? 0;
+      setFooterHeight(Math.ceil(h));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const alignClass = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
   return (
+    <>
+      {/* Spacer: on mobile the footer is position:absolute (out of flex flow), so this
+          div reserves the equivalent height so content doesn't scroll behind the footer. */}
+      <div
+        className="app-footer-spacer"
+        style={{ '--app-footer-h': `${footerHeight}px` }}
+        aria-hidden="true"
+      />
     <div
+      ref={footerRef}
       className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm"
       style={{ zIndex: 10 }}
     >
-      {/* Column header mirror table */}
-      <table className="search-hide-on-focus table table-borderless mb-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-        <colgroup>
-          <col />
-          {columns.filter(c => c.width).map((col, i) => (
-            <col key={i} style={{ width: col.width }} />
-          ))}
-        </colgroup>
-        <tfoot>
-          <tr className="bg-gray-100 dark:bg-gray-700">
-            {columns.map((col, i) => (
-              <th key={i} className={col.className}>{col.label}</th>
-            ))}
-          </tr>
-        </tfoot>
-      </table>
-
       {/* Controls: optional top row + search + buttons */}
       <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="row g-0">
@@ -68,5 +77,6 @@ export default function PageTableFooter({ columns, searchTerm, onSearch, searchP
         </div>
       </div>
     </div>
+    </>
   );
 }

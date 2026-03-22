@@ -42,6 +42,7 @@ import Button_Toolbar from './components/Button_Toolbar';
 import Modal_Template_Use from './components/Modal_Template_Use';
 import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
+import PageTableHeader from './components/PageTableHeader';
 import PageTableRow from './components/PageTableRow';
 
 export default function Clients() {
@@ -257,6 +258,8 @@ export default function Clients() {
   return (
     <PageLayout title="Clients" error={error}>
 
+        <PageTableHeader columns={[{ label: 'Client' }, { label: 'Membership', width: 80 }, { label: 'Notify', width: 56 }]} />
+
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           ref={scrollRef}
@@ -317,7 +320,6 @@ export default function Clients() {
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
-          columns={[{ label: 'Client' }, { label: 'Membership', width: 80 }, { label: 'Notify', width: 56 }]}
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
           searchPlaceholder="Search by name, email, or phone..."

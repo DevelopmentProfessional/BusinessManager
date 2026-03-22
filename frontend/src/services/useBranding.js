@@ -13,6 +13,7 @@ const DEFAULT_BRANDING = {
   secondaryColor: '#10B981',  // Emerald
   accentColor: '#8B5CF6',     // Purple
   logoUrl: '',
+  logoDocumentId: null,
   companyName: 'Business Manager',
   tagline: ''
 };

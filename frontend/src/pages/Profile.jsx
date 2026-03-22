@@ -78,7 +78,7 @@ import {
   MagnifyingGlassPlusIcon,
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
-import { employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
 import api from '../services/api';
 import { runAppSync } from '../services/appSync';
 import Modal_Signature from './components/Modal_Signature';
@@ -86,6 +86,7 @@ import Manager_DatabaseConnection from './components/Manager_DatabaseConnection'
 import useBranding from '../services/useBranding';
 import { applyActiveColorTheme } from '../services/activeColorTheme';
 import { right } from '@popperjs/core';
+import Modal from './components/Modal';
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
@@ -200,19 +201,15 @@ const DB_ENVIRONMENTS = {
 };
 
 const statusColor = (status) => {
-  if (status === 'approved') return 'success';
-  if (status === 'denied') return 'danger';
-  return 'warning';
+  const s = String(status || '').toLowerCase();
+  if (s === 'approved') return 'success';
+  if (s === 'rejected') return 'danger';
+  if (s === 'pending') return 'warning';
+  return 'secondary';
 };
 
 const Profile = () => {
-  const navigate = useNavigate();
-  const { user, logout, setUser, hasPermission } = useStore();
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
-  const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
-  const FooterAlignIcon = footerAlign === 'center' ? AlignCenterIcon : footerAlign === 'right' ? AlignRightIcon : AlignLeftIcon;
-
+  // ...
   const cycleFooterAlign = useCallback(() => {
     const next = footerAlign === 'left' ? 'center' : footerAlign === 'center' ? 'right' : 'left';
     setFooterAlign(next);
@@ -274,6 +271,12 @@ const Profile = () => {
 
   const { branding, updateBranding } = useBranding();
   const [localBranding, setLocalBranding] = useState(branding);
+
+  const [brandingLogoUploading, setBrandingLogoUploading] = useState(false);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
+  const [logoPickerLoading, setLogoPickerLoading] = useState(false);
+  const [logoPickerError, setLogoPickerError] = useState('');
+  const [logoPickerDocs, setLogoPickerDocs] = useState([]);
 
   const [dbSettings, setDbSettings] = useState({
     connectionString: '',
@@ -455,6 +458,60 @@ const Profile = () => {
     setTimeout(() => setSettingsSuccess(''), 3000);
   };
   const handleBrandingChange = (field, value) => setLocalBranding(prev => ({ ...prev, [field]: value }));
+
+  const isImageDocument = (doc) => {
+    const ct = String(doc?.content_type || '').toLowerCase();
+    const name = String(doc?.original_filename || '').toLowerCase();
+    return ct.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+  };
+
+  const loadLogoPickerDocs = async () => {
+    setLogoPickerLoading(true);
+    setLogoPickerError('');
+    try {
+      const res = await documentsAPI.getAll();
+      const docs = Array.isArray(res.data) ? res.data : [];
+      setLogoPickerDocs(docs.filter(isImageDocument));
+    } catch (err) {
+      console.warn('Failed to load documents for logo picker', err);
+      setLogoPickerDocs([]);
+      setLogoPickerError('Failed to load images.');
+    } finally {
+      setLogoPickerLoading(false);
+    }
+  };
+
+  const handleUploadBrandingLogo = async (file) => {
+    if (!file) return;
+    setBrandingLogoUploading(true);
+    setSettingsError('');
+    try {
+      const res = await documentsAPI.upload(file, 'Branding logo');
+      const doc = res?.data;
+      if (doc?.id) {
+        setLocalBranding((prev) => ({
+          ...prev,
+          logoDocumentId: doc.id,
+          logoUrl: '',
+        }));
+      }
+    } catch (err) {
+      console.error('Branding logo upload failed', err);
+      setSettingsError('Failed to upload logo.');
+    } finally {
+      setBrandingLogoUploading(false);
+    }
+  };
+
+  const handleSelectLogoFromDocuments = (doc) => {
+    if (!doc?.id) return;
+    setLocalBranding((prev) => ({
+      ...prev,
+      logoDocumentId: doc.id,
+      logoUrl: '',
+    }));
+    setLogoPickerOpen(false);
+  };
 
   const handleSaveDbSettings = () => {
     localStorage.setItem('app_db_settings', JSON.stringify(dbSettings));
@@ -1747,6 +1804,64 @@ const Profile = () => {
                       className="form-control form-control-sm" placeholder="Logo URL" />
                     <label htmlFor="logoUrl">Logo URL</label>
                   </div>
+                  <div className="border rounded p-2">
+                    <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                      <div className="fw-medium">Logo Image</div>
+                      <div className="d-flex align-items-center gap-2">
+                        <label className={`btn btn-sm btn-outline-primary ${brandingLogoUploading ? 'disabled' : ''}`}>
+                          <ArrowUpTrayIcon className="h-4 w-4" style={{ width: 16, height: 16, marginRight: 6 }} />
+                          {brandingLogoUploading ? 'Uploading...' : 'Upload'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleUploadBrandingLogo(e.target.files?.[0] || null)}
+                            disabled={brandingLogoUploading}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={async () => {
+                            setLogoPickerOpen(true);
+                            await loadLogoPickerDocs();
+                          }}
+                        >
+                          Choose from Documents
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => setLocalBranding((prev) => ({ ...prev, logoDocumentId: null, logoUrl: '' }))}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 d-flex align-items-center gap-3 flex-wrap">
+                      {localBranding.logoDocumentId ? (
+                        <img
+                          src={documentsAPI.fileUrl(localBranding.logoDocumentId)}
+                          alt="Logo"
+                          style={{ height: 48, width: 48, objectFit: 'contain', borderRadius: 6, border: '1px solid var(--bs-border-color)' }}
+                        />
+                      ) : localBranding.logoUrl ? (
+                        <img
+                          src={localBranding.logoUrl}
+                          alt="Logo"
+                          style={{ height: 48, width: 48, objectFit: 'contain', borderRadius: 6, border: '1px solid var(--bs-border-color)' }}
+                        />
+                      ) : (
+                        <div className="text-muted small">No logo selected.</div>
+                      )}
+                      {localBranding.logoDocumentId && (
+                        <div className="small text-muted" style={{ wordBreak: 'break-all' }}>
+                          Document ID: {String(localBranding.logoDocumentId)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-3 gap-3">
                     {[
                       { key: 'primaryColor', label: 'Primary', helpId: 'primary-color', helpText: 'Main buttons and links' },
@@ -1774,6 +1889,53 @@ const Profile = () => {
                     onClick={handleSaveBranding}
                     className="btn-primary"
                   />
+
+                  <Modal
+                    isOpen={logoPickerOpen}
+                    onClose={() => setLogoPickerOpen(false)}
+                    title="Select Logo from Documents"
+                    centered={true}
+                    footer={
+                      <div className="d-flex justify-content-end gap-2">
+                        <button type="button" className="btn-secondary" onClick={() => setLogoPickerOpen(false)}>
+                          Close
+                        </button>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-2">
+                      {logoPickerLoading && (
+                        <div className="text-muted">Loading images...</div>
+                      )}
+                      {logoPickerError && (
+                        <div className="text-danger">{logoPickerError}</div>
+                      )}
+                      {!logoPickerLoading && !logoPickerError && logoPickerDocs.length === 0 && (
+                        <div className="text-muted">No image documents found.</div>
+                      )}
+
+                      {!logoPickerLoading && logoPickerDocs.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {logoPickerDocs.map((doc) => (
+                            <button
+                              key={doc.id}
+                              type="button"
+                              className="border rounded p-2 text-start hover:bg-gray-50"
+                              onClick={() => handleSelectLogoFromDocuments(doc)}
+                              style={{ background: 'var(--bs-body-bg)' }}
+                            >
+                              <img
+                                src={documentsAPI.fileUrl(doc.id)}
+                                alt={doc.original_filename || 'image'}
+                                style={{ width: '100%', height: 90, objectFit: 'contain', background: '#fff', borderRadius: 6 }}
+                              />
+                              <div className="small text-truncate mt-1">{doc.original_filename || '(unnamed)'}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Modal>
                 </div>
               )}
             </div>

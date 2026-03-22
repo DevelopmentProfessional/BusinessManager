@@ -98,6 +98,7 @@ body,
 .no-scrollbar {
   scrollbar-width: none;       /* Firefox */
   -ms-overflow-style: none;    /* IE / Edge legacy */
+  overscroll-behavior: contain;
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;               /* Chrome / Safari / Opera */
@@ -356,18 +357,27 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   gap: 0.25rem !important;
 }
 
+/* Footer floats above content on mobile using position:fixed so it is independent
+   of the containing-block chain (works on ALL pages regardless of vh-100 vs h-100
+   or overflow:hidden ancestors).  bottom tracks --keyboard-offset (set by
+   Manager_MobileAddressBar) so it lifts above the keyboard when the search input
+   is focused.  The .app-footer-spacer sibling reserves the equivalent height in the
+   flex flow so content doesn't scroll behind the footer. */
 @media (max-width: 1024px) {
-  html.search-focus .app-footer-search {
-    transform: translateY(calc(-1 * var(--keyboard-offset)));
-    transition: transform 160ms ease-out;
-    will-change: transform;
+  .app-footer-search {
+    position: fixed;
+    bottom: var(--keyboard-offset, 0px);
+    left: 0;
+    right: 0;
+    z-index: 20;
   }
 
-  .app-search-input {
-    scroll-margin-bottom: calc(var(--keyboard-offset) + 2rem);
+  .app-footer-spacer {
+    flex-shrink: 0;
+    height: var(--app-footer-h, 140px);
   }
 
-  /* Hide non-search rows in footers when keyboard is open */
+  /* Hide non-search rows when keyboard is open */
   html.search-focus .search-hide-on-focus {
     display: none !important;
   }
