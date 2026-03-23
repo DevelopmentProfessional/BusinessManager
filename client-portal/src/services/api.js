@@ -16,9 +16,10 @@ function normalizeClientApiBase(rawBase) {
 }
 
 const isDev = import.meta.env.DEV
+const CLIENT_API_BASE = normalizeClientApiBase(import.meta.env.VITE_CLIENT_API_URL)
 const BASE   = isDev
   ? '/api/client'                                                  // Proxied by Vite dev server
-  : normalizeClientApiBase(import.meta.env.VITE_CLIENT_API_URL)
+  : CLIENT_API_BASE
 
 const api = axios.create({
   baseURL: BASE,
@@ -47,19 +48,35 @@ api.interceptors.response.use(
 
 // ── Companies (public) ───────────────────────────────────────────────────────
 export const companiesAPI = {
-  getAll: () => api.get('/companies').then((r) => {
-    const data = r?.data
+  getAll: async () => {
+    const response = await fetch(`${BASE}/companies?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Could not load businesses (${response.status}).`)
+    }
+
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      throw new Error('Unexpected companies response. Check the client API URL configuration.')
+    }
+
+    const data = await response.json()
     if (Array.isArray(data)) return data
     if (Array.isArray(data?.data)) return data.data
     if (Array.isArray(data?.results)) return data.results
     if (Array.isArray(data?.items)) return data.items
     if (Array.isArray(data?.companies)) return data.companies
     if (data && typeof data === 'object') {
-      const firstArray = Object.values(data).find((v) => Array.isArray(v))
+      const firstArray = Object.values(data).find((value) => Array.isArray(value))
       if (Array.isArray(firstArray)) return firstArray
     }
     return []
-  }),
+  },
   logoUrl: (companyId) => `${BASE}/companies/${companyId}/logo`,
 }
 

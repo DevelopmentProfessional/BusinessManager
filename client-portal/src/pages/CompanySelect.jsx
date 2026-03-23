@@ -10,8 +10,6 @@ import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import { companiesAPI } from '../services/api'
 import useStore from '../store/useStore'
 
-const CANONICAL_COMPANIES_URL = 'https://businessmanager-client-api.onrender.com/api/client/companies'
-
 // localStorage keys that we intentionally keep across sessions
 const PERSISTENT_KEYS = new Set(['cp_client', 'cp_token', 'cp_company', 'cp_nav_align'])
 
@@ -38,19 +36,6 @@ function clearStaleCaches() {
 
 function safeParseJson(val) {
   try { return val ? JSON.parse(val) : null } catch { return null }
-}
-
-function normalizeCompanies(payload) {
-  if (Array.isArray(payload)) return payload
-  if (Array.isArray(payload?.data)) return payload.data
-  if (Array.isArray(payload?.results)) return payload.results
-  if (Array.isArray(payload?.items)) return payload.items
-  if (Array.isArray(payload?.companies)) return payload.companies
-  if (payload && typeof payload === 'object') {
-    const firstArray = Object.values(payload).find(v => Array.isArray(v))
-    if (firstArray) return firstArray
-  }
-  return []
 }
 
 function CompanyCard({ company, onClick }) {
@@ -102,18 +87,7 @@ export default function CompanySelect() {
     setLoading(true)
     setError(null)
     try {
-      // Always bypass cache — companies must be fresh
-      const res = await fetch(`${CANONICAL_COMPANIES_URL}?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      })
-      if (!res.ok) throw new Error(`Server returned ${res.status}`)
-      const ct = res.headers.get('content-type') || ''
-      if (!ct.includes('application/json')) {
-        throw new Error('Unexpected response (not JSON). The API URL may be misconfigured.')
-      }
-      const payload = await res.json()
-      const list = normalizeCompanies(payload)
+      const list = await companiesAPI.getAll()
       setCompanies(list)
       if (list.length === 0) setError('No businesses are currently registered. Contact support.')
     } catch (err) {
