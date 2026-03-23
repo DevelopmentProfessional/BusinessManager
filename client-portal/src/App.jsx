@@ -1,6 +1,7 @@
 import React, { useEffect, Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import useStore from './store/useStore'
+import ErrorBoundary from './components/ErrorBoundary'
 import Toasts from './pages/components/Toasts'
 
 const CompanySelect = lazy(() => import('./pages/CompanySelect'))
@@ -46,26 +47,28 @@ export default function App() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <Toasts />
-      <Suspense fallback={<Spinner />}>
-        <Routes>
-          {/* Public — company picker is the true landing page */}
-          <Route path="/"         element={<CompanySelect />} />
-          <Route path="/login"    element={<Login />} />
-          <Route path="/register" element={<Register />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Toasts />
+        <Suspense fallback={<Spinner />}>
+          <Routes>
+            {/* Public — company picker is the true landing page */}
+            <Route path="/"         element={<CompanySelect />} />
+            <Route path="/login"    element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Protected */}
-          <Route path="/shop"      element={<ProtectedRoute><Shop /></ProtectedRoute>} />
-          <Route path="/dashboard" element={<Navigate to="/shop" replace />} />
-          <Route path="/catalog"   element={<Navigate to="/shop" replace />} />
-          <Route path="/cart"      element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-          <Route path="/orders"    element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
-          <Route path="/account"   element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+            {/* Protected */}
+            <Route path="/shop"      element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<Navigate to="/shop" replace />} />
+            <Route path="/catalog"   element={<Navigate to="/shop" replace />} />
+            <Route path="/cart"      element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+            <Route path="/orders"    element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+            <Route path="/account"   element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }

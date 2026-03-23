@@ -8,6 +8,14 @@ import { cartAPI } from '../services/api'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function safeParseJson(value, fallback = null) {
+  try {
+    return value ? JSON.parse(value) : fallback
+  } catch {
+    return fallback
+  }
+}
+
 function toUpsertPayload(item) {
   return {
     cart_key:   item._key,
@@ -40,10 +48,18 @@ const useStore = create((set, get) => ({
     localStorage.removeItem('cp_company')
   },
   restoreAuth: () => {
-    const client    = JSON.parse(localStorage.getItem('cp_client') || 'null')
-    const token     = localStorage.getItem('cp_token')
+    const client = safeParseJson(localStorage.getItem('cp_client'), null)
+    const token = localStorage.getItem('cp_token')
     const companyId = localStorage.getItem('cp_company')
-    if (client && token) set({ client, token, companyId })
+
+    if (client && token) {
+      set({ client, token, companyId })
+      return
+    }
+
+    if (!client && localStorage.getItem('cp_client')) {
+      localStorage.removeItem('cp_client')
+    }
   },
 
   // ── Cart (DB-backed, no localStorage) ────────────────────────────────────
@@ -55,7 +71,8 @@ const useStore = create((set, get) => ({
     if (!token) return
     try {
       const rows = await cartAPI.getAll()
-      const cart = rows.map(r => ({
+      const rowsSafe = Array.isArray(rows) ? rows : []
+      const cart = rowsSafe.map(r => ({
         _key:      r.cart_key,
         id:        r.item_id,
         name:      r.item_name,
