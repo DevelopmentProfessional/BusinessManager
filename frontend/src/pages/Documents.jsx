@@ -57,7 +57,6 @@ import {
   ListBulletIcon,
   PhotoIcon,
   ArrowDownTrayIcon,
-  FileIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { showConfirm } from '../services/showConfirm';
@@ -273,7 +272,7 @@ function getFileTypeIcon(filename = '', contentType = '') {
   }
 
   // Default file icon
-  return FileIcon;
+  return DocumentIcon;
 }
 
 // ─── 4  FORMAT FILE SIZE HELPER ───────────────────────────────────────────

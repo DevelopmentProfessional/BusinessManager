@@ -8,6 +8,14 @@ import { useNavigate } from 'react-router-dom'
 import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import { companiesAPI } from '../services/api'
 
+function normalizeCompanies(payload) {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.results)) return payload.results
+  if (Array.isArray(payload?.items)) return payload.items
+  return []
+}
+
 function CompanyCard({ company, onClick }) {
   const logoSrc = company.has_logo_data
     ? companiesAPI.logoUrl(company.company_id)
@@ -53,7 +61,9 @@ export default function CompanySelect() {
 
   useEffect(() => {
     companiesAPI.getAll()
-      .then(setCompanies)
+      .then((payload) => {
+        setCompanies(normalizeCompanies(payload))
+      })
       .catch(() => setError('Could not load companies. Please try again.'))
       .finally(() => setLoading(false))
   }, [])
@@ -63,8 +73,9 @@ export default function CompanySelect() {
     navigate('/login', { state: { company } })
   }
 
-  const filtered = companies.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+  const companiesSafe = Array.isArray(companies) ? companies : []
+  const filtered = companiesSafe.filter(c =>
+    String(c?.name || '').toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -85,7 +96,7 @@ export default function CompanySelect() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-10">
 
         {/* Search (only shown when 5+ companies) */}
-        {companies.length >= 5 && (
+        {companiesSafe.length >= 5 && (
           <div className="mb-8 max-w-sm mx-auto">
             <input
               className="form-input text-center"
