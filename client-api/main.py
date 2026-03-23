@@ -30,12 +30,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlmodel import Session, select
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from database import create_client_tables
+from database import create_client_tables, engine
+from models import Company
 from routers import auth, catalog, bookings, orders, companies, cart
 
 # ── Logging ─────────────────────────────────────────────────────────────────────
@@ -95,10 +98,50 @@ app.add_middleware(
 )
 
 
+def _database_health_snapshot():
+    with Session(engine) as session:
+        session.exec(text("SELECT 1")).one()
+        company_count = len(session.exec(select(Company.id).limit(10_000)).all())
+        return {
+            "database": "ok",
+            "company_count": company_count,
+        }
+
+
 # ── Health ───────────────────────────────────────────────────────────────────────
 @app.get("/health", include_in_schema=False)
 def health():
-    return {"status": "ok", "service": "client-api"}
+    try:
+        db = _database_health_snapshot()
+        return {"status": "ok", "service": "client-api", **db}
+    except Exception as exc:
+        logger.exception("Client API health check failed")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "service": "client-api",
+                "database": "error",
+                "detail": str(exc),
+            },
+        )
+
+
+@app.get("/health/db", include_in_schema=False)
+def health_db():
+    try:
+        return {"status": "ok", "service": "client-api", **_database_health_snapshot()}
+    except Exception as exc:
+        logger.exception("Client API database health check failed")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "service": "client-api",
+                "database": "error",
+                "detail": str(exc),
+            },
+        )
 
 
 # ── Routers ──────────────────────────────────────────────────────────────────────
