@@ -54,6 +54,10 @@ import {
   TagIcon,
   XMarkIcon,
   DocumentTextIcon,
+  ListBulletIcon,
+  PhotoIcon,
+  ArrowDownTrayIcon,
+  FileIcon,
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import { showConfirm } from '../services/showConfirm';
@@ -77,14 +81,18 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   });
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError(null);
   };
 
   const handleFileChange = (e) => {
     setFormData((prev) => ({ ...prev, file: e.target.files[0] }));
+    if (error) setError(null);
   };
 
   const handleDrag = (e) => {
@@ -103,19 +111,24 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setFormData((prev) => ({ ...prev, file: e.dataTransfer.files[0] }));
+      if (error) setError(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.file) {
-      alert('Please select a file to upload');
+      setError('Please select a file to upload');
       return;
     }
     try {
       setUploading(true);
+      setError(null);
+      setUploadProgress(0);
       await onSubmit(formData);
-    } finally {
+    } catch (err) {
+      const errorMsg = err?.response?.data?.detail || err?.message || 'Upload failed. Please try again.';
+      setError(errorMsg);
       setUploading(false);
     }
   };
@@ -193,6 +206,12 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
         Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF
       </p>
 
+      {error && (
+        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        </div>
+      )}
+
       <div className="form-floating mb-2">
         <textarea
           id="description"
@@ -201,6 +220,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
           onChange={handleChange}
           className="form-control form-control-sm min-h-[80px]"
           placeholder="Description"
+          disabled={uploading}
         />
         <label htmlFor="description">Description (optional)</label>
       </div>
@@ -214,7 +234,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
         >
           Cancel
         </button>
-        <button type="submit" className="btn-primary" disabled={uploading}>
+        <button type="submit" className="btn-primary" disabled={uploading || !formData.file}>
           {uploading ? 'Uploading...' : 'Upload Document'}
         </button>
       </div>
@@ -222,16 +242,41 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   );
 }
 
-// ─── 3  FORMAT FILE SIZE HELPER ───────────────────────────────────────────
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+// ─── 3  FILE TYPE ICON HELPER ───────────────────────────────────────────
+function getFileTypeIcon(filename = '', contentType = '') {
+  const ext = (filename || '').toLowerCase().split('.').pop();
+  const mimeType = (contentType || '').toLowerCase();
+
+  // Image types
+  if (mimeType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) {
+    return PhotoIcon;
+  }
+
+  // PDF
+  if (ext === 'pdf' || mimeType === 'application/pdf') {
+    return DocumentTextIcon;
+  }
+
+  // Documents
+  if (['doc', 'docx'].includes(ext) || mimeType.includes('word')) {
+    return DocumentIcon;
+  }
+
+  // Spreadsheets
+  if (['xls', 'xlsx', 'csv'].includes(ext) || mimeType.includes('spreadsheet')) {
+    return Squares2X2Icon;
+  }
+
+  // Presentations
+  if (['ppt', 'pptx'].includes(ext) || mimeType.includes('presentation')) {
+    return DocumentIcon;
+  }
+
+  // Default file icon
+  return FileIcon;
 }
 
-// ─── 4  DOCUMENTS PAGE COMPONENT ─────────────────────────────────────────
+// ─── 4  FORMAT FILE SIZE HELPER ───────────────────────────────────────────
 export default function Documents() {
   const navigate = useNavigate();
   const {
@@ -254,6 +299,7 @@ export default function Documents() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
   // Viewer modal state
   const [viewerDoc, setViewerDoc] = useState(null);
@@ -592,8 +638,9 @@ export default function Documents() {
       closeModal();
       clearError();
     } catch (err) {
-      setError('Failed to upload document');
-      console.error(err);
+      const errorMsg = err?.response?.data?.detail || err?.message || 'Failed to upload document';
+      setError(errorMsg);
+      throw err; // Re-throw so DocumentUploadForm can catch it
     }
   };
 
@@ -794,44 +841,95 @@ export default function Documents() {
               );
             })()
           ) : (
-            /* ── Documents list ── */
+            /* ── Documents: List or Grid View ── */
             filteredDocuments.length > 0 ? (
-              <table className="table table-borderless table-hover mb-0 table-fixed">
-                <colgroup>
-                  <col />
-                  <col style={{ width: '60px' }} />
-                </colgroup>
-                <tbody>
-                  {filteredDocuments.map((doc, index) => (
-                    <tr
-                      key={doc.id || index}
-                      className="align-middle border-bottom"
-                      style={{ height: '56px' }}
-                    >
-                      {/* File Name */}
-                      <td className="px-3">
-                        <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+              viewMode === 'grid' ? (
+                /* Grid View */
+                <div className="p-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.5rem', overflowY: 'auto' }}>
+                  {filteredDocuments.map((doc, index) => {
+                    const FileIcon = getFileTypeIcon(doc.original_filename, doc.content_type);
+                    const isImage = doc.content_type?.startsWith('image/');
+                    return (
+                      <div
+                        key={doc.id || index}
+                        className="d-flex flex-column align-items-center gap-2 p-2 rounded-lg hover-highlight"
+                        style={{ cursor: 'pointer', transition: 'background 0.2s' }}
+                        role="button"
+                        onClick={() => handleView(doc)}
+                      >
+                        {isImage ? (
+                          <img
+                            src={documentsAPI.fileUrl(doc.id)}
+                            alt={doc.original_filename}
+                            style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--bs-border-color)' }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '100px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '6px',
+                              border: '1px solid var(--bs-border-color)',
+                              backgroundColor: 'var(--bs-gray-100)',
+                            }}
+                          >
+                            <FileIcon className="h-12 w-12 text-muted" />
+                          </div>
+                        )}
+                        <div
+                          className="small text-center text-truncate"
+                          style={{ maxWidth: '120px' }}
+                          title={doc.original_filename}
+                        >
                           {doc.original_filename ?? '(unnamed)'}
                         </div>
-                        <div className="small text-muted text-truncate">
-                          {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
-                        </div>
-                      </td>
+                        <div className="text-xs text-muted">{formatFileSize(doc.file_size)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* List View */
+                <table className="table table-borderless table-hover mb-0 table-fixed">
+                  <colgroup>
+                    <col />
+                    <col style={{ width: '60px' }} />
+                  </colgroup>
+                  <tbody>
+                    {filteredDocuments.map((doc, index) => (
+                      <tr
+                        key={doc.id || index}
+                        className="align-middle border-bottom"
+                        style={{ height: '56px' }}
+                      >
+                        {/* File Name */}
+                        <td className="px-3">
+                          <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
+                            {doc.original_filename ?? '(unnamed)'}
+                          </div>
+                          <div className="small text-muted text-truncate">
+                            {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
+                          </div>
+                        </td>
 
-                      {/* View */}
-                      <td className="text-center px-2">
-                        <button
-                          onClick={() => handleView(doc)}
-                          className="btn btn-sm btn-outline-primary border-0 p-1"
-                          title="View"
-                        >
-                          <MagnifyingGlassIcon className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        {/* View */}
+                        <td className="text-center px-2">
+                          <button
+                            onClick={() => handleView(doc)}
+                            className="btn btn-sm btn-outline-primary border-0 p-1"
+                            title="View"
+                          >
+                            <MagnifyingGlassIcon className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
             ) : (
               <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
                 No documents found
@@ -927,6 +1025,19 @@ export default function Documents() {
                   className="btn-app-primary"
                 />
               </Gate_Permission>
+
+              {/* View Toggle: List <-> Grid */}
+              <Button_Toolbar
+                icon={viewMode === 'grid' ? ListBulletIcon : Squares2X2Icon}
+                label={viewMode === 'grid' ? 'List' : 'Grid'}
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className={`border-0 shadow-lg transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    : 'btn-app-secondary'
+                }`}
+                title={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
+              />
 
               {/* Clear Filters Button */}
               {(categoryFilter !== 'all' || statusFilter !== 'all' || typeFilter !== 'all') && (

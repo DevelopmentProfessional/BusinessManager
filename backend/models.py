@@ -1719,7 +1719,69 @@ class ClientCartItemUpsert(SQLModel):
     options_json: Optional[str] = None
 
 
-# ─── 18 PRODUCT PRODUCTION MODELS ─────────────────────────────────────────────
+# ─── 18 CLIENT PORTAL ORDERS ──────────────────────────────────────────────────
+class ClientOrder(BaseModel, table=True):
+    """Orders placed through the client portal (products + services)."""
+    __tablename__ = "client_order"
+    
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    status: str = Field(default="pending")  # pending | paid | cancelled | refunded
+    subtotal: float = Field(default=0.0)
+    tax_amount: float = Field(default=0.0)
+    total: float = Field(default=0.0)
+    payment_method: Optional[str] = Field(default=None)
+    stripe_payment_intent_id: Optional[str] = Field(default=None)
+    stripe_charge_id: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientOrderItem(BaseModel, table=True):
+    """Line items within a ClientOrder (products or bookings)."""
+    __tablename__ = "client_order_item"
+    
+    order_id: UUID = Field(foreign_key="client_order.id", index=True)
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str = Field(default="product")  # product | service
+    item_name: str
+    unit_price: float = Field(default=0.0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0.0)
+    booking_id: Optional[UUID] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientOrderRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    status: str
+    subtotal: float
+    tax_amount: float
+    total: float
+    payment_method: Optional[str] = None
+    stripe_payment_intent_id: Optional[str] = None
+    stripe_charge_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+
+class ClientOrderItemRead(SQLModel):
+    id: UUID
+    order_id: UUID
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    booking_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+
+# ─── 19 PRODUCT PRODUCTION MODELS ─────────────────────────────────────────────
 
 class ProductResource(BaseModel, table=True):
     """Resources (consumables) used when producing a batch of a product."""

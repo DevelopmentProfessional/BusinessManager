@@ -202,17 +202,20 @@ async def startup_event():
         session.close()
     except Exception as e:
         print(f"Warning: Could not unlock admin accounts: {e}")
-    try:
-        from backend.routers.templates import seed_standard_templates
-    except ModuleNotFoundError:
-        from routers.templates import seed_standard_templates
-    try:
-        session = next(get_session())
-        await asyncio.to_thread(seed_standard_templates, session)
-        session.close()
-        print("Standard templates seeded")
-    except Exception as e:
-        print(f"Warning: Could not seed standard templates: {e}")
+    # Template seeding is disabled - templates are now persisted in the database
+    # and should not be overwritten on each startup. Saved templates will be
+    # recalled as they were saved. To reseed templates, use the migration scripts.
+    # try:
+    #     from backend.routers.templates import seed_standard_templates
+    # except ModuleNotFoundError:
+    #     from routers.templates import seed_standard_templates
+    # try:
+    #     session = next(get_session())
+    #     await asyncio.to_thread(seed_standard_templates, session)
+    #     session.close()
+    #     print("Standard templates seeded")
+    # except Exception as e:
+    #     print(f"Warning: Could not seed standard templates: {e}")
     print("Startup complete")
 
 # ─── 7 ROUTER REGISTRATION ─────────────────────────────────────────────────────
