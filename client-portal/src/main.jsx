@@ -1,20 +1,27 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
 
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    // Apply updates as soon as a new worker is available.
-    updateSW(true)
-  },
-})
+async function clearLegacyServiceWorkers() {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(registrations.map((registration) => registration.unregister()))
+    }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
+    if ('caches' in window) {
+      const cacheNames = await caches.keys()
+      await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)))
+    }
+  } catch (error) {
+    console.warn('Failed to clear legacy client portal service workers.', error)
+  }
+}
+
+clearLegacyServiceWorkers().finally(() => {
+  ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
-  </React.StrictMode>
-)
+  )
+})
