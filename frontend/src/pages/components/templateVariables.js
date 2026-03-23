@@ -235,12 +235,18 @@ function buildItemsTableHtml(items) {
     const total = i.line_total != null ? `$${Number(i.line_total).toFixed(2)}` : '';
     return `<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:6px 8px;">${i.item_name || ''}</td>
-  <td style="padding:6px 8px;text-align:center;">${qty}</td>
-  <td style="padding:6px 8px;text-align:right;">${unit}</td>
-  <td style="padding:6px 8px;text-align:right;font-weight:500;">${total}</td>
+  <td style="padding:6px 8px;text-align:center;width:50px;">${qty}</td>
+  <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;">${unit}</td>
+  <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;">${total}</td>
 </tr>`;
   }).join('');
-  return `<table style="width:100%;border-collapse:collapse;font-family:inherit;font-size:0.9rem;">
+  return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:inherit;font-size:0.9rem;">
+  <colgroup>
+    <col/>
+    <col style="width:50px;"/>
+    <col style="width:90px;"/>
+    <col style="width:90px;"/>
+  </colgroup>
   <thead>
     <tr style="border-bottom:2px solid #d1d5db;background:#f9fafb;">
       <th style="padding:6px 8px;text-align:left;font-weight:600;">Item</th>
@@ -258,6 +264,7 @@ function buildInvoiceTotalsHtml(transaction) {
   const tax = transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '$0.00';
   const total = transaction?.total != null ? `$${Number(transaction.total).toFixed(2)}` : '$0.00';
   return `<table style="width:100%;border-collapse:collapse;margin-top:0.75rem;font-family:inherit;font-size:0.9rem;">
+  <colgroup><col/><col style="width:120px;"/></colgroup>
   <tbody>
     <tr>
       <td style="padding:4px 8px;text-align:right;color:#374151;">Subtotal</td>
@@ -280,7 +287,7 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
   const now = new Date();
   const txDate = transaction?.created_at ? formatDateISO(transaction.created_at) : formatDateISO(now);
   const itemsTableHtml = buildItemsTableHtml(items);
-  const itemsHtml = `${itemsTableHtml}${buildInvoiceTotalsHtml(transaction)}`;
+  const itemsHtml = itemsTableHtml;
   return {
     date: formatDateISO(now),
     time: formatTime(now),

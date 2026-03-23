@@ -64,9 +64,9 @@ export default function Modal_Template_Use({
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-      const imgs = doc.querySelectorAll('img[data-float]');
 
-      imgs.forEach((img) => {
+      // Fix image alignment
+      doc.querySelectorAll('img[data-float]').forEach((img) => {
         const imageFloat = img.getAttribute('data-float') || 'none';
         img.style.display = 'block';
         if (imageFloat === 'left') {
@@ -75,6 +75,18 @@ export default function Modal_Template_Use({
           img.style.margin = '0.5rem 0 0.5rem auto';
         } else {
           img.style.margin = '0.5rem auto';
+        }
+      });
+
+      // Unwrap block elements (table, hr, div, ul, ol) from <p> tags.
+      // Invalid HTML like <p><table>…</table></p> is auto-corrected by the
+      // browser in unpredictable ways, leaving empty <p> tags that add
+      // unwanted spacing. Pull them out so the DOM is clean.
+      doc.querySelectorAll('p > table, p > hr, p > div, p > ul, p > ol').forEach((block) => {
+        const p = block.parentNode;
+        p.parentNode.insertBefore(block, p);
+        if (!p.textContent.trim() && !p.querySelector('*')) {
+          p.parentNode.removeChild(p);
         }
       });
 
@@ -248,17 +260,15 @@ export default function Modal_Template_Use({
       <meta charset="utf-8"/>
       <title>${companyName}</title>
       <style>
+        * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-               font-size: 14px; line-height: 1.6; padding: 32px; margin: 0; color: #111; background: #fff; }
-        h1,h2,h3 { margin: 0.5em 0; }
-        p { margin: 0.4em 0; }
-        hr { border: none; border-top: 1px solid #ccc; margin: 1em 0; }
-        ul,ol { padding-left: 1.5em; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { vertical-align: top; }
-        @page { margin: 12mm; }
+               font-size: 13px; line-height: 1.6; padding: 32px; margin: 0;
+               color: #111; background: #fff; }
+        img { max-width: 100%; height: auto; display: block; }
+        table { border-collapse: collapse; }
+        td, th { vertical-align: top; word-break: break-word; }
+        @page { margin: 20mm; }
         @media print {
-          html, body { margin: 0; padding: 0; }
           body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       </style>
@@ -304,7 +314,7 @@ export default function Modal_Template_Use({
 
       const blob = await html2pdf()
         .set({
-          margin: 0,
+          margin: [20, 20, 35, 20],
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: {
             scale: 2,
