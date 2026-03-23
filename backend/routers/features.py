@@ -87,14 +87,31 @@ class DeductStockItem(PydanticModel):
 # ─── HELPERS ────────────────────────────────────────────────────────────────────
 
 def _recalculate_inventory_stock(session: Session, inventory_id: UUID) -> None:
-    """Recompute total stock from all enabled feature option rows and cache on inventory."""
+    """Recompute total stock from enabled feature option rows and cache on inventory.
+
+    When an item has multiple features (e.g. Size AND Color), each feature dimension
+    tracks the same physical pool of stock from a different angle — e.g. Size: S=30,
+    M=20 (total=50) and Color: Red=40, Blue=10 (total=50).  Summing across all
+    features would inflate the count, so we group by feature and take the *minimum*
+    total.  This is safe: if totals are equal the result is correct; if they diverge
+    due to data entry errors the smaller number is the conservative choice.
+    """
     rows = session.exec(
         select(InventoryFeatureOptionData).where(
             InventoryFeatureOptionData.inventory_id == inventory_id,
             InventoryFeatureOptionData.is_enabled == True,
         )
     ).all()
-    total = sum(r.quantity for r in rows)
+
+    if not rows:
+        total = 0
+    else:
+        feature_totals: dict = {}
+        for r in rows:
+            fid = str(r.feature_id)
+            feature_totals[fid] = feature_totals.get(fid, 0) + r.quantity
+        total = min(feature_totals.values())
+
     item = session.get(Inventory, inventory_id)
     if item:
         item.quantity = total

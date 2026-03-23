@@ -40,6 +40,7 @@ import Gate_Permission from './components/Gate_Permission';
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import Modal_Template_Use from './components/Modal_Template_Use';
+import Modal_Bulk_Import_Sheet from './components/Modal_Bulk_Import_Sheet';
 import PageLayout from './components/PageLayout';
 import PageTableFooter from './components/PageTableFooter';
 import PageTableHeader from './components/PageTableHeader';
@@ -57,6 +58,7 @@ export default function Clients() {
   usePagePermission('clients');
 
   const [editingClient, setEditingClient] = useState(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
@@ -173,6 +175,14 @@ export default function Clients() {
       addClient(newClient);
     }
     closeModal();
+  };
+
+  const handleBulkImportSheet = async (records) => {
+    const result = await clientsAPI.bulkImport(records);
+    await loadClients();
+    setShowBulkImport(false);
+    clearError();
+    return result;
   };
 
   const handleUpdateClient = async (clientId, clientData) => {
@@ -331,6 +341,12 @@ export default function Clients() {
               onClick={handleCreateClient}
               className="btn-app-primary"
             />
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="Bulk"
+              onClick={() => setShowBulkImport(true)}
+              className="btn-app-secondary"
+            />
           </Gate_Permission>
 
           {/* Clear Filters Button */}
@@ -437,6 +453,43 @@ export default function Clients() {
           />
         )}
       </Modal>
+
+      {/* Bulk Import Sheet Modal */}
+      <Modal_Bulk_Import_Sheet
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={handleBulkImportSheet}
+        title="Bulk Add Clients"
+        entityLabel="client"
+        fieldOptions={[
+          { value: 'name', label: 'Name (required)' },
+          { value: 'email', label: 'Email' },
+          { value: 'phone', label: 'Phone' },
+          { value: 'address', label: 'Address' },
+          { value: 'membership_tier', label: 'Membership Tier' },
+          { value: 'notes', label: 'Notes' },
+        ]}
+        defaultFieldSequence={['name', 'email', 'phone', 'address', 'membership_tier', 'notes']}
+        buildRecord={(data) => {
+          const errors = [];
+          if (!data.name?.trim()) errors.push('Name is required.');
+          const VALID_TIERS = new Set(['none', 'bronze', 'silver', 'gold', 'platinum']);
+          const tier = data.membership_tier
+            ? String(data.membership_tier).trim().toLowerCase()
+            : 'none';
+          return {
+            record: errors.length ? null : {
+              name: data.name.trim(),
+              email: data.email || null,
+              phone: data.phone || null,
+              address: data.address || null,
+              notes: data.notes || null,
+              membership_tier: VALID_TIERS.has(tier) ? tier : 'none',
+            },
+            errors,
+          };
+        }}
+      />
 
       {/* Template Use Modal */}
       {isTemplateOpen && templateClient && (

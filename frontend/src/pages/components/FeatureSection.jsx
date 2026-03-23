@@ -39,11 +39,16 @@ function calcPriceRange(features) {
   return { min, max };
 }
 
-function calcTotalStock(features) {
-  return features
-    .flatMap(f => f.options)
+function calcFeatureTotal(feature) {
+  return feature.options
     .filter(o => o.is_enabled)
     .reduce((sum, o) => sum + (parseInt(o.quantity) || 0), 0);
+}
+
+function calcTotalStock(features) {
+  if (!features.length) return 0;
+  const totals = features.map(calcFeatureTotal);
+  return Math.min(...totals);
 }
 
 // ─── 2 FEATURE TABLE ─────────────────────────────────────────────────────────
@@ -394,11 +399,36 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         </div>
       )}
 
+      {/* ── Mismatch warning ── */}
+      {itemFeatures.length > 1 && (() => {
+        const totals = itemFeatures.map(calcFeatureTotal);
+        const allEqual = totals.every(t => t === totals[0]);
+        if (allEqual) return null;
+        return (
+          <div className="alert alert-warning py-1 mb-2 d-flex align-items-start gap-2" style={{ fontSize: '0.8rem' }}>
+            <span>⚠</span>
+            <span>
+              <strong>Stock count mismatch.</strong> Feature totals differ — the effective stock is the lowest total ({Math.min(...totals)}).
+              {' '}Adjust quantities so all features have the same total:{' '}
+              {itemFeatures.map((f, i) => (
+                <span key={f.feature_id}>
+                  <strong>{f.feature_name}</strong>: {totals[i]}
+                  {i < itemFeatures.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+            </span>
+          </div>
+        );
+      })()}
+
       {/* ── Per-feature accordions ── */}
       {itemFeatures.map(f => {
         const isOpen = openFeatures[f.feature_id] !== false;
         const enabledOptions = f.options.filter(o => o.is_enabled).map(o => o.option_name);
         const optionsPreview = enabledOptions.length > 0 ? enabledOptions.join(', ') : '—';
+        const featureTotal = calcFeatureTotal(f);
+        const allFeatureTotals = itemFeatures.map(calcFeatureTotal);
+        const isMismatched = itemFeatures.length > 1 && allFeatureTotals.some(t => t !== featureTotal);
 
         return (
           <div key={f.feature_id} className="mb-2 border rounded">
@@ -422,6 +452,12 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
               {/* Title + badges */}
               <span className="fw-semibold flex-shrink-0" style={{ fontSize: '0.85rem' }}>
                 {f.feature_name}
+                <span
+                  className="ms-1"
+                  style={{ fontSize: '0.72rem', fontWeight: 400, color: isMismatched ? '#b45309' : '#6c757d' }}
+                >
+                  ({featureTotal})
+                </span>
               </span>
               {f.affects_price && (
                 <span className="badge bg-primary flex-shrink-0" style={{ fontSize: '0.65rem' }}>
