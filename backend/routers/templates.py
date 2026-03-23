@@ -70,20 +70,48 @@ _STANDARD_TEMPLATES = [
         "accessible_pages": '["sales"]',
         "description": "Standard invoice template.",
         "content": (
-            "<h2>INVOICE</h2>"
-            "<p><strong>Invoice #:</strong> {{invoice.number}}<br>"
-            "<strong>Date:</strong> {{invoice.date}}</p>"
-            "<hr>"
-            "<p><strong>Bill To:</strong><br>{{client.name}}<br>{{client.email}}</p>"
-            "<hr>"
-            "<p>{{invoice.items}}</p>"
-            "<hr>"
-            "<p><strong>Subtotal:</strong> {{invoice.subtotal}}<br>"
-            "<strong>Tax:</strong> {{invoice.tax}}<br>"
-            "<strong>Total:</strong> {{invoice.total}}</p>"
-            "<p><strong>Payment Method:</strong> {{invoice.payment_method}}</p>"
-            "<p>Thank you for your business!</p>"
-            "<p><em>{{company.name}} | {{company.email}} | {{company.phone}}</em></p>"
+            '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;color:#111;max-width:680px;">'
+
+            # Header
+            '<div style="margin-bottom:24px;">'
+            '<h2 style="margin:0 0 8px;font-size:1.5rem;letter-spacing:0.04em;">INVOICE</h2>'
+            '<div style="font-size:0.9rem;color:#555;">'
+            '<div style="margin-bottom:2px;"><strong>Invoice #:</strong> {{invoice.number}}</div>'
+            '<div><strong>Date:</strong> {{invoice.date}}</div>'
+            '</div>'
+            '</div>'
+
+            # Bill To
+            '<div style="margin-bottom:24px;padding:12px 16px;background:#f9fafb;border-left:4px solid #d1d5db;">'
+            '<div style="font-weight:600;margin-bottom:6px;">Bill To</div>'
+            '<div style="margin-bottom:2px;">{{client.name}}</div>'
+            '<div style="color:#555;font-size:0.9rem;">{{client.email}}</div>'
+            '</div>'
+
+            # Line items
+            '<div style="margin-bottom:8px;">{{invoice.items}}</div>'
+
+            # Totals
+            '<div style="margin-bottom:24px;">'
+            '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;">'
+            '<tr><td style="padding:4px 8px;text-align:right;color:#555;">Subtotal</td>'
+            '<td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;">{{invoice.subtotal}}</td></tr>'
+            '<tr><td style="padding:4px 8px;text-align:right;color:#555;">Tax</td>'
+            '<td style="padding:4px 8px;text-align:right;white-space:nowrap;">{{invoice.tax}}</td></tr>'
+            '<tr style="border-top:2px solid #111;">'
+            '<td style="padding:6px 8px;text-align:right;font-weight:700;">Total</td>'
+            '<td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;">{{invoice.total}}</td></tr>'
+            '</table>'
+            '</div>'
+
+            # Payment + footer
+            '<div style="margin-bottom:12px;font-size:0.9rem;">'
+            '<strong>Payment Method:</strong> {{invoice.payment_method}}'
+            '</div>'
+            '<div style="margin-bottom:16px;">Thank you for your business!</div>'
+            '<div style="color:#888;font-size:0.8rem;">{{company.name}} | {{company.email}} | {{company.phone}}</div>'
+
+            '</div>'
         ),
     },
     {
@@ -179,17 +207,26 @@ _STANDARD_TEMPLATES = [
 # ─── 2 SEED HELPER ─────────────────────────────────────────────────────────────
 
 def seed_standard_templates(session: Session) -> None:
-    """Insert standard templates that are missing — never overwrites user edits."""
-    existing_names = {
-        row.name
+    """Insert missing standard templates and refresh content of existing ones."""
+    existing = {
+        row.name: row
         for row in session.exec(
             select(DocumentTemplate).where(DocumentTemplate.is_standard == True)
         ).all()
     }
-    new_templates = []
+    changed = False
     for tpl in _STANDARD_TEMPLATES:
-        if tpl["name"] not in existing_names:
-            new_templates.append(DocumentTemplate(
+        if tpl["name"] in existing:
+            row = existing[tpl["name"]]
+            row.content = tpl["content"]
+            row.template_type = tpl["template_type"]
+            row.accessible_pages = tpl["accessible_pages"]
+            if tpl.get("description"):
+                row.description = tpl["description"]
+            session.add(row)
+            changed = True
+        else:
+            session.add(DocumentTemplate(
                 name=tpl["name"],
                 template_type=tpl["template_type"],
                 accessible_pages=tpl["accessible_pages"],
@@ -198,10 +235,9 @@ def seed_standard_templates(session: Session) -> None:
                 is_standard=True,
                 is_active=True,
             ))
-    if not new_templates:
+            changed = True
+    if not changed:
         return
-    for obj in new_templates:
-        session.add(obj)
     try:
         session.commit()
     except Exception:
