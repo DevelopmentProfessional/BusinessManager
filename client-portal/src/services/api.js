@@ -37,7 +37,14 @@ api.interceptors.response.use(
 
 // ── Companies (public) ───────────────────────────────────────────────────────
 export const companiesAPI = {
-  getAll: () => api.get('/companies').then(r => r.data),
+  getAll: () => api.get('/companies').then((r) => {
+    const data = r?.data
+    if (Array.isArray(data)) return data
+    if (Array.isArray(data?.data)) return data.data
+    if (Array.isArray(data?.results)) return data.results
+    if (Array.isArray(data?.items)) return data.items
+    return []
+  }),
   logoUrl: (companyId) => `${BASE}/companies/${companyId}/logo`,
 }
 
