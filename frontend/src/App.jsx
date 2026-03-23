@@ -11,6 +11,7 @@ import { initializeActiveColorTheme } from './services/activeColorTheme';
 import Modal_Client from './pages/components/Modal_Client';
 import Manager_MobileAddressBar from './pages/components/Manager_MobileAddressBar';
 import Prompt_InstallApp from './pages/components/Prompt_InstallApp';
+import PageErrorBoundary from './pages/components/ErrorBoundary';
 
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import('./pages/Clients'));
@@ -153,79 +154,59 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={
             <ProtectedRoute>
-              <Layout>
-                <Navigate to="/profile" replace />
-              </Layout>
+              <Layout><PageErrorBoundary><Navigate to="/profile" replace /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/clients" element={
             <ProtectedRoute requiredPermission="clients:read">
-              <Layout>
-                <Clients />
-              </Layout>
+              <Layout><PageErrorBoundary><Clients /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/sales" element={
             <ProtectedRoute requiredPermission="sales:read">
-              <Layout>
-                <Sales />
-              </Layout>
+              <Layout><PageErrorBoundary><Sales /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/services" element={
             <ProtectedRoute requiredPermission="services:read">
-              <Layout>
-                <Services />
-              </Layout>
+              <Layout><PageErrorBoundary><Services /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/employees" element={
             <ProtectedRoute requiredPermission="employees:read">
-              <Layout>
-                <Employees />
-              </Layout>
+              <Layout><PageErrorBoundary><Employees /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/schedule" element={
             <ProtectedRoute requiredPermission="schedule:read">
-              <Layout>
-                <Schedule />
-              </Layout>
+              <Layout><PageErrorBoundary><Schedule /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/inventory" element={
             <ProtectedRoute requiredPermission="inventory:read">
-              <Layout>
-                <Inventory />
-              </Layout>
+              <Layout><PageErrorBoundary><Inventory /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/documents" element={
             <ProtectedRoute>
-              <Layout>
-                <Documents />
-              </Layout>
+              <Layout><PageErrorBoundary><Documents /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/documents/:documentId/edit" element={
             <ProtectedRoute requiredPermission="documents:write">
               <Suspense fallback={<PageLoader />}>
-                <DocumentEditor />
+                <PageErrorBoundary><DocumentEditor /></PageErrorBoundary>
               </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/reports" element={
             <ProtectedRoute requiredPermission="reports:read">
-              <Layout>
-                <Reports />
-              </Layout>
+              <Layout><PageErrorBoundary><Reports /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
             <ProtectedRoute>
-              <Layout>
-                <Profile />
-              </Layout>
+              <Layout><PageErrorBoundary><Profile /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           {/* Catch-all route for any unmatched paths */}
