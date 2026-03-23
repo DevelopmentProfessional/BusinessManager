@@ -317,6 +317,15 @@ export const clientsAPI = {
   getTransactionItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
   getPortalOrders: (clientId) => api.get(`/isud/client_orders?client_id=${clientId}`),
   getPortalOrderItems: (orderId) => api.get(`/isud/client_order_items?order_id=${orderId}`),
+  bulkImport: async (records) => {
+    clearCache('clients');
+    const results = [];
+    for (const record of records) {
+      const res = await api.post('/isud/clients', record);
+      results.push(res?.data ?? res);
+    }
+    return { created_count: results.length };
+  },
 };
 
 // Inventory API (replaces both items and inventory APIs)
@@ -417,6 +426,15 @@ export const servicesAPI = {
       },
     });
   },
+  bulkImport: async (records) => {
+    clearCache('services');
+    const results = [];
+    for (const record of records) {
+      const res = await api.post('/isud/services', record);
+      results.push(res?.data ?? res);
+    }
+    return { created_count: results.length };
+  },
 };
 
 export const serviceRelationsAPI = {
@@ -505,6 +523,15 @@ export const employeesAPI = {
         'Content-Type': 'multipart/form-data',
       },
     });
+  },
+  bulkImport: async (records) => {
+    clearCache('employees');
+    const results = [];
+    for (const record of records) {
+      const res = await api.post('/isud/users', record);
+      results.push(res?.data ?? res);
+    }
+    return { created_count: results.length };
   },
 };
 

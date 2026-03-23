@@ -43,6 +43,7 @@ import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Service from './components/Form_Service';
 import Gate_Permission from './components/Gate_Permission';
+import Modal_Bulk_Import_Sheet from './components/Modal_Bulk_Import_Sheet';
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
@@ -56,6 +57,7 @@ export default function Services() {
 
   // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
@@ -146,6 +148,14 @@ export default function Services() {
       addService(newService);
     }
     closeModal();
+  };
+
+  const handleBulkImportSheet = async (records) => {
+    const result = await servicesAPI.bulkImport(records);
+    await loadServices();
+    setShowBulkImport(false);
+    clearError();
+    return result;
   };
 
   // ─── 7  DERIVED / COMPUTED VALUES ────────────────────────────────────────
@@ -264,6 +274,12 @@ export default function Services() {
               onClick={handleCreateService}
               className="btn-app-primary"
             />
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="Bulk"
+              onClick={() => setShowBulkImport(true)}
+              className="btn-app-secondary"
+            />
           </Gate_Permission>
 
           {/* Clear Filters Button */}
@@ -359,6 +375,52 @@ export default function Services() {
             )}
           </div>
         </PageTableFooter>
+
+      {/* Bulk Import Sheet Modal */}
+      <Modal_Bulk_Import_Sheet
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={handleBulkImportSheet}
+        title="Bulk Add Services"
+        entityLabel="service"
+        fieldOptions={[
+          { value: 'name', label: 'Name (required)' },
+          { value: 'category', label: 'Category' },
+          { value: 'price', label: 'Price' },
+          { value: 'duration_minutes', label: 'Duration (min)' },
+          { value: 'description', label: 'Description' },
+        ]}
+        defaultFieldSequence={['name', 'category', 'price', 'duration_minutes', 'description']}
+        buildRecord={(data) => {
+          const errors = [];
+          if (!data.name?.trim()) errors.push('Name is required.');
+
+          let price = null;
+          if (data.price !== undefined && data.price !== '') {
+            const p = Number(String(data.price).replace(/,/g, '').trim());
+            if (!Number.isFinite(p) || p < 0) errors.push('Price must be a non-negative number.');
+            else price = p;
+          }
+
+          let duration = null;
+          if (data.duration_minutes !== undefined && data.duration_minutes !== '') {
+            const d = Number(String(data.duration_minutes).trim());
+            if (!Number.isFinite(d) || d <= 0) errors.push('Duration must be a positive number.');
+            else duration = Math.round(d);
+          }
+
+          return {
+            record: errors.length ? null : {
+              name: data.name.trim(),
+              category: data.category || null,
+              price: price ?? 0,
+              duration_minutes: duration ?? 30,
+              description: data.description || null,
+            },
+            errors,
+          };
+        }}
+      />
 
       {/* Service Form Modal */}
       <Modal

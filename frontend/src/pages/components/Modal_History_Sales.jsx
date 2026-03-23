@@ -20,9 +20,10 @@
  * ============================================================
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import Modal from './Modal';
-import { ClockIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { saleTransactionsAPI } from '../../services/api';
 
 // ─── 1 COMPONENT DEFINITION & JSX RENDER ─────────────────────────────────
 export default function Modal_History_Sales({
@@ -32,6 +33,39 @@ export default function Modal_History_Sales({
   historyFilters,
   setHistoryFilters,
 }) {
+  const [expandedId, setExpandedId] = useState(null);
+  const [itemsCache, setItemsCache] = useState({}); // saleId → items[]
+  const [loadingId, setLoadingId] = useState(null);
+
+  const toggleSale = async (saleId) => {
+    if (expandedId === saleId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(saleId);
+    if (itemsCache[saleId]) return; // already loaded
+    setLoadingId(saleId);
+    try {
+      const res = await saleTransactionsAPI.getItems(saleId);
+      const raw = Array.isArray(res?.data) ? res.data : [];
+      const items = raw.map(item => {
+        let selectedOptions = [];
+        if (item.options_json) {
+          try {
+            const parsed = JSON.parse(item.options_json);
+            if (Array.isArray(parsed)) selectedOptions = parsed;
+          } catch { /* ignore */ }
+        }
+        return { ...item, selectedOptions };
+      });
+      setItemsCache(prev => ({ ...prev, [saleId]: items }));
+    } catch {
+      setItemsCache(prev => ({ ...prev, [saleId]: [] }));
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {/* ========== MAIN CONTAINER ========== */}
@@ -57,29 +91,82 @@ export default function Modal_History_Sales({
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredHistory.map((sale) => (
-                  <div key={sale.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          {' '}
-                          {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {sale.client && (
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                        {sale.items.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ''}`).join(', ')}
-                      </p>
+                {filteredHistory.map((sale) => {
+                  const isExpanded = expandedId === sale.id;
+                  const isLoading = loadingId === sale.id;
+                  const loadedItems = itemsCache[sale.id];
+                  return (
+                    <div key={sale.id}>
+                      {/* ── Accordion Header ── */}
+                      <button
+                        type="button"
+                        onClick={() => toggleSale(sale.id)}
+                        className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {' '}
+                              {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {sale.client && (
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {sale.type === 'service' ? 'Service' : 'Product'} · {sale.paymentMethod}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">${sale.total.toFixed(2)}</div>
+                          </div>
+                          <ChevronDownIcon
+                            className="h-4 w-4 text-gray-400 transition-transform"
+                            style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                          />
+                        </div>
+                      </button>
+
+                      {/* ── Accordion Body ── */}
+                      {isExpanded && (
+                        <div className="px-4 pb-3 bg-gray-50 dark:bg-gray-800/30">
+                          {isLoading ? (
+                            <p className="text-xs text-gray-400 py-2">Loading items…</p>
+                          ) : !loadedItems || loadedItems.length === 0 ? (
+                            <p className="text-xs text-gray-400 py-2">No items found.</p>
+                          ) : (
+                            <ul className="space-y-1 pt-1">
+                              {loadedItems.map((item, idx) => (
+                                <li key={item.id ?? idx} className="flex justify-between items-start text-sm gap-2">
+                                  <div className="min-w-0">
+                                    <span className="text-gray-800 dark:text-gray-200">
+                                      {item.item_name || item.name || '—'}
+                                      {(item.quantity ?? 1) > 1 && (
+                                        <span className="text-gray-400 ml-1">×{item.quantity}</span>
+                                      )}
+                                    </span>
+                                    {item.selectedOptions?.length > 0 && (
+                                      <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                        {item.selectedOptions.map(o =>
+                                          `${o.featureName ?? o.feature_name ?? ''}: ${o.optionName ?? o.option_name ?? ''}`
+                                        ).join(' · ')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                                    {item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : ''}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-shrink-0 text-right">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">${sale.total.toFixed(2)}</div>
-                      <div className="text-xs text-gray-400 capitalize">{sale.paymentMethod}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -218,7 +218,9 @@ export default function Modal_Checkout_Sales({
                 items={cart.map(item => ({
                   item_name: item.name,
                   quantity: item.quantity,
+                  unit_price: item.price,
                   line_total: item.price * item.quantity,
+                  selectedOptions: item.selectedOptions ?? [],
                 }))}
                 currentUser={currentUser}
                 settings={appSettings}
@@ -255,6 +257,11 @@ export default function Modal_Checkout_Sales({
                   <div key={item.cartKey} className="flex justify-between text-sm p-2 bg-white dark:bg-gray-800 rounded-lg">
                     <div className="flex-1 min-w-0">
                       <p className="text-gray-900 dark:text-white font-medium truncate">{item.name}</p>
+                      {item.selectedOptions?.length > 0 && (
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
+                          {item.selectedOptions.map(o => `${o.featureName}: ${o.optionName}`).join(' · ')}
+                        </p>
+                      )}
                       <p className="text-gray-500 dark:text-gray-400 text-xs">
                         ${item.price?.toFixed(2)} × {item.quantity}
                       </p>

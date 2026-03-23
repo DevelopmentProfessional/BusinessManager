@@ -72,6 +72,7 @@ import Modal_Insurance_Plans from './components/Modal_Insurance_Plans';
 import Chat_Employee from './components/Chat_Employee';
 import Modal_Wages from './components/Modal_Wages';
 import Modal_Pay_Employee from './components/Modal_Pay_Employee';
+import Modal_Bulk_Import_Sheet from './components/Modal_Bulk_Import_Sheet';
 
 // ─── INLINE SUB-COMPONENTS (P4-B) ────────────────────────────────────────────
 
@@ -284,6 +285,7 @@ export default function Employees() {
     last_name: '',
     role: 'employee'
   });
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -563,6 +565,14 @@ export default function Employees() {
     } catch (err) {
       setError(editingEmployee ? 'Failed to update employee' : 'Failed to create employee');
     }
+  };
+
+  const handleBulkImportSheet = async (records) => {
+    const result = await employeesAPI.bulkImport(records);
+    await loadEmployees();
+    setShowBulkImport(false);
+    clearError();
+    return result;
   };
 
   // ─── [16] PERMISSION HANDLERS ───────────────────────────────────────────────
@@ -1268,6 +1278,12 @@ export default function Employees() {
               onClick={handleCreate}
               className="btn-app-primary"
             />
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="Bulk"
+              onClick={() => setShowBulkImport(true)}
+              className="btn-app-secondary"
+            />
           </Gate_Permission>
 
           {/* Clear Filters Button */}
@@ -1298,6 +1314,52 @@ export default function Employees() {
           />
         </PageTableFooter>
       </div>
+
+      {/* Bulk Import Sheet Modal */}
+      <Modal_Bulk_Import_Sheet
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={handleBulkImportSheet}
+        title="Bulk Add Employees"
+        entityLabel="employee"
+        hint="A default password of 'Welcome1' will be assigned. Employees should change it after first login."
+        fieldOptions={[
+          { value: 'first_name', label: 'First Name (required)' },
+          { value: 'last_name', label: 'Last Name (required)' },
+          { value: 'username', label: 'Username' },
+          { value: 'email', label: 'Email' },
+          { value: 'phone', label: 'Phone' },
+          { value: 'role', label: 'Role (employee/manager/admin/viewer)' },
+        ]}
+        defaultFieldSequence={['first_name', 'last_name', 'username', 'email', 'phone', 'role']}
+        buildRecord={(data) => {
+          const errors = [];
+          if (!data.first_name?.trim()) errors.push('First Name is required.');
+          if (!data.last_name?.trim()) errors.push('Last Name is required.');
+
+          const firstName = data.first_name?.trim() || '';
+          const lastName = data.last_name?.trim() || '';
+          const username = data.username?.trim() ||
+            `${firstName.toLowerCase()}.${lastName.toLowerCase()}`.replace(/\s+/g, '');
+
+          const VALID_ROLES = new Set(['employee', 'manager', 'admin', 'viewer']);
+          const role = data.role ? String(data.role).trim().toLowerCase() : 'employee';
+
+          return {
+            record: errors.length ? null : {
+              first_name: firstName,
+              last_name: lastName,
+              username,
+              email: data.email || null,
+              phone: data.phone || null,
+              role: VALID_ROLES.has(role) ? role : 'employee',
+              password: 'Welcome1',
+              force_password_reset: true,
+            },
+            errors,
+          };
+        }}
+      />
 
       {/* Employee Form Modal */}
       <Modal

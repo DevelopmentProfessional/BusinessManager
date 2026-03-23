@@ -233,8 +233,15 @@ function buildItemsTableHtml(items) {
     const qty = i.quantity ?? '';
     const unit = i.unit_price != null ? `$${Number(i.unit_price).toFixed(2)}` : '';
     const total = i.line_total != null ? `$${Number(i.line_total).toFixed(2)}` : '';
+    // Feature selections: support both array form (cart) and object form (options_json parsed)
+    let optionsLine = '';
+    const opts = i.selectedOptions ?? i.options_json ?? null;
+    if (Array.isArray(opts) && opts.length > 0) {
+      const label = opts.map(o => `${o.featureName ?? o.feature_name ?? ''}: ${o.optionName ?? o.option_name ?? ''}`).join(' · ');
+      optionsLine = `<div style="color:#4f46e5;font-size:0.78rem;margin-top:2px;">${label}</div>`;
+    }
     return `<tr style="border-bottom:1px solid #e5e7eb;">
-  <td style="padding:6px 8px;">${i.item_name || ''}</td>
+  <td style="padding:6px 8px;">${i.item_name || ''}${optionsLine}</td>
   <td style="padding:6px 8px;text-align:center;width:50px;">${qty}</td>
   <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;">${unit}</td>
   <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;">${total}</td>
