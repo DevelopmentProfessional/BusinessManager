@@ -44,6 +44,7 @@
  *   2026-03-01 | Claude  | P5-B — Added STATUS_DOT_COLOR; status dot/strikethrough/opacity on all three calendar views
  *   2026-03-11 | Claude  | Added is_paid green-$ badge to all three calendar views
  *   2026-03-14 | Copilot | Updated footer buttons to one row, shortened labels, and fixed 3rem square sizing
+ *   2026-03-23 | Copilot | Fixed month-view January cell truncation by using date-based cutoff across year boundaries
  * ============================================================
  */
 
@@ -450,6 +451,7 @@ export default function Schedule() {
       
       // Generate up to 6 weeks of enabled days
       const maxDays = enabledDays.length * 6;
+      const cutoffDate = new Date(year, month + 1, 7); // include first week of next month
       while (days.length < maxDays) {
         const dayToAdd = new Date(currentDateObj);
         if (isDayEnabled(dayToAdd)) {
@@ -457,9 +459,9 @@ export default function Schedule() {
         }
         currentDateObj.setDate(currentDateObj.getDate() + 1);
         
-        // Stop if we've gone too far past the current month
-        if (currentDateObj.getMonth() > month + 1 || 
-            (currentDateObj.getMonth() === month + 1 && currentDateObj.getDate() > 7)) {
+        // Stop after the first week of next month.
+        // Date comparison avoids month-number wrap bugs (e.g. January backfill into December).
+        if (currentDateObj > cutoffDate) {
           break;
         }
       }

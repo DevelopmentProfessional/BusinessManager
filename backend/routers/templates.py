@@ -18,6 +18,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-03-23 | Copilot | Stop startup seeding from overwriting existing standard template content
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -207,7 +208,12 @@ _STANDARD_TEMPLATES = [
 # ─── 2 SEED HELPER ─────────────────────────────────────────────────────────────
 
 def seed_standard_templates(session: Session) -> None:
-    """Insert missing standard templates and refresh content of existing ones."""
+    """Insert missing standard templates without overwriting existing content.
+
+    Existing standard templates may be user-customized (for example Invoice).
+    Startup seeding should backfill only missing metadata fields, not replace
+    saved HTML content.
+    """
     existing = {
         row.name: row
         for row in session.exec(
@@ -218,13 +224,25 @@ def seed_standard_templates(session: Session) -> None:
     for tpl in _STANDARD_TEMPLATES:
         if tpl["name"] in existing:
             row = existing[tpl["name"]]
-            row.content = tpl["content"]
-            row.template_type = tpl["template_type"]
-            row.accessible_pages = tpl["accessible_pages"]
-            if tpl.get("description"):
+            row_changed = False
+
+            # Preserve user edits; only backfill fields that are currently empty.
+            if not row.content:
+                row.content = tpl["content"]
+                row_changed = True
+            if not row.template_type:
+                row.template_type = tpl["template_type"]
+                row_changed = True
+            if not row.accessible_pages:
+                row.accessible_pages = tpl["accessible_pages"]
+                row_changed = True
+            if not row.description and tpl.get("description"):
                 row.description = tpl["description"]
-            session.add(row)
-            changed = True
+                row_changed = True
+
+            if row_changed:
+                session.add(row)
+                changed = True
         else:
             session.add(DocumentTemplate(
                 name=tpl["name"],
