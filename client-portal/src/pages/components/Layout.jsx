@@ -6,13 +6,14 @@
  *   - Same Bootstrap + Heroicons style
  */
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ShoppingBagIcon,
   ShoppingCartIcon,
   ClipboardDocumentListIcon,
   UserCircleIcon,
   EllipsisHorizontalIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 import useStore from '../../store/useStore'
 
@@ -32,10 +33,18 @@ const ALIGN_STYLE = {
 
 export default function Layout({ children }) {
   const location  = useLocation()
+  const navigate  = useNavigate()
   const cartCount = useStore(s => s.cartCount())
-  const navAlign  = useStore(s => s.navAlignment)   // 'left' | 'center' | 'right'
+  const navAlign  = useStore(s => s.navAlignment)
+  const clearAuth = useStore(s => s.clearAuth)
 
   const [menuOpen, setMenuOpen] = useState(false)
+
+  function handleLogout() {
+    setMenuOpen(false)
+    clearAuth()
+    navigate('/', { replace: true })
+  }
 
   const btnPos = ALIGN_STYLE[navAlign] || ALIGN_STYLE.right
 
@@ -94,6 +103,16 @@ export default function Layout({ children }) {
                 </Link>
               )
             })}
+
+            {/* Logout */}
+            <button
+              title="Sign out"
+              onClick={handleLogout}
+              className="d-flex align-items-center justify-content-center rounded-circle btn btn-outline-danger"
+              style={{ width: '3rem', height: '3rem' }}
+            >
+              <ArrowRightOnRectangleIcon style={{ width: 20, height: 20 }} />
+            </button>
           </div>
         </div>
       )}

@@ -1,14 +1,44 @@
 /**
  * COMPANY SELECT — First page clients see.
- * Shows all registered companies as logo buttons.
- * Clicking one takes the client to the login page for that company.
+ * - If the user has saved credentials, auto-redirects to /shop.
+ * - If not logged in, wipes ALL stale cache/localStorage (except nav pref)
+ *   and fetches the company list fresh every time.
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import { companiesAPI } from '../services/api'
+import useStore from '../store/useStore'
 
 const CANONICAL_COMPANIES_URL = 'https://businessmanager-client-api.onrender.com/api/client/companies'
+
+// localStorage keys that we intentionally keep across sessions
+const PERSISTENT_KEYS = new Set(['cp_client', 'cp_token', 'cp_company', 'cp_nav_align'])
+
+/**
+ * Wipe all localStorage keys except credentials + nav pref,
+ * and delete any non-precache service-worker runtime caches.
+ */
+function clearStaleCaches() {
+  const toRemove = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (k && !PERSISTENT_KEYS.has(k)) toRemove.push(k)
+  }
+  toRemove.forEach(k => localStorage.removeItem(k))
+
+  if ('caches' in window) {
+    caches.keys().then(names =>
+      names
+        .filter(n => !n.startsWith('workbox-precache'))
+        .forEach(n => caches.delete(n))
+    )
+  }
+}
+
+function safeParseJson(val) {
+  try { return val ? JSON.parse(val) : null } catch { return null }
+}
 
 function normalizeCompanies(payload) {
   if (Array.isArray(payload)) return payload
@@ -17,8 +47,8 @@ function normalizeCompanies(payload) {
   if (Array.isArray(payload?.items)) return payload.items
   if (Array.isArray(payload?.companies)) return payload.companies
   if (payload && typeof payload === 'object') {
-    const firstArray = Object.values(payload).find((value) => Array.isArray(value))
-    if (Array.isArray(firstArray)) return firstArray
+    const firstArray = Object.values(payload).find(v => Array.isArray(v))
+    if (firstArray) return firstArray
   }
   return []
 }
@@ -60,70 +90,61 @@ function CompanyCard({ company, onClick }) {
 }
 
 export default function CompanySelect() {
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
+  const restoreAuth = useStore(s => s.restoreAuth)
+
   const [companies, setCompanies] = useState([])
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
   const [search,    setSearch]    = useState('')
-  const [diagnostics, setDiagnostics] = useState(null)
 
-  useEffect(() => {
-    const loadCompanies = async () => {
-      setLoading(true)
-      setError(null)
-      setDiagnostics(null)
-
-      try {
-        const payload = await companiesAPI.getAll()
-        const normalized = normalizeCompanies(payload)
-
-        if (normalized.length > 0) {
-          setCompanies(normalized)
-          return
-        }
-
-        const fallbackResponse = await fetch(`${CANONICAL_COMPANIES_URL}?t=${Date.now()}`, {
-          method: 'GET',
-          cache: 'no-store',
-        })
-
-        const contentType = fallbackResponse.headers.get('content-type') || ''
-        let fallbackPayload = null
-
-        if (contentType.includes('application/json')) {
-          fallbackPayload = await fallbackResponse.json()
-        } else {
-          fallbackPayload = await fallbackResponse.text()
-        }
-
-        const fallbackNormalized = normalizeCompanies(fallbackPayload)
-        setCompanies(fallbackNormalized)
-        setDiagnostics({
-          usedFallback: true,
-          fallbackStatus: fallbackResponse.status,
-          fallbackContentType: contentType,
-          fallbackCount: fallbackNormalized.length,
-          primaryType: Array.isArray(payload) ? 'array' : typeof payload,
-        })
-
-        if (fallbackNormalized.length === 0) {
-          setError('The portal reached the client API, but no company rows were returned.')
-        }
-      } catch (loadError) {
-        setError('Could not load companies. Please try again.')
-        setDiagnostics({
-          message: loadError?.message || 'Unknown companies load error',
-        })
-      } finally {
-        setLoading(false)
+  const fetchCompanies = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Always bypass cache — companies must be fresh
+      const res = await fetch(`${CANONICAL_COMPANIES_URL}?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
+      const ct = res.headers.get('content-type') || ''
+      if (!ct.includes('application/json')) {
+        throw new Error('Unexpected response (not JSON). The API URL may be misconfigured.')
       }
+      const payload = await res.json()
+      const list = normalizeCompanies(payload)
+      setCompanies(list)
+      if (list.length === 0) setError('No businesses are currently registered. Contact support.')
+    } catch (err) {
+      setError(err.message || 'Could not load businesses. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    loadCompanies()
   }, [])
 
+  useEffect(() => {
+    // Restore auth from localStorage first (synchronous)
+    restoreAuth()
+
+    // Read directly from localStorage so we don't wait for a React re-render
+    const savedToken   = localStorage.getItem('cp_token')
+    const savedCompany = localStorage.getItem('cp_company')
+    const savedClient  = safeParseJson(localStorage.getItem('cp_client'))
+
+    if (savedToken && savedCompany && savedClient) {
+      // Valid saved session — skip the picker and go straight to the shop
+      navigate('/shop', { replace: true })
+      return
+    }
+
+    // Not logged in — clear anything that isn't credentials or nav pref,
+    // then load the company list fresh with no caching
+    clearStaleCaches()
+    fetchCompanies()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleSelect(company) {
-    // Navigate to login, passing company info via route state
     navigate('/login', { state: { company } })
   }
 
@@ -169,34 +190,26 @@ export default function CompanySelect() {
           </div>
         )}
 
-        {error && (
+        {!loading && error && (
           <div className="text-center mt-20">
+            <BuildingOffice2Icon className="w-12 h-12 mx-auto mb-4 opacity-30 text-gray-400" />
             <p className="text-red-500 mb-4">{error}</p>
-            <button onClick={() => window.location.reload()} className="btn-secondary">
+            <button onClick={fetchCompanies} className="btn-secondary">
               Try Again
             </button>
-            {diagnostics && (
-              <div className="mt-3 text-start mx-auto small text-muted bg-white border rounded-3 p-3" style={{ maxWidth: 520 }}>
-                <div>Diagnostics:</div>
-                <div>{JSON.stringify(diagnostics)}</div>
-              </div>
-            )}
           </div>
         )}
 
-        {!loading && !error && filtered.length === 0 && (
+        {!loading && !error && companies.length === 0 && (
           <div className="text-center mt-20 text-gray-400">
             <BuildingOffice2Icon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-medium">
-              {search ? 'No businesses match your search.' : 'No businesses available.'}
-            </p>
-            {diagnostics && (
-              <div className="mt-3 text-start mx-auto small text-muted bg-white border rounded-3 p-3" style={{ maxWidth: 520 }}>
-                <div>Diagnostics:</div>
-                <div>{JSON.stringify(diagnostics)}</div>
-              </div>
-            )}
+            <p className="text-lg font-medium">No businesses available.</p>
+            <button onClick={fetchCompanies} className="btn-secondary mt-4">Retry</button>
           </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && search && (
+          <p className="text-center mt-20 text-gray-400">No businesses match your search.</p>
         )}
 
         {!loading && !error && filtered.length > 0 && (
