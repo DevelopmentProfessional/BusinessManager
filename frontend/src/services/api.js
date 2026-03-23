@@ -315,6 +315,8 @@ export const clientsAPI = {
   getSchedules: (clientId) => api.get(`/isud/schedules?client_id=${clientId}`),
   getTransactions: (clientId) => api.get(`/isud/sale_transaction?client_id=${clientId}`),
   getTransactionItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
+  getPortalOrders: (clientId) => api.get(`/isud/client_orders?client_id=${clientId}`),
+  getPortalOrderItems: (orderId) => api.get(`/isud/client_order_items?order_id=${orderId}`),
 };
 
 // Inventory API (replaces both items and inventory APIs)

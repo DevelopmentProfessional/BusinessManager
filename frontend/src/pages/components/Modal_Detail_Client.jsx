@@ -244,6 +244,9 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [invoiceTx, setInvoiceTx] = useState(null); // tx + items for invoice modal
+  const [tab, setTab] = useState('sales'); // 'sales' or 'portal'
+  const [portalOrders, setPortalOrders] = useState([]);
+  const [portalItems, setPortalItems] = useState({});
 
   useEffect(() => {
     if (!isOpen || !client) return;
@@ -256,6 +259,16 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
         // Ascending — oldest at top, most recent near the bottom
         const sorted = [...txns].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         setTransactions(sorted);
+              // Also load portal orders
+              try {
+                const portalRes = await clientsAPI.getPortalOrders(client.id);
+                const orders = portalRes?.data ?? [];
+                const sortedOrders = [...orders].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                setPortalOrders(sortedOrders);
+              } catch (err) {
+                console.warn('Failed to load portal orders:', err);
+                setPortalOrders([]);
+              }
       } catch {
         setError('Failed to load purchase history.');
       } finally {
@@ -271,6 +284,17 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
       const res = await clientsAPI.getTransactionItems(txId);
       setItems(prev => ({ ...prev, [txId]: res?.data ?? [] }));
       setExpandedId(txId);
+
+      const loadPortalItems = async (orderId) => {
+        if (portalItems[orderId]) { setExpandedId(orderId); return; }
+        try {
+          const res = await clientsAPI.getPortalOrderItems(orderId);
+          setPortalItems(prev => ({ ...prev, [orderId]: res?.data ?? [] }));
+          setExpandedId(orderId);
+        } catch {
+          setExpandedId(orderId);
+        }
+      };
     } catch {
       setExpandedId(txId);
     }
@@ -279,6 +303,11 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   const toggleExpand = (txId) => {
     if (expandedId === txId) { setExpandedId(null); return; }
     loadItems(txId);
+
+    const togglePortalExpand = (orderId) => {
+      if (expandedId === orderId) { setExpandedId(null); return; }
+      loadPortalItems(orderId);
+    };
   };
 
   const handleOpenInvoice = async (tx) => {
@@ -293,6 +322,22 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
+                  <div className="d-flex gap-2 me-2">
+                    <button
+                      type="button"
+                      onClick={() => { setTab('sales'); setExpandedId(null); }}
+                      className={`btn btn-sm ${tab === 'sales' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    >
+                      Sales ({transactions.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setTab('portal'); setExpandedId(null); }}
+                      className={`btn btn-sm ${tab === 'portal' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    >
+                      Portal ({portalOrders.length})
+                    </button>
+                  </div>
         </div>
 
         {/* Scrollable body */}
@@ -305,13 +350,22 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
           {error && <div className="alert alert-danger py-2 mx-3 small">{error}</div>}
 
           {!loading && !error && transactions.length === 0 && (
+                      {!loading && !error && tab === 'sales' && transactions.length === 0 && (
             <div className="text-center text-muted py-4">
               <ShoppingBagIcon style={{ width: 32, height: 32, margin: '0 auto 8px' }} />
               <div>No purchases yet</div>
+
+                      {!loading && !error && tab === 'portal' && portalOrders.length === 0 && (
+                        <div className="text-center text-muted py-4">
+                          <ShoppingBagIcon style={{ width: 32, height: 32, margin: '0 auto 8px' }} />
+                          <div>No portal orders yet</div>
+                        </div>
+                      )}
             </div>
           )}
 
           {!loading && transactions.length > 0 && (
+                      {!loading && tab === 'sales' && transactions.length > 0 && (
             <div>
               {transactions.map(tx => (
                 <div key={tx.id} className="border-bottom border-gray-100 dark:border-gray-700">
@@ -921,3 +975,72 @@ export default function Modal_Detail_Client({
     </Modal>
   );
 }
+
+
+          {!loading && tab === 'portal' && portalOrders.length > 0 && (
+            <div>
+              {portalOrders.map(order => (
+                <div key={order.id} className="border-bottom border-gray-100 dark:border-gray-700">
+                  <div className="d-flex align-items-center">
+                    <button
+                      type="button"
+                      onClick={() => togglePortalExpand(order.id)}
+                      className="flex-grow-1 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="flex-grow-1">
+                        <div className="fw-medium">${order.total?.toFixed(2) ?? '0.00'}</div>
+                        <div className="small text-muted">{formatDate(order.created_at)}</div>
+                      </div>
+                      <div className="d-flex align-items-center gap-2">
+                        <span className={`badge text-capitalize ${
+                          order.status === 'paid' ? 'bg-success-subtle text-success' :
+                          order.status === 'pending' ? 'bg-warning-subtle text-warning' :
+                          order.status === 'cancelled' ? 'bg-danger-subtle text-danger' :
+                          'bg-secondary-subtle text-secondary'
+                        }`}>
+                          {order.status || 'pending'}
+                        </span>
+                        <span className="text-muted small">{expandedId === order.id ? '▲' : '▼'}</span>
+                      </div>
+                    </button>
+                  </div>
+
+                  {expandedId === order.id && (
+                    <div className="pb-2 px-3">
+                      {(portalItems[order.id] || []).length === 0 ? (
+                        <div className="small text-muted">No items found</div>
+                      ) : (
+                        <table className="table table-sm table-borderless mb-0">
+                          <tbody>
+                            {(portalItems[order.id] || []).map(item => (
+                              <tr key={item.id}>
+                                <td className="ps-0 py-1 small">
+                                  <span className={`badge me-1 ${item.item_type === 'service' ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'}`}>
+                                    {item.item_type}
+                                  </span>
+                                  {item.item_name}
+                                </td>
+                                <td className="py-1 small text-muted text-end">×{item.quantity}</td>
+                                <td className="py-1 small fw-medium text-end">${item.line_total?.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr>
+                              <td colSpan={2} className="small text-muted ps-0 pt-1">Tax</td>
+                              <td className="small text-end pt-1">${order.tax_amount?.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                              <td colSpan={2} className="fw-semibold ps-0">Total</td>
+                              <td className="fw-semibold text-end">${order.total?.toFixed(2)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}

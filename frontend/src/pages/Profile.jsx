@@ -215,6 +215,7 @@ const Profile = () => {
   const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign } = useViewMode();
   const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
   const FooterAlignIcon = footerAlign === 'center' ? AlignCenterIcon : footerAlign === 'right' ? AlignRightIcon : AlignLeftIcon;
+  const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
 
   const cycleFooterAlign = useCallback(() => {
     const next = footerAlign === 'left' ? 'center' : footerAlign === 'center' ? 'right' : 'left';
@@ -373,6 +374,15 @@ const Profile = () => {
   // ─── 6 SETTINGS LOAD EFFECTS ─────────────────────────────────────────────
   // Sync local branding when global branding changes
   useEffect(() => { setLocalBranding(branding); }, [branding]);
+
+  // Track mobile viewport changes
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(getMobileEnvironment().isMobileViewport);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load saved settings + schedule from backend on mount
   useEffect(() => {
@@ -1005,7 +1015,8 @@ const Profile = () => {
   const canAccessGeneralSettings = ['manager', 'admin'].includes((user?.role || '').toLowerCase());
 
   // All panels clear the entire footer so every tab row stays visible and tappable.
-  const totalFooterHeight = row1Height + row2Height;
+  // Ensure minimum footer height for mobile - use at least 80px (one row of buttons)
+  const totalFooterHeight = Math.max(row1Height + row2Height, 80);
   const row1PanelBottom = totalFooterHeight;
 
   // Shared panel style for all settings panels
@@ -1063,8 +1074,8 @@ const Profile = () => {
             flexDirection: 'column'
           }}
         >
-          <div style={{ flexGrow: 1 }} />
-          <div style={{ flexShrink: 0 }}>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, overflowY: 'auto', minHeight: 0 }}>
               <div className="row">
                 <div className="col-sm-6">
                   <div className="flex wrap mb-1">
@@ -1157,8 +1168,8 @@ const Profile = () => {
             flexDirection: 'column'
           }}
         >
-          <div style={{ flexGrow: 1 }} />
-          <div style={{ flexShrink: 0 }}>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, overflowY: 'auto', minHeight: 0 }}>
 
               {/* Salary / Pay / Insurance */}
               <div className="row g-2 mb-3">
@@ -1300,8 +1311,8 @@ const Profile = () => {
             flexDirection: 'column',
           }}
         >
-          <div style={{ flexGrow: 1 }} />
-          <div style={{ flexShrink: 0 }}>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, overflowY: 'auto', minHeight: 0 }}>
             <h6 className="fw-semibold mb-3">Wage History</h6>
             {paySlipsLoading ? (
               <div className="text-center py-4">
@@ -1376,8 +1387,7 @@ const Profile = () => {
           }}
         >
           {/* Database Environment - Top */}
-          <div>
-            <div className="d-flex align-items-center flex-wrap gap-1 mb-2">
+          <div className="d-flex align-items-center flex-wrap gap-1 mb-2">
               <span className="text-muted small me-1">Environment</span>
               {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
                 const isCurrent = key === currentDbEnvironment;
@@ -1404,10 +1414,9 @@ const Profile = () => {
             </div>
             {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
             {dbError && <div className="small text-danger mt-1">{dbError}</div>}
-          </div>
 
           {/* Spacer */}
-          <div style={{ flexGrow: 1 }}></div>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }}></div>
 
           {/* Action Buttons - Bottom */}
           <div className="d-flex align-items-center justify-content-start gap-1 mb-3 flex-wrap" style={{ minHeight: '3rem' }}>
@@ -1525,8 +1534,8 @@ const Profile = () => {
       {/* ── Schedule Panel ────────────────────────────────────────────────────── */}
       {openAccordion === 'schedule' && canAccessSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
-          <div style={{ flexGrow: 1 }} />
-          <div style={{ flexShrink: 0, width: '100%' }}>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, width: '100%', overflowY: 'auto', minHeight: 0 }}>
 
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <ClockIcon className="h-5 w-5" /> Schedule Settings
@@ -1625,8 +1634,8 @@ const Profile = () => {
       {/* ── General Panel ─────────────────────────────────────────────────────── */}
       {openAccordion === 'general' && canAccessGeneralSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
-          <div style={{ flexGrow: 1 }} />
-          <div style={{ flexShrink: 0, width: '100%' }}>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, width: '100%', overflowY: 'auto', minHeight: 0 }}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <CogIcon className="h-5 w-5" /> General Settings
             </h2>
@@ -2000,8 +2009,8 @@ const Profile = () => {
       {/* ── Database Panel ─────────────────────────────────────────────────────── */}
       {openAccordion === 'database' && canAccessSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
-          <div style={{ flexGrow: 1 }} />
-          <div style={{ flexShrink: 0, width: '100%' }}>
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, width: '100%', overflowY: 'auto', minHeight: 0 }}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <CircleStackIcon className="h-5 w-5" /> Database Settings
             </h2>

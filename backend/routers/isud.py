@@ -172,6 +172,10 @@ READ_SCHEMA_MAP = {
     'mix_components': MixComponentRead,
     'discount_rule': DiscountRuleRead,
     'discount_rules': DiscountRuleRead,
+    'client_order': ClientOrderRead,
+    'client_orders': ClientOrderRead,
+    'client_order_item': ClientOrderItemRead,
+    'client_order_items': ClientOrderItemRead,
 }
 
 # ─── [4] SERIALIZATION HELPERS ────────────────────────────────────────────────
