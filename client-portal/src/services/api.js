@@ -5,10 +5,20 @@
  */
 import axios from 'axios'
 
+function normalizeClientApiBase(rawBase) {
+  const fallback = 'https://businessmanager-client-api.onrender.com/api/client'
+  const trimmed = String(rawBase || '').trim()
+
+  if (!trimmed) return fallback
+  if (trimmed.endsWith('/api/client')) return trimmed
+  if (trimmed.endsWith('/api/client/')) return trimmed.slice(0, -1)
+  return `${trimmed.replace(/\/+$/, '')}/api/client`
+}
+
 const isDev = import.meta.env.DEV
 const BASE   = isDev
   ? '/api/client'                                                  // Proxied by Vite dev server
-  : (import.meta.env.VITE_CLIENT_API_URL || 'https://businessmanager-client-api.onrender.com/api/client')
+  : normalizeClientApiBase(import.meta.env.VITE_CLIENT_API_URL)
 
 const api = axios.create({
   baseURL: BASE,

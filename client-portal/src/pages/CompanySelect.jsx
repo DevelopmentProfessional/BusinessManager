@@ -8,11 +8,18 @@ import { useNavigate } from 'react-router-dom'
 import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import { companiesAPI } from '../services/api'
 
+const CANONICAL_COMPANIES_URL = 'https://businessmanager-client-api.onrender.com/api/client/companies'
+
 function normalizeCompanies(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data
   if (Array.isArray(payload?.results)) return payload.results
   if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.companies)) return payload.companies
+  if (payload && typeof payload === 'object') {
+    const firstArray = Object.values(payload).find((value) => Array.isArray(value))
+    if (Array.isArray(firstArray)) return firstArray
+  }
   return []
 }
 
@@ -58,14 +65,61 @@ export default function CompanySelect() {
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
   const [search,    setSearch]    = useState('')
+  const [diagnostics, setDiagnostics] = useState(null)
 
   useEffect(() => {
-    companiesAPI.getAll()
-      .then((payload) => {
-        setCompanies(normalizeCompanies(payload))
-      })
-      .catch(() => setError('Could not load companies. Please try again.'))
-      .finally(() => setLoading(false))
+    const loadCompanies = async () => {
+      setLoading(true)
+      setError(null)
+      setDiagnostics(null)
+
+      try {
+        const payload = await companiesAPI.getAll()
+        const normalized = normalizeCompanies(payload)
+
+        if (normalized.length > 0) {
+          setCompanies(normalized)
+          return
+        }
+
+        const fallbackResponse = await fetch(`${CANONICAL_COMPANIES_URL}?t=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store',
+        })
+
+        const contentType = fallbackResponse.headers.get('content-type') || ''
+        let fallbackPayload = null
+
+        if (contentType.includes('application/json')) {
+          fallbackPayload = await fallbackResponse.json()
+        } else {
+          fallbackPayload = await fallbackResponse.text()
+        }
+
+        const fallbackNormalized = normalizeCompanies(fallbackPayload)
+        setCompanies(fallbackNormalized)
+        setDiagnostics({
+          usedFallback: true,
+          fallbackStatus: fallbackResponse.status,
+          fallbackContentType: contentType,
+          fallbackCount: fallbackNormalized.length,
+          primaryType: Array.isArray(payload) ? 'array' : typeof payload,
+        })
+
+        if (fallbackNormalized.length === 0) {
+          setError('The portal reached the client API, but no company rows were returned.')
+        }
+      } catch (loadError) {
+        setError('Could not load companies. Please try again.')
+        setDiagnostics({
+          message: loadError?.message || 'Unknown companies load error',
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadCompanies()
   }, [])
 
   function handleSelect(company) {
@@ -121,6 +175,12 @@ export default function CompanySelect() {
             <button onClick={() => window.location.reload()} className="btn-secondary">
               Try Again
             </button>
+            {diagnostics && (
+              <div className="mt-3 text-start mx-auto small text-muted bg-white border rounded-3 p-3" style={{ maxWidth: 520 }}>
+                <div>Diagnostics:</div>
+                <div>{JSON.stringify(diagnostics)}</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -130,6 +190,12 @@ export default function CompanySelect() {
             <p className="text-lg font-medium">
               {search ? 'No businesses match your search.' : 'No businesses available.'}
             </p>
+            {diagnostics && (
+              <div className="mt-3 text-start mx-auto small text-muted bg-white border rounded-3 p-3" style={{ maxWidth: 520 }}>
+                <div>Diagnostics:</div>
+                <div>{JSON.stringify(diagnostics)}</div>
+              </div>
+            )}
           </div>
         )}
 
