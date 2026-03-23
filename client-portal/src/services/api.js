@@ -43,6 +43,11 @@ export const companiesAPI = {
     if (Array.isArray(data?.data)) return data.data
     if (Array.isArray(data?.results)) return data.results
     if (Array.isArray(data?.items)) return data.items
+    if (Array.isArray(data?.companies)) return data.companies
+    if (data && typeof data === 'object') {
+      const firstArray = Object.values(data).find((v) => Array.isArray(v))
+      if (Array.isArray(firstArray)) return firstArray
+    }
     return []
   }),
   logoUrl: (companyId) => `${BASE}/companies/${companyId}/logo`,

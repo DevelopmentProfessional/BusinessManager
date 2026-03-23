@@ -5,7 +5,13 @@ import App from './App'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
 
-registerSW({ immediate: true })
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    // Apply updates as soon as a new worker is available.
+    updateSW(true)
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
