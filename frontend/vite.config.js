@@ -1,14 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
 import fs from 'fs'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command, mode }) => {
-  // Always enable HTTPS in dev so phones on the LAN can use the camera (requires secure context)
+export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
-  const enablePwa = process.env.VITE_ENABLE_PWA !== 'false'
   const buildTimestamp = new Date().toISOString()
 
   // Use custom cert (includes LAN IP SAN) so other devices on the network can connect
@@ -17,55 +14,7 @@ export default defineConfig(({ command, mode }) => {
   const sslCert = path.join(sslDir, 'cert.pem')
   const hasCustomCert = fs.existsSync(sslKey) && fs.existsSync(sslCert)
 
-  const plugins = [
-    react(),
-  ]
-
-  if (enablePwa) {
-    plugins.push(
-      VitePWA({
-        registerType: 'autoUpdate',
-        workbox: {
-          cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
-        },
-        includeAssets: ['app-icon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'app-icon-192.png', 'app-icon-512.png'],
-        manifest: {
-          name: 'Business',
-          short_name: 'Business',
-          description: 'Business Management System',
-          start_url: '/',
-          display: 'standalone',
-          background_color: '#000000',
-          theme_color: '#000000',
-          icons: [
-            {
-              src: '/app-icon-192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-icon-512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-icon-512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
-            }
-          ]
-        },
-        devOptions: {
-          enabled: false
-        }
-      })
-    )
-  }
+  const plugins = [react()]
 
   return {
     define: {

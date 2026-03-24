@@ -1,5 +1,4 @@
 import axios from 'axios';
-import cacheService from './cacheService';
 
 // API Configuration - Determine backend URL based on environment
 const getApiBaseUrl = () => {
@@ -39,24 +38,6 @@ if (import.meta.env.DEV) {
   });
 }
 
-// In-flight request dedup (prevents parallel identical requests during rapid re-renders)
-const inFlightRequests = new Map();
-
-// Maps cache keys to their ISUD table names (for background sync)
-const ISUD_TABLE_MAP = {
-  clients: 'clients',
-  inventory: 'inventory',
-  services: 'services',
-  suppliers: 'suppliers',
-  employees: 'users',
-  schedule: 'schedules',
-  attendance: 'attendance',
-  documents: 'documents',
-  'document-categories': 'document_category',
-};
-
-// Tables currently running a background sync (prevents duplicate syncs)
-const syncingTables = new Set();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -136,156 +117,41 @@ api.interceptors.response.use(
   }
 );
 
-/**
- * Background sync: compares local cache metadata with the server's /sync
- * endpoint. If there's new data, fetches only the delta (rows created after
- * the cached maxCreatedAt) and appends them to localStorage.
- * Runs silently — errors are swallowed (the sync endpoint may not be deployed).
- */
-const backgroundSync = async (key, fetchFunction) => {
-  const tableName = ISUD_TABLE_MAP[key];
-  if (!tableName || syncingTables.has(key)) return;
-  syncingTables.add(key);
-
-  try {
-    const syncRes = await api.get(`/isud/${tableName}/sync`);
-    const { count, max_created_at } = syncRes.data;
-    const cached = cacheService.get(key);
-
-    // If counts and max timestamps match, data is up-to-date
-    if (cached && cached.count === count && cached.maxCreatedAt === max_created_at) {
-      return;
-    }
-
-    // Attempt incremental fetch if we have a maxCreatedAt to compare
-    if (cached && cached.maxCreatedAt && max_created_at && cached.maxCreatedAt < max_created_at) {
-      try {
-        const deltaRes = await api.get(`/isud/${tableName}`, {
-          params: { _after: cached.maxCreatedAt },
-        });
-        const newRows = deltaRes?.data ?? [];
-        if (Array.isArray(newRows) && newRows.length > 0) {
-          cacheService.append(key, newRows);
-        }
-        return; // incremental success
-      } catch {
-        // Fall through to full re-fetch
-      }
-    }
-
-    // Full re-fetch (first load, or incremental failed, or count mismatch due to deletes)
-    const response = await fetchFunction();
-    const data = response?.data ?? response;
-    if (Array.isArray(data)) {
-      cacheService.set(key, data);
-    }
-  } catch {
-    // /sync endpoint may not exist yet — silently degrade
-  } finally {
-    syncingTables.delete(key);
-  }
-};
-
-/**
- * Persistent cache-then-fetch strategy:
- *  1. If localStorage has cached rows, return them immediately (fast).
- *  2. Schedule a background sync to update localStorage for next visit.
- *  3. If no cached data, do a full fetch and persist the result.
- *  4. In-flight dedup prevents parallel identical requests.
- */
-const getCachedOrFetch = async (key, fetchFunction) => {
-  // 1. Serve from persistent localStorage cache
-  const persisted = cacheService.getRows(key);
-  if (persisted.length > 0) {
-    // Kick off non-blocking background sync
-    backgroundSync(key, fetchFunction);
-    // Return shape that matches axios response (callers do res.data)
-    return { data: persisted };
-  }
-
-  // 2. Dedup: if a request for this key is already in flight, wait for it
-  if (inFlightRequests.has(key)) {
-    return inFlightRequests.get(key);
-  }
-
-  // 3. Full fetch — no cache available
-  const promise = fetchFunction()
-    .then((response) => {
-      const data = response?.data ?? response;
-      if (Array.isArray(data)) {
-        cacheService.set(key, data);
-      }
-      inFlightRequests.delete(key);
-      return response;
-    })
-    .catch((err) => {
-      inFlightRequests.delete(key);
-      throw err;
-    });
-
-  inFlightRequests.set(key, promise);
-  return promise;
-};
-
-/**
- * Clear cache for a specific key (or all if key is falsy).
- * Called by mutation methods (create / update / delete) to invalidate stale data.
- * Clears both in-flight dedup and persistent localStorage.
- */
-const clearCache = (key) => {
-  if (key) {
-    inFlightRequests.delete(key);
-    cacheService.clearTable(key);
-  } else {
-    inFlightRequests.clear();
-    cacheService.clearAll();
-  }
-};
-
-// Expose clearCache globally for logout (called from useStore.logout)
+// Caching removed — all fetches hit the server directly.
+const getCachedOrFetch = (_key, fetchFunction) => fetchFunction();
+const clearCache = () => {};
+export const preloadMajorTables = async () => {};
 if (typeof window !== 'undefined') {
-  window.clearApiCache = () => {
-    inFlightRequests.clear();
-    cacheService.clearAll();
-  };
+  window.clearApiCache = () => {};
 }
 
 /**
- * Preload major tables into localStorage cache after login.
- * Fire-and-forget — call without await. Errors are silently swallowed.
+ * Preload major tables into the Zustand store after login.
+ * Fire-and-forget — call without await. Fetches sequentially with a small
+ * stagger so pages feel instant on first visit.
  *
- * Skips tables already cached or with in-flight requests.
- * Fetches sequentially with a 300ms stagger to avoid server burst.
+ * @param {object} setters - Store setter functions
  */
-let preloadRunning = false;
-
-export const preloadMajorTables = async () => {
+export const preloadStoreData = async ({ setClients, setServices, setEmployees, setInventory, setAppointments }) => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (!token || preloadRunning) return;
-  preloadRunning = true;
+  if (!token) return;
 
   const tables = [
-    ['clients',   () => api.get('/isud/clients')],
-    ['services',  () => api.get('/isud/services')],
-    ['employees', () => api.get('/isud/users')],
-    ['inventory', () => api.get('/isud/inventory')],
-    ['schedule',  () => api.get('/isud/schedules')],
+    { fetch: () => api.get('/isud/clients'),   set: setClients },
+    { fetch: () => api.get('/isud/services'),  set: setServices },
+    { fetch: () => api.get('/isud/users'),     set: setEmployees },
+    { fetch: () => api.get('/isud/inventory'), set: setInventory },
+    { fetch: () => api.get('/isud/schedules'), set: setAppointments },
   ];
 
-  try {
-    for (const [key, fetchFn] of tables) {
-      if (cacheService.getRows(key).length > 0) {
-        backgroundSync(key, fetchFn);
-        continue;
-      }
-      if (inFlightRequests.has(key)) continue;
-      try {
-        await getCachedOrFetch(key, fetchFn);
-      } catch { /* individual failure won't abort preload */ }
-      await new Promise((r) => setTimeout(r, 300));
-    }
-  } catch { /* silently degrade */ }
-  finally { preloadRunning = false; }
+  for (const { fetch, set } of tables) {
+    try {
+      const res = await fetch();
+      const data = res?.data ?? res;
+      if (Array.isArray(data)) set(data);
+    } catch { /* individual failure won't abort the rest */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
 };
 
 // API endpoints for all entities
