@@ -78,7 +78,9 @@
       "Bash(DATABASE_URL=\"postgresql://db_reference_user:AGONHh5kBrXztl8hwYUEIGpCZncxK06j@dpg-d5scoucoud1c73b1s5tg-a.oregon-postgres.render.com/db_reference_name\" python migrations/add_company_logo.py)",
       "Bash(DATABASE_URL=\"postgresql://db_reference_user:AGONHh5kBrXztl8hwYUEIGpCZncxK06j@dpg-d5scoucoud1c73b1s5tg-a.oregon-postgres.render.com/db_reference_name\" python -c \":*)",
       "Bash(for company:*)",
-      "Bash(echo -n \"company=$company: \")"
+      "Bash(echo -n \"company=$company: \")",
+      "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/*.jsx)",
+      "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/components/*.jsx)"
     ]
   }
 }

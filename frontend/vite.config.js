@@ -39,11 +39,8 @@ export default defineConfig(({ command }) => {
           changeOrigin: true,
           secure: false,
           configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, res) => {
-              console.error('Proxy error:', err);
-            });
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              console.log('Proxying request:', req.method, req.url);
+            proxy.on('error', (err, _req, _res) => {
+              console.error('Proxy error:', err.message);
             });
           },
         },
