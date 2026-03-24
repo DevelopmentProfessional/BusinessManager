@@ -37,26 +37,29 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
+import json
 from pydantic import BaseModel as PydanticModel
 
 try:
     from backend.database import get_session
     from backend.models import (
         DescriptiveFeature, FeatureOption,
-        InventoryFeature, InventoryFeatureOptionData,
+        InventoryFeature, InventoryFeatureOptionData, InventoryFeatureCombination,
         Inventory, User,
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
+        InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
     )
     from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
     from models import (
         DescriptiveFeature, FeatureOption,
-        InventoryFeature, InventoryFeatureOptionData,
+        InventoryFeature, InventoryFeatureOptionData, InventoryFeatureCombination,
         Inventory, User,
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
+        InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
     )
     from routers.auth import get_current_user
 
@@ -79,12 +82,151 @@ class OptionDataRow(PydanticModel):
 
 class DeductStockItem(PydanticModel):
     inventory_id: UUID
-    feature_id: UUID
-    option_id: UUID
+    feature_id: Optional[UUID] = None
+    option_id: Optional[UUID] = None
+    option_ids: Optional[List[UUID]] = None
     quantity: int
 
 
 # ─── HELPERS ────────────────────────────────────────────────────────────────────
+
+def _build_combination_key(option_ids: List[UUID]) -> str:
+    return "|".join(sorted(str(option_id) for option_id in option_ids))
+
+
+def _get_inventory_features(session: Session, inventory_id: UUID) -> List[InventoryFeature]:
+    return session.exec(
+        select(InventoryFeature).where(InventoryFeature.inventory_id == inventory_id)
+    ).all()
+
+
+def _get_combination_rows(session: Session, inventory_id: UUID) -> List[InventoryFeatureCombination]:
+    return session.exec(
+        select(InventoryFeatureCombination).where(InventoryFeatureCombination.inventory_id == inventory_id)
+    ).all()
+
+
+def _get_enabled_feature_ids(session: Session, inventory_id: UUID) -> List[UUID]:
+    rows = session.exec(
+        select(InventoryFeatureOptionData).where(
+            InventoryFeatureOptionData.inventory_id == inventory_id,
+            InventoryFeatureOptionData.is_enabled == True,
+        )
+    ).all()
+    ordered: List[UUID] = []
+    seen = set()
+    for row in rows:
+        if row.feature_id not in seen:
+            seen.add(row.feature_id)
+            ordered.append(row.feature_id)
+    return ordered
+
+
+def _sync_option_quantities_from_combinations(session: Session, inventory_id: UUID) -> None:
+    combos = _get_combination_rows(session, inventory_id)
+    if not combos:
+        return
+
+    totals: dict[UUID, int] = {}
+    for combo in combos:
+        try:
+            option_ids = [UUID(value) for value in json.loads(combo.option_ids_json or "[]")]
+        except Exception:
+            option_ids = []
+        for option_id in option_ids:
+            totals[option_id] = totals.get(option_id, 0) + combo.quantity
+
+    data_rows = session.exec(
+        select(InventoryFeatureOptionData).where(InventoryFeatureOptionData.inventory_id == inventory_id)
+    ).all()
+    for row in data_rows:
+        row.quantity = totals.get(row.option_id, 0)
+        session.add(row)
+    session.commit()
+
+
+def _remove_invalid_combinations(session: Session, inventory_id: UUID) -> None:
+    combos = _get_combination_rows(session, inventory_id)
+    if not combos:
+        return
+
+    valid_option_rows = session.exec(
+        select(InventoryFeatureOptionData).where(
+            InventoryFeatureOptionData.inventory_id == inventory_id,
+            InventoryFeatureOptionData.is_enabled == True,
+        )
+    ).all()
+    valid_option_ids = {str(row.option_id) for row in valid_option_rows}
+    expected_feature_ids = set(str(feature_id) for feature_id in _get_enabled_feature_ids(session, inventory_id))
+
+    changed = False
+    for combo in combos:
+        try:
+            option_ids = [str(value) for value in json.loads(combo.option_ids_json or "[]")]
+        except Exception:
+            option_ids = []
+        option_models = [session.get(FeatureOption, option_id) for option_id in option_ids]
+        combo_feature_ids = {str(option.feature_id) for option in option_models if option}
+        if any(option_id not in valid_option_ids for option_id in option_ids) or combo_feature_ids != expected_feature_ids:
+            session.delete(combo)
+            changed = True
+    if changed:
+        session.commit()
+
+
+def _validate_combination_option_ids(session: Session, inventory_id: UUID, option_ids: List[UUID]) -> List[UUID]:
+    if not option_ids:
+        raise HTTPException(status_code=400, detail="Each combination requires at least one option.")
+
+    enabled_feature_ids = _get_enabled_feature_ids(session, inventory_id)
+    if not enabled_feature_ids:
+        raise HTTPException(status_code=400, detail="Enable feature options before saving combination stock.")
+
+    selected_feature_ids: List[UUID] = []
+    validated_option_ids: List[UUID] = []
+    seen_features = set()
+
+    for option_id in option_ids:
+        option = session.get(FeatureOption, option_id)
+        if not option:
+            raise HTTPException(status_code=404, detail="Feature option not found.")
+        data_row = session.exec(
+            select(InventoryFeatureOptionData).where(
+                InventoryFeatureOptionData.inventory_id == inventory_id,
+                InventoryFeatureOptionData.feature_id == option.feature_id,
+                InventoryFeatureOptionData.option_id == option_id,
+            )
+        ).first()
+        if not data_row or not data_row.is_enabled:
+            raise HTTPException(status_code=400, detail=f"Option '{option.name}' is not enabled for this item.")
+        if option.feature_id in seen_features:
+            raise HTTPException(status_code=400, detail="Use only one option per feature in a combination.")
+        seen_features.add(option.feature_id)
+        selected_feature_ids.append(option.feature_id)
+        validated_option_ids.append(option_id)
+
+    if set(selected_feature_ids) != set(enabled_feature_ids):
+        raise HTTPException(status_code=400, detail="Each combination must include one enabled option from every active feature.")
+
+    return sorted(validated_option_ids, key=lambda option_id: str(option_id))
+
+
+def _build_combination_reads(session: Session, inventory_id: UUID) -> List[InventoryFeatureCombinationRead]:
+    rows = _get_combination_rows(session, inventory_id)
+    result = []
+    for row in rows:
+        try:
+            option_ids = [UUID(value) for value in json.loads(row.option_ids_json or "[]")]
+        except Exception:
+            option_ids = []
+        result.append(InventoryFeatureCombinationRead(
+            id=row.id,
+            inventory_id=row.inventory_id,
+            combination_key=row.combination_key,
+            option_ids=option_ids,
+            quantity=row.quantity,
+        ))
+    return result
 
 def _recalculate_inventory_stock(session: Session, inventory_id: UUID) -> None:
     """Recompute total stock from enabled feature option rows and cache on inventory.
@@ -96,21 +238,25 @@ def _recalculate_inventory_stock(session: Session, inventory_id: UUID) -> None:
     total.  This is safe: if totals are equal the result is correct; if they diverge
     due to data entry errors the smaller number is the conservative choice.
     """
-    rows = session.exec(
+    combination_rows = _get_combination_rows(session, inventory_id)
+    if combination_rows:
+        total = sum(row.quantity for row in combination_rows)
+    else:
+        rows = session.exec(
         select(InventoryFeatureOptionData).where(
             InventoryFeatureOptionData.inventory_id == inventory_id,
             InventoryFeatureOptionData.is_enabled == True,
         )
-    ).all()
+        ).all()
 
-    if not rows:
-        total = 0
-    else:
-        feature_totals: dict = {}
-        for r in rows:
-            fid = str(r.feature_id)
-            feature_totals[fid] = feature_totals.get(fid, 0) + r.quantity
-        total = min(feature_totals.values())
+        if not rows:
+            total = 0
+        else:
+            feature_totals: dict = {}
+            for r in rows:
+                fid = str(r.feature_id)
+                feature_totals[fid] = feature_totals.get(fid, 0) + r.quantity
+            total = min(feature_totals.values())
 
     item = session.get(Inventory, inventory_id)
     if item:
@@ -313,6 +459,24 @@ async def deduct_feature_stock(
     """
     affected_inventory_ids = set()
     for item in items:
+        combination_rows = _get_combination_rows(session, item.inventory_id)
+        if combination_rows and item.option_ids:
+            combination_key = _build_combination_key(item.option_ids)
+            combo = session.exec(
+                select(InventoryFeatureCombination).where(
+                    InventoryFeatureCombination.inventory_id == item.inventory_id,
+                    InventoryFeatureCombination.combination_key == combination_key,
+                )
+            ).first()
+            if combo:
+                combo.quantity = max(0, combo.quantity - item.quantity)
+                session.add(combo)
+                affected_inventory_ids.add(item.inventory_id)
+            continue
+
+        if item.feature_id is None or item.option_id is None:
+            continue
+
         row = session.exec(
             select(InventoryFeatureOptionData).where(
                 InventoryFeatureOptionData.inventory_id == item.inventory_id,
@@ -326,6 +490,7 @@ async def deduct_feature_stock(
             affected_inventory_ids.add(item.inventory_id)
     session.commit()
     for inv_id in affected_inventory_ids:
+        _sync_option_quantities_from_combinations(session, inv_id)
         _recalculate_inventory_stock(session, inv_id)
     return {"deducted": len(affected_inventory_ids)}
 
@@ -450,10 +615,15 @@ async def delete_option(
             InventoryFeatureOptionData.option_id == option_id
         )
     ).all()
+    affected_inventory_ids = {row.inventory_id for row in all_data_rows}
     for row in all_data_rows:
         session.delete(row)
     session.delete(opt)
     session.commit()
+    for inventory_id in affected_inventory_ids:
+        _remove_invalid_combinations(session, inventory_id)
+        _sync_option_quantities_from_combinations(session, inventory_id)
+        _recalculate_inventory_stock(session, inventory_id)
     return {"deleted": True}
 
 
@@ -525,6 +695,10 @@ async def add_feature_to_inventory(
                 company_id=current_user.company_id,
             ))
     session.commit()
+    for combo in _get_combination_rows(session, inventory_id):
+        session.delete(combo)
+    session.commit()
+    _recalculate_inventory_stock(session, inventory_id)
     return {"added": True}
 
 
@@ -569,10 +743,65 @@ async def remove_feature_from_inventory(
     ).all()
     for row in data_rows:
         session.delete(row)
+    for combo in _get_combination_rows(session, inventory_id):
+        session.delete(combo)
     session.delete(inv_feat)
     session.commit()
     _recalculate_inventory_stock(session, inventory_id)
     return {"removed": True}
+
+
+@router.get("/inventory/{inventory_id}/feature-combinations", response_model=List[InventoryFeatureCombinationRead])
+async def get_inventory_feature_combinations(
+    inventory_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    inv = session.get(Inventory, inventory_id)
+    if not inv:
+        raise HTTPException(status_code=404, detail="Inventory item not found.")
+    return _build_combination_reads(session, inventory_id)
+
+
+@router.put("/inventory/{inventory_id}/feature-combinations")
+async def save_inventory_feature_combinations(
+    inventory_id: UUID,
+    rows: List[InventoryFeatureCombinationWrite],
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    inv = session.get(Inventory, inventory_id)
+    if not inv:
+        raise HTTPException(status_code=404, detail="Inventory item not found.")
+
+    seen_keys = set()
+    normalized_rows = []
+    for row in rows:
+        normalized_option_ids = _validate_combination_option_ids(session, inventory_id, row.option_ids)
+        combination_key = _build_combination_key(normalized_option_ids)
+        if combination_key in seen_keys:
+            raise HTTPException(status_code=409, detail="Duplicate feature combination in request.")
+        seen_keys.add(combination_key)
+        normalized_rows.append((normalized_option_ids, combination_key, max(0, row.quantity)))
+
+    existing_rows = _get_combination_rows(session, inventory_id)
+    for existing in existing_rows:
+        session.delete(existing)
+    session.commit()
+
+    for option_ids, combination_key, quantity in normalized_rows:
+        session.add(InventoryFeatureCombination(
+            inventory_id=inventory_id,
+            combination_key=combination_key,
+            option_ids_json=json.dumps([str(option_id) for option_id in option_ids]),
+            quantity=quantity,
+            company_id=current_user.company_id,
+        ))
+    session.commit()
+
+    _sync_option_quantities_from_combinations(session, inventory_id)
+    _recalculate_inventory_stock(session, inventory_id)
+    return {"saved": True}
 
 
 @router.patch("/inventory/{inventory_id}/features/affects-price")
@@ -626,5 +855,7 @@ async def save_option_data(
                 price=row.price,
             ))
     session.commit()
+    _remove_invalid_combinations(session, inventory_id)
+    _sync_option_quantities_from_combinations(session, inventory_id)
     _recalculate_inventory_stock(session, inventory_id)
     return {"saved": True}

@@ -377,6 +377,16 @@ class InventoryFeatureOptionData(BaseModel, table=True):
     company_id: Optional[str] = Field(default=None, index=True)
 
 
+class InventoryFeatureCombination(BaseModel, table=True):
+    """Stock tracked for a full option combination on a specific inventory item."""
+    __tablename__ = "inventory_feature_combination"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    combination_key: str = Field(index=True)
+    option_ids_json: str
+    quantity: int = Field(default=0, ge=0)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
 # ─── 7 SERVICE MODELS ──────────────────────────────────────────────────────────
 # Service model
 class Service(BaseModel, table=True):
@@ -917,6 +927,20 @@ class InventoryFeatureRead(SQLModel):
     affects_price: bool
     options: List["InventoryFeatureOptionDataRead"] = []
     model_config = {"from_attributes": True}
+
+
+class InventoryFeatureCombinationRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    combination_key: str
+    option_ids: List[UUID] = []
+    quantity: int
+    model_config = {"from_attributes": True}
+
+
+class InventoryFeatureCombinationWrite(SQLModel):
+    option_ids: List[UUID]
+    quantity: int = 0
 
 
 # ─── 17f USER SCHEMAS ──────────────────────────────────────────────────────────
@@ -1593,6 +1617,7 @@ class SaleTransactionItem(BaseModel, table=True):
     quantity: int = Field(default=1)
     line_total: float = Field(default=0)
     mix_selections: Optional[str] = Field(default=None)  # JSON: [{product_id, product_name, quantity}]
+    options_json: Optional[str] = Field(default=None)  # JSON: selected descriptive feature options
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1662,6 +1687,7 @@ class SaleTransactionItemRead(SQLModel):
     quantity: int
     line_total: float
     mix_selections: Optional[str] = None
+    options_json: Optional[str] = None
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
@@ -1675,6 +1701,8 @@ class SaleTransactionItemCreate(SQLModel):
     unit_price: float = 0
     quantity: int = 1
     line_total: float = 0
+    mix_selections: Optional[str] = None
+    options_json: Optional[str] = None
 
 
 # Client persistent cart models
@@ -1725,13 +1753,17 @@ class ClientOrder(BaseModel, table=True):
     __tablename__ = "client_order"
     
     client_id: UUID = Field(foreign_key="client.id", index=True)
-    status: str = Field(default="pending")  # pending | paid | cancelled | refunded
+    employee_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
+    status: str = Field(default="payment_pending")  # payment_pending | ordered | processing | ready_for_pickup | out_for_delivery | delivered | picked_up | cancelled | refunded
     subtotal: float = Field(default=0.0)
     tax_amount: float = Field(default=0.0)
     total: float = Field(default=0.0)
     payment_method: Optional[str] = Field(default=None)
     stripe_payment_intent_id: Optional[str] = Field(default=None)
     stripe_charge_id: Optional[str] = Field(default=None)
+    paid_at: Optional[datetime] = Field(default=None)
+    fulfilled_at: Optional[datetime] = Field(default=None)
+    inventory_deducted_at: Optional[datetime] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1747,12 +1779,14 @@ class ClientOrderItem(BaseModel, table=True):
     quantity: int = Field(default=1)
     line_total: float = Field(default=0.0)
     booking_id: Optional[UUID] = Field(default=None)
+    options_json: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ClientOrderRead(SQLModel):
     id: UUID
     client_id: UUID
+    employee_id: Optional[UUID] = None
     status: str
     subtotal: float
     tax_amount: float
@@ -1760,6 +1794,9 @@ class ClientOrderRead(SQLModel):
     payment_method: Optional[str] = None
     stripe_payment_intent_id: Optional[str] = None
     stripe_charge_id: Optional[str] = None
+    paid_at: Optional[datetime] = None
+    fulfilled_at: Optional[datetime] = None
+    inventory_deducted_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     
@@ -1776,6 +1813,7 @@ class ClientOrderItemRead(SQLModel):
     quantity: int
     line_total: float
     booking_id: Optional[UUID] = None
+    options_json: Optional[str] = None
     created_at: Optional[datetime] = None
     
     model_config = {"from_attributes": True}

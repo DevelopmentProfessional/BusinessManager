@@ -90,7 +90,7 @@ _STANDARD_TEMPLATES = [
             '</div>'
 
             # Line items
-            '<div style="margin-bottom:8px;">{{invoice.items}}</div>'
+            '<div style="margin-bottom:8px;">{{invoice.items.feature_table}}</div>'
 
             # Totals
             '<div style="margin-bottom:24px;">'

@@ -23,7 +23,30 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { ClockIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { saleTransactionsAPI } from '../../services/api';
+import { saleTransactionsAPI, clientOrdersAPI } from '../../services/api';
+
+const STATUS_LABELS = {
+  payment_pending: 'Payment Pending',
+  ordered: 'Ordered',
+  processing: 'Processing',
+  ready_for_pickup: 'Ready for Pickup',
+  out_for_delivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  picked_up: 'Picked Up',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+  completed: 'Completed',
+};
+
+function parseOptions(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 // ─── 1 COMPONENT DEFINITION & JSX RENDER ─────────────────────────────────
 export default function Modal_History_Sales({
@@ -37,30 +60,26 @@ export default function Modal_History_Sales({
   const [itemsCache, setItemsCache] = useState({}); // saleId → items[]
   const [loadingId, setLoadingId] = useState(null);
 
-  const toggleSale = async (saleId) => {
-    if (expandedId === saleId) {
+  const toggleSale = async (sale) => {
+    if (expandedId === sale.id) {
       setExpandedId(null);
       return;
     }
-    setExpandedId(saleId);
-    if (itemsCache[saleId]) return; // already loaded
-    setLoadingId(saleId);
+    setExpandedId(sale.id);
+    if (itemsCache[sale.id]) return;
+    setLoadingId(sale.id);
     try {
-      const res = await saleTransactionsAPI.getItems(saleId);
+      const res = sale.source === 'portal'
+        ? await clientOrdersAPI.getItems(sale.id)
+        : await saleTransactionsAPI.getItems(sale.id);
       const raw = Array.isArray(res?.data) ? res.data : [];
-      const items = raw.map(item => {
-        let selectedOptions = [];
-        if (item.options_json) {
-          try {
-            const parsed = JSON.parse(item.options_json);
-            if (Array.isArray(parsed)) selectedOptions = parsed;
-          } catch { /* ignore */ }
-        }
-        return { ...item, selectedOptions };
-      });
-      setItemsCache(prev => ({ ...prev, [saleId]: items }));
+      const items = raw.map(item => ({
+        ...item,
+        selectedOptions: parseOptions(item.options_json),
+      }));
+      setItemsCache(prev => ({ ...prev, [sale.id]: items }));
     } catch {
-      setItemsCache(prev => ({ ...prev, [saleId]: [] }));
+      setItemsCache(prev => ({ ...prev, [sale.id]: [] }));
     } finally {
       setLoadingId(null);
     }
@@ -100,22 +119,39 @@ export default function Modal_History_Sales({
                       {/* ── Accordion Header ── */}
                       <button
                         type="button"
-                        onClick={() => toggleSale(sale.id)}
+                        onClick={() => toggleSale(sale)}
                         className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center flex-wrap gap-1.5 mb-0.5">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {new Date(sale.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               {' '}
                               {new Date(sale.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                            {sale.client && (
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.client.name}</span>
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                              sale.source === 'portal'
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                            }`}>
+                              {sale.source === 'portal' ? 'Portal' : 'POS'}
+                            </span>
+                            {sale.status && (
+                              <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                {STATUS_LABELS[sale.status] || sale.status}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {sale.clientName && (
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.clientName}</span>
+                            )}
+                            {sale.employeeName && (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">· {sale.employeeName}</span>
                             )}
                           </div>
                           <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {sale.type === 'service' ? 'Service' : 'Product'} · {sale.paymentMethod}
+                            {sale.paymentMethod}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -137,9 +173,15 @@ export default function Modal_History_Sales({
                           ) : !loadedItems || loadedItems.length === 0 ? (
                             <p className="text-xs text-gray-400 py-2">No items found.</p>
                           ) : (
-                            <ul className="space-y-1 pt-1">
+                            <div className="pt-1 space-y-1">
+                              {sale.subtotal != null && (
+                                <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 pb-1 border-b border-gray-200 dark:border-gray-700">
+                                  <span>Subtotal ${Number(sale.subtotal).toFixed(2)} · Tax ${Number(sale.tax || 0).toFixed(2)}</span>
+                                  <span className="font-medium text-gray-900 dark:text-white">Total ${Number(sale.total).toFixed(2)}</span>
+                                </div>
+                              )}
                               {loadedItems.map((item, idx) => (
-                                <li key={item.id ?? idx} className="flex justify-between items-start text-sm gap-2">
+                                <div key={item.id ?? idx} className="flex justify-between items-start text-sm gap-2">
                                   <div className="min-w-0">
                                     <span className="text-gray-800 dark:text-gray-200">
                                       {item.item_name || item.name || '—'}
@@ -147,20 +189,28 @@ export default function Modal_History_Sales({
                                         <span className="text-gray-400 ml-1">×{item.quantity}</span>
                                       )}
                                     </span>
+                                    {item.item_type && (
+                                      <span className="ml-1 text-xs text-gray-400">({item.item_type})</span>
+                                    )}
                                     {item.selectedOptions?.length > 0 && (
                                       <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
                                         {item.selectedOptions.map(o =>
                                           `${o.featureName ?? o.feature_name ?? ''}: ${o.optionName ?? o.option_name ?? ''}`
-                                        ).join(' · ')}
+                                        ).filter(s => s.trim() !== ':').join(' · ')}
                                       </p>
+                                    )}
+                                    {item.unit_price != null && (
+                                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                                        @ ${Number(item.unit_price).toFixed(2)} each
+                                      </span>
                                     )}
                                   </div>
                                   <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
                                     {item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : ''}
                                   </span>
-                                </li>
+                                </div>
                               ))}
-                            </ul>
+                            </div>
                           )}
                         </div>
                       )}
@@ -186,15 +236,35 @@ export default function Modal_History_Sales({
         {/* ========== RIGHT SIDEBAR (FILTERS) ========== */}
         <div className="w-full md:w-72 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
           <div className="flex flex-col gap-3 p-4">
-            {/* ========== SERVICES & PRODUCTS FILTER ========== */}
+            {/* ========== SOURCE FILTER ========== */}
             <div className="flex flex-col gap-2">
               <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">Filters</p>
+              <div className="flex flex-wrap gap-2">
+                {[['all','All'],['pos','POS'],['portal','Portal']].map(([v,l]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setHistoryFilters((prev) => ({ ...prev, saleSource: v }))}
+                    aria-pressed={historyFilters.saleSource === v}
+                    className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
+                      historyFilters.saleSource === v
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                    }`}
+                  >{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* ========== SERVICES & PRODUCTS FILTER ========== */}
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">Item Type</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
                   aria-pressed={historyFilters.showServices}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                  className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
                     historyFilters.showServices
                       ? 'bg-primary-600 text-white border-primary-600'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
@@ -206,7 +276,7 @@ export default function Modal_History_Sales({
                   type="button"
                   onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
                   aria-pressed={historyFilters.showProducts}
-                  className={`px-3 py-2 rounded-full border text-sm transition-colors ${
+                  className={`px-3 py-1.5 rounded-full border text-xs transition-colors ${
                     historyFilters.showProducts
                       ? 'bg-secondary-600 text-white border-secondary-600'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
@@ -215,6 +285,52 @@ export default function Modal_History_Sales({
                   Products
                 </button>
               </div>
+            </div>
+
+            {/* ========== CLIENT SEARCH FILTER ========== */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Client</label>
+              <input
+                type="text"
+                value={historyFilters.clientQuery || ''}
+                onChange={(e) => setHistoryFilters((prev) => ({ ...prev, clientQuery: e.target.value }))}
+                placeholder="Search client name…"
+                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+              />
+            </div>
+
+            {/* ========== EMPLOYEE SEARCH FILTER ========== */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Employee</label>
+              <input
+                type="text"
+                value={historyFilters.employeeQuery || ''}
+                onChange={(e) => setHistoryFilters((prev) => ({ ...prev, employeeQuery: e.target.value }))}
+                placeholder="Search employee name…"
+                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+              />
+            </div>
+
+            {/* ========== ORDER STATUS FILTER ========== */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Status</label>
+              <select
+                value={historyFilters.status || ''}
+                onChange={(e) => setHistoryFilters((prev) => ({ ...prev, status: e.target.value }))}
+                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+              >
+                <option value="">All statuses</option>
+                <option value="completed">Completed (POS)</option>
+                <option value="payment_pending">Payment Pending</option>
+                <option value="ordered">Ordered</option>
+                <option value="processing">Processing</option>
+                <option value="ready_for_pickup">Ready for Pickup</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="picked_up">Picked Up</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="refunded">Refunded</option>
+              </select>
             </div>
 
             {/* ========== PRICE RANGE FILTER ========== */}
@@ -263,7 +379,18 @@ export default function Modal_History_Sales({
 
             {/* ========== CLEAR FILTERS BUTTON ========== */}
             <button
-              onClick={() => setHistoryFilters({ showServices: true, showProducts: true, minPrice: '', maxPrice: '', startDate: '', endDate: '' })}
+              onClick={() => setHistoryFilters({
+                showServices: true,
+                showProducts: true,
+                minPrice: '',
+                maxPrice: '',
+                startDate: '',
+                endDate: '',
+                clientQuery: '',
+                employeeQuery: '',
+                saleSource: 'all',
+                status: '',
+              })}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
             >
               Clear Filters

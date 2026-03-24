@@ -7,10 +7,10 @@
  * DB immediately (fire-and-forget with optimistic UI).
  */
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import Modal from './Modal';
 import { useNavigate } from 'react-router-dom';
-import { clientCartAPI } from '../../services/api';
+import { clientCartAPI, clientOrdersAPI } from '../../services/api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,12 +57,15 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
   const navigate   = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [loading,   setLoading]   = useState(false);
+  const [creating,  setCreating]  = useState(false);
+  const [orderCreated, setOrderCreated] = useState(null);
 
   // Load from DB whenever the modal opens
   useEffect(() => {
     if (!isOpen || !client?.id) return;
     let cancelled = false;
     setLoading(true);
+    setOrderCreated(null);
     clientCartAPI.getItems(client.id)
       .then((res) => {
         if (!cancelled) {
@@ -106,6 +109,21 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
     onClose();
   };
 
+  const handleCreateOrder = async () => {
+    if (cartItems.length === 0) return;
+    setCreating(true);
+    try {
+      const res = await clientOrdersAPI.createFromCart(client.id, { payment_method: 'pending' });
+      const order = res?.data ?? res;
+      setOrderCreated(order);
+      setCartItems([]);
+    } catch {
+      // order creation failed — stay on cart view
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (!client) return null;
 
   return (
@@ -127,6 +145,15 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
           {loading ? (
             <div className="d-flex justify-content-center py-5">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
+            </div>
+          ) : orderCreated ? (
+            <div className="text-center py-5 px-3">
+              <CheckCircleIcon style={{ width: 48, height: 48, color: '#22c55e', margin: '0 auto 12px' }} />
+              <div className="fw-semibold mb-1">Order Created</div>
+              <div className="small text-muted mb-1">
+                Order #{String(orderCreated.id || '').split('-')[0].toUpperCase()} is now in the queue.
+              </div>
+              <div className="small text-muted">Status: <strong>{orderCreated.status || 'payment_pending'}</strong></div>
             </div>
           ) : cartItems.length === 0 ? (
             <div className="text-center text-muted py-5">
@@ -202,15 +229,32 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
               >
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
-              <button
-                type="button"
-                onClick={handleGoToSales}
-                className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
-                style={{ width: '3rem', height: '3rem' }}
-                title="Go to Sales"
-              >
-                <ShoppingCartIcon style={{ width: 18, height: 18 }} />
-              </button>
+              {!orderCreated && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleGoToSales}
+                    className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    style={{ width: '3rem', height: '3rem' }}
+                    title="Go to Sales"
+                  >
+                    <ShoppingCartIcon style={{ width: 18, height: 18 }} />
+                  </button>
+                  {cartItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleCreateOrder}
+                      disabled={creating}
+                      className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3"
+                      style={{ height: '3rem', fontSize: 12 }}
+                      title="Create portal order from cart"
+                    >
+                      <CheckCircleIcon style={{ width: 16, height: 16 }} />
+                      {creating ? 'Creating…' : 'Create Order'}
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

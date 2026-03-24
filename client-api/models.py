@@ -54,8 +54,13 @@ class BookingStatus(str, Enum):
 
 
 class OrderStatus(str, Enum):
-    PENDING = "pending"
-    PAID = "paid"
+    PAYMENT_PENDING = "payment_pending"
+    ORDERED = "ordered"
+    PROCESSING = "processing"
+    READY_FOR_PICKUP = "ready_for_pickup"
+    OUT_FOR_DELIVERY = "out_for_delivery"
+    DELIVERED = "delivered"
+    PICKED_UP = "picked_up"
     CANCELLED = "cancelled"
     REFUNDED = "refunded"
 
@@ -300,7 +305,8 @@ class ClientOrder(BaseModel, table=True):
     __tablename__ = "client_order"
 
     client_id: UUID = Field(foreign_key="client.id", index=True)
-    status: str = Field(default="pending")              # pending | paid | cancelled | refunded
+    employee_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
+    status: str = Field(default="payment_pending")      # payment_pending | ordered | processing | ready_for_pickup | out_for_delivery | delivered | picked_up | cancelled | refunded
 
     subtotal: float = Field(default=0.0)
     tax_amount: float = Field(default=0.0)
@@ -308,6 +314,9 @@ class ClientOrder(BaseModel, table=True):
     payment_method: Optional[str] = Field(default=None)
     stripe_payment_intent_id: Optional[str] = Field(default=None)
     stripe_charge_id: Optional[str] = Field(default=None)
+    paid_at: Optional[datetime] = Field(default=None)
+    fulfilled_at: Optional[datetime] = Field(default=None)
+    inventory_deducted_at: Optional[datetime] = Field(default=None)
 
     company_id: Optional[str] = Field(default=None, index=True)
 
@@ -324,6 +333,7 @@ class ClientOrderItem(BaseModel, table=True):
     quantity: int = Field(default=1)
     line_total: float = Field(default=0.0)
     booking_id: Optional[UUID] = Field(default=None, foreign_key="client_booking.id")
+    options_json: Optional[str] = Field(default=None)
 
     company_id: Optional[str] = Field(default=None, index=True)
 
@@ -434,6 +444,7 @@ class OrderItemInput(SQLModel):
     unit_price: float
     quantity: int
     booking_id: Optional[str] = None
+    options_json: Optional[str] = None
 
 
 class OrderCreate(SQLModel):
@@ -444,12 +455,16 @@ class OrderCreate(SQLModel):
 class OrderRead(SQLModel):
     id: UUID
     client_id: UUID
+    employee_id: Optional[UUID]
     status: str
     subtotal: float
     tax_amount: float
     total: float
     payment_method: Optional[str]
     stripe_payment_intent_id: Optional[str]
+    paid_at: Optional[datetime]
+    fulfilled_at: Optional[datetime]
+    inventory_deducted_at: Optional[datetime]
     created_at: datetime
 
 
@@ -463,3 +478,4 @@ class OrderItemRead(SQLModel):
     quantity: int
     line_total: float
     booking_id: Optional[UUID]
+    options_json: Optional[str] = None

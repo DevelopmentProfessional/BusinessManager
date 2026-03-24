@@ -26,6 +26,7 @@ import { inventoryFeaturesAPI } from '../../services/api';
 
 export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onConfirm }) {
   const [features, setFeatures]     = useState([]);  // features with enabled options only
+  const [combinations, setCombinations] = useState([]);
   const [selections, setSelections] = useState({}); // featureId → { optionId, optionName, price, quantity }
   const [quantity, setQuantity]     = useState(1);
   const [loading, setLoading]       = useState(false);
@@ -37,15 +38,23 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
     setSelections({});
     setQuantity(1);
 
-    inventoryFeaturesAPI.get(item.id)
-      .then(res => {
-        const data = res?.data ?? res;
+    Promise.all([
+      inventoryFeaturesAPI.get(item.id),
+      inventoryFeaturesAPI.getCombinations(item.id),
+    ])
+      .then(([featureRes, comboRes]) => {
+        const data = featureRes?.data ?? featureRes;
+        const comboData = comboRes?.data ?? comboRes;
         const enabledFeatures = (Array.isArray(data) ? data : [])
           .map(f => ({ ...f, options: f.options.filter(o => o.is_enabled) }))
           .filter(f => f.options.length > 0);
         setFeatures(enabledFeatures);
+        setCombinations(Array.isArray(comboData) ? comboData : []);
       })
-      .catch(() => setFeatures([]))
+      .catch(() => {
+        setFeatures([]);
+        setCombinations([]);
+      })
       .finally(() => setLoading(false));
   }, [isOpen, item?.id]);
 
@@ -61,8 +70,41 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
     return item?.price ?? 0;
   })();
 
+  const getMatchingCombinationQty = (pendingSelections = selections) => {
+    if (!combinations.length) return null;
+    const selectedIds = Object.values(pendingSelections).map(sel => String(sel.optionId));
+    if (!selectedIds.length) {
+      return combinations.reduce((sum, row) => sum + (row.quantity ?? 0), 0);
+    }
+    return combinations
+      .filter(row => {
+        const rowIds = Array.isArray(row.option_ids) ? row.option_ids.map(String) : [];
+        return selectedIds.every(optionId => rowIds.includes(optionId));
+      })
+      .reduce((sum, row) => sum + (row.quantity ?? 0), 0);
+  };
+
+  const getOptionAvailability = (featureId, option) => {
+    if (!combinations.length) return option.quantity ?? 0;
+    const pendingSelections = {
+      ...selections,
+      [featureId]: {
+        optionId: option.option_id,
+        optionName: option.option_name,
+        price: option.price,
+        qty: option.quantity,
+      },
+    };
+    return getMatchingCombinationQty(pendingSelections) ?? 0;
+  };
+
   // Max qty = smallest stock among all selected options (cap at 99 if nothing selected)
   const maxQty = (() => {
+    if (combinations.length) {
+      const matchedQty = getMatchingCombinationQty();
+      if (matchedQty == null || matchedQty <= 0) return allSelected ? 0 : 99;
+      return matchedQty;
+    }
     const picked = Object.values(selections);
     if (!picked.length) return 99;
     return Math.max(1, Math.min(...picked.map(s => s.qty ?? 99)));
@@ -79,7 +121,8 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
       },
     }));
     // Clamp quantity to new max
-    setQuantity(q => Math.min(q, Math.max(1, opt.quantity ?? 99)));
+    const nextAvailability = getOptionAvailability(featureId, opt);
+    setQuantity(q => Math.min(q, Math.max(1, nextAvailability || opt.quantity || 1)));
   };
 
   const handleConfirm = () => {
@@ -130,7 +173,8 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
                 <div className="d-flex flex-wrap gap-2">
                   {f.options.map(opt => {
                     const isSelected = selections[f.feature_id]?.optionId === opt.option_id;
-                    const outOfStock = opt.quantity <= 0;
+                    const availability = getOptionAvailability(f.feature_id, opt);
+                    const outOfStock = availability <= 0;
                     return (
                       <button
                         key={opt.option_id}
@@ -154,7 +198,7 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
                         )}
                         <span className={`ms-1 ${isSelected ? 'opacity-75' : 'opacity-40'}`}
                               style={{ fontSize: '0.7rem' }}>
-                          ({opt.quantity})
+                          ({availability})
                         </span>
                       </button>
                     );
@@ -184,12 +228,18 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
                   className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center"
                   style={{ width: 32, height: 32 }}
                   onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
-                  disabled={quantity >= maxQty}
+                  disabled={maxQty <= 0 || quantity >= maxQty}
                 >
                   <PlusIcon className="h-4 w-4" />
                 </button>
               </div>
             </div>
+
+            {allSelected && (
+              <div className="small text-muted mb-3">
+                Remaining inventory for this combination: <strong>{Math.max(0, maxQty - quantity)}</strong>
+              </div>
+            )}
 
             {/* Footer actions */}
             <div
@@ -213,7 +263,7 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
                 type="button"
                 className="btn btn-primary d-flex align-items-center justify-content-center gap-2"
                 onClick={handleConfirm}
-                disabled={!allSelected}
+                disabled={!allSelected || maxQty <= 0}
               >
                 <ShoppingCartIcon className="h-5 w-5" />
                 Add to Cart

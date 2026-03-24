@@ -39,10 +39,9 @@ import {
 import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import { showConfirm } from '../../services/showConfirm';
-import { clientsAPI, servicesAPI } from '../../services/api';
+import { clientsAPI, servicesAPI, clientCartAPI, clientOrdersAPI } from '../../services/api';
 import Modal_Client_Cart from './Modal_Client_Cart';
 import Modal_Template_Use from './Modal_Template_Use';
-import { clientCartAPI } from '../../services/api';
 import { formatDate, formatDateTime } from '../../utils/dateFormatters';
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
@@ -77,6 +76,49 @@ const getTierLabel = (tier) => {
   return labels[(tier || 'none').toLowerCase()] || 'None';
 };
 
+const PORTAL_STATUS_LABELS = {
+  payment_pending: 'Payment Pending',
+  ordered: 'Ordered',
+  processing: 'Processing',
+  ready_for_pickup: 'Ready for Pickup',
+  out_for_delivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  picked_up: 'Picked Up',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+};
+
+const PORTAL_STATUS_CLASSES = {
+  payment_pending: 'bg-warning-subtle text-warning',
+  ordered: 'bg-primary-subtle text-primary',
+  processing: 'bg-info-subtle text-info',
+  ready_for_pickup: 'bg-secondary-subtle text-secondary',
+  out_for_delivery: 'bg-dark text-white',
+  delivered: 'bg-success-subtle text-success',
+  picked_up: 'bg-success-subtle text-success',
+  cancelled: 'bg-danger-subtle text-danger',
+  refunded: 'bg-info-subtle text-info',
+};
+
+const NEXT_PORTAL_STATUSES = {
+  payment_pending: ['ordered', 'cancelled'],
+  ordered: ['processing', 'cancelled', 'refunded'],
+  processing: ['ready_for_pickup', 'out_for_delivery', 'cancelled', 'refunded'],
+  ready_for_pickup: ['picked_up', 'cancelled'],
+  out_for_delivery: ['delivered', 'cancelled'],
+  picked_up: ['refunded'],
+  delivered: ['refunded'],
+};
+
+function parseOrderOptions(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 // ─── 2 SERVICE HISTORY SUB-MODAL ───────────────────────────────────────────
 
@@ -326,6 +368,16 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
     setInvoiceTx(tx);
   };
 
+  const handlePortalStatusUpdate = async (orderId, status) => {
+    try {
+      const res = await clientOrdersAPI.updateStatus(orderId, status);
+      const updated = res?.data ?? res;
+      setPortalOrders((prev) => prev.map((order) => (order.id === orderId ? updated : order)));
+    } catch (err) {
+      console.error('Failed to update portal order status:', err);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
@@ -466,13 +518,8 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                         <div className="small text-muted">{formatDate(order.created_at)}</div>
                       </div>
                       <div className="d-flex align-items-center gap-2">
-                        <span className={`badge text-capitalize ${
-                          order.status === 'paid' ? 'bg-success-subtle text-success' :
-                          order.status === 'pending' ? 'bg-warning-subtle text-warning' :
-                          order.status === 'cancelled' ? 'bg-danger-subtle text-danger' :
-                          'bg-secondary-subtle text-secondary'
-                        }`}>
-                          {order.status || 'pending'}
+                        <span className={`badge ${PORTAL_STATUS_CLASSES[order.status] || 'bg-secondary-subtle text-secondary'}`}>
+                          {PORTAL_STATUS_LABELS[order.status] || order.status || 'Payment Pending'}
                         </span>
                         <span className="text-muted small">{expandedId === order.id ? '▲' : '▼'}</span>
                       </div>
@@ -481,23 +528,51 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
                   {expandedId === order.id && (
                     <div className="pb-2 px-3">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div className="small text-muted">
+                          <div>Created: {formatDate(order.created_at)}</div>
+                          {order.paid_at && <div>Paid: {formatDate(order.paid_at)}</div>}
+                          {order.fulfilled_at && <div>Fulfilled: {formatDate(order.fulfilled_at)}</div>}
+                        </div>
+                        <div className="d-flex flex-wrap gap-2">
+                          {(NEXT_PORTAL_STATUSES[order.status] || []).map((nextStatus) => (
+                            <button
+                              key={nextStatus}
+                              type="button"
+                              onClick={() => handlePortalStatusUpdate(order.id, nextStatus)}
+                              className="btn btn-outline-secondary btn-sm"
+                              style={{ fontSize: 11 }}
+                            >
+                              {PORTAL_STATUS_LABELS[nextStatus] || nextStatus}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       {(portalItems[order.id] || []).length === 0 ? (
                         <div className="small text-muted">No items found</div>
                       ) : (
                         <table className="table table-sm table-borderless mb-0">
                           <tbody>
-                            {(portalItems[order.id] || []).map((item) => (
-                              <tr key={item.id}>
-                                <td className="ps-0 py-1 small">
-                                  <span className={`badge me-1 ${item.item_type === 'service' ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'}`}>
-                                    {item.item_type}
-                                  </span>
-                                  {item.item_name}
-                                </td>
-                                <td className="py-1 small text-muted text-end">x{item.quantity}</td>
-                                <td className="py-1 small fw-medium text-end">${item.line_total?.toFixed(2)}</td>
-                              </tr>
-                            ))}
+                            {(portalItems[order.id] || []).map((item) => {
+                              const selectedOptions = parseOrderOptions(item.options_json);
+                              return (
+                                <tr key={item.id}>
+                                  <td className="ps-0 py-1 small">
+                                    <span className={`badge me-1 ${item.item_type === 'service' ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'}`}>
+                                      {item.item_type}
+                                    </span>
+                                    {item.item_name}
+                                    {selectedOptions.length > 0 && (
+                                      <div className="text-muted" style={{ fontSize: 11 }}>
+                                        {selectedOptions.map((option) => `${option.feature_name || option.featureName || ''}: ${option.option_name || option.optionName || ''}`).join(' · ')}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="py-1 small text-muted text-end">x{item.quantity}</td>
+                                  <td className="py-1 small fw-medium text-end">${item.line_total?.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                           <tfoot>
                             <tr>

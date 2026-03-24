@@ -41,7 +41,7 @@ import {
 } from '@heroicons/react/24/outline';
 import useStore from '../services/useStore';
 import Button_Toolbar from './components/Button_Toolbar';
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, mixAPI, bundleAPI } from '../services/api';
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
 import Modal_Detail_Item from './components/Modal_Detail_Item';
@@ -401,7 +401,11 @@ export default function Sales() {
     minPrice: '',
     maxPrice: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    clientQuery: '',
+    employeeQuery: '',
+    saleSource: 'all',
+    status: '',
   });
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
@@ -414,24 +418,50 @@ export default function Sales() {
   // ─── 6  DATA LOADING FUNCTIONS ───────────────────────────────────────────
   const loadTransactionHistory = async () => {
     try {
-      const res = await saleTransactionsAPI.getAll();
-      const txData = res?.data ?? res;
-      if (Array.isArray(txData)) {
-        const clientMap = {};
-        clients.forEach(c => { clientMap[c.id] = c; });
-        const dbHistory = txData.map(tx => ({
-          id: String(tx.id),
-          date: tx.created_at || new Date().toISOString(),
-          client: tx.client_id && clientMap[tx.client_id] ? { name: clientMap[tx.client_id].name, email: clientMap[tx.client_id].email } : null,
-          items: [],
-          subtotal: tx.subtotal || 0,
-          tax: tx.tax_amount || 0,
-          total: tx.total || 0,
-          paymentMethod: tx.payment_method || 'cash',
-        }));
-        dbHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setSalesHistory(dbHistory);
-      }
+      const [salesRes, portalRes] = await Promise.all([
+        saleTransactionsAPI.getAll(),
+        clientOrdersAPI.getAll(),
+      ]);
+      const txData = salesRes?.data ?? salesRes;
+      const portalData = portalRes?.data ?? portalRes;
+      const clientMap = {};
+      clients.forEach(c => { clientMap[c.id] = c; });
+
+      const salesRecords = Array.isArray(txData) ? txData.map(tx => ({
+        id: String(tx.id),
+        source: 'pos',
+        date: tx.created_at || new Date().toISOString(),
+        client: tx.client_id && clientMap[tx.client_id] ? { name: clientMap[tx.client_id].name, email: clientMap[tx.client_id].email } : null,
+        clientName: tx.client_id && clientMap[tx.client_id] ? clientMap[tx.client_id].name : 'Walk-in',
+        employeeName: user?.full_name || user?.username || '',
+        items: [],
+        subtotal: tx.subtotal || 0,
+        tax: tx.tax_amount || 0,
+        total: tx.total || 0,
+        paymentMethod: tx.payment_method || 'cash',
+        status: 'completed',
+      })) : [];
+
+      const portalRecords = Array.isArray(portalData) ? portalData.map(order => ({
+        id: String(order.id),
+        source: 'portal',
+        date: order.created_at || new Date().toISOString(),
+        client: order.client_id && clientMap[order.client_id]
+          ? { name: clientMap[order.client_id].name, email: clientMap[order.client_id].email }
+          : (order.client_name ? { name: order.client_name } : null),
+        clientName: order.client_name || clientMap[order.client_id]?.name || 'Portal client',
+        employeeName: order.employee_name || '',
+        items: [],
+        subtotal: order.subtotal || 0,
+        tax: order.tax_amount || 0,
+        total: order.total || 0,
+        paymentMethod: order.payment_method || 'card',
+        status: order.status || 'payment_pending',
+      })) : [];
+
+      const combinedHistory = [...salesRecords, ...portalRecords]
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      setSalesHistory(combinedHistory);
     } catch (err) {
       console.error('Failed to load transaction history from DB:', err);
     }
@@ -837,6 +867,9 @@ export default function Sales() {
             ...(item.itemType === 'mix' && item.mixSelections
               ? { mix_selections: JSON.stringify(item.mixSelections) }
               : {}),
+            ...(item.selectedOptions?.length > 0
+              ? { options_json: JSON.stringify(item.selectedOptions) }
+              : {}),
           })
         ));
         // ── Inventory deduction ──────────────────────────────────────────
@@ -850,13 +883,10 @@ export default function Sales() {
           if (item.itemType !== 'product' || !item.id) return;
           allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
           if (item.selectedOptions?.length > 0) {
-            item.selectedOptions.forEach(opt => {
-              featureDeductions.push({
-                inventory_id: item.id,
-                feature_id:   opt.featureId,
-                option_id:    opt.optionId,
-                quantity:     item.quantity,
-              });
+            featureDeductions.push({
+              inventory_id: item.id,
+              option_ids: item.selectedOptions.map(opt => opt.optionId),
+              quantity: item.quantity,
             });
           }
         });
@@ -955,20 +985,24 @@ export default function Sales() {
     const startDate = historyFilters.startDate ? new Date(`${historyFilters.startDate}T00:00:00`) : null;
     const endDate = historyFilters.endDate ? new Date(`${historyFilters.endDate}T23:59:59`) : null;
     const saleDate = new Date(sale.date);
+    const clientQuery = historyFilters.clientQuery.trim().toLowerCase();
+    const employeeQuery = historyFilters.employeeQuery.trim().toLowerCase();
 
     if (Number.isFinite(minPrice) && sale.total < minPrice) return false;
     if (Number.isFinite(maxPrice) && sale.total > maxPrice) return false;
     if (startDate && saleDate < startDate) return false;
     if (endDate && saleDate > endDate) return false;
+    if (historyFilters.saleSource !== 'all' && sale.source !== historyFilters.saleSource) return false;
+    if (historyFilters.status && String(sale.status || '') !== historyFilters.status) return false;
+    if (clientQuery && !String(sale.clientName || sale.client?.name || '').toLowerCase().includes(clientQuery)) return false;
+    if (employeeQuery && !String(sale.employeeName || '').toLowerCase().includes(employeeQuery)) return false;
 
-    // If no items loaded (DB records), show them regardless of type filter
     if (!sale.items || sale.items.length === 0) return true;
-
     if (!historyFilters.showServices && !historyFilters.showProducts) return false;
     if (historyFilters.showServices && historyFilters.showProducts) return true;
 
-    const hasService = sale.items?.some((item) => item.itemType === 'service');
-    const hasProduct = sale.items?.some((item) => item.itemType === 'product');
+    const hasService = sale.items?.some((item) => item.itemType === 'service' || item.item_type === 'service');
+    const hasProduct = sale.items?.some((item) => item.itemType === 'product' || item.item_type === 'product');
     if (historyFilters.showServices && hasService) return true;
     if (historyFilters.showProducts && hasProduct) return true;
     return false;
