@@ -57,12 +57,15 @@ export const companiesAPI = {
     })
 
     if (!response.ok) {
-      throw new Error(`Could not load businesses (${response.status}).`)
+      throw new Error(`Could not load businesses (${response.status} from ${BASE}/companies).`)
     }
 
     const contentType = response.headers.get('content-type') || ''
     if (!contentType.includes('application/json')) {
-      throw new Error('Unexpected companies response. Check the client API URL configuration.')
+      throw new Error(
+        `Expected JSON from ${BASE}/companies but got "${contentType || 'no content-type'}". ` +
+        `Check that the client-api server is running and VITE_CLIENT_API_URL is set correctly.`
+      )
     }
 
     const data = await response.json()
@@ -89,10 +92,18 @@ export const authAPI = {
 }
 
 // ── Catalog ───────────────────────────────────────────────────────────────────
+function toArray(data) {
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data?.items))   return data.items
+  if (Array.isArray(data?.data))    return data.data
+  if (Array.isArray(data?.results)) return data.results
+  return []
+}
+
 export const catalogAPI = {
-  getProducts: (params) => api.get('/catalog/products',  { params }).then(r => r.data),
+  getProducts: (params) => api.get('/catalog/products',  { params }).then(r => toArray(r.data)),
   getProduct:  (id, companyId) => api.get(`/catalog/products/${id}`, { params: { company_id: companyId } }).then(r => r.data),
-  getServices: (params) => api.get('/catalog/services',  { params }).then(r => r.data),
+  getServices: (params) => api.get('/catalog/services',  { params }).then(r => toArray(r.data)),
   getService:  (id, companyId) => api.get(`/catalog/services/${id}`, { params: { company_id: companyId } }).then(r => r.data),
   getAvailability: (serviceId, companyId, params = {}) =>
     api.get(`/catalog/services/${serviceId}/availability`, { params: { company_id: companyId, ...params } }).then(r => r.data),
