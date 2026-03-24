@@ -40,7 +40,7 @@ import Button_Toolbar from './Button_Toolbar';
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from '../../services/api';
 import { showConfirm } from '../../services/showConfirm';
 import Widget_Camera from './Widget_Camera';
-import Modal_BulkImport from './Modal_BulkImport';
+import Modal_BulkImport from './Modal_Import_Bulk';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const TABS = ['details', 'resources', 'assets', 'employees', 'locations'];

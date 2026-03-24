@@ -46,7 +46,7 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
-import Modal_BulkImport from './Modal_BulkImport';
+import Modal_BulkImport from './Modal_Import_Bulk';
 import cacheService from '../../services/cacheService';
 import { servicesAPI, suppliersAPI, inventoryAPI } from '../../services/api';
 

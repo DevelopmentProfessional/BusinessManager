@@ -1,6 +1,6 @@
 import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from 'react';
 import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
-import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from './templateVariables';
+import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from './Utils_Template_Variables';
 import { documentsAPI } from '../../services/api';
 import EditorToolbar from './editors/EditorToolbar';
 

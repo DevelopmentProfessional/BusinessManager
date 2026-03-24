@@ -35,16 +35,16 @@ import usePagePermission from '../services/usePagePermission';
 import useViewMode from '../services/useViewMode';
 import Modal from './components/Modal';
 import Form_Client from './components/Form_Client';
-import Modal_Detail_Client from './components/Modal_Detail_Client';
+import Modal_Detail_Client from './components/Modal_Client_Detail';
 import Gate_Permission from './components/Gate_Permission';
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import Modal_Template_Use from './components/Modal_Template_Use';
-import Modal_Bulk_Import_Sheet from './components/Modal_Bulk_Import_Sheet';
-import PageLayout from './components/PageLayout';
-import PageTableFooter from './components/PageTableFooter';
-import PageTableHeader from './components/PageTableHeader';
-import PageTableRow from './components/PageTableRow';
+import Modal_Bulk_Import_Sheet from './components/Modal_Import_Sheet';
+import PageLayout from './components/Page_Layout';
+import PageTableFooter from './components/Page_Table_Footer';
+import PageTableHeader from './components/Page_Table_Header';
+import PageTableRow from './components/Page_Table_Row';
 
 export default function Clients() {
 // ─── [2] STATE & REFS ───────────────────────────────────────────────────────

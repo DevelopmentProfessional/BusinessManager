@@ -31,10 +31,10 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import useFetchOnce from '../services/useFetchOnce';
 import usePagePermission from '../services/usePagePermission';
 import useViewMode from '../services/useViewMode';
-import PageLayout from './components/PageLayout';
-import PageTableFooter from './components/PageTableFooter';
-import PageTableHeader from './components/PageTableHeader';
-import PageTableRow from './components/PageTableRow';
+import PageLayout from './components/Page_Layout';
+import PageTableFooter from './components/Page_Table_Footer';
+import PageTableHeader from './components/Page_Table_Header';
+import PageTableRow from './components/Page_Table_Row';
 import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
@@ -43,7 +43,7 @@ import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Service from './components/Form_Service';
 import Gate_Permission from './components/Gate_Permission';
-import Modal_Bulk_Import_Sheet from './components/Modal_Bulk_Import_Sheet';
+import Modal_Bulk_Import_Sheet from './components/Modal_Import_Sheet';
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {

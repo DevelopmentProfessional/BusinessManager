@@ -27,7 +27,7 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CheckIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
-import Modal_BulkImport from './Modal_BulkImport';
+import Modal_BulkImport from './Modal_Import_Bulk';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const MEMBERSHIP_TIERS = [

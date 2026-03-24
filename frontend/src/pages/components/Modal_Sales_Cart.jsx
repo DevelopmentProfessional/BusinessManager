@@ -23,7 +23,7 @@
  */
 import React from 'react';
 import Modal from './Modal';
-import { getDisplayImageUrl } from './imageUtils';
+import { getDisplayImageUrl } from './Utils_Image';
 import {
   ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon,
   PlusIcon, MinusIcon, SparklesIcon, CubeIcon
