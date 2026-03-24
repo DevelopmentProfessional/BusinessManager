@@ -275,15 +275,15 @@ async def stripe_webhook(
             payment_intent.succeeded   → order.status = 'ordered'
       payment_intent.canceled    → order.status = 'cancelled'
     """
-        import os
-        import stripe
+    import os
+    import stripe
 
-        stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
-        stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+    stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     payload = await request.body()
 
     try:
-                event = stripe.Webhook.construct_event(payload, stripe_signature, stripe_webhook_secret)
+        event = stripe.Webhook.construct_event(payload, stripe_signature, stripe_webhook_secret)
     except stripe.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
     except Exception:
