@@ -28,15 +28,6 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Log API configuration for debugging (only in development)
-if (import.meta.env.DEV) {
-  console.log('API Configuration:', {
-    hostname: window.location.hostname,
-    protocol: window.location.protocol,
-    API_BASE_URL,
-    VITE_API_URL: import.meta.env.VITE_API_URL,
-  });
-}
 
 
 const api = axios.create({
@@ -64,53 +55,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Add response interceptor to handle authentication errors and logging
+// Add response interceptor to handle authentication errors
 api.interceptors.response.use(
-  (response) => {
-    // Log successful responses in development
-    if (import.meta.env.DEV) {
-      const isNoisyUnreadPoll = response.config?.url?.includes('/chat/unread-counts');
-      if (isNoisyUnreadPoll) {
-        return response;
-      }
-      console.log(`API Success [${response.config.method?.toUpperCase()}] ${response.config.url}`, {
-        status: response.status,
-        dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
-      });
-    }
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Enhanced error logging
     if (error.response) {
-      // Server responded with error status
-      console.error(`API Error [${error.config?.method?.toUpperCase()}] ${error.config?.url}`, {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        baseURL: error.config?.baseURL,
-      });
-      
-      // Handle authentication errors
       if (error.response.status === 401) {
-        // Token expired or invalid — clear auth data and redirect to login
         localStorage.removeItem('token');
         sessionStorage.removeItem('token');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }
-      // 403 Forbidden = authenticated but lacks permission — do NOT log out
-    } else if (error.request) {
-      // Request was made but no response received
-      console.error('API Network Error - No response received:', {
-        url: error.config?.url,
-        baseURL: error.config?.baseURL,
-        message: error.message,
-      });
-    } else {
-      // Something else happened
-      console.error('API Error:', error.message);
     }
     
     return Promise.reject(error);

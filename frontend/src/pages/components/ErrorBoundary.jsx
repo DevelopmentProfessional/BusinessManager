@@ -19,9 +19,7 @@ export default class PageErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, info) {
-    console.error('[PageErrorBoundary] Render error:', error, info.componentStack);
-  }
+  componentDidCatch() {}
 
   handleReload() {
     this.setState({ hasError: false, error: null });
