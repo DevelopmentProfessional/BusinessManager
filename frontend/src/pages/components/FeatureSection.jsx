@@ -68,77 +68,7 @@ function buildOptionLookup(features) {
   return lookup;
 }
 
-// ─── 2 FEATURE TABLE ─────────────────────────────────────────────────────────
-//   • No outer or inner borders — only a single bottom rule under the header row.
-//   • thead th have no vertical borders.
-
-function FeatureTable({ feature, affectsPrice, onOptionChange, quantityReadOnly = false }) {
-  return (
-    <table className="table table-sm table-borderless mb-0 w-100">
-      <thead style={{ borderBottom: '1px solid #dee2e6' }}>
-        <tr>
-          <th style={{ border: 'none', width: 36 }} className="text-center">✓</th>
-          <th style={{ border: 'none' }}>Option</th>
-          <th style={{ border: 'none', width: 90 }}>{quantityReadOnly ? 'Linked' : 'Qty'}</th>
-          {affectsPrice && <th style={{ border: 'none', width: 100 }}>Price ($)</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {feature.options.map(opt => (
-          <tr key={opt.option_id} className={opt.is_enabled ? '' : 'opacity-50'}>
-            <td className="text-center align-middle p-1" style={{ border: 'none' }}>
-              <input
-                type="checkbox"
-                className="form-check-input"
-                checked={opt.is_enabled}
-                onChange={e =>
-                  onOptionChange(feature.feature_id, opt.option_id, 'is_enabled', e.target.checked)
-                }
-              />
-            </td>
-            <td className="align-middle" style={{ fontSize: '0.85rem', border: 'none' }}>
-              {opt.option_name}
-            </td>
-            <td className="p-1" style={{ border: 'none' }}>
-              <input
-                type="number"
-                min={0}
-                className="form-control form-control-sm"
-                style={{ fontSize: '0.8rem' }}
-                value={opt.quantity}
-                disabled={quantityReadOnly}
-                readOnly={quantityReadOnly}
-                onChange={e =>
-                  onOptionChange(feature.feature_id, opt.option_id, 'quantity', e.target.value)
-                }
-              />
-            </td>
-            {affectsPrice && (
-              <td className="p-1" style={{ border: 'none' }}>
-                {opt.is_enabled ? (
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    className="form-control form-control-sm"
-                    style={{ fontSize: '0.8rem' }}
-                    value={opt.price ?? ''}
-                    placeholder="0.00"
-                    onChange={e =>
-                      onOptionChange(feature.feature_id, opt.option_id, 'price', e.target.value)
-                    }
-                  />
-                ) : (
-                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>—</span>
-                )}
-              </td>
-            )}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
+// ─── 2 FEATURE TABLE — removed; options rendered inline in compact cards ──────
 
 // ─── 3 FEATURE SECTION ───────────────────────────────────────────────────────
 
@@ -537,125 +467,117 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
       })()}
 
       {/* ── Per-feature accordions ── */}
-      {itemFeatures.map(f => {
-        const isOpen = openFeatures[f.feature_id] !== false;
-        const enabledOptions = f.options.filter(o => o.is_enabled).map(o => o.option_name);
-        const optionsPreview = enabledOptions.length > 0 ? enabledOptions.join(', ') : '—';
-        const featureTotal = calcFeatureTotal(f);
-        const allFeatureTotals = itemFeatures.map(calcFeatureTotal);
-        const isMismatched = itemFeatures.length > 1 && allFeatureTotals.some(t => t !== featureTotal);
-
-        return (
-          <div key={f.feature_id} className="mb-2 border rounded">
-
-            {/* ── Accordion Header: [Trash][Title][mx-auto][Options preview] ── */}
+      {/* ── Per-feature compact cards — horizontal scroll row ── */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: 2 }}>
+        {itemFeatures.map(f => {
+          const featureTotal = calcFeatureTotal(f);
+          const isMismatched = itemFeatures.length > 1 && itemFeatures.map(calcFeatureTotal).some(t => t !== featureTotal);
+          return (
             <div
-              className="d-flex align-items-center gap-2 px-2 py-1 bg-light rounded-top"
-              style={{ cursor: 'pointer', minHeight: '2.25rem' }}
-              onClick={() => toggleFeature(f.feature_id)}
+              key={f.feature_id}
+              style={{ border: '1px solid #dee2e6', borderRadius: 6, flexShrink: 0, background: '#fff', overflow: 'hidden' }}
             >
-              {/* Trash — stop click from toggling accordion */}
-              <button
-                type="button"
-                className="btn btn-link p-0 text-danger flex-shrink-0 d-flex align-items-center"
-                title="Remove feature"
-                onClick={e => { e.stopPropagation(); handleRemoveFeature(f.feature_id); }}
-              >
-                <TrashIcon style={{ width: 14, height: 14 }} />
-              </button>
-
-              {/* Title + badges */}
-              <span className="fw-semibold flex-shrink-0" style={{ fontSize: '0.85rem' }}>
-                {f.feature_name}
-                <span
-                  className="ms-1"
-                  style={{ fontSize: '0.72rem', fontWeight: 400, color: isMismatched ? '#b45309' : '#6c757d' }}
+              {/* Card header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px 3px 8px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', color: isMismatched ? '#b45309' : undefined }}>
+                  {f.feature_name}
+                </span>
+                {f.affects_price && (
+                  <span className="badge bg-primary" style={{ fontSize: '0.6rem' }}>Price</span>
+                )}
+                {dirty[f.feature_id] && (
+                  <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem' }}>•</span>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-link p-0 text-danger d-flex align-items-center"
+                  style={{ marginLeft: 'auto' }}
+                  title="Remove feature"
+                  onClick={() => handleRemoveFeature(f.feature_id)}
                 >
-                  ({featureTotal})
-                </span>
-              </span>
-              {f.affects_price && (
-                <span className="badge bg-primary flex-shrink-0" style={{ fontSize: '0.65rem' }}>
-                  Price
-                </span>
-              )}
-              {dirty[f.feature_id] && (
-                <span className="badge bg-warning text-dark flex-shrink-0" style={{ fontSize: '0.65rem' }}>
-                  Unsaved
-                </span>
-              )}
+                  <TrashIcon style={{ width: 11, height: 11 }} />
+                </button>
+              </div>
 
-              {/* Spacer */}
-              <span className="mx-auto" />
+              {/* Options list */}
+              <div style={{ padding: '4px 8px' }}>
+                {f.options.map(opt => (
+                  <div key={opt.option_id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0', opacity: opt.is_enabled ? 1 : 0.45 }}>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      style={{ flexShrink: 0, marginTop: 0 }}
+                      checked={opt.is_enabled}
+                      onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
+                    />
+                    <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
+                    {!usesCombinationTable && (
+                      <input
+                        type="number"
+                        min={0}
+                        className="form-control form-control-sm"
+                        style={{ width: 48, fontSize: '0.75rem', padding: '0 4px', marginLeft: 4 }}
+                        value={opt.quantity}
+                        onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'quantity', e.target.value)}
+                      />
+                    )}
+                    {f.affects_price && (
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="form-control form-control-sm"
+                        style={{ width: 56, fontSize: '0.75rem', padding: '0 4px' }}
+                        value={opt.price ?? ''}
+                        placeholder="$"
+                        disabled={!opt.is_enabled}
+                        onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'price', e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
 
-              {/* Enabled options preview */}
-              <span
-                className="text-muted text-truncate flex-shrink-1"
-                style={{ fontSize: '0.72rem', maxWidth: '55%', textAlign: 'right' }}
-                title={optionsPreview}
-              >
-                {optionsPreview}
-              </span>
+              {/* Divider */}
+              <div style={{ borderTop: '1px solid #dee2e6', margin: '0 8px' }} />
 
-              {/* Chevron */}
-              <ChevronDownIcon
-                className="flex-shrink-0 text-muted"
-                style={{
-                  width: 13, height: 13,
-                  transition: 'transform 0.15s',
-                  transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                }}
-              />
-            </div>
-
-            {/* ── Accordion Body ── */}
-            {isOpen && (
-              <div className="px-2 pt-2 pb-1">
-                <FeatureTable
-                  feature={f}
-                  affectsPrice={f.affects_price}
-                  quantityReadOnly={usesCombinationTable}
-                  onOptionChange={handleOptionChange}
+              {/* Add option */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px 6px' }}>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  style={{ fontSize: '0.75rem', minWidth: 80 }}
+                  placeholder="New option…"
+                  value={newOptionInputs[f.feature_id] ?? ''}
+                  onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
                 />
-
-                {/* Add option row — right-aligned */}
-                <div className="d-flex justify-content-end gap-1 mt-1">
+                {!usesCombinationTable && (
                   <input
-                    type="text"
+                    type="number"
+                    min={0}
                     className="form-control form-control-sm"
-                    style={{ fontSize: '0.78rem', maxWidth: 160 }}
-                    placeholder="New option name…"
-                    value={newOptionInputs[f.feature_id] ?? ''}
-                    onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                    style={{ width: 44, fontSize: '0.75rem', padding: '0 4px' }}
+                    placeholder="Qty"
+                    value={newOptionQtyInputs[f.feature_id] ?? ''}
+                    onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
                   />
-                  {!usesCombinationTable && (
-                    <input
-                      type="number"
-                      min={0}
-                      className="form-control form-control-sm"
-                      style={{ fontSize: '0.78rem', maxWidth: 80 }}
-                      placeholder="Qty"
-                      value={newOptionQtyInputs[f.feature_id] ?? ''}
-                      onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
-                      onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
-                    />
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    style={{ fontSize: '0.75rem' }}
-                    onClick={() => handleAddOption(f.feature_id)}
-                    disabled={!(newOptionInputs[f.feature_id] ?? '').trim()}
-                  >
-                    + Option
-                  </button>
-                </div>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  style={{ fontSize: '0.75rem', padding: '1px 8px', flexShrink: 0 }}
+                  onClick={() => handleAddOption(f.feature_id)}
+                  disabled={!(newOptionInputs[f.feature_id] ?? '').trim()}
+                >
+                  +
+                </button>
               </div>
-            )}
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
+      </div>
 
       {usesCombinationTable && (
         <div className="mt-3 border rounded p-2 bg-light-subtle">
@@ -671,8 +593,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
             </span>
           </div>
 
-          <div className="table-responsive">
-            <table className="table table-sm align-middle mb-2">
+          <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <table className="table table-sm align-middle mb-2" style={{ width: 'max-content' }}>
               <thead>
                 <tr>
                   {itemFeatures.map(feature => (
