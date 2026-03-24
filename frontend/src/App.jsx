@@ -4,6 +4,7 @@ import Layout from './pages/components/Layout';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import useStore from './services/useStore';
+import { preloadStoreData } from './services/api';
 import useDarkMode from './services/useDarkMode';
 import useViewMode from './services/useViewMode';
 import useBranding from './services/useBranding';
@@ -76,7 +77,8 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 };
 
 function App() {
-  const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady } = useStore();
+  const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady,
+          setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
   const { setTrainingMode } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
@@ -106,6 +108,8 @@ function App() {
             refetchPermissions();
           }
 
+          // Preload major tables into store so pages feel instant on first visit
+          preloadStoreData({ setClients, setServices, setEmployees, setInventory, setAppointments });
         }
 
         // Load persisted filters
@@ -120,7 +124,8 @@ function App() {
     };
 
     initializeUserData();
-  }, [setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady]);
+  }, [setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady,
+      setClients, setServices, setEmployees, setInventory, setAppointments]);
 
   // Initialize dark mode on app startup
   useEffect(() => {

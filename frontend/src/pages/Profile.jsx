@@ -212,7 +212,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign } = useViewMode();
+  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale } = useViewMode();
   const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
   const FooterAlignIcon = footerAlign === 'center' ? AlignCenterIcon : footerAlign === 'right' ? AlignRightIcon : AlignLeftIcon;
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
