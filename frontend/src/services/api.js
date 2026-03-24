@@ -32,7 +32,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 second timeout
+  timeout: 60000, // 60s — covers Render cold-start wake-up time
 });
 
 // Add authentication interceptor
@@ -55,20 +55,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Add response interceptor to handle authentication errors
+// Add response interceptor — auto-retry on timeout, handle 401
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response) {
-      if (error.response.status === 401) {
-        localStorage.removeItem('token');
-        sessionStorage.removeItem('token');
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
+  async (error) => {
+    const config = error.config;
+
+    // Retry once on timeout (ECONNABORTED) — handles Render cold-start delays
+    if (error.code === 'ECONNABORTED' && config && !config._retried) {
+      config._retried = true;
+      await new Promise((r) => setTimeout(r, 2000));
+      return api(config);
+    }
+
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -76,7 +83,6 @@ api.interceptors.response.use(
 // Caching removed — all fetches hit the server directly.
 const getCachedOrFetch = (_key, fetchFunction) => fetchFunction();
 const clearCache = () => {};
-export const preloadMajorTables = async () => {};
 if (typeof window !== 'undefined') {
   window.clearApiCache = () => {};
 }
@@ -168,8 +174,6 @@ export const inventoryAPI = {
     return api.delete(`/isud/inventory/${id}`);
   },
   
-  invalidateCache: () => clearCache('inventory'),
-
   // Image management — always fetches fresh from database; uses cache only for offline mode
   getImages: (inventoryId) => api.get(`/isud/inventory/${inventoryId}/images`),
   addImageUrl: (inventoryId, imageData) => {

@@ -873,9 +873,6 @@ export default function Sales() {
               : p
           ));
         }
-        // Always clear the inventory cache so the Inventory page loads fresh data
-        inventoryAPI.invalidateCache();
-
         // Mark linked schedule as paid
         if (linkedScheduleId && txId) {
           try {
