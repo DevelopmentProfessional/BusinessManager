@@ -17,9 +17,6 @@ export async function runAppSync() {
     } catch { /* best effort */ }
   }
 
-  // 3. Hard reload — bypasses browser cache so index.html and assets are
-  //    fetched fresh from the server, which triggers a full API re-fetch.
-  const url = new URL(window.location.href);
-  url.searchParams.set('_r', String(Date.now()));
-  window.location.replace(url.toString());
+  // 3. Reload — browser caches are now empty so assets + API calls are fresh.
+  window.location.reload();
 }
