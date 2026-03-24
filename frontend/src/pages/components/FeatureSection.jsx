@@ -45,24 +45,41 @@ function calcFeatureTotal(feature) {
     .reduce((sum, o) => sum + (parseInt(o.quantity) || 0), 0);
 }
 
-function calcTotalStock(features) {
+function calcTotalStock(features, combinations = []) {
+  if (combinations.length > 0) {
+    return combinations.reduce((sum, row) => sum + (parseInt(row.quantity, 10) || 0), 0);
+  }
   if (!features.length) return 0;
   const totals = features.map(calcFeatureTotal);
   return Math.min(...totals);
+}
+
+function buildOptionLookup(features) {
+  const lookup = {};
+  features.forEach(feature => {
+    feature.options.forEach(option => {
+      lookup[option.option_id] = {
+        featureId: feature.feature_id,
+        featureName: feature.feature_name,
+        optionName: option.option_name,
+      };
+    });
+  });
+  return lookup;
 }
 
 // ─── 2 FEATURE TABLE ─────────────────────────────────────────────────────────
 //   • No outer or inner borders — only a single bottom rule under the header row.
 //   • thead th have no vertical borders.
 
-function FeatureTable({ feature, affectsPrice, onOptionChange }) {
+function FeatureTable({ feature, affectsPrice, onOptionChange, quantityReadOnly = false }) {
   return (
     <table className="table table-sm table-borderless mb-0 w-100">
       <thead style={{ borderBottom: '1px solid #dee2e6' }}>
         <tr>
           <th style={{ border: 'none', width: 36 }} className="text-center">✓</th>
           <th style={{ border: 'none' }}>Option</th>
-          <th style={{ border: 'none', width: 90 }}>Qty</th>
+          <th style={{ border: 'none', width: 90 }}>{quantityReadOnly ? 'Linked' : 'Qty'}</th>
           {affectsPrice && <th style={{ border: 'none', width: 100 }}>Price ($)</th>}
         </tr>
       </thead>
@@ -89,6 +106,8 @@ function FeatureTable({ feature, affectsPrice, onOptionChange }) {
                 className="form-control form-control-sm"
                 style={{ fontSize: '0.8rem' }}
                 value={opt.quantity}
+                disabled={quantityReadOnly}
+                readOnly={quantityReadOnly}
                 onChange={e =>
                   onOptionChange(feature.feature_id, opt.option_id, 'quantity', e.target.value)
                 }
@@ -126,12 +145,15 @@ function FeatureTable({ feature, affectsPrice, onOptionChange }) {
 export default function FeatureSection({ inventoryId, onStockChange, onPriceRangeChange }) {
   const [globalFeatures, setGlobalFeatures]   = useState([]);
   const [itemFeatures, setItemFeatures]       = useState([]);
+  const [combinationRows, setCombinationRows] = useState([]);
   const [searchTerm, setSearchTerm]           = useState('');
   const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
   const [newFeatureName, setNewFeatureName]   = useState('');
   const [newOptionInputs, setNewOptionInputs] = useState({}); // featureId → string
   const [newOptionQtyInputs, setNewOptionQtyInputs] = useState({}); // featureId → string qty
+  const [combinationDraft, setCombinationDraft] = useState({ selections: {}, quantity: '' });
   const [dirty, setDirty]                     = useState({}); // featureId → bool
+  const [combinationDirty, setCombinationDirty] = useState(false);
   const [saving, setSaving]                   = useState(false);
   const [lastSavedAt, setLastSavedAt]         = useState(null);
   const [error, setError]                     = useState(null);
@@ -140,12 +162,14 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   // ── Load ──
   const reload = useCallback(async () => {
     try {
-      const [gRes, pRes] = await Promise.all([
+      const [gRes, pRes, cRes] = await Promise.all([
         featuresAPI.listAll(),
         inventoryFeaturesAPI.get(inventoryId),
+        inventoryFeaturesAPI.getCombinations(inventoryId),
       ]);
       setGlobalFeatures(gRes?.data ?? gRes);
       setItemFeatures(pRes?.data ?? pRes);
+      setCombinationRows(cRes?.data ?? cRes ?? []);
     } catch (e) {
       console.error('FeatureSection load error:', e);
     }
@@ -155,9 +179,9 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   // ── Notify parent ──
   useEffect(() => {
-    onStockChange?.(itemFeatures.length > 0 ? calcTotalStock(itemFeatures) : null);
+    onStockChange?.(itemFeatures.length > 0 ? calcTotalStock(itemFeatures, combinationRows) : null);
     onPriceRangeChange?.(calcPriceRange(itemFeatures));
-  }, [itemFeatures]); // eslint-disable-line
+  }, [itemFeatures, combinationRows]); // eslint-disable-line
 
   // ── Default newly-loaded features to open ──
   useEffect(() => {
@@ -246,8 +270,24 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     }
   }, [inventoryId, itemFeatures]);
 
+  const persistCombinations = useCallback(async (rows) => {
+    const payload = rows.map(row => ({
+      option_ids: row.option_ids,
+      quantity: Math.max(0, parseInt(row.quantity, 10) || 0),
+    }));
+    await inventoryFeaturesAPI.saveCombinations(inventoryId, payload);
+  }, [inventoryId]);
+
   const handleSave = async () => {
     await persistFeatures(Object.keys(dirty));
+    if (combinationDirty) {
+      try {
+        await persistCombinations(combinationRows);
+        setCombinationDirty(false);
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? 'Could not save combination stock');
+      }
+    }
   };
 
   useEffect(() => {
@@ -257,6 +297,20 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     }, 700);
     return () => clearTimeout(timer);
   }, [dirty, itemFeatures, saving, persistFeatures]);
+
+  useEffect(() => {
+    if (saving || !combinationDirty) return;
+    const timer = setTimeout(async () => {
+      try {
+        await persistCombinations(combinationRows);
+        setCombinationDirty(false);
+        setLastSavedAt(Date.now());
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? 'Could not save combination stock');
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [combinationDirty, combinationRows, persistCombinations, saving]);
 
   // ── Add existing global feature to item ──
   const handleAddFeature = async (featureId) => {
@@ -321,8 +375,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
       if (created?.id) {
         await inventoryFeaturesAPI.saveOptionData(inventoryId, featureId, [{
           option_id: created.id,
-          is_enabled: qty > 0,
-          quantity: qty,
+          is_enabled: true,
+          quantity: usesCombinationTable ? 0 : qty,
           price: null,
         }]);
       }
@@ -334,13 +388,70 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     }
   };
 
+  const optionLookup = buildOptionLookup(itemFeatures);
+  const usesCombinationTable = itemFeatures.length > 1;
+
+  const updateCombinationQuantity = (combinationKey, quantity) => {
+    setCombinationRows(prev => prev.map(row => (
+      row.combination_key === combinationKey
+        ? { ...row, quantity: Math.max(0, parseInt(quantity, 10) || 0) }
+        : row
+    )));
+    setCombinationDirty(true);
+  };
+
+  const removeCombinationRow = (combinationKey) => {
+    setCombinationRows(prev => prev.filter(row => row.combination_key !== combinationKey));
+    setCombinationDirty(true);
+  };
+
+  const handleDraftSelectionChange = (featureId, optionId) => {
+    setCombinationDraft(prev => ({
+      ...prev,
+      selections: {
+        ...prev.selections,
+        [featureId]: optionId,
+      },
+    }));
+  };
+
+  const handleAddCombination = () => {
+    const requiredFeatures = itemFeatures.filter(feature => feature.options.some(option => option.is_enabled));
+    const optionIds = requiredFeatures.map(feature => combinationDraft.selections[feature.feature_id]).filter(Boolean);
+    if (requiredFeatures.length === 0 || optionIds.length !== requiredFeatures.length) {
+      setError('Select one enabled option from each feature before adding a combination.');
+      return;
+    }
+
+    const quantity = Math.max(0, parseInt(combinationDraft.quantity, 10) || 0);
+    const combinationKey = [...optionIds].map(String).sort().join('|');
+
+    setCombinationRows(prev => {
+      const existing = prev.find(row => row.combination_key === combinationKey);
+      if (existing) {
+        return prev.map(row => row.combination_key === combinationKey ? { ...row, quantity } : row);
+      }
+      return [
+        ...prev,
+        {
+          combination_key: combinationKey,
+          option_ids: optionIds,
+          quantity,
+        },
+      ];
+    });
+    setCombinationDraft({ selections: {}, quantity: '' });
+    setCombinationDirty(true);
+    setError(null);
+  };
+
   // ── Derived ──
   const affectingFeatureId = itemFeatures.find(f => f.affects_price)?.feature_id ?? null;
   const addableFeatures = globalFeatures.filter(
     gf => !itemFeatures.find(pf => pf.feature_id === gf.id)
        && gf.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const hasDirty = Object.keys(dirty).length > 0;
+  const hasDirty = Object.keys(dirty).length > 0 || combinationDirty;
 
   const priceRange = calcPriceRange(itemFeatures);
   const priceDisplay = priceRange
@@ -399,8 +510,12 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         </div>
       )}
 
-      {/* ── Mismatch warning ── */}
-      {itemFeatures.length > 1 && (() => {
+      {/* ── Stock guidance ── */}
+      {usesCombinationTable ? (
+        <div className="alert alert-info py-1 mb-2" style={{ fontSize: '0.8rem' }}>
+          Enable options in the checkbox lists above, then assign stock in the combination table below. Option totals are linked automatically from those combination counts.
+        </div>
+      ) : itemFeatures.length > 1 && (() => {
         const totals = itemFeatures.map(calcFeatureTotal);
         const allEqual = totals.every(t => t === totals[0]);
         if (allEqual) return null;
@@ -499,6 +614,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                 <FeatureTable
                   feature={f}
                   affectsPrice={f.affects_price}
+                  quantityReadOnly={usesCombinationTable}
                   onOptionChange={handleOptionChange}
                 />
 
@@ -513,16 +629,18 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                     onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
                   />
-                  <input
-                    type="number"
-                    min={0}
-                    className="form-control form-control-sm"
-                    style={{ fontSize: '0.78rem', maxWidth: 80 }}
-                    placeholder="Qty"
-                    value={newOptionQtyInputs[f.feature_id] ?? ''}
-                    onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
-                    onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
-                  />
+                  {!usesCombinationTable && (
+                    <input
+                      type="number"
+                      min={0}
+                      className="form-control form-control-sm"
+                      style={{ fontSize: '0.78rem', maxWidth: 80 }}
+                      placeholder="Qty"
+                      value={newOptionQtyInputs[f.feature_id] ?? ''}
+                      onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                      onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
+                    />
+                  )}
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm"
@@ -538,6 +656,108 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           </div>
         );
       })}
+
+      {usesCombinationTable && (
+        <div className="mt-3 border rounded p-2 bg-light-subtle">
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <div>
+              <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>Combination Stock</div>
+              <div className="text-muted" style={{ fontSize: '0.74rem' }}>
+                Add one row for each sellable feature combination and set the available count.
+              </div>
+            </div>
+            <span className="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+              Total {calcTotalStock(itemFeatures, combinationRows)}
+            </span>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table table-sm align-middle mb-2">
+              <thead>
+                <tr>
+                  {itemFeatures.map(feature => (
+                    <th key={feature.feature_id}>{feature.feature_name}</th>
+                  ))}
+                  <th style={{ width: 110 }}>Count</th>
+                  <th style={{ width: 80 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {combinationRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={itemFeatures.length + 2} className="text-muted" style={{ fontSize: '0.78rem' }}>
+                      No combinations saved yet.
+                    </td>
+                  </tr>
+                ) : combinationRows.map(row => (
+                  <tr key={row.combination_key}>
+                    {itemFeatures.map(feature => {
+                      const optionId = row.option_ids?.find(id => optionLookup[id]?.featureId === feature.feature_id);
+                      return <td key={`${row.combination_key}-${feature.feature_id}`}>{optionLookup[optionId]?.optionName ?? '—'}</td>;
+                    })}
+                    <td>
+                      <input
+                        type="number"
+                        min={0}
+                        className="form-control form-control-sm"
+                        value={row.quantity}
+                        onChange={e => updateCombinationQuantity(row.combination_key, e.target.value)}
+                      />
+                    </td>
+                    <td className="text-end">
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm text-danger p-0"
+                        onClick={() => removeCombinationRow(row.combination_key)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  {itemFeatures.map(feature => {
+                    const enabledOptions = feature.options.filter(option => option.is_enabled);
+                    return (
+                      <td key={`draft-${feature.feature_id}`}>
+                        <select
+                          className="form-select form-select-sm"
+                          value={combinationDraft.selections[feature.feature_id] ?? ''}
+                          onChange={e => handleDraftSelectionChange(feature.feature_id, e.target.value)}
+                        >
+                          <option value="">Select…</option>
+                          {enabledOptions.map(option => (
+                            <option key={option.option_id} value={option.option_id}>{option.option_name}</option>
+                          ))}
+                        </select>
+                      </td>
+                    );
+                  })}
+                  <td>
+                    <input
+                      type="number"
+                      min={0}
+                      className="form-control form-control-sm"
+                      placeholder="0"
+                      value={combinationDraft.quantity}
+                      onChange={e => setCombinationDraft(prev => ({ ...prev, quantity: e.target.value }))}
+                    />
+                  </td>
+                  <td className="text-end">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={handleAddCombination}
+                    >
+                      Add Row
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* ── Add feature controls ── */}
       <div className="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">

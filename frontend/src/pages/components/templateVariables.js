@@ -40,6 +40,7 @@ export const TEMPLATE_VARIABLES = {
     { key: 'invoice.tax', label: 'Tax', description: 'Tax amount' },
     { key: 'invoice.items', label: 'Line Items (list)', description: 'Purchased items as a bullet list' },
     { key: 'invoice.items.table', label: 'Line Items (table)', description: 'Purchased items as a formatted table', isLayout: true },
+    { key: 'invoice.items.feature_table', label: 'Line Items (feature table)', description: 'Purchased items with descriptive feature columns', isLayout: true },
     { key: 'invoice.payment_method', label: 'Payment Method', description: 'Cash or card' },
   ],
   appointment: [
@@ -88,6 +89,14 @@ export const LAYOUT_TEMPLATES = [
     pages: ['sales'],
     scopeHint: 'invoice',
     html: '{{invoice.items.table}}',
+  },
+  {
+    id: 'invoice_items_feature_table',
+    label: 'Invoice Feature Table',
+    description: 'A formatted table of purchased items with descriptive feature columns',
+    pages: ['sales'],
+    scopeHint: 'invoice',
+    html: '{{invoice.items.feature_table}}',
   },
   {
     id: 'invoice_summary',
@@ -229,6 +238,62 @@ function formatDuration(minutes) {
 /** Build a styled HTML table for invoice line items */
 function buildItemsTableHtml(items) {
   if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
+  function buildItemsFeatureTableHtml(items) {
+    if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
+
+    const featureNames = [];
+    items.forEach((item) => {
+      const opts = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
+      opts.forEach((opt) => {
+        const featureName = opt.featureName ?? opt.feature_name;
+        if (featureName && !featureNames.includes(featureName)) {
+          featureNames.push(featureName);
+        }
+      });
+    });
+
+    if (!featureNames.length) {
+      return buildItemsTableHtml(items);
+    }
+
+    const headerCells = [
+      '<th style="padding:6px 8px;text-align:left;font-weight:600;">Item</th>',
+      ...featureNames.map(name => `<th style="padding:6px 8px;text-align:left;font-weight:600;">${name}</th>`),
+      '<th style="padding:6px 8px;text-align:center;font-weight:600;">Qty</th>',
+      '<th style="padding:6px 8px;text-align:right;font-weight:600;">Unit Price</th>',
+      '<th style="padding:6px 8px;text-align:right;font-weight:600;">Total</th>',
+    ].join('');
+
+    const rows = items.map((item) => {
+      const optionMap = Object.create(null);
+      const opts = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
+      opts.forEach((opt) => {
+        const featureName = opt.featureName ?? opt.feature_name;
+        const optionName = opt.optionName ?? opt.option_name;
+        if (featureName) optionMap[featureName] = optionName || '';
+      });
+      const qty = item.quantity ?? '';
+      const unit = item.unit_price != null ? `$${Number(item.unit_price).toFixed(2)}` : '';
+      const total = item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : '';
+      const featureCells = featureNames.map(name => `<td style="padding:6px 8px;">${optionMap[name] || '—'}</td>`).join('');
+      return `<tr style="border-bottom:1px solid #e5e7eb;">
+    <td style="padding:6px 8px;">${item.item_name || ''}</td>
+    ${featureCells}
+    <td style="padding:6px 8px;text-align:center;">${qty}</td>
+    <td style="padding:6px 8px;text-align:right;white-space:nowrap;">${unit}</td>
+    <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:500;">${total}</td>
+  </tr>`;
+    }).join('');
+
+    return `<table style="width:100%;border-collapse:collapse;table-layout:auto;font-family:inherit;font-size:0.9rem;">
+    <thead>
+      <tr style="border-bottom:2px solid #d1d5db;background:#f9fafb;">
+        ${headerCells}
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  }
   const rows = items.map((i) => {
     const qty = i.quantity ?? '';
     const unit = i.unit_price != null ? `$${Number(i.unit_price).toFixed(2)}` : '';
@@ -294,6 +359,7 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
   const now = new Date();
   const txDate = transaction?.created_at ? formatDateISO(transaction.created_at) : formatDateISO(now);
   const itemsTableHtml = buildItemsTableHtml(items);
+  const itemsFeatureTableHtml = buildItemsFeatureTableHtml(items);
   const itemsHtml = itemsTableHtml;
   return {
     date: formatDateISO(now),
@@ -316,6 +382,7 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
     'invoice.tax': transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '',
     'invoice.items': itemsHtml,
     'invoice.items.table': itemsTableHtml,
+    'invoice.items.feature_table': itemsFeatureTableHtml,
     'invoice.payment_method': transaction?.payment_method || '',
   };
 }

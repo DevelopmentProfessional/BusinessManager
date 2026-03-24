@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.16.1"
+CURRENT_SCHEMA_VERSION = "2026.03.24.2"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -633,6 +633,91 @@ def _ensure_sale_transaction_item_mix_selections_if_needed():
         print(f"  Warning: Could not add mix_selections column: {e}")
 
 
+def _ensure_sale_transaction_item_options_json_if_needed():
+    """Add options_json TEXT column to sale_transaction_item for descriptive feature picks."""
+    if DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='sale_transaction_item' AND column_name='options_json'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE sale_transaction_item ADD COLUMN options_json TEXT"))
+                print("  + Added sale_transaction_item.options_json")
+    except Exception as e:
+        print(f"  Warning: Could not add options_json column: {e}")
+
+
+def _ensure_inventory_feature_combination_table_if_needed():
+    """Create inventory_feature_combination for full variant stock tracking."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text("SELECT to_regclass('inventory_feature_combination')")).scalar()
+            if not exists:
+                conn.execute(text("""
+                    CREATE TABLE inventory_feature_combination (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP,
+                        inventory_id UUID NOT NULL REFERENCES inventory(id),
+                        combination_key VARCHAR NOT NULL,
+                        option_ids_json TEXT NOT NULL,
+                        quantity INTEGER NOT NULL DEFAULT 0,
+                        company_id VARCHAR
+                    )
+                """))
+                conn.execute(text("CREATE INDEX ix_inventory_feature_combination_inventory_id ON inventory_feature_combination (inventory_id)"))
+                conn.execute(text("CREATE INDEX ix_inventory_feature_combination_combination_key ON inventory_feature_combination (combination_key)"))
+                print("  + Created inventory_feature_combination")
+    except Exception as e:
+        print(f"  Warning: Could not ensure inventory_feature_combination: {e}")
+
+
+def _ensure_client_order_workflow_columns_if_needed():
+    """Add workflow-tracking columns to client_order and options_json to client_order_item."""
+    if DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with engine.begin() as conn:
+            for col, definition in [
+                ("employee_id", "UUID"),
+                ("paid_at", "TIMESTAMP"),
+                ("fulfilled_at", "TIMESTAMP"),
+                ("inventory_deducted_at", "TIMESTAMP"),
+            ]:
+                exists = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='client_order' AND column_name=:c"
+                ), {"c": col}).fetchone()
+                if not exists:
+                    conn.execute(text(f"ALTER TABLE client_order ADD COLUMN {col} {definition}"))
+                    print(f"  + Added client_order.{col}")
+
+            status_exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='client_order' AND column_name='status'"
+            )).fetchone()
+            if status_exists:
+                conn.execute(text(
+                    "UPDATE client_order SET status = 'payment_pending' WHERE status = 'pending'"
+                ))
+                conn.execute(text(
+                    "UPDATE client_order SET status = 'ordered', paid_at = COALESCE(paid_at, updated_at, created_at) WHERE status = 'paid'"
+                ))
+
+            options_exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='client_order_item' AND column_name='options_json'"
+            )).fetchone()
+            if not options_exists:
+                conn.execute(text("ALTER TABLE client_order_item ADD COLUMN options_json TEXT"))
+                print("  + Added client_order_item.options_json")
+    except Exception as e:
+        print(f"  Warning: Could not ensure client order workflow columns: {e}")
+
+
 # ─── MIGRATION: DISCOUNT RULE TABLE ─────────────────────────────────────────────
 def _ensure_discount_rule_table_if_needed():
     """Create the discount_rule table for scheduled inventory discounts."""
@@ -829,6 +914,9 @@ def create_db_and_tables():
     _ensure_mix_tables_if_needed()
     _ensure_inventory_price_columns_if_needed()
     _ensure_sale_transaction_item_mix_selections_if_needed()
+    _ensure_sale_transaction_item_options_json_if_needed()
+    _ensure_inventory_feature_combination_table_if_needed()
+    _ensure_client_order_workflow_columns_if_needed()
     _ensure_discount_rule_table_if_needed()
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()

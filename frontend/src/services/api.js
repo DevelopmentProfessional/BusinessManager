@@ -222,9 +222,11 @@ export const featuresAPI = {
 
 export const inventoryFeaturesAPI = {
   get:             (invId)           => api.get(`/inventory/${invId}/features`),
+  getCombinations: (invId)           => api.get(`/inventory/${invId}/feature-combinations`),
   addFeature:      (invId, fid)      => api.post(`/inventory/${invId}/features/${fid}`),
   removeFeature:   (invId, fid)      => api.delete(`/inventory/${invId}/features/${fid}`),
   setAffectsPrice: (invId, data)     => api.patch(`/inventory/${invId}/features/affects-price`, data),
+  saveCombinations:(invId, rows)     => api.put(`/inventory/${invId}/feature-combinations`, rows),
   saveOptionData:  (invId, fid, rows) =>
     api.put(`/inventory/${invId}/features/${fid}/options`, rows),
 };
@@ -601,6 +603,14 @@ export const clientCartAPI = {
   removeItem: (clientId, cartKey) =>
     api.delete(`/client-cart/${clientId}/item/${encodeURIComponent(cartKey)}`),
   clearCart: (clientId) => api.delete(`/client-cart/${clientId}`),
+};
+
+export const clientOrdersAPI = {
+  getAll: (params = {}) => api.get('/portal-orders', { params }),
+  getItems: (orderId) => api.get(`/portal-orders/${orderId}/items`),
+  createFromCart: (clientId, data = {}) => api.post(`/portal-orders/from-client-cart/${clientId}`, data),
+  pay: (orderId, data = {}) => api.post(`/portal-orders/${orderId}/pay`, data),
+  updateStatus: (orderId, status) => api.patch(`/portal-orders/${orderId}/status`, { status }),
 };
 
 // Product production relations (resources / assets / locations linked to a manufactured product)

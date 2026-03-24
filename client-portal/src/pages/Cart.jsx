@@ -1,52 +1,13 @@
 /**
- * CART PAGE — Persistent cart with Stripe checkout.
+ * CART PAGE — Persistent cart with order review + manual pay flow.
  * Supports both physical products and bookable services.
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/outline'
-import { loadStripe } from '@stripe/stripe-js'
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import Layout from './components/Layout'
 import { ordersAPI, bookingsAPI } from '../services/api'
 import useStore from '../store/useStore'
-
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null
-
-// ── Stripe payment form ───────────────────────────────────────────────────────
-function StripeCheckoutForm({ clientSecret, orderId, onSuccess, onError }) {
-  const stripe   = useStripe()
-  const elements = useElements()
-  const [submitting, setSubmitting] = useState(false)
-
-  async function handlePay(e) {
-    e.preventDefault()
-    if (!stripe || !elements) return
-    setSubmitting(true)
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: `${window.location.origin}/orders` },
-      redirect: 'if_required',
-    })
-    if (error) {
-      onError(error.message)
-      setSubmitting(false)
-    } else {
-      onSuccess(orderId)
-    }
-  }
-
-  return (
-    <form onSubmit={handlePay}>
-      <PaymentElement className="mb-3" />
-      <button type="submit" disabled={submitting || !stripe} className="btn btn-primary w-100">
-        {submitting ? 'Processing…' : 'Pay Now'}
-      </button>
-    </form>
-  )
-}
 
 // ── Main Cart page ────────────────────────────────────────────────────────────
 export default function Cart() {
@@ -62,8 +23,9 @@ export default function Cart() {
   const isOnline   = useStore(s => s.isOnline)
 
   const [checking, setChecking]         = useState(false)
-  const [clientSecret, setClientSecret] = useState(null)
   const [currentOrderId, setCurrentOrderId] = useState(null)
+  const [currentOrderTotal, setCurrentOrderTotal] = useState(null)
+  const [paying, setPaying] = useState(false)
   const [error, setError]               = useState(null)
 
   async function handleCheckout() {
@@ -100,15 +62,10 @@ export default function Cart() {
       }
 
       const result = await ordersAPI.checkout({ items, payment_method: 'card' })
-
-      if (result.client_secret) {
-        setClientSecret(result.client_secret)
-        setCurrentOrderId(result.order_id)
-      } else {
-        clearCart()
-        addToast('Order placed successfully!', 'success')
-        navigate('/orders')
-      }
+      setCurrentOrderId(result.order_id)
+      setCurrentOrderTotal(result.total)
+      clearCart()
+      addToast('Order created. Review and pay when ready.', 'success')
     } catch (err) {
       setError(err.response?.data?.detail || 'Checkout failed. Please try again.')
     } finally {
@@ -116,13 +73,22 @@ export default function Cart() {
     }
   }
 
-  function handlePaySuccess(orderId) {
-    clearCart()
-    addToast('Payment successful! Your order is confirmed.', 'success')
-    navigate('/orders')
+  async function handlePayNow() {
+    if (!currentOrderId) return
+    setPaying(true)
+    setError(null)
+    try {
+      await ordersAPI.pay(currentOrderId)
+      addToast('Payment successful. Your order is now marked as ordered.', 'success')
+      navigate('/orders')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Payment failed. Please try again.')
+    } finally {
+      setPaying(false)
+    }
   }
 
-  if (cart.length === 0 && !clientSecret) {
+  if (cart.length === 0 && !currentOrderId) {
     return (
       <Layout>
         <div className="d-flex flex-column align-items-center justify-content-center text-muted" style={{ height: 380 }}>
@@ -221,7 +187,7 @@ export default function Cart() {
                   <div className="alert alert-danger py-2 px-3 small mt-3 mb-0">{error}</div>
                 )}
 
-                {!clientSecret && (
+                {!currentOrderId && (
                   <button
                     className="btn btn-primary w-100 mt-3"
                     onClick={handleCheckout}
@@ -234,26 +200,33 @@ export default function Cart() {
               </div>
             </div>
 
-            {/* Stripe Payment Element */}
-            {clientSecret && stripePromise && (
+            {currentOrderId && (
               <div className="card">
                 <div className="card-body">
-                  <h6 className="fw-semibold mb-3">Payment</h6>
-                  <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <StripeCheckoutForm
-                      clientSecret={clientSecret}
-                      orderId={currentOrderId}
-                      onSuccess={handlePaySuccess}
-                      onError={(msg) => { setError(msg); setClientSecret(null) }}
-                    />
-                  </Elements>
+                  <h6 className="fw-semibold mb-3">Order Ready</h6>
+                  <p className="small text-muted mb-2">
+                    Your order has been submitted for approval. Complete payment to move it into the ordered queue.
+                  </p>
+                  <div className="small text-muted mb-3">
+                    <div>Order ID: <span className="fw-medium text-dark">{currentOrderId}</span></div>
+                    <div>Total: <span className="fw-medium text-dark">${Number(currentOrderTotal || 0).toFixed(2)}</span></div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary w-100"
+                    onClick={handlePayNow}
+                    disabled={paying || !isOnline}
+                  >
+                    {paying ? 'Recording payment…' : 'Pay Now'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary w-100 mt-2"
+                    onClick={() => navigate('/orders')}
+                  >
+                    View Order History
+                  </button>
                 </div>
-              </div>
-            )}
-
-            {clientSecret && !stripePromise && (
-              <div className="alert alert-warning small">
-                Stripe is not configured. Set VITE_STRIPE_PUBLISHABLE_KEY to enable payments.
               </div>
             )}
           </div>
