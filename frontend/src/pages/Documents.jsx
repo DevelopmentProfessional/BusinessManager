@@ -66,11 +66,11 @@ import Modal from './components/Modal';
 import Table_Mobile from './components/Table_Mobile';
 import Button_Add_Mobile from './components/Button_Add_Mobile';
 import Gate_Permission from './components/Gate_Permission';
-import Modal_Viewer_Document from './components/Modal_Viewer_Document';
-import Modal_Edit_Document from './components/Modal_Edit_Document';
-import Modal_Template_Editor from './components/Modal_Template_Editor';
-import PageTableFooter from './components/PageTableFooter';
-import PageTableHeader from './components/PageTableHeader';
+import Modal_Viewer_Document from './components/Modal_Document_View';
+import Modal_Edit_Document from './components/Modal_Document_Edit';
+import Modal_Template_Editor from './components/Modal_Template_Edit';
+import PageTableFooter from './components/Page_Table_Footer';
+import PageTableHeader from './components/Page_Table_Header';
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {

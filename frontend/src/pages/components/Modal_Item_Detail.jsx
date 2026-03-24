@@ -42,11 +42,11 @@ import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mix
 import { showConfirm } from '../../services/showConfirm';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
-import { getImageSrc } from './imageUtils';
+import { getImageSrc } from './Utils_Image';
 import Scanner_Barcode from './Scanner_Barcode';
 import Widget_Camera from './Widget_Camera';
-import FeatureSection from './FeatureSection';
-import AssetUnitsPanel from './AssetUnitsPanel';
+import FeatureSection from './Panel_Features';
+import AssetUnitsPanel from './Panel_Asset_Units';
 
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode

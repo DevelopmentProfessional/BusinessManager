@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { templatesAPI, clientsAPI, clientCartAPI } from '../../services/api';
-import Modal_Template_Editor from './Modal_Template_Editor';
+import Modal_Template_Editor from './Modal_Template_Edit';
 import {
   renderTemplate,
   buildClientVariables,
   buildEmployeeVariables,
   buildSalesVariables,
   buildScheduleVariables,
-} from './templateVariables';
+} from './Utils_Template_Variables';
 
 const TYPE_BADGE_COLOR = {
   email: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',

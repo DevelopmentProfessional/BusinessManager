@@ -44,13 +44,13 @@ import Button_Toolbar from './components/Button_Toolbar';
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI } from '../services/api';
 import Gate_Permission from './components/Gate_Permission';
 import Modal from './components/Modal';
-import Modal_Detail_Item from './components/Modal_Detail_Item';
-import Modal_Checkout_Sales from './components/Modal_Checkout_Sales';
-import Modal_Cart_Sales from './components/Modal_Cart_Sales';
-import Modal_History_Sales from './components/Modal_History_Sales';
-import Modal_Feature_Select_Sales from './components/Modal_Feature_Select_Sales';
+import Modal_Detail_Item from './components/Modal_Item_Detail';
+import Modal_Checkout_Sales from './components/Modal_Sales_Checkout';
+import Modal_Cart_Sales from './components/Modal_Sales_Cart';
+import Modal_History_Sales from './components/Modal_Sales_History';
+import Modal_Feature_Select_Sales from './components/Modal_Sales_FeatureSelect';
 import Modal_Template_Use from './components/Modal_Template_Use';
-import { getDisplayImageUrl } from './components/imageUtils';
+import { getDisplayImageUrl } from './components/Utils_Image';
 import useViewMode from '../services/useViewMode';
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────

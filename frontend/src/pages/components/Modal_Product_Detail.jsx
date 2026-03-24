@@ -4,7 +4,7 @@ import {
   SparklesIcon, CubeIcon, PlusIcon, MinusIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
-import { getDisplayImageUrl } from './imageUtils';
+import { getDisplayImageUrl } from './Utils_Image';
 import Modal from './Modal';
 
 /**

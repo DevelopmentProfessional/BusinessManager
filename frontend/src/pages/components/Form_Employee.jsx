@@ -42,7 +42,7 @@ import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI } from '
 import api from '../../services/api';
 import { showConfirm } from '../../services/showConfirm';
 import Widget_Signature from './Widget_Signature';
-import Modal_Pay_Employee from './Modal_Pay_Employee';
+import Modal_Pay_Employee from './Modal_Employee_Pay';
 import useStore from '../../services/useStore';
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────

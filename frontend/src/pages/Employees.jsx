@@ -60,19 +60,19 @@ import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
 import Gate_Permission from './components/Gate_Permission';
-import PageTableFooter from './components/PageTableFooter';
-import PageTableHeader from './components/PageTableHeader';
-import PageTableRow from './components/PageTableRow';
+import PageTableFooter from './components/Page_Table_Footer';
+import PageTableHeader from './components/Page_Table_Header';
+import PageTableRow from './components/Page_Table_Row';
 import useDarkMode from '../services/useDarkMode';
-import Modal_Create_User from './components/Modal_Create_User';
-import Modal_Permissions_User from './components/Modal_Permissions_User';
-import Modal_Manage_Roles from './components/Modal_Manage_Roles';
-import Modal_Requests_Employee from './components/Modal_Requests_Employee';
+import Modal_Create_User from './components/Modal_User_Create';
+import Modal_Permissions_User from './components/Modal_User_Permissions';
+import Modal_Manage_Roles from './components/Modal_Roles_Manage';
+import Modal_Requests_Employee from './components/Modal_Employee_Requests';
 import Modal_Insurance_Plans from './components/Modal_Insurance_Plans';
 import Chat_Employee from './components/Chat_Employee';
 import Modal_Wages from './components/Modal_Wages';
-import Modal_Pay_Employee from './components/Modal_Pay_Employee';
-import Modal_Bulk_Import_Sheet from './components/Modal_Bulk_Import_Sheet';
+import Modal_Pay_Employee from './components/Modal_Employee_Pay';
+import Modal_Bulk_Import_Sheet from './components/Modal_Import_Sheet';
 
 // ─── INLINE SUB-COMPONENTS (P4-B) ────────────────────────────────────────────
 

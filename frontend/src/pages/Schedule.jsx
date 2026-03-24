@@ -62,7 +62,7 @@ import Form_Schedule from './components/Form_Schedule';
 import Gate_Permission from './components/Gate_Permission';
 import Widget_Attendance from './components/Widget_Attendance';
 import useDarkMode from '../services/useDarkMode';
-import Modal_Filter_Schedule from './components/Modal_Filter_Schedule';
+import Modal_Filter_Schedule from './components/Modal_Schedule_Filter';
 import Modal_Template_Use from './components/Modal_Template_Use';
 
 // SVG icon wrappers for schedule view buttons
