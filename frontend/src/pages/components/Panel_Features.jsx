@@ -503,16 +503,15 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                               onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
                             />
                             <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
-                            {!usesCombinationTable && (
-                              <input
-                                type="number"
-                                min={0}
-                                className="form-control form-control-sm"
-                                style={{ width: 48, fontSize: '0.75rem', padding: '0 4px', marginLeft: 4 }}
-                                value={opt.quantity}
-                                onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'quantity', e.target.value)}
-                              />
-                            )}
+                            <input
+                              type="number"
+                              min={0}
+                              className="form-control form-control-sm"
+                              style={{ width: 48, fontSize: '0.75rem', padding: '0 4px', marginLeft: 4 }}
+                              value={opt.quantity}
+                              onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'quantity', e.target.value)}
+                            />
+                            
                             {f.affects_price && (
                               <input
                                 type="number"
@@ -575,7 +574,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         </div>
       )}
 
-      {usesCombinationTable && (
+      {itemFeatures.length > 0 && (
         <div className="mt-2 border rounded overflow-hidden">
           <button
             type="button"
@@ -583,12 +582,9 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
             style={{ background: '#f8f9fa' }}
             onClick={() => setIsCombinationsOpen(prev => !prev)}
           >
-            <div className="text-start d-flex align-items-center gap-2">
-              <span className="fw-semibold" style={{ fontSize: '0.86rem' }}>Feature Combinations</span>
-              <span className="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
-                {combinationRows.length} rows
-              </span>
-            </div>
+            <span className="fw-semibold" style={{ fontSize: '0.86rem' }}>
+              {itemFeatures.length === 1 ? `${itemFeatures[0].feature_name} Stock` : 'Feature Combinations'}
+            </span>
             <ChevronDownIcon
               style={{ width: 16, height: 16, transform: isCombinationsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}
             />
@@ -596,16 +592,10 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
           {isCombinationsOpen && (
             <div className="p-2 bg-light-subtle">
-              <div className="d-flex align-items-center justify-content-between mb-2">
-                <div>
-                  <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>Combination Stock</div>
-                  <div className="text-muted" style={{ fontSize: '0.74rem' }}>
-                    Add one row for each sellable feature combination and set the available count.
-                  </div>
-                </div>
-                <span className="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
-                  Total {calcTotalStock(itemFeatures, combinationRows)}
-                </span>
+              <div className="text-muted mb-2" style={{ fontSize: '0.74rem' }}>
+                {itemFeatures.length === 1
+                  ? 'Set available stock for each enabled option.'
+                  : 'Add one row for each sellable feature combination and set the available count.'}
               </div>
 
               <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -613,7 +603,10 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                   <thead>
                     <tr>
                       {itemFeatures.map(feature => (
-                        <th key={feature.feature_id}>{feature.feature_name}</th>
+                        <React.Fragment key={feature.feature_id}>
+                          <th>{feature.feature_name}</th>
+                          {feature.affects_price && <th style={{ width: 70, textAlign: 'center' }}>Price</th>}
+                        </React.Fragment>
                       ))}
                       <th style={{ width: 110 }}>Count</th>
                       <th style={{ width: 80 }} />
@@ -622,52 +615,88 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                   <tbody>
                     {combinationRows.length === 0 ? (
                       <tr>
-                        <td colSpan={itemFeatures.length + 2} className="text-muted" style={{ fontSize: '0.78rem' }}>
+                        <td colSpan={itemFeatures.reduce((acc, f) => acc + (f.affects_price ? 2 : 1), 0) + 2} className="text-muted" style={{ fontSize: '0.78rem' }}>
                           No combinations saved yet.
                         </td>
                       </tr>
-                    ) : combinationRows.map(row => (
-                      <tr key={row.combination_key}>
-                        {itemFeatures.map(feature => {
-                          const optionId = row.option_ids?.find(id => optionLookup[id]?.featureId === feature.feature_id);
-                          return <td key={`${row.combination_key}-${feature.feature_id}`}>{optionLookup[optionId]?.optionName ?? '—'}</td>;
-                        })}
-                        <td>
-                          <input
-                            type="number"
-                            min={0}
-                            className="form-control form-control-sm"
-                            value={row.quantity}
-                            onChange={e => updateCombinationQuantity(row.combination_key, e.target.value)}
-                          />
-                        </td>
-                        <td className="text-end">
-                          <button
-                            type="button"
-                            className="btn btn-link btn-sm text-danger p-0"
-                            onClick={() => removeCombinationRow(row.combination_key)}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    ) : (
+                      <>
+                        {combinationRows.map(row => (
+                          <tr key={row.combination_key}>
+                            {itemFeatures.map(feature => {
+                              const optionId = row.option_ids?.find(id => optionLookup[id]?.featureId === feature.feature_id);
+                              const option = feature.options.find(o => o.option_id === optionId);
+                              return (
+                                <React.Fragment key={`${row.combination_key}-${feature.feature_id}`}>
+                                  <td>{optionLookup[optionId]?.optionName ?? '—'}</td>
+                                  {feature.affects_price && (
+                                    <td style={{ textAlign: 'center', fontSize: '0.78rem' }}>
+                                      {option?.price != null && option.price !== '' ? `$${parseFloat(option.price).toFixed(2)}` : '—'}
+                                    </td>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                            <td>
+                              <input
+                                type="number"
+                                min={0}
+                                className="form-control form-control-sm"
+                                value={row.quantity}
+                                onChange={e => updateCombinationQuantity(row.combination_key, e.target.value)}
+                              />
+                            </td>
+                            <td className="text-end">
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm text-danger p-0"
+                                onClick={() => removeCombinationRow(row.combination_key)}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {/* Total row */}
+                        <tr style={{ background: '#f8f9fa', fontWeight: 600 }}>
+                          <td colSpan={itemFeatures.reduce((acc, f) => acc + (f.affects_price ? 2 : 1), 0)} style={{ textAlign: 'right', paddingRight: 12 }}>
+                            Total:
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {calcTotalStock(itemFeatures, combinationRows)}
+                          </td>
+                          <td />
+                        </tr>
+                      </>
+                    )}
+                    {/* Add new row */}
                     <tr>
                       {itemFeatures.map(feature => {
                         const enabledOptions = feature.options.filter(option => option.is_enabled);
                         return (
-                          <td key={`draft-${feature.feature_id}`}>
-                            <select
-                              className="form-select form-select-sm"
-                              value={combinationDraft.selections[feature.feature_id] ?? ''}
-                              onChange={e => handleDraftSelectionChange(feature.feature_id, e.target.value)}
-                            >
-                              <option value="">Select…</option>
-                              {enabledOptions.map(option => (
-                                <option key={option.option_id} value={option.option_id}>{option.option_name}</option>
-                              ))}
-                            </select>
-                          </td>
+                          <React.Fragment key={`draft-${feature.feature_id}`}>
+                            <td>
+                              <select
+                                className="form-select form-select-sm"
+                                value={combinationDraft.selections[feature.feature_id] ?? ''}
+                                onChange={e => handleDraftSelectionChange(feature.feature_id, e.target.value)}
+                              >
+                                <option value="">Select…</option>
+                                {enabledOptions.map(option => (
+                                  <option key={option.option_id} value={option.option_id}>{option.option_name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            {feature.affects_price && (
+                              <td style={{ textAlign: 'center' }}>
+                                {(() => {
+                                  const selectedOptionId = combinationDraft.selections[feature.feature_id];
+                                  const option = feature.options.find(o => o.option_id === selectedOptionId);
+                                  return option?.price != null && option.price !== '' ? `$${parseFloat(option.price).toFixed(2)}` : '—';
+                                })()}
+                              </td>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                       <td>
