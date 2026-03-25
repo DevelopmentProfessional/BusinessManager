@@ -228,6 +228,157 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     }, 700);
     return () => clearTimeout(timer);
   }, [combinationDirty, combinationRows, persistCombinations, saving]);
+
+  // ── Add existing global feature to item ──
+  const handleAddFeature = async (featureId) => {
+    setError(null);
+    try {
+      await inventoryFeaturesAPI.addFeature(inventoryId, featureId);
+      setIsAddExistingOpen(false);
+      await reload();
+    } catch (e) {
+      setError(e?.response?.data?.detail ?? 'Could not add feature');
+    }
+  };
+
+  const handleDeleteGlobalFeature = async (featureId, featureName) => {
+    if (!await showConfirm(`Delete feature '${featureName}' from database?`)) return;
+    setError(null);
+    try {
+      await featuresAPI.delete(featureId);
+      await reload();
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      setError((detail && typeof detail === 'object' && detail.message) ? detail.message : (detail ?? 'Could not delete feature'));
+    }
+  };
+
+  // ── Create new global feature then add to item ──
+  const handleCreateFeature = async () => {
+    const name = newFeatureName.trim();
+    if (!name) return;
+    setError(null);
+    try {
+      const res = await featuresAPI.create({ name });
+      const created = res?.data ?? res;
+      setNewFeatureName('');
+      await inventoryFeaturesAPI.addFeature(inventoryId, created.id);
+      await reload();
+    } catch (e) {
+      setError(e?.response?.data?.detail ?? 'Could not create feature');
+    }
+  };
+
+  // ── Remove feature from item ──
+  const handleRemoveFeature = async (featureId) => {
+    setError(null);
+    try {
+      await inventoryFeaturesAPI.removeFeature(inventoryId, featureId);
+      await reload();
+    } catch (e) {
+      setError(e?.response?.data?.detail ?? 'Cannot remove feature');
+    }
+  };
+
+  // ── Add new option to a global feature ──
+  const handleAddOption = async (featureId) => {
+    const name = (newOptionInputs[featureId] ?? '').trim();
+    const qty = Math.max(0, parseInt(newOptionQtyInputs[featureId], 10) || 0);
+    if (!name) return;
+    setError(null);
+    try {
+      const createdRes = await featuresAPI.addOption(featureId, { name });
+      const created = createdRes?.data ?? createdRes;
+      if (created?.id) {
+        await inventoryFeaturesAPI.saveOptionData(inventoryId, featureId, [{
+          option_id: created.id,
+          is_enabled: true,
+          quantity: usesCombinationTable ? 0 : qty,
+          price: null,
+        }]);
+      }
+      setNewOptionInputs(prev => ({ ...prev, [featureId]: '' }));
+      setNewOptionQtyInputs(prev => ({ ...prev, [featureId]: '' }));
+      await reload();
+    } catch (e) {
+      setError(e?.response?.data?.detail ?? 'Could not add option');
+    }
+  };
+
+  const optionLookup = buildOptionLookup(itemFeatures);
+  const usesCombinationTable = itemFeatures.length > 1;
+
+  const updateCombinationQuantity = (combinationKey, quantity) => {
+    setCombinationRows(prev => prev.map(row => (
+      row.combination_key === combinationKey
+        ? { ...row, quantity: Math.max(0, parseInt(quantity, 10) || 0) }
+        : row
+    )));
+    setCombinationDirty(true);
+  };
+
+  const removeCombinationRow = (combinationKey) => {
+    setCombinationRows(prev => prev.filter(row => row.combination_key !== combinationKey));
+    setCombinationDirty(true);
+  };
+
+  const handleDraftSelectionChange = (featureId, optionId) => {
+    setCombinationDraft(prev => ({
+      ...prev,
+      selections: {
+        ...prev.selections,
+        [featureId]: optionId,
+      },
+    }));
+  };
+
+  const handleAddCombination = () => {
+    const requiredFeatures = itemFeatures.filter(feature => feature.options.some(option => option.is_enabled));
+    const optionIds = requiredFeatures.map(feature => combinationDraft.selections[feature.feature_id]).filter(Boolean);
+    if (requiredFeatures.length === 0 || optionIds.length !== requiredFeatures.length) {
+      setError('Select one enabled option from each feature before adding a combination.');
+      return;
+    }
+
+    const quantity = Math.max(0, parseInt(combinationDraft.quantity, 10) || 0);
+    const combinationKey = [...optionIds].map(String).sort().join('|');
+
+    setCombinationRows(prev => {
+      const existing = prev.find(row => row.combination_key === combinationKey);
+      if (existing) {
+        return prev.map(row => row.combination_key === combinationKey ? { ...row, quantity } : row);
+      }
+      return [
+        ...prev,
+        {
+          combination_key: combinationKey,
+          option_ids: optionIds,
+          quantity,
+        },
+      ];
+    });
+    setCombinationDraft({ selections: {}, quantity: '' });
+    setCombinationDirty(true);
+    setError(null);
+  };
+
+  // ── Derived ──
+  const affectingFeatureId = itemFeatures.find(f => f.affects_price)?.feature_id ?? null;
+  const addableFeatures = globalFeatures.filter(
+    gf => !itemFeatures.find(pf => pf.feature_id === gf.id)
+       && gf.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const hasDirty = Object.keys(dirty).length > 0 || combinationDirty;
+
+  const priceRange = calcPriceRange(itemFeatures);
+  const priceDisplay = priceRange
+    ? (priceRange.min === priceRange.max
+        ? `$${priceRange.min.toFixed(2)}`
+        : `From $${priceRange.min.toFixed(2)} to $${priceRange.max.toFixed(2)}`)
+    : null;
+
+  return (
+    <div className="border-top mt-3 pt-3 px-1">
       {/* ── Descriptive options accordion ── */}
       {itemFeatures.length > 0 && (
         <div className="border rounded mb-3 overflow-hidden">
@@ -544,186 +695,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
               </div>
             </div>
           )}
-        </div>
-      )}
-              <div style={{ padding: '4px 8px' }}>
-                {f.options.map(opt => (
-                  <div key={opt.option_id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0', opacity: opt.is_enabled ? 1 : 0.45 }}>
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      style={{ flexShrink: 0, marginTop: 0 }}
-                      checked={opt.is_enabled}
-                      onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
-                    />
-                    <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
-                    {!usesCombinationTable && (
-                      <input
-                        type="number"
-                        min={0}
-                        className="form-control form-control-sm"
-                        style={{ width: 48, fontSize: '0.75rem', padding: '0 4px', marginLeft: 4 }}
-                        value={opt.quantity}
-                        onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'quantity', e.target.value)}
-                      />
-                    )}
-                    {f.affects_price && (
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        className="form-control form-control-sm"
-                        style={{ width: 56, fontSize: '0.75rem', padding: '0 4px' }}
-                        value={opt.price ?? ''}
-                        placeholder="$"
-                        disabled={!opt.is_enabled}
-                        onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'price', e.target.value)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Divider */}
-              <div style={{ borderTop: '1px solid #dee2e6', margin: '0 8px' }} />
-
-              {/* Add option */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px 6px' }}>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  style={{ fontSize: '0.75rem', minWidth: 80 }}
-                  placeholder="New option…"
-                  value={newOptionInputs[f.feature_id] ?? ''}
-                  onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
-                  onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
-                />
-                {!usesCombinationTable && (
-                  <input
-                    type="number"
-                    min={0}
-                    className="form-control form-control-sm"
-                    style={{ width: 44, fontSize: '0.75rem', padding: '0 4px' }}
-                    placeholder="Qty"
-                    value={newOptionQtyInputs[f.feature_id] ?? ''}
-                    onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
-                    onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
-                  />
-                )}
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary btn-sm"
-                  style={{ fontSize: '0.75rem', padding: '1px 8px', flexShrink: 0 }}
-                  onClick={() => handleAddOption(f.feature_id)}
-                  disabled={!(newOptionInputs[f.feature_id] ?? '').trim()}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {usesCombinationTable && (
-        <div className="mt-3 border rounded p-2 bg-light-subtle">
-          <div className="d-flex align-items-center justify-content-between mb-2">
-            <div>
-              <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>Combination Stock</div>
-              <div className="text-muted" style={{ fontSize: '0.74rem' }}>
-                Add one row for each sellable feature combination and set the available count.
-              </div>
-            </div>
-            <span className="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
-              Total {calcTotalStock(itemFeatures, combinationRows)}
-            </span>
-          </div>
-
-          <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <table className="table table-sm align-middle mb-2" style={{ width: 'max-content' }}>
-              <thead>
-                <tr>
-                  {itemFeatures.map(feature => (
-                    <th key={feature.feature_id}>{feature.feature_name}</th>
-                  ))}
-                  <th style={{ width: 110 }}>Count</th>
-                  <th style={{ width: 80 }} />
-                </tr>
-              </thead>
-              <tbody>
-                {combinationRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={itemFeatures.length + 2} className="text-muted" style={{ fontSize: '0.78rem' }}>
-                      No combinations saved yet.
-                    </td>
-                  </tr>
-                ) : combinationRows.map(row => (
-                  <tr key={row.combination_key}>
-                    {itemFeatures.map(feature => {
-                      const optionId = row.option_ids?.find(id => optionLookup[id]?.featureId === feature.feature_id);
-                      return <td key={`${row.combination_key}-${feature.feature_id}`}>{optionLookup[optionId]?.optionName ?? '—'}</td>;
-                    })}
-                    <td>
-                      <input
-                        type="number"
-                        min={0}
-                        className="form-control form-control-sm"
-                        value={row.quantity}
-                        onChange={e => updateCombinationQuantity(row.combination_key, e.target.value)}
-                      />
-                    </td>
-                    <td className="text-end">
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm text-danger p-0"
-                        onClick={() => removeCombinationRow(row.combination_key)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  {itemFeatures.map(feature => {
-                    const enabledOptions = feature.options.filter(option => option.is_enabled);
-                    return (
-                      <td key={`draft-${feature.feature_id}`}>
-                        <select
-                          className="form-select form-select-sm"
-                          value={combinationDraft.selections[feature.feature_id] ?? ''}
-                          onChange={e => handleDraftSelectionChange(feature.feature_id, e.target.value)}
-                        >
-                          <option value="">Select…</option>
-                          {enabledOptions.map(option => (
-                            <option key={option.option_id} value={option.option_id}>{option.option_name}</option>
-                          ))}
-                        </select>
-                      </td>
-                    );
-                  })}
-                  <td>
-                    <input
-                      type="number"
-                      min={0}
-                      className="form-control form-control-sm"
-                      placeholder="0"
-                      value={combinationDraft.quantity}
-                      onChange={e => setCombinationDraft(prev => ({ ...prev, quantity: e.target.value }))}
-                    />
-                  </td>
-                  <td className="text-end">
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={handleAddCombination}
-                    >
-                      Add Row
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 

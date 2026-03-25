@@ -3,8 +3,7 @@
 #
 # PURPOSE:
 #   Application entry point for the BusinessManager FastAPI backend.
-#   Registers all routers, configures CORS, handles startup events
-#   (DB init, template seeding), and defines all document file-operation
+#   Registers all routers, configures CORS, and defines all document file-operation
 #   endpoints (upload, serve, download, edit, sign, assignments).
 #
 # FUNCTIONAL PARTS:
@@ -13,11 +12,10 @@
 #   [3] CORS Middleware           — AggressiveCORSMiddleware + standard CORSMiddleware
 #   [4] App Initialization        — FastAPI instance creation and CORS origin list
 #   [5] Health Endpoint           — GET /health with database connectivity check
-#   [6] Startup Event             — DB table creation + standard template seeding
-#   [7] Router Registration       — all API routers mounted under /api/v1/
-#   [8] Document File Endpoints   — upload, serve/download, content read/write,
+#   [6] Router Registration       — all API routers mounted under /api/v1/
+#   [7] Document File Endpoints   — upload, serve/download, content read/write,
 #                                   binary save, e-sign, OnlyOffice, assignments
-#   [9] Entry Point               — uvicorn runner for direct execution
+#   [8] Entry Point               — uvicorn runner for direct execution
 #
 # CHANGE LOG — all modifications to this file must be recorded here:
 #   Format : YYYY-MM-DD | Author | Description
@@ -48,11 +46,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart, portal_orders, production, assets, products
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.regtest", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, regtest, features, client_cart, portal_orders, production, assets, products  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products"}:
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products  # type: ignore
     else:
         raise
 
@@ -170,55 +168,7 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# ─── 5 STARTUP EVENT ───────────────────────────────────────────────────────────
-import asyncio
-
-@app.on_event("startup")
-async def startup_event():
-    print("Business Management API is starting...")
-    try:
-        from backend.database import create_db_and_tables, get_session
-    except ModuleNotFoundError:
-        from database import create_db_and_tables, get_session
-    await asyncio.to_thread(create_db_and_tables)
-    print("Database migrations complete")
-    try:
-        from backend.models import User, UserRole
-    except ModuleNotFoundError:
-        from models import User, UserRole
-    try:
-        from sqlmodel import select
-        session = next(get_session())
-        locked_admins = session.exec(
-            select(User).where(User.role == UserRole.ADMIN, User.is_locked == True)
-        ).all()
-        for admin in locked_admins:
-            admin.is_locked = False
-            admin.failed_login_attempts = 0
-            admin.locked_until = None
-            print(f"Unlocked admin account: {admin.username}")
-        if locked_admins:
-            await asyncio.to_thread(session.commit)
-        session.close()
-    except Exception as e:
-        print(f"Warning: Could not unlock admin accounts: {e}")
-    # Template seeding is disabled - templates are now persisted in the database
-    # and should not be overwritten on each startup. Saved templates will be
-    # recalled as they were saved. To reseed templates, use the migration scripts.
-    # try:
-    #     from backend.routers.templates import seed_standard_templates
-    # except ModuleNotFoundError:
-    #     from routers.templates import seed_standard_templates
-    # try:
-    #     session = next(get_session())
-    #     await asyncio.to_thread(seed_standard_templates, session)
-    #     session.close()
-    #     print("Standard templates seeded")
-    # except Exception as e:
-    #     print(f"Warning: Could not seed standard templates: {e}")
-    print("Startup complete")
-
-# ─── 7 ROUTER REGISTRATION ─────────────────────────────────────────────────────
+# ─── 6 ROUTER REGISTRATION ─────────────────────────────────────────────────────
 # Include routers (documents + document_category CRUD go through isud)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
@@ -230,7 +180,6 @@ app.include_router(leave_requests.router, prefix="/api/v1", tags=["leave-request
 app.include_router(payroll.router, prefix="/api/v1", tags=["payroll"])
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
-app.include_router(regtest.router, prefix="/api/v1/regtest", tags=["regtest"])
 app.include_router(features.router, prefix="/api/v1", tags=["features"])
 app.include_router(client_cart.router, prefix="/api/v1", tags=["client-cart"])
 app.include_router(portal_orders.router, prefix="/api/v1", tags=["portal-orders"])
@@ -238,7 +187,7 @@ app.include_router(production.router, prefix="/api/v1", tags=["production"])
 app.include_router(assets.router, prefix="/api/v1", tags=["assets"])
 app.include_router(products.router, prefix="/api/v1", tags=["products"])
 
-# ─── 8 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
+# ─── 7 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).
 import shutil
@@ -792,7 +741,7 @@ async def remove_document_assignment(
     return {"deleted": True}
 
 
-# ─── 9 ENTRY POINT ─────────────────────────────────────────────────────────────
+# ─── 8 ENTRY POINT ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(app, host="0.0.0.0", port=port)

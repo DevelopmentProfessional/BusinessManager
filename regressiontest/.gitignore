@@ -1,8 +1,0 @@
-.env
-reports/
-__pycache__/
-.pytest_cache/
-*.pyc
-cleanup.log
-.playwright/
-node_modules/

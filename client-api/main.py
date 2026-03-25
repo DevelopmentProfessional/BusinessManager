@@ -25,7 +25,6 @@ Environment variables (set in Render Dashboard):
 
 import os
 import logging
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,22 +36,13 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from database import create_client_tables, engine
+from database import engine
 from models import Company
 from routers import auth, catalog, bookings, orders, companies, cart
 
 # ── Logging ─────────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("client-api")
-
-
-# ── Lifespan ────────────────────────────────────────────────────────────────────
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("Starting client-api — running DB migrations …")
-    create_client_tables()
-    logger.info("client-api ready.")
-    yield
 
 
 # ── Rate limiter ────────────────────────────────────────────────────────────────
@@ -66,7 +56,6 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan,
 )
 
 app.state.limiter = limiter
