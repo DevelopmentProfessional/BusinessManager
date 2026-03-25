@@ -1,0 +1,1656 @@
+{
+  "created": 1772425543.0775526,
+  "duration": 17.08341145515442,
+  "exitcode": 0,
+  "root": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest",
+  "environment": {},
+  "summary": {
+    "passed": 7,
+    "xfailed": 4,
+    "skipped": 1,
+    "total": 12,
+    "collected": 12
+  },
+  "collectors": [
+    {
+      "nodeid": "",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database",
+          "type": "Package"
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestScheduleCascade",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestScheduleCascade::test_delete_schedule_removes_from_list",
+          "type": "Function",
+          "lineno": 18
+        },
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestScheduleCascade::test_delete_client_removes_orphan_schedules",
+          "type": "Function",
+          "lineno": 44
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestDocumentAssignmentCascade",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestDocumentAssignmentCascade::test_delete_document_removes_assignments",
+          "type": "Function",
+          "lineno": 76
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestUserDeletion",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestUserDeletion::test_delete_user_no_cascade_error",
+          "type": "Function",
+          "lineno": 117
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestScheduleCascade",
+          "type": "Class"
+        },
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestDocumentAssignmentCascade",
+          "type": "Class"
+        },
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py::TestUserDeletion",
+          "type": "Class"
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention::test_duplicate_username_blocked",
+          "type": "Function",
+          "lineno": 15
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention::test_duplicate_sku_blocked",
+          "type": "Function",
+          "lineno": 32
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention::test_duplicate_payslip_blocked",
+          "type": "Function",
+          "lineno": 53
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention::test_create_schedule_with_invalid_client_id",
+          "type": "Function",
+          "lineno": 86
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention::test_update_nonexistent_record_returns_404",
+          "type": "Function",
+          "lineno": 115
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention::test_delete_nonexistent_record_returns_404",
+          "type": "Function",
+          "lineno": 122
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestRequiredFields",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestRequiredFields::test_create_client_without_required_fields",
+          "type": "Function",
+          "lineno": 132
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestRequiredFields::test_login_with_empty_credentials",
+          "type": "Function",
+          "lineno": 142
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention",
+          "type": "Class"
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention",
+          "type": "Class"
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py::TestRequiredFields",
+          "type": "Class"
+        }
+      ]
+    },
+    {
+      "nodeid": "stage4_database",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "stage4_database/test_cascade_delete.py",
+          "type": "Module"
+        },
+        {
+          "nodeid": "stage4_database/test_constraints.py",
+          "type": "Module"
+        }
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestScheduleCascade::test_delete_schedule_removes_from_list",
+      "lineno": 18,
+      "outcome": "passed",
+      "keywords": [
+        "test_delete_schedule_removes_from_list",
+        "TestScheduleCascade",
+        "test_cascade_delete.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 2.116706400000112,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/auth/login \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425528.1233947,
+            "msecs": 123.0,
+            "relativeCreated": 2397.243,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:28"
+          }
+        ]
+      },
+      "call": {
+        "duration": 1.8030549999966752,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/clients \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425528.5353725,
+            "msecs": 535.0,
+            "relativeCreated": 2809.2208,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:28"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/services \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425528.6902883,
+            "msecs": 690.0,
+            "relativeCreated": 2964.1366,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:28"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/auth/me \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425528.8443174,
+            "msecs": 844.0,
+            "relativeCreated": 3118.1658,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:28"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425528.9792874,
+            "msecs": 979.0,
+            "relativeCreated": 3253.1355,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:28"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule/86f8c70c-529d-4ab8-acc9-c1267c65f0ee \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425529.1391506,
+            "msecs": 139.0,
+            "relativeCreated": 3412.9988,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:29"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule/86f8c70c-529d-4ab8-acc9-c1267c65f0ee \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425529.2923872,
+            "msecs": 292.0,
+            "relativeCreated": 3566.2356,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:29"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule/86f8c70c-529d-4ab8-acc9-c1267c65f0ee \"HTTP/1.1 404 Not Found\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425529.4409757,
+            "msecs": 440.0,
+            "relativeCreated": 3714.824,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:29"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/clients/f1d0a0a3-f6fc-4adc-a2f8-19589656122c \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425529.7711854,
+            "msecs": 771.0,
+            "relativeCreated": 4045.0336,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:29"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/services/d5b7c791-caa8-4d57-ad77-2c3d359af561 \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425529.9270592,
+            "msecs": 927.0,
+            "relativeCreated": 4200.9074,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:29"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.00017809999917517416,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestScheduleCascade::test_delete_client_removes_orphan_schedules",
+      "lineno": 44,
+      "outcome": "passed",
+      "keywords": [
+        "test_delete_client_removes_orphan_schedules",
+        "TestScheduleCascade",
+        "test_cascade_delete.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00015360000179498456,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 1.6566839999977674,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/clients \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425530.3361683,
+            "msecs": 336.0,
+            "relativeCreated": 4610.0165,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:30"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/services \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425530.5001137,
+            "msecs": 500.0,
+            "relativeCreated": 4773.9619,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:30"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/auth/me \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425530.6463227,
+            "msecs": 646.0,
+            "relativeCreated": 4920.1711,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:30"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425530.8006496,
+            "msecs": 800.0,
+            "relativeCreated": 5074.498,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:30"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/clients/af185215-41e7-4d2d-b96a-42c091895cfa \"HTTP/1.1 500 Internal Server Error\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425530.955851,
+            "msecs": 955.0,
+            "relativeCreated": 5229.6994,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:30"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425531.287887,
+            "msecs": 287.0,
+            "relativeCreated": 5561.7355,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:31"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule/f6cc70c9-6050-4578-a11d-66ae1364fc0b \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425531.4557354,
+            "msecs": 455.0,
+            "relativeCreated": 5729.5838,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:31"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/services/407007ab-a117-460a-90b3-1f8b98b818cd \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425531.585334,
+            "msecs": 585.0,
+            "relativeCreated": 5859.1824,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:31"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.00020279999807826243,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestDocumentAssignmentCascade::test_delete_document_removes_assignments",
+      "lineno": 76,
+      "outcome": "xfailed",
+      "keywords": [
+        "test_delete_document_removes_assignments",
+        "TestDocumentAssignmentCascade",
+        "test_cascade_delete.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.0001587999977346044,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 1.0141642000016873,
+        "outcome": "skipped",
+        "crash": {
+          "path": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\stage4_database\\test_cascade_delete.py",
+          "lineno": 104,
+          "message": "_pytest.outcomes.XFailed: Known backend gap: deleting document via /isud/documents/{id} returns 500"
+        },
+        "traceback": [
+          {
+            "path": "stage4_database\\test_cascade_delete.py",
+            "lineno": 104,
+            "message": "XFailed"
+          }
+        ],
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/documents/upload \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425531.9953575,
+            "msecs": 995.0,
+            "relativeCreated": 6269.2058,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:31"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/auth/me \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425532.1456957,
+            "msecs": 145.0,
+            "relativeCreated": 6419.5441,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:32"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/documents/e5f579fb-94e2-4c98-9a02-58f45155ab3a/assignments \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425532.307887,
+            "msecs": 307.0,
+            "relativeCreated": 6581.7354,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:32"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/documents/e5f579fb-94e2-4c98-9a02-58f45155ab3a/assignments \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425532.444622,
+            "msecs": 444.0,
+            "relativeCreated": 6718.4703,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:32"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/documents/e5f579fb-94e2-4c98-9a02-58f45155ab3a \"HTTP/1.1 500 Internal Server Error\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425532.6014984,
+            "msecs": 601.0,
+            "relativeCreated": 6875.3467,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:32"
+          }
+        ],
+        "longrepr": "self = <stage4_database.test_cascade_delete.TestDocumentAssignmentCascade object at 0x00000255258F7750>\nadmin_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZTZmYTc4My1iNmZiLTQ3ZWMtYjhiMy01ZDM1MzYzM2VjOTYiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzcyNDU0MzI3fQ.xvdogf6_wsQBBmcDX21KZ8RF3E7nz3Nq88Hj68iKMTU'\n\n    def test_delete_document_removes_assignments(self, admin_token):\n        \"\"\"Deleting a document should also remove its assignments.\"\"\"\n        import io\n        api = AuthedClient(token=admin_token)\n    \n        # Upload a test document\n        upload_resp = api.post(\n            \"/api/v1/documents/upload\",\n            files={\"file\": (\"cascade_test.txt\", io.BytesIO(b\"cascade test\"), \"text/plain\")},\n            data={\"description\": \"[REGTEST] cascade delete test\"},\n        )\n        doc_id = upload_resp.json().get(\"id\")\n    \n        # Assign to self\n        me_id = api.get(\"/api/v1/auth/me\").json().get(\"id\")\n        api.post(\n            f\"/api/v1/documents/{doc_id}/assignments\",\n            json={\"entity_type\": \"employee\", \"entity_id\": me_id},\n        )\n    \n        # Verify assignment exists\n        assignments = api.get(f\"/api/v1/documents/{doc_id}/assignments\").json()\n        assert len(assignments) >= 1\n    \n        # Delete document record\n        del_resp = api.delete(f\"/api/v1/isud/documents/{doc_id}\")\n        if del_resp.status_code == 500:\n>           pytest.xfail(\"Known backend gap: deleting document via /isud/documents/{id} returns 500\")\nE           _pytest.outcomes.XFailed: Known backend gap: deleting document via /isud/documents/{id} returns 500\n\nstage4_database\\test_cascade_delete.py:104: XFailed"
+      },
+      "teardown": {
+        "duration": 0.0002480000002833549,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_cascade_delete.py::TestUserDeletion::test_delete_user_no_cascade_error",
+      "lineno": 117,
+      "outcome": "skipped",
+      "keywords": [
+        "test_delete_user_no_cascade_error",
+        "TestUserDeletion",
+        "test_cascade_delete.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00022979999994277023,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 2.2078844999996363,
+        "outcome": "skipped",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/auth/users \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425534.7035031,
+            "msecs": 703.0,
+            "relativeCreated": 8977.3514,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:34"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/auth/users/d967736b-e674-43ce-8406-de65aad08809 \"HTTP/1.1 405 Method Not Allowed\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425534.8443768,
+            "msecs": 844.0,
+            "relativeCreated": 9118.2252,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:34"
+          }
+        ],
+        "longrepr": "('C:\\\\Users\\\\dpint\\\\Documents\\\\Development\\\\BusinessManager\\\\regressiontest\\\\stage4_database\\\\test_cascade_delete.py', 130, 'Skipped: User delete endpoint not supported on current backend')"
+      },
+      "teardown": {
+        "duration": 0.0001467000001866836,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention::test_duplicate_username_blocked",
+      "lineno": 15,
+      "outcome": "passed",
+      "keywords": [
+        "test_duplicate_username_blocked",
+        "TestDuplicatePrevention",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00013219999891589396,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 2.236815400003252,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/auth/users \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425536.8015068,
+            "msecs": 801.0,
+            "relativeCreated": 11075.355,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:36"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/auth/users \"HTTP/1.1 400 Bad Request\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425536.9516973,
+            "msecs": 951.0,
+            "relativeCreated": 11225.5457,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:36"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/auth/users/7fd593a3-63b9-45e0-b946-30d9cd211424 \"HTTP/1.1 405 Method Not Allowed\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425537.0824745,
+            "msecs": 82.0,
+            "relativeCreated": 11356.3227,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:37"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.00018110000019078143,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention::test_duplicate_sku_blocked",
+      "lineno": 32,
+      "outcome": "xfailed",
+      "keywords": [
+        "test_duplicate_sku_blocked",
+        "TestDuplicatePrevention",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00015999999959603883,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 0.7487890999982483,
+        "outcome": "skipped",
+        "crash": {
+          "path": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\stage4_database\\test_constraints.py",
+          "lineno": 45,
+          "message": "_pytest.outcomes.XFailed: Known backend gap: duplicate SKU returns 500 instead of 409/422"
+        },
+        "traceback": [
+          {
+            "path": "stage4_database\\test_constraints.py",
+            "lineno": 45,
+            "message": "XFailed"
+          }
+        ],
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/inventory \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425537.5126016,
+            "msecs": 512.0,
+            "relativeCreated": 11786.45,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:37"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/inventory \"HTTP/1.1 500 Internal Server Error\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425537.6696177,
+            "msecs": 669.0,
+            "relativeCreated": 11943.466,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:37"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/inventory/924aa6a4-3162-4778-b3ac-3ebf16dacb26 \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425537.8325841,
+            "msecs": 832.0,
+            "relativeCreated": 12106.4325,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:37"
+          }
+        ],
+        "longrepr": "self = <stage4_database.test_constraints.TestDuplicatePrevention object at 0x00000255258F7D90>\nadmin_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZTZmYTc4My1iNmZiLTQ3ZWMtYjhiMy01ZDM1MzYzM2VjOTYiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzcyNDU0MzI3fQ.xvdogf6_wsQBBmcDX21KZ8RF3E7nz3Nq88Hj68iKMTU'\n\n    def test_duplicate_sku_blocked(self, admin_token):\n        \"\"\"Creating two inventory items with the same SKU should return an error.\"\"\"\n        api = AuthedClient(token=admin_token)\n        payload = make_inventory()\n    \n        resp1 = api.post(\"/api/v1/isud/inventory\", json=payload)\n        assert resp1.status_code in (200, 201)\n        inv_id = resp1.json().get(\"id\")\n    \n        try:\n            resp2 = api.post(\"/api/v1/isud/inventory\", json=payload)\n            if resp2.status_code == 500:\n>               pytest.xfail(\"Known backend gap: duplicate SKU returns 500 instead of 409/422\")\nE               _pytest.outcomes.XFailed: Known backend gap: duplicate SKU returns 500 instead of 409/422\n\nstage4_database\\test_constraints.py:45: XFailed"
+      },
+      "teardown": {
+        "duration": 0.00014759999976377003,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestDuplicatePrevention::test_duplicate_payslip_blocked",
+      "lineno": 53,
+      "outcome": "passed",
+      "keywords": [
+        "test_duplicate_payslip_blocked",
+        "TestDuplicatePrevention",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00027430000045569614,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 2.2654511999971874,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/auth/users \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425539.8057513,
+            "msecs": 805.0,
+            "relativeCreated": 14079.5997,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:39"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/payroll/pay/35afc0b8-b706-4d90-93d1-e41c1edeb5ba \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425539.9518323,
+            "msecs": 951.0,
+            "relativeCreated": 14225.6807,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:39"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/payroll/pay/35afc0b8-b706-4d90-93d1-e41c1edeb5ba \"HTTP/1.1 400 Bad Request\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425540.1041186,
+            "msecs": 104.0,
+            "relativeCreated": 14377.9669,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:40"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.00015830000120331533,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention::test_create_schedule_with_invalid_client_id",
+      "lineno": 86,
+      "outcome": "xfailed",
+      "keywords": [
+        "test_create_schedule_with_invalid_client_id",
+        "TestOrphanPrevention",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.0001353999978164211,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 0.9545123999996576,
+        "outcome": "skipped",
+        "crash": {
+          "path": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\stage4_database\\test_constraints.py",
+          "lineno": 103,
+          "message": "_pytest.outcomes.XFailed: Known backend gap: invalid foreign key returns 500 instead of 400/422"
+        },
+        "traceback": [
+          {
+            "path": "stage4_database\\test_constraints.py",
+            "lineno": 103,
+            "message": "XFailed"
+          }
+        ],
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/services \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425540.7510412,
+            "msecs": 751.0,
+            "relativeCreated": 15024.8896,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:40"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: GET https://businessmanager-reference-api.onrender.com/api/v1/auth/me \"HTTP/1.1 200 OK\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425540.9068515,
+            "msecs": 906.0,
+            "relativeCreated": 15180.6999,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:40"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/schedule \"HTTP/1.1 500 Internal Server Error\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425541.0595279,
+            "msecs": 59.0,
+            "relativeCreated": 15333.3763,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:41"
+          }
+        ],
+        "longrepr": "self = <stage4_database.test_constraints.TestOrphanPrevention object at 0x00000255258F7ED0>\nadmin_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZTZmYTc4My1iNmZiLTQ3ZWMtYjhiMy01ZDM1MzYzM2VjOTYiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzcyNDU0MzI3fQ.xvdogf6_wsQBBmcDX21KZ8RF3E7nz3Nq88Hj68iKMTU'\n\n    def test_create_schedule_with_invalid_client_id(self, admin_token):\n        \"\"\"Schedule with non-existent client_id should be rejected or return error.\"\"\"\n        api = AuthedClient(token=admin_token)\n        from helpers.test_data import make_service, make_schedule\n    \n        s_id = api.post(\"/api/v1/isud/services\", json=make_service()).json().get(\"id\")\n        me_id = api.get(\"/api/v1/auth/me\").json().get(\"id\")\n    \n        fake_client_id = \"00000000-0000-0000-0000-000000000099\"\n        payload = make_schedule(\n            client_id=fake_client_id,\n            service_id=s_id,\n            employee_id=me_id,\n        )\n        resp = api.post(\"/api/v1/isud/schedule\", json=payload)\n        if resp.status_code == 500:\n>           pytest.xfail(\"Known backend gap: invalid foreign key returns 500 instead of 400/422\")\nE           _pytest.outcomes.XFailed: Known backend gap: invalid foreign key returns 500 instead of 400/422\n\nstage4_database\\test_constraints.py:103: XFailed"
+      },
+      "teardown": {
+        "duration": 0.00013969999781693332,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention::test_update_nonexistent_record_returns_404",
+      "lineno": 115,
+      "outcome": "passed",
+      "keywords": [
+        "test_update_nonexistent_record_returns_404",
+        "TestOrphanPrevention",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00018229999841423705,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 0.3930575999984285,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: PUT https://businessmanager-reference-api.onrender.com/api/v1/isud/clients/00000000-0000-0000-0000-000000000001 \"HTTP/1.1 404 Not Found\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425541.4562907,
+            "msecs": 456.0,
+            "relativeCreated": 15730.1392,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:41"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.00015759999951114878,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestOrphanPrevention::test_delete_nonexistent_record_returns_404",
+      "lineno": 122,
+      "outcome": "passed",
+      "keywords": [
+        "test_delete_nonexistent_record_returns_404",
+        "TestOrphanPrevention",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00011780000204453245,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 0.39205020000008517,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/isud/clients/00000000-0000-0000-0000-000000000002 \"HTTP/1.1 404 Not Found\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425541.8491166,
+            "msecs": 849.0,
+            "relativeCreated": 16122.9649,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:41"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.00010630000178935006,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestRequiredFields::test_create_client_without_required_fields",
+      "lineno": 132,
+      "outcome": "xfailed",
+      "keywords": [
+        "test_create_client_without_required_fields",
+        "TestRequiredFields",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00014089999967836775,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 0.4031409999988682,
+        "outcome": "skipped",
+        "crash": {
+          "path": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\stage4_database\\test_constraints.py",
+          "lineno": 138,
+          "message": "_pytest.outcomes.XFailed: Known backend gap: missing required fields returns 500 instead of 422"
+        },
+        "traceback": [
+          {
+            "path": "stage4_database\\test_constraints.py",
+            "lineno": 138,
+            "message": "XFailed"
+          }
+        ],
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/isud/clients \"HTTP/1.1 500 Internal Server Error\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425542.253118,
+            "msecs": 253.0,
+            "relativeCreated": 16526.9662,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:42"
+          }
+        ],
+        "longrepr": "self = <stage4_database.test_constraints.TestRequiredFields object at 0x0000025525A2C190>\nadmin_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZTZmYTc4My1iNmZiLTQ3ZWMtYjhiMy01ZDM1MzYzM2VjOTYiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzcyNDU0MzI3fQ.xvdogf6_wsQBBmcDX21KZ8RF3E7nz3Nq88Hj68iKMTU'\n\n    def test_create_client_without_required_fields(self, admin_token):\n        \"\"\"POST /isud/clients with missing required fields returns 422.\"\"\"\n        api = AuthedClient(token=admin_token)\n        resp = api.post(\"/api/v1/isud/clients\", json={})\n        if resp.status_code == 500:\n>           pytest.xfail(\"Known backend gap: missing required fields returns 500 instead of 422\")\nE           _pytest.outcomes.XFailed: Known backend gap: missing required fields returns 500 instead of 422\n\nstage4_database\\test_constraints.py:138: XFailed"
+      },
+      "teardown": {
+        "duration": 0.00016139999934239313,
+        "outcome": "passed"
+      }
+    },
+    {
+      "nodeid": "stage4_database/test_constraints.py::TestRequiredFields::test_login_with_empty_credentials",
+      "lineno": 142,
+      "outcome": "passed",
+      "keywords": [
+        "test_login_with_empty_credentials",
+        "TestRequiredFields",
+        "test_constraints.py",
+        "stage4",
+        "stage4_database",
+        "regressiontest",
+        ""
+      ],
+      "setup": {
+        "duration": 0.00013129999933880754,
+        "outcome": "passed"
+      },
+      "call": {
+        "duration": 0.4055240000016056,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: POST https://businessmanager-reference-api.onrender.com/api/v1/auth/login \"HTTP/1.1 422 Unprocessable Entity\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425542.6612296,
+            "msecs": 661.0,
+            "relativeCreated": 16935.0778,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:42"
+          }
+        ]
+      },
+      "teardown": {
+        "duration": 0.41486790000271867,
+        "outcome": "passed",
+        "log": [
+          {
+            "name": "helpers.cleanup",
+            "msg": "CleanupRegistry: tearing down 1 resource(s)...",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\helpers\\cleanup.py",
+            "filename": "cleanup.py",
+            "module": "cleanup",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 64,
+            "funcName": "teardown",
+            "created": 1772425542.6625006,
+            "msecs": 662.0,
+            "relativeCreated": 16936.3488,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:42"
+          },
+          {
+            "name": "httpx",
+            "msg": "HTTP Request: DELETE https://businessmanager-reference-api.onrender.com/api/v1/auth/users/35afc0b8-b706-4d90-93d1-e41c1edeb5ba \"HTTP/1.1 405 Method Not Allowed\"",
+            "args": null,
+            "levelname": "INFO",
+            "levelno": 20,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\httpx\\_client.py",
+            "filename": "_client.py",
+            "module": "_client",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 1025,
+            "funcName": "_send_single_request",
+            "created": 1772425543.075052,
+            "msecs": 75.0,
+            "relativeCreated": 17348.9003,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:43"
+          },
+          {
+            "name": "helpers.cleanup",
+            "msg": "  [WARN 405] DELETE /api/v1/auth/users/35afc0b8-b706-4d90-93d1-e41c1edeb5ba  constraint test employee",
+            "args": null,
+            "levelname": "WARNING",
+            "levelno": 30,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\helpers\\cleanup.py",
+            "filename": "cleanup.py",
+            "module": "cleanup",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 79,
+            "funcName": "teardown",
+            "created": 1772425543.07576,
+            "msecs": 75.0,
+            "relativeCreated": 17349.6081,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:43"
+          },
+          {
+            "name": "helpers.cleanup",
+            "msg": "CleanupRegistry: 1 error(s) during teardown. See cleanup.log.",
+            "args": null,
+            "levelname": "WARNING",
+            "levelno": 30,
+            "pathname": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\helpers\\cleanup.py",
+            "filename": "cleanup.py",
+            "module": "cleanup",
+            "exc_info": null,
+            "exc_text": null,
+            "stack_info": null,
+            "lineno": 100,
+            "funcName": "teardown",
+            "created": 1772425543.0767767,
+            "msecs": 76.0,
+            "relativeCreated": 17350.6249,
+            "thread": 1992,
+            "threadName": "MainThread",
+            "processName": "MainProcess",
+            "process": 28800,
+            "taskName": null,
+            "asctime": "00:25:43"
+          }
+        ]
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "message": "Unknown config option: continue_on_collection_errors\n",
+      "category": "PytestConfigWarning",
+      "when": "config",
+      "filename": "C:\\Users\\dpint\\Documents\\Development\\BusinessManager\\regressiontest\\.venv-regression\\Lib\\site-packages\\_pytest\\config\\__init__.py",
+      "lineno": 1441
+    }
+  ]
+}

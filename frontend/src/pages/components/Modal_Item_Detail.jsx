@@ -38,7 +38,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from '../../services/api';
+import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI, inventoryCategoriesAPI } from '../../services/api';
 import { showConfirm } from '../../services/showConfirm';
 import Modal from './Modal';
 import cacheService from '../../services/cacheService';
@@ -559,8 +559,12 @@ export default function Modal_Detail_Item({
     location: '',
     image_url: '',
     type: 'PRODUCT',
-    supplier_id: ''
+    supplier_id: '',
+    category: '',
   });
+  const [itemCategories, setItemCategories] = useState([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
 
   const upperType = (itemType || item?.type || 'product').toUpperCase();
@@ -627,7 +631,8 @@ export default function Modal_Detail_Item({
         location: item.location || '',
         image_url: item.image_url || '',
         type: item.type || 'PRODUCT',
-        supplier_id: item.supplier_id || ''
+        supplier_id: item.supplier_id || '',
+        category: item.category || '',
       });
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
@@ -668,6 +673,38 @@ export default function Modal_Detail_Item({
       }).catch(() => {});
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode, loadAvailableLocations]);
+
+  // Load categories whenever item type changes (or modal opens with a new item)
+  const currentItemType = (formData.type || 'PRODUCT').toLowerCase();
+  useEffect(() => {
+    if (!isOpen || isSalesMode) return;
+    inventoryCategoriesAPI.getByType(currentItemType)
+      .then(res => setItemCategories(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => setItemCategories([]));
+    setShowCategoryManager(false);
+    setNewCategoryName('');
+  }, [isOpen, currentItemType, isSalesMode]);
+
+  const handleAddCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    try {
+      const res = await inventoryCategoriesAPI.create(currentItemType, name);
+      const created = res?.data;
+      setItemCategories(prev => [...prev.filter(c => c.id !== created?.id), created].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewCategoryName('');
+    } catch { /* silent */ }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    try {
+      await inventoryCategoriesAPI.delete(catId);
+      setItemCategories(prev => prev.filter(c => c.id !== catId));
+      if (formData.category === itemCategories.find(c => c.id === catId)?.name) {
+        setFormData(prev => ({ ...prev, category: '' }));
+      }
+    } catch { /* silent */ }
+  };
 
   // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
   const loadImages = async (inventoryId) => {
@@ -831,7 +868,8 @@ export default function Modal_Detail_Item({
       location: formData.location,
       image_url: formData.image_url,
       type: formData.type,
-      supplier_id: formData.supplier_id || null
+      supplier_id: formData.supplier_id || null,
+      category: formData.category || null,
     });
   };
 
@@ -1541,6 +1579,76 @@ export default function Modal_Detail_Item({
                 <label htmlFor="detail_new_location">New Location</label>
               </div>
             )}
+
+          {/* Category picker — type-specific, above features */}
+          <div className="mb-2 mt-2">
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <div className="form-floating flex-grow-1">
+                <select
+                  id="detail_category"
+                  name="category"
+                  value={formData.category}
+                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  className="form-select form-select-sm"
+                >
+                  <option value="">— None —</option>
+                  {itemCategories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+                <label htmlFor="detail_category">Category</label>
+              </div>
+              <button
+                type="button"
+                title={showCategoryManager ? 'Close' : 'Manage categories'}
+                onClick={() => setShowCategoryManager(v => !v)}
+                className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                style={{ height: '3.2rem', width: '2.6rem', fontSize: '0.8rem' }}
+              >
+                {showCategoryManager ? '×' : '⋯'}
+              </button>
+            </div>
+            {showCategoryManager && (
+              <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                {itemCategories.length === 0 && (
+                  <div className="small text-muted mb-2">No categories yet for this type.</div>
+                )}
+                <div className="d-flex flex-wrap gap-1 mb-2">
+                  {itemCategories.map(cat => (
+                    <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: '0.78rem', fontWeight: 500 }}>
+                      {cat.name}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="btn-close btn-close-sm ms-1"
+                        style={{ fontSize: '0.55rem', padding: '0.1rem' }}
+                        aria-label="Remove"
+                      />
+                    </span>
+                  ))}
+                </div>
+                <div className="d-flex gap-1">
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={e => setNewCategoryName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                    placeholder="New category name..."
+                    className="form-control form-control-sm"
+                    style={{ fontSize: '0.8rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="btn btn-sm btn-outline-primary flex-shrink-0"
+                    style={{ fontSize: '0.78rem' }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           </form>
 

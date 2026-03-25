@@ -308,6 +308,25 @@ class InventoryImage(BaseModel, table=True):
     inventory_item: Inventory = Relationship(back_populates="images")
 
 
+# ─── 6b INVENTORY CATEGORY MODEL ──────────────────────────────────────────────
+class InventoryCategory(BaseModel, table=True):
+    """Lookup table of available categories per item type, scoped to a company."""
+    __tablename__ = "inventory_category"
+    item_type: str = Field(index=True)   # e.g. "product", "resource", "asset"
+    name: str
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryCategoryRead(SQLModel):
+    id: UUID
+    item_type: str
+    name: str
+    company_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 # ─── 6c ASSET UNIT MODEL ───────────────────────────────────────────────────────
 
 ASSET_UNIT_STATES = {"available", "in_use", "maintenance", "arriving_soon"}

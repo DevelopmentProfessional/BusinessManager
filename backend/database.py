@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.24.2"
+CURRENT_SCHEMA_VERSION = "2026.03.25.1"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -874,6 +874,59 @@ def _drop_descriptive_feature_name_unique_index_if_needed():
         print(f"  Warning: Could not drop ix_descriptive_feature_name: {e}")
 
 
+def _ensure_inventory_category_table_if_needed():
+    """Create inventory_category table for item-type-scoped category lookup."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT to_regclass('inventory_category')"
+            )).scalar()
+            if not exists:
+                conn.execute(text("""
+                    CREATE TABLE inventory_category (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        item_type VARCHAR NOT NULL,
+                        name VARCHAR NOT NULL,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inventory_category_item_type ON inventory_category(item_type)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inventory_category_company_id ON inventory_category(company_id)"))
+                print("  + Created inventory_category table")
+    except Exception as e:
+        print(f"  Warning: Could not create inventory_category table: {e}")
+
+
+def _seed_inventory_categories_for_03897():
+    """Seed default item categories for company 03897."""
+    COMPANY_ID = "03897"
+    SEED_CATEGORIES = {
+        "product":  ["Clothing", "Accessories", "Electronics", "Footwear", "Home Goods", "Food & Beverage", "Books & Media", "Toys & Games", "Sports & Outdoors"],
+        "resource": ["Raw Materials", "Packaging", "Fabric", "Chemicals", "Printing Supplies", "Cleaning Supplies"],
+        "asset":    ["Machinery", "Furniture", "Vehicles", "Technology", "Display Equipment", "Tools"],
+        "location": ["Storage", "Storefront", "Warehouse", "Office", "Back Room", "Display Floor", "Fitting Room"],
+        "item":     ["Miscellaneous", "Sample", "Promotional", "Display Only"],
+        "bundle":   ["Starter Pack", "Gift Set", "Seasonal Bundle", "Value Pack"],
+        "mix":      ["Custom Mix", "Client Choice", "Variety Pack"],
+    }
+    try:
+        with engine.begin() as conn:
+            for item_type, names in SEED_CATEGORIES.items():
+                for name in names:
+                    existing = conn.execute(text(
+                        "SELECT 1 FROM inventory_category WHERE company_id = :c AND item_type = :t AND name = :n"
+                    ), {"c": COMPANY_ID, "t": item_type, "n": name}).fetchone()
+                    if not existing:
+                        conn.execute(text(
+                            "INSERT INTO inventory_category (item_type, name, company_id) VALUES (:t, :n, :c)"
+                        ), {"t": item_type, "n": name, "c": COMPANY_ID})
+        print("  + Seeded inventory categories for company 03897")
+    except Exception as e:
+        print(f"  Warning: Could not seed inventory categories: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Run safe migrations to bring schema to current version."""
@@ -927,6 +980,8 @@ def create_db_and_tables():
     _ensure_inventory_category_column_if_needed()
     _ensure_inventory_image_db_storage_if_needed()
     _drop_descriptive_feature_name_unique_index_if_needed()
+    _ensure_inventory_category_table_if_needed()
+    _seed_inventory_categories_for_03897()
     _mark_schema_current()
     print("Migrations complete.")
 

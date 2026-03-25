@@ -636,6 +636,12 @@ export const productRelationsAPI = {
   removeLocation: (id) => api.delete(`/isud/product_location/${id}`),
 };
 
+export const inventoryCategoriesAPI = {
+  getByType: (itemType) => api.get(`/inventory-categories?item_type=${encodeURIComponent(itemType)}`),
+  create: (itemType, name) => api.post('/inventory-categories', { item_type: itemType, name }),
+  delete: (id) => api.delete(`/inventory-categories/${id}`),
+};
+
 export const discountRulesAPI = {
   getAll:  ()         => api.get('/isud/discount_rule'),
   create:  (data)     => api.post('/isud/discount_rule', data),
