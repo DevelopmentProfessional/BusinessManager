@@ -87,7 +87,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [saving, setSaving]                   = useState(false);
   const [lastSavedAt, setLastSavedAt]         = useState(null);
   const [error, setError]                     = useState(null);
-  const [openFeatures, setOpenFeatures]       = useState({}); // featureId → bool (default open)
+  const [isFeatureOptionsOpen, setIsFeatureOptionsOpen] = useState(true);
+  const [isCombinationsOpen, setIsCombinationsOpen] = useState(true);
 
   // ── Load ──
   const reload = useCallback(async () => {
@@ -112,20 +113,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     onStockChange?.(itemFeatures.length > 0 ? calcTotalStock(itemFeatures, combinationRows) : null);
     onPriceRangeChange?.(calcPriceRange(itemFeatures));
   }, [itemFeatures, combinationRows]); // eslint-disable-line
-
-  // ── Default newly-loaded features to open ──
-  useEffect(() => {
-    setOpenFeatures(prev => {
-      const next = { ...prev };
-      itemFeatures.forEach(f => {
-        if (!(f.feature_id in next)) next[f.feature_id] = true;
-      });
-      return next;
-    });
-  }, [itemFeatures]);
-
-  const toggleFeature = (featureId) =>
-    setOpenFeatures(prev => ({ ...prev, [featureId]: !prev[featureId] }));
 
   // ── Local option edits ──
   const handleOptionChange = (featureId, optionId, field, value) => {
@@ -241,265 +228,324 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     }, 700);
     return () => clearTimeout(timer);
   }, [combinationDirty, combinationRows, persistCombinations, saving]);
-
-  // ── Add existing global feature to item ──
-  const handleAddFeature = async (featureId) => {
-    setError(null);
-    try {
-      await inventoryFeaturesAPI.addFeature(inventoryId, featureId);
-      setIsAddExistingOpen(false);
-      await reload();
-    } catch (e) {
-      setError(e?.response?.data?.detail ?? 'Could not add feature');
-    }
-  };
-
-  const handleDeleteGlobalFeature = async (featureId, featureName) => {
-    if (!await showConfirm(`Delete feature '${featureName}' from database?`)) return;
-    setError(null);
-    try {
-      await featuresAPI.delete(featureId);
-      await reload();
-    } catch (e) {
-      const detail = e?.response?.data?.detail;
-      setError((detail && typeof detail === 'object' && detail.message) ? detail.message : (detail ?? 'Could not delete feature'));
-    }
-  };
-
-  // ── Create new global feature then add to item ──
-  const handleCreateFeature = async () => {
-    const name = newFeatureName.trim();
-    if (!name) return;
-    setError(null);
-    try {
-      const res = await featuresAPI.create({ name });
-      const created = res?.data ?? res;
-      setNewFeatureName('');
-      await inventoryFeaturesAPI.addFeature(inventoryId, created.id);
-      await reload();
-    } catch (e) {
-      setError(e?.response?.data?.detail ?? 'Could not create feature');
-    }
-  };
-
-  // ── Remove feature from item ──
-  const handleRemoveFeature = async (featureId) => {
-    setError(null);
-    try {
-      await inventoryFeaturesAPI.removeFeature(inventoryId, featureId);
-      await reload();
-    } catch (e) {
-      setError(e?.response?.data?.detail ?? 'Cannot remove feature');
-    }
-  };
-
-  // ── Add new option to a global feature ──
-  const handleAddOption = async (featureId) => {
-    const name = (newOptionInputs[featureId] ?? '').trim();
-    const qty = Math.max(0, parseInt(newOptionQtyInputs[featureId], 10) || 0);
-    if (!name) return;
-    setError(null);
-    try {
-      const createdRes = await featuresAPI.addOption(featureId, { name });
-      const created = createdRes?.data ?? createdRes;
-      if (created?.id) {
-        await inventoryFeaturesAPI.saveOptionData(inventoryId, featureId, [{
-          option_id: created.id,
-          is_enabled: true,
-          quantity: usesCombinationTable ? 0 : qty,
-          price: null,
-        }]);
-      }
-      setNewOptionInputs(prev => ({ ...prev, [featureId]: '' }));
-      setNewOptionQtyInputs(prev => ({ ...prev, [featureId]: '' }));
-      await reload();
-    } catch (e) {
-      setError(e?.response?.data?.detail ?? 'Could not add option');
-    }
-  };
-
-  const optionLookup = buildOptionLookup(itemFeatures);
-  const usesCombinationTable = itemFeatures.length > 1;
-
-  const updateCombinationQuantity = (combinationKey, quantity) => {
-    setCombinationRows(prev => prev.map(row => (
-      row.combination_key === combinationKey
-        ? { ...row, quantity: Math.max(0, parseInt(quantity, 10) || 0) }
-        : row
-    )));
-    setCombinationDirty(true);
-  };
-
-  const removeCombinationRow = (combinationKey) => {
-    setCombinationRows(prev => prev.filter(row => row.combination_key !== combinationKey));
-    setCombinationDirty(true);
-  };
-
-  const handleDraftSelectionChange = (featureId, optionId) => {
-    setCombinationDraft(prev => ({
-      ...prev,
-      selections: {
-        ...prev.selections,
-        [featureId]: optionId,
-      },
-    }));
-  };
-
-  const handleAddCombination = () => {
-    const requiredFeatures = itemFeatures.filter(feature => feature.options.some(option => option.is_enabled));
-    const optionIds = requiredFeatures.map(feature => combinationDraft.selections[feature.feature_id]).filter(Boolean);
-    if (requiredFeatures.length === 0 || optionIds.length !== requiredFeatures.length) {
-      setError('Select one enabled option from each feature before adding a combination.');
-      return;
-    }
-
-    const quantity = Math.max(0, parseInt(combinationDraft.quantity, 10) || 0);
-    const combinationKey = [...optionIds].map(String).sort().join('|');
-
-    setCombinationRows(prev => {
-      const existing = prev.find(row => row.combination_key === combinationKey);
-      if (existing) {
-        return prev.map(row => row.combination_key === combinationKey ? { ...row, quantity } : row);
-      }
-      return [
-        ...prev,
-        {
-          combination_key: combinationKey,
-          option_ids: optionIds,
-          quantity,
-        },
-      ];
-    });
-    setCombinationDraft({ selections: {}, quantity: '' });
-    setCombinationDirty(true);
-    setError(null);
-  };
-
-  // ── Derived ──
-  const affectingFeatureId = itemFeatures.find(f => f.affects_price)?.feature_id ?? null;
-  const addableFeatures = globalFeatures.filter(
-    gf => !itemFeatures.find(pf => pf.feature_id === gf.id)
-       && gf.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const hasDirty = Object.keys(dirty).length > 0 || combinationDirty;
-
-  const priceRange = calcPriceRange(itemFeatures);
-  const priceDisplay = priceRange
-    ? (priceRange.min === priceRange.max
-        ? `$${priceRange.min.toFixed(2)}`
-        : `From $${priceRange.min.toFixed(2)} to $${priceRange.max.toFixed(2)}`)
-    : null;
-
-  return (
-    <div className="border-top mt-3 pt-3 px-1">
-      <div className="d-flex align-items-center justify-content-between mb-2">
-        <h6 className="fw-bold mb-0" style={{ fontSize: '0.9rem' }}>Descriptive Features</h6>
-        {priceDisplay && (
-          <span className="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle"
-                style={{ fontSize: '0.75rem' }}>
-            {priceDisplay}
-          </span>
-        )}
-      </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible py-1 mb-2" style={{ fontSize: '0.8rem' }}>
-          {typeof error === 'object' ? JSON.stringify(error) : error}
-          <button type="button" className="btn-close btn-sm" onClick={() => setError(null)} />
-        </div>
-      )}
-
-      {/* ── Affects-price radio group ── */}
+      {/* ── Descriptive options accordion ── */}
       {itemFeatures.length > 0 && (
-        <div className="mb-3 p-2 bg-light rounded border">
-          <div className="small fw-semibold text-muted mb-1">Which feature sets the price?</div>
-          <div className="d-flex flex-wrap gap-3">
-            <div className="form-check form-check-inline mb-0">
-              <input className="form-check-input" type="radio" name={`ap_${inventoryId}`}
-                id={`ap_none_${inventoryId}`}
-                checked={affectingFeatureId === null}
-                onChange={handleClearAffectsPrice}
-              />
-              <label className="form-check-label small" htmlFor={`ap_none_${inventoryId}`}>
-                None (fixed price)
-              </label>
-            </div>
-            {itemFeatures.map(f => (
-              <div key={f.feature_id} className="form-check form-check-inline mb-0">
-                <input className="form-check-input" type="radio" name={`ap_${inventoryId}`}
-                  id={`ap_${f.feature_id}`}
-                  checked={affectingFeatureId === f.feature_id}
-                  onChange={() => handleAffectsPrice(f.feature_id)}
-                />
-                <label className="form-check-label small" htmlFor={`ap_${f.feature_id}`}>
-                  {f.feature_name}
-                </label>
+        <div className="border rounded mb-3 overflow-hidden">
+          <button
+            type="button"
+            className="w-100 d-flex align-items-start justify-content-between gap-2 px-3 py-2 border-0"
+            style={{ background: '#f8f9fa' }}
+            onClick={() => setIsFeatureOptionsOpen(prev => !prev)}
+          >
+            <div className="text-start flex-grow-1">
+              <div className="fw-semibold" style={{ fontSize: '0.86rem' }}>
+                Descriptive Feature Options
               </div>
-            ))}
-          </div>
+              <div
+                className="d-flex flex-wrap gap-3 mt-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="form-check form-check-inline mb-0">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name={`ap_${inventoryId}`}
+                    id={`ap_none_${inventoryId}`}
+                    checked={affectingFeatureId === null}
+                    onChange={handleClearAffectsPrice}
+                  />
+                  <label className="form-check-label small" htmlFor={`ap_none_${inventoryId}`}>
+                    Fixed price
+                  </label>
+                </div>
+                {itemFeatures.map(f => (
+                  <div key={f.feature_id} className="form-check form-check-inline mb-0">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name={`ap_${inventoryId}`}
+                      id={`ap_${f.feature_id}`}
+                      checked={affectingFeatureId === f.feature_id}
+                      onChange={() => handleAffectsPrice(f.feature_id)}
+                    />
+                    <label className="form-check-label small" htmlFor={`ap_${f.feature_id}`}>
+                      Depends on {f.feature_name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ChevronDownIcon
+              style={{ width: 16, height: 16, transform: isFeatureOptionsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}
+            />
+          </button>
+
+          {isFeatureOptionsOpen && (
+            <div className="p-2 bg-white">
+              {/* ── Stock guidance ── */}
+              {usesCombinationTable ? (
+                <div className="alert alert-info py-1 mb-2" style={{ fontSize: '0.8rem' }}>
+                  Enable options in the checkbox lists below, then assign stock in the combination table. Option totals are linked automatically from those combination counts.
+                </div>
+              ) : itemFeatures.length > 1 && (() => {
+                const totals = itemFeatures.map(calcFeatureTotal);
+                const allEqual = totals.every(t => t === totals[0]);
+                if (allEqual) return null;
+                return (
+                  <div className="alert alert-warning py-1 mb-2 d-flex align-items-start gap-2" style={{ fontSize: '0.8rem' }}>
+                    <span>⚠</span>
+                    <span>
+                      <strong>Stock count mismatch.</strong> Feature totals differ — the effective stock is the lowest total ({Math.min(...totals)}).
+                      {' '}Adjust quantities so all features have the same total:{' '}
+                      {itemFeatures.map((f, i) => (
+                        <span key={f.feature_id}>
+                          <strong>{f.feature_name}</strong>: {totals[i]}
+                          {i < itemFeatures.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* ── Per-feature compact cards — horizontal scroll row ── */}
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: 2 }}>
+                {itemFeatures.map(f => {
+                  const featureTotal = calcFeatureTotal(f);
+                  const isMismatched = itemFeatures.length > 1 && itemFeatures.map(calcFeatureTotal).some(t => t !== featureTotal);
+                  return (
+                    <div
+                      key={f.feature_id}
+                      style={{ border: '1px solid #dee2e6', borderRadius: 6, flexShrink: 0, background: '#fff', overflow: 'hidden' }}
+                    >
+                      {/* Card header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px 3px 8px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', color: isMismatched ? '#b45309' : undefined }}>
+                          {f.feature_name}
+                        </span>
+                        {f.affects_price && (
+                          <span className="badge bg-primary" style={{ fontSize: '0.6rem' }}>Price</span>
+                        )}
+                        {dirty[f.feature_id] && (
+                          <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem' }}>•</span>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-link p-0 text-danger d-flex align-items-center"
+                          style={{ marginLeft: 'auto' }}
+                          title="Remove feature"
+                          onClick={() => handleRemoveFeature(f.feature_id)}
+                        >
+                          <TrashIcon style={{ width: 11, height: 11 }} />
+                        </button>
+                      </div>
+
+                      {/* Options list */}
+                      <div style={{ padding: '4px 8px' }}>
+                        {f.options.map(opt => (
+                          <div key={opt.option_id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0', opacity: opt.is_enabled ? 1 : 0.45 }}>
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              style={{ flexShrink: 0, marginTop: 0 }}
+                              checked={opt.is_enabled}
+                              onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
+                            />
+                            <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
+                            {!usesCombinationTable && (
+                              <input
+                                type="number"
+                                min={0}
+                                className="form-control form-control-sm"
+                                style={{ width: 48, fontSize: '0.75rem', padding: '0 4px', marginLeft: 4 }}
+                                value={opt.quantity}
+                                onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'quantity', e.target.value)}
+                              />
+                            )}
+                            {f.affects_price && (
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                className="form-control form-control-sm"
+                                style={{ width: 56, fontSize: '0.75rem', padding: '0 4px' }}
+                                value={opt.price ?? ''}
+                                placeholder="$"
+                                disabled={!opt.is_enabled}
+                                onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'price', e.target.value)}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Divider */}
+                      <div style={{ borderTop: '1px solid #dee2e6', margin: '0 8px' }} />
+
+                      {/* Add option */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px 6px' }}>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm"
+                          style={{ fontSize: '0.75rem', minWidth: 80 }}
+                          placeholder="New option…"
+                          value={newOptionInputs[f.feature_id] ?? ''}
+                          onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                          onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
+                        />
+                        {!usesCombinationTable && (
+                          <input
+                            type="number"
+                            min={0}
+                            className="form-control form-control-sm"
+                            style={{ width: 44, fontSize: '0.75rem', padding: '0 4px' }}
+                            placeholder="Qty"
+                            value={newOptionQtyInputs[f.feature_id] ?? ''}
+                            onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
+                            onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          style={{ fontSize: '0.75rem', padding: '1px 8px', flexShrink: 0 }}
+                          onClick={() => handleAddOption(f.feature_id)}
+                          disabled={!(newOptionInputs[f.feature_id] ?? '').trim()}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Stock guidance ── */}
-      {usesCombinationTable ? (
-        <div className="alert alert-info py-1 mb-2" style={{ fontSize: '0.8rem' }}>
-          Enable options in the checkbox lists above, then assign stock in the combination table below. Option totals are linked automatically from those combination counts.
-        </div>
-      ) : itemFeatures.length > 1 && (() => {
-        const totals = itemFeatures.map(calcFeatureTotal);
-        const allEqual = totals.every(t => t === totals[0]);
-        if (allEqual) return null;
-        return (
-          <div className="alert alert-warning py-1 mb-2 d-flex align-items-start gap-2" style={{ fontSize: '0.8rem' }}>
-            <span>⚠</span>
-            <span>
-              <strong>Stock count mismatch.</strong> Feature totals differ — the effective stock is the lowest total ({Math.min(...totals)}).
-              {' '}Adjust quantities so all features have the same total:{' '}
-              {itemFeatures.map((f, i) => (
-                <span key={f.feature_id}>
-                  <strong>{f.feature_name}</strong>: {totals[i]}
-                  {i < itemFeatures.length - 1 ? ', ' : ''}
-                </span>
-              ))}
-            </span>
-          </div>
-        );
-      })()}
+      {usesCombinationTable && (
+        <div className="mt-2 border rounded overflow-hidden">
+          <button
+            type="button"
+            className="w-100 d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-0"
+            style={{ background: '#f8f9fa' }}
+            onClick={() => setIsCombinationsOpen(prev => !prev)}
+          >
+            <div className="text-start d-flex align-items-center gap-2">
+              <span className="fw-semibold" style={{ fontSize: '0.86rem' }}>Feature Combinations</span>
+              <span className="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+                {combinationRows.length} rows
+              </span>
+            </div>
+            <ChevronDownIcon
+              style={{ width: 16, height: 16, transform: isCombinationsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}
+            />
+          </button>
 
-      {/* ── Per-feature accordions ── */}
-      {/* ── Per-feature compact cards — horizontal scroll row ── */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: 2 }}>
-        {itemFeatures.map(f => {
-          const featureTotal = calcFeatureTotal(f);
-          const isMismatched = itemFeatures.length > 1 && itemFeatures.map(calcFeatureTotal).some(t => t !== featureTotal);
-          return (
-            <div
-              key={f.feature_id}
-              style={{ border: '1px solid #dee2e6', borderRadius: 6, flexShrink: 0, background: '#fff', overflow: 'hidden' }}
-            >
-              {/* Card header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px 3px 8px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', color: isMismatched ? '#b45309' : undefined }}>
-                  {f.feature_name}
+          {isCombinationsOpen && (
+            <div className="p-2 bg-light-subtle">
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <div>
+                  <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>Combination Stock</div>
+                  <div className="text-muted" style={{ fontSize: '0.74rem' }}>
+                    Add one row for each sellable feature combination and set the available count.
+                  </div>
+                </div>
+                <span className="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+                  Total {calcTotalStock(itemFeatures, combinationRows)}
                 </span>
-                {f.affects_price && (
-                  <span className="badge bg-primary" style={{ fontSize: '0.6rem' }}>Price</span>
-                )}
-                {dirty[f.feature_id] && (
-                  <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem' }}>•</span>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-link p-0 text-danger d-flex align-items-center"
-                  style={{ marginLeft: 'auto' }}
-                  title="Remove feature"
-                  onClick={() => handleRemoveFeature(f.feature_id)}
-                >
-                  <TrashIcon style={{ width: 11, height: 11 }} />
-                </button>
               </div>
 
-              {/* Options list */}
+              <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <table className="table table-sm align-middle mb-2" style={{ width: 'max-content' }}>
+                  <thead>
+                    <tr>
+                      {itemFeatures.map(feature => (
+                        <th key={feature.feature_id}>{feature.feature_name}</th>
+                      ))}
+                      <th style={{ width: 110 }}>Count</th>
+                      <th style={{ width: 80 }} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {combinationRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={itemFeatures.length + 2} className="text-muted" style={{ fontSize: '0.78rem' }}>
+                          No combinations saved yet.
+                        </td>
+                      </tr>
+                    ) : combinationRows.map(row => (
+                      <tr key={row.combination_key}>
+                        {itemFeatures.map(feature => {
+                          const optionId = row.option_ids?.find(id => optionLookup[id]?.featureId === feature.feature_id);
+                          return <td key={`${row.combination_key}-${feature.feature_id}`}>{optionLookup[optionId]?.optionName ?? '—'}</td>;
+                        })}
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            className="form-control form-control-sm"
+                            value={row.quantity}
+                            onChange={e => updateCombinationQuantity(row.combination_key, e.target.value)}
+                          />
+                        </td>
+                        <td className="text-end">
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm text-danger p-0"
+                            onClick={() => removeCombinationRow(row.combination_key)}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr>
+                      {itemFeatures.map(feature => {
+                        const enabledOptions = feature.options.filter(option => option.is_enabled);
+                        return (
+                          <td key={`draft-${feature.feature_id}`}>
+                            <select
+                              className="form-select form-select-sm"
+                              value={combinationDraft.selections[feature.feature_id] ?? ''}
+                              onChange={e => handleDraftSelectionChange(feature.feature_id, e.target.value)}
+                            >
+                              <option value="">Select…</option>
+                              {enabledOptions.map(option => (
+                                <option key={option.option_id} value={option.option_id}>{option.option_name}</option>
+                              ))}
+                            </select>
+                          </td>
+                        );
+                      })}
+                      <td>
+                        <input
+                          type="number"
+                          min={0}
+                          className="form-control form-control-sm"
+                          placeholder="0"
+                          value={combinationDraft.quantity}
+                          onChange={e => setCombinationDraft(prev => ({ ...prev, quantity: e.target.value }))}
+                        />
+                      </td>
+                      <td className="text-end">
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={handleAddCombination}
+                        >
+                          Add Row
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
               <div style={{ padding: '4px 8px' }}>
                 {f.options.map(opt => (
                   <div key={opt.option_id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0', opacity: opt.is_enabled ? 1 : 0.45 }}>
