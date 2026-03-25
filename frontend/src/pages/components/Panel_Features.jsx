@@ -80,7 +80,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
   const [newFeatureName, setNewFeatureName]   = useState('');
   const [newOptionInputs, setNewOptionInputs] = useState({}); // featureId → string
-  const [newOptionQtyInputs, setNewOptionQtyInputs] = useState({}); // featureId → string qty
   const [combinationDraft, setCombinationDraft] = useState({ selections: {}, quantity: '' });
   const [dirty, setDirty]                     = useState({}); // featureId → bool
   const [combinationDirty, setCombinationDirty] = useState(false);
@@ -283,7 +282,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   // ── Add new option to a global feature ──
   const handleAddOption = async (featureId) => {
     const name = (newOptionInputs[featureId] ?? '').trim();
-    const qty = Math.max(0, parseInt(newOptionQtyInputs[featureId], 10) || 0);
     if (!name) return;
     setError(null);
     try {
@@ -293,12 +291,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         await inventoryFeaturesAPI.saveOptionData(inventoryId, featureId, [{
           option_id: created.id,
           is_enabled: true,
-          quantity: usesCombinationTable ? 0 : qty,
+          quantity: 0,  // Always 0; stock controlled via combinations table
           price: null,
         }]);
       }
       setNewOptionInputs(prev => ({ ...prev, [featureId]: '' }));
-      setNewOptionQtyInputs(prev => ({ ...prev, [featureId]: '' }));
       await reload();
     } catch (e) {
       setError(e?.response?.data?.detail ?? 'Could not add option');
@@ -434,30 +431,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           {isFeatureOptionsOpen && (
             <div className="p-2 bg-white">
               {/* ── Stock guidance ── */}
-              {usesCombinationTable ? (
-                <div className="alert alert-info py-1 mb-2" style={{ fontSize: '0.8rem' }}>
-                  Enable options in the checkbox lists below, then assign stock in the combination table. Option totals are linked automatically from those combination counts.
-                </div>
-              ) : itemFeatures.length > 1 && (() => {
-                const totals = itemFeatures.map(calcFeatureTotal);
-                const allEqual = totals.every(t => t === totals[0]);
-                if (allEqual) return null;
-                return (
-                  <div className="alert alert-warning py-1 mb-2 d-flex align-items-start gap-2" style={{ fontSize: '0.8rem' }}>
-                    <span>⚠</span>
-                    <span>
-                      <strong>Stock count mismatch.</strong> Feature totals differ — the effective stock is the lowest total ({Math.min(...totals)}).
-                      {' '}Adjust quantities so all features have the same total:{' '}
-                      {itemFeatures.map((f, i) => (
-                        <span key={f.feature_id}>
-                          <strong>{f.feature_name}</strong>: {totals[i]}
-                          {i < itemFeatures.length - 1 ? ', ' : ''}
-                        </span>
-                      ))}
-                    </span>
-                  </div>
-                );
-              })()}
+              <div className="alert alert-info py-1 mb-2" style={{ fontSize: '0.8rem' }}>
+                Enable options in the checkbox lists below, then assign stock in the combination table below. 
+                {itemFeatures.length > 1 && ' For multiple features, create one row per sellable combination.'}
+                {itemFeatures.length === 1 && ' One row per enabled option.'}
+              </div>
 
               {/* ── Per-feature compact cards — horizontal scroll row ── */}
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: 2 }}>
@@ -503,14 +481,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                               onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
                             />
                             <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              className="form-control form-control-sm"
-                              style={{ width: 48, fontSize: '0.75rem', padding: '0 4px', marginLeft: 4 }}
-                              value={opt.quantity}
-                              onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'quantity', e.target.value)}
-                            />
                             
                             {f.affects_price && (
                               <input
@@ -543,18 +513,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                           onChange={e => setNewOptionInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
                           onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
                         />
-                        {!usesCombinationTable && (
-                          <input
-                            type="number"
-                            min={0}
-                            className="form-control form-control-sm"
-                            style={{ width: 44, fontSize: '0.75rem', padding: '0 4px' }}
-                            placeholder="Qty"
-                            value={newOptionQtyInputs[f.feature_id] ?? ''}
-                            onChange={e => setNewOptionQtyInputs(prev => ({ ...prev, [f.feature_id]: e.target.value }))}
-                            onKeyDown={e => e.key === 'Enter' && handleAddOption(f.feature_id)}
-                          />
-                        )}
                         <button
                           type="button"
                           className="btn btn-outline-secondary btn-sm"
