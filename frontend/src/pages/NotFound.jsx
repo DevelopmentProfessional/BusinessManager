@@ -23,12 +23,13 @@
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 const NotFound = () => {
 // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
-  const navigate = useNavigate();
+  const goToRoot = () => window.location.assign('/');
+  const goToLogin = () => window.location.assign('/login');
+  const reloadPage = () => window.location.reload();
 
 // ─── [3] RENDER ─────────────────────────────────────────────────────────────
   return (
@@ -40,15 +41,32 @@ const NotFound = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Page Not Found
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          The page you're looking for doesn't exist or has been moved.
+        <p className="text-gray-600 dark:text-gray-400 mb-3">
+          The page you're looking for doesn't exist, has moved, or the site is redeploying.
         </p>
-        <button
-          onClick={() => navigate('/', { replace: true })}
-          className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-        >
-          Go to Home
-        </button>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          Try reloading, then return to the main site.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={reloadPage}
+            className="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
+          >
+            Reload Page
+          </button>
+          <button
+            onClick={goToRoot}
+            className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+          >
+            Go to Main Site
+          </button>
+          <button
+            onClick={goToLogin}
+            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
     </div>
   );
