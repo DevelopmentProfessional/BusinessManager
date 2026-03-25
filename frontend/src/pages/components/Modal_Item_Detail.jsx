@@ -826,8 +826,7 @@ export default function Modal_Detail_Item({
       price: parseFloat(formData.price) || 0,
       cost: formData.cost !== '' && formData.cost != null ? parseFloat(formData.cost) : null,
       description: formData.description,
-      // When features manage stock, use the feature-computed total
-      quantity: featureStock != null ? featureStock : parseInt(formData.quantity) || 0,
+      quantity: parseInt(formData.quantity) || 0,
       min_stock_level: parseInt(formData.min_stock_level) || 10,
       location: formData.location,
       image_url: formData.image_url,
@@ -855,8 +854,7 @@ export default function Modal_Detail_Item({
     return <CubeIcon className="h-16 w-16" />;
   };
 
-  // When features are managing stock, use the feature-derived total; else use form value
-  const effectiveStock = featureStock ?? formData.quantity;
+  const effectiveStock = formData.quantity;
   const isLowStock = effectiveStock <= formData.min_stock_level;
 
   // Reusable image display with navigation
@@ -1203,17 +1201,13 @@ export default function Modal_Detail_Item({
                         type="number"
                         id="quantity"
                         name="quantity"
-                        value={featureStock != null ? featureStock : formData.quantity}
+                        value={formData.quantity}
                         onChange={handleChange}
                         className="form-control form-control-sm"
                         placeholder="Current Count"
                         min="0"
-                        disabled={featureStock != null}
-                        title={featureStock != null ? 'Stock is managed by features below' : ''}
                       />
-                      <label htmlFor="quantity">
-                        {featureStock != null ? 'Stock (from features)' : 'Current Count'}
-                      </label>
+                      <label htmlFor="quantity">Current Count</label>
                     </div>
 
                                 <div className="mb-2">
