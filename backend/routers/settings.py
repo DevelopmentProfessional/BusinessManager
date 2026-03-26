@@ -196,3 +196,198 @@ def trigger_seed_data(
         "message": "Seed completed successfully",
         "force": payload.force,
     }
+
+
+# ─── 4 USER SCHEDULE SETTINGS ──────────────────────────────────────────────────
+
+from sqlmodel import func
+from datetime import timedelta
+
+try:
+    from backend.models import (
+        ScheduleSettings, ScheduleSettingsRead,
+        PendingOrder, PendingOrderRead,
+        User
+    )
+except ImportError:
+    from models import (
+        ScheduleSettings, ScheduleSettingsRead,
+        PendingOrder, PendingOrderRead,
+        User
+    )
+
+
+@router.get("/api/v1/schedule-settings/{user_id}", response_model=AppSettingsRead)
+def get_user_schedule_settings(
+    user_id: UUID,
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Get schedule settings for a user."""
+    # Users can only view their own settings unless they're admin
+    if user_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    stmt = select(ScheduleSettings).where(
+        ScheduleSettings.user_id == user_id,
+        ScheduleSettings.company_id == current_user.company_id
+    )
+    settings = session.exec(stmt).first()
+
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not found")
+
+    return ScheduleSettingsRead.model_validate(settings)
+
+
+@router.put("/api/v1/schedule-settings/{user_id}", response_model=AppSettingsRead)
+def update_user_schedule_settings(
+    user_id: UUID,
+    payload: dict,
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Update schedule settings for a user."""
+    # Users can only update their own settings unless they're admin
+    if user_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    stmt = select(ScheduleSettings).where(
+        ScheduleSettings.user_id == user_id,
+        ScheduleSettings.company_id == current_user.company_id
+    )
+    settings = session.exec(stmt).first()
+
+    if not settings:
+        # Create if doesn't exist
+        settings = ScheduleSettings(
+            user_id=user_id,
+            company_id=current_user.company_id,
+            auto_accept_client_bookings=payload.get("auto_accept_client_bookings", False),
+            auto_accept_pending_hours=payload.get("auto_accept_pending_hours")
+        )
+    else:
+        # Update existing
+        if "auto_accept_client_bookings" in payload:
+            settings.auto_accept_client_bookings = payload["auto_accept_client_bookings"]
+        if "auto_accept_pending_hours" in payload:
+            settings.auto_accept_pending_hours = payload["auto_accept_pending_hours"]
+
+    settings.updated_at = datetime.utcnow()
+    session.add(settings)
+    session.commit()
+    session.refresh(settings)
+
+    return ScheduleSettingsRead.model_validate(settings)
+
+
+# ─── 5 PENDING ORDERS ENDPOINTS ────────────────────────────────────────────────
+
+@router.get("/api/v1/pending-orders")
+def list_pending_orders(
+    client_id: UUID = None,
+    order_type: str = None,
+    status: str = None,
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """List pending review orders."""
+    stmt = select(PendingOrder).where(
+        PendingOrder.company_id == current_user.company_id
+    )
+
+    if client_id:
+        stmt = stmt.where(PendingOrder.client_id == client_id)
+    if order_type:
+        stmt = stmt.where(PendingOrder.order_type == order_type)
+    if status:
+        stmt = stmt.where(PendingOrder.status == status)
+
+    stmt = stmt.order_by(PendingOrder.created_at.desc())
+    orders = session.exec(stmt).all()
+
+    return [PendingOrderRead.model_validate(o) for o in orders]
+
+
+@router.get("/api/v1/pending-orders/count")
+def get_pending_orders_count(
+    client_id: UUID = None,
+    order_type: str = None,
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Get count of pending review orders."""
+    stmt = select(func.count(PendingOrder.id)).where(
+        PendingOrder.company_id == current_user.company_id,
+        PendingOrder.status.in_(["pending", "pending_revision"])
+    )
+
+    if client_id:
+        stmt = stmt.where(PendingOrder.client_id == client_id)
+    if order_type:
+        stmt = stmt.where(PendingOrder.order_type == order_type)
+
+    count = session.exec(stmt).first() or 0
+
+    return {
+        "pending_count": count,
+        "has_pending": count > 0,
+        "client_id": str(client_id) if client_id else None,
+        "order_type": order_type
+    }
+
+
+@router.get("/api/v1/pending-orders/summary")
+def get_pending_orders_summary(
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Get summary of pending orders by type and age."""
+    now = datetime.utcnow()
+
+    # Count by type
+    stmt = select(
+        PendingOrder.order_type,
+        func.count(PendingOrder.id)
+    ).where(
+        PendingOrder.company_id == current_user.company_id,
+        PendingOrder.status == "pending"
+    ).group_by(PendingOrder.order_type)
+
+    type_counts = session.exec(stmt).all()
+
+    # Count by age (how long pending)
+    one_day_ago = now - timedelta(days=1)
+    three_days_ago = now - timedelta(days=3)
+
+    stmt_fresh = select(func.count(PendingOrder.id)).where(
+        PendingOrder.company_id == current_user.company_id,
+        PendingOrder.status == "pending",
+        PendingOrder.created_at > one_day_ago
+    )
+    fresh_count = session.exec(stmt_fresh).first() or 0
+
+    stmt_aged = select(func.count(PendingOrder.id)).where(
+        PendingOrder.company_id == current_user.company_id,
+        PendingOrder.status == "pending",
+        PendingOrder.created_at <= one_day_ago,
+        PendingOrder.created_at > three_days_ago
+    )
+    aged_count = session.exec(stmt_aged).first() or 0
+
+    stmt_very_old = select(func.count(PendingOrder.id)).where(
+        PendingOrder.company_id == current_user.company_id,
+        PendingOrder.status == "pending",
+        PendingOrder.created_at <= three_days_ago
+    )
+    very_old_count = session.exec(stmt_very_old).first() or 0
+
+    return {
+        "by_type": {order_type: count for order_type, count in type_counts},
+        "by_age": {
+            "less_than_1_day": fresh_count,
+            "1_to_3_days": aged_count,
+            "over_3_days": very_old_count
+        },
+        "total_pending": sum([count for _, count in type_counts])
+    }

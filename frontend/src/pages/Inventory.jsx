@@ -399,8 +399,13 @@ return (
                     <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
                       {inv.name}
                     </div>
-                    {inv.supplier_name && (
-                      <div className="small text-muted">{inv.supplier_name}</div>
+                    {inv.category && (
+                      <span
+                        className="badge bg-secondary-subtle text-secondary rounded-pill"
+                        style={{ fontSize: '0.68rem', width: 'fit-content' }}
+                      >
+                        {inv.category}
+                      </span>
                     )}
                     {/* Price display (range if features affect price, otherwise fixed) */}
                     {getPriceDisplay(inv) && (

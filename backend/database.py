@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.25.1"
+CURRENT_SCHEMA_VERSION = "2026.03.26.2"
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -899,6 +899,77 @@ def _ensure_inventory_category_table_if_needed():
         print(f"  Warning: Could not create inventory_category table: {e}")
 
 
+def _ensure_department_table_if_needed():
+    """Create department table and add department_id FK column to user table."""
+    try:
+        with engine.begin() as conn:
+            dept_exists = conn.execute(text("SELECT to_regclass('department')")).scalar()
+            if not dept_exists:
+                conn.execute(text("""
+                    CREATE TABLE department (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name VARCHAR NOT NULL,
+                        description VARCHAR,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_department_name ON department(name)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_department_company_id ON department(company_id)"))
+                print("  + Created department table")
+
+            col_exists = conn.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'user' AND column_name = 'department_id'
+            """)).fetchone()
+            if not col_exists:
+                conn.execute(text(
+                    'ALTER TABLE "user" ADD COLUMN department_id UUID REFERENCES department(id) ON DELETE SET NULL'
+                ))
+                print("  + Added department_id to user table")
+    except Exception as e:
+        print(f"  Warning: Could not set up department table: {e}")
+
+
+def _ensure_document_tag_tables_if_needed():
+    """Create document_tag and document_tag_link tables for document tagging."""
+    try:
+        with engine.begin() as conn:
+            tag_exists = conn.execute(text("SELECT to_regclass('document_tag')")).scalar()
+            if not tag_exists:
+                conn.execute(text("""
+                    CREATE TABLE document_tag (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name VARCHAR NOT NULL,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_name ON document_tag(name)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_company_id ON document_tag(company_id)"))
+                print("  + Created document_tag table")
+            link_exists = conn.execute(text("SELECT to_regclass('document_tag_link')")).scalar()
+            if not link_exists:
+                conn.execute(text("""
+                    CREATE TABLE document_tag_link (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        document_id UUID NOT NULL REFERENCES document(id) ON DELETE CASCADE,
+                        tag_id UUID NOT NULL REFERENCES document_tag(id) ON DELETE CASCADE,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE(document_id, tag_id)
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_link_document_id ON document_tag_link(document_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_link_tag_id ON document_tag_link(tag_id)"))
+                print("  + Created document_tag_link table")
+    except Exception as e:
+        print(f"  Warning: Could not create document tag tables: {e}")
+
+
 def _seed_inventory_categories_for_03897():
     """Seed default item categories for company 03897."""
     COMPANY_ID = "03897"
@@ -982,6 +1053,8 @@ def create_db_and_tables():
     _drop_descriptive_feature_name_unique_index_if_needed()
     _ensure_inventory_category_table_if_needed()
     _seed_inventory_categories_for_03897()
+    _ensure_document_tag_tables_if_needed()
+    _ensure_department_table_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

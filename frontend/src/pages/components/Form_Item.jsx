@@ -195,14 +195,18 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     return () => { if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl); };
   }, []);
 
-  // Load categories whenever type changes
+  // Load categories whenever type changes.
+  // cancelled flag prevents stale API responses from overwriting fresh results
+  // when the type changes quickly (e.g. initial populate from item prop).
   useEffect(() => {
+    let cancelled = false;
     const type = (formData.type || 'PRODUCT').toLowerCase();
     inventoryCategoriesAPI.getByType(type)
-      .then(res => setItemCategories(Array.isArray(res?.data) ? res.data : []))
-      .catch(() => setItemCategories([]));
+      .then(res => { if (!cancelled) setItemCategories(Array.isArray(res?.data) ? res.data : []); })
+      .catch(() => { if (!cancelled) setItemCategories([]); });
     setShowCategoryManager(false);
     setNewCategoryName('');
+    return () => { cancelled = true; };
   }, [formData.type]);
 
   // Load products when type changes to BUNDLE or MIX

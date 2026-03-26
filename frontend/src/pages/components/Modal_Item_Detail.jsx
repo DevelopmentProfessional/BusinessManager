@@ -630,7 +630,7 @@ export default function Modal_Detail_Item({
         min_stock_level: item.min_stock_level || 10,
         location: item.location || '',
         image_url: item.image_url || '',
-        type: item.type || 'PRODUCT',
+        type: (item.type || 'PRODUCT').toUpperCase(),
         supplier_id: item.supplier_id || '',
         category: item.category || '',
       });
@@ -674,15 +674,18 @@ export default function Modal_Detail_Item({
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode, loadAvailableLocations]);
 
-  // Load categories whenever item type changes (or modal opens with a new item)
+  // Load categories whenever item type changes (or modal opens with a new item).
+  // cancelled flag prevents stale API responses from overwriting fresh results.
   const currentItemType = (formData.type || 'PRODUCT').toLowerCase();
   useEffect(() => {
     if (!isOpen || isSalesMode) return;
+    let cancelled = false;
     inventoryCategoriesAPI.getByType(currentItemType)
-      .then(res => setItemCategories(Array.isArray(res?.data) ? res.data : []))
-      .catch(() => setItemCategories([]));
+      .then(res => { if (!cancelled) setItemCategories(Array.isArray(res?.data) ? res.data : []); })
+      .catch(() => { if (!cancelled) setItemCategories([]); });
     setShowCategoryManager(false);
     setNewCategoryName('');
+    return () => { cancelled = true; };
   }, [isOpen, currentItemType, isSalesMode]);
 
   const handleAddCategory = async () => {

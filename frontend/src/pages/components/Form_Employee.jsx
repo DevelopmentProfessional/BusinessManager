@@ -38,7 +38,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './Button_Toolbar';
-import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI } from '../../services/api';
+import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showConfirm } from '../../services/showConfirm';
 import Widget_Signature from './Widget_Signature';
@@ -109,6 +109,13 @@ export default function Form_Employee({
   const [signatureMessage, setSignatureMessage] = useState('');
   const signatureFileRef = useRef(null);
 
+  // Department state
+  const [departments, setDepartments] = useState([]);
+  const [showNewDept, setShowNewDept] = useState(false);
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptDesc, setNewDeptDesc] = useState('');
+  const [deptCreating, setDeptCreating] = useState(false);
+
   // Payments state
   const [paySlips, setPaySlips] = useState([]);
   const [paySlipsLoading, setPaySlipsLoading] = useState(false);
@@ -133,6 +140,7 @@ export default function Form_Employee({
     role_id: '',
     iod_number: '',
     location: '',
+    department_id: '',
     // Benefits
     employment_type: '',
     salary: '',
@@ -161,6 +169,13 @@ export default function Form_Employee({
       }
     };
     loadRoles();
+  }, []);
+
+  // Load departments
+  useEffect(() => {
+    departmentsAPI.getAll()
+      .then(res => { const d = res?.data ?? res; if (Array.isArray(d)) setDepartments(d); })
+      .catch(() => {});
   }, []);
 
   // Load insurance plans
@@ -215,6 +230,7 @@ export default function Form_Employee({
         role_id: employee.role_id || '',
         iod_number: employee.iod_number || '',
         location: employee.location || '',
+        department_id: employee.department_id || '',
         employment_type: employee.employment_type || '',
         salary: employee.salary ?? '',
         hourly_rate: employee.hourly_rate ?? '',
@@ -350,6 +366,25 @@ export default function Form_Employee({
     }
   };
 
+  const handleCreateDepartment = async () => {
+    const name = newDeptName.trim();
+    if (!name || deptCreating) return;
+    setDeptCreating(true);
+    try {
+      const res = await departmentsAPI.create({ name, description: newDeptDesc.trim() || undefined });
+      const created = res?.data ?? res;
+      setDepartments(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setFormData(prev => ({ ...prev, department_id: created.id }));
+      setNewDeptName('');
+      setNewDeptDesc('');
+      setShowNewDept(false);
+    } catch (err) {
+      console.error('Failed to create department', err);
+    } finally {
+      setDeptCreating(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -376,6 +411,7 @@ export default function Form_Employee({
     if (!submitData.role_id) submitData.role_id = null;
     if (!submitData.iod_number.trim()) submitData.iod_number = null;
     if (!submitData.location.trim()) submitData.location = null;
+    if (!submitData.department_id) submitData.department_id = null;
     if (!submitData.employment_type) submitData.employment_type = null;
     if (!submitData.pay_frequency) submitData.pay_frequency = null;
     if (!submitData.insurance_plan) submitData.insurance_plan = null;
@@ -649,6 +685,72 @@ export default function Form_Employee({
                     className="form-control form-control-sm" placeholder="Location" />
                   <label htmlFor="location">Location</label>
                 </div>
+              </div>
+
+              {/* Department */}
+              <div className="col-12">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="form-floating flex-grow-1">
+                    <select
+                      id="department_id"
+                      name="department_id"
+                      value={formData.department_id}
+                      onChange={handleInputChange}
+                      className="form-select form-select-sm"
+                    >
+                      <option value="">— None —</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                    <label htmlFor="department_id">Department</label>
+                  </div>
+                  <button
+                    type="button"
+                    title={showNewDept ? 'Close' : 'Create a new department'}
+                    onClick={() => { setShowNewDept(v => !v); setNewDeptName(''); setNewDeptDesc(''); }}
+                    className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                    style={{ height: '3.2rem', width: '2.6rem', fontSize: '1rem' }}
+                  >
+                    {showNewDept ? '×' : '+'}
+                  </button>
+                </div>
+
+                {showNewDept && (
+                  <div className="mt-2 p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <p className="small text-muted mb-2">Create a new department</p>
+                    <div className="d-flex flex-column gap-1">
+                      <input
+                        type="text"
+                        value={newDeptName}
+                        onChange={e => setNewDeptName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateDepartment())}
+                        placeholder="Department name (required)"
+                        className="form-control form-control-sm"
+                        style={{ fontSize: '0.82rem' }}
+                        autoFocus
+                      />
+                      <input
+                        type="text"
+                        value={newDeptDesc}
+                        onChange={e => setNewDeptDesc(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateDepartment())}
+                        placeholder="Description (optional)"
+                        className="form-control form-control-sm"
+                        style={{ fontSize: '0.82rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateDepartment}
+                        disabled={!newDeptName.trim() || deptCreating}
+                        className="btn btn-sm btn-outline-primary align-self-start px-3"
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        {deptCreating ? 'Creating…' : 'Create & Select'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Direct Reports (read-only) */}

@@ -61,7 +61,7 @@ import {
 import useStore from '../services/useStore';
 import { showConfirm } from '../services/showConfirm';
 import Button_Toolbar from './components/Button_Toolbar';
-import api, { documentsAPI, documentCategoriesAPI, templatesAPI } from '../services/api';
+import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from '../services/api';
 import Modal from './components/Modal';
 import Table_Mobile from './components/Table_Mobile';
 import Button_Add_Mobile from './components/Button_Add_Mobile';
@@ -337,6 +337,9 @@ export default function Documents() {
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const { isTrainingMode } = useViewMode();
 
+  // Tag data: {documentId: [tagName, ...]} — loaded once, refreshed after edit
+  const [docTagMap, setDocTagMap] = useState({});
+
   // Templates state
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates, setTemplates] = useState([]);
@@ -379,11 +382,13 @@ export default function Documents() {
 
       if (!term) return true;
 
+      const tagNames = (docTagMap[String(doc.id)] || []).join(' ');
       const haystack = [
         doc.original_filename,
         doc.description,
         doc.entity_type,
         categoryName,
+        tagNames,
       ]
         .filter(Boolean)
         .join(' ')
@@ -391,13 +396,14 @@ export default function Documents() {
 
       return haystack.includes(term);
     });
-  }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById]);
+  }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById, docTagMap]);
 
   // ─── 7  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
     loadDocuments();
     loadCategories();
     loadTemplates();
+    loadDocTagMap();
   });
 
   // ─── 8  TEMPLATE API HANDLERS ─────────────────────────────────────────────
@@ -493,6 +499,15 @@ export default function Documents() {
     }
   };
 
+  const loadDocTagMap = async () => {
+    try {
+      const res = await documentTagsAPI.getAllLinks();
+      setDocTagMap(res.data || {});
+    } catch {
+      // non-critical — search will just not include tags
+    }
+  };
+
   // ─── 10  DOCUMENT VIEW / EDIT HANDLERS ───────────────────────────────────
   // View document in modal
   const handleView = (doc) => {
@@ -537,6 +552,8 @@ export default function Documents() {
     if (viewerDoc && viewerDoc.id === updatedDoc.id) {
       setViewerDoc(updatedDoc);
     }
+    // Refresh tag map so search reflects any tag changes
+    loadDocTagMap();
   };
 
   // Open in dedicated editor page
@@ -909,8 +926,17 @@ export default function Documents() {
                           <div className="fw-medium text-truncate" style={{ maxWidth: '100%' }}>
                             {doc.original_filename ?? '(unnamed)'}
                           </div>
-                          <div className="small text-muted text-truncate">
-                            {doc.entity_type ? <span className="text-capitalize">{doc.entity_type}</span> : 'Document'}
+                          <div className="small text-muted d-flex align-items-center gap-1 flex-wrap">
+                            <span className="text-capitalize">{doc.entity_type || 'Document'}</span>
+                            {(docTagMap[String(doc.id)] || []).map((tag) => (
+                              <span
+                                key={tag}
+                                className="badge rounded-pill"
+                                style={{ fontSize: '0.68rem', fontWeight: 500, background: 'var(--bs-info-bg-subtle)', color: 'var(--bs-info-text-emphasis)' }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
                           </div>
                         </td>
 
@@ -941,7 +967,7 @@ export default function Documents() {
         <PageTableFooter
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
-          searchPlaceholder="Search by name, type, or description..."
+          searchPlaceholder="Search by name, type, description, or tag…"
           hideSearch={showTemplates}
         >
           {/* Templates toggle */}

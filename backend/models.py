@@ -135,6 +135,14 @@ class Company(BaseModel, table=True):
 
 # ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
 # User model for authentication (consolidated user/employee)
+class Department(BaseModel, table=True):
+    """Company-scoped department lookup for grouping employees."""
+    __tablename__ = "department"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
 class User(BaseModel, table=True):
     __table_args__ = (
         UniqueConstraint("company_id", "username", name="uq_user_company_username"),
@@ -168,6 +176,7 @@ class User(BaseModel, table=True):
     iod_number: Optional[str] = Field(default=None)
     supervisor: Optional[str] = Field(default=None)
     location: Optional[str] = Field(default=None)
+    department_id: Optional[UUID] = Field(default=None, foreign_key="department.id")
 
     # Signature (base64 PNG data URL)
     signature_data: Optional[str] = Field(default=None)
@@ -660,6 +669,28 @@ class DocumentAssignmentRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class DocumentTag(BaseModel, table=True):
+    """Company-scoped tag lookup for documents."""
+    __tablename__ = "document_tag"
+    name: str = Field(index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentTagLink(BaseModel, table=True):
+    """Junction table linking a document to a tag."""
+    __tablename__ = "document_tag_link"
+    document_id: UUID = Field(foreign_key="document.id", index=True)
+    tag_id: UUID = Field(foreign_key="document_tag.id", index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentTagRead(SQLModel):
+    id: UUID
+    name: str
+    company_id: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
 # ─── 17 READ / CREATE / UPDATE SCHEMAS ─────────────────────────────────────────
 # ─── 17a CLIENT SCHEMAS ────────────────────────────────────────────────────────
 # Request/Response models for API
@@ -963,6 +994,15 @@ class InventoryFeatureCombinationWrite(SQLModel):
 
 
 # ─── 17f USER SCHEMAS ──────────────────────────────────────────────────────────
+class DepartmentRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    company_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
 class UserCreate(SQLModel):
     username: str
     email: Optional[str] = None
@@ -977,6 +1017,7 @@ class UserCreate(SQLModel):
     iod_number: Optional[str] = None
     supervisor: Optional[str] = None
     location: Optional[str] = None
+    department_id: Optional[UUID] = None
     salary: Optional[float] = None
     pay_frequency: Optional[str] = None
     insurance_plan: Optional[str] = None
@@ -1008,6 +1049,7 @@ class UserUpdate(SQLModel):
     iod_number: Optional[str] = None
     supervisor: Optional[str] = None
     location: Optional[str] = None
+    department_id: Optional[UUID] = None
     salary: Optional[float] = None
     pay_frequency: Optional[str] = None
     insurance_plan: Optional[str] = None
@@ -1041,6 +1083,7 @@ class UserRead(SQLModel):
     iod_number: Optional[str] = None
     supervisor: Optional[str] = None
     location: Optional[str] = None
+    department_id: Optional[UUID] = None
     salary: Optional[float] = None
     pay_frequency: Optional[str] = None
     insurance_plan: Optional[str] = None
@@ -2109,4 +2152,339 @@ class DocumentTemplateRead(SQLModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+    model_config = {"from_attributes": True}
+
+
+# ─── 12 AUDIT LOGGING ──────────────────────────────────────────────────────────
+class AuditLog(BaseModel, table=True):
+    """Comprehensive audit trail for compliance and security"""
+    __tablename__ = "audit_log"
+    
+    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None, index=True)
+    username: Optional[str] = Field(default=None, index=True)
+    action: str = Field(index=True)  # "create", "update", "delete", "approve", "reject", "view", "download"
+    entity_type: str = Field(index=True)  # "document", "inventory", "order", "schedule", etc.
+    entity_id: Optional[UUID] = Field(default=None, index=True)
+    entity_name: Optional[str] = Field(default=None)
+    
+    # Before/after values
+    changes_json: Optional[str] = Field(default=None)  # JSON: {"field": {"old": X, "new": Y}, ...}
+    
+    # Request context
+    ip_address: Optional[str] = Field(default=None)
+    user_agent: Optional[str] = Field(default=None)
+    
+    # Status
+    status: str = Field(default="success")  # "success" or "failure"
+    error_message: Optional[str] = Field(default=None)
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 13 WORKFLOW & APPROVALS ───────────────────────────────────────────────────
+class WorkflowTemplate(BaseModel, table=True):
+    """Reusable workflow definitions (e.g., 'Expense Approval', 'Invoice Approval')"""
+    __tablename__ = "workflow_template"
+    
+    name: str = Field(index=True)
+    description: Optional[str] = None
+    document_type: str  # "document", "expense", "invoice", "leave_request", "purchase_order"
+    company_id: str = Field(index=True)
+    is_active: bool = Field(default=True)
+    
+    # Workflow structure (JSON, stores all stage configs)
+    stages_json: str = Field(default='{"stages": []}')
+    
+    created_by: Optional[UUID] = Field(foreign_key="user.id")
+
+
+class DocumentWorkflowInstance(BaseModel, table=True):
+    """Instance of a workflow for a specific document"""
+    __tablename__ = "document_workflow_instance"
+    
+    document_id: UUID = Field(foreign_key="document.id", index=True, unique=True)
+    workflow_template_id: UUID = Field(foreign_key="workflow_template.id")
+    company_id: str = Field(index=True)
+    
+    # Current state
+    current_stage_id: Optional[str] = None
+    current_approver_id: Optional[UUID] = Field(foreign_key="user.id")
+    
+    # Status
+    status: str = Field(default="in_progress")  # "in_progress", "approved", "rejected"
+    completed_at: Optional[datetime] = None
+    
+    # Rejection tracking
+    rejection_reason: Optional[str] = None
+    rejection_count: int = Field(default=0)
+
+
+class WorkflowApprovalStep(BaseModel, table=True):
+    """Record of each approval action taken"""
+    __tablename__ = "workflow_approval_step"
+    
+    workflow_instance_id: UUID = Field(foreign_key="document_workflow_instance.id", index=True)
+    stage_id: str
+    stage_name: str
+    
+    assigned_to_user_id: UUID = Field(foreign_key="user.id", index=True)
+    assigned_by: Optional[UUID] = Field(foreign_key="user.id")
+    assigned_at: datetime = Field(default_factory=datetime.utcnow)
+    due_at: Optional[datetime] = None
+    
+    # Action taken
+    action: str = Field(default="pending")  # "pending", "approved", "rejected", "reassigned"
+    action_by_user_id: Optional[UUID] = Field(foreign_key="user.id")
+    action_at: Optional[datetime] = None
+    action_reason: Optional[str] = None
+    
+    # Signature details
+    signature_image: Optional[str] = None  # base64 PNG
+
+
+class PendingOrder(BaseModel, table=True):
+    """Track orders pending review/revision"""
+    __tablename__ = "pending_order"
+    
+    order_id: Optional[UUID] = Field(default=None)  # Can be schedule_id or sale_transaction_id
+    order_type: str  # "booking" (from client portal) or "transaction"
+    client_id: Optional[UUID] = Field(foreign_key="client.id", index=True)
+    user_id: Optional[UUID] = Field(foreign_key="user.id")  # Employee who needs to review
+    
+    status: str = Field(default="pending")  # "pending", "reviewed", "approved", "rejected"
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 14 FINANCIAL MODULES ──────────────────────────────────────────────────────
+class GeneralLedgerAccount(BaseModel, table=True):
+    """Chart of Accounts"""
+    __tablename__ = "general_ledger_account"
+    
+    account_code: str = Field(index=True)  # e.g., "1000", "2000"
+    account_name: str
+    account_type: str  # "asset", "liability", "equity", "revenue", "expense"
+    description: Optional[str] = None
+    
+    is_active: bool = Field(default=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class GeneralLedgerEntry(BaseModel, table=True):
+    """Individual GL transactions"""
+    __tablename__ = "general_ledger_entry"
+    
+    account_id: UUID = Field(foreign_key="general_ledger_account.id")
+    transaction_date: datetime = Field(index=True)
+    
+    debit: float = Field(default=0.0, ge=0)
+    credit: float = Field(default=0.0, ge=0)
+    
+    description: str
+    reference_id: Optional[UUID] = None  # Link to sales transaction, invoice, etc.
+    reference_type: Optional[str] = None  # "sales", "invoice", "expense", etc.
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class AccountsReceivable(BaseModel, table=True):
+    """Invoice aging and payment tracking"""
+    __tablename__ = "accounts_receivable"
+    
+    invoice_number: str = Field(index=True)
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    invoice_date: datetime
+    due_date: datetime = Field(index=True)
+    
+    amount: float
+    amount_paid: float = Field(default=0.0)
+    amount_remaining: float
+    
+    status: str = Field(default="outstanding")  # "outstanding", "paid", "overdue", "written_off"
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class AccountsPayable(BaseModel, table=True):
+    """Vendor invoice aging and payment tracking"""
+    __tablename__ = "accounts_payable"
+    
+    invoice_number: str = Field(index=True)
+    supplier_id: UUID = Field(foreign_key="supplier.id", index=True)
+    invoice_date: datetime
+    due_date: datetime = Field(index=True)
+    
+    amount: float
+    amount_paid: float = Field(default=0.0)
+    amount_remaining: float
+    
+    status: str = Field(default="outstanding")  # "outstanding", "paid", "overdue", "paid_early"
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProcurementOrder(BaseModel, table=True):
+    """Purchase orders to suppliers"""
+    __tablename__ = "procurement_order"
+    
+    po_number: str = Field(index=True, unique=True)
+    supplier_id: UUID = Field(foreign_key="supplier.id", index=True)
+    
+    order_date: datetime = Field(index=True)
+    expected_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[datetime] = None
+    
+    total_amount: float
+    status: str = Field(default="draft")  # "draft", "sent", "confirmed", "received", "invoiced", "closed"
+    
+    created_by: Optional[UUID] = Field(foreign_key="user.id")
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProcurementOrderLine(BaseModel, table=True):
+    """Line items on a purchase order"""
+    __tablename__ = "procurement_order_line"
+    
+    po_id: UUID = Field(foreign_key="procurement_order.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id")
+    
+    quantity_ordered: int
+    quantity_received: int = Field(default=0)
+    unit_price: float
+    line_total: float
+    
+    notes: Optional[str] = None
+
+
+class InventoryCost(BaseModel, table=True):
+    """Track inventory valuation and cost"""
+    __tablename__ = "inventory_cost"
+    
+    inventory_id: UUID = Field(foreign_key="inventory.id", unique=True)
+    
+    standard_cost: Optional[float] = None  # Standard/expected cost
+    actual_cost: Optional[float] = None  # Weighted average cost
+    acquisition_cost: Optional[float] = None  # Most recent purchase cost
+    
+    reorder_quantity: int = Field(default=0)
+    reorder_point: int = Field(default=0)
+    lead_time_days: int = Field(default=0)
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ScheduleSettings(BaseModel, table=True):
+    """Per-user schedule/booking settings"""
+    __tablename__ = "schedule_settings"
+    
+    user_id: UUID = Field(foreign_key="user.id", unique=True, index=True)
+    auto_accept_client_bookings: bool = Field(default=False)  # Auto-accept from client portal
+    auto_accept_pending_hours: Optional[int] = Field(default=None)  # Auto-accept if within N hours
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── READ SCHEMAS FOR NEW MODELS ──────────────────────────────────────────────
+
+class AuditLogRead(SQLModel):
+    id: UUID
+    user_id: Optional[UUID]
+    username: Optional[str]
+    action: str
+    entity_type: str
+    entity_id: Optional[UUID]
+    entity_name: Optional[str]
+    changes_json: Optional[str]
+    ip_address: Optional[str]
+    status: str
+    error_message: Optional[str]
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class WorkflowTemplateRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    document_type: str
+    company_id: str
+    is_active: bool
+    stages_json: str
+    created_by: Optional[UUID]
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class WorkflowApprovalStepRead(SQLModel):
+    id: UUID
+    workflow_instance_id: UUID
+    stage_id: str
+    stage_name: str
+    assigned_to_user_id: UUID
+    assigned_at: datetime
+    due_at: Optional[datetime]
+    action: str
+    action_at: Optional[datetime]
+    action_reason: Optional[str]
+    
+    model_config = {"from_attributes": True}
+
+
+class DocumentWorkflowInstanceRead(SQLModel):
+    id: UUID
+    document_id: UUID
+    workflow_template_id: UUID
+    company_id: str
+    current_stage_id: Optional[str]
+    status: str
+    completed_at: Optional[datetime]
+    rejection_reason: Optional[str]
+    rejection_count: int
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class ProcurementOrderRead(SQLModel):
+    id: UUID
+    po_number: str
+    supplier_id: UUID
+    order_date: datetime
+    expected_delivery_date: Optional[datetime]
+    total_amount: float
+    status: str
+    notes: Optional[str]
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class InventoryCostRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    standard_cost: Optional[float]
+    actual_cost: Optional[float]
+    acquisition_cost: Optional[float]
+    reorder_quantity: int
+    reorder_point: int
+    lead_time_days: int
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class ScheduleSettingsRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    auto_accept_client_bookings: bool
+    auto_accept_pending_hours: Optional[int]
+    created_at: Optional[datetime]
+    
     model_config = {"from_attributes": True}
