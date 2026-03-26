@@ -235,11 +235,9 @@ function formatDuration(minutes) {
   return rem > 0 ? `${h} hour ${rem} min` : `${h} hour${h !== 1 ? 's' : ''}`;
 }
 
-/** Build a styled HTML table for invoice line items */
-function buildItemsTableHtml(items) {
+/** Build a styled HTML table for invoice line items with feature columns */
+function buildItemsFeatureTableHtml(items) {
   if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
-  function buildItemsFeatureTableHtml(items) {
-    if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
 
     const featureNames = [];
     items.forEach((item) => {
@@ -293,7 +291,11 @@ function buildItemsTableHtml(items) {
     </thead>
     <tbody>${rows}</tbody>
   </table>`;
-  }
+}
+
+/** Build a styled HTML table for invoice line items */
+function buildItemsTableHtml(items) {
+  if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
   const rows = items.map((i) => {
     const qty = i.quantity ?? '';
     const unit = i.unit_price != null ? `$${Number(i.unit_price).toFixed(2)}` : '';

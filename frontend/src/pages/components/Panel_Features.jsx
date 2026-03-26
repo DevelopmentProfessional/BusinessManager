@@ -473,14 +473,16 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       <div style={{ padding: '4px 8px' }}>
                         {f.options.map(opt => (
                           <div key={opt.option_id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0', opacity: opt.is_enabled ? 1 : 0.45 }}>
-                            <input
-                              type="checkbox"
-                              className="form-check-input"
-                              style={{ flexShrink: 0, marginTop: 0 }}
-                              checked={opt.is_enabled}
-                              onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
-                            />
-                            <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', margin: 0, flex: f.affects_price ? '0 0 auto' : 1 }}>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                style={{ flexShrink: 0, marginTop: 0 }}
+                                checked={opt.is_enabled}
+                                onChange={e => handleOptionChange(f.feature_id, opt.option_id, 'is_enabled', e.target.checked)}
+                              />
+                              <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{opt.option_name}</span>
+                            </label>
                             
                             {f.affects_price && (
                               <input
@@ -496,6 +498,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                               />
                             )}
                           </div>
+
                         ))}
                       </div>
 
