@@ -32,7 +32,7 @@ const MODE_INFO = {
   locked: { label: 'Locked Booking', color: 'bg-green-100 text-green-800',   desc: 'Pay now to guarantee your slot. Partial refund if cancelled.' },
 }
 
-export default function BookingCalendar({ service, companyId, onSelect, onClose }) {
+export default function BookingCalendar({ service, companyId, onSelect, onClose, submitting = false }) {
   const [slots,       setSlots]       = useState([])
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState(null)
@@ -178,10 +178,15 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose 
             <button onClick={onClose} className="btn-secondary">Cancel</button>
             <button
               onClick={handleConfirm}
-              disabled={!selected}
-              className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!selected || submitting}
+              className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {bookingMode === 'locked' ? 'Proceed to Payment' : 'Confirm Soft Booking'}
+              {submitting && (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              )}
+              {submitting
+                ? 'Booking…'
+                : bookingMode === 'locked' ? 'Proceed to Payment' : 'Confirm Booking'}
             </button>
           </div>
         </div>
