@@ -4,14 +4,17 @@
  * and a list-style detail view on click.
  */
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
 import Layout from './components/Layout'
 import ItemCard from './components/ItemCard'
 import BookingCalendar from './components/BookingCalendar'
-import { catalogAPI } from '../services/api'
+import BookingConfirmation from './components/BookingConfirmation'
+import { catalogAPI, bookingsAPI } from '../services/api'
 import useStore from '../store/useStore'
 
 export default function Catalog() {
+  const navigate  = useNavigate()
   const companyId = useStore(s => s.companyId)
   const addToast  = useStore(s => s.addToast)
   const addToCart = useStore(s => s.addToCart)
@@ -28,7 +31,9 @@ export default function Catalog() {
   const [maxPrice,  setMaxPrice]  = useState('')
 
   // Booking state
-  const [bookingService, setBookingService] = useState(null)
+  const [bookingService,   setBookingService]   = useState(null)
+  const [bookingLoading,   setBookingLoading]   = useState(false)
+  const [bookingConfirmed, setBookingConfirmed] = useState(null)
 
   const load = useCallback(async () => {
     if (!companyId) return
@@ -73,11 +78,24 @@ export default function Catalog() {
     if (itemType === 'service') setBookingService(item)
   }
 
-  function handleSlotSelected(slot) {
+  async function handleSlotSelected(slot) {
     if (!bookingService) return
-    addToCart({ ...bookingService, item_type: 'service', price: bookingService.price, booking_slot: slot })
-    setBookingService(null)
-    addToast(`${bookingService.name} added to cart.`, 'success')
+    setBookingLoading(true)
+    try {
+      await bookingsAPI.create({
+        service_id:       bookingService.id,
+        appointment_date: slot.start,
+        booking_mode:     slot.booking_mode || 'soft',
+        notes:            '',
+      })
+      const confirmed = { service: bookingService, slot }
+      setBookingService(null)
+      setBookingConfirmed(confirmed)
+    } catch (err) {
+      addToast(err?.response?.data?.detail || 'Could not book this slot. Please try again.', 'error')
+    } finally {
+      setBookingLoading(false)
+    }
   }
 
   return (
@@ -175,6 +193,16 @@ export default function Catalog() {
           companyId={companyId}
           onSelect={handleSlotSelected}
           onClose={() => setBookingService(null)}
+          submitting={bookingLoading}
+        />
+      )}
+
+      {bookingConfirmed && (
+        <BookingConfirmation
+          service={bookingConfirmed.service}
+          slot={bookingConfirmed.slot}
+          onClose={() => setBookingConfirmed(null)}
+          onViewBookings={() => { setBookingConfirmed(null); navigate('/orders') }}
         />
       )}
     </Layout>
