@@ -2,7 +2,7 @@
 init_database.py
 ================
 Pre-start script run by Render via:
-    preStartCommand: python backend/init_database.py
+    preDeployCommand: python backend/init_database.py
 
 Responsibilities (in order):
   1. Run all SQLModel table creation / schema migrations (create_db_and_tables)

@@ -15,6 +15,7 @@ import {
   CheckIcon,
   PaperAirplaneIcon,
 } from '@heroicons/react/24/outline';
+import api, { inventoryAPI } from '../../services/api';
 
 const ProcurementUI = ({ supplierId, onPOCreated }) => {
   const [showModal, setShowModal] = useState(false);
@@ -35,11 +36,8 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
 
   const loadPurchaseOrders = async () => {
     try {
-      const response = await fetch(`/api/v1/purchase-orders?supplier_id=${supplierId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPurchaseOrders(data);
-      }
+      const response = await api.get(`/purchase-orders?supplier_id=${supplierId}`);
+      setPurchaseOrders(response?.data ?? []);
     } catch (error) {
       console.error('Failed to load POs:', error);
     }
@@ -47,11 +45,8 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
 
   const loadInventoryItems = async () => {
     try {
-      const response = await fetch('/api/v1/inventory');
-      if (response.ok) {
-        const data = await response.json();
-        setInventoryItems(data);
-      }
+      const response = await inventoryAPI.getAll();
+      setInventoryItems(response?.data ?? response ?? []);
     } catch (error) {
       console.error('Failed to load inventory:', error);
     }
@@ -97,31 +92,24 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
       const payload = {
         supplier_id: formData.supplier_id,
         expected_delivery_date: formData.expected_delivery_date,
-        line_items: formData.line_items.map(item => ({
+        items: formData.line_items.map(item => ({
           inventory_id: item.inventory_id,
-          quantity_ordered: item.quantity_ordered,
+          quantity: item.quantity_ordered,
           unit_price: item.unit_price,
         })),
       };
 
-      const response = await fetch('/api/v1/purchase-orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await api.post('/purchase-orders', payload);
+      const newPO = response?.data;
+      setPurchaseOrders([newPO, ...purchaseOrders]);
+      setShowModal(false);
+      setFormData({
+        supplier_id: supplierId,
+        line_items: [{ inventory_id: '', quantity_ordered: 1, unit_price: 0 }],
+        expected_delivery_date: '',
+        notes: '',
       });
-
-      if (response.ok) {
-        const newPO = await response.json();
-        setPurchaseOrders([newPO, ...purchaseOrders]);
-        setShowModal(false);
-        setFormData({
-          supplier_id: supplierId,
-          line_items: [{ inventory_id: '', quantity_ordered: 1, unit_price: 0 }],
-          expected_delivery_date: '',
-          notes: '',
-        });
-        onPOCreated?.();
-      }
+      onPOCreated?.();
     } catch (error) {
       console.error('Failed to create PO:', error);
     } finally {
@@ -131,14 +119,8 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
 
   const handleSendPO = async (poId) => {
     try {
-      const response = await fetch(`/api/v1/purchase-orders/${poId}/send`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.ok) {
-        loadPurchaseOrders();
-      }
+      await api.put(`/purchase-orders/${poId}/send`);
+      loadPurchaseOrders();
     } catch (error) {
       console.error('Failed to send PO:', error);
     }

@@ -17,11 +17,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircleIcon, 
-  ExclamationIcon,
+  ExclamationTriangleIcon,
   XMarkIcon,
   PencilSquareIcon
 } from '@heroicons/react/24/outline';
-import { formatDateTime } from '../utils/dateFormatters';
+import api from '../../services/api';
+import { formatDateTime } from '../../utils/dateFormatters';
 
 // ─ Main Component ────────────────────────────────────────────────────
 
@@ -36,10 +37,8 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
   
   const fetchWorkflows = async () => {
     try {
-      const response = await fetch('/api/v1/workflows');
-      if (response.ok) {
-        setWorkflows(await response.json());
-      }
+      const response = await api.get('/workflows');
+      setWorkflows(response?.data ?? []);
     } catch (error) {
       console.error('Failed to load workflows:', error);
     } finally {
@@ -51,20 +50,13 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
     if (!selectedWorkflow) return;
     
     try {
-      const response = await fetch(`/api/v1/documents/${documentId}/assign-workflow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflow_template_id: selectedWorkflow.id })
+      await api.post(`/documents/${documentId}/assign-workflow`, {
+        workflow_template_id: selectedWorkflow.id,
       });
-      
-      if (response.ok) {
-        alert('Workflow assigned successfully');
-        onAssigned?.();
-        onClose();
-      }
+      onAssigned?.();
+      onClose();
     } catch (error) {
       console.error('Failed to assign workflow:', error);
-      alert('Error assigning workflow');
     }
   };
   
@@ -128,7 +120,7 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
 
 // ─ Workflow Status Tracker ─────────────────────────────────────────
 
-export const WorkflowStatusTracker = ({ documentId }) => {
+export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpdated }) => {
   const [workflow, setWorkflow] = useState(null);
   const [steps, setSteps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -140,12 +132,12 @@ export const WorkflowStatusTracker = ({ documentId }) => {
   const loadWorkflow = async () => {
     try {
       const [wfRes, stepsRes] = await Promise.all([
-        fetch(`/api/v1/documents/${documentId}/workflow`),
-        fetch(`/api/v1/documents/${documentId}/workflow-steps`)
+        api.get(`/documents/${documentId}/workflow`),
+        api.get(`/documents/${documentId}/workflow-steps`)
       ]);
-      
-      if (wfRes.ok) setWorkflow(await wfRes.json());
-      if (stepsRes.ok) setSteps(await stepsRes.json());
+
+      setWorkflow(wfRes?.data ?? null);
+      setSteps(stepsRes?.data ?? []);
     } catch (error) {
       console.error('Failed to load workflow:', error);
     } finally {
@@ -198,6 +190,17 @@ export const WorkflowStatusTracker = ({ documentId }) => {
               {step.action_reason && (
                 <p className="text-sm text-red-900 mt-1">Reason: {step.action_reason}</p>
               )}
+              {step.action === 'pending' && currentUserId && String(step.assigned_to_user_id) === String(currentUserId) && (
+                <div className="mt-3">
+                  <ApprovalActions
+                    stepId={step.id}
+                    onApprovalComplete={() => {
+                      loadWorkflow();
+                      onWorkflowUpdated?.();
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -212,7 +215,7 @@ export const WorkflowStatusTracker = ({ documentId }) => {
       
       {workflow.status === 'rejected' && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-          <ExclamationIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
           <div>
             <p className="text-sm text-red-900 font-medium">Document rejected</p>
             {workflow.rejection_reason && (
@@ -237,19 +240,10 @@ export const ApprovalActions = ({ stepId, onApprovalComplete }) => {
   const handleApprove = async (signatureImage = null) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/approval-steps/${stepId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature_image: signatureImage })
-      });
-      
-      if (response.ok) {
-        alert('Approved successfully!');
-        onApprovalComplete?.();
-      }
+      await api.post(`/approval-steps/${stepId}/approve`, { signature_image: signatureImage });
+      onApprovalComplete?.();
     } catch (error) {
       console.error('Failed to approve:', error);
-      alert('Error approving');
     } finally {
       setLoading(false);
     }
@@ -258,19 +252,10 @@ export const ApprovalActions = ({ stepId, onApprovalComplete }) => {
   const handleReject = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/approval-steps/${stepId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: rejectReason })
-      });
-      
-      if (response.ok) {
-        alert('Rejected');
-        onApprovalComplete?.();
-      }
+      await api.post(`/approval-steps/${stepId}/reject`, { reason: rejectReason });
+      onApprovalComplete?.();
     } catch (error) {
       console.error('Failed to reject:', error);
-      alert('Error rejecting');
     } finally {
       setLoading(false);
       setShowRejectModal(false);

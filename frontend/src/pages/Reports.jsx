@@ -53,6 +53,8 @@ import Chart_Report from './components/Chart_Report';
 import Button_Toolbar from './components/Button_Toolbar';
 import useViewMode from '../services/useViewMode';
 import Modal_Forecast_Calculator from './components/Modal_Forecast_Calculator';
+import Modal from './components/Modal';
+import FinancialDashboard from './components/FinancialDashboard';
 
 const AVAILABLE_REPORTS = [
   {
@@ -170,6 +172,7 @@ export default function Reports() {
   const [services, setServices] = useState([]);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [showForecastCalculator, setShowForecastCalculator] = useState(false);
+  const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     dateRange: 'last30days',
     groupBy: 'month',
@@ -575,6 +578,12 @@ export default function Reports() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
         <div className="d-flex align-items-center gap-2">
                 <Button_Toolbar
+                  icon={CurrencyDollarIcon}
+                  label="Financial"
+                  onClick={() => setShowFinancialDashboard(true)}
+                  className="btn-app-primary"
+                />
+                <Button_Toolbar
                   icon={CalculatorIcon}
                   label="Forecast"
                   onClick={() => setShowForecastCalculator(true)}
@@ -842,6 +851,26 @@ export default function Reports() {
         isOpen={showForecastCalculator}
         onClose={() => setShowForecastCalculator(false)}
       />
+
+      <Modal
+        isOpen={showFinancialDashboard}
+        onClose={() => setShowFinancialDashboard(false)}
+        fullScreen={true}
+        noPadding={true}
+      >
+        <div className="p-4 bg-gray-50 h-full overflow-auto">
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <h2 className="text-xl font-bold text-gray-900 mb-0">Financial Controls</h2>
+            <Button_Toolbar
+              icon={ChartBarIcon}
+              label="Close"
+              onClick={() => setShowFinancialDashboard(false)}
+              className="btn-outline-secondary"
+            />
+          </div>
+          <FinancialDashboard />
+        </div>
+      </Modal>
     </div>
   );
 }

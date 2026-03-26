@@ -83,6 +83,7 @@ import api from '../services/api';
 import { runAppSync } from '../services/appSync';
 import Modal_Signature from './components/Modal_Signature';
 import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
+import ScheduleSettingsCard from './components/ScheduleSettings';
 import useBranding from '../services/useBranding';
 import { applyActiveColorTheme } from '../services/activeColorTheme';
 import { right } from '@popperjs/core';
@@ -1616,6 +1617,10 @@ const Profile = () => {
               className="btn-primary"
               disabled={scheduleLoading}
             />
+
+            <div className="mt-4">
+              <ScheduleSettingsCard userId={user.id} />
+            </div>
 
             {settingsError && (
               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800 text-sm">

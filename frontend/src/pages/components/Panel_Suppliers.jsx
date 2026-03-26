@@ -34,6 +34,7 @@ import { showConfirm } from '../../services/showConfirm';
 import Modal from './Modal';
 import Button_Toolbar from './Button_Toolbar';
 import Gate_Permission from './Gate_Permission';
+import ProcurementUI from './ProcurementUI';
 
 // ─── 1 COMPONENT DEFINITION ──────────────────────────────────────────────────
 export default function Suppliers_Panel({ isOpen, onClose }) {
@@ -43,6 +44,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [procurementSupplier, setProcurementSupplier] = useState(null);
 
   // ─── 2 EFFECTS ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
       // Reset form state when panel closes
       setShowForm(false);
       setEditingSupplier(null);
+      setProcurementSupplier(null);
     }
   }, [isOpen]);
 
@@ -120,6 +123,12 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
     setEditingSupplier(null);
   };
 
+  const handleOpenProcurement = (supplier) => {
+    setProcurementSupplier(supplier);
+    setShowForm(false);
+    setEditingSupplier(null);
+  };
+
   // ─── 5 RENDER ──────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
@@ -131,13 +140,18 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
             <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
               {editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
             </h6>
+          ) : procurementSupplier ? (
+            <div className="d-flex align-items-center gap-2">
+              <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Procurement</h6>
+              <span className="text-muted small">{procurementSupplier.name}</span>
+            </div>
           ) : (
             <div className="d-flex align-items-center gap-2">
               <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Suppliers</h6>
               <span className="text-muted small">({suppliers.length})</span>
             </div>
           )}
-          {!showForm && (
+          {!showForm && !procurementSupplier && (
             <Gate_Permission page="suppliers" permission="write">
               <Button_Toolbar
                 icon={PlusIcon}
@@ -158,6 +172,13 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               onCancel={handleCancelForm}
               className="flex-grow-1"
             />
+          ) : procurementSupplier ? (
+            <div className="p-3">
+              <ProcurementUI
+                supplierId={procurementSupplier.id}
+                onPOCreated={loadSuppliers}
+              />
+            </div>
           ) : loading ? (
             <div className="d-flex justify-content-center align-items-center" style={{ height: '200px' }}>
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
@@ -199,6 +220,17 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                   <Gate_Permission page="suppliers" permission="write">
                     <button
                       type="button"
+                      onClick={() => handleOpenProcurement(supplier)}
+                      className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: '3rem', height: '3rem' }}
+                      title="Procurement"
+                    >
+                      PO
+                    </button>
+                  </Gate_Permission>
+                  <Gate_Permission page="suppliers" permission="write">
+                    <button
+                      type="button"
                       onClick={() => handleEdit(supplier)}
                       className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
                       style={{ width: '3rem', height: '3rem' }}
@@ -233,6 +265,13 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                     className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg"
                   />
                 </>
+              ) : procurementSupplier ? (
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Back"
+                  onClick={() => setProcurementSupplier(null)}
+                  className="btn-outline-secondary"
+                />
               ) : (
                 <Button_Toolbar
                   icon={XMarkIcon}

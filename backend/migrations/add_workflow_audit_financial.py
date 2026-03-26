@@ -1,93 +1,67 @@
 """
-============================================================
-Migration: Add comprehensive workflow, audit, and financial tables
+Create or drop the workflow, audit, financial, procurement, and schedule tables.
 
-Purpose:
-   This migration adds all new database tables required for the 
-   feature implementation: workflows, audit logging, financial 
-   controls, procurement, and inventory intelligence.
-
-Tables Created:
-   - audit_log
-   - workflow_template
-   - document_workflow_instance
-   - workflow_approval_step
-   - pending_order
-   - general_ledger_account
-   - general_ledger_entry
-   - accounts_receivable
-   - accounts_payable
-   - procurement_order
-   - procurement_order_line
-   - inventory_cost
-   - schedule_settings
-============================================================
+This repo uses SQLModel metadata and a shared engine from backend.database.
+The migration is intentionally lightweight so it can be executed directly from
+the repository root with the project's virtual environment.
 """
 
-import json
-from datetime import datetime
-from sqlalchemy import (
-    create_engine, Column, String, Integer, Float, DateTime,
-    TIMESTAMP, UUID, ForeignKey, JSON, Boolean, Text
-)
-from sqlalchemy.orm import Session
-from sqlalchemy.ext.declarative import declarative_base
-from uuid import uuid4
+import os
+import sys
+
+from sqlmodel import SQLModel
+from sqlalchemy import text
+
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_BACKEND_DIR = os.path.dirname(_THIS_DIR)
+_PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 try:
-    from backend.database import get_db_url
-    from backend.models import Base
-except ImportError:
-    from database import get_db_url
-    from models import Base
+    from backend.database import engine
+    import backend.models  # noqa: F401
+except ModuleNotFoundError:
+    from database import engine  # type: ignore
+    import models  # type: ignore  # noqa: F401
+
+
+TABLES_TO_DROP = [
+    "procurement_order_line",
+    "procurement_order",
+    "accounts_payable",
+    "accounts_receivable",
+    "general_ledger_entry",
+    "general_ledger_account",
+    "workflow_approval_step",
+    "document_workflow_instance",
+    "workflow_template",
+    "pending_order",
+    "inventory_cost",
+    "schedule_settings",
+    "audit_log",
+]
 
 
 def upgrade():
-    """Apply all new tables."""
-    engine = create_engine(get_db_url(), echo=False)
-    
-    # Create all new tables defined in models.py
-    Base.metadata.create_all(engine)
-    
-    print("✓ Migration completed: All tables created successfully")
+    """Create any missing tables from the loaded SQLModel metadata."""
+    SQLModel.metadata.create_all(engine)
+    print("Migration completed: tables created or already present")
 
 
 def downgrade():
-    """Remove all new tables."""
-    engine = create_engine(get_db_url(), echo=False)
-    
-    # List of tables to drop (in reverse dependency order)
-    tables_to_drop = [
-        'procurement_order_line',
-        'procurement_order',
-        'accounts_payable',
-        'accounts_receivable',
-        'general_ledger_entry',
-        'general_ledger_account',
-        'workflow_approval_step',
-        'document_workflow_instance',
-        'workflow_template',
-        'pending_order',
-        'inventory_cost',
-        'schedule_settings',
-        'audit_log',
-    ]
-    
+    """Drop only the tables introduced by this feature set."""
     with engine.begin() as conn:
-        for table in tables_to_drop:
-            try:
-                conn.execute(f"DROP TABLE IF EXISTS {table} CASCADE")
-                print(f"  ✓ Dropped {table}")
-            except Exception as e:
-                print(f"  ✗ Error dropping {table}: {e}")
-    
-    print("✓ Migration reversed: All tables dropped")
+        for table_name in TABLES_TO_DROP:
+            conn.execute(text(f'DROP TABLE IF EXISTS "{table_name}" CASCADE'))
+            print(f"Dropped {table_name}")
+
+    print("Migration reversed: feature tables removed")
 
 
-if __name__ == '__main__':
-    import sys
-    
-    if len(sys.argv) > 1 and sys.argv[1] == 'downgrade':
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "downgrade":
         downgrade()
     else:
         upgrade()

@@ -209,7 +209,7 @@ try:
         PendingOrder, PendingOrderRead,
         User
     )
-except ImportError:
+except ModuleNotFoundError:
     from models import (
         ScheduleSettings, ScheduleSettingsRead,
         PendingOrder, PendingOrderRead,
@@ -217,7 +217,7 @@ except ImportError:
     )
 
 
-@router.get("/api/v1/schedule-settings/{user_id}", response_model=AppSettingsRead)
+@router.get("/schedule-settings/{user_id}", response_model=ScheduleSettingsRead)
 def get_user_schedule_settings(
     user_id: UUID,
     current_user=Depends(get_current_user),
@@ -240,7 +240,7 @@ def get_user_schedule_settings(
     return ScheduleSettingsRead.model_validate(settings)
 
 
-@router.put("/api/v1/schedule-settings/{user_id}", response_model=AppSettingsRead)
+@router.put("/schedule-settings/{user_id}", response_model=ScheduleSettingsRead)
 def update_user_schedule_settings(
     user_id: UUID,
     payload: dict,
@@ -283,7 +283,7 @@ def update_user_schedule_settings(
 
 # ─── 5 PENDING ORDERS ENDPOINTS ────────────────────────────────────────────────
 
-@router.get("/api/v1/pending-orders")
+@router.get("/pending-orders")
 def list_pending_orders(
     client_id: UUID = None,
     order_type: str = None,
@@ -309,7 +309,7 @@ def list_pending_orders(
     return [PendingOrderRead.model_validate(o) for o in orders]
 
 
-@router.get("/api/v1/pending-orders/count")
+@router.get("/pending-orders/count")
 def get_pending_orders_count(
     client_id: UUID = None,
     order_type: str = None,
@@ -337,7 +337,7 @@ def get_pending_orders_count(
     }
 
 
-@router.get("/api/v1/pending-orders/summary")
+@router.get("/pending-orders/summary")
 def get_pending_orders_summary(
     current_user=Depends(get_current_user),
     session: Session = Depends(get_session),

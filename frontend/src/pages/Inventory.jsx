@@ -50,6 +50,7 @@ import Suppliers_Panel from './components/Panel_Suppliers';
 import Modal_Bulk_Import_Items from './components/Modal_Import_Items';
 import Modal from './components/Modal';
 import Form_Item from './components/Form_Item';
+import InventoryIntelligence from './components/InventoryIntelligence';
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
@@ -446,6 +447,10 @@ return (
             No inventory items found
           </div>
         )}
+      </div>
+
+      <div className="px-3 pb-3 bg-white dark:bg-gray-900 border-top border-gray-200 dark:border-gray-800">
+        <InventoryIntelligence />
       </div>
 
       {/* Fixed bottom – headers + controls */}

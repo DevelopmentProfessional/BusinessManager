@@ -69,6 +69,19 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 # Bump this string whenever you add a new migration function
 CURRENT_SCHEMA_VERSION = "2026.03.26.2"
 
+
+def _required_schema_artifacts_present() -> bool:
+    """Return True when late-added schema artifacts required by current code exist."""
+    try:
+        with engine.connect() as conn:
+            department_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user' AND column_name='department_id'"
+            )).fetchone()
+            return department_column is not None
+    except Exception:
+        return False
+
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
     try:
@@ -1001,8 +1014,15 @@ def _seed_inventory_categories_for_03897():
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Run safe migrations to bring schema to current version."""
-    # Skip all migrations if schema is already at the current version
-    if _schema_is_current():
+    try:
+        import backend.models  # noqa: F401
+    except ModuleNotFoundError:
+        import models  # type: ignore  # noqa: F401
+
+    SQLModel.metadata.create_all(engine)
+
+    # Skip migrations only when the version marker and required artifacts match reality.
+    if _schema_is_current() and _required_schema_artifacts_present():
         print(f"Schema already at {CURRENT_SCHEMA_VERSION}, skipping migrations.")
         return
 

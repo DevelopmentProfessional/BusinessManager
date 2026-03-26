@@ -71,6 +71,8 @@ import Modal_Edit_Document from './components/Modal_Document_Edit';
 import Modal_Template_Editor from './components/Modal_Template_Edit';
 import PageTableFooter from './components/Page_Table_Footer';
 import PageTableHeader from './components/Page_Table_Header';
+import Modal_Generic from './components/Modal';
+import { WorkflowModal, WorkflowStatusTracker } from './components/WorkflowApproval';
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -348,6 +350,9 @@ export default function Documents() {
   const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
   const [templateTypeFilter, setTemplateTypeFilter] = useState('all');
   const [isTemplateTypeFilterOpen, setIsTemplateTypeFilterOpen] = useState(false);
+  const [workflowDoc, setWorkflowDoc] = useState(null);
+  const [showWorkflowAssign, setShowWorkflowAssign] = useState(false);
+  const [showWorkflowStatus, setShowWorkflowStatus] = useState(false);
 
   // ─── 6  DERIVED / COMPUTED VALUES ────────────────────────────────────────
   const categoryNameById = useMemo(() => {
@@ -1337,7 +1342,62 @@ export default function Documents() {
         onEdit={handleEditFromViewer}
         onSign={handleSignFromViewer}
         onDelete={handleDeleteFromViewer}
+        onWorkflow={(doc) => {
+          setWorkflowDoc(doc);
+          setShowWorkflowStatus(true);
+        }}
       />
+
+      {showWorkflowAssign && workflowDoc && (
+        <WorkflowModal
+          documentId={workflowDoc.id}
+          onClose={() => setShowWorkflowAssign(false)}
+          onAssigned={() => {
+            setShowWorkflowAssign(false);
+            setShowWorkflowStatus(true);
+            loadDocuments();
+          }}
+        />
+      )}
+
+      <Modal_Generic
+        isOpen={showWorkflowStatus}
+        onClose={() => setShowWorkflowStatus(false)}
+        fullScreen={true}
+        noPadding={true}
+      >
+        {showWorkflowStatus && workflowDoc && (
+          <div className="p-4 bg-white dark:bg-gray-900 h-full overflow-auto">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Workflow</h3>
+                <p className="text-sm text-muted mb-0">{workflowDoc.original_filename}</p>
+              </div>
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowWorkflowAssign(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  Assign Workflow
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowWorkflowStatus(false)}
+                  className="btn btn-outline-secondary btn-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <WorkflowStatusTracker
+              documentId={workflowDoc.id}
+              currentUserId={user?.id}
+              onWorkflowUpdated={loadDocuments}
+            />
+          </div>
+        )}
+      </Modal_Generic>
 
       {/* Document Edit Modal */}
       <Modal_Edit_Document
