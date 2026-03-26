@@ -546,7 +546,7 @@ function EditorArea({ document, documentType }) {
 }
 
 // Main Document Viewer Modal
-export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdit, onSign, onDelete }) {
+export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdit, onSign, onDelete, onWorkflow }) {
   const [mode, setMode] = useState('view'); // 'view' or 'edit'
   const [editorDirty, setEditorDirty] = useState(false);
 
@@ -701,6 +701,15 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
               >
                 <TrashIcon className="h-4 w-4" />
                 Delete
+              </button>
+            )}
+
+            {onWorkflow && (
+              <button
+                onClick={() => onWorkflow(document)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50"
+              >
+                Workflow
               </button>
             )}
 

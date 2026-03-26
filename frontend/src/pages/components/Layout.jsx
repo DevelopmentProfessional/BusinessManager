@@ -18,6 +18,7 @@ import useStore from '../../services/useStore';
 import useViewMode from '../../services/useViewMode';
 import { chatAPI } from '../../services/api';
 import { runAppSync } from '../../services/appSync';
+import PendingOrderBadge from './PendingOrderBadge';
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
@@ -43,7 +44,7 @@ export default function Layout({ children }) {
   const [unreadCounts, setUnreadCounts] = useState({});
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
-  const { hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
+  const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
   const { isTrainingMode, uiScale } = useViewMode();
 
   const employeeUnreadTotal = Object.values(unreadCounts).reduce((total, count) => {
@@ -242,6 +243,7 @@ export default function Layout({ children }) {
         }}
       >
         <EllipsisHorizontalIcon className="h-5 w-5" />
+        <PendingOrderBadge clientId={user?.client_id} />
       </button>
 
       {/* Global sync button - Top-right */}

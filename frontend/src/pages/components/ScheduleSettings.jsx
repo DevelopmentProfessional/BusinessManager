@@ -9,7 +9,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { CheckIcon, ExclamationIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import api from '../../services/api';
 
 const ScheduleSettings = ({ userId }) => {
   const [settings, setSettings] = useState(null);
@@ -28,24 +29,23 @@ const ScheduleSettings = ({ userId }) => {
   const loadScheduleSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v1/schedule-settings/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data);
-        setFormData({
-          auto_accept_client_bookings: data.auto_accept_client_bookings || false,
-          auto_accept_pending_hours: data.auto_accept_pending_hours || null,
-        });
-      } else if (response.status === 404) {
-        // Create default settings
+      const response = await api.get(`/schedule-settings/${userId}`);
+      const data = response?.data;
+      setSettings(data);
+      setFormData({
+        auto_accept_client_bookings: data.auto_accept_client_bookings || false,
+        auto_accept_pending_hours: data.auto_accept_pending_hours || null,
+      });
+    } catch (error) {
+      if (error?.response?.status === 404) {
         setFormData({
           auto_accept_client_bookings: false,
           auto_accept_pending_hours: null,
         });
+      } else {
+        console.error('Failed to load schedule settings:', error);
+        setMessage({ type: 'error', text: 'Failed to load settings' });
       }
-    } catch (error) {
-      console.error('Failed to load schedule settings:', error);
-      setMessage({ type: 'error', text: 'Failed to load settings' });
     } finally {
       setLoading(false);
     }
@@ -71,20 +71,11 @@ const ScheduleSettings = ({ userId }) => {
       setSaving(true);
       setMessage(null);
 
-      const response = await fetch(`/api/v1/schedule-settings/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const updated = await response.json();
-        setSettings(updated);
-        setMessage({ type: 'success', text: '✓ Schedule settings saved successfully' });
-        setTimeout(() => setMessage(null), 3000);
-      } else {
-        setMessage({ type: 'error', text: 'Failed to save settings' });
-      }
+      const response = await api.put(`/schedule-settings/${userId}`, formData);
+      const updated = response?.data;
+      setSettings(updated);
+      setMessage({ type: 'success', text: '✓ Schedule settings saved successfully' });
+      setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
       setMessage({ type: 'error', text: 'Error saving settings' });
@@ -116,7 +107,7 @@ const ScheduleSettings = ({ userId }) => {
           {message.type === 'success' ? (
             <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
           ) : (
-            <ExclamationIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
           )}
           <p
             className={`text-sm font-medium ${

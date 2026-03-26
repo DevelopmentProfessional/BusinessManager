@@ -991,50 +991,6 @@ def update_dark_mode_preference(
     
     return {"message": "Dark mode preference updated", "dark_mode": dark_mode}
 
-# Password Reset and Account Management
-@router.post("/reset-password")
-def reset_password(
-    reset_data: PasswordResetRequest,
-    session: Session = Depends(get_session)
-):
-    """Reset user password (admin only or self-reset with current password)"""
-    user = session.exec(select(User).where(User.username == reset_data.username)).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    # Check if user is locked
-    if user.is_locked:
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail="Account is locked. Contact administrator to unlock."
-        )
-    
-    # Verify current password if provided (for self-reset)
-    if reset_data.current_password:
-        if not user.verify_password(reset_data.current_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Current password is incorrect"
-            )
-    else:
-        # Admin reset - require admin role (this should be checked by the caller)
-        # For now, we'll allow it but in production you'd want proper admin verification
-        pass
-    
-    # Update password
-    user.password_hash = User.hash_password(reset_data.new_password)
-    user.force_password_reset = False
-    user.failed_login_attempts = 0
-    user.locked_until = None
-    
-    session.commit()
-    session.refresh(user)
-    
-    return {"message": "Password reset successfully"}
-
 @router.post("/admin/reset-password")
 def admin_reset_password(
     reset_data: dict = Body(...),

@@ -9,10 +9,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 
 const PendingOrderBadge = ({ clientId }) => {
   const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadPendingCount();
@@ -24,19 +24,13 @@ const PendingOrderBadge = ({ clientId }) => {
 
   const loadPendingCount = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(
-        `/api/v1/pending-orders/count${clientId ? `?client_id=${clientId}` : ''}`
+      const response = await api.get(
+        `/pending-orders/count${clientId ? `?client_id=${clientId}` : ''}`
       );
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCount(data.pending_count || 0);
-      }
+      const data = response?.data ?? {};
+      setCount(data.pending_count || 0);
     } catch (error) {
       console.error('Failed to load pending count:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

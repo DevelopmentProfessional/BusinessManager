@@ -9,12 +9,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ExclamationIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import api from '../../services/api';
 
 const InventoryIntelligence = ({ onCreatePO }) => {
   const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedItem, setExpandedItem] = useState(null);
   
   useEffect(() => {
     loadInventoryInsights();
@@ -22,11 +22,8 @@ const InventoryIntelligence = ({ onCreatePO }) => {
   
   const loadInventoryInsights = async () => {
     try {
-      const response = await fetch('/api/v1/inventory-costs?low_stock_only=false');
-      if (response.ok) {
-        const data = await response.json();
-        setInsights(data);
-      }
+      const response = await api.get('/inventory-costs?low_stock_only=false');
+      setInsights(response?.data ?? []);
     } catch (error) {
       console.error('Failed to load insights:', error);
     } finally {
@@ -100,7 +97,7 @@ const InventoryIntelligence = ({ onCreatePO }) => {
           {lowStockCount > 0 && (
             <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded">
               <div className="flex gap-3">
-                <ExclamationIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-red-900">{lowStockCount} items need reordering</p>
                   <p className="text-sm text-red-800">Expected stockouts in:</p>

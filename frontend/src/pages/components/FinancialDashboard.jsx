@@ -11,10 +11,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   CurrencyDollarIcon,
-  ExclamationIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ExclamationTriangleIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline';
+import api from '../../services/api';
 
 const FinancialDashboard = () => {
   const [arData, setArData] = useState(null);
@@ -29,14 +30,14 @@ const FinancialDashboard = () => {
   const loadFinancialData = async () => {
     try {
       const [arRes, apRes, icRes] = await Promise.all([
-        fetch('/api/v1/accounts-receivable'),
-        fetch('/api/v1/accounts-payable'),
-        fetch('/api/v1/inventory-costs?low_stock_only=true')
+        api.get('/accounts-receivable'),
+        api.get('/accounts-payable'),
+        api.get('/inventory-costs?low_stock_only=true')
       ]);
-      
-      if (arRes.ok) setArData(await arRes.json());
-      if (apRes.ok) setApData(await apRes.json());
-      if (icRes.ok) setInventoryCosts(await icRes.json());
+
+      setArData(arRes?.data ?? null);
+      setApData(apRes?.data ?? null);
+      setInventoryCosts(icRes?.data ?? null);
     } catch (error) {
       console.error('Failed to load financial data:', error);
     } finally {
@@ -73,7 +74,7 @@ const FinancialDashboard = () => {
                 ${(arData?.total_outstanding || 0).toFixed(2)}
               </p>
             </div>
-            <TrendingUpIcon className="w-8 h-8 text-green-600" />
+            <ArrowTrendingUpIcon className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-gray-500 mt-2">Money owed TO you</p>
         </div>
@@ -87,7 +88,7 @@ const FinancialDashboard = () => {
                 ${(apData?.total_payable || 0).toFixed(2)}
               </p>
             </div>
-            <TrendingDownIcon className="w-8 h-8 text-red-600" />
+            <ArrowTrendingDownIcon className="w-8 h-8 text-red-600" />
           </div>
           <p className="text-xs text-gray-500 mt-2">Money you OWE</p>
         </div>
@@ -112,7 +113,7 @@ const FinancialDashboard = () => {
           </div>
           {arData.by_age?.['90_plus'] > 0 && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-              <ExclamationIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
               <p className="text-sm text-red-800">
                 {arData.by_age['90_plus']} invoices are 90+ days overdue. Consider collections action.
               </p>
@@ -145,7 +146,7 @@ const FinancialDashboard = () => {
       {inventoryCosts && inventoryCosts.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <ExclamationIcon className="w-5 h-5 text-orange-600" />
+            <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
             Low Stock Items - Action Needed
           </h3>
           <div className="overflow-x-auto">

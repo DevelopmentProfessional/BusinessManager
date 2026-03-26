@@ -2480,11 +2480,28 @@ class InventoryCostRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class PendingOrderRead(SQLModel):
+    id: UUID
+    order_id: Optional[UUID]
+    order_type: str
+    client_id: Optional[UUID]
+    user_id: Optional[UUID]
+    status: str
+    notes: Optional[str]
+    company_id: Optional[str]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    model_config = {"from_attributes": True}
+
+
 class ScheduleSettingsRead(SQLModel):
     id: UUID
     user_id: UUID
     auto_accept_client_bookings: bool
     auto_accept_pending_hours: Optional[int]
     created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    company_id: Optional[str]
     
     model_config = {"from_attributes": True}
