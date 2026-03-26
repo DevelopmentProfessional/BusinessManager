@@ -134,6 +134,8 @@ READ_SCHEMA_MAP = {
     'inventory_images': InventoryImageRead,
     'database_connection': DatabaseConnectionRead,
     'database_connections': DatabaseConnectionRead,
+    'department': DepartmentRead,
+    'departments': DepartmentRead,
     'supplier': SupplierRead,
     'suppliers': SupplierRead,
     'attendance': AttendanceRead,

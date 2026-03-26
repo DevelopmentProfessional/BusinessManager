@@ -375,6 +375,13 @@ export const profileAPI = {
   getProfilePictureUrl: (userId) => `${api.defaults.baseURL}/auth/users/${userId}/profile-picture`,
 };
 
+export const departmentsAPI = {
+  getAll: () => api.get('/isud/department'),
+  create: (data) => api.post('/isud/department', data),
+  update: (id, data) => api.put(`/isud/department/${id}`, data),
+  delete: (id) => api.delete(`/isud/department/${id}`),
+};
+
 export const rolesAPI = {
   getAll: () => getCachedOrFetch('roles', () => api.get('/auth/roles')),
   getById: (id) => api.get(`/auth/roles/${id}`),
@@ -532,6 +539,16 @@ export const documentsAPI = {
     if (contentType) formData.append('content_type', contentType);
     return api.put(`/documents/${id}/binary`, formData);
   },
+};
+
+// Document tags: company-scoped tags + per-document assignment.
+export const documentTagsAPI = {
+  list: (q) => api.get('/document-tags', { params: q ? { q } : {} }),
+  create: (name) => api.post('/document-tags', { name }),
+  delete: (tagId) => api.delete(`/document-tags/${tagId}`),
+  getForDocument: (documentId) => api.get(`/documents/${documentId}/tags`),
+  setForDocument: (documentId, tagIds) => api.put(`/documents/${documentId}/tags`, { tag_ids: tagIds }),
+  getAllLinks: () => api.get('/document-tag-links'),
 };
 
 // Document categories: full CRUD via isud (table document_category).

@@ -80,7 +80,8 @@
       "Bash(for company:*)",
       "Bash(echo -n \"company=$company: \")",
       "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/*.jsx)",
-      "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/components/*.jsx)"
+      "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/components/*.jsx)",
+      "Bash(del:*)"
     ]
   }
 }

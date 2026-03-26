@@ -55,7 +55,7 @@ import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBub
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
 import { showConfirm } from '../services/showConfirm';
-import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI } from '../services/api';
+import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Employee from './components/Form_Employee';
 import Dropdown_Custom from './components/Dropdown_Custom';
@@ -288,6 +288,7 @@ export default function Employees() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [departments, setDepartments] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
@@ -313,6 +314,10 @@ export default function Employees() {
     loadEmployees();
     // Roles are loaded on-demand when the Manage Roles modal is opened
     settingsAPI.getSettings().then((res) => setAppSettings(res.data)).catch(() => {});
+    departmentsAPI.getAll().then(res => {
+      const list = res?.data ?? res ?? [];
+      setDepartments(Array.isArray(list) ? list : []);
+    }).catch(() => {});
   });
 
   // Whenever the employees list changes, re-evaluate each employee's paid
@@ -562,6 +567,11 @@ export default function Employees() {
       }
       closeModal();
       clearError();
+      // Refresh departments in case a new one was created inline
+      departmentsAPI.getAll().then(res => {
+        const list = res?.data ?? res ?? [];
+        setDepartments(Array.isArray(list) ? list : []);
+      }).catch(() => {});
     } catch (err) {
       setError(editingEmployee ? 'Failed to update employee' : 'Failed to create employee');
     }
@@ -1160,6 +1170,17 @@ export default function Employees() {
                       >
                         {employee.first_name} {employee.last_name}
                       </div>
+                      {employee.department_id && (() => {
+                        const dept = departments.find(d => d.id === employee.department_id);
+                        return dept ? (
+                          <span
+                            className="badge bg-info-subtle text-info rounded-pill"
+                            style={{ fontSize: '0.68rem' }}
+                          >
+                            {dept.name}
+                          </span>
+                        ) : null;
+                      })()}
                     </td>
 
                     {/* Lock icon — admin only, only visible when account is locked */}

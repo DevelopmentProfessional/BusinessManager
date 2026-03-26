@@ -38,7 +38,6 @@ import PageTableRow from './components/Page_Table_Row';
 import { PlusIcon, FolderOpenIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
-import { showConfirm } from '../services/showConfirm';
 import { servicesAPI } from '../services/api';
 import Modal from './components/Modal';
 import Form_Service from './components/Form_Service';
@@ -112,10 +111,12 @@ export default function Services() {
       setError('You do not have permission to delete services');
       return;
     }
-    if (!await showConfirm('Are you sure you want to delete this service?')) return;
+    // Confirmation is shown by the Form_Service delete button — don't double-confirm here
     try {
       await servicesAPI.delete(serviceId);
       removeService(serviceId);
+      setEditingService(null);
+      closeModal();
       clearError();
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || 'Failed to delete service';
