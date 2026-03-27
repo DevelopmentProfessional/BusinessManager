@@ -153,7 +153,7 @@ export default function Schedule() {
   
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState('month');
+  const [currentView, setCurrentView] = useState('week');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [draggedAppointment, setDraggedAppointment] = useState(null);

@@ -40,6 +40,8 @@ export const TEMPLATE_VARIABLES = {
     { key: 'invoice.tax', label: 'Tax', description: 'Tax amount' },
     { key: 'invoice.items', label: 'Line Items (list)', description: 'Purchased items as a bullet list' },
     { key: 'invoice.items.table', label: 'Line Items (table)', description: 'Purchased items as a formatted table', isLayout: true },
+    { key: 'invoice.items.compact_feature_table', label: 'Line Items (compact feature table)', description: 'Purchased items with descriptive features stacked compactly under each product', isLayout: true },
+    { key: 'invoice.items.dense_table', label: 'Line Items (dense table)', description: 'Purchased items in an extra-tight print layout for longer orders', isLayout: true },
     { key: 'invoice.items.feature_table', label: 'Line Items (feature table)', description: 'Purchased items with descriptive feature columns', isLayout: true },
     { key: 'invoice.payment_method', label: 'Payment Method', description: 'Cash or card' },
   ],
@@ -56,7 +58,7 @@ export const TEMPLATE_VARIABLES = {
 
 /** Which variable scopes are available per page context */
 export const PAGE_VARIABLE_SCOPES = {
-  clients: ['system', 'company', 'sender', 'client'],
+  clients: ['system', 'company', 'sender', 'client', 'invoice'],
   employees: ['system', 'company', 'sender', 'employee'],
   sales: ['system', 'company', 'sender', 'client', 'invoice'],
   schedule: ['system', 'company', 'sender', 'client', 'appointment'],
@@ -72,7 +74,7 @@ export const SCOPE_PAGE_CONTEXT = {
   sender:      { label: 'Sender',      pages: ['clients', 'employees', 'sales', 'schedule'], color: 'gray' },
   client:      { label: 'Client',      pages: ['clients', 'sales', 'schedule'], color: 'blue' },
   employee:    { label: 'Employee',    pages: ['employees'], color: 'green' },
-  invoice:     { label: 'Invoice / Sales', pages: ['sales'], color: 'amber' },
+  invoice:     { label: 'Invoice / Sales', pages: ['clients', 'sales'], color: 'amber' },
   appointment: { label: 'Appointment', pages: ['schedule'], color: 'purple' },
 };
 
@@ -85,16 +87,40 @@ export const LAYOUT_TEMPLATES = [
   {
     id: 'invoice_items_table',
     label: 'Invoice Line Items Table',
-    description: 'A formatted table of purchased items (Item, Qty, Unit Price, Total)',
-    pages: ['sales'],
+    description: 'Default compact cart table with descriptive features tucked under each product row',
+    pages: ['clients', 'sales'],
+    scopeHint: 'invoice',
+    html: '{{invoice.items.compact_feature_table}}',
+  },
+  {
+    id: 'invoice_items_plain_table',
+    label: 'Invoice Plain Table',
+    description: 'A standard line-items table without the compact feature badges',
+    pages: ['clients', 'sales'],
     scopeHint: 'invoice',
     html: '{{invoice.items.table}}',
+  },
+  {
+    id: 'invoice_items_compact_feature_table',
+    label: 'Invoice Compact Feature Table',
+    description: 'A compact cart table that lists descriptive product features under each item without adding extra columns',
+    pages: ['clients', 'sales'],
+    scopeHint: 'invoice',
+    html: '{{invoice.items.compact_feature_table}}',
+  },
+  {
+    id: 'invoice_items_dense_table',
+    label: 'Invoice Dense Print Table',
+    description: 'An ultra-dense print layout for longer orders that keeps rows tight and feature text inline',
+    pages: ['clients', 'sales'],
+    scopeHint: 'invoice',
+    html: '{{invoice.items.dense_table}}',
   },
   {
     id: 'invoice_items_feature_table',
     label: 'Invoice Feature Table',
     description: 'A formatted table of purchased items with descriptive feature columns',
-    pages: ['sales'],
+    pages: ['clients', 'sales'],
     scopeHint: 'invoice',
     html: '{{invoice.items.feature_table}}',
   },
@@ -102,7 +128,7 @@ export const LAYOUT_TEMPLATES = [
     id: 'invoice_summary',
     label: 'Invoice Totals Summary',
     description: 'Subtotal, tax, and grand total block',
-    pages: ['sales'],
+    pages: ['clients', 'sales'],
     scopeHint: 'invoice',
     html: `<table style="width:100%;border-collapse:collapse;margin-top:1rem;font-family:inherit;">
   <tr><td style="padding:4px 8px;text-align:right;">Subtotal:</td><td style="padding:4px 8px;text-align:right;">{{invoice.subtotal}}</td></tr>
@@ -114,7 +140,7 @@ export const LAYOUT_TEMPLATES = [
     id: 'invoice_header',
     label: 'Invoice Header Block',
     description: 'Invoice number, date, client, and payment method in a clean header',
-    pages: ['sales'],
+    pages: ['clients', 'sales'],
     scopeHint: 'invoice',
     html: `<table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem;font-family:inherit;">
   <tr>
@@ -235,13 +261,48 @@ function formatDuration(minutes) {
   return rem > 0 ? `${h} hour ${rem} min` : `${h} hour${h !== 1 ? 's' : ''}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getNormalizedSelectedOptions(item) {
+  const rawOptions = item?.selectedOptions ?? item?.options_json ?? null;
+  if (!Array.isArray(rawOptions)) return [];
+
+  return rawOptions
+    .map((option) => ({
+      featureName: option?.featureName ?? option?.feature_name ?? '',
+      optionName: option?.optionName ?? option?.option_name ?? '',
+    }))
+    .filter((option) => option.featureName || option.optionName);
+}
+
+function buildCompactFeatureSummaryHtml(item) {
+  const options = getNormalizedSelectedOptions(item);
+  if (!options.length) return '';
+
+  const optionBadges = options.map((option) => {
+    const label = option.featureName && option.optionName
+      ? `${option.featureName}: ${option.optionName}`
+      : option.optionName || option.featureName;
+    return `<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:0.72rem;line-height:1.2;white-space:normal;">${escapeHtml(label)}</span>`;
+  }).join('');
+
+  return `<div style="margin-top:4px;line-height:1.3;">${optionBadges}</div>`;
+}
+
 /** Build a styled HTML table for invoice line items with feature columns */
 function buildItemsFeatureTableHtml(items) {
   if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
 
     const featureNames = [];
     items.forEach((item) => {
-      const opts = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
+      const opts = getNormalizedSelectedOptions(item);
       opts.forEach((opt) => {
         const featureName = opt.featureName ?? opt.feature_name;
         if (featureName && !featureNames.includes(featureName)) {
@@ -264,7 +325,7 @@ function buildItemsFeatureTableHtml(items) {
 
     const rows = items.map((item) => {
       const optionMap = Object.create(null);
-      const opts = Array.isArray(item.selectedOptions) ? item.selectedOptions : [];
+      const opts = getNormalizedSelectedOptions(item);
       opts.forEach((opt) => {
         const featureName = opt.featureName ?? opt.feature_name;
         const optionName = opt.optionName ?? opt.option_name;
@@ -293,6 +354,88 @@ function buildItemsFeatureTableHtml(items) {
   </table>`;
 }
 
+function buildItemsCompactFeatureTableHtml(items) {
+  if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
+  const rows = items.map((item) => {
+    const qty = item.quantity ?? '';
+    const unit = item.unit_price != null ? `$${Number(item.unit_price).toFixed(2)}` : '';
+    const total = item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : '';
+    const featureSummary = buildCompactFeatureSummaryHtml(item);
+    return `<tr style="border-bottom:1px solid #e5e7eb;page-break-inside:avoid;break-inside:avoid;">
+  <td style="padding:7px 8px;">
+    <div style="font-weight:500;line-height:1.35;">${escapeHtml(item.item_name || '')}</div>
+    ${featureSummary}
+  </td>
+  <td style="padding:7px 8px;text-align:center;width:50px;vertical-align:top;">${qty}</td>
+  <td style="padding:7px 8px;text-align:right;width:90px;white-space:nowrap;vertical-align:top;">${unit}</td>
+  <td style="padding:7px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;vertical-align:top;">${total}</td>
+</tr>`;
+  }).join('');
+  return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:inherit;font-size:0.9rem;">
+  <colgroup>
+    <col/>
+    <col style="width:50px;"/>
+    <col style="width:90px;"/>
+    <col style="width:90px;"/>
+  </colgroup>
+  <thead>
+    <tr style="border-bottom:2px solid #d1d5db;background:#f9fafb;">
+      <th style="padding:6px 8px;text-align:left;font-weight:600;">Item</th>
+      <th style="padding:6px 8px;text-align:center;font-weight:600;">Qty</th>
+      <th style="padding:6px 8px;text-align:right;font-weight:600;">Unit Price</th>
+      <th style="padding:6px 8px;text-align:right;font-weight:600;">Total</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
+}
+
+function buildItemsDenseTableHtml(items) {
+  if (!items.length) return '<p style="color:#6b7280;font-size:0.8rem;">No items</p>';
+  const rows = items.map((item) => {
+    const qty = item.quantity ?? '';
+    const unit = item.unit_price != null ? `$${Number(item.unit_price).toFixed(2)}` : '';
+    const total = item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : '';
+    const options = getNormalizedSelectedOptions(item);
+    const featureLine = options.length
+      ? `<div style="margin-top:2px;color:#475569;font-size:0.68rem;line-height:1.2;">${escapeHtml(options.map((option) => {
+          const label = option.featureName && option.optionName
+            ? `${option.featureName}: ${option.optionName}`
+            : option.optionName || option.featureName;
+          return label;
+        }).join(' | '))}</div>`
+      : '';
+
+    return `<tr style="border-bottom:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
+  <td style="padding:4px 6px;vertical-align:top;line-height:1.2;">
+    <div style="font-weight:500;">${escapeHtml(item.item_name || '')}</div>
+    ${featureLine}
+  </td>
+  <td style="padding:4px 6px;text-align:center;width:42px;vertical-align:top;">${qty}</td>
+  <td style="padding:4px 6px;text-align:right;width:78px;white-space:nowrap;vertical-align:top;">${unit}</td>
+  <td style="padding:4px 6px;text-align:right;width:78px;white-space:nowrap;font-weight:600;vertical-align:top;">${total}</td>
+</tr>`;
+  }).join('');
+
+  return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:inherit;font-size:0.78rem;line-height:1.2;">
+  <colgroup>
+    <col/>
+    <col style="width:42px;"/>
+    <col style="width:78px;"/>
+    <col style="width:78px;"/>
+  </colgroup>
+  <thead>
+    <tr style="border-bottom:2px solid #cbd5e1;background:#f8fafc;">
+      <th style="padding:4px 6px;text-align:left;font-weight:700;">Item</th>
+      <th style="padding:4px 6px;text-align:center;font-weight:700;">Qty</th>
+      <th style="padding:4px 6px;text-align:right;font-weight:700;">Unit</th>
+      <th style="padding:4px 6px;text-align:right;font-weight:700;">Total</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
+}
+
 /** Build a styled HTML table for invoice line items */
 function buildItemsTableHtml(items) {
   if (!items.length) return '<p style="color:#6b7280;font-size:0.875rem;">No items</p>';
@@ -300,13 +443,7 @@ function buildItemsTableHtml(items) {
     const qty = i.quantity ?? '';
     const unit = i.unit_price != null ? `$${Number(i.unit_price).toFixed(2)}` : '';
     const total = i.line_total != null ? `$${Number(i.line_total).toFixed(2)}` : '';
-    // Feature selections: support both array form (cart) and object form (options_json parsed)
-    let optionsLine = '';
-    const opts = i.selectedOptions ?? i.options_json ?? null;
-    if (Array.isArray(opts) && opts.length > 0) {
-      const label = opts.map(o => `${o.featureName ?? o.feature_name ?? ''}: ${o.optionName ?? o.option_name ?? ''}`).join(' · ');
-      optionsLine = `<div style="color:#4f46e5;font-size:0.78rem;margin-top:2px;">${label}</div>`;
-    }
+    const optionsLine = buildCompactFeatureSummaryHtml(i);
     return `<tr style="border-bottom:1px solid #e5e7eb;">
   <td style="padding:6px 8px;">${i.item_name || ''}${optionsLine}</td>
   <td style="padding:6px 8px;text-align:center;width:50px;">${qty}</td>
@@ -361,6 +498,8 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
   const now = new Date();
   const txDate = transaction?.created_at ? formatDateISO(transaction.created_at) : formatDateISO(now);
   const itemsTableHtml = buildItemsTableHtml(items);
+  const itemsCompactFeatureTableHtml = buildItemsCompactFeatureTableHtml(items);
+  const itemsDenseTableHtml = buildItemsDenseTableHtml(items);
   const itemsFeatureTableHtml = buildItemsFeatureTableHtml(items);
   const itemsHtml = itemsTableHtml;
   return {
@@ -384,6 +523,8 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
     'invoice.tax': transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : '',
     'invoice.items': itemsHtml,
     'invoice.items.table': itemsTableHtml,
+    'invoice.items.compact_feature_table': itemsCompactFeatureTableHtml,
+    'invoice.items.dense_table': itemsDenseTableHtml,
     'invoice.items.feature_table': itemsFeatureTableHtml,
     'invoice.payment_method': transaction?.payment_method || '',
   };
