@@ -691,11 +691,22 @@ export default function Modal_Detail_Item({
   const handleAddCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) return;
+    const normalizedName = name.toLocaleLowerCase();
+    const existingCategory = itemCategories.find((category) => category.name?.trim().toLocaleLowerCase() === normalizedName);
+    if (existingCategory) {
+      setFormData(prev => ({ ...prev, category: existingCategory.name }));
+      setNewCategoryName('');
+      setShowCategoryManager(false);
+      return;
+    }
     try {
       const res = await inventoryCategoriesAPI.create(currentItemType, name);
       const created = res?.data;
+      if (!created?.name) return;
       setItemCategories(prev => [...prev.filter(c => c.id !== created?.id), created].sort((a, b) => a.name.localeCompare(b.name)));
+      setFormData(prev => ({ ...prev, category: created.name }));
       setNewCategoryName('');
+      setShowCategoryManager(false);
     } catch { /* silent */ }
   };
 
