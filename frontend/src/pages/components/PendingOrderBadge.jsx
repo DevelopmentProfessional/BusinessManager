@@ -34,8 +34,7 @@ const PendingOrderBadge = ({ clientId }) => {
     }
   };
 
-  if (!count) {
-    return null;
+  if (!count) {return null;
   }
 
   return (
