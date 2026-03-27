@@ -12,6 +12,8 @@ services:
         fromDatabase:
           name: dd_reference_temp
           property: connectionString
+      - key: SKIP_STARTUP_DB_BOOTSTRAP
+        value: "true"
       - key: ALLOWED_ORIGINS
         value: https://businessmanager-reference.onrender.com,http://localhost:5173
       - key: ENVIRONMENT

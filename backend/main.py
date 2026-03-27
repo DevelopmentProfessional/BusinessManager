@@ -140,6 +140,8 @@ app = FastAPI(
 
 @app.on_event("startup")
 def ensure_database_ready() -> None:
+    if os.getenv("SKIP_STARTUP_DB_BOOTSTRAP", "").strip().lower() in {"1", "true", "yes", "on"}:
+        return
     create_db_and_tables()
 
 # Configure CORS with explicit production domains

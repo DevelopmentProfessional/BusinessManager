@@ -3,6 +3,8 @@
 ## Scope
 These instructions apply to the whole repository and should be used as the first routing guide before broad codebase exploration.
 
+Use the closest AGENTS.md file in the directory tree for area-specific guidance.
+
 ## Update Coverage
 When making updates, evaluate impact across all application surfaces in this repository.
 
@@ -22,27 +24,16 @@ For any task, start with the smallest relevant area instead of scanning the whol
 4. After identifying the primary area, evaluate whether matching changes are needed in client-portal/.
 5. After identifying the primary area, evaluate whether matching changes are needed in client-api/.
 
-## Prefer These Areas
-- frontend/src/pages/components/ for shared UI behavior
-- frontend/src/pages/ for page-level behavior
-- frontend/src/services/ for frontend API access and shared state
-- client-portal/src/pages/ for portal page-level behavior
-- client-portal/src/components/ for portal shared UI
-- client-portal/src/services/ for portal API access and shared state
-- backend/routers/ for API behavior
-- backend/models.py for schema and shared data shapes
-- backend/database.py for schema setup and migrations
+## Area Routing
+- frontend/: defer to frontend/AGENTS.md
+- backend/: defer to backend/AGENTS.md
+- client-portal/: defer to client-portal/AGENTS.md
+- client-api/: defer to client-api/AGENTS.md
 
 ## Avoid By Default
 Do not read these areas unless the task explicitly requires them.
 
 - node_modules/
-- frontend/public/ unless the task involves static assets, manifest, or icons
-- frontend/index.html, frontend/vite.config.js, frontend/postcss.config.js, frontend/tailwind.config.js unless the task is build/config related
-- client-portal/public/ unless the task involves static assets, manifest, or icons
-- client-portal/index.html, client-portal/vite.config.js, client-portal/postcss.config.js, client-portal/tailwind.config.js unless the task is build/config related
-- frontend/dist/ and frontend/dev-dist/
-- client-portal/dist/ if present
 - backend/uploads/
 - ssl/
 - .git/
@@ -50,11 +41,8 @@ Do not read these areas unless the task explicitly requires them.
 
 ## Investigation Rules
 - Do not broad-search the entire repo up front; identify the primary area first, then expand only into the other affected apps.
-- For frontend/ and client-portal/, stay inside src/ by default.
-- Prefer shared components and API modules before scanning many page files.
 - Prefer direct file reads after targeted search hits instead of opening large unrelated files.
 - Treat deleted, seeded, generated, or legacy helper scripts as out of scope unless the user asks for them.
-- If the addition or fix appears to require reading outside frontend/src/ or client-portal/src/, ask before expanding scope when the missing context is not explicit from the task.
 
 ## Validation
 - For frontend changes, prefer npm run build from the repo root.
@@ -62,5 +50,3 @@ Do not read these areas unless the task explicitly requires them.
 
 ## Escalation
 If the task is ambiguous about which app area it belongs to, inspect only the active file and one adjacent dependency first, then expand outward.
-
-If work in frontend/ or client-portal/ appears blocked by missing config, asset, build, or entry-point context outside src/, ask for permission to read further rather than expanding scope automatically.
