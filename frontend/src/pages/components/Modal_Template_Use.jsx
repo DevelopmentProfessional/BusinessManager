@@ -59,6 +59,27 @@ export default function Modal_Template_Use({
   const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || 'Invoice';
   const recipientEmail = (client?.email || entity?.email || '').trim();
 
+  const parseSelectedOptions = useCallback((item) => {
+    if (Array.isArray(item?.selectedOptions)) {
+      return item.selectedOptions;
+    }
+
+    if (Array.isArray(item?.options_json)) {
+      return item.options_json;
+    }
+
+    if (typeof item?.options_json === 'string' && item.options_json.trim()) {
+      try {
+        const parsed = JSON.parse(item.options_json);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    return [];
+  }, []);
+
   const normalizeImageAlignment = useCallback((html) => {
     if (!html) return '';
     try {
@@ -196,6 +217,7 @@ export default function Modal_Template_Use({
           quantity: qty,
           unit_price: unitPrice,
           line_total: unitPrice * qty,
+          selectedOptions: parseSelectedOptions(item),
         };
       });
 

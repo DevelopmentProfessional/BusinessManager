@@ -252,6 +252,129 @@ div[role="combobox"] {
   height: 1.6rem !important;
 }
 
+.searchable-select-overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+
+.searchable-select-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.searchable-select-panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+[data-bs-theme="dark"] .searchable-select-panel {
+  background: rgba(31, 41, 55, 0.96);
+  border-color: rgba(100, 116, 139, 0.4);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.45);
+}
+
+.searchable-select-panel-header {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.searchable-select-input-shell {
+  position: relative;
+}
+
+.searchable-select-input {
+  padding-right: 2.5rem !important;
+}
+
+.searchable-select-input-icon {
+  position: absolute;
+  top: 50%;
+  right: 0.9rem;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+[data-bs-theme="dark"] .searchable-select-input-icon {
+  color: #cbd5e1;
+}
+
+.searchable-select-current-value {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+[data-bs-theme="dark"] .searchable-select-current-value {
+  color: #cbd5e1;
+}
+
+.searchable-select-options {
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.searchable-select-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0.8rem 0.95rem;
+  border: 0;
+  border-radius: 0.95rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.searchable-select-option:hover,
+.searchable-select-option.is-highlighted {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.searchable-select-option.is-selected {
+  background: rgba(37, 99, 235, 0.16);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .searchable-select-option.is-selected {
+  color: #93c5fd;
+}
+
+.searchable-select-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.searchable-select-option-label {
+  line-height: 1.25rem;
+}
+
+.searchable-select-empty-state {
+  padding: 1rem;
+  text-align: center;
+  color: #64748b;
+}
+
+[data-bs-theme="dark"] .searchable-select-empty-state {
+  color: #cbd5e1;
+}
+
 /* ========================================
    COMPACT MODE BUTTON STYLES
    Buttons in compact/icon-only mode

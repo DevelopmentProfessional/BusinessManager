@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { matchesWildcardText } from '../../utils/searchableSelect';
 
 export default function Dropdown_Custom({
   value,
@@ -11,7 +12,7 @@ export default function Dropdown_Custom({
   disabled = false,
   name = '',
   id = '',
-  searchable = false,
+  searchable = true,
   onOpen = null,
   loading = false,
   multiSelect = false
@@ -83,7 +84,7 @@ export default function Dropdown_Custom({
   // Filter options based on search term
   const filteredOptions = searchable && searchTerm 
     ? options.filter(option => 
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+        matchesWildcardText(searchTerm, option.label, option.value)
       )
     : options;
 

@@ -39,7 +39,7 @@ import PageLayout from './components/Page_Layout';
 import PageTableFooter from './components/Page_Table_Footer';
 import PageTableHeader from './components/Page_Table_Header';
 import PageTableRow from './components/Page_Table_Row';
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon } from '@heroicons/react/24/outline';
 import Modal_Discount_Rules from './components/Modal_Discount_Rules';
 import Button_Toolbar from './components/Button_Toolbar';
 import useStore from '../services/useStore';
@@ -80,6 +80,7 @@ export default function Inventory() {
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
   const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const { isTrainingMode } = useViewMode();
+  const [showIntelligence, setShowIntelligence] = useState(false);
   const scrollRef = useRef(null);
   const deleteInFlightRef = useRef(new Set());
 
@@ -449,10 +450,6 @@ return (
         )}
       </div>
 
-      <div className="px-3 pb-3 bg-white dark:bg-gray-900 border-top border-gray-200 dark:border-gray-800">
-        <InventoryIntelligence />
-      </div>
-
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter
         searchTerm={searchTerm}
@@ -472,6 +469,23 @@ return (
               onClick={() => setShowDiscountRules(true)}
               className="btn-app-secondary"
             />
+            {/* Inventory Intelligence drop-up */}
+            <div className="position-relative">
+              <Button_Toolbar
+                icon={PresentationChartBarIcon}
+                label="Insights"
+                onClick={() => setShowIntelligence((v) => !v)}
+                className={showIntelligence ? 'bg-blue-600 text-white' : 'btn-app-secondary'}
+              />
+              {showIntelligence && (
+                <div className="position-absolute bottom-100 start-0 mb-2 z-50">
+                  <InventoryIntelligence
+                    inventory={inventory}
+                    onClose={() => setShowIntelligence(false)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         }
       >

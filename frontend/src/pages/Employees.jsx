@@ -1129,13 +1129,6 @@ export default function Employees() {
       {/* Main upside-down table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
 
-        <PageTableHeader columns={[
-          { label: 'Employee' },
-          ...(isAdmin ? [{ label: '', width: 54, className: 'text-center p-0' }] : []),
-          { label: 'Role', width: 90 },
-          { label: '', width: 54, className: 'text-center p-0' },
-        ]} />
-
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div
           className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
@@ -1252,6 +1245,13 @@ export default function Employees() {
             </div>
           )}
         </div>
+
+        <PageTableHeader columns={[
+          { label: 'Employee' },
+          ...(isAdmin ? [{ label: '', width: 54, className: 'text-center p-0' }] : []),
+          { label: 'Role', width: 90 },
+          { label: '', width: 54, className: 'text-center p-0' },
+        ]} />
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter

@@ -13,6 +13,7 @@ import Modal_Client from './pages/components/Modal_Client';
 import Manager_MobileAddressBar from './pages/components/Manager_MobileAddressBar';
 import Prompt_InstallApp from './pages/components/Prompt_InstallApp';
 import PageErrorBoundary from './pages/components/ErrorBoundary';
+import SearchableSelectOverlay from './pages/components/SearchableSelectOverlay';
 
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import('./pages/Clients'));
@@ -154,12 +155,13 @@ function App() {
       <ClearErrorOnNavigate />
       <Manager_MobileAddressBar />
       <Prompt_InstallApp />
+      <SearchableSelectOverlay />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={
             <ProtectedRoute>
-              <Layout><PageErrorBoundary><Navigate to="/profile" replace /></PageErrorBoundary></Layout>
+              <Layout><PageErrorBoundary><Navigate to="/schedule" replace /></PageErrorBoundary></Layout>
             </ProtectedRoute>
           } />
           <Route path="/clients" element={

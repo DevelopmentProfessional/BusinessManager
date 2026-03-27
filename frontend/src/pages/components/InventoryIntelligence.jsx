@@ -3,224 +3,355 @@
  * FILE: InventoryIntelligence.jsx
  *
  * PURPOSE:
- *   Integrated inventory insights component for the inventory
- *   page. Shows stock levels, reorder recommendations, ABC analysis.
+ *   Drop-up insights panel for the Inventory page.
+ *   Receives the already-loaded inventory array as a prop and
+ *   computes all metrics locally — no separate API call needed.
  * ============================================================
  */
 
-import React, { useState, useEffect } from 'react';
-import { ExclamationTriangleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import api from '../../services/api';
+import React, { useMemo } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
-const InventoryIntelligence = ({ onCreatePO }) => {
-  const [insights, setInsights] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    loadInventoryInsights();
-  }, []);
-  
-  const loadInventoryInsights = async () => {
-    try {
-      const response = await api.get('/inventory-costs?low_stock_only=false');
-      setInsights(response?.data ?? []);
-    } catch (error) {
-      console.error('Failed to load insights:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Categorize by value/turnover (ABC analysis)
-  const abcAnalysis = () => {
-    const sorted = [...insights].sort((a, b) => {
-      const aValue = (a.current_quantity * (a.actual_cost || 0));
-      const bValue = (b.current_quantity * (b.actual_cost || 0));
-      return bValue - aValue;
-    });
-    
-    const total = sorted.length;
-    const aItems = sorted.slice(0, Math.ceil(total * 0.2)); // Top 20%
-    const bItems = sorted.slice(Math.ceil(total * 0.2), Math.ceil(total * 0.8)); // Middle 60%
-    const cItems = sorted.slice(Math.ceil(total * 0.8)); // Bottom 20%
-    
-    return { aItems, bItems, cItems };
-  };
-  
-  const { aItems, bItems, cItems } = abcAnalysis();
-  
-  const lowStockCount = insights.filter(i => i.should_reorder).length;
-  const totalInventoryValue = insights.reduce((sum, i) => sum + (i.current_quantity * (i.actual_cost || 0)), 0);
-  
+/* ─── sub-components ────────────────────────────────────────── */
+
+const Kpi = ({ label, value, color }) => {
+  const colorMap = { red: 'text-red-600', amber: 'text-amber-600', green: 'text-green-600' };
   return (
-    <div className="space-y-6 bg-white rounded-lg shadow-lg p-6 mt-6 border-t-4 border-blue-600">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-gray-900">📊 Inventory Intelligence</h3>
-        <button
-          onClick={loadInventoryInsights}
-          className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
-        >
-          Refresh
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
+      <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{label}</div>
+      <div className={`text-lg font-bold leading-tight mt-0.5 ${colorMap[color] || 'text-gray-900 dark:text-gray-100'}`}>
+        {value}
+      </div>
+    </div>
+  );
+};
+
+const Section = ({ title, children }) => (
+  <div className="mb-3">
+    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{title}</div>
+    {children}
+  </div>
+);
+
+const AbcCard = ({ label, subtitle, value, note, color }) => {
+  const colorMap = {
+    red:   'bg-red-50   dark:bg-red-900/20   text-red-700   dark:text-red-300   border-red-200   dark:border-red-800',
+    amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    green: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
+  };
+  return (
+    <div className={`rounded-lg p-2 border text-center ${colorMap[color]}`}>
+      <div className="font-bold text-sm">{label}</div>
+      <div className="text-xs opacity-75">{subtitle}</div>
+      <div className="text-xs font-semibold mt-0.5">{value}</div>
+      <div className="text-xs opacity-60 mt-0.5">{note}</div>
+    </div>
+  );
+};
+
+/* ─── TYPE badge palette (matches Inventory.jsx) ────────────── */
+const TYPE_COLORS = {
+  PRODUCT:  'bg-gray-100  text-gray-700  dark:bg-gray-700  dark:text-gray-300',
+  RESOURCE: 'bg-blue-100  text-blue-700  dark:bg-blue-900/40 dark:text-blue-300',
+  ASSET:    'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+  LOCATION: 'bg-teal-100  text-teal-700  dark:bg-teal-900/40 dark:text-teal-300',
+  BUNDLE:   'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  MIX:      'bg-pink-100  text-pink-700  dark:bg-pink-900/40 dark:text-pink-300',
+  ITEM:     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+};
+
+/* ─── helpers ────────────────────────────────────────────────── */
+const NON_STOCK_TYPES = new Set(['LOCATION', 'ASSET']);
+
+const fmtUSD = (n) =>
+  '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+/* ─── main component ─────────────────────────────────────────── */
+const InventoryIntelligence = ({ inventory = [], onClose }) => {
+  const metrics = useMemo(() => {
+    if (!inventory.length) return null;
+
+    const isStockable = (i) => !NON_STOCK_TYPES.has((i.type || 'PRODUCT').toUpperCase());
+
+    // Stock health
+    const outOfStock = inventory.filter((i) => isStockable(i) && i.quantity === 0);
+    const lowStock   = inventory.filter((i) => isStockable(i) && i.quantity > 0 && i.quantity <= i.min_stock_level);
+    const healthy    = inventory.filter((i) => isStockable(i) && i.quantity > i.min_stock_level);
+
+    // Value metrics
+    const totalValue = inventory.reduce((s, i) => s + (i.quantity || 0) * (i.price || 0), 0);
+    const totalCost  = inventory.reduce((s, i) => s + (i.quantity || 0) * (i.cost  || 0), 0);
+
+    // Margin (items where both price > 0 and cost > 0)
+    const withBoth = inventory.filter((i) => (i.price || 0) > 0 && (i.cost || 0) > 0);
+    const avgMargin = withBoth.length
+      ? withBoth.reduce((s, i) => s + (i.price - i.cost) / i.price, 0) / withBoth.length * 100
+      : null;
+
+    // Data-quality flags
+    const missingPrice = inventory.filter(
+      (i) => (i.type || 'PRODUCT').toUpperCase() === 'PRODUCT' && !(i.price > 0)
+    );
+    const missingSku = inventory.filter((i) => !i.sku);
+    const missingCost = inventory.filter(
+      (i) => isStockable(i) && !(i.cost > 0)
+    );
+
+    // By type
+    const byType = {};
+    inventory.forEach((i) => {
+      const t = (i.type || 'PRODUCT').toUpperCase();
+      if (!byType[t]) byType[t] = { count: 0, value: 0 };
+      byType[t].count++;
+      byType[t].value += (i.quantity || 0) * (i.price || 0);
+    });
+
+    // By category (top 6)
+    const byCat = {};
+    inventory.forEach((i) => {
+      const c = i.category || '—';
+      byCat[c] = (byCat[c] || 0) + 1;
+    });
+    const topCategories = Object.entries(byCat)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+
+    // ABC analysis by total value (qty × price)
+    const sorted = [...inventory]
+      .map((i) => ({ ...i, totalVal: (i.quantity || 0) * (i.price || 0) }))
+      .sort((a, b) => b.totalVal - a.totalVal);
+    const n = sorted.length;
+    const aEnd = Math.max(1, Math.ceil(n * 0.2));
+    const bEnd = Math.max(aEnd, Math.ceil(n * 0.8));
+    const aItems = sorted.slice(0, aEnd);
+    const bItems = sorted.slice(aEnd, bEnd);
+    const cItems = sorted.slice(bEnd);
+    const aValue = aItems.reduce((s, i) => s + i.totalVal, 0);
+    const bValue = bItems.reduce((s, i) => s + i.totalVal, 0);
+    const cValue = cItems.reduce((s, i) => s + i.totalVal, 0);
+
+    // Stock coverage ratio (avg qty / min_stock_level for items that have a min set)
+    const withMin = inventory.filter((i) => isStockable(i) && i.min_stock_level > 0);
+    const avgCoverage = withMin.length
+      ? withMin.reduce((s, i) => s + i.quantity / i.min_stock_level, 0) / withMin.length * 100
+      : null;
+
+    // Top value items (A-items, up to 5)
+    const topValueItems = aItems.slice(0, 5);
+
+    // Urgent reorders — sorted by qty / min ratio (lowest first)
+    const reorders = inventory
+      .filter((i) => isStockable(i) && i.quantity <= i.min_stock_level)
+      .sort((a, b) => {
+        const ra = a.quantity / Math.max(a.min_stock_level, 1);
+        const rb = b.quantity / Math.max(b.min_stock_level, 1);
+        return ra - rb;
+      })
+      .slice(0, 6);
+
+    return {
+      total: inventory.length,
+      outOfStock: outOfStock.length,
+      lowStock: lowStock.length,
+      healthy: healthy.length,
+      totalValue,
+      totalCost,
+      avgMargin,
+      missingPrice: missingPrice.length,
+      missingSku: missingSku.length,
+      missingCost: missingCost.length,
+      byType,
+      topCategories,
+      abc: {
+        aCount: aItems.length, aValue,
+        bCount: bItems.length, bValue,
+        cCount: cItems.length, cValue,
+      },
+      avgCoverage,
+      topValueItems,
+      reorders,
+    };
+  }, [inventory]);
+
+  if (!metrics) {
+    return (
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4"
+           style={{ width: 340 }}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">Inventory Insights</span>
+          <button onClick={onClose}><XMarkIcon className="w-4 h-4 text-gray-400" /></button>
+        </div>
+        <p className="text-sm text-gray-500">No inventory data loaded yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-y-auto"
+      style={{ width: 360, maxHeight: '72vh' }}
+    >
+      {/* Header */}
+      <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4 py-2.5 z-10">
+        <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">Inventory Insights</span>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
-      
-      {loading ? (
-        <p className="text-gray-600">Loading inventory insights...</p>
-      ) : (
-        <>
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-              <p className="text-gray-600 text-sm">Total Items</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{insights.length}</p>
-            </div>
-            
-            <div className={`bg-gradient-to-br ${lowStockCount > 0 ? 'from-red-50 to-red-100' : 'from-green-50 to-green-100'} rounded-lg p-4`}>
-              <p className="text-gray-600 text-sm">Low Stock</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{lowStockCount}</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-              <p className="text-gray-600 text-sm">Inventory Value</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">${totalInventoryValue.toFixed(0)}</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4">
-              <p className="text-gray-600 text-sm">Avg Stock Level</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {(insights.reduce((sum, i) => sum + i.current_quantity, 0) / insights.length).toFixed(0)}
-              </p>
-            </div>
+
+      <div className="p-4 space-y-4">
+
+        {/* ── KPIs ── */}
+        <Section title="Overview">
+          <div className="grid grid-cols-2 gap-2">
+            <Kpi label="Total Items" value={metrics.total} />
+            <Kpi label="In Stock" value={metrics.healthy} color="green" />
+            <Kpi label="Low Stock" value={metrics.lowStock} color={metrics.lowStock > 0 ? 'amber' : 'green'} />
+            <Kpi label="Out of Stock" value={metrics.outOfStock} color={metrics.outOfStock > 0 ? 'red' : 'green'} />
+            <Kpi label="Inventory Value" value={fmtUSD(metrics.totalValue)} />
+            {metrics.totalCost > 0
+              ? <Kpi label="Cost Basis" value={fmtUSD(metrics.totalCost)} />
+              : <Kpi label="Items w/ Cost" value={`${metrics.total - metrics.missingCost} / ${metrics.total}`} />
+            }
+            {metrics.avgMargin !== null && (
+              <Kpi label="Avg Margin" value={`${metrics.avgMargin.toFixed(1)}%`} color={metrics.avgMargin >= 30 ? 'green' : 'amber'} />
+            )}
+            {metrics.avgCoverage !== null && (
+              <Kpi label="Stock Coverage" value={`${metrics.avgCoverage.toFixed(0)}%`} color={metrics.avgCoverage >= 100 ? 'green' : 'amber'} />
+            )}
           </div>
-          
-          {/* Low Stock Alert */}
-          {lowStockCount > 0 && (
-            <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded">
-              <div className="flex gap-3">
-                <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-red-900">{lowStockCount} items need reordering</p>
-                  <p className="text-sm text-red-800">Expected stockouts in:</p>
-                  <ul className="text-sm text-red-800 mt-1 ml-4 list-disc">
-                    {insights
-                      .filter(i => i.should_reorder && i.estimated_days_until_stockout)
-                      .slice(0, 3)
-                      .map(i => (
-                        <li key={i.inventory_id}>
-                          <strong>{i.inventory_name}</strong>: {i.estimated_days_until_stockout.toFixed(0)} days
-                        </li>
-                      ))}
-                  </ul>
+        </Section>
+
+        {/* ── Data Quality ── */}
+        {(metrics.missingPrice > 0 || metrics.missingSku > 0 || metrics.missingCost > 0) && (
+          <Section title="Data Quality">
+            <div className="space-y-1">
+              {metrics.missingPrice > 0 && (
+                <div className="flex justify-between text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded px-2 py-1">
+                  <span>Products without a price</span>
+                  <span className="font-semibold">{metrics.missingPrice}</span>
                 </div>
-              </div>
+              )}
+              {metrics.missingSku > 0 && (
+                <div className="flex justify-between text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded px-2 py-1">
+                  <span>Items missing a SKU</span>
+                  <span className="font-semibold">{metrics.missingSku}</span>
+                </div>
+              )}
+              {metrics.missingCost > 0 && (
+                <div className="flex justify-between text-xs bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded px-2 py-1">
+                  <span>Items missing cost (for margin)</span>
+                  <span className="font-semibold">{metrics.missingCost}</span>
+                </div>
+              )}
             </div>
-          )}
-          
-          {/* ABC Analysis */}
-          <div className="border rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 mb-3">ABC Inventory Analysis</h4>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="bg-red-50 p-3 rounded">
-                <p className="text-red-700 font-bold text-lg">A Items</p>
-                <p className="text-gray-600 text-sm">{aItems.length} critical items (20%)</p>
-                <p className="text-xs text-gray-600 mt-1">Highest value - strict control</p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded">
-                <p className="text-yellow-700 font-bold text-lg">B Items</p>
-                <p className="text-gray-600 text-sm">{bItems.length} important items (60%)</p>
-                <p className="text-xs text-gray-600 mt-1">Medium value - regular monitoring</p>
-              </div>
-              <div className="bg-green-50 p-3 rounded">
-                <p className="text-green-700 font-bold text-lg">C Items</p>
-                <p className="text-gray-600 text-sm">{cItems.length} standard items (20%)</p>
-                <p className="text-xs text-gray-600 mt-1">Lower value - loose control</p>
-              </div>
-            </div>
+          </Section>
+        )}
+
+        {/* ── By Type ── */}
+        <Section title="By Type">
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(metrics.byType).map(([type, d]) => (
+              <span
+                key={type}
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[type] || 'bg-gray-100 text-gray-700'}`}
+              >
+                {type.charAt(0) + type.slice(1).toLowerCase()}: {d.count}
+                {d.value > 0 && <span className="opacity-60 ml-1">· {fmtUSD(d.value)}</span>}
+              </span>
+            ))}
           </div>
-          
-          {/* Reorder Recommendations */}
-          {insights.filter(i => i.should_reorder).length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">📦 Reorder Recommendations</h4>
-              <div className="space-y-2">
-                {insights
-                  .filter(i => i.should_reorder)
-                  .slice(0, 5)
-                  .map(item => (
-                    <div key={item.inventory_id} className="flex items-center justify-between p-2 bg-white rounded border border-blue-200">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.inventory_name}</p>
-                        <p className="text-sm text-gray-600">
-                          Current: {item.current_quantity} | Reorder: {item.reorder_quantity}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => onCreatePO?.(item.inventory_id)}
-                        className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                      >
-                        Create PO
-                      </button>
+        </Section>
+
+        {/* ── Top Categories ── */}
+        {metrics.topCategories.length > 1 && (
+          <Section title="Top Categories">
+            <div className="space-y-1">
+              {metrics.topCategories.map(([cat, count]) => {
+                const pct = Math.round(count / metrics.total * 100);
+                return (
+                  <div key={cat} className="flex items-center gap-2 text-xs">
+                    <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden h-1.5">
+                      <div className="bg-blue-500 h-full rounded-full" style={{ width: `${pct}%` }} />
                     </div>
-                  ))}
-              </div>
+                    <span className="text-gray-700 dark:text-gray-300 truncate" style={{ maxWidth: 120 }}>{cat}</span>
+                    <span className="font-medium text-gray-500 flex-shrink-0">{count}</span>
+                  </div>
+                );
+              })}
             </div>
-          )}
-          
-          {/* Detailed Stock Levels */}
-          <details className="border rounded-lg">
-            <summary className="p-4 cursor-pointer font-semibold text-gray-900 flex items-center gap-2 hover:bg-gray-50">
-              <ChevronDownIcon className="w-5 h-5" />
-              View All Stock Levels
-            </summary>
-            <div className="border-t p-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="text-left px-3 py-2 font-medium">Item</th>
-                      <th className="text-center px-3 py-2 font-medium">Current</th>
-                      <th className="text-center px-3 py-2 font-medium">Reorder Point</th>
-                      <th className="text-center px-3 py-2 font-medium">Reorder Qty</th>
-                      <th className="text-center px-3 py-2 font-medium">Days Until Stock Out</th>
-                      <th className="text-center px-3 py-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {insights.map(item => (
-                      <tr key={item.inventory_id} className="border-b hover:bg-gray-50">
-                        <td className="px-3 py-2">{item.inventory_name}</td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`px-2 py-1 rounded text-white font-bold ${
-                            item.current_quantity <= item.reorder_point ? 'bg-red-600' : 'bg-green-600'
-                          }`}>
-                            {item.current_quantity}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-center">{item.reorder_point}</td>
-                        <td className="px-3 py-2 text-center font-medium">{item.reorder_quantity}</td>
-                        <td className="px-3 py-2 text-center">
-                          {item.estimated_days_until_stockout
-                            ? `${item.estimated_days_until_stockout.toFixed(1)} days`
-                            : 'N/A'}
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            item.should_reorder
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}>
-                            {item.should_reorder ? '⚠️ Low' : '✓ OK'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          </Section>
+        )}
+
+        {/* ── ABC Analysis ── */}
+        <Section title="ABC Analysis (by value)">
+          <div className="grid grid-cols-3 gap-1.5 mb-1">
+            <AbcCard
+              label="A"
+              subtitle={`${metrics.abc.aCount} items`}
+              value={fmtUSD(metrics.abc.aValue)}
+              note="Top 20% — strict control"
+              color="red"
+            />
+            <AbcCard
+              label="B"
+              subtitle={`${metrics.abc.bCount} items`}
+              value={fmtUSD(metrics.abc.bValue)}
+              note="Mid 60% — monitor"
+              color="amber"
+            />
+            <AbcCard
+              label="C"
+              subtitle={`${metrics.abc.cCount} items`}
+              value={fmtUSD(metrics.abc.cValue)}
+              note="Bottom 20% — low priority"
+              color="green"
+            />
+          </div>
+        </Section>
+
+        {/* ── Top Value Items ── */}
+        {metrics.topValueItems.length > 0 && (
+          <Section title="Highest Value Items">
+            <div className="space-y-1">
+              {metrics.topValueItems.map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
+                  <span className="truncate mr-2">{item.name}</span>
+                  <span className="font-medium flex-shrink-0 text-blue-600 dark:text-blue-400">{fmtUSD(item.totalVal)}</span>
+                </div>
+              ))}
             </div>
-          </details>
-        </>
-      )}
+          </Section>
+        )}
+
+        {/* ── Reorder List ── */}
+        {metrics.reorders.length > 0 && (
+          <Section title="Needs Reorder">
+            <div className="space-y-1">
+              {metrics.reorders.map((item) => {
+                const pct = item.min_stock_level > 0
+                  ? Math.round(item.quantity / item.min_stock_level * 100)
+                  : 100;
+                return (
+                  <div key={item.id} className="text-xs bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">
+                    <div className="flex justify-between text-red-800 dark:text-red-200">
+                      <span className="truncate mr-2 font-medium">{item.name}</span>
+                      <span className="flex-shrink-0">{item.quantity} / {item.min_stock_level}</span>
+                    </div>
+                    <div className="mt-1 bg-red-200 dark:bg-red-800 rounded-full overflow-hidden h-1">
+                      <div
+                        className={`h-full rounded-full ${pct === 0 ? 'bg-gray-400' : 'bg-red-500'}`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        )}
+
+      </div>
     </div>
   );
 };
