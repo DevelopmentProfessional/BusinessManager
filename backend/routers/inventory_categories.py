@@ -3,6 +3,7 @@ Router: /api/v1/inventory-categories
 CRUD for per-type, per-company inventory category lookup entries.
 """
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
@@ -46,11 +47,12 @@ def create_inventory_category(
         raise HTTPException(status_code=422, detail="name and item_type are required")
 
     # Deduplicate
+    normalized_name = name.casefold()
     existing = session.exec(
         select(InventoryCategory).where(
             InventoryCategory.company_id == company_id,
             InventoryCategory.item_type == item_type,
-            InventoryCategory.name == name,
+            func.lower(InventoryCategory.name) == normalized_name,
         )
     ).first()
     if existing:
