@@ -958,14 +958,38 @@ export default function Sales() {
 
   return (
     <div className="h-full flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Sticky Header - Title Only */}
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales</h1>
+      {/* Sticky Header */}
+      <div className="flex-shrink-0 sticky top-0 z-10 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between pb-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">Sales</h1>
+            {selectedClient && (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-green-400" />
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">{selectedClient.name}</span>
+              </div>
+            )}
+          </div>
+          {cartItemCount > 0 && (
+            <button
+              onClick={() => setShowCartModal(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                color: '#fff', border: 'none', cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(79,70,229,0.35)',
+              }}
+            >
+              <ShoppingCartIcon className="h-4 w-4" />
+              {cartItemCount} · ${cartTotal.toFixed(2)}
+            </button>
+          )}
+        </div>
         {error && (
-          <div className="mt-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-xl flex items-center justify-between">
+          <div className="mb-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-xl flex items-center justify-between text-sm">
             <span>{error}</span>
-            <button onClick={clearError} className="text-red-500 hover:text-red-700">
-              <XMarkIcon className="h-5 w-5" />
+            <button onClick={clearError} className="text-red-500 hover:text-red-700 ml-2">
+              <XMarkIcon className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -977,10 +1001,13 @@ export default function Sales() {
         {showServices && filteredServices.length > 0 && (
           <div className="mb-6">
             {showProducts && (
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <SparklesIcon className="h-4 w-4" />
-                Services ({filteredServices.length})
-              </h3>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'linear-gradient(135deg, #4f46e510, #7c3aed10)', color: '#4f46e5', border: '1px solid #4f46e530' }}>
+                  <SparklesIcon className="h-3.5 w-3.5" />
+                  Services
+                </div>
+                <span className="text-xs text-gray-400">{filteredServices.length} available</span>
+              </div>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {filteredServices.map((service) => (
@@ -1004,10 +1031,13 @@ export default function Sales() {
         {showProducts && filteredProducts.length > 0 && (
           <div className="mb-6">
             {showServices && (
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <CubeIcon className="h-4 w-4" />
-                Products ({filteredProducts.length})
-              </h3>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'linear-gradient(135deg, #0ea5e910, #06b6d410)', color: '#0ea5e9', border: '1px solid #0ea5e930' }}>
+                  <CubeIcon className="h-3.5 w-3.5" />
+                  Products
+                </div>
+                <span className="text-xs text-gray-400">{filteredProducts.length} available</span>
+              </div>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {filteredProducts.map((product) => {

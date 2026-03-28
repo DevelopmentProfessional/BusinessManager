@@ -7,6 +7,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Portal CSS variables ───────────────────────────────────── */
+:root {
+  --cp-bg: #f8f9fc;
+  --cp-nav-bg: #ffffff;
+  --cp-nav-border: #e5e7eb;
+  --cp-primary: #4f46e5;
+  --cp-nav-inactive: #9ca3af;
+}
+
 /* ── Base ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -15,7 +24,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
   color: #111827;
-  background: #f9fafb;
+  background: var(--cp-bg);
   margin: 0;
 }
 

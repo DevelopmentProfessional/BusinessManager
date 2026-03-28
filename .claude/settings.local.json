@@ -84,7 +84,9 @@
       "Bash(del:*)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(find C:UsersdpintDocumentsDevelopmentBusinessManagerclient-portal -type f \\\\\\(-name *.jsx -o -name *.js -o -name *.tsx -o -name *.ts \\\\\\))",
+      "Bash(node --input-type=module --eval \":*)"
     ]
   }
 }

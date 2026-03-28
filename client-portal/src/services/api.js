@@ -10,6 +10,17 @@ function normalizeClientApiBase(rawBase) {
   const trimmed = String(rawBase || '').trim()
 
   if (!trimmed) return fallback
+
+  // Guard: if the URL points at the portal itself (same origin), fall back to
+  // the hardcoded client-api URL so we don't recurse into ourselves.
+  try {
+    const parsed = new URL(trimmed.endsWith('/api/client') ? trimmed : `${trimmed}/api/client`)
+    if (typeof window !== 'undefined' && parsed.origin === window.location.origin) {
+      console.warn('[api] VITE_CLIENT_API_URL appears to point at the portal itself. Using fallback:', fallback)
+      return fallback
+    }
+  } catch { /* ignore parse errors */ }
+
   if (trimmed.endsWith('/api/client')) return trimmed
   if (trimmed.endsWith('/api/client/')) return trimmed.slice(0, -1)
   return `${trimmed.replace(/\/+$/, '')}/api/client`
@@ -48,6 +59,15 @@ api.interceptors.response.use(
 
 // ── Companies (public) ───────────────────────────────────────────────────────
 export const companiesAPI = {
+  getBranding: async (companyId) => {
+    const res = await fetch(`${BASE}/companies/${encodeURIComponent(companyId)}/branding`, {
+      cache: 'default',
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return null
+    try { return await res.json() } catch { return null }
+  },
+  heroImageUrl: (companyId) => `${BASE}/companies/${encodeURIComponent(companyId)}/hero-image`,
   getAll: async () => {
     const response = await fetch(`${BASE}/companies?t=${Date.now()}`, {
       cache: 'no-store',

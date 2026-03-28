@@ -1,22 +1,17 @@
 /**
  * COMPANY SELECT — First page clients see.
+ * Modern full-screen landing page with company cards.
  * - If the user has saved credentials, auto-redirects to /shop.
- * - If not logged in, wipes ALL stale cache/localStorage (except nav pref)
- *   and fetches the company list fresh every time.
+ * - Wipes stale cache/localStorage (except nav pref) on load.
  */
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
+import { BuildingOffice2Icon, MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 import { companiesAPI } from '../services/api'
 import useStore from '../store/useStore'
 
-// localStorage keys that we intentionally keep across sessions
 const PERSISTENT_KEYS = new Set(['cp_client', 'cp_token', 'cp_company', 'cp_nav_align'])
 
-/**
- * Wipe all localStorage keys except credentials + nav pref,
- * and delete any non-precache service-worker runtime caches.
- */
 function clearStaleCaches() {
   const toRemove = []
   for (let i = 0; i < localStorage.length; i++) {
@@ -45,30 +40,64 @@ function CompanyCard({ company, onClick }) {
 
   const [imgError, setImgError] = useState(false)
   const showLogo = logoSrc && !imgError
+  const initial = (company.name || '?')[0].toUpperCase()
+
+  const COLORS = ['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ec4899']
+  const color = COLORS[initial.charCodeAt(0) % COLORS.length]
 
   return (
     <button
       onClick={() => onClick(company)}
-      className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-gray-100
-                 bg-white hover:border-primary hover:shadow-lg transition-all duration-200
-                 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/40
-                 min-w-[140px]"
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 10, padding: '20px 16px',
+        background: '#fff', border: '2px solid #f0f0f0',
+        borderRadius: '1.25rem', cursor: 'pointer',
+        transition: 'all 0.18s ease',
+        textAlign: 'center', minWidth: 130,
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = '#4f46e5'
+        e.currentTarget.style.transform = 'translateY(-3px)'
+        e.currentTarget.style.boxShadow = '0 12px 32px rgba(79,70,229,0.15)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = '#f0f0f0'
+        e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.boxShadow = 'none'
+      }}
     >
-      {/* Logo — only shown if one exists */}
-      {showLogo && (
-        <div className="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
+      {/* Logo / initial */}
+      <div style={{
+        width: 64, height: 64, borderRadius: '0.75rem', overflow: 'hidden',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        background: showLogo ? '#f9f9f9' : color,
+      }}>
+        {showLogo ? (
           <img
             src={logoSrc}
             alt={company.name}
-            className="w-full h-full object-contain"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }}
             onError={() => setImgError(true)}
           />
-        </div>
-      )}
+        ) : (
+          <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.4rem' }}>{initial}</span>
+        )}
+      </div>
 
-      {/* Company name */}
-      <span className="text-sm font-semibold text-gray-800 text-center leading-snug group-hover:text-primary transition-colors">
+      {/* Name */}
+      <span style={{
+        fontSize: '0.82rem', fontWeight: 600, color: '#111827',
+        lineHeight: 1.3, wordBreak: 'break-word',
+      }}>
         {company.name}
+      </span>
+
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 3,
+        fontSize: '0.7rem', color: '#4f46e5', fontWeight: 500,
+      }}>
+        Select <ArrowRightIcon style={{ width: 10, height: 10 }} />
       </span>
     </button>
   )
@@ -98,22 +127,17 @@ export default function CompanySelect() {
   }, [])
 
   useEffect(() => {
-    // Restore auth from localStorage first (synchronous)
     restoreAuth()
 
-    // Read directly from localStorage so we don't wait for a React re-render
     const savedToken   = localStorage.getItem('cp_token')
     const savedCompany = localStorage.getItem('cp_company')
     const savedClient  = safeParseJson(localStorage.getItem('cp_client'))
 
     if (savedToken && savedCompany && savedClient) {
-      // Valid saved session — skip the picker and go straight to the shop
       navigate('/shop', { replace: true })
       return
     }
 
-    // Not logged in — clear anything that isn't credentials or nav pref,
-    // then load the company list fresh with no caching
     clearStaleCaches()
     fetchCompanies()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -128,27 +152,69 @@ export default function CompanySelect() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary
-                          flex items-center justify-center mx-auto mb-2 shadow">
-            <BuildingOffice2Icon className="w-6 h-6 text-white" />
+    <div style={{ minHeight: '100vh', background: '#f8f9fc', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Hero header ───────────────────────────────────────── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+        padding: '40px 24px 32px',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative circles */}
+        <div style={{
+          position: 'absolute', top: -50, right: -50,
+          width: 200, height: 200, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.06)',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -30, left: -30,
+          width: 140, height: 140, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)',
+        }} />
+
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: '1rem',
+            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px',
+          }}>
+            <BuildingOffice2Icon style={{ width: 28, height: 28, color: '#fff' }} />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Client Portal</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Select your business to continue</p>
+          <h1 style={{
+            color: '#fff', fontWeight: 800, fontSize: '1.6rem',
+            margin: 0, letterSpacing: '-0.02em',
+          }}>
+            Client Portal
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', margin: '6px 0 0' }}>
+            Select your business to continue
+          </p>
         </div>
-      </header>
+      </div>
 
-      {/* ── Main ────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-10">
+      {/* ── Main ──────────────────────────────────────────────── */}
+      <main style={{ flex: 1, maxWidth: 600, margin: '0 auto', width: '100%', padding: '24px 20px' }}>
 
-        {/* Search (only shown when 5+ companies) */}
+        {/* Search */}
         {companiesSafe.length >= 5 && (
-          <div className="mb-8 max-w-sm mx-auto">
+          <div style={{ position: 'relative', marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+            <MagnifyingGlassIcon style={{
+              width: 16, height: 16, position: 'absolute',
+              left: 12, top: '50%', transform: 'translateY(-50%)',
+              color: '#9ca3af', pointerEvents: 'none',
+            }} />
             <input
-              className="form-input text-center"
+              style={{
+                width: '100%', paddingLeft: 36, paddingRight: 12,
+                paddingTop: 10, paddingBottom: 10,
+                fontSize: '0.85rem', border: '1.5px solid #e5e7eb',
+                borderRadius: '0.75rem', outline: 'none',
+                background: '#fff', color: '#111827',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+              }}
               placeholder="Search businesses…"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -157,37 +223,66 @@ export default function CompanySelect() {
           </div>
         )}
 
-        {/* States */}
+        {/* Loading */}
         {loading && (
-          <div className="flex justify-center mt-20">
-            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              border: '3px solid #e0e7ff',
+              borderTopColor: '#4f46e5',
+              animation: 'spin 0.7s linear infinite',
+            }} />
           </div>
         )}
 
+        {/* Error */}
         {!loading && error && (
-          <div className="text-center mt-20">
-            <BuildingOffice2Icon className="w-12 h-12 mx-auto mb-4 opacity-30 text-gray-400" />
-            <p className="text-red-500 mb-4">{error}</p>
-            <button onClick={fetchCompanies} className="btn-secondary">
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <BuildingOffice2Icon style={{ width: 52, height: 52, margin: '0 auto 16px', color: '#d1d5db' }} />
+            <p style={{ color: '#ef4444', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+            <button
+              onClick={fetchCompanies}
+              style={{
+                padding: '8px 20px', borderRadius: '0.6rem',
+                border: '1.5px solid #e5e7eb', background: '#fff',
+                color: '#374151', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer',
+              }}
+            >
               Try Again
             </button>
           </div>
         )}
 
+        {/* Empty */}
         {!loading && !error && companies.length === 0 && (
-          <div className="text-center mt-20 text-gray-400">
-            <BuildingOffice2Icon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-medium">No businesses available.</p>
-            <button onClick={fetchCompanies} className="btn-secondary mt-4">Retry</button>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
+            <BuildingOffice2Icon style={{ width: 52, height: 52, margin: '0 auto 12px', opacity: 0.3 }} />
+            <p style={{ fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>No businesses available.</p>
+            <button onClick={fetchCompanies} style={{
+              marginTop: 12, padding: '7px 18px', borderRadius: '0.6rem',
+              border: '1.5px solid #e5e7eb', background: '#fff',
+              color: '#374151', fontSize: '0.82rem', cursor: 'pointer',
+            }}>
+              Retry
+            </button>
           </div>
         )}
 
+        {/* No search match */}
         {!loading && !error && filtered.length === 0 && search && (
-          <p className="text-center mt-20 text-gray-400">No businesses match your search.</p>
+          <p style={{ textAlign: 'center', color: '#9ca3af', padding: '32px 0' }}>
+            No businesses match "{search}"
+          </p>
         )}
 
+        {/* Company grid */}
         {!loading && !error && filtered.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 justify-items-center">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+            gap: 14,
+            justifyItems: 'stretch',
+          }}>
             {filtered.map(company => (
               <CompanyCard
                 key={company.company_id}
@@ -199,10 +294,12 @@ export default function CompanySelect() {
         )}
       </main>
 
-      {/* ── Footer ──────────────────────────────────────────────── */}
-      <footer className="text-center py-6 text-xs text-gray-400">
+      {/* ── Footer ───────────────────────────────────────────── */}
+      <footer style={{ textAlign: 'center', padding: '20px', fontSize: '0.72rem', color: '#c4c9d4' }}>
         Powered by BusinessManager
       </footer>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

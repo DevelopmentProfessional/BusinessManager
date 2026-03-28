@@ -575,6 +575,20 @@ class AppSettings(BaseModel, table=True):
     company_address: Optional[str] = Field(default=None)
     # Tax
     tax_rate: Optional[float] = Field(default=0.0)  # Percentage, e.g. 8.5 = 8.5%
+    # Client portal branding (added by migration)
+    portal_hero_title: Optional[str] = Field(default=None)
+    portal_hero_subtitle: Optional[str] = Field(default=None)
+    portal_hero_tagline: Optional[str] = Field(default=None)
+    portal_hero_bg_color: Optional[str] = Field(default=None)
+    portal_hero_text_color: Optional[str] = Field(default=None)
+    portal_hero_image_url: Optional[str] = Field(default=None)
+    portal_banner_text: Optional[str] = Field(default=None)
+    portal_banner_color: Optional[str] = Field(default=None)
+    portal_show_hero: bool = Field(default=True)
+    portal_show_banner: bool = Field(default=False)
+    portal_footer_text: Optional[str] = Field(default=None)
+    portal_primary_color: Optional[str] = Field(default=None)
+    portal_secondary_color: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1322,6 +1336,20 @@ class AppSettingsUpdate(SQLModel):
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
     tax_rate: Optional[float] = None
+    # Client portal branding
+    portal_hero_title: Optional[str] = None
+    portal_hero_subtitle: Optional[str] = None
+    portal_hero_tagline: Optional[str] = None
+    portal_hero_bg_color: Optional[str] = None
+    portal_hero_text_color: Optional[str] = None
+    portal_hero_image_url: Optional[str] = None
+    portal_banner_text: Optional[str] = None
+    portal_banner_color: Optional[str] = None
+    portal_show_hero: Optional[bool] = None
+    portal_show_banner: Optional[bool] = None
+    portal_footer_text: Optional[str] = None
+    portal_primary_color: Optional[str] = None
+    portal_secondary_color: Optional[str] = None
 
 
 class AppSettingsRead(SQLModel):
@@ -1341,6 +1369,20 @@ class AppSettingsRead(SQLModel):
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
     tax_rate: Optional[float] = None
+    # Client portal branding
+    portal_hero_title: Optional[str] = None
+    portal_hero_subtitle: Optional[str] = None
+    portal_hero_tagline: Optional[str] = None
+    portal_hero_bg_color: Optional[str] = None
+    portal_hero_text_color: Optional[str] = None
+    portal_hero_image_url: Optional[str] = None
+    portal_banner_text: Optional[str] = None
+    portal_banner_color: Optional[str] = None
+    portal_show_hero: bool = True
+    portal_show_banner: bool = False
+    portal_footer_text: Optional[str] = None
+    portal_primary_color: Optional[str] = None
+    portal_secondary_color: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
