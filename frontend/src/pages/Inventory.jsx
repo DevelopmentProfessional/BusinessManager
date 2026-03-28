@@ -14,9 +14,9 @@
  *   [4]  Data Loading         — loadInventoryData fetches all inventory items from the API
  *   [5]  CRUD Handlers        — handleUpdateInventory, handleOpenBulkImport, handleSubmitUpdate,
  *                               handleBulkImportItems, handleDeleteItem
- *   [6]  Display Utilities    — getItemTypeLabel, getItemTypeColor, isLocationOrAsset,
- *                               isLowStock, getTypeFilterButtonClass, getStockFilterButtonClass,
- *                               getStockColor — helpers for rendering badges and filter buttons
+ *   [6]  Display Utilities    — getItemTypeLabel, isLocationOrAsset,
+ *                               isLowStock, getTypeFilterButtonClass, getStockFilterButtonClass
+ *                               — badge variants via colorMapping.js utilities
  *   [7]  Derived Data         — filteredInventory memoized from search, type, and stock filters
  *   [8]  Render               — Header, error banner, upside-down scrollable table, footer
  *                               controls (search, Add, Type filter, Stock filter), and modals
@@ -32,6 +32,9 @@
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { S } from "../utils/strings";
+import { itemTypeVariant, stockVariant } from "../utils/colorMapping";
+import Badge from "./components/Badge";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
@@ -50,6 +53,7 @@ import Suppliers_Panel from "./components/Panel_Suppliers";
 import Modal_Bulk_Import_Items from "./components/Modal_Import_Items";
 import Modal from "./components/Modal";
 import Form_Item from "./components/Form_Item";
+import Inventory_RowDetail from "./components/Inventory_RowDetail";
 import InventoryIntelligence from "./components/InventoryIntelligence";
 
 export default function Inventory() {
@@ -251,16 +255,6 @@ export default function Inventory() {
     return labels[type] || type || "Product";
   };
 
-  const getItemTypeColor = (type) => {
-    const upperType = (type || "").toUpperCase();
-    if (upperType === "RESOURCE") return "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300";
-    if (upperType === "ASSET") return "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300";
-    if (upperType === "LOCATION") return "bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300";
-    if (upperType === "BUNDLE") return "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300";
-    if (upperType === "MIX") return "bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300";
-    if (upperType === "ITEM") return "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"; // PRODUCT
-  };
 
   // Location and Asset items always have "OK" status
   const isLocationOrAsset = (item) => {
@@ -289,13 +283,6 @@ export default function Inventory() {
     return "btn-app-secondary";
   };
 
-  // Get stock status color (uses the former status badge colors)
-  const getStockColor = (item) => {
-    if (isLowStock(item)) {
-      return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300";
-    }
-    return "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300";
-  };
 
   const getPriceDisplay = (item) => {
     const s = featureSummary[item.id];
@@ -380,7 +367,7 @@ export default function Inventory() {
       {/* Container_Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredInventory.length > 0 ? (
-          <table className="table table-borderless table-hover mb-0 table-fixed">
+          <table className="table table-borderless table-hover mb-0">
             <colgroup>
               <col />
               <col style={{ width: "80px" }} />
@@ -389,45 +376,27 @@ export default function Inventory() {
             <tbody>
               {filteredInventory.map((inv, index) => (
                 <PageTableRow key={inv.id || index} onClick={() => handleUpdateInventory(inv)}>
-                  {/* Name */}
-                  <td className="main-page-table-data">
-                    <div className="fw-medium" style={{ wordBreak: "break-word" }}>
-                      {inv.name}
-                    </div>
-                    {inv.category && (
-                      <span className="badge bg-secondary-subtle text-secondary rounded-pill" style={{ fontSize: "0.68rem", width: "fit-content" }}>
-                        {inv.category}
-                      </span>
-                    )}
-                    {/* Price display (range if features affect price, otherwise fixed) */}
-                    {getPriceDisplay(inv) && <div className="small text-primary fw-semibold">{getPriceDisplay(inv)}</div>}
-                    {/* Feature name tags */}
-                    {featureSummary[inv.id]?.feature_names?.length > 0 && (
-                      <div className="d-flex flex-wrap gap-1 mt-1">
-                        {featureSummary[inv.id].feature_names.map((name) => (
-                          <span key={name} className="badge bg-secondary-subtle text-secondary-emphasis" style={{ fontSize: "0.62rem", fontWeight: 500 }}>
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
+                  <Inventory_RowDetail
+                    item={inv}
+                    priceDisplay={getPriceDisplay(inv)}
+                    featureNames={featureSummary[inv.id]?.feature_names || []}
+                  />
 
                   {/* Type */}
                   <td className="main-page-table-data">
-                    <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>{getItemTypeLabel(inv.type)}</span>
+                    <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
                   </td>
 
                   {/* Stock */}
                   <td className="main-page-table-data text-center">
-                    <span className={`badge rounded-pill ${getStockColor(inv)}`}>{inv.quantity}</span>
+                    <Badge variant={stockVariant(inv)} pill label={String(inv.quantity)} />
                   </td>
                 </PageTableRow>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">No inventory items found</div>
+          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
         )}
       </div>
 
@@ -472,7 +441,7 @@ export default function Inventory() {
             data-active={typeFilter !== "all"}
           />
           {isTypeFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "200px" }}>
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
               {typeFilterOptions.map((option, index) => {
                 const isLast = index === typeFilterOptions.length - 1;
                 const isSelected = typeFilter === option.value;
@@ -496,8 +465,8 @@ export default function Inventory() {
                         <button
                           type="button"
                           aria-label={`${option.label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                          style={{ width: "1.75rem", height: "1.75rem" }}
                           onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                           onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           onMouseDown={(e) => {
@@ -543,7 +512,7 @@ export default function Inventory() {
             data-active={stockFilter !== "all"}
           />
           {isStockFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
               {stockFilterOptions.map((option, index) => {
                 const isLast = index === stockFilterOptions.length - 1;
                 const isSelected = stockFilter === option.value;
@@ -567,8 +536,8 @@ export default function Inventory() {
                         <button
                           type="button"
                           aria-label={`${option.label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                          style={{ width: "1.75rem", height: "1.75rem" }}
                           onMouseEnter={() => setStockFilterHelpKey(option.value)}
                           onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           onMouseDown={(e) => {

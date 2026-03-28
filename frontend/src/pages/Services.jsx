@@ -28,6 +28,7 @@
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
@@ -198,7 +199,7 @@ export default function Services() {
       {/* Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredServices.length > 0 ? (
-          <table className="table table-borderless table-hover mb-0 table-fixed">
+          <table className="table table-borderless table-hover mb-0">
             <colgroup>
               <col />
               <col style={{ width: "80px" }} />
@@ -209,11 +210,11 @@ export default function Services() {
                 <PageTableRow key={service.id || index} onClick={() => handleEditService(service)}>
                   {/* Name + Category stacked */}
                   <td className="main-page-table-data">
-                    <div className="fw-medium" style={{ wordBreak: "break-word" }}>
+                    <div className="fw-medium text-wrap-word">
                       {service.name}
                     </div>
                     {service.category && (
-                      <span className="badge bg-secondary-subtle text-secondary rounded-pill" style={{ fontSize: "0.68rem", width: "fit-content" }}>
+                      <span className="badge bg-secondary-subtle text-secondary rounded-pill text-xxs" style={{ width: "fit-content" }}>
                         {service.category}
                       </span>
                     )}
@@ -233,7 +234,7 @@ export default function Services() {
             </tbody>
           </table>
         ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{searchTerm || categoryFilter !== "all" ? "No services match filters" : "No services found"}</div>
+          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
         )}
       </div>
 
@@ -261,7 +262,7 @@ export default function Services() {
             data-active={categoryFilter !== "all"}
           />
           {isCategoryFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "200px", maxHeight: "300px", overflowY: "auto" }}>
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min" style={{ maxHeight: "300px", overflowY: "auto" }}>
               {categories.map((cat, index) => {
                 const key = cat ?? "__none__";
                 const label = cat === "all" ? "All Categories" : cat || "No Category";
@@ -288,8 +289,8 @@ export default function Services() {
                         <button
                           type="button"
                           aria-label={`${label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
+                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                          style={{ width: "1.75rem", height: "1.75rem" }}
                           onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                           onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           onMouseDown={(e) => {

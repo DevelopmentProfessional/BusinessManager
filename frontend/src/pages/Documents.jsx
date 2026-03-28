@@ -37,6 +37,7 @@
 import React, { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "../utils/dateFormatters";
+import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
@@ -56,6 +57,7 @@ import PageTableFooter from "./components/Page_Table_Footer";
 import PageTableHeader from "./components/Page_Table_Header";
 import Modal_Generic from "./components/Modal";
 import { WorkflowModal, WorkflowStatusTracker } from "./components/WorkflowApproval";
+import FilterDropdown from "./components/FilterDropdown";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -256,9 +258,6 @@ export default function Documents() {
   const [isFilterCategoriesOpen, setIsFilterCategoriesOpen] = useState(false);
   const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
   const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
-  const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
-  const [statusFilterHelpKey, setStatusFilterHelpKey] = useState(null);
-  const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const { isTrainingMode } = useViewMode();
 
   // Tag data: {documentId: [tagName, ...]} — loaded once, refreshed after edit
@@ -709,7 +708,7 @@ export default function Documents() {
               };
               const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter);
               return filtered.length > 0 ? (
-                <table className="table table-borderless table-hover mb-0 table-fixed">
+                <table className="table table-borderless table-hover mb-0">
                   <colgroup>
                     <col style={{ width: "56px" }} />
                     <col />
@@ -733,12 +732,12 @@ export default function Documents() {
                           <div className="d-flex align-items-center gap-2">
                             <span className="fw-medium text-truncate">{tpl.name}</span>
                             {tpl.is_standard && (
-                              <span className="badge bg-warning text-dark" style={{ fontSize: "0.65rem" }}>
+                              <span className="badge bg-warning text-dark text-xxs">
                                 Standard
                               </span>
                             )}
                           </div>
-                          <span className={`badge rounded-pill mt-1 ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`} style={{ fontSize: "0.65rem" }}>
+                          <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>
                             {tpl.template_type}
                           </span>
                         </td>
@@ -752,7 +751,7 @@ export default function Documents() {
                   </tbody>
                 </table>
               ) : (
-                <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{templatesLoading ? "Loading templates..." : "No templates found"}</div>
+                <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{templatesLoading ? S.loading : S.noResults}</div>
               );
             })()
           ) : /* ── Documents: List or Grid View ── */
@@ -793,7 +792,7 @@ export default function Documents() {
               </div>
             ) : (
               /* List View */
-              <table className="table table-borderless table-hover mb-0 table-fixed">
+              <table className="table table-borderless table-hover mb-0">
                 <colgroup>
                   <col />
                   <col style={{ width: "60px" }} />
@@ -809,7 +808,7 @@ export default function Documents() {
                         <div className="small text-muted d-flex align-items-center gap-1 flex-wrap">
                           <span className="text-capitalize">{doc.entity_type || "Document"}</span>
                           {(docTagMap[String(doc.id)] || []).map((tag) => (
-                            <span key={tag} className="badge rounded-pill" style={{ fontSize: "0.68rem", fontWeight: 500, background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
+                            <span key={tag} className="badge rounded-pill text-xxs fw-medium" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
                               {tag}
                             </span>
                           ))}
@@ -828,7 +827,7 @@ export default function Documents() {
               </table>
             )
           ) : (
-            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">No documents found</div>
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
           )}
         </div>
 
@@ -920,235 +919,53 @@ export default function Documents() {
               )}
 
               {/* Categories Filter */}
-              <div className="position-relative">
-                <Button_Toolbar
-                  icon={Squares2X2Icon}
-                  label="Category"
-                  onClick={() => {
-                    const nextOpen = !isFilterCategoriesOpen;
-                    setIsFilterCategoriesOpen(nextOpen);
-                    if (!nextOpen) setCategoryFilterHelpKey(null);
-                  }}
-                  className={`border-0 shadow-lg transition-all ${categoryFilter !== "all" ? "bg-primary-600 hover:bg-primary-700 text-white" : "btn-app-secondary"}`}
-                  data-active={categoryFilter !== "all"}
-                />
-                {isFilterCategoriesOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "200px" }}>
-                    {[
-                      { id: "all", name: "All Categories", description: "Shows documents from every category." },
-                      ...categories.map((cat) => ({
-                        id: String(cat.id),
-                        name: cat.name,
-                        description: `Shows only documents in the "${cat.name}" category.`,
-                      })),
-                    ].map((option, index, arr) => {
-                      const isLast = index === arr.length - 1;
-                      const isSelected = categoryFilter === option.id;
-                      const isHelpOpen = categoryFilterHelpKey === option.id;
-
-                      return (
-                        <div key={option.id} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                          <button
-                            onClick={() => {
-                              setCategoryFilter(option.id);
-                              setIsFilterCategoriesOpen(false);
-                              setCategoryFilterHelpKey(null);
-                            }}
-                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 text-primary-600" : "hover:bg-gray-50 text-gray-900"}`}
-                          >
-                            {option.name}
-                          </button>
-
-                          {isTrainingMode && (
-                            <div className="position-relative flex-shrink-0">
-                              <button
-                                type="button"
-                                aria-label={`${option.name} help`}
-                                className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
-                                style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
-                                onMouseEnter={() => setCategoryFilterHelpKey(option.id)}
-                                onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === option.id ? null : prev))}
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setCategoryFilterHelpKey((prev) => (prev === option.id ? null : option.id));
-                                }}
-                              >
-                                ?
-                              </button>
-
-                              {isHelpOpen && (
-                                <div
-                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
-                                  style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
-                                  onMouseEnter={() => setCategoryFilterHelpKey(option.id)}
-                                  onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === option.id ? null : prev))}
-                                >
-                                  <div className="fw-semibold text-gray-900 mb-1">{option.name}</div>
-                                  <div className="small text-gray-700">{option.description}</div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <FilterDropdown
+                icon={Squares2X2Icon}
+                label="Category"
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                isOpen={isFilterCategoriesOpen}
+                setIsOpen={setIsFilterCategoriesOpen}
+                showHelp={isTrainingMode}
+                options={[
+                  { value: "all", label: "All Categories", description: "Shows documents from every category." },
+                  ...categories.map((cat) => ({ value: String(cat.id), label: cat.name, description: `Shows only documents in the "${cat.name}" category.` })),
+                ]}
+              />
 
               {/* Status Filter */}
-              <div className="position-relative">
-                <Button_Toolbar
-                  icon={CheckCircleIcon}
-                  label="Status"
-                  onClick={() => {
-                    const nextOpen = !isFilterStatusOpen;
-                    setIsFilterStatusOpen(nextOpen);
-                    if (!nextOpen) setStatusFilterHelpKey(null);
-                  }}
-                  className={`border-0 shadow-lg transition-all ${getStatusFilterButtonClass()}`}
-                  data-active={statusFilter !== "all"}
-                />
-                {isFilterStatusOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
-                    {[
-                      { value: "all", label: "All Statuses", description: "Shows both signed and unsigned documents." },
-                      { value: "signed", label: "Signed", description: "Shows only documents that have signatures." },
-                      { value: "unsigned", label: "Unsigned", description: "Shows only documents without signatures." },
-                    ].map((option, index, arr) => {
-                      const isLast = index === arr.length - 1;
-                      const isSelected = statusFilter === option.value;
-                      const isHelpOpen = statusFilterHelpKey === option.value;
-
-                      return (
-                        <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                          <button
-                            onClick={() => {
-                              setStatusFilter(option.value);
-                              setIsFilterStatusOpen(false);
-                              setStatusFilterHelpKey(null);
-                            }}
-                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 text-secondary-600" : "hover:bg-gray-50 text-gray-900"}`}
-                          >
-                            {option.label}
-                          </button>
-
-                          {isTrainingMode && (
-                            <div className="position-relative flex-shrink-0">
-                              <button
-                                type="button"
-                                aria-label={`${option.label} help`}
-                                className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
-                                style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
-                                onMouseEnter={() => setStatusFilterHelpKey(option.value)}
-                                onMouseLeave={() => setStatusFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setStatusFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                                }}
-                              >
-                                ?
-                              </button>
-
-                              {isHelpOpen && (
-                                <div
-                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
-                                  style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
-                                  onMouseEnter={() => setStatusFilterHelpKey(option.value)}
-                                  onMouseLeave={() => setStatusFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                                >
-                                  <div className="fw-semibold text-gray-900 mb-1">{option.label}</div>
-                                  <div className="small text-gray-700">{option.description}</div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <FilterDropdown
+                icon={CheckCircleIcon}
+                label="Status"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                isOpen={isFilterStatusOpen}
+                setIsOpen={setIsFilterStatusOpen}
+                activeClass={getStatusFilterButtonClass()}
+                showHelp={isTrainingMode}
+                options={[
+                  { value: "all",      label: "All Statuses", description: "Shows both signed and unsigned documents." },
+                  { value: "signed",   label: "Signed",       description: "Shows only documents that have signatures." },
+                  { value: "unsigned", label: "Unsigned",     description: "Shows only documents without signatures." },
+                ]}
+              />
 
               {/* Type Filter */}
-              <div className="position-relative">
-                <Button_Toolbar
-                  icon={TagIcon}
-                  label="Type"
-                  onClick={() => {
-                    const nextOpen = !isFilterTypeOpen;
-                    setIsFilterTypeOpen(nextOpen);
-                    if (!nextOpen) setTypeFilterHelpKey(null);
-                  }}
-                  className={`border-0 shadow-lg transition-all ${typeFilter !== "all" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
-                  data-active={typeFilter !== "all"}
-                />
-                {isFilterTypeOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px", maxHeight: "300px", overflowY: "auto" }}>
-                    {[
-                      { value: "all", label: "All Types", description: "Shows all document entity types." },
-                      ...entityTypeOptions.map((type) => ({
-                        value: type,
-                        label: type,
-                        description: `Shows only documents with type "${type}".`,
-                      })),
-                    ].map((option, index, arr) => {
-                      const isLast = index === arr.length - 1;
-                      const isSelected = typeFilter === option.value;
-                      const isHelpOpen = typeFilterHelpKey === option.value;
-
-                      return (
-                        <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                          <button
-                            onClick={() => {
-                              setTypeFilter(option.value);
-                              setIsFilterTypeOpen(false);
-                              setTypeFilterHelpKey(null);
-                            }}
-                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
-                          >
-                            {option.label}
-                          </button>
-
-                          {isTrainingMode && (
-                            <div className="position-relative flex-shrink-0">
-                              <button
-                                type="button"
-                                aria-label={`${option.label} help`}
-                                className="btn btn-sm text-gray-600 d-flex align-items-center justify-content-center"
-                                style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
-                                onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                                onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                                }}
-                              >
-                                ?
-                              </button>
-
-                              {isHelpOpen && (
-                                <div
-                                  className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 bg-white text-start"
-                                  style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
-                                  onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                                  onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                                >
-                                  <div className="fw-semibold text-gray-900 mb-1">{option.label}</div>
-                                  <div className="small text-gray-700">{option.description}</div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <FilterDropdown
+                icon={TagIcon}
+                label="Type"
+                value={typeFilter}
+                onChange={setTypeFilter}
+                isOpen={isFilterTypeOpen}
+                setIsOpen={setIsFilterTypeOpen}
+                activeClass="bg-indigo-600 hover:bg-indigo-700 text-white"
+                showHelp={isTrainingMode}
+                dropdownStyle={{ maxHeight: "300px", overflowY: "auto" }}
+                options={[
+                  { value: "all", label: "All Types", description: "Shows all document entity types." },
+                  ...entityTypeOptions.map((type) => ({ value: type, label: type, description: `Shows only documents with type "${type}".` })),
+                ]}
+              />
             </>
           )}
         </PageTableFooter>

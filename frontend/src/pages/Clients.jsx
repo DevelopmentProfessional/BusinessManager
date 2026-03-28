@@ -29,6 +29,10 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useStore from "../services/useStore";
+import { tierVariant } from "../utils/colorMapping";
+import { S } from "../utils/strings";
+import Badge from "./components/Badge";
+import FilterDropdown from "./components/FilterDropdown";
 import { clientsAPI, settingsAPI } from "../services/api";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
@@ -57,17 +61,16 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
-  const [tierFilterHelpKey, setTierFilterHelpKey] = useState(null);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
 
   const tierFilterOptions = [
-    { value: "all", label: "All Tiers", description: "Shows all clients regardless of membership tier." },
-    { value: "NONE", label: "No Membership", description: "Shows clients without any membership tier assigned." },
-    { value: "BRONZE", label: "Bronze", description: "Shows only clients assigned to the Bronze tier." },
-    { value: "SILVER", label: "Silver", description: "Shows only clients assigned to the Silver tier." },
-    { value: "GOLD", label: "Gold", description: "Shows only clients assigned to the Gold tier." },
-    { value: "PLATINUM", label: "Platinum", description: "Shows only clients assigned to the Platinum tier." },
+    { value: "all",      label: "All Tiers",      description: "Shows all clients regardless of membership tier." },
+    { value: "NONE",     label: "No Membership",  description: "Shows clients without any membership tier assigned." },
+    { value: "BRONZE",   label: "Bronze",          description: "Shows only clients assigned to the Bronze tier." },
+    { value: "SILVER",   label: "Silver",          description: "Shows only clients assigned to the Silver tier." },
+    { value: "GOLD",     label: "Gold",            description: "Shows only clients assigned to the Gold tier." },
+    { value: "PLATINUM", label: "Platinum",        description: "Shows only clients assigned to the Platinum tier." },
   ];
 
   // Template modal state
@@ -121,12 +124,6 @@ export default function Clients() {
   };
 
   // ─── [5] CRUD HANDLERS ──────────────────────────────────────────────────────
-  const handleTierFilterToggle = () => {
-    const nextOpen = !isTierFilterOpen;
-    setIsTierFilterOpen(nextOpen);
-    if (!nextOpen) setTierFilterHelpKey(null);
-  };
-
   const handleOpenTemplate = (client) => (e) => {
     e.stopPropagation();
     setTemplateClient(client);
@@ -136,20 +133,6 @@ export default function Clients() {
   const handleCloseTemplate = () => {
     setIsTemplateOpen(false);
     setTemplateClient(null);
-  };
-
-  const handleSelectTier = (value) => () => {
-    setTierFilter(value);
-    setIsTierFilterOpen(false);
-    setTierFilterHelpKey(null);
-  };
-
-  const handleHelpEnter = (value) => () => setTierFilterHelpKey(value);
-  const handleHelpLeave = (value) => () => setTierFilterHelpKey((prev) => (prev === value ? null : prev));
-  const handleHelpToggle = (value) => (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setTierFilterHelpKey((prev) => (prev === value ? null : value));
   };
 
   const handleCreateClient = () => {
@@ -229,16 +212,6 @@ export default function Clients() {
   };
 
   // ─── [6] UTILITY HELPERS ────────────────────────────────────────────────────
-  // Get membership tier badge color
-  const getTierColor = (tier) => {
-    const upperTier = (tier || "NONE").toUpperCase();
-    if (upperTier === "PLATINUM") return "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300";
-    if (upperTier === "GOLD") return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300";
-    if (upperTier === "SILVER") return "bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200";
-    if (upperTier === "BRONZE") return "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300";
-    return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"; // NONE
-  };
-
   const getTierLabel = (tier) => {
     const labels = { NONE: "None", BRONZE: "Bronze", SILVER: "Silver", GOLD: "Gold", PLATINUM: "Platinum" };
     return labels[(tier || "NONE").toUpperCase()] || tier || "None";
@@ -301,7 +274,7 @@ export default function Clients() {
       {/* Container_Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredClients.length > 0 ? (
-          <table className="table table-borderless table-hover mb-0 table-fixed w-100">
+          <table className="table table-borderless table-hover mb-0 w-100">
             <colgroup>
               <col />
               <col style={{ width: "80px" }} />
@@ -319,7 +292,7 @@ export default function Clients() {
                   {/* Membership + template */}
                   <td className="main-page-table-data">
                     <div className="d-flex align-items-center gap-1">
-                      <span className={`badge rounded-pill ${getTierColor(client.membership_tier)}`}>{getTierLabel(client.membership_tier)}</span>
+                      <Badge variant={tierVariant(client.membership_tier)} pill label={getTierLabel(client.membership_tier)} />
                     </div>
                   </td>
                   <td className="main-page-table-data p-0 text-center">
@@ -338,7 +311,7 @@ export default function Clients() {
             </tbody>
           </table>
         ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{searchTerm ? `No clients found matching "${searchTerm}"` : "No clients found"}</div>
+          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
         )}
       </div>
 
@@ -353,57 +326,17 @@ export default function Clients() {
         {tierFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear Filter" onClick={() => setTierFilter("all")} className="btn-app-danger" />}
 
         {/* Tier Filter */}
-        <div className="position-relative">
-          <Button_Toolbar icon={StarIcon} label="Filter Tier" onClick={handleTierFilterToggle} className={`border-0 shadow-lg transition-all ${getTierFilterButtonClass()}`} data-active={tierFilter !== "all"} />
-          {isTierFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "200px" }}>
-              {tierFilterOptions.map((option, index) => {
-                const isLast = index === tierFilterOptions.length - 1;
-                const isSelected = tierFilter === option.value;
-                const isHelpOpen = tierFilterHelpKey === option.value;
-
-                return (
-                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                    <button
-                      onClick={handleSelectTier(option.value)}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                    >
-                      {option.label}
-                    </button>
-
-                    {isTrainingMode && (
-                      <div className="position-relative flex-shrink-0">
-                        <button
-                          type="button"
-                          aria-label={`${option.label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
-                          onMouseEnter={handleHelpEnter(option.value)}
-                          onMouseLeave={handleHelpLeave(option.value)}
-                          onMouseDown={handleHelpToggle(option.value)}
-                        >
-                          ?
-                        </button>
-
-                        {isHelpOpen && (
-                          <div
-                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
-                            onMouseEnter={handleHelpEnter(option.value)}
-                            onMouseLeave={handleHelpLeave(option.value)}
-                          >
-                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <FilterDropdown
+          icon={StarIcon}
+          label="Filter Tier"
+          value={tierFilter}
+          onChange={setTierFilter}
+          isOpen={isTierFilterOpen}
+          setIsOpen={setIsTierFilterOpen}
+          activeClass={getTierFilterButtonClass()}
+          showHelp={isTrainingMode}
+          options={tierFilterOptions}
+        />
       </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}
