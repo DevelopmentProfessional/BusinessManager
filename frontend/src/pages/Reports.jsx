@@ -30,143 +30,128 @@
  */
 
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
-import React, { useEffect, useMemo, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import {
-  ChartBarIcon,
-  CalendarIcon,
-  UsersIcon,
-  BanknotesIcon,
-  CurrencyDollarIcon,
-  WrenchScrewdriverIcon,
-  ArchiveBoxIcon,
-  ClockIcon,
-  ArrowDownTrayIcon,
-  ChevronUpDownIcon,
-  CalculatorIcon
-} from '@heroicons/react/24/outline';
+import React, { useEffect, useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, CalculatorIcon } from "@heroicons/react/24/outline";
 
-import useStore from '../services/useStore';
-import { reportsAPI, employeesAPI, servicesAPI } from '../services/api';
-import useBranding from '../services/useBranding';
-import Chart_Report from './components/Chart_Report';
-import Button_Toolbar from './components/Button_Toolbar';
-import useViewMode from '../services/useViewMode';
-import Modal_Forecast_Calculator from './components/Modal_Forecast_Calculator';
-import Modal from './components/Modal';
-import FinancialDashboard from './components/FinancialDashboard';
+import useStore from "../services/useStore";
+import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
+import useBranding from "../services/useBranding";
+import Chart_Report from "./components/Chart_Report";
+import Button_Toolbar from "./components/Button_Toolbar";
+import useViewMode from "../services/useViewMode";
+import Modal_Forecast_Calculator from "./components/Modal_Forecast_Calculator";
+import Modal from "./components/Modal";
+import FinancialDashboard from "./components/FinancialDashboard";
 
 const AVAILABLE_REPORTS = [
   {
-    id: 'appointments',
-    title: 'Appointments Over Time',
-    description: 'Track appointment trends and patterns',
+    id: "appointments",
+    title: "Appointments Over Time",
+    description: "Track appointment trends and patterns",
     icon: CalendarIcon,
-    color: 'blue',
-    tables: ['schedule', 'clients', 'services', 'user'],
-    chartTypes: ['line', 'bar', 'pie']
+    color: "blue",
+    tables: ["schedule", "clients", "services", "user"],
+    chartTypes: ["line", "bar", "pie"],
   },
   {
-    id: 'revenue',
-    title: 'Revenue Analysis',
-    description: 'Monitor earnings and financial performance',
+    id: "revenue",
+    title: "Revenue Analysis",
+    description: "Monitor earnings and financial performance",
     icon: BanknotesIcon,
-    color: 'green',
-    tables: ['schedule', 'services'],
-    chartTypes: ['line', 'bar', 'area']
+    color: "green",
+    tables: ["schedule", "services"],
+    chartTypes: ["line", "bar", "area"],
   },
   {
-    id: 'clients',
-    title: 'Client Activity',
-    description: 'Analyze client engagement and retention',
+    id: "clients",
+    title: "Client Activity",
+    description: "Analyze client engagement and retention",
     icon: UsersIcon,
-    color: 'purple',
-    tables: ['clients', 'schedule'],
-    chartTypes: ['bar', 'pie', 'doughnut']
+    color: "purple",
+    tables: ["clients", "schedule"],
+    chartTypes: ["bar", "pie", "doughnut"],
   },
   {
-    id: 'services',
-    title: 'Service Performance',
-    description: 'Compare service popularity and profitability',
+    id: "services",
+    title: "Service Performance",
+    description: "Compare service popularity and profitability",
     icon: WrenchScrewdriverIcon,
-    color: 'orange',
-    tables: ['services', 'schedule'],
-    chartTypes: ['pie', 'bar', 'doughnut']
+    color: "orange",
+    tables: ["services", "schedule"],
+    chartTypes: ["pie", "bar", "doughnut"],
   },
   {
-    id: 'sales',
-    title: 'Sales Trends',
-    description: 'Track transaction totals over time',
+    id: "sales",
+    title: "Sales Trends",
+    description: "Track transaction totals over time",
     icon: CurrencyDollarIcon,
-    color: 'emerald',
-    tables: ['sale_transaction', 'user', 'client'],
-    chartTypes: ['line', 'bar', 'area']
+    color: "emerald",
+    tables: ["sale_transaction", "user", "client"],
+    chartTypes: ["line", "bar", "area"],
   },
   {
-    id: 'payroll',
-    title: 'Payroll Summary',
-    description: 'Monitor payroll payouts by period',
+    id: "payroll",
+    title: "Payroll Summary",
+    description: "Monitor payroll payouts by period",
     icon: BanknotesIcon,
-    color: 'teal',
-    tables: ['pay_slip', 'user'],
-    chartTypes: ['bar', 'line', 'area']
+    color: "teal",
+    tables: ["pay_slip", "user"],
+    chartTypes: ["bar", "line", "area"],
   },
   {
-    id: 'inventory',
-    title: 'Inventory Analytics',
-    description: 'Track stock levels and usage patterns',
+    id: "inventory",
+    title: "Inventory Analytics",
+    description: "Track stock levels and usage patterns",
     icon: ArchiveBoxIcon,
-    color: 'red',
-    tables: ['inventory', 'item', 'supplier'],
-    chartTypes: ['bar', 'line']
+    color: "red",
+    tables: ["inventory", "item", "supplier"],
+    chartTypes: ["bar", "line"],
   },
   {
-    id: 'employees',
-    title: 'Employee Performance',
-    description: 'Monitor staff productivity and schedules',
+    id: "employees",
+    title: "Employee Performance",
+    description: "Monitor staff productivity and schedules",
     icon: ClockIcon,
-    color: 'indigo',
-    tables: ['user', 'schedule', 'attendance'],
-    chartTypes: ['bar', 'line']
+    color: "indigo",
+    tables: ["user", "schedule", "attendance"],
+    chartTypes: ["bar", "line"],
   },
   {
-    id: 'attendance',
-    title: 'Attendance Tracking',
-    description: 'View employee attendance patterns',
+    id: "attendance",
+    title: "Attendance Tracking",
+    description: "View employee attendance patterns",
     icon: ClockIcon,
-    color: 'gray',
-    tables: ['attendance', 'user'],
-    chartTypes: ['line', 'bar']
-  }
+    color: "gray",
+    tables: ["attendance", "user"],
+    chartTypes: ["line", "bar"],
+  },
 ];
 
 const DATE_RANGE_OPTIONS = [
-  { value: 'last7days', label: '7D' },
-  { value: 'last30days', label: '1M' },
-  { value: 'last3months', label: '3M' },
-  { value: 'last6months', label: '6M' },
-  { value: 'lastyear', label: '1Y' }
+  { value: "last7days", label: "7D" },
+  { value: "last30days", label: "1M" },
+  { value: "last3months", label: "3M" },
+  { value: "last6months", label: "6M" },
+  { value: "lastyear", label: "1Y" },
 ];
 
 const GROUP_BY_OPTIONS = [
-  { value: 'day', label: '1D' },
-  { value: 'week', label: '2W' },
-  { value: 'month', label: '1M' }
+  { value: "day", label: "1D" },
+  { value: "week", label: "2W" },
+  { value: "month", label: "1M" },
 ];
 
 export default function Reports() {
   // ─── 2 COMPONENT SETUP & PERMISSION GUARD ──────────────────────────────
-  const {
-    loading, setLoading, error, setError, clearError,
-    hasPageAccess
-  } = useStore();
+  const { loading, setLoading, error, setError, clearError, hasPageAccess } = useStore();
 
   const { branding } = useBranding();
   const { isTrainingMode } = useViewMode();
 
   // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
   // NOTE: permission guard is evaluated AFTER all hooks to comply with React's Rules of Hooks
-  const [selectedReportId, setSelectedReportId] = useState('');
+  const [selectedReportId, setSelectedReportId] = useState("");
   const [reportData, setReportData] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
@@ -174,39 +159,36 @@ export default function Reports() {
   const [showForecastCalculator, setShowForecastCalculator] = useState(false);
   const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
   const [reportFilters, setReportFilters] = useState({
-    dateRange: 'last30days',
-    groupBy: 'month',
-    chartType: 'line',
-    status: 'all',
-    employeeId: 'all',
-    serviceId: 'all'
+    dateRange: "last30days",
+    groupBy: "month",
+    chartType: "line",
+    status: "all",
+    employeeId: "all",
+    serviceId: "all",
   });
 
   // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
-  const accessibleReports = AVAILABLE_REPORTS.filter(report => {
-    return report.tables.some(table => {
+  const accessibleReports = AVAILABLE_REPORTS.filter((report) => {
+    return report.tables.some((table) => {
       const pageMap = {
-        'schedule': 'schedule',
-        'clients': 'clients', 
-        'services': 'services',
-        'user': 'employees',
-        'inventory': 'inventory',
-        'item': 'inventory',
-        'supplier': 'suppliers',
-        'attendance': 'attendance',
-        'sale_transaction': 'sales',
-        'pay_slip': 'profile'
+        schedule: "schedule",
+        clients: "clients",
+        services: "services",
+        user: "employees",
+        inventory: "inventory",
+        item: "inventory",
+        supplier: "suppliers",
+        attendance: "attendance",
+        sale_transaction: "sales",
+        pay_slip: "profile",
       };
       const page = pageMap[table];
-      if (page === 'profile') return true;
+      if (page === "profile") return true;
       return page && hasPageAccess(page);
     });
   });
 
-  const selectedReport = useMemo(
-    () => accessibleReports.find((r) => r.id === selectedReportId) || null,
-    [accessibleReports, selectedReportId]
-  );
+  const selectedReport = useMemo(() => accessibleReports.find((r) => r.id === selectedReportId) || null, [accessibleReports, selectedReportId]);
 
   // ─── 5 REPORT SELECTION HANDLER ──────────────────────────────────────────
   const handleReportSelect = (reportId) => {
@@ -215,8 +197,8 @@ export default function Reports() {
     setSelectedReportId(report.id);
     setReportFilters((prev) => ({
       ...prev,
-      groupBy: 'month',
-      chartType: report.chartTypes[0] || 'line'
+      groupBy: "month",
+      chartType: report.chartTypes[0] || "line",
     }));
     setReportMenuOpen(false);
   };
@@ -231,45 +213,45 @@ export default function Reports() {
         start_date: getStartDate(filters.dateRange),
         end_date: getEndDate(filters.dateRange),
         group_by: filters.groupBy,
-        ...(filters.status && filters.status !== 'all' ? { status: filters.status } : {}),
-        ...(filters.employeeId && filters.employeeId !== 'all' ? { employee_id: filters.employeeId } : {}),
-        ...(filters.serviceId && filters.serviceId !== 'all' ? { service_id: filters.serviceId } : {})
+        ...(filters.status && filters.status !== "all" ? { status: filters.status } : {}),
+        ...(filters.employeeId && filters.employeeId !== "all" ? { employee_id: filters.employeeId } : {}),
+        ...(filters.serviceId && filters.serviceId !== "all" ? { service_id: filters.serviceId } : {}),
       };
 
       switch (reportId) {
-        case 'appointments':
+        case "appointments":
           response = await reportsAPI.getAppointmentsReport(apiParams);
           setReportData(transformAppointmentsData(response.data, filters.chartType));
           break;
-        case 'revenue':
+        case "revenue":
           response = await reportsAPI.getRevenueReport(apiParams);
           setReportData(transformRevenueData(response.data, filters.chartType));
           break;
-        case 'clients':
+        case "clients":
           response = await reportsAPI.getClientsReport(apiParams);
           setReportData(transformClientsData(response.data, filters.chartType));
           break;
-        case 'services':
+        case "services":
           response = await reportsAPI.getServicesReport(apiParams);
           setReportData(transformServicesData(response.data, filters.chartType));
           break;
-        case 'inventory':
+        case "inventory":
           response = await reportsAPI.getInventoryReport();
           setReportData(transformInventoryData(response.data, filters.chartType));
           break;
-        case 'employees':
+        case "employees":
           response = await reportsAPI.getEmployeesReport(apiParams);
           setReportData(transformEmployeesData(response.data, filters.chartType));
           break;
-        case 'attendance':
+        case "attendance":
           response = await reportsAPI.getAttendanceReport(apiParams);
           setReportData(transformAttendanceData(response.data, filters.chartType));
           break;
-        case 'sales':
+        case "sales":
           response = await reportsAPI.getSalesReport(apiParams);
           setReportData(transformSalesData(response.data, filters.chartType));
           break;
-        case 'payroll':
+        case "payroll":
           response = await reportsAPI.getPayrollReport(apiParams);
           setReportData(transformPayrollData(response.data, filters.chartType));
           break;
@@ -278,7 +260,7 @@ export default function Reports() {
       }
       clearError();
     } catch (err) {
-      setError('Failed to load report data');
+      setError("Failed to load report data");
       console.error(err);
       setReportData({ labels: [], datasets: [] });
     } finally {
@@ -290,140 +272,143 @@ export default function Reports() {
   const getStartDate = (dateRange) => {
     const now = new Date();
     switch (dateRange) {
-      case 'last7days':
-        return new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
-      case 'last30days':
-        return new Date(now.setDate(now.getDate() - 30)).toISOString().split('T')[0];
-      case 'last3months':
-        return new Date(now.setMonth(now.getMonth() - 3)).toISOString().split('T')[0];
-      case 'last6months':
-        return new Date(now.setMonth(now.getMonth() - 6)).toISOString().split('T')[0];
-      case 'lastyear':
-        return new Date(now.setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
+      case "last7days":
+        return new Date(now.setDate(now.getDate() - 7)).toISOString().split("T")[0];
+      case "last30days":
+        return new Date(now.setDate(now.getDate() - 30)).toISOString().split("T")[0];
+      case "last3months":
+        return new Date(now.setMonth(now.getMonth() - 3)).toISOString().split("T")[0];
+      case "last6months":
+        return new Date(now.setMonth(now.getMonth() - 6)).toISOString().split("T")[0];
+      case "lastyear":
+        return new Date(now.setFullYear(now.getFullYear() - 1)).toISOString().split("T")[0];
       default:
-        return new Date(now.setDate(now.getDate() - 30)).toISOString().split('T')[0];
+        return new Date(now.setDate(now.getDate() - 30)).toISOString().split("T")[0];
     }
   };
 
   const getEndDate = (dateRange) => {
-    return new Date().toISOString().split('T')[0];
+    return new Date().toISOString().split("T")[0];
   };
 
   // ─── 8 DATA TRANSFORM FUNCTIONS — map API responses to Chart.js datasets ─
-  const getPalette = (count, alpha = 0.5) =>
-    Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`);
+  const getPalette = (count, alpha = 0.5) => Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`);
 
   const transformAppointmentsData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Appointments',
-      data: data.data,
-      backgroundColor: chartType === 'pie' || chartType === 'doughnut' ? 
-        data.data.map((_, i) => `hsl(${(i * 360) / data.data.length}, 70%, 60%)`) : 
-        'rgba(59, 130, 246, 0.5)',
-      borderColor: 'rgb(59, 130, 246)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Appointments",
+        data: data.data,
+        backgroundColor: chartType === "pie" || chartType === "doughnut" ? data.data.map((_, i) => `hsl(${(i * 360) / data.data.length}, 70%, 60%)`) : "rgba(59, 130, 246, 0.5)",
+        borderColor: "rgb(59, 130, 246)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformRevenueData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Revenue ($)',
-      data: data.data,
-      backgroundColor: chartType === 'pie' || chartType === 'doughnut' ? 
-        data.data.map((_, i) => `hsl(${(i * 360) / data.data.length}, 70%, 60%)`) : 
-        'rgba(34, 197, 94, 0.5)',
-      borderColor: 'rgb(34, 197, 94)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Revenue ($)",
+        data: data.data,
+        backgroundColor: chartType === "pie" || chartType === "doughnut" ? data.data.map((_, i) => `hsl(${(i * 360) / data.data.length}, 70%, 60%)`) : "rgba(34, 197, 94, 0.5)",
+        borderColor: "rgb(34, 197, 94)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformClientsData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Clients',
-      data: data.data,
-      backgroundColor: [
-        'rgba(147, 51, 234, 0.5)',
-        'rgba(59, 130, 246, 0.5)',
-        'rgba(107, 114, 128, 0.5)'
-      ],
-      borderColor: [
-        'rgb(147, 51, 234)',
-        'rgb(59, 130, 246)',
-        'rgb(107, 114, 128)'
-      ],
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Clients",
+        data: data.data,
+        backgroundColor: ["rgba(147, 51, 234, 0.5)", "rgba(59, 130, 246, 0.5)", "rgba(107, 114, 128, 0.5)"],
+        borderColor: ["rgb(147, 51, 234)", "rgb(59, 130, 246)", "rgb(107, 114, 128)"],
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformServicesData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Service Usage',
-      data: data.data || [],
-      backgroundColor: chartType === 'pie' || chartType === 'doughnut' ? 
-        getPalette((data.labels || []).length) : 
-        'rgba(251, 146, 60, 0.5)',
-      borderColor: 'rgb(251, 146, 60)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Service Usage",
+        data: data.data || [],
+        backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette((data.labels || []).length) : "rgba(251, 146, 60, 0.5)",
+        borderColor: "rgb(251, 146, 60)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformInventoryData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Current Stock',
-      data: data.data || [],
-      backgroundColor: 'rgba(239, 68, 68, 0.5)',
-      borderColor: 'rgb(239, 68, 68)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Current Stock",
+        data: data.data || [],
+        backgroundColor: "rgba(239, 68, 68, 0.5)",
+        borderColor: "rgb(239, 68, 68)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformEmployeesData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Appointments',
-      data: data.data || [],
-      backgroundColor: 'rgba(99, 102, 241, 0.5)',
-      borderColor: 'rgb(99, 102, 241)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Appointments",
+        data: data.data || [],
+        backgroundColor: "rgba(99, 102, 241, 0.5)",
+        borderColor: "rgb(99, 102, 241)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformAttendanceData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Attendance Records',
-      data: data.data || [],
-      backgroundColor: 'rgba(75, 85, 99, 0.5)',
-      borderColor: 'rgb(75, 85, 99)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Attendance Records",
+        data: data.data || [],
+        backgroundColor: "rgba(75, 85, 99, 0.5)",
+        borderColor: "rgb(75, 85, 99)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformSalesData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Sales Total ($)',
-      data: data.data || [],
-      backgroundColor: 'rgba(16, 185, 129, 0.5)',
-      borderColor: 'rgb(16, 185, 129)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Sales Total ($)",
+        data: data.data || [],
+        backgroundColor: "rgba(16, 185, 129, 0.5)",
+        borderColor: "rgb(16, 185, 129)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   const transformPayrollData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [{
-      label: 'Payroll Net ($)',
-      data: data.data || [],
-      backgroundColor: 'rgba(20, 184, 166, 0.5)',
-      borderColor: 'rgb(20, 184, 166)',
-      borderWidth: 2
-    }]
+    datasets: [
+      {
+        label: "Payroll Net ($)",
+        data: data.data || [],
+        backgroundColor: "rgba(20, 184, 166, 0.5)",
+        borderColor: "rgb(20, 184, 166)",
+        borderWidth: 2,
+      },
+    ],
   });
 
   // ─── 9 LIFECYCLE HOOKS ───────────────────────────────────────────────────
@@ -436,10 +421,7 @@ export default function Reports() {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const [empRes, svcRes] = await Promise.all([
-          employeesAPI.getAll(),
-          servicesAPI.getAll(),
-        ]);
+        const [empRes, svcRes] = await Promise.all([employeesAPI.getAll(), servicesAPI.getAll()]);
         setEmployees(empRes.data || []);
         setServices(svcRes.data || []);
       } catch {
@@ -456,9 +438,9 @@ export default function Reports() {
     }
   }, [selectedReport?.id, reportFilters.dateRange, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId]);
 
-  const canUseStatus = selectedReport?.id === 'appointments';
-  const canUseService = ['appointments', 'services', 'revenue'].includes(selectedReport?.id || '');
-  const canUseEmployee = ['appointments', 'employees', 'attendance'].includes(selectedReport?.id || '');
+  const canUseStatus = selectedReport?.id === "appointments";
+  const canUseService = ["appointments", "services", "revenue"].includes(selectedReport?.id || "");
+  const canUseEmployee = ["appointments", "employees", "attendance"].includes(selectedReport?.id || "");
 
   const [showDataTable, setShowDataTable] = useState(false);
 
@@ -472,16 +454,13 @@ export default function Reports() {
     const avg = total / nums.length;
     const maxVal = Math.max(...nums);
     const maxIdx = nums.indexOf(maxVal);
-    const isCurrency = (reportData.datasets[0].label || '').includes('($)');
-    const fmt = (n) =>
-      isCurrency
-        ? `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+    const isCurrency = (reportData.datasets[0].label || "").includes("($)");
+    const fmt = (n) => (isCurrency ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : n.toLocaleString("en-US", { maximumFractionDigits: 1 }));
     return [
-      { label: 'Total', value: fmt(total) },
-      { label: 'Avg / Period', value: fmt(avg) },
-      { label: 'Peak', value: fmt(maxVal), sub: labels[maxIdx] || '' },
-      { label: 'Periods', value: nums.length },
+      { label: "Total", value: fmt(total) },
+      { label: "Avg / Period", value: fmt(avg) },
+      { label: "Peak", value: fmt(maxVal), sub: labels[maxIdx] || "" },
+      { label: "Periods", value: nums.length },
     ];
   }, [reportData]);
 
@@ -489,15 +468,15 @@ export default function Reports() {
   const handleExportPdf = () => {
     if (!selectedReport) return;
 
-    const reportEl = document.getElementById('report-export-section');
+    const reportEl = document.getElementById("report-export-section");
     if (!reportEl) return;
 
-    const chartCanvas = reportEl.querySelector('canvas');
-    const chartImg = chartCanvas ? chartCanvas.toDataURL('image/png') : '';
+    const chartCanvas = reportEl.querySelector("canvas");
+    const chartImg = chartCanvas ? chartCanvas.toDataURL("image/png") : "";
 
     const prettyRange = reportFilters.dateRange;
 
-    const printWindow = window.open('', '_blank', 'width=1000,height=800');
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
     if (!printWindow) return;
 
     printWindow.document.write(`
@@ -524,9 +503,9 @@ export default function Reports() {
             <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
           </div>
           <div class="chart-wrap">
-            ${chartImg ? `<img src="${chartImg}" alt="${selectedReport.title}" />` : '<p>Chart preview unavailable.</p>'}
+            ${chartImg ? `<img src="${chartImg}" alt="${selectedReport.title}" />` : "<p>Chart preview unavailable.</p>"}
           </div>
-          <div class="footer">${branding.companyName || 'Business Manager'}</div>
+          <div class="footer">${branding.companyName || "Business Manager"}</div>
         </body>
       </html>
     `);
@@ -539,15 +518,12 @@ export default function Reports() {
   // ─── 11 CSV EXPORT HANDLER ───────────────────────────────────────────────
   const handleExportCsv = () => {
     if (!reportData?.labels?.length || !selectedReport) return;
-    const datasetLabel = reportData.datasets?.[0]?.label || 'Value';
-    const rows = [
-      ['Period', datasetLabel],
-      ...reportData.labels.map((label, i) => [label, reportData.datasets?.[0]?.data?.[i] ?? '']),
-    ];
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const datasetLabel = reportData.datasets?.[0]?.label || "Value";
+    const rows = [["Period", datasetLabel], ...reportData.labels.map((label, i) => [label, reportData.datasets?.[0]?.data?.[i] ?? ""])];
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `${selectedReport.id}-${reportFilters.dateRange}.csv`;
     a.click();
@@ -556,7 +532,7 @@ export default function Reports() {
 
   // ─── 12 RENDER ───────────────────────────────────────────────────────────
   // Permission guard — placed after all hooks to comply with React's Rules of Hooks
-  if (!hasPageAccess('reports')) {
+  if (!hasPageAccess("reports")) {
     return <Navigate to="/profile" replace />;
   }
 
@@ -569,47 +545,20 @@ export default function Reports() {
   }
 
   return (
-    <div
-      className="h-full flex flex-col reports-page"
-      style={{ minHeight: 0 }}
-    >
+    <div className="h-full flex flex-col reports-page" style={{ minHeight: 0 }}>
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
       <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
         <div className="d-flex align-items-center gap-2">
-                <Button_Toolbar
-                  icon={CurrencyDollarIcon}
-                  label="Financial"
-                  onClick={() => setShowFinancialDashboard(true)}
-                  className="btn-app-primary"
-                />
-                <Button_Toolbar
-                  icon={CalculatorIcon}
-                  label="Forecast"
-                  onClick={() => setShowForecastCalculator(true)}
-                  className="btn-app-primary"
-                />
-                <Button_Toolbar
-                  icon={ArrowDownTrayIcon}
-                  label="PDF"
-                  onClick={handleExportPdf}
-                  className="btn-outline-secondary"
-                />
-                <Button_Toolbar
-                  icon={ArrowDownTrayIcon}
-                  label="CSV"
-                  onClick={handleExportCsv}
-                  className="btn-outline-secondary"
-                />
-              </div>
-       </div>
+          <Button_Toolbar icon={CurrencyDollarIcon} label="Financial" onClick={() => setShowFinancialDashboard(true)} className="btn-app-primary" />
+          <Button_Toolbar icon={CalculatorIcon} label="Forecast" onClick={() => setShowForecastCalculator(true)} className="btn-app-primary" />
+          <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
+          <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
+        </div>
+      </div>
 
-      <div className="flex-grow-1 overflow-auto p-3" style={{ minHeight: 0, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {error && (
-          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">
-            {error}
-          </div>
-        )}
+      <div className="flex-grow-1 overflow-auto p-3" style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        {error && <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">{error}</div>}
 
         {!selectedReport ? (
           <div className="text-center py-12">
@@ -619,16 +568,11 @@ export default function Reports() {
           </div>
         ) : (
           <>
-
             {/* ── KPI SUMMARY CARDS ── */}
             {kpis && (
               <div className="d-flex flex-wrap gap-2 mb-3">
                 {kpis.map((kpi) => (
-                  <div
-                    key={kpi.label}
-                    className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center"
-                    style={{ minWidth: '6rem' }}
-                  >
+                  <div key={kpi.label} className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center" style={{ minWidth: "6rem" }}>
                     <div className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{kpi.value}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">{kpi.label}</div>
                     {kpi.sub && <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{kpi.sub}</div>}
@@ -638,43 +582,30 @@ export default function Reports() {
             )}
 
             <div id="report-export-section" className="h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-              <Chart_Report
-                data={reportData}
-                type={reportFilters.chartType}
-                title={selectedReport.title}
-                loading={loading}
-              />
+              <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
             </div>
 
             {/* ── DATA TABLE TOGGLE + TABLE ── */}
             {reportData?.labels?.length > 0 && (
               <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDataTable((v) => !v)}
-                  className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                >
+                <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
                   <ChevronUpDownIcon className="h-4 w-4" />
-                  {showDataTable ? 'Hide' : 'Show'} Data Table
+                  {showDataTable ? "Hide" : "Show"} Data Table
                 </button>
                 {showDataTable && (
-                  <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: '16rem' }}>
+                  <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: "16rem" }}>
                     <table className="table table-sm mb-0">
                       <thead className="sticky-top bg-white dark:bg-gray-900">
                         <tr>
                           <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold">Period</th>
-                          <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">
-                            {reportData.datasets?.[0]?.label || 'Value'}
-                          </th>
+                          <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">{reportData.datasets?.[0]?.label || "Value"}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {reportData.labels.map((label, i) => (
                           <tr key={i}>
                             <td className="text-sm text-gray-700 dark:text-gray-300">{label}</td>
-                            <td className="text-sm text-gray-900 dark:text-white text-end font-medium">
-                              {reportData.datasets?.[0]?.data?.[i] ?? '—'}
-                            </td>
+                            <td className="text-sm text-gray-900 dark:text-white text-end font-medium">{reportData.datasets?.[0]?.data?.[i] ?? "—"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -683,8 +614,6 @@ export default function Reports() {
                 )}
               </div>
             )}
-
-            
           </>
         )}
       </div>
@@ -696,59 +625,69 @@ export default function Reports() {
             <select
               className="form-select form-select-sm"
               style={{
-                width: '3rem',
-                height: '3rem',
-                minWidth: '3rem',
-                borderRadius: '50%',
+                width: "3rem",
+                height: "3rem",
+                minWidth: "3rem",
+                borderRadius: "50%",
                 paddingLeft: 0,
                 paddingRight: 0,
-                textAlign: 'center',
-                appearance: 'none',
-                backgroundImage: 'none'
+                textAlign: "center",
+                appearance: "none",
+                backgroundImage: "none",
               }}
               value={reportFilters.dateRange}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
             >
-              {DATE_RANGE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {DATE_RANGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
 
             <select
               className="form-select form-select-sm"
               style={{
-                width: '3rem',
-                height: '3rem',
-                minWidth: '3rem',
-                borderRadius: '50%',
+                width: "3rem",
+                height: "3rem",
+                minWidth: "3rem",
+                borderRadius: "50%",
                 paddingLeft: 0,
                 paddingRight: 0,
-                textAlign: 'center',
-                appearance: 'none',
-                backgroundImage: 'none'
+                textAlign: "center",
+                appearance: "none",
+                backgroundImage: "none",
               }}
               value={reportFilters.groupBy}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
             >
-              {GROUP_BY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {GROUP_BY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
 
             <select
               className="form-select form-select-sm"
               style={{
-                width: '3rem',
-                height: '3rem',
-                minWidth: '3rem',
-                borderRadius: '50%',
+                width: "3rem",
+                height: "3rem",
+                minWidth: "3rem",
+                borderRadius: "50%",
                 paddingLeft: 0,
                 paddingRight: 0,
-                textAlign: 'center',
-                appearance: 'none',
-                backgroundImage: 'none'
+                textAlign: "center",
+                appearance: "none",
+                backgroundImage: "none",
               }}
               value={reportFilters.chartType}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
             >
               {selectedReport.chartTypes.map((chartType) => (
-                <option key={chartType} value={chartType}>{chartType === 'doughnut' ? 'Ring' : chartType}</option>
+                <option key={chartType} value={chartType}>
+                  {chartType === "doughnut" ? "Ring" : chartType}
+                </option>
               ))}
             </select>
 
@@ -756,9 +695,9 @@ export default function Reports() {
               <select
                 className="form-select form-select-sm"
                 style={{
-                  width: 'auto',
-                  appearance: 'none',
-                  backgroundImage: 'none'
+                  width: "auto",
+                  appearance: "none",
+                  backgroundImage: "none",
                 }}
                 value={reportFilters.status}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
@@ -774,16 +713,18 @@ export default function Reports() {
               <select
                 className="form-select form-select-sm"
                 style={{
-                  width: 'auto',
-                  appearance: 'none',
-                  backgroundImage: 'none'
+                  width: "auto",
+                  appearance: "none",
+                  backgroundImage: "none",
                 }}
                 value={reportFilters.serviceId}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
               >
                 <option value="all">All Services</option>
                 {services.map((service) => (
-                  <option key={service.id} value={service.id}>{service.name}</option>
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -792,16 +733,18 @@ export default function Reports() {
               <select
                 className="form-select form-select-sm"
                 style={{
-                  width: 'auto',
-                  appearance: 'none',
-                  backgroundImage: 'none'
+                  width: "auto",
+                  appearance: "none",
+                  backgroundImage: "none",
                 }}
                 value={reportFilters.employeeId}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
               >
                 <option value="all">All Employees</option>
                 {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>{`${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username}</option>
+                  <option key={employee.id} value={employee.id}>
+                    {`${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username}
+                  </option>
                 ))}
               </select>
             )}
@@ -810,18 +753,10 @@ export default function Reports() {
           {/* Row 2: centered report dropup selector */}
           <div className="d-flex justify-content-center align-items-center pt-2 position-relative">
             <div className="position-relative">
-              <Button_Toolbar
-                icon={ChevronUpDownIcon}
-                label={selectedReport?.title || 'Report'}
-                onClick={() => setReportMenuOpen((prev) => !prev)}
-                className="btn-outline-secondary"
-              />
+              <Button_Toolbar icon={ChevronUpDownIcon} label={selectedReport?.title || "Report"} onClick={() => setReportMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
               {reportMenuOpen && (
-                <div
-                  className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1"
-                  style={{ minWidth: isTrainingMode ? '16rem' : '12rem', zIndex: 20 }}
-                >
+                <div className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", zIndex: 20 }}>
                   {accessibleReports.map((report) => {
                     const isActive = selectedReportId === report.id;
                     return (
@@ -832,7 +767,7 @@ export default function Reports() {
                           handleReportSelect(report.id);
                           setReportMenuOpen(false);
                         }}
-                        className={`btn btn-sm w-100 d-flex align-items-center gap-2 text-start ${isActive ? 'btn-primary' : 'btn-outline-secondary'} mb-1`}
+                        className={`btn btn-sm w-100 d-flex align-items-center gap-2 text-start ${isActive ? "btn-primary" : "btn-outline-secondary"} mb-1`}
                       >
                         <report.icon className="h-4 w-4 flex-shrink-0" />
                         <span className="text-truncate">{report.title}</span>
@@ -847,26 +782,13 @@ export default function Reports() {
       )}
 
       {/* Forecast Calculator Modal */}
-      <Modal_Forecast_Calculator
-        isOpen={showForecastCalculator}
-        onClose={() => setShowForecastCalculator(false)}
-      />
+      <Modal_Forecast_Calculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
 
-      <Modal
-        isOpen={showFinancialDashboard}
-        onClose={() => setShowFinancialDashboard(false)}
-        fullScreen={true}
-        noPadding={true}
-      >
+      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen={true} noPadding={true}>
         <div className="p-4 bg-gray-50 h-full overflow-auto">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <h2 className="text-xl font-bold text-gray-900 mb-0">Financial Controls</h2>
-            <Button_Toolbar
-              icon={ChartBarIcon}
-              label="Close"
-              onClick={() => setShowFinancialDashboard(false)}
-              className="btn-outline-secondary"
-            />
+            <Button_Toolbar icon={ChartBarIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" />
           </div>
           <FinancialDashboard />
         </div>

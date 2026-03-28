@@ -1,35 +1,35 @@
-import React, { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Layout from './pages/components/Layout';
-import Login from './pages/Login';
-import NotFound from './pages/NotFound';
-import useStore from './services/useStore';
-import { preloadStoreData } from './services/api';
-import useDarkMode from './services/useDarkMode';
-import useViewMode from './services/useViewMode';
-import useBranding from './services/useBranding';
-import { initializeActiveColorTheme } from './services/activeColorTheme';
-import Modal_Client from './pages/components/Modal_Client';
-import Manager_MobileAddressBar from './pages/components/Manager_MobileAddressBar';
-import Prompt_InstallApp from './pages/components/Prompt_InstallApp';
-import PageErrorBoundary from './pages/components/ErrorBoundary';
-import SearchableSelectOverlay from './pages/components/SearchableSelectOverlay';
+import React, { useEffect, Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import Layout from "./pages/components/Layout";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import useStore from "./services/useStore";
+import { preloadStoreData } from "./services/api";
+import useDarkMode from "./services/useDarkMode";
+import useViewMode from "./services/useViewMode";
+import useBranding from "./services/useBranding";
+import { initializeActiveColorTheme } from "./services/activeColorTheme";
+import Modal_Client from "./pages/components/Modal_Client";
+import Manager_MobileAddressBar from "./pages/components/Manager_MobileAddressBar";
+import Prompt_InstallApp from "./pages/components/Prompt_InstallApp";
+import PageErrorBoundary from "./pages/components/ErrorBoundary";
+import SearchableSelectOverlay from "./pages/components/SearchableSelectOverlay";
 
 // Lazy load pages - only load when navigating to them
-const Clients = lazy(() => import('./pages/Clients'));
-const Inventory = lazy(() => import('./pages/Inventory'));
-const Services = lazy(() => import('./pages/Services'));
-const Sales = lazy(() => import('./pages/Sales'));
-const Employees = lazy(() => import('./pages/Employees'));
-const Schedule = lazy(() => import('./pages/Schedule'));
-const Documents = lazy(() => import('./pages/Documents'));
-const DocumentEditor = lazy(() => import('./pages/DocumentEditor'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Reports = lazy(() => import('./pages/Reports'));
+const Clients = lazy(() => import("./pages/Clients"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const Services = lazy(() => import("./pages/Services"));
+const Sales = lazy(() => import("./pages/Sales"));
+const Employees = lazy(() => import("./pages/Employees"));
+const Schedule = lazy(() => import("./pages/Schedule"));
+const Documents = lazy(() => import("./pages/Documents"));
+const DocumentEditor = lazy(() => import("./pages/DocumentEditor"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Reports = lazy(() => import("./pages/Reports"));
 
 // Loading fallback component
 const PageLoader = () => (
-  <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+  <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "200px" }}>
     <div className="spinner-border text-primary" role="status">
       <span className="visually-hidden">Loading...</span>
     </div>
@@ -47,8 +47,6 @@ const ClearErrorOnNavigate = () => {
 
   return null;
 };
-
-
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredPermission = null }) => {
@@ -68,7 +66,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 
   // Check if user has required permission
   if (requiredPermission) {
-    const [page, permission] = requiredPermission.split(':');
+    const [page, permission] = requiredPermission.split(":");
     if (!hasPermission(page, permission)) {
       return <Navigate to="/profile" replace />;
     }
@@ -78,8 +76,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 };
 
 function App() {
-  const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady,
-          setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
+  const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
   const { setTrainingMode } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
@@ -89,9 +86,9 @@ function App() {
     const initializeUserData = async () => {
       try {
         // Try to get token and user data from storage
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
-        const permissionsData = localStorage.getItem('permissions') || sessionStorage.getItem('permissions');
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+        const permissionsData = localStorage.getItem("permissions") || sessionStorage.getItem("permissions");
 
         if (token && userData) {
           const user = JSON.parse(userData);
@@ -105,7 +102,7 @@ function App() {
           // If permissions are missing (e.g. sessionStorage was cleared by iOS after the app
           // was backgrounded/killed), silently re-fetch them from the server so all
           // permission-gated pages work correctly without forcing a new login.
-          if (permissions.length === 0 && user.role !== 'admin') {
+          if (permissions.length === 0 && user.role !== "admin") {
             refetchPermissions();
           }
 
@@ -116,7 +113,7 @@ function App() {
         // Load persisted filters
         loadPersistedFilters();
       } catch (error) {
-        console.error('Error initializing user data:', error);
+        console.error("Error initializing user data:", error);
       } finally {
         // Signal that auth initialization is complete so ProtectedRoute can make
         // routing decisions — prevents premature redirects on iOS cold-start.
@@ -125,8 +122,7 @@ function App() {
     };
 
     initializeUserData();
-  }, [setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady,
-      setClients, setServices, setEmployees, setInventory, setAppointments]);
+  }, [setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments]);
 
   // Initialize dark mode on app startup
   useEffect(() => {
@@ -159,63 +155,138 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout><PageErrorBoundary><Navigate to="/schedule" replace /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/clients" element={
-            <ProtectedRoute requiredPermission="clients:read">
-              <Layout><PageErrorBoundary><Clients /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/sales" element={
-            <ProtectedRoute requiredPermission="sales:read">
-              <Layout><PageErrorBoundary><Sales /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/services" element={
-            <ProtectedRoute requiredPermission="services:read">
-              <Layout><PageErrorBoundary><Services /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/employees" element={
-            <ProtectedRoute requiredPermission="employees:read">
-              <Layout><PageErrorBoundary><Employees /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/schedule" element={
-            <ProtectedRoute requiredPermission="schedule:read">
-              <Layout><PageErrorBoundary><Schedule /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/inventory" element={
-            <ProtectedRoute requiredPermission="inventory:read">
-              <Layout><PageErrorBoundary><Inventory /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/documents" element={
-            <ProtectedRoute>
-              <Layout><PageErrorBoundary><Documents /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/documents/:documentId/edit" element={
-            <ProtectedRoute requiredPermission="documents:write">
-              <Suspense fallback={<PageLoader />}>
-                <PageErrorBoundary><DocumentEditor /></PageErrorBoundary>
-              </Suspense>
-            </ProtectedRoute>
-          } />
-          <Route path="/reports" element={
-            <ProtectedRoute requiredPermission="reports:read">
-              <Layout><PageErrorBoundary><Reports /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Layout><PageErrorBoundary><Profile /></PageErrorBoundary></Layout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PageErrorBoundary>
+                    <Navigate to="/schedule" replace />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoute requiredPermission="clients:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Clients />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales"
+            element={
+              <ProtectedRoute requiredPermission="sales:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Sales />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/services"
+            element={
+              <ProtectedRoute requiredPermission="services:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Services />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employees"
+            element={
+              <ProtectedRoute requiredPermission="employees:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Employees />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <ProtectedRoute requiredPermission="schedule:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Schedule />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute requiredPermission="inventory:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Inventory />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PageErrorBoundary>
+                    <Documents />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents/:documentId/edit"
+            element={
+              <ProtectedRoute requiredPermission="documents:write">
+                <Suspense fallback={<PageLoader />}>
+                  <PageErrorBoundary>
+                    <DocumentEditor />
+                  </PageErrorBoundary>
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute requiredPermission="reports:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Reports />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PageErrorBoundary>
+                    <Profile />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
           {/* Catch-all route for any unmatched paths */}
           <Route path="*" element={<NotFound />} />
         </Routes>

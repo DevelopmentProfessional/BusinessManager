@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import useStore from '../../services/useStore';
-import { getMobileEnvironment } from '../../services/mobileEnvironment';
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import useStore from "../../services/useStore";
+import { getMobileEnvironment } from "../../services/mobileEnvironment";
 
 export default function Manager_MobileAddressBar() {
   const location = useLocation();
@@ -13,8 +13,8 @@ export default function Manager_MobileAddressBar() {
 
     const updateKeyboardOffset = () => {
       if (!focusActive) {
-        root.style.setProperty('--keyboard-offset', '0px');
-        root.classList.remove('keyboard-open');
+        root.style.setProperty("--keyboard-offset", "0px");
+        root.classList.remove("keyboard-open");
         return;
       }
 
@@ -23,15 +23,15 @@ export default function Manager_MobileAddressBar() {
       const offsetTop = viewport?.offsetTop || 0;
       const offset = Math.max(0, Math.round(window.innerHeight - viewportHeight - offsetTop));
 
-      root.style.setProperty('--keyboard-offset', `${offset}px`);
-      root.classList.toggle('keyboard-open', offset > 0);
+      root.style.setProperty("--keyboard-offset", `${offset}px`);
+      root.classList.toggle("keyboard-open", offset > 0);
     };
 
     const onFocusIn = (event) => {
       const target = event.target;
-      if (target && target.classList?.contains('app-search-input')) {
+      if (target && target.classList?.contains("app-search-input")) {
         focusActive = true;
-        root.classList.add('search-focus');
+        root.classList.add("search-focus");
         updateKeyboardOffset();
         window.setTimeout(updateKeyboardOffset, 0);
       }
@@ -40,7 +40,7 @@ export default function Manager_MobileAddressBar() {
     let blurTimeout = null;
     const onFocusOut = (event) => {
       const target = event.target;
-      if (target && target.classList?.contains('app-search-input')) {
+      if (target && target.classList?.contains("app-search-input")) {
         focusActive = false;
         // Debounce removal so a tap on a footer button fires its click before the
         // layout shifts back (search-hide-on-focus elements reappearing would
@@ -48,7 +48,7 @@ export default function Manager_MobileAddressBar() {
         clearTimeout(blurTimeout);
         blurTimeout = setTimeout(() => {
           if (!focusActive) {
-            root.classList.remove('search-focus');
+            root.classList.remove("search-focus");
             updateKeyboardOffset();
           }
         }, 200);
@@ -61,43 +61,43 @@ export default function Manager_MobileAddressBar() {
       }
     };
 
-    document.addEventListener('focusin', onFocusIn);
-    document.addEventListener('focusout', onFocusOut);
-    window.addEventListener('resize', onViewportChange, { passive: true });
-    window.visualViewport?.addEventListener('resize', onViewportChange, { passive: true });
-    window.visualViewport?.addEventListener('scroll', onViewportChange, { passive: true });
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    window.addEventListener("resize", onViewportChange, { passive: true });
+    window.visualViewport?.addEventListener("resize", onViewportChange, { passive: true });
+    window.visualViewport?.addEventListener("scroll", onViewportChange, { passive: true });
 
     return () => {
       clearTimeout(blurTimeout);
-      document.removeEventListener('focusin', onFocusIn);
-      document.removeEventListener('focusout', onFocusOut);
-      window.removeEventListener('resize', onViewportChange);
-      window.visualViewport?.removeEventListener('resize', onViewportChange);
-      window.visualViewport?.removeEventListener('scroll', onViewportChange);
-      root.style.setProperty('--keyboard-offset', '0px');
-      root.classList.remove('keyboard-open', 'search-focus');
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+      window.removeEventListener("resize", onViewportChange);
+      window.visualViewport?.removeEventListener("resize", onViewportChange);
+      window.visualViewport?.removeEventListener("scroll", onViewportChange);
+      root.style.setProperty("--keyboard-offset", "0px");
+      root.classList.remove("keyboard-open", "search-focus");
     };
   }, []);
 
   useEffect(() => {
-    const shouldHideAddressBar = isAuthenticated() && location.pathname !== '/login';
+    const shouldHideAddressBar = isAuthenticated() && location.pathname !== "/login";
     const root = document.documentElement;
 
     if (!shouldHideAddressBar) {
-      root.classList.remove('mobile-immersive', 'pwa-standalone', 'ios-browser-mode');
-      root.removeAttribute('data-mobile-browser');
-      root.removeAttribute('data-mobile-os');
-      root.removeAttribute('data-mobile-standalone');
+      root.classList.remove("mobile-immersive", "pwa-standalone", "ios-browser-mode");
+      root.removeAttribute("data-mobile-browser");
+      root.removeAttribute("data-mobile-os");
+      root.removeAttribute("data-mobile-standalone");
       return undefined;
     }
 
     const mobileEnv = getMobileEnvironment();
 
     if (!mobileEnv.isMobileViewport) {
-      root.classList.remove('mobile-immersive', 'pwa-standalone', 'ios-browser-mode');
-      root.removeAttribute('data-mobile-browser');
-      root.removeAttribute('data-mobile-os');
-      root.removeAttribute('data-mobile-standalone');
+      root.classList.remove("mobile-immersive", "pwa-standalone", "ios-browser-mode");
+      root.removeAttribute("data-mobile-browser");
+      root.removeAttribute("data-mobile-os");
+      root.removeAttribute("data-mobile-standalone");
       return undefined;
     }
 
@@ -107,17 +107,17 @@ export default function Manager_MobileAddressBar() {
 
     const applyModeClasses = () => {
       const env = getMobileEnvironment();
-      root.classList.toggle('pwa-standalone', env.isStandalone);
-      root.classList.toggle('mobile-immersive', !env.isStandalone);
-      root.classList.toggle('ios-browser-mode', env.isIOS && !env.isStandalone);
-      root.setAttribute('data-mobile-browser', env.browser);
-      root.setAttribute('data-mobile-os', env.isIOS ? 'ios' : env.isAndroid ? 'android' : 'other');
-      root.setAttribute('data-mobile-standalone', env.isStandalone ? 'true' : 'false');
+      root.classList.toggle("pwa-standalone", env.isStandalone);
+      root.classList.toggle("mobile-immersive", !env.isStandalone);
+      root.classList.toggle("ios-browser-mode", env.isIOS && !env.isStandalone);
+      root.setAttribute("data-mobile-browser", env.browser);
+      root.setAttribute("data-mobile-os", env.isIOS ? "ios" : env.isAndroid ? "android" : "other");
+      root.setAttribute("data-mobile-standalone", env.isStandalone ? "true" : "false");
     };
 
     const syncViewportHeight = () => {
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
-      root.style.setProperty('--mobile-app-height', `${Math.round(viewportHeight)}px`);
+      root.style.setProperty("--mobile-app-height", `${Math.round(viewportHeight)}px`);
     };
 
     const hideAddressBar = () => {
@@ -150,23 +150,23 @@ export default function Manager_MobileAddressBar() {
 
     hideAddressBarWithRetries();
 
-    window.addEventListener('resize', onViewportChange, { passive: true });
-    window.addEventListener('orientationchange', onViewportChange, { passive: true });
-    window.addEventListener('pageshow', onViewportChange, { passive: true });
-    window.visualViewport?.addEventListener('resize', onViewportChange, { passive: true });
+    window.addEventListener("resize", onViewportChange, { passive: true });
+    window.addEventListener("orientationchange", onViewportChange, { passive: true });
+    window.addEventListener("pageshow", onViewportChange, { passive: true });
+    window.visualViewport?.addEventListener("resize", onViewportChange, { passive: true });
 
     return () => {
       window.clearTimeout(hideTimeoutA);
       window.clearTimeout(hideTimeoutB);
       window.clearTimeout(hideTimeoutC);
-      root.classList.remove('mobile-immersive', 'pwa-standalone', 'ios-browser-mode');
-      root.removeAttribute('data-mobile-browser');
-      root.removeAttribute('data-mobile-os');
-      root.removeAttribute('data-mobile-standalone');
-      window.removeEventListener('resize', onViewportChange);
-      window.removeEventListener('orientationchange', onViewportChange);
-      window.removeEventListener('pageshow', onViewportChange);
-      window.visualViewport?.removeEventListener('resize', onViewportChange);
+      root.classList.remove("mobile-immersive", "pwa-standalone", "ios-browser-mode");
+      root.removeAttribute("data-mobile-browser");
+      root.removeAttribute("data-mobile-os");
+      root.removeAttribute("data-mobile-standalone");
+      window.removeEventListener("resize", onViewportChange);
+      window.removeEventListener("orientationchange", onViewportChange);
+      window.removeEventListener("pageshow", onViewportChange);
+      window.visualViewport?.removeEventListener("resize", onViewportChange);
     };
   }, [isAuthenticated, location.pathname]);
 

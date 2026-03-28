@@ -38,14 +38,14 @@
  */
 
 // ─── 1 IMPORTS ──────────────────────────────────────────────────────────────
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import useStore from '../services/useStore';
-import useDarkMode from '../services/useDarkMode';
-import useViewMode from '../services/useViewMode';
-import Button_Toolbar from './components/Button_Toolbar';
-import { getMobileEnvironment } from '../services/mobileEnvironment';
-import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from '../services/performanceTracker';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useStore from "../services/useStore";
+import useDarkMode from "../services/useDarkMode";
+import useViewMode from "../services/useViewMode";
+import Button_Toolbar from "./components/Button_Toolbar";
+import { getMobileEnvironment } from "../services/mobileEnvironment";
+import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import {
   UserIcon,
   CogIcon,
@@ -76,41 +76,41 @@ import {
   Squares2X2Icon,
   ArrowPathIcon,
   MagnifyingGlassPlusIcon,
-} from '@heroicons/react/24/outline';
-import { PencilSquareIcon } from '@heroicons/react/24/solid';
-import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from '../services/api';
-import api from '../services/api';
-import { runAppSync } from '../services/appSync';
-import Modal_Signature from './components/Modal_Signature';
-import Manager_DatabaseConnection from './components/Manager_DatabaseConnection';
-import ScheduleSettingsCard from './components/ScheduleSettings';
-import useBranding from '../services/useBranding';
-import { applyActiveColorTheme } from '../services/activeColorTheme';
-import { right } from '@popperjs/core';
-import Modal from './components/Modal';
+} from "@heroicons/react/24/outline";
+import { PencilSquareIcon } from "@heroicons/react/24/solid";
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from "../services/api";
+import api from "../services/api";
+import { runAppSync } from "../services/appSync";
+import Modal_Signature from "./components/Modal_Signature";
+import Manager_DatabaseConnection from "./components/Manager_DatabaseConnection";
+import ScheduleSettingsCard from "./components/ScheduleSettings";
+import useBranding from "../services/useBranding";
+import { applyActiveColorTheme } from "../services/activeColorTheme";
+import { right } from "@popperjs/core";
+import Modal from "./components/Modal";
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
 const AlignLeftIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
-    <rect x="2" y="3" width="16" height="2.5" rx="1.25"/>
-    <rect x="2" y="8.75" width="11" height="2.5" rx="1.25"/>
-    <rect x="2" y="14.5" width="14" height="2.5" rx="1.25"/>
+  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: "1.1rem", height: "1.1rem" }}>
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
+    <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
+    <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
 const AlignCenterIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
-    <rect x="2" y="3" width="16" height="2.5" rx="1.25"/>
-    <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25"/>
-    <rect x="3" y="14.5" width="14" height="2.5" rx="1.25"/>
+  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: "1.1rem", height: "1.1rem" }}>
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
+    <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
+    <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
 const AlignRightIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
-    <rect x="2" y="3" width="16" height="2.5" rx="1.25"/>
-    <rect x="7" y="8.75" width="11" height="2.5" rx="1.25"/>
-    <rect x="4" y="14.5" width="14" height="2.5" rx="1.25"/>
+  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: "1.1rem", height: "1.1rem" }}>
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
+    <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />
+    <rect x="4" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
 
@@ -165,21 +165,21 @@ const accordionStyles = `
 `;
 
 // Add animation styles (shared with Settings — only inject once)
-if (typeof document !== 'undefined') {
-  if (!document.head.querySelector('style[data-accordion-popup]')) {
-    const styleSheet = document.createElement('style');
+if (typeof document !== "undefined") {
+  if (!document.head.querySelector("style[data-accordion-popup]")) {
+    const styleSheet = document.createElement("style");
     styleSheet.textContent = accordionStyles;
-    styleSheet.setAttribute('data-accordion-popup', 'true');
+    styleSheet.setAttribute("data-accordion-popup", "true");
     document.head.appendChild(styleSheet);
   }
 }
 
 // Always inject profile-specific no-scrollbar styles (own unique tag, never blocked)
-if (typeof document !== 'undefined') {
-  const existing = document.head.querySelector('style[data-profile-no-scrollbar]');
+if (typeof document !== "undefined") {
+  const existing = document.head.querySelector("style[data-profile-no-scrollbar]");
   if (!existing) {
-    const styleSheet = document.createElement('style');
-    styleSheet.setAttribute('data-profile-no-scrollbar', 'true');
+    const styleSheet = document.createElement("style");
+    styleSheet.setAttribute("data-profile-no-scrollbar", "true");
     styleSheet.textContent = `
       .profile-page * {
         scrollbar-width: none !important;
@@ -198,28 +198,28 @@ if (typeof document !== 'undefined') {
 // ─── 3 MODULE-LEVEL CONSTANTS & HELPERS ──────────────────────────────────────
 // Available database environments - shows what's possible
 const DB_ENVIRONMENTS = {
-  production: { name: 'Production', description: 'Live production database' }
+  production: { name: "Production", description: "Live production database" },
 };
 
 const statusColor = (status) => {
-  const s = String(status || '').toLowerCase();
-  if (s === 'approved') return 'success';
-  if (s === 'rejected') return 'danger';
-  if (s === 'pending') return 'warning';
-  return 'secondary';
+  const s = String(status || "").toLowerCase();
+  if (s === "approved") return "success";
+  if (s === "rejected") return "danger";
+  if (s === "pending") return "warning";
+  return "secondary";
 };
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale } = useViewMode();
-  const footerJustify = footerAlign === 'center' ? 'justify-content-center' : footerAlign === 'right' ? 'justify-content-end' : 'justify-content-start';
-  const FooterAlignIcon = footerAlign === 'center' ? AlignCenterIcon : footerAlign === 'right' ? AlignRightIcon : AlignLeftIcon;
+  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
+  const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
+  const FooterAlignIcon = footerAlign === "center" ? AlignCenterIcon : footerAlign === "right" ? AlignRightIcon : AlignLeftIcon;
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
 
   const cycleFooterAlign = useCallback(() => {
-    const next = footerAlign === 'left' ? 'center' : footerAlign === 'center' ? 'right' : 'left';
+    const next = footerAlign === "left" ? "center" : footerAlign === "center" ? "right" : "left";
     setFooterAlign(next);
   }, [footerAlign, setFooterAlign]);
 
@@ -227,29 +227,29 @@ const Profile = () => {
   // Log Profile component mount if performance session is active
   useEffect(() => {
     if (getPerformanceSessionActive()) {
-      logComponentLoad('Profile Component');
+      logComponentLoad("Profile Component");
     }
   }, []);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   // Database environment from user profile - production only
-  const currentDbEnvironment = user?.db_environment === 'production' ? 'production' : 'production';
+  const currentDbEnvironment = user?.db_environment === "production" ? "production" : "production";
   const [dbLoading, setDbLoading] = useState(false);
-  const [dbMessage, setDbMessage] = useState('');
-  const [dbError, setDbError] = useState('');
-  const [installMessage, setInstallMessage] = useState('');
-  const [installError, setInstallError] = useState('');
+  const [dbMessage, setDbMessage] = useState("");
+  const [dbError, setDbError] = useState("");
+  const [installMessage, setInstallMessage] = useState("");
+  const [installError, setInstallError] = useState("");
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
-  const [employeeColor, setEmployeeColor] = useState(user?.color || '#3B82F6');
-  const [pendingColor, setPendingColor] = useState(user?.color || '#3B82F6');
+  const [employeeColor, setEmployeeColor] = useState(user?.color || "#3B82F6");
+  const [pendingColor, setPendingColor] = useState(user?.color || "#3B82F6");
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorUpdating, setColorUpdating] = useState(false);
-  const [colorMessage, setColorMessage] = useState('');
-  const [openAccordion, setOpenAccordion] = useState('settings');
+  const [colorMessage, setColorMessage] = useState("");
+  const [openAccordion, setOpenAccordion] = useState("settings");
   const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
 
   // Leave request state
@@ -257,10 +257,10 @@ const Profile = () => {
   const [sickRequests, setSickRequests] = useState([]);
   const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [leaveModalType, setLeaveModalType] = useState('vacation');
-  const [leaveForm, setLeaveForm] = useState({ start_date: '', end_date: '', notes: '' });
+  const [leaveModalType, setLeaveModalType] = useState("vacation");
+  const [leaveForm, setLeaveForm] = useState({ start_date: "", end_date: "", notes: "" });
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
-  const [leaveError, setLeaveError] = useState('');
+  const [leaveError, setLeaveError] = useState("");
 
   // Wages / payroll state
   const [paySlips, setPaySlips] = useState([]);
@@ -273,8 +273,8 @@ const Profile = () => {
   const row2ObsRef = useRef(null);
 
   // ── Settings state ──────────────────────────────────────────────────────────
-  const [settingsError, setSettingsError] = useState('');
-  const [settingsSuccess, setSettingsSuccess] = useState('');
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsSuccess, setSettingsSuccess] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
 
   const { branding, updateBranding } = useBranding();
@@ -283,18 +283,18 @@ const Profile = () => {
   const [brandingLogoUploading, setBrandingLogoUploading] = useState(false);
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const [logoPickerLoading, setLogoPickerLoading] = useState(false);
-  const [logoPickerError, setLogoPickerError] = useState('');
+  const [logoPickerError, setLogoPickerError] = useState("");
   const [logoPickerDocs, setLogoPickerDocs] = useState([]);
 
   const [dbSettings, setDbSettings] = useState({
-    connectionString: '',
-    apiBaseUrl: '',
-    onlyofficeUrl: '',
+    connectionString: "",
+    apiBaseUrl: "",
+    onlyofficeUrl: "",
   });
 
   const [scheduleSettings, setScheduleSettings] = useState({
-    start_of_day: '06:00',
-    end_of_day: '21:00',
+    start_of_day: "06:00",
+    end_of_day: "21:00",
     attendance_check_in_required: true,
     monday_enabled: true,
     tuesday_enabled: true,
@@ -308,10 +308,10 @@ const Profile = () => {
 
   // Company info state
   const [companyInfo, setCompanyInfo] = useState({
-    company_name: '',
-    company_email: '',
-    company_phone: '',
-    company_address: '',
+    company_name: "",
+    company_email: "",
+    company_phone: "",
+    company_address: "",
     tax_rate: 0,
   });
   const [companyLoading, setCompanyLoading] = useState(false);
@@ -325,7 +325,7 @@ const Profile = () => {
   });
 
   const [availableTables, setAvailableTables] = useState([]);
-  const [selectedTable, setSelectedTable] = useState('');
+  const [selectedTable, setSelectedTable] = useState("");
   const [tableColumns, setTableColumns] = useState([]);
   const [csvData, setCsvData] = useState(null);
   const [csvHeaders, setCsvHeaders] = useState([]);
@@ -343,7 +343,7 @@ const Profile = () => {
 
   // Keep color button state aligned to the persisted user color.
   useEffect(() => {
-    const savedColor = user?.color || '#3B82F6';
+    const savedColor = user?.color || "#3B82F6";
     setEmployeeColor(savedColor);
     if (!colorPickerOpen) setPendingColor(savedColor);
   }, [user?.color, colorPickerOpen]);
@@ -364,7 +364,10 @@ const Profile = () => {
       row2ObsRef.current.disconnect();
       row2ObsRef.current = null;
     }
-    if (!el) { setRow2Height(0); return; }
+    if (!el) {
+      setRow2Height(0);
+      return;
+    }
     const update = () => setRow2Height(el.offsetHeight);
     update();
     const obs = new ResizeObserver(update);
@@ -374,40 +377,50 @@ const Profile = () => {
 
   // ─── 6 SETTINGS LOAD EFFECTS ─────────────────────────────────────────────
   // Sync local branding when global branding changes
-  useEffect(() => { setLocalBranding(branding); }, [branding]);
+  useEffect(() => {
+    setLocalBranding(branding);
+  }, [branding]);
 
   // Track mobile viewport changes
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(getMobileEnvironment().isMobileViewport);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Load saved settings + schedule from backend on mount
   useEffect(() => {
-    const savedDb = localStorage.getItem('app_db_settings');
+    const savedDb = localStorage.getItem("app_db_settings");
     if (savedDb) {
-      try { setDbSettings(JSON.parse(savedDb)); } catch { /* ignore */ }
+      try {
+        setDbSettings(JSON.parse(savedDb));
+      } catch {
+        /* ignore */
+      }
     } else {
       setDbSettings({
-        connectionString: '',
-        apiBaseUrl: import.meta.env.VITE_API_URL || '',
-        onlyofficeUrl: import.meta.env.VITE_ONLYOFFICE_URL || '',
+        connectionString: "",
+        apiBaseUrl: import.meta.env.VITE_API_URL || "",
+        onlyofficeUrl: import.meta.env.VITE_ONLYOFFICE_URL || "",
       });
     }
-    const savedNotif = localStorage.getItem('app_notifications');
+    const savedNotif = localStorage.getItem("app_notifications");
     if (savedNotif) {
-      try { setNotifications(JSON.parse(savedNotif)); } catch { /* ignore */ }
+      try {
+        setNotifications(JSON.parse(savedNotif));
+      } catch {
+        /* ignore */
+      }
     }
     const loadSchedule = async () => {
       try {
         const res = await settingsAPI.getScheduleSettings();
         if (res.data) {
           setScheduleSettings({
-            start_of_day: res.data.start_of_day || '06:00',
-            end_of_day: res.data.end_of_day || '21:00',
+            start_of_day: res.data.start_of_day || "06:00",
+            end_of_day: res.data.end_of_day || "21:00",
             attendance_check_in_required: res.data.attendance_check_in_required ?? true,
             monday_enabled: res.data.monday_enabled ?? true,
             tuesday_enabled: res.data.tuesday_enabled ?? true,
@@ -418,14 +431,16 @@ const Profile = () => {
             sunday_enabled: res.data.sunday_enabled ?? true,
           });
           setCompanyInfo({
-            company_name: res.data.company_name || '',
-            company_email: res.data.company_email || '',
-            company_phone: res.data.company_phone || '',
-            company_address: res.data.company_address || '',
+            company_name: res.data.company_name || "",
+            company_email: res.data.company_email || "",
+            company_phone: res.data.company_phone || "",
+            company_address: res.data.company_address || "",
             tax_rate: res.data.tax_rate ?? 0,
           });
         }
-      } catch { /* silently degrade */ }
+      } catch {
+        /* silently degrade */
+      }
     };
     loadSchedule();
   }, []);
@@ -433,7 +448,7 @@ const Profile = () => {
   // ─── 7 DATABASE / IMPORT EFFECTS ─────────────────────────────────────────
   // Load available tables when database tab opens
   useEffect(() => {
-    if (openAccordion === 'database' && availableTables.length === 0) {
+    if (openAccordion === "database" && availableTables.length === 0) {
       loadTables();
     }
   }, [openAccordion]);
@@ -452,12 +467,7 @@ const Profile = () => {
   // ── Settings helpers ─────────────────────────────────────────────────────────
   const HelpIcon = ({ id, text }) => (
     <div className="relative inline-block ml-1">
-      <QuestionMarkCircleIcon
-        className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors"
-        onClick={() => setActiveTooltip(activeTooltip === id ? null : id)}
-        onMouseEnter={() => setActiveTooltip(id)}
-        onMouseLeave={() => setActiveTooltip(null)}
-      />
+      <QuestionMarkCircleIcon className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" onClick={() => setActiveTooltip(activeTooltip === id ? null : id)} onMouseEnter={() => setActiveTooltip(id)} onMouseLeave={() => setActiveTooltip(null)} />
       {activeTooltip === id && (
         <div className="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-lg shadow-lg max-w-xs text-center">
           {text}
@@ -467,32 +477,32 @@ const Profile = () => {
     </div>
   );
 
-  const toggleAccordion = (id) => setOpenAccordions(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleAccordion = (id) => setOpenAccordions((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const handleSaveBranding = () => {
     updateBranding(localBranding);
-    setSettingsSuccess('Branding saved!');
-    setTimeout(() => setSettingsSuccess(''), 3000);
+    setSettingsSuccess("Branding saved!");
+    setTimeout(() => setSettingsSuccess(""), 3000);
   };
-  const handleBrandingChange = (field, value) => setLocalBranding(prev => ({ ...prev, [field]: value }));
+  const handleBrandingChange = (field, value) => setLocalBranding((prev) => ({ ...prev, [field]: value }));
 
   const isImageDocument = (doc) => {
-    const ct = String(doc?.content_type || '').toLowerCase();
-    const name = String(doc?.original_filename || '').toLowerCase();
-    return ct.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+    const ct = String(doc?.content_type || "").toLowerCase();
+    const name = String(doc?.original_filename || "").toLowerCase();
+    return ct.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
   };
 
   const loadLogoPickerDocs = async () => {
     setLogoPickerLoading(true);
-    setLogoPickerError('');
+    setLogoPickerError("");
     try {
       const res = await documentsAPI.getAll();
       const docs = Array.isArray(res.data) ? res.data : [];
       setLogoPickerDocs(docs.filter(isImageDocument));
     } catch (err) {
-      console.warn('Failed to load documents for logo picker', err);
+      console.warn("Failed to load documents for logo picker", err);
       setLogoPickerDocs([]);
-      setLogoPickerError('Failed to load images.');
+      setLogoPickerError("Failed to load images.");
     } finally {
       setLogoPickerLoading(false);
     }
@@ -501,20 +511,20 @@ const Profile = () => {
   const handleUploadBrandingLogo = async (file) => {
     if (!file) return;
     setBrandingLogoUploading(true);
-    setSettingsError('');
+    setSettingsError("");
     try {
-      const res = await documentsAPI.upload(file, 'Branding logo');
+      const res = await documentsAPI.upload(file, "Branding logo");
       const doc = res?.data;
       if (doc?.id) {
         setLocalBranding((prev) => ({
           ...prev,
           logoDocumentId: doc.id,
-          logoUrl: '',
+          logoUrl: "",
         }));
       }
     } catch (err) {
-      console.error('Branding logo upload failed', err);
-      setSettingsError('Failed to upload logo.');
+      console.error("Branding logo upload failed", err);
+      setSettingsError("Failed to upload logo.");
     } finally {
       setBrandingLogoUploading(false);
     }
@@ -525,54 +535,54 @@ const Profile = () => {
     setLocalBranding((prev) => ({
       ...prev,
       logoDocumentId: doc.id,
-      logoUrl: '',
+      logoUrl: "",
     }));
     setLogoPickerOpen(false);
   };
 
   const handleSaveDbSettings = () => {
-    localStorage.setItem('app_db_settings', JSON.stringify(dbSettings));
-    setSettingsSuccess('Connection settings saved!');
-    setTimeout(() => setSettingsSuccess(''), 3000);
+    localStorage.setItem("app_db_settings", JSON.stringify(dbSettings));
+    setSettingsSuccess("Connection settings saved!");
+    setTimeout(() => setSettingsSuccess(""), 3000);
   };
-  const handleDbSettingsChange = (field, value) => setDbSettings(prev => ({ ...prev, [field]: value }));
+  const handleDbSettingsChange = (field, value) => setDbSettings((prev) => ({ ...prev, [field]: value }));
 
   const handleSaveNotifications = () => {
-    localStorage.setItem('app_notifications', JSON.stringify(notifications));
-    setSettingsSuccess('Notification settings saved!');
-    setTimeout(() => setSettingsSuccess(''), 3000);
+    localStorage.setItem("app_notifications", JSON.stringify(notifications));
+    setSettingsSuccess("Notification settings saved!");
+    setTimeout(() => setSettingsSuccess(""), 3000);
   };
-  const handleNotificationChange = (field, value) => setNotifications(prev => ({ ...prev, [field]: value }));
+  const handleNotificationChange = (field, value) => setNotifications((prev) => ({ ...prev, [field]: value }));
 
-  const handleScheduleSettingsChange = (field, value) => setScheduleSettings(prev => ({ ...prev, [field]: value }));
+  const handleScheduleSettingsChange = (field, value) => setScheduleSettings((prev) => ({ ...prev, [field]: value }));
 
   const handleSaveScheduleSettings = async () => {
     setScheduleLoading(true);
-    setSettingsError('');
-    setSettingsSuccess('');
+    setSettingsError("");
+    setSettingsSuccess("");
     try {
       await settingsAPI.updateScheduleSettings(scheduleSettings);
-      setSettingsSuccess('Schedule settings saved!');
-      setTimeout(() => setSettingsSuccess(''), 3000);
+      setSettingsSuccess("Schedule settings saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
     } catch (err) {
-      setSettingsError(err.response?.data?.detail || 'Failed to save schedule settings');
+      setSettingsError(err.response?.data?.detail || "Failed to save schedule settings");
     } finally {
       setScheduleLoading(false);
     }
   };
 
-  const handleCompanyInfoChange = (field, value) => setCompanyInfo(prev => ({ ...prev, [field]: value }));
+  const handleCompanyInfoChange = (field, value) => setCompanyInfo((prev) => ({ ...prev, [field]: value }));
 
   const handleSaveCompanyInfo = async () => {
     setCompanyLoading(true);
-    setSettingsError('');
-    setSettingsSuccess('');
+    setSettingsError("");
+    setSettingsSuccess("");
     try {
       await settingsAPI.updateSettings(companyInfo);
-      setSettingsSuccess('Company info saved!');
-      setTimeout(() => setSettingsSuccess(''), 3000);
+      setSettingsSuccess("Company info saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
     } catch (err) {
-      setSettingsError(err.response?.data?.detail || 'Failed to save company info');
+      setSettingsError(err.response?.data?.detail || "Failed to save company info");
     } finally {
       setCompanyLoading(false);
     }
@@ -580,26 +590,26 @@ const Profile = () => {
 
   const handleManualSync = async () => {
     setSyncLoading(true);
-    setSettingsError('');
-    setSettingsSuccess('');
+    setSettingsError("");
+    setSettingsSuccess("");
     try {
-      setSettingsSuccess('Sync complete. Refreshing app shell...');
+      setSettingsSuccess("Sync complete. Refreshing app shell...");
       await runAppSync();
     } catch (err) {
-      setSettingsError('Sync failed. Please try again.');
+      setSettingsError("Sync failed. Please try again.");
     } finally {
       setSyncLoading(false);
     }
   };
-
-
 
   // ─── 9 CSV IMPORT HANDLERS ───────────────────────────────────────────────
   const loadTables = async () => {
     try {
       const res = await schemaAPI.getTables();
       setAvailableTables(res.data || []);
-    } catch { /* silently degrade */ }
+    } catch {
+      /* silently degrade */
+    }
   };
 
   const loadTableColumns = async (tableName) => {
@@ -610,25 +620,32 @@ const Profile = () => {
       setCsvData(null);
       setCsvHeaders([]);
       setImportResult(null);
-    } catch { setTableColumns([]); }
+    } catch {
+      setTableColumns([]);
+    }
   };
 
   const parseCSVLine = (line) => {
     const result = [];
-    let current = '';
+    let current = "";
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
-      if (char === '"') { inQuotes = !inQuotes; }
-      else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-      else { current += char; }
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
     }
     result.push(current.trim());
     return result;
   };
 
   const parseCSV = (text) => {
-    const lines = text.split('\n').filter(l => l.trim());
+    const lines = text.split("\n").filter((l) => l.trim());
     if (lines.length < 2) return { headers: [], data: [] };
     const headers = parseCSVLine(lines[0]);
     const data = [];
@@ -636,7 +653,9 @@ const Profile = () => {
       const values = parseCSVLine(lines[i]);
       if (values.length === headers.length) {
         const row = {};
-        headers.forEach((h, idx) => { row[h] = values[idx]; });
+        headers.forEach((h, idx) => {
+          row[h] = values[idx];
+        });
         data.push(row);
       }
     }
@@ -652,9 +671,9 @@ const Profile = () => {
       setCsvHeaders(headers);
       setCsvData(data);
       const autoMapping = {};
-      headers.forEach(header => {
-        const norm = header.toLowerCase().replace(/\s+/g, '_');
-        const match = tableColumns.find(col => col.name.toLowerCase() === norm || col.display_name.toLowerCase() === header.toLowerCase());
+      headers.forEach((header) => {
+        const norm = header.toLowerCase().replace(/\s+/g, "_");
+        const match = tableColumns.find((col) => col.name.toLowerCase() === norm || col.display_name.toLowerCase() === header.toLowerCase());
         if (match) autoMapping[header] = match.name;
       });
       setColumnMapping(autoMapping);
@@ -664,38 +683,46 @@ const Profile = () => {
   };
 
   const handleColumnMappingChange = (csvHeader, dbColumn) => {
-    setColumnMapping(prev => ({ ...prev, [csvHeader]: dbColumn || undefined }));
+    setColumnMapping((prev) => ({ ...prev, [csvHeader]: dbColumn || undefined }));
   };
 
   const handleImport = async () => {
-    if (!csvData || csvData.length === 0) { setSettingsError('No data to import'); return; }
+    if (!csvData || csvData.length === 0) {
+      setSettingsError("No data to import");
+      return;
+    }
     setImportLoading(true);
-    setSettingsError('');
+    setSettingsError("");
     setImportResult(null);
     try {
-      const transformedData = csvData.map(row => {
-        const newRow = {};
-        Object.entries(columnMapping).forEach(([csvH, dbCol]) => {
-          if (dbCol && row[csvH] !== undefined) newRow[dbCol] = row[csvH];
-        });
-        return newRow;
-      }).filter(row => Object.keys(row).length > 0);
+      const transformedData = csvData
+        .map((row) => {
+          const newRow = {};
+          Object.entries(columnMapping).forEach(([csvH, dbCol]) => {
+            if (dbCol && row[csvH] !== undefined) newRow[dbCol] = row[csvH];
+          });
+          return newRow;
+        })
+        .filter((row) => Object.keys(row).length > 0);
       const res = await schemaAPI.bulkImport(selectedTable, transformedData);
       setImportResult(res.data);
       if (res.data.imported > 0) {
         setSettingsSuccess(`Imported ${res.data.imported} records!`);
-        setTimeout(() => setSettingsSuccess(''), 5000);
+        setTimeout(() => setSettingsSuccess(""), 5000);
       }
     } catch (err) {
-      setSettingsError(err.response?.data?.detail || 'Import failed');
+      setSettingsError(err.response?.data?.detail || "Import failed");
     } finally {
       setImportLoading(false);
     }
   };
 
   const resetImport = () => {
-    setCsvData(null); setCsvHeaders([]); setColumnMapping({}); setImportResult(null);
-    if (csvFileInputRef.current) csvFileInputRef.current.value = '';
+    setCsvData(null);
+    setCsvHeaders([]);
+    setColumnMapping({});
+    setImportResult(null);
+    if (csvFileInputRef.current) csvFileInputRef.current.value = "";
   };
 
   // ─── 10 USER SYNC HELPER ─────────────────────────────────────────────────
@@ -704,11 +731,11 @@ const Profile = () => {
     try {
       const response = await employeesAPI.getUserData(user.id);
       const refreshedUser = response?.data ?? response;
-      if (!refreshedUser || typeof refreshedUser !== 'object') return;
+      if (!refreshedUser || typeof refreshedUser !== "object") return;
       const mergedUser = { ...user, ...refreshedUser };
       setUser(mergedUser);
-      if (localStorage.getItem('user')) localStorage.setItem('user', JSON.stringify(mergedUser));
-      if (sessionStorage.getItem('user')) sessionStorage.setItem('user', JSON.stringify(mergedUser));
+      if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
+      if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
     } catch {
       // silently degrade
     }
@@ -723,7 +750,7 @@ const Profile = () => {
   // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
   // Load pay slips when wages accordion opens
   useEffect(() => {
-    if (openAccordion !== 'wages' || !user?.id) return;
+    if (openAccordion !== "wages" || !user?.id) return;
     let cancelled = false;
     const load = async () => {
       setPaySlipsLoading(true);
@@ -737,22 +764,21 @@ const Profile = () => {
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [openAccordion, user?.id]);
 
   // ─── 12 LEAVE REQUEST EFFECTS & HANDLERS ─────────────────────────────────
   // Load leave requests whenever benefits accordion opens or Leave Management modal opens
   useEffect(() => {
-    if ((openAccordion !== 'benefits' && !leaveManagementOpen) || !user?.id) return;
+    if ((openAccordion !== "benefits" && !leaveManagementOpen) || !user?.id) return;
     let cancelled = false;
     const load = async () => {
       setLeaveRequestsLoading(true);
       try {
         await syncCurrentUser();
-        const [vacRes, sickRes] = await Promise.all([
-          leaveRequestsAPI.getByUser(user.id, 'vacation'),
-          leaveRequestsAPI.getByUser(user.id, 'sick'),
-        ]);
+        const [vacRes, sickRes] = await Promise.all([leaveRequestsAPI.getByUser(user.id, "vacation"), leaveRequestsAPI.getByUser(user.id, "sick")]);
         if (cancelled) return;
         setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
         setSickRequests(Array.isArray(sickRes?.data) ? sickRes.data : []);
@@ -763,17 +789,16 @@ const Profile = () => {
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [openAccordion, leaveManagementOpen, user?.id]);
 
   const refreshLeaveRequests = async () => {
     if (!user?.id) return;
     setLeaveRequestsLoading(true);
     try {
-      const [vacRes, sickRes] = await Promise.all([
-        leaveRequestsAPI.getByUser(user.id, 'vacation'),
-        leaveRequestsAPI.getByUser(user.id, 'sick'),
-      ]);
+      const [vacRes, sickRes] = await Promise.all([leaveRequestsAPI.getByUser(user.id, "vacation"), leaveRequestsAPI.getByUser(user.id, "sick")]);
       setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
       setSickRequests(Array.isArray(sickRes?.data) ? sickRes.data : []);
     } catch {
@@ -787,21 +812,21 @@ const Profile = () => {
     e.preventDefault();
     if (!user?.id) return;
     setLeaveSubmitting(true);
-    setLeaveError('');
+    setLeaveError("");
     try {
-      const isLeave = leaveModalType === 'vacation' || leaveModalType === 'sick';
+      const isLeave = leaveModalType === "vacation" || leaveModalType === "sick";
 
       if (isLeave) {
         const start = new Date(leaveForm.start_date);
         const end = new Date(leaveForm.end_date);
         if (end < start) {
-          setLeaveError('End date must be on or after start date.');
+          setLeaveError("End date must be on or after start date.");
           setLeaveSubmitting(false);
           return;
         }
         const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-        if (leaveModalType === 'vacation') {
+        if (leaveModalType === "vacation") {
           const remaining = Math.max(0, toNumber(user.vacation_days) - toNumber(user.vacation_days_used));
           if (daysRequested > remaining) {
             setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
@@ -825,31 +850,31 @@ const Profile = () => {
           end_date: leaveForm.end_date,
           days_requested: daysRequested,
           notes: leaveForm.notes || null,
-          status: 'pending',
+          status: "pending",
         });
         await refreshLeaveRequests();
-      } else if (leaveModalType === 'onboarding') {
+      } else if (leaveModalType === "onboarding") {
         await onboardingRequestsAPI.create({
           user_id: user.id,
           supervisor_id: user.reports_to || null,
           request_date: leaveForm.start_date || null,
           notes: leaveForm.notes || null,
-          status: 'pending',
+          status: "pending",
         });
-      } else if (leaveModalType === 'offboarding') {
+      } else if (leaveModalType === "offboarding") {
         await offboardingRequestsAPI.create({
           user_id: user.id,
           supervisor_id: user.reports_to || null,
           request_date: leaveForm.start_date || null,
           notes: leaveForm.notes || null,
-          status: 'pending',
+          status: "pending",
         });
       }
 
       setShowLeaveModal(false);
-      setLeaveForm({ start_date: '', end_date: '', notes: '' });
+      setLeaveForm({ start_date: "", end_date: "", notes: "" });
     } catch (err) {
-      setLeaveError(err?.response?.data?.detail || 'Failed to submit request.');
+      setLeaveError(err?.response?.data?.detail || "Failed to submit request.");
     } finally {
       setLeaveSubmitting(false);
     }
@@ -859,32 +884,32 @@ const Profile = () => {
   const handleSwitchEnvironment = async (env) => {
     if (env === currentDbEnvironment || !user?.id) return;
     setDbLoading(true);
-    setDbMessage('');
-    setDbError('');
+    setDbMessage("");
+    setDbError("");
     try {
       await employeesAPI.updateUser(user.id, { db_environment: env });
       setUser({ ...user, db_environment: env });
       setDbMessage(`Database preference updated to ${DB_ENVIRONMENTS[env]?.name || env}.`);
-      setTimeout(() => setDbMessage(''), 3000);
+      setTimeout(() => setDbMessage(""), 3000);
     } catch (error) {
-      const detail = error?.response?.data?.detail || error?.message || 'Failed to update database preference';
+      const detail = error?.response?.data?.detail || error?.message || "Failed to update database preference";
       setDbError(detail);
-      setTimeout(() => setDbError(''), 5000);
+      setTimeout(() => setDbError(""), 5000);
     } finally {
       setDbLoading(false);
     }
   };
 
   const handleAddToHomeScreen = async () => {
-    setInstallMessage('');
-    setInstallError('');
+    setInstallMessage("");
+    setInstallError("");
     const mobileEnv = getMobileEnvironment();
     if (!mobileEnv.isMobileViewport) {
-      setInstallError('Add to Home Screen is available on mobile devices.');
+      setInstallError("Add to Home Screen is available on mobile devices.");
       return;
     }
     if (mobileEnv.isStandalone) {
-      setInstallMessage('This app is already installed on your home screen.');
+      setInstallMessage("This app is already installed on your home screen.");
       return;
     }
     const deferredPrompt = window.__pwaDeferredPrompt;
@@ -895,13 +920,13 @@ const Profile = () => {
     try {
       deferredPrompt.prompt();
       const result = await deferredPrompt.userChoice;
-      if (result?.outcome === 'accepted') {
-        setInstallMessage('Installation started. Open the app from your home screen once complete.');
+      if (result?.outcome === "accepted") {
+        setInstallMessage("Installation started. Open the app from your home screen once complete.");
       } else {
         setInstallMessage(mobileEnv.installHint);
       }
     } catch {
-      setInstallError('Unable to open install prompt. Please use your browser menu to add to home screen.');
+      setInstallError("Unable to open install prompt. Please use your browser menu to add to home screen.");
     }
   };
 
@@ -909,23 +934,23 @@ const Profile = () => {
     setEmployeeColor(newColor);
     applyActiveColorTheme(newColor);
     setColorUpdating(true);
-    setColorMessage('');
+    setColorMessage("");
     try {
       await employeesAPI.updateUser(user.id, { color: newColor });
       const updatedUser = { ...user, color: newColor };
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      sessionStorage.setItem('user', JSON.stringify(updatedUser));
-      setColorMessage('Calendar color updated!');
-      setTimeout(() => setColorMessage(''), 2000);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      setColorMessage("Calendar color updated!");
+      setTimeout(() => setColorMessage(""), 2000);
       return true;
     } catch (error) {
-      const detail = error?.response?.data?.detail || error?.message || 'Failed to update color';
+      const detail = error?.response?.data?.detail || error?.message || "Failed to update color";
       setColorMessage(detail);
-      const fallbackColor = user?.color || '#3B82F6';
+      const fallbackColor = user?.color || "#3B82F6";
       setEmployeeColor(fallbackColor);
       applyActiveColorTheme(fallbackColor);
-      setTimeout(() => setColorMessage(''), 3000);
+      setTimeout(() => setColorMessage(""), 3000);
       return false;
     } finally {
       setColorUpdating(false);
@@ -941,16 +966,10 @@ const Profile = () => {
   // Finalize performance report when Profile is fully loaded
   useEffect(() => {
     if (getPerformanceSessionActive()) {
-      const trackedSections = [
-        'Employee Information Section',
-        'Theme Settings Section',
-        'Database Environment Section',
-        'Install App Section',
-        'Access Token Section'
-      ];
+      const trackedSections = ["Employee Information Section", "Theme Settings Section", "Database Environment Section", "Install App Section", "Access Token Section"];
       const checkSections = () => {
         const checkInterval = setInterval(() => {
-          trackedSections.forEach(section => {
+          trackedSections.forEach((section) => {
             if (getPerformanceSessionActive()) logComponentLoad(section);
           });
           clearInterval(checkInterval);
@@ -958,7 +977,9 @@ const Profile = () => {
       };
       checkSections();
       const rafId = requestAnimationFrame(() => {
-        setTimeout(() => { finalizePerformanceReport(); }, 300);
+        setTimeout(() => {
+          finalizePerformanceReport();
+        }, 300);
       });
       return () => cancelAnimationFrame(rafId);
     }
@@ -981,19 +1002,26 @@ const Profile = () => {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const getRoleBadgeColor = (role) => {
     switch (role?.toLowerCase()) {
-      case 'admin': return 'danger';
-      case 'manager': return 'warning';
-      case 'employee': return 'primary';
-      case 'viewer': return 'secondary';
-      default: return 'secondary';
+      case "admin":
+        return "danger";
+      case "manager":
+        return "warning";
+      case "employee":
+        return "primary";
+      case "viewer":
+        return "secondary";
+      default:
+        return "secondary";
     }
   };
 
@@ -1005,15 +1033,15 @@ const Profile = () => {
   const sickRemaining = Math.max(0, sickTotal - sickUsed);
 
   const openLeaveModal = (type) => {
-    const defaultType = type || (vacRemaining > 0 ? 'vacation' : (sickRemaining > 0 ? 'sick' : 'onboarding'));
+    const defaultType = type || (vacRemaining > 0 ? "vacation" : sickRemaining > 0 ? "sick" : "onboarding");
     setLeaveModalType(defaultType);
-    setLeaveForm({ start_date: '', end_date: '', notes: '' });
-    setLeaveError('');
+    setLeaveForm({ start_date: "", end_date: "", notes: "" });
+    setLeaveError("");
     setShowLeaveModal(true);
   };
 
-  const canAccessSettings = hasPermission('settings', 'read');
-  const canAccessGeneralSettings = ['manager', 'admin'].includes((user?.role || '').toLowerCase());
+  const canAccessSettings = hasPermission("settings", "read");
+  const canAccessGeneralSettings = ["manager", "admin"].includes((user?.role || "").toLowerCase());
 
   // All panels clear the entire footer so every tab row stays visible and tappable.
   // Ensure minimum footer height for mobile - use at least 80px (one row of buttons)
@@ -1022,298 +1050,303 @@ const Profile = () => {
 
   // Shared panel style for all settings panels
   const settingsPanelStyle = {
-    position: 'fixed',
+    position: "fixed",
     top: 0,
     bottom: `${totalFooterHeight}px`,
     left: 0,
     right: 0,
-    width: '100%',
+    width: "100%",
     height: `calc(var(--vvp-height, 100dvh) - ${totalFooterHeight}px)`,
-    overflowY: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-    backgroundColor: 'var(--bs-body-bg)',
+    overflowY: "auto",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    backgroundColor: "var(--bs-body-bg)",
     zIndex: 1000,
-    paddingTop: '1rem',
-    paddingLeft: '1rem',
-    paddingRight: '1rem',
-    paddingBottom: '0.25rem',
-    display: 'flex',
-    flexDirection: 'column',
+    paddingTop: "1rem",
+    paddingLeft: "1rem",
+    paddingRight: "1rem",
+    paddingBottom: "0.25rem",
+    display: "flex",
+    flexDirection: "column",
   };
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: '100%' }}>
-      
+    <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: "100%" }}>
       {/* Main Content Area */}
       <div className="flex-grow-1"></div>
 
       {/* Floating Content Panels */}
       {/* Profile Content */}
-      {openAccordion === 'profile' && (
-        <div 
-          className="accordion-popup" 
-          style={{ 
-            position: 'fixed',
-            top: 0,
-            bottom: `${row1PanelBottom}px`,
-            left: 0,
-            right: 0,
-            width: '100%',
-            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
-            overflowY: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-body-bg)',
-            zIndex: 1000,
-            paddingTop: '1rem',
-            paddingLeft: '1rem',
-            paddingRight: '1rem',
-            paddingBottom: '0.25rem',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-          <div style={{ flexShrink: 0, overflowY: 'auto', minHeight: 0 }}>
-              <div className="row">
-                <div className="col-sm-6">
-                  <div className="flex wrap mb-1">
-                    <UserIcon className="w-4" /> <div className="fw-medium p-1">{user.first_name} {user.last_name}</div>
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="flex wrap mb-1">
-                    <BriefcaseIcon className="w-4" />
-                    <span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>
-                      {user.role || 'Employee'}
-                    </span>
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="flex wrap mb-1">
-                    <EnvelopeIcon className="w-4" /><div className="fw-medium p-1">{user.email || 'Not set'}</div>
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="flex wrap mb-1">
-                    <PhoneIcon className="w-4" /><div className="fw-medium p-1">{user.phone || 'Not set'}</div>
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="flex wrap mb-1">
-                    <CalendarDaysIcon className="w-4" /><div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="flex wrap mb-1">
-                    <ClockIcon className="w-4" /><div className="fw-medium p-1">{formatDate(user.last_login)}</div>
-                  </div>
-                </div>
-              </div>
-              <hr className="my-2" />
-              <h6 className="fw-semibold mb-2">Details</h6>
-              <div className="row g-2">
-                <div className="col-sm-6">
-                  <div className="text-muted small">Username</div>
-                  <div className="fw-medium">{user.username || 'Not set'}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">Employee ID</div>
-                  <div className="fw-medium">{user.id || 'N/A'}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">Location</div>
-                  <div className="fw-medium">{user.location || 'Not set'}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">IOD Number</div>
-                  <div className="fw-medium">{user.iod_number || 'Not set'}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">Reports To</div>
-                  <div className="fw-medium">{user.reports_to_name || user.reports_to || 'Not set'}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">Active</div>
-                  <div className="fw-medium">{user.is_active === false ? 'No' : 'Yes'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-      {/* Benefits Content */}
-      {openAccordion === 'benefits' && (
-        <div 
-          className="accordion-popup" 
-          style={{ 
-            position: 'fixed',
-            top: 0,
-            bottom: `${row1PanelBottom}px`,
-            left: 0,
-            right: 0,
-            width: '100%',
-            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
-            overflowY: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-body-bg)',
-            zIndex: 1000,
-            paddingTop: '1rem',
-            paddingLeft: '1rem',
-            paddingRight: '1rem',
-            paddingBottom: '0.25rem',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-          <div style={{ flexShrink: 0, overflowY: 'auto', minHeight: 0 }}>
-
-              {/* Salary / Pay / Insurance */}
-              <div className="row g-2 mb-3">
-                <div className="col-sm-6">
-                  <div className="text-muted small">Salary</div>
-                  <div className="fw-medium">
-                    {user.salary != null ? `$${Number(user.salary).toLocaleString()}` : 'Not set'}
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">Pay Frequency</div>
-                  <div className="fw-medium" style={{ textTransform: 'capitalize' }}>
-                    {user.pay_frequency || 'Not set'}
-                  </div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small">Insurance Plan</div>
-                  <div className="fw-medium">{user.insurance_plan || 'Not set'}</div>
-                </div>
-              </div>
-
-              {/* Leave Management */}
-              <div className="border-top pt-3">
-                <h6 className="fw-semibold mb-3">Leave Management</h6>
-                
-                {leaveRequestsLoading ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                  </div>
-                ) : (
-                  <>
-                    {/* Leave Summary */}
-                    <div className="row g-2 mb-3">
-                      <div className="col-6">
-                        <div className="bg-light rounded p-2 small">
-                          <div className="fw-semibold text-primary">Vacation Days</div>
-                          <div className="text-muted small mb-1">{vacUsed} / {vacTotal} used</div>
-                          <div className="progress" style={{ height: '4px' }}>
-                            <div className="progress-bar bg-primary" style={{
-                              width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`
-                            }} />
-                          </div>
-                          <div className="text-muted small mt-1">{vacRemaining} remaining</div>
-                        </div>
-                      </div>
-                      <div className="col-6">
-                        <div className="bg-light rounded p-2 small">
-                          <div className="fw-semibold text-warning">Sick Days</div>
-                          <div className="text-muted small mb-1">{sickUsed} / {sickTotal} used</div>
-                          <div className="progress" style={{ height: '4px' }}>
-                            <div className="progress-bar bg-warning" style={{
-                              width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`
-                            }} />
-                          </div>
-                          <div className="text-muted small mt-1">{sickRemaining} remaining</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Pending Requests Table */}
-                    <div className="mb-3">
-                      <h6 className="small fw-semibold mb-2">Pending Requests</h6>
-                      {vacationRequests.filter(r => r.status === 'pending').length === 0 && sickRequests.filter(r => r.status === 'pending').length === 0 ? (
-                        <p className="text-muted small mb-0">No pending requests</p>
-                      ) : (
-                        <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                          <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
-                            <thead className="table-light">
-                              <tr>
-                                <th>Type</th>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Days</th>
-                                <th>Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {[...vacationRequests, ...sickRequests]
-                                .filter(r => r.status === 'pending')
-                                .map(req => (
-                                  <tr key={req.id}>
-                                    <td>{req.leave_type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
-                                    <td>{req.start_date}</td>
-                                    <td>{req.end_date}</td>
-                                    <td>{req.days_requested ?? '—'}</td>
-                                    <td>
-                                      <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: '0.7rem' }}>
-                                        {req.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))
-                              }
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Button */}
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm w-100"
-                      onClick={() => openLeaveModal()}
-                    >
-                      <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: 'inline' }} />
-                      Request Leave
-                    </button>
-                  </>
-                )}
-              </div>
-
-            </div>
-          </div>
-        )}
-
-      {/* Wages Content */}
-      {openAccordion === 'wages' && (
+      {openAccordion === "profile" && (
         <div
           className="accordion-popup"
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
-            width: '100%',
+            width: "100%",
             height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
-            overflowY: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-body-bg)',
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            backgroundColor: "var(--bs-body-bg)",
             zIndex: 1000,
-            paddingTop: '1rem',
-            paddingLeft: '1rem',
-            paddingRight: '1rem',
-            paddingBottom: '0.25rem',
-            display: 'flex',
-            flexDirection: 'column',
+            paddingTop: "1rem",
+            paddingLeft: "1rem",
+            paddingRight: "1rem",
+            paddingBottom: "0.25rem",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-          <div style={{ flexShrink: 0, overflowY: 'auto', minHeight: 0 }}>
+          <div style={{ flexShrink: 0, overflowY: "auto", minHeight: 0 }}>
+            <div className="row">
+              <div className="col-sm-6">
+                <div className="flex wrap mb-1">
+                  <UserIcon className="w-4" />{" "}
+                  <div className="fw-medium p-1">
+                    {user.first_name} {user.last_name}
+                  </div>
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="flex wrap mb-1">
+                  <BriefcaseIcon className="w-4" />
+                  <span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>{user.role || "Employee"}</span>
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="flex wrap mb-1">
+                  <EnvelopeIcon className="w-4" />
+                  <div className="fw-medium p-1">{user.email || "Not set"}</div>
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="flex wrap mb-1">
+                  <PhoneIcon className="w-4" />
+                  <div className="fw-medium p-1">{user.phone || "Not set"}</div>
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="flex wrap mb-1">
+                  <CalendarDaysIcon className="w-4" />
+                  <div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="flex wrap mb-1">
+                  <ClockIcon className="w-4" />
+                  <div className="fw-medium p-1">{formatDate(user.last_login)}</div>
+                </div>
+              </div>
+            </div>
+            <hr className="my-2" />
+            <h6 className="fw-semibold mb-2">Details</h6>
+            <div className="row g-2">
+              <div className="col-sm-6">
+                <div className="text-muted small">Username</div>
+                <div className="fw-medium">{user.username || "Not set"}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Employee ID</div>
+                <div className="fw-medium">{user.id || "N/A"}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Location</div>
+                <div className="fw-medium">{user.location || "Not set"}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">IOD Number</div>
+                <div className="fw-medium">{user.iod_number || "Not set"}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Reports To</div>
+                <div className="fw-medium">{user.reports_to_name || user.reports_to || "Not set"}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Active</div>
+                <div className="fw-medium">{user.is_active === false ? "No" : "Yes"}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Benefits Content */}
+      {openAccordion === "benefits" && (
+        <div
+          className="accordion-popup"
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: `${row1PanelBottom}px`,
+            left: 0,
+            right: 0,
+            width: "100%",
+            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            backgroundColor: "var(--bs-body-bg)",
+            zIndex: 1000,
+            paddingTop: "1rem",
+            paddingLeft: "1rem",
+            paddingRight: "1rem",
+            paddingBottom: "0.25rem",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, overflowY: "auto", minHeight: 0 }}>
+            {/* Salary / Pay / Insurance */}
+            <div className="row g-2 mb-3">
+              <div className="col-sm-6">
+                <div className="text-muted small">Salary</div>
+                <div className="fw-medium">{user.salary != null ? `$${Number(user.salary).toLocaleString()}` : "Not set"}</div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Pay Frequency</div>
+                <div className="fw-medium" style={{ textTransform: "capitalize" }}>
+                  {user.pay_frequency || "Not set"}
+                </div>
+              </div>
+              <div className="col-sm-6">
+                <div className="text-muted small">Insurance Plan</div>
+                <div className="fw-medium">{user.insurance_plan || "Not set"}</div>
+              </div>
+            </div>
+
+            {/* Leave Management */}
+            <div className="border-top pt-3">
+              <h6 className="fw-semibold mb-3">Leave Management</h6>
+
+              {leaveRequestsLoading ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                </div>
+              ) : (
+                <>
+                  {/* Leave Summary */}
+                  <div className="row g-2 mb-3">
+                    <div className="col-6">
+                      <div className="bg-light rounded p-2 small">
+                        <div className="fw-semibold text-primary">Vacation Days</div>
+                        <div className="text-muted small mb-1">
+                          {vacUsed} / {vacTotal} used
+                        </div>
+                        <div className="progress" style={{ height: "4px" }}>
+                          <div
+                            className="progress-bar bg-primary"
+                            style={{
+                              width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="text-muted small mt-1">{vacRemaining} remaining</div>
+                      </div>
+                    </div>
+                    <div className="col-6">
+                      <div className="bg-light rounded p-2 small">
+                        <div className="fw-semibold text-warning">Sick Days</div>
+                        <div className="text-muted small mb-1">
+                          {sickUsed} / {sickTotal} used
+                        </div>
+                        <div className="progress" style={{ height: "4px" }}>
+                          <div
+                            className="progress-bar bg-warning"
+                            style={{
+                              width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="text-muted small mt-1">{sickRemaining} remaining</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pending Requests Table */}
+                  <div className="mb-3">
+                    <h6 className="small fw-semibold mb-2">Pending Requests</h6>
+                    {vacationRequests.filter((r) => r.status === "pending").length === 0 && sickRequests.filter((r) => r.status === "pending").length === 0 ? (
+                      <p className="text-muted small mb-0">No pending requests</p>
+                    ) : (
+                      <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                        <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>Type</th>
+                              <th>From</th>
+                              <th>To</th>
+                              <th>Days</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...vacationRequests, ...sickRequests]
+                              .filter((r) => r.status === "pending")
+                              .map((req) => (
+                                <tr key={req.id}>
+                                  <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
+                                  <td>{req.start_date}</td>
+                                  <td>{req.end_date}</td>
+                                  <td>{req.days_requested ?? "—"}</td>
+                                  <td>
+                                    <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
+                                      {req.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <button type="button" className="btn btn-primary btn-sm w-100" onClick={() => openLeaveModal()}>
+                    <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
+                    Request Leave
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wages Content */}
+      {openAccordion === "wages" && (
+        <div
+          className="accordion-popup"
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: `${row1PanelBottom}px`,
+            left: 0,
+            right: 0,
+            width: "100%",
+            height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            backgroundColor: "var(--bs-body-bg)",
+            zIndex: 1000,
+            paddingTop: "1rem",
+            paddingLeft: "1rem",
+            paddingRight: "1rem",
+            paddingBottom: "0.25rem",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
+          <div style={{ flexShrink: 0, overflowY: "auto", minHeight: 0 }}>
             <h6 className="fw-semibold mb-3">Wage History</h6>
             {paySlipsLoading ? (
               <div className="text-center py-4">
@@ -1322,8 +1355,8 @@ const Profile = () => {
             ) : paySlips.length === 0 ? (
               <p className="text-muted small">No pay slips on record.</p>
             ) : (
-              <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+              <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
                   <thead className="table-light">
                     <tr>
                       <th>Period</th>
@@ -1334,19 +1367,14 @@ const Profile = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paySlips.map(slip => (
+                    {paySlips.map((slip) => (
                       <tr key={slip.id}>
-                        <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : '—'}</td>
+                        <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
                         <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                         <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                         <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                         <td>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-secondary py-0 px-1"
-                            style={{ fontSize: '0.7rem' }}
-                            onClick={() => setSelectedSlip(slip)}
-                          >
+                          <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1" style={{ fontSize: "0.7rem" }} onClick={() => setSelectedSlip(slip)}>
                             View
                           </button>
                         </td>
@@ -1361,136 +1389,119 @@ const Profile = () => {
       )}
 
       {/* Settings Content */}
-      {openAccordion === 'settings' && (
-        <div 
-          className="accordion-popup" 
-          style={{ 
-            position: 'fixed',
+      {openAccordion === "settings" && (
+        <div
+          className="accordion-popup"
+          style={{
+            position: "fixed",
             top: 0,
             bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
-            width: '100%',
+            width: "100%",
             height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
-            overflowY: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-body-bg)',
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            backgroundColor: "var(--bs-body-bg)",
             zIndex: 1000,
-            paddingTop: '1rem',
-            paddingLeft: '1rem',
-            paddingRight: '1rem',
-            paddingBottom: '0.25rem',
-            boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-            
-            display: 'flex',
-            flexDirection: 'column'
+            paddingTop: "1rem",
+            paddingLeft: "1rem",
+            paddingRight: "1rem",
+            paddingBottom: "0.25rem",
+            boxShadow: "0 -2px 10px rgba(0,0,0,0.1)",
+
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           {/* Database Environment - Top */}
           <div className="d-flex align-items-center flex-wrap gap-1 mb-2">
-              <span className="text-muted small me-1">Environment</span>
-              {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
-                const isCurrent = key === currentDbEnvironment;
-                return (
-                  <span
-                    key={key}
-                    role="radio"
-                    aria-checked={isCurrent}
-                    tabIndex={0}
-                    className={`badge rounded-pill px-3 py-2 ${isCurrent ? 'bg-primary text-white' : 'bg-transparent text-secondary border'}`}
-                    style={{ cursor: isCurrent || dbLoading ? 'default' : 'pointer', fontSize: '0.8rem', transition: 'all 0.15s ease', userSelect: 'none' }}
-                    onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isCurrent && !dbLoading && handleSwitchEnvironment(key); } }}
-                  >
-                    {env.name}
-                  </span>
-                );
-              })}
-              {dbLoading && (
-                <div className="spinner-border spinner-border-sm text-primary" role="status">
-                  <span className="visually-hidden">Updating...</span>
-                </div>
-              )}
-            </div>
-            {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
-            {dbError && <div className="small text-danger mt-1">{dbError}</div>}
+            <span className="text-muted small me-1">Environment</span>
+            {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
+              const isCurrent = key === currentDbEnvironment;
+              return (
+                <span
+                  key={key}
+                  role="radio"
+                  aria-checked={isCurrent}
+                  tabIndex={0}
+                  className={`badge rounded-pill px-3 py-2 ${isCurrent ? "bg-primary text-white" : "bg-transparent text-secondary border"}`}
+                  style={{ cursor: isCurrent || dbLoading ? "default" : "pointer", fontSize: "0.8rem", transition: "all 0.15s ease", userSelect: "none" }}
+                  onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      !isCurrent && !dbLoading && handleSwitchEnvironment(key);
+                    }
+                  }}
+                >
+                  {env.name}
+                </span>
+              );
+            })}
+            {dbLoading && (
+              <div className="spinner-border spinner-border-sm text-primary" role="status">
+                <span className="visually-hidden">Updating...</span>
+              </div>
+            )}
+          </div>
+          {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
+          {dbError && <div className="small text-danger mt-1">{dbError}</div>}
 
           {/* Spacer */}
           <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }}></div>
 
           {/* Action Buttons - Bottom */}
-          <div className="d-flex align-items-center justify-content-start gap-1 mb-3 flex-wrap" style={{ minHeight: '3rem' }}>
+          <div className="d-flex align-items-center justify-content-start gap-1 mb-3 flex-wrap" style={{ minHeight: "3rem" }}>
             {/* Dark Mode Toggle */}
-            <Button_Toolbar
-              icon={isDarkMode ? MoonIcon : SunIcon}
-              label={isDarkMode ? 'Light' : 'Dark'}
-              onClick={toggleDarkMode}
-              className={`settings-accordion-btn ${isDarkMode ? 'text-white' : ''}`}
-              style={{ backgroundColor: isDarkMode ? '#3B82F6' : '#F59E0B', border: 'none' }}
-            />
+            <Button_Toolbar icon={isDarkMode ? MoonIcon : SunIcon} label={isDarkMode ? "Light" : "Dark"} onClick={toggleDarkMode} className={`settings-accordion-btn ${isDarkMode ? "text-white" : ""}`} style={{ backgroundColor: isDarkMode ? "#3B82F6" : "#F59E0B", border: "none" }} />
 
             {/* Calendar Color */}
             <div className="position-relative">
               <Button_Toolbar
                 icon={CalendarDaysIcon}
                 label="Color"
-                onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(prev => !prev); }}
+                onClick={() => {
+                  setPendingColor(employeeColor);
+                  setColorPickerOpen((prev) => !prev);
+                }}
                 className="settings-accordion-btn"
-                style={{ backgroundColor: employeeColor, border: '0px solid var(--bs-border-color, #dee2e6)', color: 'white' }}
+                style={{ backgroundColor: employeeColor, border: "0px solid var(--bs-border-color, #dee2e6)", color: "white" }}
                 disabled={colorUpdating}
                 aria-expanded={colorPickerOpen}
               />
               {colorPickerOpen && (
-                <div
-                  className="position-absolute bottom-100 mb-5 start-0  border bg-white dark:bg-gray-800 shadow-lg d-flex justify-content-start gap-4"
-                  style={{ zIndex: 10, borderBottomRightRadius: '3rem', borderTopRightRadius: '3rem' }}
-                >
+                <div className="position-absolute bottom-100 mb-5 start-0  border bg-white dark:bg-gray-800 shadow-lg d-flex justify-content-start gap-4" style={{ zIndex: 10, borderBottomRightRadius: "3rem", borderTopRightRadius: "3rem" }}>
                   <div className="d-flex align-items-center gap-1 ">
-                    <input
-                      type="color"
-                      value={pendingColor}
-                      onChange={(e) => setPendingColor(e.target.value)}
-                      className=""
-                      style={{ width: '3rem', height: '3rem', padding: '0px', cursor: colorUpdating ? 'not-allowed' : 'pointer', opacity: colorUpdating ? 0.6 : 1 }}
-                      disabled={colorUpdating}
-                    />
+                    <input type="color" value={pendingColor} onChange={(e) => setPendingColor(e.target.value)} className="" style={{ width: "3rem", height: "3rem", padding: "0px", cursor: colorUpdating ? "not-allowed" : "pointer", opacity: colorUpdating ? 0.6 : 1 }} disabled={colorUpdating} />
                     <span className="small text-muted">{pendingColor.toUpperCase()}</span>
                   </div>
                   <div className="d-flex gap-2 justify-content-end">
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary"
-                      onClick={() => { setPendingColor(employeeColor); setColorPickerOpen(false); }}
+                      onClick={() => {
+                        setPendingColor(employeeColor);
+                        setColorPickerOpen(false);
+                      }}
                       disabled={colorUpdating}
-                    >Cancel</button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={handleColorSave}
-                      disabled={colorUpdating}
-                    >Save</button>
+                    >
+                      Cancel
+                    </button>
+                    <button type="button" className="btn btn-sm btn-primary" onClick={handleColorSave} disabled={colorUpdating}>
+                      Save
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Footer Align Cycle */}
-            <Button_Toolbar
-              icon={FooterAlignIcon}
-              label="Align"
-              onClick={cycleFooterAlign}
-              className="settings-accordion-btn btn-outline-secondary"
-              title="Cycle footer alignment"
-            />
+            <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="settings-accordion-btn btn-outline-secondary" title="Cycle footer alignment" />
 
             {/* Signature */}
-            <Button_Toolbar
-              icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon}
-              label="Signature"
-              onClick={() => setSignatureModalOpen(true)}
-              className="settings-accordion-btn btn-outline-secondary"
-            />
+            <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Signature" onClick={() => setSignatureModalOpen(true)} className="settings-accordion-btn btn-outline-secondary" />
 
             {/* Training / Compact Mode Toggle */}
             <button
@@ -1498,17 +1509,21 @@ const Profile = () => {
               onClick={async () => {
                 toggleViewMode();
                 if (user?.id) {
-                  try { await api.put(`/isud/user/${user.id}`, { training_mode: !isTrainingMode }); } catch (_) {}
+                  try {
+                    await api.put(`/isud/user/${user.id}`, { training_mode: !isTrainingMode });
+                  } catch (_) {}
                 }
               }}
               className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex justify-content-center align-items-center"
-              style={isTrainingMode ? { height: '3rem' } : { width: '3rem', minWidth: '3rem', height: '3rem' }}
-              title={isTrainingMode ? 'Switch to compact mode' : 'Switch to training mode'}
+              style={isTrainingMode ? { height: "3rem" } : { width: "3rem", minWidth: "3rem", height: "3rem" }}
+              title={isTrainingMode ? "Switch to compact mode" : "Switch to training mode"}
             >
               {isTrainingMode ? (
                 <>
                   <Squares2X2Icon className="h-5 w-5" />
-                  <span className="ms-1" style={{ fontSize: '0.78rem' }}>Compact</span>
+                  <span className="ms-1" style={{ fontSize: "0.78rem" }}>
+                    Compact
+                  </span>
                 </>
               ) : (
                 <BookOpenIcon className="h-5 w-5" />
@@ -1516,28 +1531,18 @@ const Profile = () => {
             </button>
 
             {/* Logout */}
-            <Button_Toolbar
-              icon={ArrowLeftOnRectangleIcon}
-              label="Log out"
-              onClick={handleLogout}
-              className="settings-accordion-btn btn-outline-secondary"
-            />
+            <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Log out" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" />
           </div>
 
-          {colorMessage && (
-            <div className={`small mb-2 ${colorMessage.includes('Failed') || colorMessage.includes('Error') ? 'text-danger' : 'text-success'}`}>
-              {colorMessage}
-            </div>
-          )}
+          {colorMessage && <div className={`small mb-2 ${colorMessage.includes("Failed") || colorMessage.includes("Error") ? "text-danger" : "text-success"}`}>{colorMessage}</div>}
         </div>
-        )}
+      )}
 
       {/* ── Schedule Panel ────────────────────────────────────────────────────── */}
-      {openAccordion === 'schedule' && canAccessSettings && (
+      {openAccordion === "schedule" && canAccessSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
           <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-          <div style={{ flexShrink: 0, width: '100%', overflowY: 'auto', minHeight: 0 }}>
-
+          <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <ClockIcon className="h-5 w-5" /> Schedule Settings
             </h2>
@@ -1549,15 +1554,11 @@ const Profile = () => {
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="form-floating">
-                  <input type="time" id="start_of_day" value={scheduleSettings.start_of_day}
-                    onChange={(e) => handleScheduleSettingsChange('start_of_day', e.target.value)}
-                    className="form-control form-control-sm" placeholder="Start of Day" />
+                  <input type="time" id="start_of_day" value={scheduleSettings.start_of_day} onChange={(e) => handleScheduleSettingsChange("start_of_day", e.target.value)} className="form-control form-control-sm" placeholder="Start of Day" />
                   <label htmlFor="start_of_day">Start of Day</label>
                 </div>
                 <div className="form-floating">
-                  <input type="time" id="end_of_day" value={scheduleSettings.end_of_day}
-                    onChange={(e) => handleScheduleSettingsChange('end_of_day', e.target.value)}
-                    className="form-control form-control-sm" placeholder="End of Day" />
+                  <input type="time" id="end_of_day" value={scheduleSettings.end_of_day} onChange={(e) => handleScheduleSettingsChange("end_of_day", e.target.value)} className="form-control form-control-sm" placeholder="End of Day" />
                   <label htmlFor="end_of_day">End of Day</label>
                 </div>
               </div>
@@ -1570,18 +1571,16 @@ const Profile = () => {
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { key: 'monday_enabled', label: 'Mon', fullLabel: 'Monday' },
-                  { key: 'tuesday_enabled', label: 'Tue', fullLabel: 'Tuesday' },
-                  { key: 'wednesday_enabled', label: 'Wed', fullLabel: 'Wednesday' },
-                  { key: 'thursday_enabled', label: 'Thu', fullLabel: 'Thursday' },
-                  { key: 'friday_enabled', label: 'Fri', fullLabel: 'Friday' },
-                  { key: 'saturday_enabled', label: 'Sat', fullLabel: 'Saturday' },
-                  { key: 'sunday_enabled', label: 'Sun', fullLabel: 'Sunday' },
-                ].map(day => (
+                  { key: "monday_enabled", label: "Mon", fullLabel: "Monday" },
+                  { key: "tuesday_enabled", label: "Tue", fullLabel: "Tuesday" },
+                  { key: "wednesday_enabled", label: "Wed", fullLabel: "Wednesday" },
+                  { key: "thursday_enabled", label: "Thu", fullLabel: "Thursday" },
+                  { key: "friday_enabled", label: "Fri", fullLabel: "Friday" },
+                  { key: "saturday_enabled", label: "Sat", fullLabel: "Saturday" },
+                  { key: "sunday_enabled", label: "Sun", fullLabel: "Sunday" },
+                ].map((day) => (
                   <div key={day.key} className="flex items-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <input type="checkbox" id={day.key} checked={scheduleSettings[day.key]}
-                      onChange={(e) => handleScheduleSettingsChange(day.key, e.target.checked)}
-                      className="h-4 w-4 rounded" />
+                    <input type="checkbox" id={day.key} checked={scheduleSettings[day.key]} onChange={(e) => handleScheduleSettingsChange(day.key, e.target.checked)} className="h-4 w-4 rounded" />
                     <label htmlFor={day.key} className="ml-2 text-sm font-medium cursor-pointer">
                       <span className="hidden sm:inline">{day.fullLabel}</span>
                       <span className="sm:hidden">{day.label}</span>
@@ -1602,21 +1601,13 @@ const Profile = () => {
                   <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" checked={scheduleSettings.attendance_check_in_required}
-                    onChange={(e) => handleScheduleSettingsChange('attendance_check_in_required', e.target.checked)}
-                    className="sr-only peer" />
+                  <input type="checkbox" checked={scheduleSettings.attendance_check_in_required} onChange={(e) => handleScheduleSettingsChange("attendance_check_in_required", e.target.checked)} className="sr-only peer" />
                   <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
             </div>
 
-            <Button_Toolbar
-              icon={CheckCircleIcon}
-              label={scheduleLoading ? 'Saving…' : 'Save'}
-              onClick={handleSaveScheduleSettings}
-              className="btn-primary"
-              disabled={scheduleLoading}
-            />
+            <Button_Toolbar icon={CheckCircleIcon} label={scheduleLoading ? "Saving…" : "Save"} onClick={handleSaveScheduleSettings} className="btn-primary" disabled={scheduleLoading} />
 
             <div className="mt-4">
               <ScheduleSettingsCard userId={user.id} />
@@ -1624,12 +1615,14 @@ const Profile = () => {
 
             {settingsError && (
               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800 text-sm">
-                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />{settingsError}
+                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                {settingsError}
               </div>
             )}
             {settingsSuccess && (
               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
-                <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />{settingsSuccess}
+                <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />
+                {settingsSuccess}
               </div>
             )}
           </div>
@@ -1637,25 +1630,22 @@ const Profile = () => {
       )}
 
       {/* ── General Panel ─────────────────────────────────────────────────────── */}
-      {openAccordion === 'general' && canAccessGeneralSettings && (
+      {openAccordion === "general" && canAccessGeneralSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
           <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-          <div style={{ flexShrink: 0, width: '100%', overflowY: 'auto', minHeight: 0 }}>
+          <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <CogIcon className="h-5 w-5" /> General Settings
             </h2>
 
             {/* Application */}
             <div className="mb-2">
-              <button onClick={() => toggleAccordion('application')}
-                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
-                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+              <button onClick={() => toggleAccordion("application")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
                 <div className="d-flex align-items-center gap-2">
                   <InformationCircleIcon className="h-5 w-5 text-blue-500" />
                   <span className="fw-medium">Application</span>
                 </div>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500"
-                  style={{ transition: 'transform 0.2s', transform: openAccordions.application ? 'rotate(180deg)' : 'none' }} />
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.application ? "rotate(180deg)" : "none" }} />
               </button>
               {openAccordions.application && (
                 <div className="accordion-popup py-3">
@@ -1669,7 +1659,7 @@ const Profile = () => {
                     <div className="col-6">
                       <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded">
                         <span className="small fw-medium">Environment</span>
-                        <span className="small text-muted">{import.meta.env.DEV ? 'Development' : 'Production'}</span>
+                        <span className="small text-muted">{import.meta.env.DEV ? "Development" : "Production"}</span>
                       </div>
                     </div>
                     <div className="col-12">
@@ -1679,36 +1669,22 @@ const Profile = () => {
                           <span className="small fw-medium">App Zoom</span>
                         </div>
                         <div className="d-flex align-items-center gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={cycleUiScale}
-                            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
-                            title="Increase zoom to the next preset"
-                          >
+                          <button type="button" onClick={cycleUiScale} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" title="Increase zoom to the next preset">
                             <MagnifyingGlassPlusIcon className="h-4 w-4" />
                             <span>{uiScale}%</span>
                           </button>
-                          <select
-                            value={uiScale}
-                            onChange={(e) => setUiScale(Number(e.target.value))}
-                            className="form-select form-select-sm"
-                            style={{ width: '7rem' }}
-                            aria-label="App zoom level"
-                          >
+                          <select value={uiScale} onChange={(e) => setUiScale(Number(e.target.value))} className="form-select form-select-sm" style={{ width: "7rem" }} aria-label="App zoom level">
                             {APP_ZOOM_LEVELS.map((zoomLevel) => (
-                              <option key={zoomLevel} value={zoomLevel}>{zoomLevel}%</option>
+                              <option key={zoomLevel} value={zoomLevel}>
+                                {zoomLevel}%
+                              </option>
                             ))}
                           </select>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleManualSync}
-                        disabled={syncLoading}
-                        className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
-                      >
+                      <button type="button" onClick={handleManualSync} disabled={syncLoading} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
                         <ArrowPathIcon className="h-4 w-4" />
-                        <span>{syncLoading ? 'Syncing…' : 'Sync Now'}</span>
+                        <span>{syncLoading ? "Syncing…" : "Sync Now"}</span>
                       </button>
                     </div>
                   </div>
@@ -1718,26 +1694,22 @@ const Profile = () => {
 
             {/* Company Info */}
             <div className="mb-2">
-              <button onClick={() => toggleAccordion('companyInfo')}
-                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
-                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+              <button onClick={() => toggleAccordion("companyInfo")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
                 <div className="d-flex align-items-center gap-2">
                   <BriefcaseIcon className="h-5 w-5 text-blue-600" />
                   <span className="fw-medium">Company Info</span>
                 </div>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500"
-                  style={{ transition: 'transform 0.2s', transform: openAccordions.companyInfo ? 'rotate(180deg)' : 'none' }} />
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.companyInfo ? "rotate(180deg)" : "none" }} />
               </button>
               {openAccordions.companyInfo && (
                 <div className="accordion-popup py-3">
                   {/* Company ID — read-only identifier used at login */}
                   {user?.company_id && (
                     <div className="d-flex align-items-center gap-2 mb-3 px-1">
-                      <span className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>Company ID</span>
-                      <span
-                        className="fw-bold text-sm px-3 py-1 rounded-pill"
-                        style={{ background: 'var(--bs-primary-bg-subtle, #1e3a5f)', color: 'var(--bs-primary, #6366f1)', border: '1px solid var(--bs-primary, #6366f1)', letterSpacing: '0.08em', fontFamily: 'monospace' }}
-                      >
+                      <span className="text-xs text-muted" style={{ whiteSpace: "nowrap" }}>
+                        Company ID
+                      </span>
+                      <span className="fw-bold text-sm px-3 py-1 rounded-pill" style={{ background: "var(--bs-primary-bg-subtle, #1e3a5f)", color: "var(--bs-primary, #6366f1)", border: "1px solid var(--bs-primary, #6366f1)", letterSpacing: "0.08em", fontFamily: "monospace" }}>
                         {user.company_id}
                       </span>
                       <span className="text-xs text-muted">(used at login)</span>
@@ -1745,46 +1717,29 @@ const Profile = () => {
                   )}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="form-floating">
-                      <input type="text" id="company_name" value={companyInfo.company_name}
-                        onChange={(e) => handleCompanyInfoChange('company_name', e.target.value)}
-                        className="form-control form-control-sm" placeholder="Company Name" />
+                      <input type="text" id="company_name" value={companyInfo.company_name} onChange={(e) => handleCompanyInfoChange("company_name", e.target.value)} className="form-control form-control-sm" placeholder="Company Name" />
                       <label htmlFor="company_name">Company Name</label>
                     </div>
                     <div className="form-floating">
-                      <input type="email" id="company_email" value={companyInfo.company_email}
-                        onChange={(e) => handleCompanyInfoChange('company_email', e.target.value)}
-                        className="form-control form-control-sm" placeholder="Company Email" />
+                      <input type="email" id="company_email" value={companyInfo.company_email} onChange={(e) => handleCompanyInfoChange("company_email", e.target.value)} className="form-control form-control-sm" placeholder="Company Email" />
                       <label htmlFor="company_email">Company Email</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="company_phone" value={companyInfo.company_phone}
-                        onChange={(e) => handleCompanyInfoChange('company_phone', e.target.value)}
-                        className="form-control form-control-sm" placeholder="Company Phone" />
+                      <input type="text" id="company_phone" value={companyInfo.company_phone} onChange={(e) => handleCompanyInfoChange("company_phone", e.target.value)} className="form-control form-control-sm" placeholder="Company Phone" />
                       <label htmlFor="company_phone">Company Phone</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="company_address" value={companyInfo.company_address}
-                        onChange={(e) => handleCompanyInfoChange('company_address', e.target.value)}
-                        className="form-control form-control-sm" placeholder="Company Address" />
+                      <input type="text" id="company_address" value={companyInfo.company_address} onChange={(e) => handleCompanyInfoChange("company_address", e.target.value)} className="form-control form-control-sm" placeholder="Company Address" />
                       <label htmlFor="company_address">Company Address</label>
                     </div>
                     <div className="form-floating">
-                      <input type="number" id="tax_rate" value={companyInfo.tax_rate}
-                        onChange={(e) => handleCompanyInfoChange('tax_rate', parseFloat(e.target.value) || 0)}
-                        className="form-control form-control-sm" placeholder="Tax Rate"
-                        min="0" max="100" step="0.01" />
+                      <input type="number" id="tax_rate" value={companyInfo.tax_rate} onChange={(e) => handleCompanyInfoChange("tax_rate", parseFloat(e.target.value) || 0)} className="form-control form-control-sm" placeholder="Tax Rate" min="0" max="100" step="0.01" />
                       <label htmlFor="tax_rate">Tax Rate (%)</label>
                     </div>
                   </div>
                   <p className="text-xs text-muted mb-2">e.g. 8.5 for 8.5%</p>
                   <div className="mb-2">
-                    <Button_Toolbar
-                      icon={CheckCircleIcon}
-                      label={companyLoading ? 'Saving...' : 'Save '}
-                      onClick={handleSaveCompanyInfo}
-                      className="btn-primary"
-                      disabled={companyLoading}
-                    />
+                    <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save "} onClick={handleSaveCompanyInfo} className="btn-primary" disabled={companyLoading} />
                   </div>
                 </div>
               )}
@@ -1792,52 +1747,37 @@ const Profile = () => {
 
             {/* Branding */}
             <div className="mb-2">
-              <button onClick={() => toggleAccordion('branding')}
-                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
-                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+              <button onClick={() => toggleAccordion("branding")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
                 <div className="d-flex align-items-center gap-2">
                   <SwatchIcon className="h-5 w-5 text-purple-500" />
                   <span className="fw-medium">Branding</span>
                 </div>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500"
-                  style={{ transition: 'transform 0.2s', transform: openAccordions.branding ? 'rotate(180deg)' : 'none' }} />
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.branding ? "rotate(180deg)" : "none" }} />
               </button>
               {openAccordions.branding && (
                 <div className="accordion-popup py-3 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="form-floating">
-                      <input type="text" id="companyName" value={localBranding.companyName}
-                        onChange={(e) => handleBrandingChange('companyName', e.target.value)}
-                        className="form-control form-control-sm" placeholder="Company Name" />
+                      <input type="text" id="companyName" value={localBranding.companyName} onChange={(e) => handleBrandingChange("companyName", e.target.value)} className="form-control form-control-sm" placeholder="Company Name" />
                       <label htmlFor="companyName">Company Name</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="tagline" value={localBranding.tagline}
-                        onChange={(e) => handleBrandingChange('tagline', e.target.value)}
-                        className="form-control form-control-sm" placeholder="Tagline" />
+                      <input type="text" id="tagline" value={localBranding.tagline} onChange={(e) => handleBrandingChange("tagline", e.target.value)} className="form-control form-control-sm" placeholder="Tagline" />
                       <label htmlFor="tagline">Tagline</label>
                     </div>
                   </div>
                   <div className="form-floating">
-                    <input type="url" id="logoUrl" value={localBranding.logoUrl}
-                      onChange={(e) => handleBrandingChange('logoUrl', e.target.value)}
-                      className="form-control form-control-sm" placeholder="Logo URL" />
+                    <input type="url" id="logoUrl" value={localBranding.logoUrl} onChange={(e) => handleBrandingChange("logoUrl", e.target.value)} className="form-control form-control-sm" placeholder="Logo URL" />
                     <label htmlFor="logoUrl">Logo URL</label>
                   </div>
                   <div className="border rounded p-2">
                     <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
                       <div className="fw-medium">Logo Image</div>
                       <div className="d-flex align-items-center gap-2">
-                        <label className={`btn btn-sm btn-outline-primary ${brandingLogoUploading ? 'disabled' : ''}`}>
+                        <label className={`btn btn-sm btn-outline-primary ${brandingLogoUploading ? "disabled" : ""}`}>
                           <ArrowUpTrayIcon className="h-4 w-4" style={{ width: 16, height: 16, marginRight: 6 }} />
-                          {brandingLogoUploading ? 'Uploading...' : 'Upload'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={(e) => handleUploadBrandingLogo(e.target.files?.[0] || null)}
-                            disabled={brandingLogoUploading}
-                          />
+                          {brandingLogoUploading ? "Uploading..." : "Upload"}
+                          <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleUploadBrandingLogo(e.target.files?.[0] || null)} disabled={brandingLogoUploading} />
                         </label>
                         <button
                           type="button"
@@ -1849,11 +1789,7 @@ const Profile = () => {
                         >
                           Choose from Documents
                         </button>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => setLocalBranding((prev) => ({ ...prev, logoDocumentId: null, logoUrl: '' }))}
-                        >
+                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setLocalBranding((prev) => ({ ...prev, logoDocumentId: null, logoUrl: "" }))}>
                           Clear
                         </button>
                       </div>
@@ -1861,22 +1797,14 @@ const Profile = () => {
 
                     <div className="mt-2 d-flex align-items-center gap-3 flex-wrap">
                       {localBranding.logoDocumentId ? (
-                        <img
-                          src={documentsAPI.fileUrl(localBranding.logoDocumentId)}
-                          alt="Logo"
-                          style={{ height: 48, width: 48, objectFit: 'contain', borderRadius: 6, border: '1px solid var(--bs-border-color)' }}
-                        />
+                        <img src={documentsAPI.fileUrl(localBranding.logoDocumentId)} alt="Logo" style={{ height: 48, width: 48, objectFit: "contain", borderRadius: 6, border: "1px solid var(--bs-border-color)" }} />
                       ) : localBranding.logoUrl ? (
-                        <img
-                          src={localBranding.logoUrl}
-                          alt="Logo"
-                          style={{ height: 48, width: 48, objectFit: 'contain', borderRadius: 6, border: '1px solid var(--bs-border-color)' }}
-                        />
+                        <img src={localBranding.logoUrl} alt="Logo" style={{ height: 48, width: 48, objectFit: "contain", borderRadius: 6, border: "1px solid var(--bs-border-color)" }} />
                       ) : (
                         <div className="text-muted small">No logo selected.</div>
                       )}
                       {localBranding.logoDocumentId && (
-                        <div className="small text-muted" style={{ wordBreak: 'break-all' }}>
+                        <div className="small text-muted" style={{ wordBreak: "break-all" }}>
                           Document ID: {String(localBranding.logoDocumentId)}
                         </div>
                       )}
@@ -1884,31 +1812,22 @@ const Profile = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { key: 'primaryColor', label: 'Primary', helpId: 'primary-color', helpText: 'Main buttons and links' },
-                      { key: 'secondaryColor', label: 'Secondary', helpId: 'secondary-color', helpText: 'Success states and highlights' },
-                      { key: 'accentColor', label: 'Accent', helpId: 'accent-color', helpText: 'Special elements and badges' },
+                      { key: "primaryColor", label: "Primary", helpId: "primary-color", helpText: "Main buttons and links" },
+                      { key: "secondaryColor", label: "Secondary", helpId: "secondary-color", helpText: "Success states and highlights" },
+                      { key: "accentColor", label: "Accent", helpId: "accent-color", helpText: "Special elements and badges" },
                     ].map(({ key, label, helpId, helpText }) => (
                       <div key={key}>
                         <label className="flex items-center text-sm font-medium mb-1">
                           {label} <HelpIcon id={helpId} text={helpText} />
                         </label>
                         <div className="flex items-center gap-2">
-                          <input type="color" value={localBranding[key]}
-                            onChange={(e) => handleBrandingChange(key, e.target.value)}
-                            className="rounded border cursor-pointer flex-shrink-0" style={{ width: '2.5rem', height: '2.5rem' }} />
-                          <input type="text" value={localBranding[key]}
-                            onChange={(e) => handleBrandingChange(key, e.target.value)}
-                            className="flex-1 min-w-0 px-2 py-1 border rounded text-xs font-mono" />
+                          <input type="color" value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="rounded border cursor-pointer flex-shrink-0" style={{ width: "2.5rem", height: "2.5rem" }} />
+                          <input type="text" value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="flex-1 min-w-0 px-2 py-1 border rounded text-xs font-mono" />
                         </div>
                       </div>
                     ))}
                   </div>
-                  <Button_Toolbar
-                    icon={CheckCircleIcon}
-                    label="Save Branding"
-                    onClick={handleSaveBranding}
-                    className="btn-primary"
-                  />
+                  <Button_Toolbar icon={CheckCircleIcon} label="Save Branding" onClick={handleSaveBranding} className="btn-primary" />
 
                   <Modal
                     isOpen={logoPickerOpen}
@@ -1924,32 +1843,16 @@ const Profile = () => {
                     }
                   >
                     <div className="space-y-2">
-                      {logoPickerLoading && (
-                        <div className="text-muted">Loading images...</div>
-                      )}
-                      {logoPickerError && (
-                        <div className="text-danger">{logoPickerError}</div>
-                      )}
-                      {!logoPickerLoading && !logoPickerError && logoPickerDocs.length === 0 && (
-                        <div className="text-muted">No image documents found.</div>
-                      )}
+                      {logoPickerLoading && <div className="text-muted">Loading images...</div>}
+                      {logoPickerError && <div className="text-danger">{logoPickerError}</div>}
+                      {!logoPickerLoading && !logoPickerError && logoPickerDocs.length === 0 && <div className="text-muted">No image documents found.</div>}
 
                       {!logoPickerLoading && logoPickerDocs.length > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {logoPickerDocs.map((doc) => (
-                            <button
-                              key={doc.id}
-                              type="button"
-                              className="border rounded p-2 text-start hover:bg-gray-50"
-                              onClick={() => handleSelectLogoFromDocuments(doc)}
-                              style={{ background: 'var(--bs-body-bg)' }}
-                            >
-                              <img
-                                src={documentsAPI.fileUrl(doc.id)}
-                                alt={doc.original_filename || 'image'}
-                                style={{ width: '100%', height: 90, objectFit: 'contain', background: '#fff', borderRadius: 6 }}
-                              />
-                              <div className="small text-truncate mt-1">{doc.original_filename || '(unnamed)'}</div>
+                            <button key={doc.id} type="button" className="border rounded p-2 text-start hover:bg-gray-50" onClick={() => handleSelectLogoFromDocuments(doc)} style={{ background: "var(--bs-body-bg)" }}>
+                              <img src={documentsAPI.fileUrl(doc.id)} alt={doc.original_filename || "image"} style={{ width: "100%", height: 90, objectFit: "contain", background: "#fff", borderRadius: 6 }} />
+                              <div className="small text-truncate mt-1">{doc.original_filename || "(unnamed)"}</div>
                             </button>
                           ))}
                         </div>
@@ -1962,22 +1865,19 @@ const Profile = () => {
 
             {/* Notifications */}
             <div className="mb-2">
-              <button onClick={() => toggleAccordion('notifications')}
-                className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start"
-                style={{ border: 'none', borderBottom: '1px solid var(--bs-border-color)' }}>
+              <button onClick={() => toggleAccordion("notifications")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
                 <div className="d-flex align-items-center gap-2">
                   <BellIcon className="h-5 w-5 text-amber-500" />
                   <span className="fw-medium">Notifications</span>
                 </div>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500"
-                  style={{ transition: 'transform 0.2s', transform: openAccordions.notifications ? 'rotate(180deg)' : 'none' }} />
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.notifications ? "rotate(180deg)" : "none" }} />
               </button>
               {openAccordions.notifications && (
                 <div className="accordion-popup py-3 space-y-3">
                   {[
-                    { key: 'emailEnabled', label: 'Email Notifications', helpId: 'email-notif', helpText: 'Receive updates via email' },
-                    { key: 'appointmentReminders', label: 'Appointment Reminders', helpId: 'appt-reminders', helpText: 'Get reminded before appointments' },
-                    { key: 'dailyDigest', label: 'Daily Digest', helpId: 'daily-digest', helpText: 'Receive a daily summary email' },
+                    { key: "emailEnabled", label: "Email Notifications", helpId: "email-notif", helpText: "Receive updates via email" },
+                    { key: "appointmentReminders", label: "Appointment Reminders", helpId: "appt-reminders", helpText: "Get reminded before appointments" },
+                    { key: "dailyDigest", label: "Daily Digest", helpId: "daily-digest", helpText: "Receive a daily summary email" },
                   ].map(({ key, label, helpId, helpText }) => (
                     <div key={key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                       <div className="flex items-center">
@@ -1985,26 +1885,20 @@ const Profile = () => {
                         <HelpIcon id={helpId} text={helpText} />
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={notifications[key]}
-                          onChange={(e) => handleNotificationChange(key, e.target.checked)}
-                          className="sr-only peer" />
+                        <input type="checkbox" checked={notifications[key]} onChange={(e) => handleNotificationChange(key, e.target.checked)} className="sr-only peer" />
                         <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
                     </div>
                   ))}
-                  <Button_Toolbar
-                    icon={CheckCircleIcon}
-                    label="Save Notifications"
-                    onClick={handleSaveNotifications}
-                    className="btn-primary"
-                  />
+                  <Button_Toolbar icon={CheckCircleIcon} label="Save Notifications" onClick={handleSaveNotifications} className="btn-primary" />
                 </div>
               )}
             </div>
 
             {settingsSuccess && (
               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
-                <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />{settingsSuccess}
+                <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />
+                {settingsSuccess}
               </div>
             )}
           </div>
@@ -2012,10 +1906,10 @@ const Profile = () => {
       )}
 
       {/* ── Database Panel ─────────────────────────────────────────────────────── */}
-      {openAccordion === 'database' && canAccessSettings && (
+      {openAccordion === "database" && canAccessSettings && (
         <div className="accordion-popup" style={settingsPanelStyle}>
           <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-          <div style={{ flexShrink: 0, width: '100%', overflowY: 'auto', minHeight: 0 }}>
+          <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <CircleStackIcon className="h-5 w-5" /> Database Settings
             </h2>
@@ -2036,11 +1930,12 @@ const Profile = () => {
                 <label className="flex items-center text-sm font-medium mb-1">
                   Select Table <HelpIcon id="select-table" text="Choose which database table to import data into" />
                 </label>
-                <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)}
-                  className="form-select form-select-sm">
+                <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)} className="form-select form-select-sm">
                   <option value="">-- Select a table --</option>
-                  {availableTables.map(t => (
-                    <option key={t.name} value={t.name}>{t.display_name}</option>
+                  {availableTables.map((t) => (
+                    <option key={t.name} value={t.name}>
+                      {t.display_name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -2052,13 +1947,13 @@ const Profile = () => {
                     <TableCellsIcon className="h-4 w-4 mr-1" /> Table Columns
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {tableColumns.filter(col => !col.auto_generated).map(col => (
-                      <span key={col.name}
-                        className={`px-2 py-1 text-xs rounded ${col.required ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'}`}
-                        title={`Type: ${col.type}${col.required ? ' (Required)' : ''}`}>
-                        {col.display_name}
-                      </span>
-                    ))}
+                    {tableColumns
+                      .filter((col) => !col.auto_generated)
+                      .map((col) => (
+                        <span key={col.name} className={`px-2 py-1 text-xs rounded ${col.required ? "bg-red-100 text-red-700" : "bg-gray-200 text-gray-700"}`} title={`Type: ${col.type}${col.required ? " (Required)" : ""}`}>
+                          {col.display_name}
+                        </span>
+                      ))}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
                     <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>Required fields
@@ -2073,10 +1968,11 @@ const Profile = () => {
                     Upload CSV File <HelpIcon id="csv-upload" text="First row should contain column headers" />
                   </label>
                   <div className="d-flex align-items-center gap-2">
-                    <input ref={csvFileInputRef} type="file" accept=".csv" onChange={handleFileSelect}
-                      className="form-control form-control-sm flex-1" />
+                    <input ref={csvFileInputRef} type="file" accept=".csv" onChange={handleFileSelect} className="form-control form-control-sm flex-1" />
                     {csvData && (
-                      <button onClick={resetImport} className="btn btn-outline-secondary btn-sm">Clear</button>
+                      <button onClick={resetImport} className="btn btn-outline-secondary btn-sm">
+                        Clear
+                      </button>
                     )}
                   </div>
                 </div>
@@ -2089,17 +1985,22 @@ const Profile = () => {
                     <DocumentTextIcon className="h-4 w-4 mr-1" />
                     Column Mapping <HelpIcon id="column-mapping" text="Match CSV columns to database columns" />
                   </h4>
-                  <div className="space-y-2" style={{ maxHeight: '12rem', overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {csvHeaders.map(header => (
+                  <div className="space-y-2" style={{ maxHeight: "12rem", overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                    {csvHeaders.map((header) => (
                       <div key={header} className="d-flex align-items-center gap-2">
-                        <span className="small fw-medium text-truncate" style={{ minWidth: '8rem', maxWidth: '8rem' }}>{header}</span>
+                        <span className="small fw-medium text-truncate" style={{ minWidth: "8rem", maxWidth: "8rem" }}>
+                          {header}
+                        </span>
                         <span className="text-muted">→</span>
-                        <select value={columnMapping[header] || ''} onChange={(e) => handleColumnMappingChange(header, e.target.value)}
-                          className="form-select form-select-sm flex-1">
+                        <select value={columnMapping[header] || ""} onChange={(e) => handleColumnMappingChange(header, e.target.value)} className="form-select form-select-sm flex-1">
                           <option value="">-- Skip --</option>
-                          {tableColumns.filter(col => !col.auto_generated).map(col => (
-                            <option key={col.name} value={col.name}>{col.display_name}</option>
-                          ))}
+                          {tableColumns
+                            .filter((col) => !col.auto_generated)
+                            .map((col) => (
+                              <option key={col.name} value={col.name}>
+                                {col.display_name}
+                              </option>
+                            ))}
                         </select>
                       </div>
                     ))}
@@ -2109,27 +2010,30 @@ const Profile = () => {
               )}
 
               {/* Import Button */}
-              {csvData && Object.keys(columnMapping).filter(k => columnMapping[k]).length > 0 && (
-                <button onClick={handleImport} disabled={importLoading}
-                  className="btn btn-success btn-sm d-flex align-items-center gap-2">
+              {csvData && Object.keys(columnMapping).filter((k) => columnMapping[k]).length > 0 && (
+                <button onClick={handleImport} disabled={importLoading} className="btn btn-success btn-sm d-flex align-items-center gap-2">
                   <ArrowUpTrayIcon className="h-4 w-4" />
-                  {importLoading ? 'Importing…' : `Import ${csvData.length} Records`}
+                  {importLoading ? "Importing…" : `Import ${csvData.length} Records`}
                 </button>
               )}
 
               {/* Import Result */}
               {importResult && (
-                <div className={`mt-3 p-3 rounded-lg border ${importResult.errors?.length > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
+                <div className={`mt-3 p-3 rounded-lg border ${importResult.errors?.length > 0 ? "bg-yellow-50 border-yellow-200" : "bg-green-50 border-green-200"}`}>
                   <div className="d-flex align-items-center gap-2 mb-2">
-                    <CheckCircleIcon className={`h-5 w-5 flex-shrink-0 ${importResult.errors?.length > 0 ? 'text-yellow-600' : 'text-green-600'}`} />
-                    <span className="small">Imported {importResult.imported} of {importResult.total} records</span>
+                    <CheckCircleIcon className={`h-5 w-5 flex-shrink-0 ${importResult.errors?.length > 0 ? "text-yellow-600" : "text-green-600"}`} />
+                    <span className="small">
+                      Imported {importResult.imported} of {importResult.total} records
+                    </span>
                   </div>
                   {importResult.errors?.length > 0 && (
                     <div className="text-xs text-yellow-700 mt-1">
                       <p className="fw-medium mb-1">Errors:</p>
                       <ul className="list-unstyled mb-0">
                         {importResult.errors.slice(0, 5).map((err, idx) => (
-                          <li key={idx}>Row {err.row}: {err.error}</li>
+                          <li key={idx}>
+                            Row {err.row}: {err.error}
+                          </li>
                         ))}
                         {importResult.errors.length > 5 && <li>…and {importResult.errors.length - 5} more</li>}
                       </ul>
@@ -2140,7 +2044,8 @@ const Profile = () => {
 
               {settingsError && (
                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg d-flex align-items-center gap-2 text-danger text-sm">
-                  <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />{settingsError}
+                  <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                  {settingsError}
                 </div>
               )}
             </div>
@@ -2150,25 +2055,25 @@ const Profile = () => {
 
       {/* Leave Management Panel */}
       {leaveManagementOpen && (
-        <div 
+        <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             bottom: `${row1PanelBottom}px`,
             left: 0,
             right: 0,
-            maxHeight: 'calc(100vh - 164px)',
-            overflowY: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            backgroundColor: 'var(--bs-body-bg)',  
+            maxHeight: "calc(100vh - 164px)",
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            backgroundColor: "var(--bs-body-bg)",
             zIndex: 1000,
           }}
           className="accordion-popup"
         >
-          <div className="card border-0 rounded-0" style={{ minHeight: '200px' }}>
+          <div className="card border-0 rounded-0" style={{ minHeight: "200px" }}>
             <div className="card-body">
               <h6 className="card-title mb-3">Leave Management</h6>
-              
+
               {leaveRequestsLoading ? (
                 <div className="text-center py-4">
                   <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -2180,11 +2085,16 @@ const Profile = () => {
                     <div className="col-6">
                       <div className="bg-light rounded p-2 small">
                         <div className="fw-semibold text-primary">Vacation Days</div>
-                        <div className="text-muted small mb-1">{vacUsed} / {vacTotal} used</div>
-                        <div className="progress" style={{ height: '4px' }}>
-                          <div className="progress-bar bg-primary" style={{
-                            width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`
-                          }} />
+                        <div className="text-muted small mb-1">
+                          {vacUsed} / {vacTotal} used
+                        </div>
+                        <div className="progress" style={{ height: "4px" }}>
+                          <div
+                            className="progress-bar bg-primary"
+                            style={{
+                              width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%`,
+                            }}
+                          />
                         </div>
                         <div className="text-muted small mt-1">{vacRemaining} remaining</div>
                       </div>
@@ -2192,11 +2102,16 @@ const Profile = () => {
                     <div className="col-6">
                       <div className="bg-light rounded p-2 small">
                         <div className="fw-semibold text-warning">Sick Days</div>
-                        <div className="text-muted small mb-1">{sickUsed} / {sickTotal} used</div>
-                        <div className="progress" style={{ height: '4px' }}>
-                          <div className="progress-bar bg-warning" style={{
-                            width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`
-                          }} />
+                        <div className="text-muted small mb-1">
+                          {sickUsed} / {sickTotal} used
+                        </div>
+                        <div className="progress" style={{ height: "4px" }}>
+                          <div
+                            className="progress-bar bg-warning"
+                            style={{
+                              width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%`,
+                            }}
+                          />
                         </div>
                         <div className="text-muted small mt-1">{sickRemaining} remaining</div>
                       </div>
@@ -2206,11 +2121,11 @@ const Profile = () => {
                   {/* Pending Requests Table */}
                   <div className="mb-3">
                     <h6 className="small fw-semibold mb-2">Pending Requests</h6>
-                    {vacationRequests.filter(r => r.status === 'pending').length === 0 && sickRequests.filter(r => r.status === 'pending').length === 0 ? (
+                    {vacationRequests.filter((r) => r.status === "pending").length === 0 && sickRequests.filter((r) => r.status === "pending").length === 0 ? (
                       <p className="text-muted small mb-0">No pending requests</p>
                     ) : (
-                      <div style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                        <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                      <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                        <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
                           <thead className="table-light">
                             <tr>
                               <th>Type</th>
@@ -2222,21 +2137,20 @@ const Profile = () => {
                           </thead>
                           <tbody>
                             {[...vacationRequests, ...sickRequests]
-                              .filter(r => r.status === 'pending')
-                              .map(req => (
+                              .filter((r) => r.status === "pending")
+                              .map((req) => (
                                 <tr key={req.id}>
-                                  <td>{req.leave_type === 'vacation' ? '🏖️ Vacation' : '🤒 Sick'}</td>
+                                  <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
                                   <td>{req.start_date}</td>
                                   <td>{req.end_date}</td>
-                                  <td>{req.days_requested ?? '—'}</td>
+                                  <td>{req.days_requested ?? "—"}</td>
                                   <td>
-                                    <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: '0.7rem' }}>
+                                    <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
                                       {req.status}
                                     </span>
                                   </td>
                                 </tr>
-                              ))
-                            }
+                              ))}
                           </tbody>
                         </table>
                       </div>
@@ -2245,19 +2159,11 @@ const Profile = () => {
 
                   {/* Action Button */}
                   <div className="d-flex gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm flex-grow-1"
-                      onClick={() => openLeaveModal()}
-                    >
-                      <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: 'inline' }} />
+                    <button type="button" className="btn btn-primary btn-sm flex-grow-1" onClick={() => openLeaveModal()}>
+                      <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
                       Request Leave
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => setLeaveManagementOpen(false)}
-                    >
+                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setLeaveManagementOpen(false)}>
                       Close
                     </button>
                   </div>
@@ -2269,10 +2175,7 @@ const Profile = () => {
       )}
 
       {/* Footer Tabs */}
-      <div
-        className="flex-shrink-0 bg-body profile-footer-nav ps-3"
-        style={{ zIndex: 10 }}
-      >
+      <div className="flex-shrink-0 bg-body profile-footer-nav ps-3" style={{ zIndex: 10 }}>
         {/* Row 1 — Admin/Settings: Schedule, Database */}
         {canAccessSettings && (
           <div ref={handleRow2Ref} className="pt-2 pb-0">
@@ -2282,16 +2185,16 @@ const Profile = () => {
                 <div className="col-10">
                   <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                     {[
-                      { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
-                      { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+                      { id: "schedule", Icon: ClockIcon, title: "Schedule" },
+                      { id: "database", Icon: CircleStackIcon, title: "Database" },
                     ].map(({ id, Icon, title }) => (
                       <Button_Toolbar
                         key={id}
                         icon={Icon}
                         label={title}
-                        onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                        className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        style={{ height: '3rem' }}
+                        onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                        style={{ height: "3rem" }}
                         data-active={openAccordion === id}
                       />
                     ))}
@@ -2305,16 +2208,16 @@ const Profile = () => {
               <div className="row g-0">
                 <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
                   {[
-                    { id: 'schedule', Icon: ClockIcon,        title: 'Schedule' },
-                    { id: 'database', Icon: CircleStackIcon,  title: 'Database' },
+                    { id: "schedule", Icon: ClockIcon, title: "Schedule" },
+                    { id: "database", Icon: CircleStackIcon, title: "Database" },
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
                       icon={Icon}
                       label={title}
-                      onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                      className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      style={{ height: '3rem' }}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      style={{ height: "3rem" }}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -2332,19 +2235,19 @@ const Profile = () => {
               <div className="col-10">
                 <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                   {[
-                    { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
-                    { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
-                    { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
-                    { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
-                    ...(canAccessGeneralSettings ? [{ id: 'general', Icon: CogIcon, title: 'General' }] : []),
+                    { id: "profile", Icon: UserIcon, title: "Profile" },
+                    { id: "benefits", Icon: HeartIcon, title: "Benefits" },
+                    { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
+                    { id: "settings", Icon: CogIcon, title: "Settings" },
+                    ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
                       icon={Icon}
                       label={title}
-                      onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                      className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      style={{ height: '3rem' }}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      style={{ height: "3rem" }}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -2358,19 +2261,19 @@ const Profile = () => {
             <div className="row g-0">
               <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
                 {[
-                  { id: 'profile',   Icon: UserIcon,           title: 'Profile'   },
-                  { id: 'benefits',  Icon: HeartIcon,          title: 'Benefits'  },
-                  { id: 'wages',     Icon: CurrencyDollarIcon, title: 'Wages'     },
-                  { id: 'settings',  Icon: CogIcon,            title: 'Settings'  },
-                  ...(canAccessGeneralSettings ? [{ id: 'general', Icon: CogIcon, title: 'General' }] : []),
+                  { id: "profile", Icon: UserIcon, title: "Profile" },
+                  { id: "benefits", Icon: HeartIcon, title: "Benefits" },
+                  { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
+                  { id: "settings", Icon: CogIcon, title: "Settings" },
+                  ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
                 ].map(({ id, Icon, title }) => (
                   <Button_Toolbar
                     key={id}
                     icon={Icon}
                     label={title}
-                    onClick={() => setOpenAccordion(openAccordion === id ? '' : id)}
-                    className={`btn btn-sm ${isTrainingMode ? 'ps-0 pe-1' : 'p-0'} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? 'btn-primary' : 'btn-outline-secondary'}`}
-                    style={{ height: '3rem' }}
+                    onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                    className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                    style={{ height: "3rem" }}
                     data-active={openAccordion === id}
                   />
                 ))}
@@ -2381,19 +2284,20 @@ const Profile = () => {
       </div>
 
       {/* Signature Modal */}
-      <Modal_Signature
-        isOpen={signatureModalOpen}
-        onClose={() => setSignatureModalOpen(false)}
-        userId={user?.id}
-      />
+      <Modal_Signature isOpen={signatureModalOpen} onClose={() => setSignatureModalOpen(false)} userId={user?.id} />
 
       {/* Request Modal */}
       {showLeaveModal && (
         <div
           className="modal d-block"
           tabIndex="-1"
-          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) { setShowLeaveModal(false); setLeaveError(''); } }}
+          style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLeaveModal(false);
+              setLeaveError("");
+            }
+          }}
         >
           <div className="modal-dialog modal-sm modal-dialog-centered">
             <div className="modal-content">
@@ -2402,23 +2306,24 @@ const Profile = () => {
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => { setShowLeaveModal(false); setLeaveError(''); }}
+                  onClick={() => {
+                    setShowLeaveModal(false);
+                    setLeaveError("");
+                  }}
                 />
               </div>
               <form onSubmit={handleLeaveSubmit}>
                 <div className="modal-body py-3">
-                  {leaveError && (
-                    <div className="alert alert-danger py-1 small mb-2">{leaveError}</div>
-                  )}
+                  {leaveError && <div className="alert alert-danger py-1 small mb-2">{leaveError}</div>}
                   <div className="mb-2">
                     <label className="form-label small mb-1">Request Type</label>
                     <select
                       className="form-select form-select-sm"
                       value={leaveModalType}
-                      onChange={e => {
+                      onChange={(e) => {
                         setLeaveModalType(e.target.value);
-                        setLeaveForm({ start_date: '', end_date: '', notes: '' });
-                        setLeaveError('');
+                        setLeaveForm({ start_date: "", end_date: "", notes: "" });
+                        setLeaveError("");
                       }}
                     >
                       <option value="vacation">Vacation Leave</option>
@@ -2427,62 +2332,41 @@ const Profile = () => {
                       <option value="offboarding">Offboarding</option>
                     </select>
                   </div>
-                  {(leaveModalType === 'vacation' || leaveModalType === 'sick') ? (
+                  {leaveModalType === "vacation" || leaveModalType === "sick" ? (
                     <>
                       <div className="mb-2">
                         <label className="form-label small mb-1">Start Date</label>
-                        <input
-                          type="date"
-                          className="form-control form-control-sm"
-                          value={leaveForm.start_date}
-                          onChange={e => setLeaveForm(f => ({ ...f, start_date: e.target.value }))}
-                          required
-                        />
+                        <input type="date" className="form-control form-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
                       </div>
                       <div className="mb-2">
                         <label className="form-label small mb-1">End Date</label>
-                        <input
-                          type="date"
-                          className="form-control form-control-sm"
-                          value={leaveForm.end_date}
-                          min={leaveForm.start_date || undefined}
-                          onChange={e => setLeaveForm(f => ({ ...f, end_date: e.target.value }))}
-                          required
-                        />
+                        <input type="date" className="form-control form-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
                       </div>
                     </>
                   ) : (
                     <div className="mb-2">
                       <label className="form-label small mb-1">Requested Date (optional)</label>
-                      <input
-                        type="date"
-                        className="form-control form-control-sm"
-                        value={leaveForm.start_date}
-                        onChange={e => setLeaveForm(f => ({ ...f, start_date: e.target.value }))}
-                      />
+                      <input type="date" className="form-control form-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
                     </div>
                   )}
                   <div className="mb-0">
                     <label className="form-label small mb-1">Notes (optional)</label>
-                    <textarea
-                      className="form-control form-control-sm"
-                      rows="2"
-                      value={leaveForm.notes}
-                      onChange={e => setLeaveForm(f => ({ ...f, notes: e.target.value }))}
-                      placeholder="Reason or additional info..."
-                    />
+                    <textarea className="form-control form-control-sm" rows="2" value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
                   </div>
                 </div>
                 <div className="modal-footer py-2">
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm"
-                    onClick={() => { setShowLeaveModal(false); setLeaveError(''); }}
+                    onClick={() => {
+                      setShowLeaveModal(false);
+                      setLeaveError("");
+                    }}
                   >
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
-                    {leaveSubmitting ? 'Submitting…' : 'Submit Request'}
+                    {leaveSubmitting ? "Submitting…" : "Submit Request"}
                   </button>
                 </div>
               </form>
@@ -2496,8 +2380,10 @@ const Profile = () => {
         <div
           className="modal d-block"
           tabIndex="-1"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 2000 }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedSlip(null); }}
+          style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 2000 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedSlip(null);
+          }}
         >
           <div className="modal-dialog modal-dialog-centered modal-sm">
             <div className="modal-content" id="pay-slip-print-area">
@@ -2505,27 +2391,35 @@ const Profile = () => {
                 <h6 className="modal-title mb-0">Pay Slip</h6>
                 <button type="button" className="btn-close" onClick={() => setSelectedSlip(null)} />
               </div>
-              <div className="modal-body" style={{ fontSize: '0.85rem' }}>
+              <div className="modal-body" style={{ fontSize: "0.85rem" }}>
                 <div className="text-center mb-3">
-                  <div className="fw-bold fs-6">{user?.first_name} {user?.last_name}</div>
+                  <div className="fw-bold fs-6">
+                    {user?.first_name} {user?.last_name}
+                  </div>
                   <div className="text-muted small">{user?.role}</div>
                 </div>
                 <hr className="my-2" />
                 <div className="row g-1 mb-2">
                   <div className="col-6 text-muted">Pay Period</div>
-                  <div className="col-6 text-end">{selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : '—'} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : '—'}</div>
+                  <div className="col-6 text-end">
+                    {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
+                  </div>
                   <div className="col-6 text-muted">Type</div>
-                  <div className="col-6 text-end" style={{ textTransform: 'capitalize' }}>{selectedSlip.employment_type || '—'}</div>
-                  {selectedSlip.employment_type === 'hourly' && (
+                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                    {selectedSlip.employment_type || "—"}
+                  </div>
+                  {selectedSlip.employment_type === "hourly" && (
                     <>
                       <div className="col-6 text-muted">Hours</div>
-                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? '—'}</div>
+                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? "—"}</div>
                       <div className="col-6 text-muted">Rate</div>
                       <div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
                     </>
                   )}
                   <div className="col-6 text-muted">Pay Frequency</div>
-                  <div className="col-6 text-end" style={{ textTransform: 'capitalize' }}>{selectedSlip.pay_frequency || '—'}</div>
+                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                    {selectedSlip.pay_frequency || "—"}
+                  </div>
                 </div>
                 <hr className="my-2" />
                 <div className="row g-1">
@@ -2546,35 +2440,35 @@ const Profile = () => {
                   <div className="col-6 fw-bold border-top pt-1 mt-1">Net Pay</div>
                   <div className="col-6 fw-bold text-end border-top pt-1 mt-1 text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                 </div>
-                {selectedSlip.notes && (
-                  <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>
-                )}
+                {selectedSlip.notes && <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>}
               </div>
               <div className="modal-footer py-2">
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => {
-                    const el = document.getElementById('pay-slip-print-area');
+                    const el = document.getElementById("pay-slip-print-area");
                     if (el) {
-                      const w = window.open('', '_blank');
-                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + '</body></html>');
+                      const w = window.open("", "_blank");
+                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + "</body></html>");
                       w.document.close();
                       w.focus();
-                      setTimeout(() => { w.print(); }, 500);
+                      setTimeout(() => {
+                        w.print();
+                      }, 500);
                     }
                   }}
                 >
                   Print
                 </button>
-                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>Close</button>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>
+                  Close
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-
     </div>
   );
 };

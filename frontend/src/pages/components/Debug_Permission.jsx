@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import useStore from '../../services/useStore';
+import React, { useState, useEffect } from "react";
+import useStore from "../../services/useStore";
 
 /**
  * Debug component to show current user permissions
@@ -9,14 +9,14 @@ const Debug_Permission = () => {
   const { user, hasPermission } = useStore();
   const [permissions, setPermissions] = useState({});
 
-  const pages = ['clients', 'inventory', 'sales', 'services', 'employees', 'schedule', 'documents', 'templates', 'insurance', 'tasks', 'leave', 'reports', 'admin'];
-  const permissionTypes = ['read', 'write', 'delete', 'admin'];
+  const pages = ["clients", "inventory", "sales", "services", "employees", "schedule", "documents", "templates", "insurance", "tasks", "leave", "reports", "admin"];
+  const permissionTypes = ["read", "write", "delete", "admin"];
 
   useEffect(() => {
     const currentPermissions = {};
-    pages.forEach(page => {
+    pages.forEach((page) => {
       currentPermissions[page] = {};
-      permissionTypes.forEach(perm => {
+      permissionTypes.forEach((perm) => {
         currentPermissions[page][perm] = hasPermission(page, perm);
       });
     });
@@ -29,15 +29,21 @@ const Debug_Permission = () => {
     <div className="bg-gray-100 p-4 rounded-lg mb-4">
       <h3 className="text-sm font-bold mb-2">Current User Permissions (Debug)</h3>
       <div className="text-xs">
-        <p><strong>User:</strong> {user.first_name} {user.last_name}</p>
-        <p><strong>Role:</strong> {user.role}</p>
-        <p><strong>Employee ID:</strong> {user.employee?.id || 'None'}</p>
+        <p>
+          <strong>User:</strong> {user.first_name} {user.last_name}
+        </p>
+        <p>
+          <strong>Role:</strong> {user.role}
+        </p>
+        <p>
+          <strong>Employee ID:</strong> {user.employee?.id || "None"}
+        </p>
         <div className="mt-2">
-          {pages.map(page => (
+          {pages.map((page) => (
             <div key={page} className="mb-1">
               <span className="font-medium">{page}:</span>
-              {permissionTypes.map(perm => (
-                <span key={perm} className={`ml-2 px-1 rounded ${permissions[page]?.[perm] ? 'bg-green-200' : 'bg-red-200'}`}>
+              {permissionTypes.map((perm) => (
+                <span key={perm} className={`ml-2 px-1 rounded ${permissions[page]?.[perm] ? "bg-green-200" : "bg-red-200"}`}>
                   {perm}
                 </span>
               ))}

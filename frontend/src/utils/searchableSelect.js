@@ -1,11 +1,13 @@
 const WHITESPACE_PATTERN = /\s/;
 
 function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function matchesWildcardText(term, ...candidates) {
-  const normalizedTerm = String(term ?? '').trim().toLowerCase();
+  const normalizedTerm = String(term ?? "")
+    .trim()
+    .toLowerCase();
   if (!normalizedTerm) {
     return true;
   }
@@ -15,10 +17,10 @@ export function matchesWildcardText(term, ...candidates) {
     return true;
   }
 
-  const wildcardPattern = new RegExp(characters.map((character) => escapeRegex(character)).join('.*'), 'i');
+  const wildcardPattern = new RegExp(characters.map((character) => escapeRegex(character)).join(".*"), "i");
 
   return candidates.some((candidate) => {
-    const text = String(candidate ?? '').trim();
+    const text = String(candidate ?? "").trim();
     return text.length > 0 && wildcardPattern.test(text);
   });
 }

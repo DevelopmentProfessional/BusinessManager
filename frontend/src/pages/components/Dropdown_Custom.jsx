@@ -1,24 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
-import { matchesWildcardText } from '../../utils/searchableSelect';
+import React, { useState, useRef, useEffect } from "react";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { matchesWildcardText } from "../../utils/searchableSelect";
 
-export default function Dropdown_Custom({
-  value,
-  onChange,
-  options = [],
-  placeholder = '',
-  required = false,
-  className = '',
-  disabled = false,
-  name = '',
-  id = '',
-  searchable = true,
-  onOpen = null,
-  loading = false,
-  multiSelect = false
-}) {
+export default function Dropdown_Custom({ value, onChange, options = [], placeholder = "", required = false, className = "", disabled = false, name = "", id = "", searchable = true, onOpen = null, loading = false, multiSelect = false }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
   // Call onOpen callback when dropdown opens
@@ -37,31 +23,19 @@ export default function Dropdown_Custom({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
-  const normalizedValue = multiSelect
-    ? (Array.isArray(value) ? value : value ? [value] : [])
-    : value;
-  const selectedOptions = multiSelect
-    ? options.filter(option => normalizedValue.includes(option.value))
-    : [];
-  const selectedOption = !multiSelect
-    ? options.find(option => option.value === value)
-    : null;
-  const displayValue = multiSelect
-    ? (selectedOptions.length === 0
-        ? placeholder
-        : selectedOptions.length <= 2
-          ? selectedOptions.map(option => option.label).join(', ')
-          : `${selectedOptions.length} selected`)
-    : (selectedOption ? selectedOption.label : placeholder);
+  const normalizedValue = multiSelect ? (Array.isArray(value) ? value : value ? [value] : []) : value;
+  const selectedOptions = multiSelect ? options.filter((option) => normalizedValue.includes(option.value)) : [];
+  const selectedOption = !multiSelect ? options.find((option) => option.value === value) : null;
+  const displayValue = multiSelect ? (selectedOptions.length === 0 ? placeholder : selectedOptions.length <= 2 ? selectedOptions.map((option) => option.label).join(", ") : `${selectedOptions.length} selected`) : selectedOption ? selectedOption.label : placeholder;
   const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
 
   const handleSelect = (option) => {
@@ -73,20 +47,16 @@ export default function Dropdown_Custom({
         next.add(option.value);
       }
       onChange({ target: { name, value: Array.from(next) } });
-      setSearchTerm('');
+      setSearchTerm("");
       return;
     }
     onChange({ target: { name, value: option.value } });
     setIsOpen(false);
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   // Filter options based on search term
-  const filteredOptions = searchable && searchTerm 
-    ? options.filter(option => 
-        matchesWildcardText(searchTerm, option.label, option.value)
-      )
-    : options;
+  const filteredOptions = searchable && searchTerm ? options.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : options;
 
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
@@ -102,27 +72,20 @@ export default function Dropdown_Custom({
             }}
             onFocus={() => {
               handleOpen();
-              setSearchTerm('');
+              setSearchTerm("");
             }}
             placeholder={placeholder}
             className={`
               w-full px-3 py-2 border rounded-lg 
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
               border-gray-300 dark:border-gray-600
-              ${disabled ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500'}
-              ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : ''}
+              ${disabled ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500"}
+              ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
             `}
             disabled={disabled}
           />
-          <button
-            type="button"
-            onClick={() => !disabled && setIsOpen(!isOpen)}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2"
-          >
-            <ChevronDownIcon 
-              className="h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform" 
-              style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            />
+          <button type="button" onClick={() => !disabled && setIsOpen(!isOpen)} className="absolute right-2 top-1/2 transform -translate-y-1/2">
+            <ChevronDownIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
           </button>
         </div>
       ) : (
@@ -138,18 +101,13 @@ export default function Dropdown_Custom({
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
             flex items-center justify-between
             border-gray-300 dark:border-gray-600
-            ${disabled ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500'}
-            ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? 'border-red-300 dark:border-red-600 focus:ring-red-500' : ''}
+            ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
+            ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
           `}
           disabled={disabled}
         >
-          <span className={(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? 'text-gray-500 dark:text-gray-400' : ''}>
-            {displayValue}
-          </span>
-          <ChevronDownIcon 
-            className="h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform" 
-            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-          />
+          <span className={(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}>{displayValue}</span>
+          <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
         </button>
       )}
 
@@ -166,20 +124,20 @@ export default function Dropdown_Custom({
             filteredOptions.map((option) => {
               const isSelected = multiSelect ? selectedSet.has(option.value) : option.value === value;
               return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option)}
-                className={`
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option)}
+                  className={`
                   w-full px-3 py-2 text-left focus:outline-none
                   hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
-                  ${isSelected ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-200'}
+                  ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"}
                 `}
-                aria-pressed={isSelected}
-              >
-                {option.label}
-              </button>
-            );
+                  aria-pressed={isSelected}
+                >
+                  {option.label}
+                </button>
+              );
             })
           )}
         </div>

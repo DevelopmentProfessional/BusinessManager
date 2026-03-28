@@ -22,16 +22,16 @@
  * ============================================================
  */
 
-import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
-import Widget_Signature from './Widget_Signature';
-import api from '../../services/api';
+import React, { useState, useEffect } from "react";
+import Modal from "./Modal";
+import Widget_Signature from "./Widget_Signature";
+import api from "../../services/api";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
   const [savedSignature, setSavedSignature] = useState(null);
   const [signatureLoading, setSignatureLoading] = useState(false);
-  const [signatureMessage, setSignatureMessage] = useState('');
+  const [signatureMessage, setSignatureMessage] = useState("");
   const [showSignaturePad, setShowSignaturePad] = useState(false);
 
   // ─── 2 LOAD SIGNATURE EFFECT ──────────────────────────────────────────────
@@ -39,9 +39,9 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
     const loadSignature = async () => {
       if (!isOpen || !userId) return;
       setSignatureLoading(true);
-      setSignatureMessage('');
+      setSignatureMessage("");
       try {
-        const res = await api.get('/auth/me/signature');
+        const res = await api.get("/auth/me/signature");
         setSavedSignature(res.data?.signature_data || null);
         setShowSignaturePad(!res.data?.signature_data); // Show pad if no signature exists
       } catch (error) {
@@ -56,18 +56,18 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
 
   const handleSaveSignature = async (dataUrl) => {
     setSignatureLoading(true);
-    setSignatureMessage('');
+    setSignatureMessage("");
     try {
-      await api.put('/auth/me/signature', { signature_data: dataUrl });
+      await api.put("/auth/me/signature", { signature_data: dataUrl });
       setSavedSignature(dataUrl);
       setShowSignaturePad(false);
-      setSignatureMessage('Signature saved successfully');
+      setSignatureMessage("Signature saved successfully");
       setTimeout(() => {
-        setSignatureMessage('');
+        setSignatureMessage("");
         onClose();
       }, 1500);
     } catch (error) {
-      const detail = error?.response?.data?.detail || error?.message || 'Failed to save signature';
+      const detail = error?.response?.data?.detail || error?.message || "Failed to save signature";
       setSignatureMessage(detail);
     } finally {
       setSignatureLoading(false);
@@ -83,20 +83,11 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose}
-      title="Signature"
-      noPadding={true}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Signature" noPadding={true}>
       <div className="d-flex flex-column h-100">
         {/* Container_Scrollable Content */}
-        <div className="flex-1 overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
-          {signatureMessage && (
-            <div className={`alert py-2 small mb-3 ${signatureMessage.includes('Failed') ? 'alert-danger' : 'alert-success'}`}>
-              {signatureMessage}
-            </div>
-          )}
+        <div className="flex-1 overflow-auto p-4" style={{ maxHeight: "calc(80vh - 140px)" }}>
+          {signatureMessage && <div className={`alert py-2 small mb-3 ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>}
 
           {signatureLoading ? (
             <div className="text-center py-4">
@@ -106,21 +97,10 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
               <div className="text-muted">Loading signature...</div>
             </div>
           ) : showSignaturePad ? (
-            <Widget_Signature
-              onSave={handleSaveSignature}
-              onCancel={handleCancel}
-              initialSignature={savedSignature}
-              width={500}
-              height={200}
-            />
+            <Widget_Signature onSave={handleSaveSignature} onCancel={handleCancel} initialSignature={savedSignature} width={500} height={200} />
           ) : savedSignature ? (
             <div className="d-flex flex-column gap-3">
-              <img
-                src={savedSignature}
-                alt="Saved signature"
-                className="border rounded"
-                style={{ maxWidth: '100%', height: 'auto' }}
-              />
+              <img src={savedSignature} alt="Saved signature" className="border rounded" style={{ maxWidth: "100%", height: "auto" }} />
             </div>
           ) : (
             <div className="text-center py-4">
@@ -133,19 +113,11 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
         <div className="border-top bg-white dark:bg-gray-800 p-3">
           <div className="d-flex justify-content-end gap-2">
             {!showSignaturePad && savedSignature && (
-              <button 
-                type="button" 
-                className="btn btn-outline-primary"
-                onClick={() => setShowSignaturePad(true)}
-              >
+              <button type="button" className="btn btn-outline-primary" onClick={() => setShowSignaturePad(true)}>
                 Replace Signature
               </button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-secondary"
-            >
+            <button type="button" onClick={onClose} className="btn btn-secondary">
               Close
             </button>
           </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * PageTableHeader
@@ -15,14 +15,18 @@ export default function PageTableHeader({ columns }) {
       <table className="table table-borderless mb-0 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
         <colgroup>
           <col />
-          {columns.filter(c => c.width).map((col, i) => (
-            <col key={i} style={{ width: col.width }} />
-          ))}
+          {columns
+            .filter((c) => c.width)
+            .map((col, i) => (
+              <col key={i} style={{ width: col.width }} />
+            ))}
         </colgroup>
         <thead>
           <tr>
             {columns.map((col, i) => (
-              <th key={i} className={col.className}>{col.label}</th>
+              <th key={i} className={col.className}>
+                {col.label}
+              </th>
             ))}
           </tr>
         </thead>

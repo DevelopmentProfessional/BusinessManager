@@ -1,4 +1,4 @@
-import { inventoryAPI } from '../../services/api';
+import { inventoryAPI } from "../../services/api";
 
 /**
  * Get the best display image URL for an inventory item.
@@ -7,7 +7,7 @@ import { inventoryAPI } from '../../services/api';
  */
 export function getDisplayImageUrl(item) {
   if (item?.images?.length > 0) {
-    const primary = item.images.find(img => img.is_primary);
+    const primary = item.images.find((img) => img.is_primary);
     const img = primary || item.images[0];
     return getImageSrc(img);
   }

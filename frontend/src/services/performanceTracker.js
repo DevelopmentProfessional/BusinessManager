@@ -3,8 +3,8 @@
  * Tracks component load times and logs to console
  */
 
-const PERFORMANCE_SESSION_KEY = 'perf_session_start';
-const PERFORMANCE_COMPONENTS_KEY = 'perf_components_log';
+const PERFORMANCE_SESSION_KEY = "perf_session_start";
+const PERFORMANCE_COMPONENTS_KEY = "perf_components_log";
 
 export const startPerformanceSession = () => {
   const now = performance.now();
@@ -20,17 +20,21 @@ export const logComponentLoad = (componentName) => {
   const loadTime = currentTime - startTime;
 
   try {
-    const componentsLog = JSON.parse(sessionStorage.getItem(PERFORMANCE_COMPONENTS_KEY) || '[]');
+    const componentsLog = JSON.parse(sessionStorage.getItem(PERFORMANCE_COMPONENTS_KEY) || "[]");
     componentsLog.push({ name: componentName, timestamp: currentTime, totalElapsedTime: loadTime });
     sessionStorage.setItem(PERFORMANCE_COMPONENTS_KEY, JSON.stringify(componentsLog));
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 };
 
 export const finalizePerformanceReport = () => {
   try {
     sessionStorage.removeItem(PERFORMANCE_SESSION_KEY);
     sessionStorage.removeItem(PERFORMANCE_COMPONENTS_KEY);
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 };
 
 export const clearPerformanceSession = () => {
@@ -47,5 +51,5 @@ export default {
   logComponentLoad,
   finalizePerformanceReport,
   clearPerformanceSession,
-  getPerformanceSessionActive
+  getPerformanceSessionActive,
 };

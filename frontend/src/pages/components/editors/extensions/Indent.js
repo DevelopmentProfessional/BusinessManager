@@ -1,4 +1,4 @@
-import { Extension } from '@tiptap/core';
+import { Extension } from "@tiptap/core";
 
 const INDENT_STEP = 40; // px per indent level
 const MAX_INDENT = 10;
@@ -8,11 +8,11 @@ const MAX_INDENT = 10;
  * Adds indent/outdent commands that apply margin-left to block nodes.
  */
 export const Indent = Extension.create({
-  name: 'indent',
+  name: "indent",
 
   addOptions() {
     return {
-      types: ['paragraph', 'heading', 'blockquote'],
+      types: ["paragraph", "heading", "blockquote"],
       step: INDENT_STEP,
       maxLevel: MAX_INDENT,
     };
@@ -100,11 +100,11 @@ export const Indent = Extension.create({
     return {
       Tab: () => {
         // Let list item sink/nest handle Tab when inside a list
-        if (this.editor.isActive('listItem')) return false;
+        if (this.editor.isActive("listItem")) return false;
         return this.editor.commands.indent();
       },
-      'Shift-Tab': () => {
-        if (this.editor.isActive('listItem')) return false;
+      "Shift-Tab": () => {
+        if (this.editor.isActive("listItem")) return false;
         return this.editor.commands.outdent();
       },
     };

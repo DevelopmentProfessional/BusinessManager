@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 // API Configuration - Determine backend URL based on environment
 const getApiBaseUrl = () => {
@@ -10,25 +10,21 @@ const getApiBaseUrl = () => {
   const hostname = window.location.hostname;
 
   // Check if we're in development (localhost, 127.0.0.1, or private network IPs)
-  const isLocalhost = hostname === 'localhost' ||
-                      hostname === '127.0.0.1' ||
-                      hostname === '';
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "";
 
   // Check for private/local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
   const isPrivateIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
 
   if (isLocalhost || isPrivateIP) {
     // Local development uses Vite proxy
-    return '/api/v1';
+    return "/api/v1";
   }
 
   // Production fallback: static frontend is hosted separately from backend API on Render.
-  return 'https://businessmanager-reference-api.onrender.com/api/v1';
+  return "https://businessmanager-reference-api.onrender.com/api/v1";
 };
 
 const API_BASE_URL = getApiBaseUrl();
-
-
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -38,20 +34,20 @@ const api = axios.create({
 // Add authentication interceptor
 api.interceptors.request.use((config) => {
   // Get token from localStorage or sessionStorage
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  
+
   // Ensure FormData requests are sent as multipart/form-data (let the browser set the boundary)
-  const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
+  const isFormData = typeof FormData !== "undefined" && config.data instanceof FormData;
   if (isFormData) {
-    if (config.headers && 'Content-Type' in config.headers) {
-      delete config.headers['Content-Type'];
+    if (config.headers && "Content-Type" in config.headers) {
+      delete config.headers["Content-Type"];
     }
   }
-  
+
   return config;
 });
 
@@ -62,17 +58,17 @@ api.interceptors.response.use(
     const config = error.config;
 
     // Retry once on timeout (ECONNABORTED) — handles Render cold-start delays
-    if (error.code === 'ECONNABORTED' && config && !config._retried) {
+    if (error.code === "ECONNABORTED" && config && !config._retried) {
       config._retried = true;
       await new Promise((r) => setTimeout(r, 2000));
       return api(config);
     }
 
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
       }
     }
 
@@ -83,7 +79,7 @@ api.interceptors.response.use(
 // Caching removed — all fetches hit the server directly.
 const getCachedOrFetch = (_key, fetchFunction) => fetchFunction();
 const clearCache = () => {};
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.clearApiCache = () => {};
 }
 
@@ -95,15 +91,15 @@ if (typeof window !== 'undefined') {
  * @param {object} setters - Store setter functions
  */
 export const preloadStoreData = async ({ setClients, setServices, setEmployees, setInventory, setAppointments }) => {
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   if (!token) return;
 
   const tables = [
-    { fetch: () => api.get('/isud/clients'),   set: setClients },
-    { fetch: () => api.get('/isud/services'),  set: setServices },
-    { fetch: () => api.get('/isud/users'),     set: setEmployees },
-    { fetch: () => api.get('/isud/inventory'), set: setInventory },
-    { fetch: () => api.get('/isud/schedules'), set: setAppointments },
+    { fetch: () => api.get("/isud/clients"), set: setClients },
+    { fetch: () => api.get("/isud/services"), set: setServices },
+    { fetch: () => api.get("/isud/users"), set: setEmployees },
+    { fetch: () => api.get("/isud/inventory"), set: setInventory },
+    { fetch: () => api.get("/isud/schedules"), set: setAppointments },
   ];
 
   for (const { fetch, set } of tables) {
@@ -111,32 +107,34 @@ export const preloadStoreData = async ({ setClients, setServices, setEmployees, 
       const res = await fetch();
       const data = res?.data ?? res;
       if (Array.isArray(data)) set(data);
-    } catch { /* individual failure won't abort the rest */ }
+    } catch {
+      /* individual failure won't abort the rest */
+    }
     await new Promise((r) => setTimeout(r, 200));
   }
 };
 
 // API endpoints for all entities
 export const clientsAPI = {
-  getAll: () => getCachedOrFetch('clients', () => api.get('/isud/clients')),
+  getAll: () => getCachedOrFetch("clients", () => api.get("/isud/clients")),
   getById: (id) => api.get(`/isud/clients/${id}`),
   create: (data) => {
-    clearCache('clients');
-    return api.post('/isud/clients', data);
+    clearCache("clients");
+    return api.post("/isud/clients", data);
   },
   update: (id, data) => {
-    clearCache('clients');
+    clearCache("clients");
     return api.put(`/isud/clients/${id}`, data);
   },
   delete: (id) => {
-    clearCache('clients');
+    clearCache("clients");
     return api.delete(`/isud/clients/${id}`);
   },
   uploadCSV: (formData) => {
-    clearCache('clients');
-    return api.post('/clients/upload-csv', formData, {
+    clearCache("clients");
+    return api.post("/clients/upload-csv", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
@@ -146,10 +144,10 @@ export const clientsAPI = {
   getPortalOrders: (clientId) => api.get(`/isud/client_orders?client_id=${clientId}`),
   getPortalOrderItems: (orderId) => api.get(`/isud/client_order_items?order_id=${orderId}`),
   bulkImport: async (records) => {
-    clearCache('clients');
+    clearCache("clients");
     const results = [];
     for (const record of records) {
-      const res = await api.post('/isud/clients', record);
+      const res = await api.post("/isud/clients", record);
       results.push(res?.data ?? res);
     }
     return { created_count: results.length };
@@ -158,22 +156,22 @@ export const clientsAPI = {
 
 // Inventory API (replaces both items and inventory APIs)
 export const inventoryAPI = {
-  getAll: () => getCachedOrFetch('inventory', () => api.get('/isud/inventory')),
+  getAll: () => getCachedOrFetch("inventory", () => api.get("/isud/inventory")),
   getById: (id) => api.get(`/isud/inventory/${id}`),
-  getLowStock: () => getCachedOrFetch('inventory-low-stock', () => api.get('/isud/inventory/low-stock')),
+  getLowStock: () => getCachedOrFetch("inventory-low-stock", () => api.get("/isud/inventory/low-stock")),
   create: (data) => {
-    clearCache('inventory');
-    return api.post('/isud/inventory', data);
+    clearCache("inventory");
+    return api.post("/isud/inventory", data);
   },
   update: (id, data) => {
-    clearCache('inventory');
+    clearCache("inventory");
     return api.put(`/isud/inventory/${id}`, data);
   },
   delete: (id) => {
-    clearCache('inventory');
+    clearCache("inventory");
     return api.delete(`/isud/inventory/${id}`);
   },
-  
+
   // Image management — always fetches fresh from database; uses cache only for offline mode
   getImages: (inventoryId) => api.get(`/isud/inventory/${inventoryId}/images`),
   addImageUrl: (inventoryId, imageData) => {
@@ -181,11 +179,11 @@ export const inventoryAPI = {
   },
   uploadImageFile: (inventoryId, file, isPrimary = false) => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('is_primary', isPrimary);
+    formData.append("file", file);
+    formData.append("is_primary", isPrimary);
     return api.post(`/isud/inventory/${inventoryId}/images/upload`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
@@ -196,69 +194,68 @@ export const inventoryAPI = {
     return api.delete(`/isud/inventory/images/${imageId}`);
   },
   getImageFileUrl: (imageId) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
     const base = `${api.defaults.baseURL}/isud/inventory/images/${imageId}/file`;
     return token ? `${base}?token=${encodeURIComponent(token)}` : base;
   },
-  getLocations: () => api.get('/isud/inventory/locations'),
+  getLocations: () => api.get("/isud/inventory/locations"),
   bulkImport: (products) => {
-    clearCache('inventory');
-    return api.post('/products/bulk-import', { products });
+    clearCache("inventory");
+    return api.post("/products/bulk-import", { products });
   },
 };
 
 // ─── Descriptive Features API ────────────────────────────────────────────────
 export const featuresAPI = {
-  listAll:      ()               => api.get('/features'),
-  create:       (data)           => api.post('/features', data),
-  rename:       (id, data)       => api.patch(`/features/${id}`, data),
-  delete:       (id)             => api.delete(`/features/${id}`),
-  addOption:    (fid, data)      => api.post(`/features/${fid}/options`, data),
+  listAll: () => api.get("/features"),
+  create: (data) => api.post("/features", data),
+  rename: (id, data) => api.patch(`/features/${id}`, data),
+  delete: (id) => api.delete(`/features/${id}`),
+  addOption: (fid, data) => api.post(`/features/${fid}/options`, data),
   renameOption: (fid, oid, data) => api.patch(`/features/${fid}/options/${oid}`, data),
-  deleteOption:        (fid, oid) => api.delete(`/features/${fid}/options/${oid}`),
-  getInventorySummary: ()         => api.get('/features/inventory-summary'),
-  deductStock:         (items)    => api.post('/features/deduct-stock', items),
+  deleteOption: (fid, oid) => api.delete(`/features/${fid}/options/${oid}`),
+  getInventorySummary: () => api.get("/features/inventory-summary"),
+  deductStock: (items) => api.post("/features/deduct-stock", items),
 };
 
 export const inventoryFeaturesAPI = {
-  get:             (invId)           => api.get(`/inventory/${invId}/features`),
-  getCombinations: (invId)           => api.get(`/inventory/${invId}/feature-combinations`),
-  addFeature:      (invId, fid)      => api.post(`/inventory/${invId}/features/${fid}`),
-  removeFeature:   (invId, fid)      => api.delete(`/inventory/${invId}/features/${fid}`),
-  setAffectsPrice: (invId, data)     => api.patch(`/inventory/${invId}/features/affects-price`, data),
-  saveCombinations:(invId, rows)     => api.put(`/inventory/${invId}/feature-combinations`, rows),
-  saveOptionData:  (invId, fid, rows) =>
-    api.put(`/inventory/${invId}/features/${fid}/options`, rows),
+  get: (invId) => api.get(`/inventory/${invId}/features`),
+  getCombinations: (invId) => api.get(`/inventory/${invId}/feature-combinations`),
+  addFeature: (invId, fid) => api.post(`/inventory/${invId}/features/${fid}`),
+  removeFeature: (invId, fid) => api.delete(`/inventory/${invId}/features/${fid}`),
+  setAffectsPrice: (invId, data) => api.patch(`/inventory/${invId}/features/affects-price`, data),
+  saveCombinations: (invId, rows) => api.put(`/inventory/${invId}/feature-combinations`, rows),
+  saveOptionData: (invId, fid, rows) => api.put(`/inventory/${invId}/features/${fid}/options`, rows),
 };
 
 export const servicesAPI = {
-  getAll: () => getCachedOrFetch('services', () => api.get('/isud/services')),
+  getAll: () => getCachedOrFetch("services", () => api.get("/isud/services")),
   getById: (id) => api.get(`/isud/services/${id}`),
   create: (data) => {
-    clearCache('services');
-    return api.post('/isud/services', data);
+    clearCache("services");
+    return api.post("/isud/services", data);
   },
   update: (id, data) => {
-    clearCache('services');
+    clearCache("services");
     return api.put(`/isud/services/${id}`, data);
   },
   delete: (id) => {
-    clearCache('services');
+    clearCache("services");
     return api.delete(`/isud/services/${id}`);
   },
   uploadCSV: (formData) => {
-    clearCache('services');
-    return api.post('/services/upload-csv', formData, {
+    clearCache("services");
+    return api.post("/services/upload-csv", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
   bulkImport: async (records) => {
-    clearCache('services');
+    clearCache("services");
     const results = [];
     for (const record of records) {
-      const res = await api.post('/isud/services', record);
+      const res = await api.post("/isud/services", record);
       results.push(res?.data ?? res);
     }
     return { created_count: results.length };
@@ -269,8 +266,10 @@ export const serviceRelationsAPI = {
   // Consumable resources linked to a service
   getResources: (serviceId) => api.get(`/isud/service_resource?service_id=${serviceId}`),
   addResource: (serviceId, inventoryId, quantity, consumptionRatePct = null) =>
-    api.post('/isud/service_resource', {
-      service_id: serviceId, inventory_id: inventoryId, quantity,
+    api.post("/isud/service_resource", {
+      service_id: serviceId,
+      inventory_id: inventoryId,
+      quantity,
       ...(consumptionRatePct != null ? { consumption_rate_pct: consumptionRatePct } : {}),
     }),
   updateResource: (id, quantity) => api.put(`/isud/service_resource/${id}`, { quantity }),
@@ -279,61 +278,57 @@ export const serviceRelationsAPI = {
 
   // Assets reserved for the full duration of a service
   getAssets: (serviceId) => api.get(`/isud/service_asset?service_id=${serviceId}`),
-  addAsset: (serviceId, inventoryId) =>
-    api.post('/isud/service_asset', { service_id: serviceId, inventory_id: inventoryId }),
-  updateAssetDuration: (id, durationMinutes) =>
-    api.put(`/isud/service_asset/${id}`, { asset_duration_minutes: durationMinutes }),
+  addAsset: (serviceId, inventoryId) => api.post("/isud/service_asset", { service_id: serviceId, inventory_id: inventoryId }),
+  updateAssetDuration: (id, durationMinutes) => api.put(`/isud/service_asset/${id}`, { asset_duration_minutes: durationMinutes }),
   removeAsset: (id) => api.delete(`/isud/service_asset/${id}`),
 
   // Employees capable of performing a service
   getEmployees: (serviceId) => api.get(`/isud/service_employee?service_id=${serviceId}`),
-  addEmployee: (serviceId, userId) =>
-    api.post('/isud/service_employee', { service_id: serviceId, user_id: userId }),
+  addEmployee: (serviceId, userId) => api.post("/isud/service_employee", { service_id: serviceId, user_id: userId }),
   removeEmployee: (id) => api.delete(`/isud/service_employee/${id}`),
 
   // Locations where the service is offered
   getLocations: (serviceId) => api.get(`/isud/service_location?service_id=${serviceId}`),
-  addLocation: (serviceId, inventoryId) =>
-    api.post('/isud/service_location', { service_id: serviceId, inventory_id: inventoryId }),
+  addLocation: (serviceId, inventoryId) => api.post("/isud/service_location", { service_id: serviceId, inventory_id: inventoryId }),
   removeLocation: (id) => api.delete(`/isud/service_location/${id}`),
 };
 
 export const serviceRecipeAPI = {
   get: (serviceId) => api.get(`/isud/service_recipe?service_id=${serviceId}`),
-  create: (data) => api.post('/isud/service_recipe', data),
+  create: (data) => api.post("/isud/service_recipe", data),
   update: (id, data) => api.put(`/isud/service_recipe/${id}`, data),
 };
 
 export const suppliersAPI = {
-  getAll: () => getCachedOrFetch('suppliers', () => api.get('/isud/suppliers')),
+  getAll: () => getCachedOrFetch("suppliers", () => api.get("/isud/suppliers")),
   getById: (id) => api.get(`/isud/suppliers/${id}`),
   create: (data) => {
-    clearCache('suppliers');
-    return api.post('/isud/suppliers', data);
+    clearCache("suppliers");
+    return api.post("/isud/suppliers", data);
   },
   update: (id, data) => {
-    clearCache('suppliers');
+    clearCache("suppliers");
     return api.put(`/isud/suppliers/${id}`, data);
   },
   delete: (id) => {
-    clearCache('suppliers');
+    clearCache("suppliers");
     return api.delete(`/isud/suppliers/${id}`);
   },
 };
 
 export const employeesAPI = {
-  getAll: () => getCachedOrFetch('employees', () => api.get('/isud/users')),
+  getAll: () => getCachedOrFetch("employees", () => api.get("/isud/users")),
   getById: (id) => api.get(`/isud/users/${id}`),
   create: (data) => {
-    clearCache('employees');
-    return api.post('/isud/users', data);
+    clearCache("employees");
+    return api.post("/isud/users", data);
   },
   update: (id, data) => {
-    clearCache('employees');
+    clearCache("employees");
     return api.put(`/isud/users/${id}`, data);
   },
   delete: (id) => {
-    clearCache('employees');
+    clearCache("employees");
     return api.delete(`/isud/users/${id}`);
   },
   getUserData: (userId) => api.get(`/auth/users/${userId}`),
@@ -345,18 +340,18 @@ export const employeesAPI = {
   updateUserPermission: (userId, permissionId, data) => api.put(`/auth/users/${userId}/permissions/${permissionId}`, data),
   deleteUserPermission: (userId, permissionId) => api.delete(`/auth/users/${userId}/permissions/${permissionId}`),
   uploadCSV: (formData) => {
-    clearCache('employees');
-    return api.post('/employees/upload-csv', formData, {
+    clearCache("employees");
+    return api.post("/employees/upload-csv", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
   bulkImport: async (records) => {
-    clearCache('employees');
+    clearCache("employees");
     const results = [];
     for (const record of records) {
-      const res = await api.post('/isud/users', record);
+      const res = await api.post("/isud/users", record);
       results.push(res?.data ?? res);
     }
     return { created_count: results.length };
@@ -364,252 +359,240 @@ export const employeesAPI = {
 };
 
 export const profileAPI = {
-  updateMyProfile: (data) => api.put('/auth/me/profile', data),
+  updateMyProfile: (data) => api.put("/auth/me/profile", data),
   uploadProfilePicture: (file) => {
     const formData = new FormData();
-    formData.append('file', file);
-    return api.put('/auth/me/profile-picture', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    formData.append("file", file);
+    return api.put("/auth/me/profile-picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
   },
   getProfilePictureUrl: (userId) => `${api.defaults.baseURL}/auth/users/${userId}/profile-picture`,
 };
 
 export const departmentsAPI = {
-  getAll: () => api.get('/isud/department'),
-  create: (data) => api.post('/isud/department', data),
+  getAll: () => api.get("/isud/department"),
+  create: (data) => api.post("/isud/department", data),
   update: (id, data) => api.put(`/isud/department/${id}`, data),
   delete: (id) => api.delete(`/isud/department/${id}`),
 };
 
 export const rolesAPI = {
-  getAll: () => getCachedOrFetch('roles', () => api.get('/auth/roles')),
+  getAll: () => getCachedOrFetch("roles", () => api.get("/auth/roles")),
   getById: (id) => api.get(`/auth/roles/${id}`),
   create: (data) => {
-    clearCache('roles');
-    return api.post('/auth/roles', data);
+    clearCache("roles");
+    return api.post("/auth/roles", data);
   },
   update: (id, data) => {
-    clearCache('roles');
+    clearCache("roles");
     return api.put(`/auth/roles/${id}`, data);
   },
   delete: (id) => {
-    clearCache('roles');
+    clearCache("roles");
     return api.delete(`/auth/roles/${id}`);
   },
   addPermission: (roleId, data) => {
-    clearCache('roles');
+    clearCache("roles");
     return api.post(`/auth/roles/${roleId}/permissions`, data);
   },
   removePermission: (roleId, permissionId) => {
-    clearCache('roles');
+    clearCache("roles");
     return api.delete(`/auth/roles/${roleId}/permissions/${permissionId}`);
   },
 };
 
 export const scheduleAPI = {
-  getAll: () => getCachedOrFetch('schedule', () => api.get('/isud/schedules')),
+  getAll: () => getCachedOrFetch("schedule", () => api.get("/isud/schedules")),
   getByEmployee: (userId) => api.get(`/isud/schedules?employee_id=${userId}`),
-  getAvailableEmployees: () => api.get('/isud/users'),
+  getAvailableEmployees: () => api.get("/isud/users"),
   create: (data) => {
-    clearCache('schedule');
-    return api.post('/isud/schedules', data);
+    clearCache("schedule");
+    return api.post("/isud/schedules", data);
   },
   update: (id, data) => {
-    clearCache('schedule');
+    clearCache("schedule");
     return api.put(`/isud/schedules/${id}`, data);
   },
   delete: (id) => {
-    clearCache('schedule');
+    clearCache("schedule");
     return api.delete(`/isud/schedules/${id}`);
   },
 };
 
 export const scheduleAttendeesAPI = {
   getBySchedule: (scheduleId) => api.get(`/isud/schedule_attendee?schedule_id=${scheduleId}`),
-  create: (data) => api.post('/isud/schedule_attendee', data),
+  create: (data) => api.post("/isud/schedule_attendee", data),
   delete: (id) => api.delete(`/isud/schedule_attendee/${id}`),
 };
 
 export const tasksAPI = {
-  getAll: () => getCachedOrFetch('tasks', () => api.get('/tasks')),
+  getAll: () => getCachedOrFetch("tasks", () => api.get("/tasks")),
   getById: (id) => api.get(`/tasks/${id}`),
   getByTitle: (title) => api.get(`/tasks/by-title/${encodeURIComponent(title)}`),
   create: (data) => {
-    clearCache('tasks');
-    return api.post('/tasks', data);
+    clearCache("tasks");
+    return api.post("/tasks", data);
   },
   update: (id, data) => {
-    clearCache('tasks');
+    clearCache("tasks");
     return api.put(`/tasks/${id}`, data);
   },
   delete: (id) => {
-    clearCache('tasks');
+    clearCache("tasks");
     return api.delete(`/tasks/${id}`);
   },
   linkByTitle: (taskId, targetTaskTitle) => {
-    clearCache('tasks');
+    clearCache("tasks");
     return api.post(`/tasks/${taskId}/link`, {
-      target_task_title: targetTaskTitle
+      target_task_title: targetTaskTitle,
     });
   },
   unlink: (taskId, targetTaskId) => {
-    clearCache('tasks');
+    clearCache("tasks");
     return api.delete(`/tasks/${taskId}/link/${targetTaskId}`);
   },
 };
 
 export const attendanceAPI = {
-  getAll: () => getCachedOrFetch('attendance', () => api.get('/isud/attendance')),
+  getAll: () => getCachedOrFetch("attendance", () => api.get("/isud/attendance")),
   getByUser: (userId) => api.get(`/isud/attendance?employee_id=${userId}`),
   getByUserAndDate: (userId, date) => api.get(`/isud/attendance?employee_id=${userId}&date=${date}`),
-  me: () => api.get('/auth/attendance/me'),
-  checkUser: () => api.get('/auth/attendance/check-user'),
-  clockIn: () => api.post('/auth/attendance/clock-in', {}),
-  clockOut: () => api.post('/auth/attendance/clock-out', {}),
+  me: () => api.get("/auth/attendance/me"),
+  checkUser: () => api.get("/auth/attendance/check-user"),
+  clockIn: () => api.post("/auth/attendance/clock-in", {}),
+  clockOut: () => api.post("/auth/attendance/clock-out", {}),
   create: (data) => {
-    clearCache('attendance');
-    return api.post('/isud/attendance', data);
+    clearCache("attendance");
+    return api.post("/isud/attendance", data);
   },
   update: (id, data) => {
-    clearCache('attendance');
+    clearCache("attendance");
     return api.put(`/isud/attendance/${id}`, data);
   },
 };
 
 // Documents: full CRUD via ISUD pattern including file uploads.
 export const documentsAPI = {
-  getAll: () => getCachedOrFetch('documents', () => api.get('/isud/documents')),
+  getAll: () => getCachedOrFetch("documents", () => api.get("/isud/documents")),
   getById: (id) => api.get(`/isud/documents/${id}`),
-  getByEntity: (entityType, entityId) =>
-    api.get('/isud/documents', { params: { entity_type: entityType, entity_id: entityId } }),
+  getByEntity: (entityType, entityId) => api.get("/isud/documents", { params: { entity_type: entityType, entity_id: entityId } }),
   upload: (file, description, extra = {}) => {
-    clearCache('documents');
+    clearCache("documents");
     const formData = new FormData();
-    formData.append('file', file);
-    if (description) formData.append('description', description);
-    if (extra.entity_type) formData.append('entity_type', extra.entity_type);
-    if (extra.entity_id) formData.append('entity_id', extra.entity_id);
-    if (extra.category_id) formData.append('category_id', extra.category_id);
-    return api.post('/isud/document/insert', formData);
+    formData.append("file", file);
+    if (description) formData.append("description", description);
+    if (extra.entity_type) formData.append("entity_type", extra.entity_type);
+    if (extra.entity_id) formData.append("entity_id", extra.entity_id);
+    if (extra.category_id) formData.append("category_id", extra.category_id);
+    return api.post("/isud/document/insert", formData);
   },
-  uploadBulk: (files, { entity_type, entity_id, description } = {}) =>
-    Promise.all(
-      files.map((file) =>
-        documentsAPI.upload(file, description, { entity_type, entity_id })
-      )
-    ),
+  uploadBulk: (files, { entity_type, entity_id, description } = {}) => Promise.all(files.map((file) => documentsAPI.upload(file, description, { entity_type, entity_id }))),
   delete: (id) => {
-    clearCache('documents');
+    clearCache("documents");
     return api.delete(`/isud/documents/${id}`);
   },
   update: (id, data) => {
-    clearCache('documents');
+    clearCache("documents");
     return api.put(`/isud/documents/${id}`, data);
   },
   sign: (id) => {
-    clearCache('documents');
+    clearCache("documents");
     return api.put(`/documents/${id}/sign`);
   },
-  fileUrl: (id, { download = false } = {}) =>
-    `${api.defaults.baseURL}/documents/${id}/${download ? 'download' : 'file'}`,
-  historyFileUrl: (historyId, { download = true } = {}) =>
-    `${api.defaults.baseURL}/documents/history/${historyId}/download${download ? '?download=true' : ''}`,
+  fileUrl: (id, { download = false } = {}) => `${api.defaults.baseURL}/documents/${id}/${download ? "download" : "file"}`,
+  historyFileUrl: (historyId, { download = true } = {}) => `${api.defaults.baseURL}/documents/history/${historyId}/download${download ? "?download=true" : ""}`,
   history: () => Promise.resolve({ data: [] }),
-  replaceContent: () => Promise.reject(new Error('Replace content: use document editor component')),
-  listAssignments: (documentId) =>
-    api.get(`/documents/${documentId}/assignments`),
-  addAssignment: (documentId, entityId, entityType = 'employee') =>
+  replaceContent: () => Promise.reject(new Error("Replace content: use document editor component")),
+  listAssignments: (documentId) => api.get(`/documents/${documentId}/assignments`),
+  addAssignment: (documentId, entityId, entityType = "employee") =>
     api.post(`/documents/${documentId}/assignments`, {
       entity_type: entityType,
       entity_id: entityId,
     }),
-  removeAssignment: (documentId, entityId, entityType = 'employee') =>
-    api.delete(`/documents/${documentId}/assignments/${entityId}?entity_type=${entityType}`),
+  removeAssignment: (documentId, entityId, entityType = "employee") => api.delete(`/documents/${documentId}/assignments/${entityId}?entity_type=${entityType}`),
   onlyofficeConfig: (id) => api.get(`/documents/${id}/onlyoffice-config`),
   getContent: (id) => api.get(`/documents/${id}/content`),
   saveContent: (id, content, contentType) => {
-    clearCache('documents');
+    clearCache("documents");
     return api.put(`/documents/${id}/content`, { content, content_type: contentType });
   },
   saveBinary: (id, blob, contentType) => {
-    clearCache('documents');
+    clearCache("documents");
     const formData = new FormData();
-    formData.append('file', blob, 'document');
-    if (contentType) formData.append('content_type', contentType);
+    formData.append("file", blob, "document");
+    if (contentType) formData.append("content_type", contentType);
     return api.put(`/documents/${id}/binary`, formData);
   },
 };
 
 // Document tags: company-scoped tags + per-document assignment.
 export const documentTagsAPI = {
-  list: (q) => api.get('/document-tags', { params: q ? { q } : {} }),
-  create: (name) => api.post('/document-tags', { name }),
+  list: (q) => api.get("/document-tags", { params: q ? { q } : {} }),
+  create: (name) => api.post("/document-tags", { name }),
   delete: (tagId) => api.delete(`/document-tags/${tagId}`),
   getForDocument: (documentId) => api.get(`/documents/${documentId}/tags`),
   setForDocument: (documentId, tagIds) => api.put(`/documents/${documentId}/tags`, { tag_ids: tagIds }),
-  getAllLinks: () => api.get('/document-tag-links'),
+  getAllLinks: () => api.get("/document-tag-links"),
 };
 
 // Document categories: full CRUD via isud (table document_category).
 export const documentCategoriesAPI = {
-  list: () => getCachedOrFetch('document-categories', () => api.get('/isud/document_category')),
+  list: () => getCachedOrFetch("document-categories", () => api.get("/isud/document_category")),
   create: (data) => {
-    clearCache('document-categories');
-    return api.post('/isud/document_category', data);
+    clearCache("document-categories");
+    return api.post("/isud/document_category", data);
   },
   update: (id, data) => {
-    clearCache('document-categories');
+    clearCache("document-categories");
     return api.put(`/isud/document_category/${id}`, data);
   },
   delete: (id) => {
-    clearCache('document-categories');
+    clearCache("document-categories");
     return api.delete(`/isud/document_category/${id}`);
   },
 };
 
 export const leaveRequestsAPI = {
-  getAll: () => api.get('/isud/leave_request'),
+  getAll: () => api.get("/isud/leave_request"),
   getBySupervisor: (supervisorId) => api.get(`/isud/leave_request?supervisor_id=${supervisorId}`),
   getByUser: (userId, leaveType) => {
-    const params = leaveType
-      ? `/isud/leave_request?user_id=${userId}&leave_type=${leaveType}`
-      : `/isud/leave_request?user_id=${userId}`;
+    const params = leaveType ? `/isud/leave_request?user_id=${userId}&leave_type=${leaveType}` : `/isud/leave_request?user_id=${userId}`;
     return api.get(params);
   },
-  create: (data) => api.post('/isud/leave_request', data),
+  create: (data) => api.post("/isud/leave_request", data),
   update: (id, data) => api.put(`/isud/leave_request/${id}`, data),
   delete: (id) => api.delete(`/isud/leave_request/${id}`),
   action: (id, action) => api.put(`/leave-requests/${id}/action`, { action }),
 };
 
 export const onboardingRequestsAPI = {
-  getAll: () => api.get('/isud/onboarding_request'),
+  getAll: () => api.get("/isud/onboarding_request"),
   getBySupervisor: (supervisorId) => api.get(`/isud/onboarding_request?supervisor_id=${supervisorId}`),
   getByUser: (userId) => api.get(`/isud/onboarding_request?user_id=${userId}`),
-  create: (data) => api.post('/isud/onboarding_request', data),
+  create: (data) => api.post("/isud/onboarding_request", data),
   update: (id, data) => api.put(`/isud/onboarding_request/${id}`, data),
   delete: (id) => api.delete(`/isud/onboarding_request/${id}`),
   action: (id, action) => api.put(`/onboarding-requests/${id}/action`, { action }),
 };
 
 export const offboardingRequestsAPI = {
-  getAll: () => api.get('/isud/offboarding_request'),
+  getAll: () => api.get("/isud/offboarding_request"),
   getBySupervisor: (supervisorId) => api.get(`/isud/offboarding_request?supervisor_id=${supervisorId}`),
   getByUser: (userId) => api.get(`/isud/offboarding_request?user_id=${userId}`),
-  create: (data) => api.post('/isud/offboarding_request', data),
+  create: (data) => api.post("/isud/offboarding_request", data),
   update: (id, data) => api.put(`/isud/offboarding_request/${id}`, data),
   delete: (id) => api.delete(`/isud/offboarding_request/${id}`),
   action: (id, action) => api.put(`/offboarding-requests/${id}/action`, { action }),
 };
 
 export const saleTransactionsAPI = {
-  getAll: () => getCachedOrFetch('sale-transactions', () => api.get('/isud/sale_transaction')),
+  getAll: () => getCachedOrFetch("sale-transactions", () => api.get("/isud/sale_transaction")),
   create: (data) => {
-    clearCache('sale-transactions');
-    return api.post('/isud/sale_transaction', data);
+    clearCache("sale-transactions");
+    return api.post("/isud/sale_transaction", data);
   },
-  createItem: (data) => api.post('/isud/sale_transaction_item', data),
+  createItem: (data) => api.post("/isud/sale_transaction_item", data),
   getItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
 };
 
@@ -617,13 +600,12 @@ export const saleTransactionsAPI = {
 export const clientCartAPI = {
   getItems: (clientId) => api.get(`/client-cart/${clientId}`),
   upsertItem: (clientId, itemData) => api.put(`/client-cart/${clientId}/item`, itemData),
-  removeItem: (clientId, cartKey) =>
-    api.delete(`/client-cart/${clientId}/item/${encodeURIComponent(cartKey)}`),
+  removeItem: (clientId, cartKey) => api.delete(`/client-cart/${clientId}/item/${encodeURIComponent(cartKey)}`),
   clearCart: (clientId) => api.delete(`/client-cart/${clientId}`),
 };
 
 export const clientOrdersAPI = {
-  getAll: (params = {}) => api.get('/portal-orders', { params }),
+  getAll: (params = {}) => api.get("/portal-orders", { params }),
   getItems: (orderId) => api.get(`/portal-orders/${orderId}/items`),
   createFromCart: (clientId, data = {}) => api.post(`/portal-orders/from-client-cart/${clientId}`, data),
   pay: (orderId, data = {}) => api.post(`/portal-orders/${orderId}/pay`, data),
@@ -633,78 +615,73 @@ export const clientOrdersAPI = {
 // Product production relations (resources / assets / locations linked to a manufactured product)
 export const productRelationsAPI = {
   // Resources consumed per batch
-  getResources:   (inventoryId) => api.get(`/isud/product_resource?inventory_id=${inventoryId}`),
-  addResource:    (inventoryId, resourceId, quantityPerBatch, notes = null) =>
-    api.post('/isud/product_resource', { inventory_id: inventoryId, resource_id: resourceId, quantity_per_batch: quantityPerBatch, notes }),
-  updateResource: (id, data)    => api.put(`/isud/product_resource/${id}`, data),
-  removeResource: (id)          => api.delete(`/isud/product_resource/${id}`),
+  getResources: (inventoryId) => api.get(`/isud/product_resource?inventory_id=${inventoryId}`),
+  addResource: (inventoryId, resourceId, quantityPerBatch, notes = null) => api.post("/isud/product_resource", { inventory_id: inventoryId, resource_id: resourceId, quantity_per_batch: quantityPerBatch, notes }),
+  updateResource: (id, data) => api.put(`/isud/product_resource/${id}`, data),
+  removeResource: (id) => api.delete(`/isud/product_resource/${id}`),
 
   // Assets used during production
-  getAssets:   (inventoryId) => api.get(`/isud/product_asset?inventory_id=${inventoryId}`),
-  addAsset:    (inventoryId, assetId, batchSize = 1, durationMinutes = null) =>
-    api.post('/isud/product_asset', { inventory_id: inventoryId, asset_id: assetId, batch_size: batchSize, duration_minutes: durationMinutes }),
-  updateAsset: (id, data)    => api.put(`/isud/product_asset/${id}`, data),
-  removeAsset: (id)          => api.delete(`/isud/product_asset/${id}`),
+  getAssets: (inventoryId) => api.get(`/isud/product_asset?inventory_id=${inventoryId}`),
+  addAsset: (inventoryId, assetId, batchSize = 1, durationMinutes = null) => api.post("/isud/product_asset", { inventory_id: inventoryId, asset_id: assetId, batch_size: batchSize, duration_minutes: durationMinutes }),
+  updateAsset: (id, data) => api.put(`/isud/product_asset/${id}`, data),
+  removeAsset: (id) => api.delete(`/isud/product_asset/${id}`),
 
   // Locations where the product is manufactured
-  getLocations:   (inventoryId) => api.get(`/isud/product_location?inventory_id=${inventoryId}`),
-  addLocation:    (inventoryId, locationId) =>
-    api.post('/isud/product_location', { inventory_id: inventoryId, location_id: locationId }),
+  getLocations: (inventoryId) => api.get(`/isud/product_location?inventory_id=${inventoryId}`),
+  addLocation: (inventoryId, locationId) => api.post("/isud/product_location", { inventory_id: inventoryId, location_id: locationId }),
   removeLocation: (id) => api.delete(`/isud/product_location/${id}`),
 };
 
 export const inventoryCategoriesAPI = {
   getByType: (itemType) => api.get(`/inventory-categories?item_type=${encodeURIComponent(itemType)}`),
-  create: (itemType, name) => api.post('/inventory-categories', { item_type: itemType, name }),
+  create: (itemType, name) => api.post("/inventory-categories", { item_type: itemType, name }),
   delete: (id) => api.delete(`/inventory-categories/${id}`),
 };
 
 export const discountRulesAPI = {
-  getAll:  ()         => api.get('/isud/discount_rule'),
-  create:  (data)     => api.post('/isud/discount_rule', data),
-  update:  (id, data) => api.put(`/isud/discount_rule/${id}`, data),
-  delete:  (id)       => api.delete(`/isud/discount_rule/${id}`),
+  getAll: () => api.get("/isud/discount_rule"),
+  create: (data) => api.post("/isud/discount_rule", data),
+  update: (id, data) => api.put(`/isud/discount_rule/${id}`, data),
+  delete: (id) => api.delete(`/isud/discount_rule/${id}`),
 };
 
 export const mixAPI = {
   // Mix config (one record per mix inventory item)
-  getConfig:    (inventoryId) => api.get(`/isud/mix_config?inventory_id=${inventoryId}`),
-  saveConfig:   (data)        => api.post('/isud/mix_config', data),
-  updateConfig: (id, data)    => api.put(`/isud/mix_config/${id}`, data),
+  getConfig: (inventoryId) => api.get(`/isud/mix_config?inventory_id=${inventoryId}`),
+  saveConfig: (data) => api.post("/isud/mix_config", data),
+  updateConfig: (id, data) => api.put(`/isud/mix_config/${id}`, data),
   // Mix components (products selectable within the mix)
-  getComponents:   (mixId)                    => api.get(`/isud/mix_component?mix_id=${mixId}`),
-  addComponent:    (mixId, componentId, maxQty = null) =>
-    api.post('/isud/mix_component', { mix_id: mixId, component_id: componentId, max_quantity: maxQty }),
-  updateComponent: (id, data)  => api.put(`/isud/mix_component/${id}`, data),
-  removeComponent: (id)        => api.delete(`/isud/mix_component/${id}`),
+  getComponents: (mixId) => api.get(`/isud/mix_component?mix_id=${mixId}`),
+  addComponent: (mixId, componentId, maxQty = null) => api.post("/isud/mix_component", { mix_id: mixId, component_id: componentId, max_quantity: maxQty }),
+  updateComponent: (id, data) => api.put(`/isud/mix_component/${id}`, data),
+  removeComponent: (id) => api.delete(`/isud/mix_component/${id}`),
 };
 
 export const bundleAPI = {
-  getComponents:   (bundleId) => api.get(`/isud/bundle_component?bundle_id=${bundleId}`),
-  addComponent:    (bundleId, componentId, quantity, notes = null) =>
-    api.post('/isud/bundle_component', { bundle_id: bundleId, component_id: componentId, quantity, notes }),
-  updateComponent: (id, data)  => api.put(`/isud/bundle_component/${id}`, data),
-  removeComponent: (id)        => api.delete(`/isud/bundle_component/${id}`),
+  getComponents: (bundleId) => api.get(`/isud/bundle_component?bundle_id=${bundleId}`),
+  addComponent: (bundleId, componentId, quantity, notes = null) => api.post("/isud/bundle_component", { bundle_id: bundleId, component_id: componentId, quantity, notes }),
+  updateComponent: (id, data) => api.put(`/isud/bundle_component/${id}`, data),
+  removeComponent: (id) => api.delete(`/isud/bundle_component/${id}`),
 };
 
 // Production task completion
 export const productionAPI = {
-  getInfo:      (scheduleId) => api.get(`/production/tasks/${scheduleId}/info`),
+  getInfo: (scheduleId) => api.get(`/production/tasks/${scheduleId}/info`),
   completeTask: (scheduleId) => api.post(`/production/tasks/${scheduleId}/complete`),
 };
 
 export const insurancePlansAPI = {
-  getAll: () => getCachedOrFetch('insurance-plans', () => api.get('/isud/insurance_plan')),
+  getAll: () => getCachedOrFetch("insurance-plans", () => api.get("/isud/insurance_plan")),
   create: (data) => {
-    clearCache('insurance-plans');
-    return api.post('/isud/insurance_plan', data);
+    clearCache("insurance-plans");
+    return api.post("/isud/insurance_plan", data);
   },
   update: (id, data) => {
-    clearCache('insurance-plans');
+    clearCache("insurance-plans");
     return api.put(`/isud/insurance_plan/${id}`, data);
   },
   delete: (id) => {
-    clearCache('insurance-plans');
+    clearCache("insurance-plans");
     return api.delete(`/isud/insurance_plan/${id}`);
   },
 };
@@ -712,65 +689,64 @@ export const insurancePlansAPI = {
 export const payrollAPI = {
   processPayment: (employeeId, data) => api.post(`/payroll/pay/${employeeId}`, data),
   getByEmployee: (employeeId) => api.get(`/payroll/pay-slips/${employeeId}`),
-  getAll: () => api.get('/payroll/pay-slips'),
-  checkEligibility: (employeeId, periodStart) =>
-    api.get(`/payroll/check/${employeeId}?period_start=${encodeURIComponent(periodStart)}`),
+  getAll: () => api.get("/payroll/pay-slips"),
+  checkEligibility: (employeeId, periodStart) => api.get(`/payroll/check/${employeeId}?period_start=${encodeURIComponent(periodStart)}`),
 };
 
 export const chatAPI = {
   getHistory: (otherUserId) => api.get(`/chat/messages/${otherUserId}`),
   sendMessage: (receiverId, data) => api.post(`/chat/messages/${receiverId}`, data),
   markRead: (otherUserId) => api.put(`/chat/messages/${otherUserId}/read`),
-  getUnreadCounts: () => api.get('/chat/unread-counts'),
+  getUnreadCounts: () => api.get("/chat/unread-counts"),
 };
 
 export const adminAPI = {
   importData: (formData) => {
-    clearCache('clients');
-    clearCache('services');
-    clearCache('schedule');
-    return api.post('/admin/import-data', formData, {
+    clearCache("clients");
+    clearCache("services");
+    clearCache("schedule");
+    return api.post("/admin/import-data", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
-  getSystemInfo: () => api.get('/admin/system-info'),
-  testAppointments: () => api.get('/admin/test-appointments'),
+  getSystemInfo: () => api.get("/admin/system-info"),
+  testAppointments: () => api.get("/admin/test-appointments"),
 };
 
 // DEPRECATED: Database environment is now stored in user profile (user.db_environment)
 // Use employeesAPI.updateUser(userId, { db_environment: 'development' }) to update
 export const dbEnvironmentAPI = {
-  getCurrent: () => Promise.resolve({ data: { current: 'development', environments: {} } }),
-  switch: () => Promise.resolve({ data: { message: 'Use user profile to update db_environment' } }),
+  getCurrent: () => Promise.resolve({ data: { current: "development", environments: {} } }),
+  switch: () => Promise.resolve({ data: { message: "Use user profile to update db_environment" } }),
 };
 
 export const settingsAPI = {
-  getScheduleSettings: () => getCachedOrFetch('schedule-settings', () => api.get('/settings/schedule')),
+  getScheduleSettings: () => getCachedOrFetch("schedule-settings", () => api.get("/settings/schedule")),
   updateScheduleSettings: (data) => {
-    clearCache('schedule-settings');
-    return api.put('/settings/schedule', data);
+    clearCache("schedule-settings");
+    return api.put("/settings/schedule", data);
   },
   // Aliases (same endpoint, both names work)
-  getSettings: () => getCachedOrFetch('schedule-settings', () => api.get('/settings/schedule')),
+  getSettings: () => getCachedOrFetch("schedule-settings", () => api.get("/settings/schedule")),
   updateSettings: (data) => {
-    clearCache('schedule-settings');
-    return api.put('/settings/schedule', data);
+    clearCache("schedule-settings");
+    return api.put("/settings/schedule", data);
   },
-  seedDemoData: (force = true, seedKey = '') => {
+  seedDemoData: (force = true, seedKey = "") => {
     const headers = {};
     if (seedKey) {
-      headers['X-Seed-Key'] = seedKey;
+      headers["X-Seed-Key"] = seedKey;
     }
-    return api.post('/settings/admin/seed', { force }, { headers });
+    return api.post("/settings/admin/seed", { force }, { headers });
   },
 };
 
 export const templatesAPI = {
-  getAll: (page) => api.get('/templates' + (page ? `?page=${encodeURIComponent(page)}` : '')),
+  getAll: (page) => api.get("/templates" + (page ? `?page=${encodeURIComponent(page)}` : "")),
   getById: (id) => api.get(`/templates/${id}`),
-  create: (data) => api.post('/templates', data),
+  create: (data) => api.post("/templates", data),
   update: (id, data) => api.put(`/templates/${id}`, data),
   delete: (id) => api.delete(`/templates/${id}`),
   render: (id, variables) => api.post(`/templates/${id}/render`, { variables }),
@@ -778,7 +754,7 @@ export const templatesAPI = {
 
 // Schema/Database Import API
 export const schemaAPI = {
-  getTables: () => getCachedOrFetch('schema-tables', () => api.get('/isud/schema/tables')),
+  getTables: () => getCachedOrFetch("schema-tables", () => api.get("/isud/schema/tables")),
   getTableColumns: (tableName) => getCachedOrFetch(`schema-columns-${tableName}`, () => api.get(`/isud/schema/tables/${tableName}/columns`)),
   bulkImport: (tableName, records) => api.post(`/isud/schema/tables/${tableName}/import`, records),
 };
@@ -801,7 +777,7 @@ export const reportsAPI = {
     return api.get(`/reports/clients?${queryParams}`);
   },
   getInventoryReport: () => {
-    return api.get('/reports/inventory');
+    return api.get("/reports/inventory");
   },
   getEmployeesReport: (params) => {
     const queryParams = new URLSearchParams(params).toString();
@@ -827,11 +803,11 @@ export const reportsAPI = {
  * so they work independently on any page (no dependency on parent/page loading store).
  */
 export const assetUnitsAPI = {
-  list:         (invId)            => api.get(`/inventory/${invId}/asset-units`),
-  add:          (invId, data)      => api.post(`/inventory/${invId}/asset-units`, data),
-  update:       (invId, uid, data) => api.put(`/inventory/${invId}/asset-units/${uid}`, data),
-  remove:       (invId, uid)       => api.delete(`/inventory/${invId}/asset-units/${uid}`),
-  availability: (invId, params)    => api.get(`/inventory/${invId}/asset-units/availability`, { params }),
+  list: (invId) => api.get(`/inventory/${invId}/asset-units`),
+  add: (invId, data) => api.post(`/inventory/${invId}/asset-units`, data),
+  update: (invId, uid, data) => api.put(`/inventory/${invId}/asset-units/${uid}`, data),
+  remove: (invId, uid) => api.delete(`/inventory/${invId}/asset-units/${uid}`),
+  availability: (invId, params) => api.get(`/inventory/${invId}/asset-units/availability`, { params }),
 };
 
 export const isudAPI = {

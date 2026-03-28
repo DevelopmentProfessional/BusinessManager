@@ -81,7 +81,10 @@
       "Bash(echo -n \"company=$company: \")",
       "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/*.jsx)",
       "Bash(grep -n \"isModalOpen.*modalContent\" /c/Users/ISDP19659/Documents/BusinessManager/BusinessManager/frontend/src/pages/components/*.jsx)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(npx prettier:*)"
     ]
   }
 }

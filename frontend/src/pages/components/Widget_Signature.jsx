@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from "react";
 
 export default function Widget_Signature({ onSave, onCancel, initialSignature, width = 500, height = 200 }) {
   const canvasRef = useRef(null);
@@ -10,13 +10,13 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#000000';
+    ctx.strokeStyle = "#000000";
     ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
     if (initialSignature) {
       const img = new Image();
@@ -49,30 +49,36 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
   const saveSnapshot = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    setUndoStack(prev => [...prev, canvas.toDataURL()]);
+    setUndoStack((prev) => [...prev, canvas.toDataURL()]);
   }, []);
 
-  const startDrawing = useCallback((e) => {
-    e.preventDefault();
-    saveSnapshot();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const { x, y } = getCoords(e);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  }, [getCoords, saveSnapshot]);
+  const startDrawing = useCallback(
+    (e) => {
+      e.preventDefault();
+      saveSnapshot();
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      const { x, y } = getCoords(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      setIsDrawing(true);
+    },
+    [getCoords, saveSnapshot]
+  );
 
-  const draw = useCallback((e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const { x, y } = getCoords(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    setHasDrawn(true);
-  }, [isDrawing, getCoords]);
+  const draw = useCallback(
+    (e) => {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      const { x, y } = getCoords(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      setHasDrawn(true);
+    },
+    [isDrawing, getCoords]
+  );
 
   const stopDrawing = useCallback((e) => {
     if (e) e.preventDefault();
@@ -81,23 +87,23 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
 
   const handleClear = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     saveSnapshot();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#000000';
+    ctx.strokeStyle = "#000000";
     ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     setHasDrawn(false);
   };
 
   const handleUndo = () => {
     if (undoStack.length === 0) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const lastSnapshot = undoStack[undoStack.length - 1];
-    setUndoStack(prev => prev.slice(0, -1));
+    setUndoStack((prev) => prev.slice(0, -1));
 
     const img = new Image();
     img.onload = () => {
@@ -110,7 +116,7 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
   const handleSave = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
+    const dataUrl = canvas.toDataURL("image/png");
     onSave(dataUrl);
   };
 
@@ -132,43 +138,23 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
           onTouchEnd={stopDrawing}
         />
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-        Draw your signature above using mouse or touch
-      </p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Draw your signature above using mouse or touch</p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={undoStack.length === 0}
-            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button type="button" onClick={handleUndo} disabled={undoStack.length === 0} className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
             Undo
           </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
+          <button type="button" onClick={handleClear} className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
             Clear
           </button>
         </div>
         <div className="flex items-center gap-2">
           {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
+            <button type="button" onClick={onCancel} className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
               Cancel
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!hasDrawn}
-            className="px-4 py-1.5 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button type="button" onClick={handleSave} disabled={!hasDrawn} className="px-4 py-1.5 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
             Save Signature
           </button>
         </div>

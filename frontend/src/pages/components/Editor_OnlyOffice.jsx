@@ -1,17 +1,16 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { documentsAPI } from '../../services/api';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { documentsAPI } from "../../services/api";
 
 // Simple utility to load the OnlyOffice script once
 function loadOnlyOfficeScript(onlyofficeUrl, timeoutMs = 10000) {
-  const url = `${onlyofficeUrl.replace(/\/+$/, '')}/web-apps/apps/api/documents/api.js`;
+  const url = `${onlyofficeUrl.replace(/\/+$/, "")}/web-apps/apps/api/documents/api.js`;
   return new Promise((resolve, reject) => {
     if (window.DocsAPI) return resolve(window.DocsAPI);
 
-    const existing = Array.from(document.getElementsByTagName('script'))
-      .find(s => s.src === url);
+    const existing = Array.from(document.getElementsByTagName("script")).find((s) => s.src === url);
     if (existing) {
-      existing.addEventListener('load', () => resolve(window.DocsAPI));
-      existing.addEventListener('error', () => reject(new Error('Failed to load OnlyOffice script')));
+      existing.addEventListener("load", () => resolve(window.DocsAPI));
+      existing.addEventListener("error", () => reject(new Error("Failed to load OnlyOffice script")));
       return;
     }
 
@@ -23,14 +22,22 @@ function loadOnlyOfficeScript(onlyofficeUrl, timeoutMs = 10000) {
       }
     }, timeoutMs);
 
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = url;
     script.async = true;
     script.onload = () => {
-      if (!done) { done = true; clearTimeout(timer); resolve(window.DocsAPI); }
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        resolve(window.DocsAPI);
+      }
     };
     script.onerror = () => {
-      if (!done) { done = true; clearTimeout(timer); reject(new Error('Failed to load OnlyOffice script')); }
+      if (!done) {
+        done = true;
+        clearTimeout(timer);
+        reject(new Error("Failed to load OnlyOffice script"));
+      }
     };
     document.head.appendChild(script);
   });
@@ -41,33 +48,30 @@ export default function Editor_OnlyOffice({ documentId }) {
   const editorRef = useRef(null);
   const connectorRef = useRef(null);
   const initializedRef = useRef(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [docType, setDocType] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const ONLYOFFICE_URL = (import.meta.env.VITE_ONLYOFFICE_URL || '').trim();
+  const ONLYOFFICE_URL = (import.meta.env.VITE_ONLYOFFICE_URL || "").trim();
 
   useLayoutEffect(() => {
     let canceled = false;
 
     if (!ONLYOFFICE_URL) {
-      setError('OnlyOffice server URL is not configured. Set VITE_ONLYOFFICE_URL in your environment.');
+      setError("OnlyOffice server URL is not configured. Set VITE_ONLYOFFICE_URL in your environment.");
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
-    Promise.all([
-      loadOnlyOfficeScript(ONLYOFFICE_URL),
-      documentsAPI.onlyofficeConfig(documentId).then(r => r.data),
-    ])
+    Promise.all([loadOnlyOfficeScript(ONLYOFFICE_URL), documentsAPI.onlyofficeConfig(documentId).then((r) => r.data)])
       .then(([DocsAPI, cfg]) => {
         if (canceled) return;
         // Ensure full-size editor
-        const merged = { ...cfg, width: '100%', height: '100%' };
+        const merged = { ...cfg, width: "100%", height: "100%" };
         setDocType(cfg?.documentType || null);
         // Inject helpful events without clobbering existing ones
         merged.events = {
@@ -76,15 +80,17 @@ export default function Editor_OnlyOffice({ documentId }) {
           onReady: () => {
             // Try to create Automation API connector when editor is ready
             try {
-              if (editorRef.current && typeof editorRef.current.createConnector === 'function') {
+              if (editorRef.current && typeof editorRef.current.createConnector === "function") {
                 connectorRef.current = editorRef.current.createConnector();
               }
             } catch (err) {
-              console.warn('OnlyOffice connector unavailable:', err);
+              console.warn("OnlyOffice connector unavailable:", err);
             }
-            setTimeout(() => { if (!canceled) setLoading(false); }, 0);
+            setTimeout(() => {
+              if (!canceled) setLoading(false);
+            }, 0);
           },
-          onError: (e) => setError(`OnlyOffice error: ${typeof e === 'string' ? e : JSON.stringify(e)}`),
+          onError: (e) => setError(`OnlyOffice error: ${typeof e === "string" ? e : JSON.stringify(e)}`),
         };
         // Instantiate after DOM available in next microtask
         queueMicrotask(() => {
@@ -95,7 +101,7 @@ export default function Editor_OnlyOffice({ documentId }) {
             initializedRef.current = true;
           } catch (e) {
             console.error(e);
-            setError('Failed to initialize OnlyOffice editor. Check console for details.');
+            setError("Failed to initialize OnlyOffice editor. Check console for details.");
             setLoading(false);
           }
         });
@@ -103,14 +109,14 @@ export default function Editor_OnlyOffice({ documentId }) {
       .catch((e) => {
         if (canceled) return;
         console.error(e);
-        setError(e?.message || 'Failed to load OnlyOffice editor.');
+        setError(e?.message || "Failed to load OnlyOffice editor.");
         setLoading(false);
       });
 
     return () => {
       canceled = true;
       try {
-        if (editorRef.current && typeof editorRef.current.destroyEditor === 'function') {
+        if (editorRef.current && typeof editorRef.current.destroyEditor === "function") {
           editorRef.current.destroyEditor();
         }
       } catch (e) {
@@ -129,36 +135,36 @@ export default function Editor_OnlyOffice({ documentId }) {
 
   const handleUndo = () => {
     try {
-      connectorRef.current?.executeMethod?.('Undo');
+      connectorRef.current?.executeMethod?.("Undo");
     } catch (e) {
-      console.warn('Undo not supported:', e);
+      console.warn("Undo not supported:", e);
     }
   };
 
   const handleRedo = () => {
     try {
-      connectorRef.current?.executeMethod?.('Redo');
+      connectorRef.current?.executeMethod?.("Redo");
     } catch (e) {
-      console.warn('Redo not supported:', e);
+      console.warn("Redo not supported:", e);
     }
   };
 
   const handleBold = () => {
     if (!hasConnector) return;
     try {
-      if (docType === 'word' || docType === 'slide' || !docType) {
+      if (docType === "word" || docType === "slide" || !docType) {
         // Attempt Text Document API style change
-        connectorRef.current.executeMethod('ChangeTextPr', [{ b: true }]);
-      } else if (docType === 'cell') {
+        connectorRef.current.executeMethod("ChangeTextPr", [{ b: true }]);
+      } else if (docType === "cell") {
         // Spreadsheet: attempt SetBold on selection
-        connectorRef.current.executeMethod('SetBold', [true]);
+        connectorRef.current.executeMethod("SetBold", [true]);
       }
     } catch (e1) {
       // Fallback attempts
       try {
-        connectorRef.current.executeMethod('SetBold', [true]);
+        connectorRef.current.executeMethod("SetBold", [true]);
       } catch (e2) {
-        console.warn('Bold not supported in this document/editor:', e2);
+        console.warn("Bold not supported in this document/editor:", e2);
       }
     }
   };
@@ -166,16 +172,16 @@ export default function Editor_OnlyOffice({ documentId }) {
   const handleItalic = () => {
     if (!hasConnector) return;
     try {
-      if (docType === 'word' || docType === 'slide' || !docType) {
-        connectorRef.current.executeMethod('ChangeTextPr', [{ i: true }]);
-      } else if (docType === 'cell') {
-        connectorRef.current.executeMethod('SetItalic', [true]);
+      if (docType === "word" || docType === "slide" || !docType) {
+        connectorRef.current.executeMethod("ChangeTextPr", [{ i: true }]);
+      } else if (docType === "cell") {
+        connectorRef.current.executeMethod("SetItalic", [true]);
       }
     } catch (e1) {
       try {
-        connectorRef.current.executeMethod('SetItalic', [true]);
+        connectorRef.current.executeMethod("SetItalic", [true]);
       } catch (e2) {
-        console.warn('Italic not supported in this document/editor:', e2);
+        console.warn("Italic not supported in this document/editor:", e2);
       }
     }
   };
@@ -183,16 +189,16 @@ export default function Editor_OnlyOffice({ documentId }) {
   const handleUnderline = () => {
     if (!hasConnector) return;
     try {
-      if (docType === 'word' || docType === 'slide' || !docType) {
-        connectorRef.current.executeMethod('ChangeTextPr', [{ u: true }]);
-      } else if (docType === 'cell') {
-        connectorRef.current.executeMethod('SetUnderline', [true]);
+      if (docType === "word" || docType === "slide" || !docType) {
+        connectorRef.current.executeMethod("ChangeTextPr", [{ u: true }]);
+      } else if (docType === "cell") {
+        connectorRef.current.executeMethod("SetUnderline", [true]);
       }
     } catch (e1) {
       try {
-        connectorRef.current.executeMethod('SetUnderline', [true]);
+        connectorRef.current.executeMethod("SetUnderline", [true]);
       } catch (e2) {
-        console.warn('Underline not supported in this document/editor:', e2);
+        console.warn("Underline not supported in this document/editor:", e2);
       }
     }
   };
@@ -202,11 +208,11 @@ export default function Editor_OnlyOffice({ documentId }) {
     setSaving(true);
     try {
       // Trigger OnlyOffice to save; backend callback will persist the file
-      connectorRef.current?.executeMethod?.('Save');
+      connectorRef.current?.executeMethod?.("Save");
       // Provide brief visual feedback even though save is async via callback
       setTimeout(() => setSaving(false), 1200);
     } catch (e) {
-      console.warn('Save not supported:', e);
+      console.warn("Save not supported:", e);
       setSaving(false);
     }
   };
@@ -219,8 +225,7 @@ export default function Editor_OnlyOffice({ documentId }) {
           <div className="text-6xl mb-4">📄</div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Document Editor Not Available</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            OnlyOffice Document Server is not configured. To enable full document editing for DOCX, XLSX, and PDF files, 
-            configure the <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded text-gray-900 dark:text-gray-100">VITE_ONLYOFFICE_URL</code> environment variable.
+            OnlyOffice Document Server is not configured. To enable full document editing for DOCX, XLSX, and PDF files, configure the <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded text-gray-900 dark:text-gray-100">VITE_ONLYOFFICE_URL</code> environment variable.
           </p>
           <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-left">
             <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Alternative Options:</h4>
@@ -242,11 +247,9 @@ export default function Editor_OnlyOffice({ documentId }) {
           <strong>Editor Error:</strong> {error}
         </div>
       ) : null}
-      {loading && !error ? (
-        <div className="p-3 text-sm text-gray-600">Loading editor…</div>
-      ) : null}
+      {loading && !error ? <div className="p-3 text-sm text-gray-600">Loading editor…</div> : null}
       {/* Document container - always white background, document should not inherit dark mode */}
-      <div id={containerId} className="flex-1 min-h-0 bg-white" style={{ width: '100%', height: '100%' }} />
+      <div id={containerId} className="flex-1 min-h-0 bg-white" style={{ width: "100%", height: "100%" }} />
       {/* Footer: icon-only buttons with tooltips on hover/long-press - can have dark mode */}
       <footer className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-2 flex items-center gap-1 flex-wrap shrink-0" role="toolbar" aria-label="Editor actions">
         {/* Text Formatting */}
@@ -282,9 +285,9 @@ export default function Editor_OnlyOffice({ documentId }) {
             U
           </button>
         </div>
-        
+
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
-        
+
         {/* History */}
         <div className="flex items-center gap-1">
           <button
@@ -308,21 +311,21 @@ export default function Editor_OnlyOffice({ documentId }) {
             ↷
           </button>
         </div>
-        
+
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
-        
+
         {/* Save */}
         <button
           type="button"
           className="px-2 py-1 text-sm rounded border bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          title={saving ? 'Saving…' : 'Save (Ctrl+S)'}
-          aria-label={saving ? 'Saving…' : 'Save (Ctrl+S)'}
+          title={saving ? "Saving…" : "Save (Ctrl+S)"}
+          aria-label={saving ? "Saving…" : "Save (Ctrl+S)"}
           disabled={buttonsDisabled || saving}
           onClick={handleSave}
         >
-          {saving ? '⋯' : '💾'}
+          {saving ? "⋯" : "💾"}
         </button>
-        
+
         {/* Status indicator */}
         <div className="ml-auto flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           {loading && <span>Loading editor...</span>}

@@ -31,38 +31,34 @@
  */
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import useFetchOnce from '../services/useFetchOnce';
-import usePagePermission from '../services/usePagePermission';
-import useViewMode from '../services/useViewMode';
-import PageLayout from './components/Page_Layout';
-import PageTableFooter from './components/Page_Table_Footer';
-import PageTableHeader from './components/Page_Table_Header';
-import PageTableRow from './components/Page_Table_Row';
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon } from '@heroicons/react/24/outline';
-import Modal_Discount_Rules from './components/Modal_Discount_Rules';
-import Button_Toolbar from './components/Button_Toolbar';
-import useStore from '../services/useStore';
-import { inventoryAPI, featuresAPI } from '../services/api';
-import Modal_Detail_Item from './components/Modal_Item_Detail';
-import Gate_Permission from './components/Gate_Permission';
-import Suppliers_Panel from './components/Panel_Suppliers';
-import Modal_Bulk_Import_Items from './components/Modal_Import_Items';
-import Modal from './components/Modal';
-import Form_Item from './components/Form_Item';
-import InventoryIntelligence from './components/InventoryIntelligence';
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import useFetchOnce from "../services/useFetchOnce";
+import usePagePermission from "../services/usePagePermission";
+import useViewMode from "../services/useViewMode";
+import PageLayout from "./components/Page_Layout";
+import PageTableFooter from "./components/Page_Table_Footer";
+import PageTableHeader from "./components/Page_Table_Header";
+import PageTableRow from "./components/Page_Table_Row";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon } from "@heroicons/react/24/outline";
+import Modal_Discount_Rules from "./components/Modal_Discount_Rules";
+import Button_Toolbar from "./components/Button_Toolbar";
+import useStore from "../services/useStore";
+import { inventoryAPI, featuresAPI } from "../services/api";
+import Modal_Detail_Item from "./components/Modal_Item_Detail";
+import Gate_Permission from "./components/Gate_Permission";
+import Suppliers_Panel from "./components/Panel_Suppliers";
+import Modal_Bulk_Import_Items from "./components/Modal_Import_Items";
+import Modal from "./components/Modal";
+import Form_Item from "./components/Form_Item";
+import InventoryIntelligence from "./components/InventoryIntelligence";
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
-  const {
-    inventory, setInventory,
-    loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
-  } = useStore();
+  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
   // Use the permission refresh hook
 
-  usePagePermission('inventory');
+  usePagePermission("inventory");
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
@@ -71,9 +67,9 @@ export default function Inventory() {
   const [showDiscountRules, setShowDiscountRules] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
-  const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all"); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
+  const [stockFilter, setStockFilter] = useState("all"); // 'all', 'low', 'ok'
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
@@ -86,62 +82,62 @@ export default function Inventory() {
 
   const typeFilterOptions = [
     {
-      value: 'all',
-      label: 'All Types',
-      description: 'Shows every inventory item type together (Products, Resources, Assets, Locations, and Items). Use this to clear type filtering.',
+      value: "all",
+      label: "All Types",
+      description: "Shows every inventory item type together (Products, Resources, Assets, Locations, and Items). Use this to clear type filtering.",
     },
     {
-      value: 'PRODUCT',
-      label: 'Products',
-      description: 'Shows sellable product records only. New inventory entries saved as Product appear when this filter is selected.',
+      value: "PRODUCT",
+      label: "Products",
+      description: "Shows sellable product records only. New inventory entries saved as Product appear when this filter is selected.",
     },
     {
-      value: 'RESOURCE',
-      label: 'Resources',
-      description: 'Shows consumable/internal resource items used by the business. Use this to review stock for resources only.',
+      value: "RESOURCE",
+      label: "Resources",
+      description: "Shows consumable/internal resource items used by the business. Use this to review stock for resources only.",
     },
     {
-      value: 'ASSET',
-      label: 'Assets',
-      description: 'Shows long-term business assets (equipment/property style items). Asset entries appear here when this filter is active.',
+      value: "ASSET",
+      label: "Assets",
+      description: "Shows long-term business assets (equipment/property style items). Asset entries appear here when this filter is active.",
     },
     {
-      value: 'LOCATION',
-      label: 'Locations',
-      description: 'Shows location-type inventory records only. Use this when managing location entries separately from stock items.',
+      value: "LOCATION",
+      label: "Locations",
+      description: "Shows location-type inventory records only. Use this when managing location entries separately from stock items.",
     },
     {
-      value: 'ITEM',
-      label: 'Items',
-      description: 'Shows generic item records that are not categorized as Product, Resource, Asset, or Location.',
+      value: "ITEM",
+      label: "Items",
+      description: "Shows generic item records that are not categorized as Product, Resource, Asset, or Location.",
     },
     {
-      value: 'BUNDLE',
-      label: 'Bundles',
-      description: 'Shows bundle items — pre-defined sets of products sold together at a fixed price. When a bundle is sold, each component product\'s stock decrements automatically.',
+      value: "BUNDLE",
+      label: "Bundles",
+      description: "Shows bundle items — pre-defined sets of products sold together at a fixed price. When a bundle is sold, each component product's stock decrements automatically.",
     },
     {
-      value: 'MIX',
-      label: 'Mixes',
-      description: 'Shows mix items — client picks a fixed number of products from a predefined list (e.g. any 10 blankets). Supports per-product maximums and fixed or percentage pricing.',
+      value: "MIX",
+      label: "Mixes",
+      description: "Shows mix items — client picks a fixed number of products from a predefined list (e.g. any 10 blankets). Supports per-product maximums and fixed or percentage pricing.",
     },
   ];
 
   const stockFilterOptions = [
     {
-      value: 'all',
-      label: 'All Stock',
-      description: 'Shows every inventory record regardless of stock level.',
+      value: "all",
+      label: "All Stock",
+      description: "Shows every inventory record regardless of stock level.",
     },
     {
-      value: 'low',
-      label: 'Low Stock',
-      description: 'Shows only items that are at or below minimum stock level.',
+      value: "low",
+      label: "Low Stock",
+      description: "Shows only items that are at or below minimum stock level.",
     },
     {
-      value: 'ok',
-      label: 'In Stock',
-      description: 'Shows items currently above minimum stock level and considered stocked.',
+      value: "ok",
+      label: "In Stock",
+      description: "Shows items currently above minimum stock level and considered stocked.",
     },
   ];
 
@@ -152,10 +148,7 @@ export default function Inventory() {
   const loadInventoryData = async () => {
     setLoading(true);
     try {
-      const [inventoryRes, summaryRes] = await Promise.all([
-        inventoryAPI.getAll(),
-        featuresAPI.getInventorySummary().catch(() => ({ data: {} })),
-      ]);
+      const [inventoryRes, summaryRes] = await Promise.all([inventoryAPI.getAll(), featuresAPI.getInventorySummary().catch(() => ({ data: {} }))]);
 
       // Handle both direct data and response.data formats
       const inventoryData = inventoryRes?.data ?? inventoryRes;
@@ -164,15 +157,15 @@ export default function Inventory() {
       if (Array.isArray(inventoryData)) {
         setInventory(inventoryData);
       } else {
-        console.error('Invalid inventory data format:', inventoryData);
+        console.error("Invalid inventory data format:", inventoryData);
         setInventory([]);
       }
 
-      setFeatureSummary(typeof summaryData === 'object' ? summaryData : {});
+      setFeatureSummary(typeof summaryData === "object" ? summaryData : {});
       clearError();
     } catch (err) {
-      setError('Failed to load inventory data');
-      console.error('Error loading inventory:', err);
+      setError("Failed to load inventory data");
+      console.error("Error loading inventory:", err);
       setInventory([]);
     } finally {
       setLoading(false);
@@ -181,25 +174,25 @@ export default function Inventory() {
 
   // ─── 6 CRUD HANDLERS ─────────────────────────────────────────────────────────
   const handleUpdateInventory = (inventoryItem) => {
-    if (!hasPermission('inventory', 'write')) {
-      setError('You do not have permission to update inventory');
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to update inventory");
       return;
     }
     setEditingInventory(inventoryItem);
-    openModal('inventory-form');
+    openModal("inventory-form");
   };
 
   const handleOpenBulkImport = () => {
-    if (!hasPermission('inventory', 'write')) {
-      setError('You do not have permission to import items');
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to import items");
       return;
     }
     setShowBulkImport(true);
   };
 
   const handleOpenAddItem = () => {
-    if (!hasPermission('inventory', 'write')) {
-      setError('You do not have permission to add items');
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to add items");
       return;
     }
     setShowAddItemModal(true);
@@ -212,7 +205,7 @@ export default function Inventory() {
       setShowAddItemModal(false);
       clearError();
     } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'Failed to create inventory item';
+      const detail = err?.response?.data?.detail || err?.message || "Failed to create inventory item";
       setError(String(detail));
     }
   };
@@ -225,9 +218,9 @@ export default function Inventory() {
       closeModal();
       clearError();
     } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'Failed to update inventory';
+      const detail = err?.response?.data?.detail || err?.message || "Failed to update inventory";
       setError(String(detail));
-      console.error('Inventory update error:', err?.response || err);
+      console.error("Inventory update error:", err?.response || err);
     }
   };
 
@@ -241,28 +234,38 @@ export default function Inventory() {
 
   // ─── 7 DISPLAY UTILITIES ─────────────────────────────────────────────────────
   const getItemTypeLabel = (type) => {
-    const labels = { 
-      PRODUCT: 'Product', RESOURCE: 'Resource', ASSET: 'Asset', LOCATION: 'Location', ITEM: 'Item', BUNDLE: 'Bundle', MIX: 'Mix',
-      product: 'Product', resource: 'Resource', asset: 'Asset', location: 'Location', item: 'Item'
+    const labels = {
+      PRODUCT: "Product",
+      RESOURCE: "Resource",
+      ASSET: "Asset",
+      LOCATION: "Location",
+      ITEM: "Item",
+      BUNDLE: "Bundle",
+      MIX: "Mix",
+      product: "Product",
+      resource: "Resource",
+      asset: "Asset",
+      location: "Location",
+      item: "Item",
     };
-    return labels[type] || type || 'Product';
+    return labels[type] || type || "Product";
   };
 
   const getItemTypeColor = (type) => {
-    const upperType = (type || '').toUpperCase();
-    if (upperType === 'RESOURCE') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-    if (upperType === 'ASSET') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
-    if (upperType === 'LOCATION') return 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300';
-    if (upperType === 'BUNDLE') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
-    if (upperType === 'MIX') return 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300';
-if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
-    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'; // PRODUCT
+    const upperType = (type || "").toUpperCase();
+    if (upperType === "RESOURCE") return "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300";
+    if (upperType === "ASSET") return "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300";
+    if (upperType === "LOCATION") return "bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300";
+    if (upperType === "BUNDLE") return "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300";
+    if (upperType === "MIX") return "bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300";
+    if (upperType === "ITEM") return "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300";
+    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"; // PRODUCT
   };
 
   // Location and Asset items always have "OK" status
   const isLocationOrAsset = (item) => {
-    const upperType = (item.type || '').toUpperCase();
-    return upperType === 'LOCATION' || upperType === 'ASSET';
+    const upperType = (item.type || "").toUpperCase();
+    return upperType === "LOCATION" || upperType === "ASSET";
   };
 
   const isLowStock = (item) => {
@@ -272,34 +275,32 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
   };
 
   const getTypeFilterButtonClass = () => {
-    if (typeFilter === 'all') return 'btn-app-secondary';
-    if (typeFilter === 'RESOURCE') return 'bg-blue-600 text-white';
-    if (typeFilter === 'ASSET') return 'bg-purple-600 text-white';
-    if (typeFilter === 'LOCATION') return 'bg-teal-600 text-white';
-    if (typeFilter === 'ITEM') return 'bg-orange-500 text-white';
-    return 'bg-gray-600 text-white'; // PRODUCT
+    if (typeFilter === "all") return "btn-app-secondary";
+    if (typeFilter === "RESOURCE") return "bg-blue-600 text-white";
+    if (typeFilter === "ASSET") return "bg-purple-600 text-white";
+    if (typeFilter === "LOCATION") return "bg-teal-600 text-white";
+    if (typeFilter === "ITEM") return "bg-orange-500 text-white";
+    return "bg-gray-600 text-white"; // PRODUCT
   };
 
   const getStockFilterButtonClass = () => {
-    if (stockFilter === 'low') return 'bg-orange-700 text-white';
-    if (stockFilter === 'ok') return 'bg-green-600 text-white';
-    return 'btn-app-secondary';
+    if (stockFilter === "low") return "bg-orange-700 text-white";
+    if (stockFilter === "ok") return "bg-green-600 text-white";
+    return "btn-app-secondary";
   };
 
   // Get stock status color (uses the former status badge colors)
   const getStockColor = (item) => {
     if (isLowStock(item)) {
-      return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+      return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300";
     }
-    return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+    return "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300";
   };
 
   const getPriceDisplay = (item) => {
     const s = featureSummary[item.id];
     if (s?.price_min != null && s?.price_max != null) {
-      return s.price_min === s.price_max
-        ? `$${s.price_min.toFixed(2)}`
-        : `$${s.price_min.toFixed(2)}–$${s.price_max.toFixed(2)}`;
+      return s.price_min === s.price_max ? `$${s.price_min.toFixed(2)}` : `$${s.price_min.toFixed(2)}–$${s.price_max.toFixed(2)}`;
     }
     return item.price != null ? `$${item.price.toFixed(2)}` : null;
   };
@@ -309,8 +310,8 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
       return;
     }
 
-    if (!hasPermission('inventory', 'delete')) {
-      setError('You do not have permission to delete items');
+    if (!hasPermission("inventory", "delete")) {
+      setError("You do not have permission to delete items");
       return;
     }
 
@@ -322,7 +323,7 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
       await loadInventoryData();
       clearError();
     } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'Failed to delete item';
+      const detail = err?.response?.data?.detail || err?.message || "Failed to delete item";
       setError(String(detail));
     } finally {
       deleteInFlightRef.current.delete(inventoryId);
@@ -337,20 +338,20 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
       // Search filter (name or SKU) - inventory now has these fields directly
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
-        const matchesName = (inv.name || '').toLowerCase().includes(term);
-        const matchesSku = (inv.sku || '').toLowerCase().includes(term);
+        const matchesName = (inv.name || "").toLowerCase().includes(term);
+        const matchesSku = (inv.sku || "").toLowerCase().includes(term);
         if (!matchesName && !matchesSku) return false;
       }
 
       // Type filter
-      if (typeFilter !== 'all') {
-        const itemType = (inv.type || 'PRODUCT').toUpperCase();
+      if (typeFilter !== "all") {
+        const itemType = (inv.type || "PRODUCT").toUpperCase();
         if (itemType !== typeFilter) return false;
       }
 
       // Stock filter
-      if (stockFilter === 'low' && !isLowStock(inv)) return false;
-      if (stockFilter === 'ok' && isLowStock(inv)) return false;
+      if (stockFilter === "low" && !isLowStock(inv)) return false;
+      if (stockFilter === "ok" && isLowStock(inv)) return false;
 
       return true;
     });
@@ -372,53 +373,39 @@ if (upperType === 'ITEM') return 'bg-orange-100 text-orange-800 dark:bg-orange-9
     );
   }
 
-return (
-  <PageLayout title="Inventory" error={error}>
-
-      <PageTableHeader columns={[{ label: 'Item' }, { label: 'Type', width: 80 }, { label: 'Stock', width: 50 }]} />
+  return (
+    <PageLayout title="Inventory" error={error}>
+      <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Stock", width: 50 }]} />
 
       {/* Container_Scrollable rows – grow upwards from bottom */}
-      <div
-        ref={scrollRef}
-        className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar"
-        style={{ background: 'var(--bs-body-bg)' }}
-      >
+      <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredInventory.length > 0 ? (
           <table className="table table-borderless table-hover mb-0 table-fixed">
             <colgroup>
               <col />
-              <col style={{ width: '80px' }} />
-              <col style={{ width: '50px' }} />
+              <col style={{ width: "80px" }} />
+              <col style={{ width: "50px" }} />
             </colgroup>
             <tbody>
               {filteredInventory.map((inv, index) => (
-                <PageTableRow
-                  key={inv.id || index}
-                  onClick={() => handleUpdateInventory(inv)}
-                >
+                <PageTableRow key={inv.id || index} onClick={() => handleUpdateInventory(inv)}>
                   {/* Name */}
                   <td className="main-page-table-data">
-                    <div className="fw-medium" style={{ wordBreak: 'break-word' }}>
+                    <div className="fw-medium" style={{ wordBreak: "break-word" }}>
                       {inv.name}
                     </div>
                     {inv.category && (
-                      <span
-                        className="badge bg-secondary-subtle text-secondary rounded-pill"
-                        style={{ fontSize: '0.68rem', width: 'fit-content' }}
-                      >
+                      <span className="badge bg-secondary-subtle text-secondary rounded-pill" style={{ fontSize: "0.68rem", width: "fit-content" }}>
                         {inv.category}
                       </span>
                     )}
                     {/* Price display (range if features affect price, otherwise fixed) */}
-                    {getPriceDisplay(inv) && (
-                      <div className="small text-primary fw-semibold">{getPriceDisplay(inv)}</div>
-                    )}
+                    {getPriceDisplay(inv) && <div className="small text-primary fw-semibold">{getPriceDisplay(inv)}</div>}
                     {/* Feature name tags */}
                     {featureSummary[inv.id]?.feature_names?.length > 0 && (
                       <div className="d-flex flex-wrap gap-1 mt-1">
-                        {featureSummary[inv.id].feature_names.map(name => (
-                          <span key={name} className="badge bg-secondary-subtle text-secondary-emphasis"
-                                style={{ fontSize: '0.62rem', fontWeight: 500 }}>
+                        {featureSummary[inv.id].feature_names.map((name) => (
+                          <span key={name} className="badge bg-secondary-subtle text-secondary-emphasis" style={{ fontSize: "0.62rem", fontWeight: 500 }}>
                             {name}
                           </span>
                         ))}
@@ -428,25 +415,19 @@ return (
 
                   {/* Type */}
                   <td className="main-page-table-data">
-                    <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>
-                      {getItemTypeLabel(inv.type)}
-                    </span>
+                    <span className={`badge rounded-pill ${getItemTypeColor(inv.type)}`}>{getItemTypeLabel(inv.type)}</span>
                   </td>
 
                   {/* Stock */}
                   <td className="main-page-table-data text-center">
-                    <span className={`badge rounded-pill ${getStockColor(inv)}`}>
-                      {inv.quantity}
-                    </span>
+                    <span className={`badge rounded-pill ${getStockColor(inv)}`}>{inv.quantity}</span>
                   </td>
                 </PageTableRow>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
-            No inventory items found
-          </div>
+          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">No inventory items found</div>
         )}
       </div>
 
@@ -456,33 +437,15 @@ return (
         onSearch={setSearchTerm}
         searchPlaceholder="Search by name or SKU..."
         beforeSearch={
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button_Toolbar
-              icon={TruckIcon}
-              label="Suppliers"
-              onClick={() => setShowSuppliersPanel(true)}
-              className="btn-app-secondary"
-            />
-            <Button_Toolbar
-              icon={TagIcon}
-              label="Discounts"
-              onClick={() => setShowDiscountRules(true)}
-              className="btn-app-secondary"
-            />
+          <div style={{ display: "flex", gap: 6 }}>
+            <Button_Toolbar icon={TruckIcon} label="Suppliers" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" />
+            <Button_Toolbar icon={TagIcon} label="Discounts" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" />
             {/* Inventory Intelligence drop-up */}
             <div className="position-relative">
-              <Button_Toolbar
-                icon={PresentationChartBarIcon}
-                label="Insights"
-                onClick={() => setShowIntelligence((v) => !v)}
-                className={showIntelligence ? 'bg-blue-600 text-white' : 'btn-app-secondary'}
-              />
+              <Button_Toolbar icon={PresentationChartBarIcon} label="Insights" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} />
               {showIntelligence && (
                 <div className="position-absolute bottom-100 start-0 mb-2 z-50">
-                  <InventoryIntelligence
-                    inventory={inventory}
-                    onClose={() => setShowIntelligence(false)}
-                  />
+                  <InventoryIntelligence inventory={inventory} onClose={() => setShowIntelligence(false)} />
                 </div>
               )}
             </div>
@@ -490,19 +453,9 @@ return (
         }
       >
         <Gate_Permission page="inventory" permission="write">
-          <Button_Toolbar
-            icon={PlusIcon}
-            label="Add"
-            onClick={handleOpenAddItem}
-            className="btn-app-primary"
-          />
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
 
-          <Button_Toolbar
-            icon={PlusIcon}
-            label="Bulk"
-            onClick={handleOpenBulkImport}
-            className="btn-app-secondary"
-          />
+          <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
         </Gate_Permission>
 
         {/* Type Filter */}
@@ -516,24 +469,24 @@ return (
               if (!nextOpen) setTypeFilterHelpKey(null);
             }}
             className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
-            data-active={typeFilter !== 'all'}
+            data-active={typeFilter !== "all"}
           />
           {isTypeFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '200px' }}>
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "200px" }}>
               {typeFilterOptions.map((option, index) => {
                 const isLast = index === typeFilterOptions.length - 1;
                 const isSelected = typeFilter === option.value;
                 const isHelpOpen = typeFilterHelpKey === option.value;
 
                 return (
-                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
                     <button
                       onClick={() => {
                         setTypeFilter(option.value);
                         setIsTypeFilterOpen(false);
                         setTypeFilterHelpKey(null);
                       }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                     >
                       {option.label}
                     </button>
@@ -544,7 +497,7 @@ return (
                           type="button"
                           aria-label={`${option.label} help`}
                           className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
                           onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                           onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           onMouseDown={(e) => {
@@ -559,7 +512,7 @@ return (
                         {isHelpOpen && (
                           <div
                             className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                            style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                             onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                             onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           >
@@ -587,24 +540,24 @@ return (
               if (!nextOpen) setStockFilterHelpKey(null);
             }}
             className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
-            data-active={stockFilter !== 'all'}
+            data-active={stockFilter !== "all"}
           />
           {isStockFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: '180px' }}>
+            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
               {stockFilterOptions.map((option, index) => {
                 const isLast = index === stockFilterOptions.length - 1;
                 const isSelected = stockFilter === option.value;
                 const isHelpOpen = stockFilterHelpKey === option.value;
 
                 return (
-                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? '' : 'mb-1'}`}>
+                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
                     <button
                       onClick={() => {
                         setStockFilter(option.value);
                         setIsStockFilterOpen(false);
                         setStockFilterHelpKey(null);
                       }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
+                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                     >
                       {option.label}
                     </button>
@@ -615,7 +568,7 @@ return (
                           type="button"
                           aria-label={`${option.label} help`}
                           className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                          style={{ width: '1.75rem', height: '1.75rem', lineHeight: 1, fontWeight: 700 }}
+                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
                           onMouseEnter={() => setStockFilterHelpKey(option.value)}
                           onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           onMouseDown={(e) => {
@@ -630,7 +583,7 @@ return (
                         {isHelpOpen && (
                           <div
                             className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: '260px', maxWidth: 'calc(100vw - 1rem)', transform: 'translateX(-55%)' }}
+                            style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                             onMouseEnter={() => setStockFilterHelpKey(option.value)}
                             onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                           >
@@ -648,58 +601,42 @@ return (
         </div>
 
         {/* Clear Filters Button */}
-        {(typeFilter !== 'all' || stockFilter !== 'all') && (
+        {(typeFilter !== "all" || stockFilter !== "all") && (
           <Button_Toolbar
             icon={XMarkIcon}
             label="Clear"
-            onClick={() => { setTypeFilter('all'); setStockFilter('all'); }}
+            onClick={() => {
+              setTypeFilter("all");
+              setStockFilter("all");
+            }}
             className="btn-app-danger"
           />
         )}
       </PageTableFooter>
 
-    <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding>
-      <Form_Item
-        item={null}
-        showInitialQuantity
-        showScanner
-        existingSkus={inventory.map(i => i.sku).filter(Boolean)}
-        onCancel={() => setShowAddItemModal(false)}
-        onSubmit={handleCreateInventory}
+      <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding>
+        <Form_Item item={null} showInitialQuantity showScanner existingSkus={inventory.map((i) => i.sku).filter(Boolean)} onCancel={() => setShowAddItemModal(false)} onSubmit={handleCreateInventory} />
+      </Modal>
+
+      {/* Modals remain unchanged */}
+      <Modal_Detail_Item
+        isOpen={isModalOpen && modalContent === "inventory-form"}
+        onClose={closeModal}
+        item={editingInventory}
+        itemType={editingInventory?.type || "product"}
+        mode="inventory"
+        onUpdateInventory={handleSubmitUpdate}
+        onDelete={handleDeleteItem}
+        canDelete={hasPermission("inventory", "delete")}
+        isDeleting={deletingInventoryId === editingInventory?.id}
+        existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
       />
-    </Modal>
 
-    {/* Modals remain unchanged */}
-    <Modal_Detail_Item
-      isOpen={isModalOpen && modalContent === 'inventory-form'}
-      onClose={closeModal}
-      item={editingInventory}
-      itemType={editingInventory?.type || 'product'}
-      mode="inventory"
-      onUpdateInventory={handleSubmitUpdate}
-      onDelete={handleDeleteItem}
-      canDelete={hasPermission('inventory', 'delete')}
-      isDeleting={deletingInventoryId === editingInventory?.id}
-      existingSkus={inventory.map(i => i.sku).filter(Boolean)}
-    />
+      <Modal_Bulk_Import_Items isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onImport={handleBulkImportItems} existingSkus={inventory.map((i) => i.sku).filter(Boolean)} />
 
-    <Modal_Bulk_Import_Items
-      isOpen={showBulkImport}
-      onClose={() => setShowBulkImport(false)}
-      onImport={handleBulkImportItems}
-      existingSkus={inventory.map(i => i.sku).filter(Boolean)}
-    />
+      <Suppliers_Panel isOpen={showSuppliersPanel} onClose={() => setShowSuppliersPanel(false)} />
 
-    <Suppliers_Panel
-      isOpen={showSuppliersPanel}
-      onClose={() => setShowSuppliersPanel(false)}
-    />
-
-    <Modal_Discount_Rules
-      isOpen={showDiscountRules}
-      onClose={() => setShowDiscountRules(false)}
-    />
-
-  </PageLayout>
-);
+      <Modal_Discount_Rules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
+    </PageLayout>
+  );
 }
