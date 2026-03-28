@@ -12,10 +12,12 @@ try:
     from backend.database import get_session
     from backend.models import InventoryCategory, InventoryCategoryRead
     from backend.routers.auth import get_current_user
+    from backend.utils.db_helpers import safe_commit, safe_commit_refresh
 except ImportError:
     from database import get_session
     from models import InventoryCategory, InventoryCategoryRead
     from routers.auth import get_current_user
+    from utils.db_helpers import safe_commit, safe_commit_refresh
 
 router = APIRouter()
 
@@ -60,13 +62,7 @@ def create_inventory_category(
 
     cat = InventoryCategory(item_type=item_type, name=name, company_id=company_id)
     session.add(cat)
-    try:
-        session.commit()
-        session.refresh(cat)
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create category")
-    return cat
+    return safe_commit_refresh(session, cat, "create category")
 
 
 @router.delete("/inventory-categories/{category_id}", status_code=204)
@@ -80,8 +76,4 @@ def delete_inventory_category(
     if not cat or cat.company_id != company_id:
         raise HTTPException(status_code=404, detail="Category not found")
     session.delete(cat)
-    try:
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete category")
+    safe_commit(session, "delete category")

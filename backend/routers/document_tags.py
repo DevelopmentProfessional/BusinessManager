@@ -12,10 +12,12 @@ try:
     from backend.database import get_session
     from backend.models import DocumentTag, DocumentTagLink, DocumentTagRead
     from backend.routers.auth import get_current_user
+    from backend.utils.db_helpers import safe_commit, safe_commit_refresh
 except ImportError:
     from database import get_session
     from models import DocumentTag, DocumentTagLink, DocumentTagRead
     from routers.auth import get_current_user
+    from utils.db_helpers import safe_commit, safe_commit_refresh
 
 router = APIRouter()
 
@@ -60,13 +62,7 @@ def create_document_tag(
 
     tag = DocumentTag(name=name, company_id=company_id)
     session.add(tag)
-    try:
-        session.commit()
-        session.refresh(tag)
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create tag")
-    return tag
+    return safe_commit_refresh(session, tag, "create tag")
 
 
 @router.delete("/document-tags/{tag_id}", status_code=204)
@@ -80,11 +76,7 @@ def delete_document_tag(
     if not tag or tag.company_id != company_id:
         raise HTTPException(status_code=404, detail="Tag not found")
     session.delete(tag)
-    try:
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete tag")
+    safe_commit(session, "delete tag")
 
 
 # ─── Per-document tag endpoints ─────────────────────────────────────────────────
@@ -147,12 +139,7 @@ def set_document_tags(
         session.add(lnk)
         result_tags.append(tag)
 
-    try:
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to update tags")
-
+    safe_commit(session, "update tags")
     return result_tags
 
 

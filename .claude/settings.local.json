@@ -86,7 +86,9 @@
       "Skill(update-config:*)",
       "Bash(npx prettier:*)",
       "Bash(find C:UsersdpintDocumentsDevelopmentBusinessManagerclient-portal -type f \\\\\\(-name *.jsx -o -name *.js -o -name *.tsx -o -name *.ts \\\\\\))",
-      "Bash(node --input-type=module --eval \":*)"
+      "Bash(node --input-type=module --eval \":*)",
+      "Bash(wc -l frontend/src/pages/*.jsx frontend/src/pages/components/Panel_*.jsx frontend/src/pages/components/Form_*.jsx)",
+      "Bash(wc -l /c/Users/dpint/Documents/Development/BusinessManager/backend/routers/*.py)"
     ]
   }
 }

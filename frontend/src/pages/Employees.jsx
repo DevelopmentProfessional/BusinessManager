@@ -49,10 +49,12 @@
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo } from "react";
 import { formatDateTime } from "../utils/dateFormatters";
+import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
+import FilterDropdown from "./components/FilterDropdown";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
@@ -73,171 +75,6 @@ import Chat_Employee from "./components/Chat_Employee";
 import Modal_Wages from "./components/Modal_Wages";
 import Modal_Pay_Employee from "./components/Modal_Employee_Pay";
 import Modal_Bulk_Import_Sheet from "./components/Modal_Import_Sheet";
-
-// ─── INLINE SUB-COMPONENTS (P4-B) ────────────────────────────────────────────
-
-function RoleFilterDropdown({ roleFilter, setRoleFilter, isOpen, setIsOpen, roleOptions }) {
-  const [roleHelpKey, setRoleHelpKey] = useState(null);
-  const roleOptionsWithAll = ["all", ...roleOptions];
-
-  return (
-    <div className="position-relative">
-      <Button_Toolbar
-        icon={UserGroupIcon}
-        label="Filter Role"
-        onClick={() => {
-          const nextOpen = !isOpen;
-          setIsOpen(nextOpen);
-          if (!nextOpen) setRoleHelpKey(null);
-        }}
-        className={`border-0 shadow-lg transition-all ${roleFilter !== "all" ? "bg-primary-600 hover:bg-primary-700 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
-        data-active={roleFilter !== "all"}
-      />
-      {isOpen && (
-        <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "200px", maxHeight: "300px", overflowY: "auto" }}>
-          {roleOptionsWithAll.map((role, index) => {
-            const label = role === "all" ? "All Roles" : role;
-            const description = role === "all" ? "Shows employees from every role." : `Shows only employees assigned the "${role}" role.`;
-            const isLast = index === roleOptionsWithAll.length - 1;
-            const isSelected = roleFilter === role;
-            const isHelpOpen = roleHelpKey === role;
-
-            return (
-              <div key={role} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                <button
-                  onClick={() => {
-                    setRoleFilter(role);
-                    setIsOpen(false);
-                    setRoleHelpKey(null);
-                  }}
-                  className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                >
-                  {label}
-                </button>
-
-                <div className="position-relative flex-shrink-0">
-                  <button
-                    type="button"
-                    aria-label={`${label} help`}
-                    className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
-                    onMouseEnter={() => setRoleHelpKey(role)}
-                    onMouseLeave={() => setRoleHelpKey((prev) => (prev === role ? null : prev))}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setRoleHelpKey((prev) => (prev === role ? null : role));
-                    }}
-                  >
-                    ?
-                  </button>
-
-                  {isHelpOpen && (
-                    <div
-                      className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                      style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
-                      onMouseEnter={() => setRoleHelpKey(role)}
-                      onMouseLeave={() => setRoleHelpKey((prev) => (prev === role ? null : prev))}
-                    >
-                      <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
-                      <div className="small text-gray-700 dark:text-gray-300">{description}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatusFilterDropdown({ statusFilter, setStatusFilter, isOpen, setIsOpen }) {
-  const [statusHelpKey, setStatusHelpKey] = useState(null);
-
-  const btnClass = () => {
-    if (statusFilter === "active") return "bg-green-600 text-white";
-    if (statusFilter === "inactive") return "bg-red-600 text-white";
-    return "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600";
-  };
-
-  const statusOptions = [
-    { value: "all", label: "All Statuses", description: "Shows both active and inactive employees." },
-    { value: "active", label: "Active", description: "Shows only active employees." },
-    { value: "inactive", label: "Inactive", description: "Shows only inactive employees." },
-  ];
-
-  return (
-    <div className="position-relative">
-      <Button_Toolbar
-        icon={CheckCircleIcon}
-        label="Filter Status"
-        onClick={() => {
-          const nextOpen = !isOpen;
-          setIsOpen(nextOpen);
-          if (!nextOpen) setStatusHelpKey(null);
-        }}
-        className={`border-0 shadow-lg transition-all ${btnClass()}`}
-        data-active={statusFilter !== "all"}
-      />
-      {isOpen && (
-        <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
-          {statusOptions.map((option, index) => {
-            const isLast = index === statusOptions.length - 1;
-            const isSelected = statusFilter === option.value;
-            const isHelpOpen = statusHelpKey === option.value;
-
-            return (
-              <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                <button
-                  onClick={() => {
-                    setStatusFilter(option.value);
-                    setIsOpen(false);
-                    setStatusHelpKey(null);
-                  }}
-                  className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                >
-                  {option.label}
-                </button>
-
-                <div className="position-relative flex-shrink-0">
-                  <button
-                    type="button"
-                    aria-label={`${option.label} help`}
-                    className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center"
-                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700 }}
-                    onMouseEnter={() => setStatusHelpKey(option.value)}
-                    onMouseLeave={() => setStatusHelpKey((prev) => (prev === option.value ? null : prev))}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setStatusHelpKey((prev) => (prev === option.value ? null : option.value));
-                    }}
-                  >
-                    ?
-                  </button>
-
-                  {isHelpOpen && (
-                    <div
-                      className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                      style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
-                      onMouseEnter={() => setStatusHelpKey(option.value)}
-                      onMouseLeave={() => setStatusHelpKey((prev) => (prev === option.value ? null : prev))}
-                    >
-                      <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                      <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function Employees() {
   // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
@@ -1075,7 +912,7 @@ export default function Employees() {
 
   // ─── [21] LOADING GUARD ─────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return <div className="p-4">{S.loading}</div>;
   }
 
   // ─── [22] RENDER / JSX ──────────────────────────────────────────────────────
@@ -1096,7 +933,7 @@ export default function Employees() {
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
           {filteredEmployees.length > 0 ? (
-            <table className="table table-borderless table-hover mb-0 table-fixed">
+            <table className="table table-borderless table-hover mb-0">
               <colgroup>
                 <col />
                 {isAdmin && <col style={{ width: "54px" }} />}
@@ -1123,7 +960,7 @@ export default function Employees() {
                         (() => {
                           const dept = departments.find((d) => d.id === employee.department_id);
                           return dept ? (
-                            <span className="badge bg-info-subtle text-info rounded-pill" style={{ fontSize: "0.68rem" }}>
+                            <span className="badge bg-info-subtle text-info rounded-pill text-xxs">
                               {dept.name}
                             </span>
                           ) : null;
@@ -1179,7 +1016,7 @@ export default function Employees() {
               </tbody>
             </table>
           ) : (
-            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">No employees found</div>
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
           )}
         </div>
 
@@ -1226,10 +1063,35 @@ export default function Employees() {
           )}
 
           {/* Role Filter */}
-          <RoleFilterDropdown roleFilter={roleFilter} setRoleFilter={setRoleFilter} isOpen={isRoleFilterOpen} setIsOpen={setIsRoleFilterOpen} roleOptions={roleOptions} />
+          <FilterDropdown
+            icon={UserGroupIcon}
+            label="Filter Role"
+            value={roleFilter}
+            onChange={setRoleFilter}
+            isOpen={isRoleFilterOpen}
+            setIsOpen={setIsRoleFilterOpen}
+            dropdownStyle={{ maxHeight: "300px", overflowY: "auto" }}
+            options={[
+              { value: "all", label: "All Roles", description: "Shows employees from every role." },
+              ...roleOptions.map((r) => ({ value: r, label: r, description: `Shows only employees assigned the "${r}" role.` })),
+            ]}
+          />
 
           {/* Status Filter */}
-          <StatusFilterDropdown statusFilter={statusFilter} setStatusFilter={setStatusFilter} isOpen={isStatusFilterOpen} setIsOpen={setIsStatusFilterOpen} />
+          <FilterDropdown
+            icon={CheckCircleIcon}
+            label="Filter Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            isOpen={isStatusFilterOpen}
+            setIsOpen={setIsStatusFilterOpen}
+            activeClass={statusFilter === "active" ? "bg-green-600 text-white" : "bg-red-600 text-white"}
+            options={[
+              { value: "all",      label: "All Statuses", description: "Shows both active and inactive employees." },
+              { value: "active",   label: "Active",       description: "Shows only active employees." },
+              { value: "inactive", label: "Inactive",     description: "Shows only inactive employees." },
+            ]}
+          />
         </PageTableFooter>
       </div>
 

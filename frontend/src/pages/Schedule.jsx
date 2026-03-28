@@ -51,9 +51,11 @@
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { S } from "../utils/strings";
 import useStore from "../services/useStore";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
+import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -93,30 +95,30 @@ const TodayIcon = ({ className }) => (
 );
 
 const MonthFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1" style={{ lineHeight: 1 }}>
+  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
     <MonthViewIcon />
-    <span style={{ fontSize: "0.65rem", fontWeight: 700, lineHeight: 1 }}>M</span>
+    <span className="text-xxs app-label--bold">M</span>
   </span>
 );
 
 const WeekFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1" style={{ lineHeight: 1 }}>
+  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
     <WeekViewIcon />
-    <span style={{ fontSize: "0.65rem", fontWeight: 700, lineHeight: 1 }}>W</span>
+    <span className="text-xxs app-label--bold">W</span>
   </span>
 );
 
 const DayFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1" style={{ lineHeight: 1 }}>
+  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
     <DayViewIcon />
-    <span style={{ fontSize: "0.65rem", fontWeight: 700, lineHeight: 1 }}>D</span>
+    <span className="text-xxs app-label--bold">D</span>
   </span>
 );
 
 const TodayFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1" style={{ lineHeight: 1 }}>
+  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
     <TodayIcon />
-    <span style={{ fontSize: "0.65rem", fontWeight: 700, lineHeight: 1 }}>T</span>
+    <span className="text-xxs app-label--bold">T</span>
   </span>
 );
 
@@ -141,8 +143,35 @@ export default function Schedule() {
   usePagePermission("schedule");
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState("week");
+  const [scheduleSettings, setScheduleSettings] = useState({
+    start_of_day: "06:00",
+    end_of_day: "21:00",
+    attendance_check_in_required: true,
+    monday_enabled: true,
+    tuesday_enabled: true,
+    wednesday_enabled: true,
+    thursday_enabled: true,
+    friday_enabled: true,
+    saturday_enabled: true,
+    sunday_enabled: true,
+  });
+
+  const {
+    currentDate,
+    setCurrentDate,
+    currentView,
+    setCurrentView,
+    swipeOffset,
+    handleNavigatePrevious,
+    handleNavigateNext,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    getCalendarDays,
+    getTimeSlots,
+    isDayEnabled,
+  } = useCalendarView({ scheduleSettings });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [draggedAppointment, setDraggedAppointment] = useState(null);
@@ -165,15 +194,6 @@ export default function Schedule() {
   const [reminderAppointment, setReminderAppointment] = useState(null);
   const calendarGridRef = useRef(null);
   const calendarContainerRef = useRef(null);
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-  const touchStartTime = useRef(0);
-  const lastSwipeTime = useRef(0);
-  const MIN_SWIPE_DISTANCE = 50; // Minimum distance to trigger swipe (in pixels)
-  const SWIPE_COOLDOWN = 300; // Cooldown period in milliseconds
-  const MIN_DATE = new Date(1900, 0, 1); // January 1, 1900
-  const MAX_DATE = new Date(2100, 11, 31); // December 31, 2100
-  const [swipeOffset, setSwipeOffset] = useState(0); // For visual feedback during swipe
 
   // Open appointment editor when linked from another page (e.g., client service history)
   useEffect(() => {
@@ -223,20 +243,6 @@ export default function Schedule() {
   }, []);
 
   // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
-  // Schedule settings state
-  const [scheduleSettings, setScheduleSettings] = useState({
-    start_of_day: "06:00",
-    end_of_day: "21:00",
-    attendance_check_in_required: true,
-    monday_enabled: true,
-    tuesday_enabled: true,
-    wednesday_enabled: true,
-    thursday_enabled: true,
-    friday_enabled: true,
-    saturday_enabled: true,
-    sunday_enabled: true,
-  });
-
   // Load schedule data and supporting lookups
   useFetchOnce(() => {
     const loadSchedule = async () => {
@@ -359,115 +365,6 @@ export default function Schedule() {
   }, [appointments, filters]);
 
   // ─── 7 CALENDAR UTILITIES ────────────────────────────────────────────────────
-  // Get calendar data based on current view
-  // Helper to check if a day is enabled based on settings
-  const isDayEnabled = (date) => {
-    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const dayMap = [
-      "sunday_enabled", // 0
-      "monday_enabled", // 1
-      "tuesday_enabled", // 2
-      "wednesday_enabled", // 3
-      "thursday_enabled", // 4
-      "friday_enabled", // 5
-      "saturday_enabled", // 6
-    ];
-    return scheduleSettings[dayMap[dayOfWeek]];
-  };
-
-  const getCalendarDays = () => {
-    if (currentView === "day") {
-      return [new Date(currentDate)];
-    } else if (currentView === "week") {
-      const startOfWeek = new Date(currentDate);
-      // Start week on Sunday (standard calendar)
-      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-
-      const days = [];
-      for (let i = 0; i < 7; i++) {
-        // 7 days (Sun-Sat)
-        const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
-        // Only include enabled days
-        if (isDayEnabled(day)) {
-          days.push(day);
-        }
-      }
-      return days;
-    } else {
-      // Month view - show only enabled days in a grid
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-
-      // Get all enabled days of the week
-      const enabledDays = [];
-      for (let i = 0; i < 7; i++) {
-        const testDate = new Date(2024, 0, i); // Use a reference week
-        if (isDayEnabled(testDate)) {
-          enabledDays.push(i);
-        }
-      }
-
-      // Find the first occurrence of an enabled day in the month
-      let startDate = new Date(firstDay);
-      while (!isDayEnabled(startDate) && startDate <= lastDay) {
-        startDate.setDate(startDate.getDate() + 1);
-      }
-
-      // Generate days for the month, only including enabled days
-      const days = [];
-      const currentDateObj = new Date(startDate);
-
-      // Go back to include days from previous month if needed to fill first week
-      const firstEnabledDay = enabledDays[0];
-      const startDayOfWeek = startDate.getDay();
-      if (startDayOfWeek !== firstEnabledDay) {
-        // Calculate how many days back we need to go
-        let daysBack = 0;
-        let checkDay = startDayOfWeek;
-        while (checkDay !== firstEnabledDay) {
-          checkDay = (checkDay - 1 + 7) % 7;
-          daysBack++;
-          if (daysBack > 7) break; // Safety check
-        }
-        currentDateObj.setDate(currentDateObj.getDate() - daysBack);
-      }
-
-      // Generate up to 6 weeks of enabled days
-      const maxDays = enabledDays.length * 6;
-      const cutoffDate = new Date(year, month + 1, 7); // include first week of next month
-      while (days.length < maxDays) {
-        const dayToAdd = new Date(currentDateObj);
-        if (isDayEnabled(dayToAdd)) {
-          days.push(dayToAdd);
-        }
-        currentDateObj.setDate(currentDateObj.getDate() + 1);
-
-        // Stop after the first week of next month.
-        // Date comparison avoids month-number wrap bugs (e.g. January backfill into December).
-        if (currentDateObj > cutoffDate) {
-          break;
-        }
-      }
-
-      return days;
-    }
-  };
-
-  // Get time slots for week and day views (based on settings)
-  const getTimeSlots = () => {
-    const timeSlots = [];
-    const startHour = parseInt(scheduleSettings.start_of_day.split(":")[0], 10) || 6;
-    const endHour = parseInt(scheduleSettings.end_of_day.split(":")[0], 10) || 21;
-    for (let hour = startHour; hour <= endHour; hour++) {
-      timeSlots.push(hour);
-    }
-    return timeSlots;
-  };
-
   const days = getCalendarDays();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -751,136 +648,6 @@ export default function Schedule() {
     setEditingAppointment(null);
   }, []);
 
-  // ─── 15 NAVIGATION HANDLERS ──────────────────────────────────────────────────
-  // Navigation handlers for swipe gestures with date bounds validation
-  const handleNavigatePrevious = useCallback(() => {
-    const newDate = new Date(currentDate);
-
-    if (currentView === "day") {
-      newDate.setDate(newDate.getDate() - 1);
-    } else if (currentView === "week") {
-      newDate.setDate(newDate.getDate() - 7);
-    } else {
-      // Month view: navigate to previous month
-      const currentDay = newDate.getDate();
-      newDate.setMonth(newDate.getMonth() - 1);
-
-      // Edge case: If current day doesn't exist in previous month (e.g., March 31 → Feb 31)
-      // JavaScript automatically adjusts, but we want to set to last day of that month
-      const maxDayInNewMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
-      if (currentDay > maxDayInNewMonth) {
-        newDate.setDate(maxDayInNewMonth);
-      }
-    }
-
-    // Validate date bounds
-    if (newDate < MIN_DATE) {
-      console.warn("Cannot navigate before", MIN_DATE.toLocaleDateString());
-      return;
-    }
-
-    setCurrentDate(newDate);
-  }, [currentDate, currentView]);
-
-  const handleNavigateNext = useCallback(() => {
-    const newDate = new Date(currentDate);
-
-    if (currentView === "day") {
-      newDate.setDate(newDate.getDate() + 1);
-    } else if (currentView === "week") {
-      newDate.setDate(newDate.getDate() + 7);
-    } else {
-      // Month view: navigate to next month
-      const currentDay = newDate.getDate();
-      newDate.setMonth(newDate.getMonth() + 1);
-
-      // Edge case: If current day doesn't exist in next month (e.g., Jan 31 → Feb 31)
-      // JavaScript automatically adjusts, but we want to set to last day of that month
-      const maxDayInNewMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
-      if (currentDay > maxDayInNewMonth) {
-        newDate.setDate(maxDayInNewMonth);
-      }
-    }
-
-    // Validate date bounds
-    if (newDate > MAX_DATE) {
-      console.warn("Cannot navigate beyond", MAX_DATE.toLocaleDateString());
-      return;
-    }
-
-    setCurrentDate(newDate);
-  }, [currentDate, currentView]);
-
-  // ─── 16 TOUCH / SWIPE HANDLERS ───────────────────────────────────────────────
-  // Touch handlers for swipe navigation on mobile with visual feedback
-  const handleTouchStart = useCallback((e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    touchStartTime.current = Date.now();
-    setSwipeOffset(0);
-  }, []);
-
-  const handleTouchMove = useCallback((e) => {
-    if (!touchStartX.current) return;
-
-    const currentX = e.touches[0].clientX;
-    const deltaX = currentX - touchStartX.current;
-
-    // Show visual feedback (limit to prevent excessive drag)
-    const maxOffset = 100;
-    const constrainedOffset = Math.max(-maxOffset, Math.min(maxOffset, deltaX * 0.3));
-    setSwipeOffset(constrainedOffset);
-  }, []);
-
-  const handleTouchEnd = useCallback(
-    (e) => {
-      if (!touchStartX.current) return;
-
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
-      const touchEndTime = Date.now();
-
-      const distanceX = touchStartX.current - touchEndX;
-      const distanceY = touchStartY.current - touchEndY;
-      const swipeDuration = touchEndTime - touchStartTime.current;
-
-      // Reset visual feedback
-      setSwipeOffset(0);
-
-      // Only trigger if vertical movement is minimal (user is swiping horizontally)
-      if (Math.abs(distanceY) > Math.abs(distanceX)) {
-        touchStartX.current = 0;
-        touchStartY.current = 0;
-        return; // Vertical scroll, not a horizontal swipe
-      }
-
-      // Check cooldown period to prevent rapid multiple swipes
-      const timeSinceLastSwipe = touchEndTime - lastSwipeTime.current;
-      if (timeSinceLastSwipe < SWIPE_COOLDOWN) {
-        touchStartX.current = 0;
-        touchStartY.current = 0;
-        return;
-      }
-
-      // Check if swipe distance is significant and swipe was reasonably fast
-      if (Math.abs(distanceX) > MIN_SWIPE_DISTANCE && swipeDuration < 500) {
-        if (distanceX > 0) {
-          // Swiped left → go to next
-          handleNavigateNext();
-          lastSwipeTime.current = touchEndTime;
-        } else {
-          // Swiped right → go to previous
-          handleNavigatePrevious();
-          lastSwipeTime.current = touchEndTime;
-        }
-      }
-
-      touchStartX.current = 0;
-      touchStartY.current = 0;
-    },
-    [handleNavigateNext, handleNavigatePrevious]
-  );
-
   // ─── 17 RENDER HELPERS ───────────────────────────────────────────────────────
   const isCurrentMonth = (date) => {
     return date.getMonth() === currentDate.getMonth();
@@ -897,7 +664,7 @@ export default function Schedule() {
 
   // ─── 18 RENDER ───────────────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return <div className="p-4">{S.loading}</div>;
   }
 
   return (
@@ -1224,7 +991,7 @@ export default function Schedule() {
                                           <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                             {appointment.notes || "Meeting"}
                                           </div>
-                                          <div className="appointment-client" style={{ fontSize: "0.65rem", opacity: 0.85 }}>
+                                          <div className="appointment-client text-xxs" style={{ opacity: 0.85 }}>
                                             Meeting
                                           </div>
                                         </>

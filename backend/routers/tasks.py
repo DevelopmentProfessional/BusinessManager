@@ -35,6 +35,17 @@ class TaskLinkRequest(BaseModel):
 
 router = APIRouter()
 
+# ─── HELPERS ───────────────────────────────────────────────────────────────────
+
+def _build_task_read(task: Task, session: Session) -> TaskRead:
+    """Resolve linked-task titles and return a TaskRead instance."""
+    linked_titles = [
+        target.title
+        for link in task.linked_tasks
+        if (target := session.get(Task, link.target_task_id))
+    ]
+    return TaskRead(**{**task.dict(), "linked_task_titles": linked_titles})
+
 # ─── 2 TASK READ ROUTES ────────────────────────────────────────────────────────
 
 @router.get("/tasks", response_model=List[TaskRead])
@@ -44,22 +55,7 @@ async def get_tasks(
 ):
     """Get all tasks"""
     stmt = select(Task).where(Task.company_id == current_user.company_id)
-    tasks = session.exec(stmt).all()
-    result = []
-    for task in tasks:
-        # Get linked task titles
-        linked_titles = []
-        for link in task.linked_tasks:
-            target_task = session.get(Task, link.target_task_id)
-            if target_task:
-                linked_titles.append(target_task.title)
-        
-        task_dict = {
-            **task.dict(),
-            "linked_task_titles": linked_titles
-        }
-        result.append(TaskRead(**task_dict))
-    return result
+    return [_build_task_read(t, session) for t in session.exec(stmt).all()]
 
 @router.get("/tasks/{task_id}", response_model=TaskRead)
 async def get_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
@@ -67,40 +63,13 @@ async def get_task(task_id: UUID, session: Session = Depends(get_session), curre
     task = session.get(Task, task_id)
     if not task or (current_user.company_id and task.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Task not found")
-
-    # Get linked task titles
-    linked_titles = []
-    for link in task.linked_tasks:
-        target_task = session.get(Task, link.target_task_id)
-        if target_task:
-            linked_titles.append(target_task.title)
-    
-    task_dict = {
-        **task.dict(),
-        "linked_task_titles": linked_titles
-    }
-    return TaskRead(**task_dict)
+    return _build_task_read(task, session)
 
 @router.get("/tasks/by-title/{title}", response_model=List[TaskRead])
 async def get_tasks_by_title(title: str, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Get tasks by title"""
     stmt = select(Task).where(Task.title == title, Task.company_id == current_user.company_id)
-    tasks = session.exec(stmt).all()
-    result = []
-    for task in tasks:
-        # Get linked task titles
-        linked_titles = []
-        for link in task.linked_tasks:
-            target_task = session.get(Task, link.target_task_id)
-            if target_task:
-                linked_titles.append(target_task.title)
-        
-        task_dict = {
-            **task.dict(),
-            "linked_task_titles": linked_titles
-        }
-        result.append(TaskRead(**task_dict))
-    return result
+    return [_build_task_read(t, session) for t in session.exec(stmt).all()]
 
 # ─── 3 TASK WRITE ROUTES ───────────────────────────────────────────────────────
 
@@ -139,18 +108,7 @@ async def create_task(task_data: TaskCreate, session: Session = Depends(get_sess
                         session.add(link)
         session.commit()
     
-    # Get linked task titles for response
-    linked_titles = []
-    for link in task.linked_tasks:
-        target_task = session.get(Task, link.target_task_id)
-        if target_task:
-            linked_titles.append(target_task.title)
-    
-    task_dict = {
-        **task.dict(),
-        "linked_task_titles": linked_titles
-    }
-    return TaskRead(**task_dict)
+    return _build_task_read(task, session)
 
 @router.put("/tasks/{task_id}", response_model=TaskRead)
 async def update_task(
@@ -197,18 +155,7 @@ async def update_task(
     session.commit()
     session.refresh(task)
     
-    # Get linked task titles for response
-    linked_titles = []
-    for link in task.linked_tasks:
-        target_task = session.get(Task, link.target_task_id)
-        if target_task:
-            linked_titles.append(target_task.title)
-    
-    task_dict = {
-        **task.dict(),
-        "linked_task_titles": linked_titles
-    }
-    return TaskRead(**task_dict)
+    return _build_task_read(task, session)
 
 # ─── 4 TASK DELETE ROUTE ───────────────────────────────────────────────────────
 
@@ -281,18 +228,7 @@ async def link_task_by_title(
     session.commit()
     session.refresh(task)
     
-    # Get linked task titles for response
-    linked_titles = []
-    for link in task.linked_tasks:
-        target_task = session.get(Task, link.target_task_id)
-        if target_task:
-            linked_titles.append(target_task.title)
-    
-    task_dict = {
-        **task.dict(),
-        "linked_task_titles": linked_titles
-    }
-    return TaskRead(**task_dict)
+    return _build_task_read(task, session)
 
 @router.delete("/tasks/{task_id}/link/{target_task_id}")
 async def unlink_task(

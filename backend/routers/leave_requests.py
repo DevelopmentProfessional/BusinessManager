@@ -28,6 +28,40 @@ from backend.routers.auth import get_current_user
 
 router = APIRouter()
 
+# ─── HELPERS ───────────────────────────────────────────────────────────────────
+
+def _parse_uuid(value: str, label: str = "request ID") -> UUID:
+    try:
+        return UUID(value)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid {label} format")
+
+def _require_admin_or_supervisor(current_user: User, req) -> None:
+    """Raise 403 unless current_user is admin or the request's assigned supervisor."""
+    is_admin = current_user.role == UserRole.ADMIN
+    is_supervisor = str(req.supervisor_id) == str(current_user.id) if req.supervisor_id else False
+    if not is_admin and not is_supervisor:
+        raise HTTPException(status_code=403, detail="Not authorized to act on this request")
+
+def _simple_request_action(model_class, request_id: str, action_data: dict, current_user: User, session: Session, label: str):
+    """Generic approve/deny handler for onboarding and offboarding requests."""
+    req_uuid = _parse_uuid(request_id)
+    req = session.get(model_class, req_uuid)
+    if not req or (current_user.company_id and req.company_id != current_user.company_id):
+        raise HTTPException(status_code=404, detail=f"{label} not found")
+
+    action = action_data.get("action")
+    if action not in ("approved", "denied"):
+        raise HTTPException(status_code=400, detail="action must be 'approved' or 'denied'")
+
+    _require_admin_or_supervisor(current_user, req)
+
+    req.status = action
+    req.updated_at = datetime.utcnow()
+    session.add(req)
+    session.commit()
+    session.refresh(req)
+    return {"message": f"Request {action}", "id": str(req.id), "status": req.status}
 
 # ─── 1 LEAVE REQUEST ACTION ────────────────────────────────────────────────────
 
@@ -44,26 +78,16 @@ def leave_request_action(
     - Approving increments vacation_days_used / sick_days_used on the employee.
     - Changing from approved → denied reverses the deduction.
     """
-    try:
-        req_uuid = UUID(request_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid request ID format")
-
+    req_uuid = _parse_uuid(request_id)
     req = session.get(LeaveRequest, req_uuid)
-    if not req:
-        raise HTTPException(status_code=404, detail="Leave request not found")
-    if current_user.company_id and req.company_id != current_user.company_id:
+    if not req or (current_user.company_id and req.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Leave request not found")
 
     action = action_data.get("action")
     if action not in ("approved", "denied"):
         raise HTTPException(status_code=400, detail="action must be 'approved' or 'denied'")
 
-    # Authorization: admin can act on anything; supervisor can only act on requests routed to them
-    is_admin = current_user.role == UserRole.ADMIN
-    is_supervisor = str(req.supervisor_id) == str(current_user.id) if req.supervisor_id else False
-    if not is_admin and not is_supervisor:
-        raise HTTPException(status_code=403, detail="Not authorized to act on this request")
+    _require_admin_or_supervisor(current_user, req)
 
     old_status = req.status
     req.status = action
@@ -110,33 +134,7 @@ def onboarding_request_action(
     session: Session = Depends(get_session),
 ):
     """Approve or deny an onboarding request."""
-    try:
-        req_uuid = UUID(request_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid request ID format")
-
-    req = session.get(OnboardingRequest, req_uuid)
-    if not req:
-        raise HTTPException(status_code=404, detail="Onboarding request not found")
-    if current_user.company_id and req.company_id != current_user.company_id:
-        raise HTTPException(status_code=404, detail="Onboarding request not found")
-
-    action = action_data.get("action")
-    if action not in ("approved", "denied"):
-        raise HTTPException(status_code=400, detail="action must be 'approved' or 'denied'")
-
-    is_admin = current_user.role == UserRole.ADMIN
-    is_supervisor = str(req.supervisor_id) == str(current_user.id) if req.supervisor_id else False
-    if not is_admin and not is_supervisor:
-        raise HTTPException(status_code=403, detail="Not authorized to act on this request")
-
-    req.status = action
-    req.updated_at = datetime.utcnow()
-    session.add(req)
-    session.commit()
-    session.refresh(req)
-
-    return {"message": f"Request {action}", "id": str(req.id), "status": req.status}
+    return _simple_request_action(OnboardingRequest, request_id, action_data, current_user, session, "Onboarding request")
 
 
 # ─── 3 OFFBOARDING REQUEST ACTION ──────────────────────────────────────────────
@@ -149,30 +147,4 @@ def offboarding_request_action(
     session: Session = Depends(get_session),
 ):
     """Approve or deny an offboarding request."""
-    try:
-        req_uuid = UUID(request_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid request ID format")
-
-    req = session.get(OffboardingRequest, req_uuid)
-    if not req:
-        raise HTTPException(status_code=404, detail="Offboarding request not found")
-    if current_user.company_id and req.company_id != current_user.company_id:
-        raise HTTPException(status_code=404, detail="Offboarding request not found")
-
-    action = action_data.get("action")
-    if action not in ("approved", "denied"):
-        raise HTTPException(status_code=400, detail="action must be 'approved' or 'denied'")
-
-    is_admin = current_user.role == UserRole.ADMIN
-    is_supervisor = str(req.supervisor_id) == str(current_user.id) if req.supervisor_id else False
-    if not is_admin and not is_supervisor:
-        raise HTTPException(status_code=403, detail="Not authorized to act on this request")
-
-    req.status = action
-    req.updated_at = datetime.utcnow()
-    session.add(req)
-    session.commit()
-    session.refresh(req)
-
-    return {"message": f"Request {action}", "id": str(req.id), "status": req.status}
+    return _simple_request_action(OffboardingRequest, request_id, action_data, current_user, session, "Offboarding request")
