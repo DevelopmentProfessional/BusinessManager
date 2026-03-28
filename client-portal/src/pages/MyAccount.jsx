@@ -1,37 +1,50 @@
 /**
- * MY ACCOUNT — Profile details + portal preferences.
- * Includes nav button alignment setting (left / center / right).
+ * MY ACCOUNT — Modern profile + membership card.
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import { UserCircleIcon, StarIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { authAPI } from '../services/api'
 import useStore from '../store/useStore'
 
-const TIER_BADGE = {
-  none:     'bg-secondary',
-  bronze:   'bg-warning text-dark',
-  silver:   'bg-secondary',
-  gold:     'bg-warning text-dark',
-  platinum: 'bg-primary',
+const TIER_CONFIG = {
+  none:     { label: 'Member',   bg: '#f3f4f6', color: '#6b7280', star: false },
+  bronze:   { label: 'Bronze',   bg: '#fef3c7', color: '#b45309', star: true  },
+  silver:   { label: 'Silver',   bg: '#f1f5f9', color: '#475569', star: true  },
+  gold:     { label: 'Gold',     bg: '#fef9c3', color: '#b45309', star: true  },
+  platinum: { label: 'Platinum', bg: '#f0f9ff', color: '#0369a1', star: true  },
 }
 
-const ALIGN_OPTIONS = [
-  { value: 'left',   label: 'Left' },
-  { value: 'center', label: 'Center' },
-  { value: 'right',  label: 'Right' },
-]
+function Field({ label, children }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#374151', marginBottom: 5 }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+const inputStyle = {
+  width: '100%', padding: '9px 12px',
+  fontSize: '0.88rem', border: '1.5px solid #e5e7eb',
+  borderRadius: '0.6rem', outline: 'none', boxSizing: 'border-box',
+  background: '#fff', color: '#111827',
+  transition: 'border-color 0.15s',
+}
+const inputDisabledStyle = { ...inputStyle, background: '#f9fafb', color: '#9ca3af' }
 
 export default function MyAccount() {
-  const navigate      = useNavigate()
-  const client        = useStore(s => s.client)
-  const token         = useStore(s => s.token)
-  const companyId     = useStore(s => s.companyId)
-  const setAuth       = useStore(s => s.setAuth)
-  const clearAuth     = useStore(s => s.clearAuth)
-  const navAlignment  = useStore(s => s.navAlignment)
-  const setNavAlignment = useStore(s => s.setNavAlignment)
-  const addToast      = useStore(s => s.addToast)
+  const navigate    = useNavigate()
+  const client      = useStore(s => s.client)
+  const token       = useStore(s => s.token)
+  const companyId   = useStore(s => s.companyId)
+  const setAuth     = useStore(s => s.setAuth)
+  const clearAuth   = useStore(s => s.clearAuth)
+  const addToast    = useStore(s => s.addToast)
 
   const [form, setForm] = useState({
     name:    client?.name    || '',
@@ -58,135 +71,152 @@ export default function MyAccount() {
     }
   }
 
-  function handleLogout() {
-    clearAuth()
-    navigate('/')
-  }
-
-  const tier = client?.membership_tier || 'none'
+  const tier      = client?.membership_tier || 'none'
+  const tierCfg   = TIER_CONFIG[tier] || TIER_CONFIG.none
+  const initial   = (client?.name || '?')[0].toUpperCase()
+  const points    = client?.membership_points || 0
 
   return (
     <Layout>
-      <div className="p-3" style={{ paddingBottom: '5rem' }}>
-        <h5 className="fw-bold mb-4">My Account</h5>
+      <div style={{ paddingBottom: '5.5rem', maxWidth: 560, margin: '0 auto' }}>
 
-        <div className="row g-3">
+        {/* ── Profile hero card ───────────────────────────────── */}
+        <div style={{
+          background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+          padding: '28px 20px 20px', textAlign: 'center',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
 
-          {/* ── Membership card ────────────────────────────────── */}
-          <div className="col-12 col-md-4">
-            <div className="card h-100">
-              <div className="card-body text-center">
-                <div
-                  className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                  style={{ width: 64, height: 64, background: '#eef2ff', fontSize: 28, fontWeight: 800, color: '#4f46e5' }}
-                >
-                  {client?.name?.[0]?.toUpperCase() || '?'}
-                </div>
-                <p className="fw-bold mb-0">{client?.name}</p>
-                <p className="text-muted small">{client?.email}</p>
+          {/* Avatar */}
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 12px', fontSize: '1.6rem', fontWeight: 800, color: '#fff',
+            border: '3px solid rgba(255,255,255,0.3)',
+          }}>
+            {initial}
+          </div>
+          <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>{client?.name || 'Account'}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.82rem', margin: '3px 0 12px' }}>{client?.email}</p>
 
-                <div className="mt-3 pt-3 border-top">
-                  <span className={`badge ${TIER_BADGE[tier]} text-capitalize`}>
-                    {tier} Member
-                  </span>
-                  <p className="text-muted small mt-1">{client?.membership_points || 0} points</p>
-                </div>
-
-                {client?.membership_expires && (
-                  <p className="text-muted" style={{ fontSize: '0.75rem' }}>
-                    Expires {new Date(client.membership_expires).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-            </div>
+          {/* Membership badge */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: tierCfg.bg, color: tierCfg.color,
+              borderRadius: '999px', padding: '4px 12px',
+              fontSize: '0.75rem', fontWeight: 700,
+            }}>
+              {tierCfg.star && <StarSolid style={{ width: 11, height: 11 }} />}
+              {tierCfg.label}
+            </span>
+            <span style={{
+              background: 'rgba(255,255,255,0.15)', color: '#fff',
+              borderRadius: '999px', padding: '4px 10px',
+              fontSize: '0.72rem', fontWeight: 600, backdropFilter: 'blur(4px)',
+            }}>
+              {points.toLocaleString()} pts
+            </span>
           </div>
 
-          {/* ── Edit profile ───────────────────────────────────── */}
-          <div className="col-12 col-md-8">
-            <div className="card mb-3">
-              <div className="card-body">
-                <h6 className="fw-semibold mb-3">Profile Details</h6>
-                <form onSubmit={handleSave}>
-                  <div className="mb-3">
-                    <label className="form-label small fw-medium">Full Name</label>
-                    <input
-                      className="form-control"
-                      value={form.name}
-                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-medium">Email</label>
-                    <input className="form-control" value={client?.email || ''} disabled />
-                    <div className="form-text">Email cannot be changed.</div>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-medium">Phone</label>
-                    <input
-                      className="form-control"
-                      placeholder="555-1234"
-                      value={form.phone}
-                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-medium">Address</label>
-                    <textarea
-                      className="form-control"
-                      rows={2}
-                      placeholder="123 Main St, City, State"
-                      value={form.address}
-                      onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                    />
-                  </div>
-                  <div className="d-flex justify-content-end">
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+          {client?.membership_expires && (
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem', marginTop: 6 }}>
+              Expires {new Date(client.membership_expires).toLocaleDateString()}
+            </p>
+          )}
+        </div>
 
-            {/* ── Portal preferences ─────────────────────────── */}
-            <div className="card mb-3">
-              <div className="card-body">
-                <h6 className="fw-semibold mb-3">Portal Preferences</h6>
+        {/* ── Profile form ────────────────────────────────────── */}
+        <div style={{ padding: '20px 16px 0' }}>
+          <div style={{
+            background: '#fff', borderRadius: '1rem',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            padding: '20px', marginBottom: 16,
+          }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#111827', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <UserCircleIcon style={{ width: 18, height: 18, color: '#6b7280' }} />
+              Profile Details
+            </h3>
 
-                <div className="mb-0">
-                  <label className="form-label small fw-medium">Navigation Button Position</label>
-                  <div className="d-flex gap-2">
-                    {ALIGN_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        className={`btn btn-sm flex-fill ${navAlignment === opt.value ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        onClick={() => {
-                          setNavAlignment(opt.value)
-                          addToast(`Navigation moved to ${opt.label.toLowerCase()}.`, 'success')
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="form-text">Controls where the navigation button sits at the bottom of the screen.</div>
-                </div>
-              </div>
-            </div>
+            <form onSubmit={handleSave}>
+              <Field label="Full Name">
+                <input
+                  style={inputStyle}
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  required
+                  onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                />
+              </Field>
 
-            {/* ── Sign out ───────────────────────────────────── */}
-            <div className="card">
-              <div className="card-body">
-                <h6 className="fw-semibold mb-3">Session</h6>
-                <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
-                  Sign Out
+              <Field label="Email address">
+                <input style={inputDisabledStyle} value={client?.email || ''} disabled />
+                <p style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 4 }}>Email cannot be changed.</p>
+              </Field>
+
+              <Field label="Phone">
+                <input
+                  style={inputStyle}
+                  placeholder="555-1234"
+                  value={form.phone}
+                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                />
+              </Field>
+
+              <Field label="Address">
+                <textarea
+                  style={{ ...inputStyle, resize: 'none' }}
+                  rows={2}
+                  placeholder="123 Main St, City, State"
+                  value={form.address}
+                  onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                  onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                />
+              </Field>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: '9px 20px', background: saving ? '#a5b4fc' : '#4f46e5',
+                    color: '#fff', border: 'none', borderRadius: '0.6rem',
+                    fontWeight: 600, fontSize: '0.85rem',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
+          {/* ── Sign out ──────────────────────────────────────── */}
+          <button
+            onClick={() => { clearAuth(); navigate('/') }}
+            style={{
+              width: '100%', padding: '12px',
+              background: '#fff', border: '1.5px solid #fee2e2',
+              borderRadius: '0.9rem', color: '#dc2626',
+              fontSize: '0.88rem', fontWeight: 600,
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+          >
+            <ArrowRightOnRectangleIcon style={{ width: 18, height: 18 }} />
+            Sign Out
+          </button>
         </div>
       </div>
     </Layout>

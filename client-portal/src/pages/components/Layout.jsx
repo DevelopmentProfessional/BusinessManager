@@ -1,18 +1,15 @@
 /**
  * CLIENT PORTAL LAYOUT
- * Mirrors the internal app's Layout.jsx exactly:
- *   - Fixed bottom circle button that expands to nav items
- *   - Position (left / center / right) is a user preference stored in localStorage
- *   - Same Bootstrap + Heroicons style
+ * Full-text bottom navigation bar — always visible, never compact.
+ * Shows icon + label for every nav item at all times.
  */
-import React, { useState } from 'react'
+import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ShoppingBagIcon,
   ShoppingCartIcon,
   ClipboardDocumentListIcon,
   UserCircleIcon,
-  EllipsisHorizontalIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 import useStore from '../../store/useStore'
@@ -24,130 +21,120 @@ const NAV = [
   { name: 'Account', href: '/account', Icon: UserCircleIcon },
 ]
 
-// Alignment → CSS horizontal position for the fixed button
-const ALIGN_STYLE = {
-  left:   { left:  '1rem', right: 'auto' },
-  center: { left:  '50%',  right: 'auto', transform: 'translateX(-50%)' },
-  right:  { right: '1rem', left:  'auto' },
-}
-
 export default function Layout({ children }) {
   const location  = useLocation()
   const navigate  = useNavigate()
   const cartCount = useStore(s => s.cartCount())
-  const navAlign  = useStore(s => s.navAlignment)
   const clearAuth = useStore(s => s.clearAuth)
 
-  const [menuOpen, setMenuOpen] = useState(false)
-
   function handleLogout() {
-    setMenuOpen(false)
     clearAuth()
     navigate('/', { replace: true })
   }
 
-  const btnPos = ALIGN_STYLE[navAlign] || ALIGN_STYLE.right
-
   return (
-    <div className="app-shell bg-body d-flex flex-column" style={{ minHeight: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--cp-bg, #f8f9fa)' }}>
 
-      {/* Main content */}
-      <main className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
+      {/* Main scrollable content */}
+      <main style={{ flex: 1, overflowY: 'auto', paddingBottom: '5rem' }}>
         {children}
       </main>
 
-      {/* ── Nav overlay ─────────────────────────────────────────── */}
-      {menuOpen && (
-        <div className="position-fixed top-0 start-0 w-100 h-100" style={{ zIndex: 1050 }}>
-          {/* Backdrop */}
-          <div
-            className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-25"
-            onClick={() => setMenuOpen(false)}
-          />
-
-          {/* Nav items — stacked above the toggle button */}
-          <div
-            className="position-fixed d-flex flex-column gap-2"
-            style={{ bottom: '5rem', zIndex: 1051, ...btnPos }}
-          >
-            {NAV.map(({ name, href, Icon }) => {
-              const active = location.pathname === href
-              return (
-                <Link
-                  key={href}
-                  to={href}
-                  title={name}
-                  onClick={() => setMenuOpen(false)}
-                  className={[
-                    'd-flex align-items-center justify-content-center',
-                    'rounded-circle text-decoration-none position-relative',
-                    active ? 'btn btn-primary' : 'btn btn-outline-secondary',
-                  ].join(' ')}
-                  style={{
-                    width: '3rem', height: '3rem',
-                    backgroundColor: active ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
-                    color:           active ? 'var(--bs-white)'   : 'var(--bs-body-color)',
-                    borderColor:     active ? 'var(--bs-primary)' : 'var(--bs-border-color)',
-                  }}
-                >
-                  <Icon style={{ width: 20, height: 20 }} />
-                  {/* Cart badge */}
-                  {name === 'Cart' && cartCount > 0 && (
-                    <span
-                      className="badge bg-danger rounded-pill position-absolute"
-                      style={{ top: -4, right: -4, fontSize: '0.6rem', minWidth: 16, padding: '2px 4px' }}
-                    >
-                      {cartCount > 9 ? '9+' : cartCount}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-
-            {/* Logout */}
-            <button
-              title="Sign out"
-              onClick={handleLogout}
-              className="d-flex align-items-center justify-content-center rounded-circle btn btn-outline-danger"
-              style={{ width: '3rem', height: '3rem' }}
+      {/* ── Full-text bottom nav bar ───────────────────────────────────── */}
+      <nav style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        background: 'var(--cp-nav-bg, #ffffff)',
+        borderTop: '1px solid var(--cp-nav-border, #e5e7eb)',
+        display: 'flex',
+        alignItems: 'stretch',
+        boxShadow: '0 -4px 24px rgba(0,0,0,0.08)',
+      }}>
+        {NAV.map(({ name, href, Icon }) => {
+          const active = location.pathname === href
+          return (
+            <Link
+              key={href}
+              to={href}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3px',
+                padding: '10px 4px 8px',
+                textDecoration: 'none',
+                color: active ? 'var(--cp-primary, #6366f1)' : 'var(--cp-nav-inactive, #9ca3af)',
+                borderBottom: active ? '2px solid var(--cp-primary, #6366f1)' : '2px solid transparent',
+                transition: 'color 0.15s, border-color 0.15s',
+                position: 'relative',
+                fontSize: '0.65rem',
+                fontWeight: active ? 600 : 400,
+                letterSpacing: '0.02em',
+              }}
             >
-              <ArrowRightOnRectangleIcon style={{ width: 20, height: 20 }} />
-            </button>
-          </div>
-        </div>
-      )}
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <Icon style={{ width: 22, height: 22 }} />
+                {name === 'Cart' && cartCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -5,
+                    right: -7,
+                    background: '#ef4444',
+                    color: '#fff',
+                    borderRadius: '9999px',
+                    fontSize: '0.55rem',
+                    fontWeight: 700,
+                    minWidth: 16,
+                    height: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 3px',
+                    lineHeight: 1,
+                  }}>
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </span>
+              {name}
+            </Link>
+          )
+        })}
 
-      {/* ── Toggle button ────────────────────────────────────────── */}
-      <button
-        onClick={() => setMenuOpen(!menuOpen)}
-        title={menuOpen ? 'Close menu' : 'Open menu'}
-        className={[
-          'p-0 position-fixed rounded-circle shadow-lg',
-          'd-flex align-items-center justify-content-center',
-          menuOpen ? 'btn btn-primary' : 'btn btn-outline-secondary',
-        ].join(' ')}
-        style={{
-          width: '3rem', height: '3rem',
-          zIndex: 1100,
-          bottom: '1.5rem',
-          backgroundColor: menuOpen ? 'var(--bs-primary)' : 'var(--bs-tertiary-bg)',
-          color:           menuOpen ? 'var(--bs-white)'   : 'var(--bs-body-color)',
-          borderColor:     menuOpen ? 'var(--bs-primary)' : 'var(--bs-border-color)',
-          ...btnPos,
-        }}
-      >
-        <EllipsisHorizontalIcon style={{ width: 20, height: 20 }} />
-        {/* Cart badge on toggle when menu is closed */}
-        {!menuOpen && cartCount > 0 && (
-          <span
-            className="badge bg-danger rounded-pill position-absolute"
-            style={{ top: -4, right: -4, fontSize: '0.6rem', minWidth: 16, padding: '2px 4px' }}
-          >
-            {cartCount > 9 ? '9+' : cartCount}
-          </span>
-        )}
-      </button>
-
+        {/* Sign out */}
+        <button
+          onClick={handleLogout}
+          title="Sign out"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '3px',
+            padding: '10px 4px 8px',
+            background: 'none',
+            border: 'none',
+            borderBottom: '2px solid transparent',
+            color: 'var(--cp-nav-inactive, #9ca3af)',
+            cursor: 'pointer',
+            fontSize: '0.65rem',
+            fontWeight: 400,
+            letterSpacing: '0.02em',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--cp-nav-inactive, #9ca3af)'}
+        >
+          <ArrowRightOnRectangleIcon style={{ width: 22, height: 22 }} />
+          Sign Out
+        </button>
+      </nav>
     </div>
   )
 }
