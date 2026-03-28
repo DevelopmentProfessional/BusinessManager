@@ -18,7 +18,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React from 'react';
+import React from "react";
 
 /**
  * Wraps content so it scrolls internally instead of making the page scroll.
@@ -28,12 +28,9 @@ import React from 'react';
 
 // ─── 1 SCROLLABLE CONTAINER RENDER ────────────────────────────────────────────
 
-export default function Container_Scrollable({ children, className = '', as: Tag = 'div', ...rest }) {
+export default function Container_Scrollable({ children, className = "", as: Tag = "div", ...rest }) {
   return (
-    <Tag
-      className={`overflow-scroll-container ${className}`}
-      {...rest}
-    >
+    <Tag className={`overflow-scroll-container ${className}`} {...rest}>
       {children}
     </Tag>
   );

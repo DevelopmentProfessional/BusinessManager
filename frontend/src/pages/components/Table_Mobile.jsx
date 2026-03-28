@@ -1,19 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  PencilIcon, 
-  TrashIcon, 
-  MagnifyingGlassIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from '@heroicons/react/24/outline';
-import Gate_Permission from './Gate_Permission';
-import Button_Icon from './Button_Icon';
+import React, { useState, useMemo } from "react";
+import { PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import Gate_Permission from "./Gate_Permission";
+import Button_Icon from "./Button_Icon";
 
-export default function Table_Mobile({ 
-  data = [], 
-  columns = [], 
-  onEdit, 
-  onDelete, 
+export default function Table_Mobile({
+  data = [],
+  columns = [],
+  onEdit,
+  onDelete,
   loading = false,
   emptyMessage = "No data available",
   rightActions, // optional: (item) => ReactNode, renders after Edit button on right
@@ -21,7 +15,7 @@ export default function Table_Mobile({
   deletePermission, // optional: { page, permission } for delete button
 }) {
   const [searchTerms, setSearchTerms] = useState({});
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [activeSearch, setActiveSearch] = useState(null);
 
   // Filter and sort data
@@ -31,7 +25,7 @@ export default function Table_Mobile({
     // Apply search filters
     Object.entries(searchTerms).forEach(([columnKey, searchTerm]) => {
       if (searchTerm.trim()) {
-        filtered = filtered.filter(item => {
+        filtered = filtered.filter((item) => {
           const value = item[columnKey];
           return value && value.toString().toLowerCase().includes(searchTerm.toLowerCase());
         });
@@ -43,9 +37,9 @@ export default function Table_Mobile({
       filtered = [...filtered].sort((a, b) => {
         const aVal = a[sortConfig.key];
         const bVal = b[sortConfig.key];
-        
-        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+
+        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
@@ -54,16 +48,16 @@ export default function Table_Mobile({
   }, [data, searchTerms, sortConfig]);
 
   const handleSort = (columnKey) => {
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key: columnKey,
-      direction: prev.key === columnKey && prev.direction === 'asc' ? 'desc' : 'asc'
+      direction: prev.key === columnKey && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
   const handleSearch = (columnKey, value) => {
-    setSearchTerms(prev => ({
+    setSearchTerms((prev) => ({
       ...prev,
-      [columnKey]: value
+      [columnKey]: value,
     }));
   };
 
@@ -86,24 +80,11 @@ export default function Table_Mobile({
         {processedData.length > 0 ? (
           <div className="min-w-full">
             {processedData.map((item, index) => (
-              <div 
-                key={item.id || index} 
-                className="bg-white border-b border-gray-200 p-4 flex items-center gap-3"
-              >
+              <div key={item.id || index} className="bg-white border-b border-gray-200 p-4 flex items-center gap-3">
                 {/* Delete button - leftmost (optional) */}
                 {onDelete && (
-                  <Gate_Permission 
-                    page={deletePermission?.page} 
-                    permission={deletePermission?.permission}
-                    hide={!deletePermission}
-                  >
-                    <Button_Icon
-                      icon={TrashIcon}
-                      label="Delete"
-                      onClick={() => onDelete(item)}
-                      variant="danger"
-                      className="flex-shrink-0 !p-2"
-                    />
+                  <Gate_Permission page={deletePermission?.page} permission={deletePermission?.permission} hide={!deletePermission}>
+                    <Button_Icon icon={TrashIcon} label="Delete" onClick={() => onDelete(item)} variant="danger" className="flex-shrink-0 !p-2" />
                   </Gate_Permission>
                 )}
 
@@ -111,30 +92,18 @@ export default function Table_Mobile({
                 <div className="flex-1 grid gap-2 min-w-0" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
                   {columns.map((column) => (
                     <div key={column.key} className="min-w-0">
-                      <div className="text-sm text-gray-900 truncate">
-                        {column.render ? column.render(item[column.key], item) : item[column.key]}
-                      </div>
+                      <div className="text-sm text-gray-900 truncate">{column.render ? column.render(item[column.key], item) : item[column.key]}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Right actions: Edit (optional) + custom */}
                 {onEdit && (
-                  <Gate_Permission 
-                    page={editPermission?.page} 
-                    permission={editPermission?.permission}
-                    hide={!editPermission}
-                  >
-                    <Button_Icon
-                      icon={PencilIcon}
-                      label="Edit"
-                      onClick={() => onEdit(item)}
-                      variant="ghost"
-                      className="flex-shrink-0 !p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                    />
+                  <Gate_Permission page={editPermission?.page} permission={editPermission?.permission} hide={!editPermission}>
+                    <Button_Icon icon={PencilIcon} label="Edit" onClick={() => onEdit(item)} variant="ghost" className="flex-shrink-0 !p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30" />
                   </Gate_Permission>
                 )}
-                {typeof rightActions === 'function' ? rightActions(item) : null}
+                {typeof rightActions === "function" ? rightActions(item) : null}
               </div>
             ))}
           </div>
@@ -147,10 +116,7 @@ export default function Table_Mobile({
           {columns.map((column) => (
             <div key={column.key} className="min-w-0">
               {/* Column title with search toggle */}
-              <button
-                onClick={() => toggleSearch(column.key)}
-                className="w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors mb-1"
-              >
+              <button onClick={() => toggleSearch(column.key)} className="w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors mb-1">
                 {column.title}
               </button>
 
@@ -160,7 +126,7 @@ export default function Table_Mobile({
                   <input
                     type="text"
                     placeholder={`Search ${column.title.toLowerCase()}...`}
-                    value={searchTerms[column.key] || ''}
+                    value={searchTerms[column.key] || ""}
                     onChange={(e) => handleSearch(column.key, e.target.value)}
                     className="app-search-input w-full pl-8 pr-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     autoFocus
@@ -170,20 +136,9 @@ export default function Table_Mobile({
               )}
 
               {/* Sort toggle */}
-              <button
-                onClick={() => handleSort(column.key)}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-              >
+              <button onClick={() => handleSort(column.key)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors">
                 Sort
-                {sortConfig.key === column.key ? (
-                  sortConfig.direction === 'asc' ? (
-                    <ChevronUpIcon className="h-3 w-3" />
-                  ) : (
-                    <ChevronDownIcon className="h-3 w-3" />
-                  )
-                ) : (
-                  <div className="h-3 w-3" />
-                )}
+                {sortConfig.key === column.key ? sortConfig.direction === "asc" ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" /> : <div className="h-3 w-3" />}
               </button>
             </div>
           ))}

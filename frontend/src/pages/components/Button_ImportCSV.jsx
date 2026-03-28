@@ -25,9 +25,9 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React, { useState, useRef, useMemo } from 'react';
-import { ArrowUpTrayIcon, XMarkIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import Modal from './Modal';
+import React, { useState, useRef, useMemo } from "react";
+import { ArrowUpTrayIcon, XMarkIcon, CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import Modal from "./Modal";
 
 /**
  * Reusable CSV Import Button component
@@ -40,15 +40,7 @@ import Modal from './Modal';
  * - requiredFields: array - list of required field names
  * - className: string - additional CSS classes for the button
  */
-export default function Button_ImportCSV({
-  onImport,
-  onComplete,
-  entityName = 'Records',
-  fieldMapping = {},
-  requiredFields = [],
-  tableColumns = [],
-  className = ''
-}) {
+export default function Button_ImportCSV({ onImport, onComplete, entityName = "Records", fieldMapping = {}, requiredFields = [], tableColumns = [], className = "" }) {
   // ─── 1 STATE & REFS ──────────────────────────────────────────────────────────
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,7 +48,7 @@ export default function Button_ImportCSV({
   const [parsedData, setParsedData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [importing, setImporting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [results, setResults] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -66,18 +58,16 @@ export default function Button_ImportCSV({
   const mappingInfo = useMemo(() => {
     if (headers.length === 0 || tableColumns.length === 0) return null;
 
-    const tableFieldSet = new Set(tableColumns.map(c => c.field));
+    const tableFieldSet = new Set(tableColumns.map((c) => c.field));
     const matched = [];
     const unmatchedCsv = [];
     const mappedTableFields = new Set();
 
-    headers.forEach(header => {
-      const mappedField = fieldMapping[header.toLowerCase()] ||
-                         fieldMapping[header] ||
-                         header.toLowerCase().replace(/\s+/g, '_');
+    headers.forEach((header) => {
+      const mappedField = fieldMapping[header.toLowerCase()] || fieldMapping[header] || header.toLowerCase().replace(/\s+/g, "_");
 
       if (tableFieldSet.has(mappedField)) {
-        const col = tableColumns.find(c => c.field === mappedField);
+        const col = tableColumns.find((c) => c.field === mappedField);
         matched.push({ csvHeader: header, tableField: mappedField, tableLabel: col?.label || mappedField });
         mappedTableFields.add(mappedField);
       } else {
@@ -85,7 +75,7 @@ export default function Button_ImportCSV({
       }
     });
 
-    const missingTable = tableColumns.filter(c => !mappedTableFields.has(c.field));
+    const missingTable = tableColumns.filter((c) => !mappedTableFields.has(c.field));
 
     return { matched, unmatchedCsv, missingTable };
   }, [headers, tableColumns, fieldMapping]);
@@ -93,9 +83,9 @@ export default function Button_ImportCSV({
   // ─── 3 CSV PARSING ───────────────────────────────────────────────────────────
 
   const parseCSV = (text) => {
-    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    const lines = text.split(/\r?\n/).filter((line) => line.trim());
     if (lines.length < 2) {
-      throw new Error('CSV must have at least a header row and one data row');
+      throw new Error("CSV must have at least a header row and one data row");
     }
 
     // Parse header row
@@ -106,15 +96,13 @@ export default function Button_ImportCSV({
     const records = [];
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
-      if (values.length === 0 || values.every(v => !v.trim())) continue; // Skip empty rows
+      if (values.length === 0 || values.every((v) => !v.trim())) continue; // Skip empty rows
 
       const record = {};
       csvHeaders.forEach((header, index) => {
         // Apply field mapping if provided, otherwise use header as-is (lowercase, underscored)
-        const fieldName = fieldMapping[header.toLowerCase()] ||
-                         fieldMapping[header] ||
-                         header.toLowerCase().replace(/\s+/g, '_');
-        record[fieldName] = values[index]?.trim() || '';
+        const fieldName = fieldMapping[header.toLowerCase()] || fieldMapping[header] || header.toLowerCase().replace(/\s+/g, "_");
+        record[fieldName] = values[index]?.trim() || "";
       });
       records.push(record);
     }
@@ -124,7 +112,7 @@ export default function Button_ImportCSV({
 
   const parseCSVLine = (line) => {
     const result = [];
-    let current = '';
+    let current = "";
     let inQuotes = false;
 
     for (let i = 0; i < line.length; i++) {
@@ -137,9 +125,9 @@ export default function Button_ImportCSV({
         } else {
           inQuotes = !inQuotes;
         }
-      } else if (char === ',' && !inQuotes) {
+      } else if (char === "," && !inQuotes) {
         result.push(current);
-        current = '';
+        current = "";
       } else {
         current += char;
       }
@@ -153,7 +141,7 @@ export default function Button_ImportCSV({
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-    setError('');
+    setError("");
     setResults(null);
 
     if (!selectedFile) {
@@ -163,8 +151,8 @@ export default function Button_ImportCSV({
       return;
     }
 
-    if (!selectedFile.name.endsWith('.csv')) {
-      setError('Please select a CSV file (.csv)');
+    if (!selectedFile.name.endsWith(".csv")) {
+      setError("Please select a CSV file (.csv)");
       setFile(null);
       return;
     }
@@ -176,12 +164,10 @@ export default function Button_ImportCSV({
 
         // Validate required fields
         if (requiredFields.length > 0) {
-          const mappedHeaders = csvHeaders.map(h =>
-            fieldMapping[h.toLowerCase()] || fieldMapping[h] || h.toLowerCase().replace(/\s+/g, '_')
-          );
-          const missingFields = requiredFields.filter(f => !mappedHeaders.includes(f));
+          const mappedHeaders = csvHeaders.map((h) => fieldMapping[h.toLowerCase()] || fieldMapping[h] || h.toLowerCase().replace(/\s+/g, "_"));
+          const missingFields = requiredFields.filter((f) => !mappedHeaders.includes(f));
           if (missingFields.length > 0) {
-            setError(`Missing required columns: ${missingFields.join(', ')}`);
+            setError(`Missing required columns: ${missingFields.join(", ")}`);
             setFile(null);
             return;
           }
@@ -191,12 +177,12 @@ export default function Button_ImportCSV({
         setHeaders(csvHeaders);
         setParsedData(records);
       } catch (err) {
-        setError(err.message || 'Failed to parse CSV file');
+        setError(err.message || "Failed to parse CSV file");
         setFile(null);
       }
     };
     reader.onerror = () => {
-      setError('Failed to read file');
+      setError("Failed to read file");
       setFile(null);
     };
     reader.readAsText(selectedFile);
@@ -206,12 +192,12 @@ export default function Button_ImportCSV({
 
   const handleImport = async () => {
     if (parsedData.length === 0) {
-      setError('No data to import');
+      setError("No data to import");
       return;
     }
 
     setImporting(true);
-    setError('');
+    setError("");
     setResults(null);
 
     try {
@@ -220,12 +206,12 @@ export default function Button_ImportCSV({
       setResults({
         success: importResults.success || parsedData.length,
         failed: importResults.failed || 0,
-        errors: importResults.errors || []
+        errors: importResults.errors || [],
       });
 
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
       setFile(null);
       setParsedData([]);
@@ -236,7 +222,7 @@ export default function Button_ImportCSV({
         onComplete();
       }
     } catch (err) {
-      setError(err.message || 'Import failed');
+      setError(err.message || "Import failed");
     } finally {
       setImporting(false);
     }
@@ -249,10 +235,10 @@ export default function Button_ImportCSV({
     setFile(null);
     setParsedData([]);
     setHeaders([]);
-    setError('');
+    setError("");
     setResults(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -260,11 +246,7 @@ export default function Button_ImportCSV({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(true)}
-        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm ${className}`}
-      >
+      <button type="button" onClick={() => setIsModalOpen(true)} className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm ${className}`}>
         <ArrowUpTrayIcon className="h-4 w-4" />
         Import CSV
       </button>
@@ -272,9 +254,7 @@ export default function Button_ImportCSV({
       <Modal isOpen={isModalOpen} onClose={handleClose}>
         <div className="p-1">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Import {entityName} from CSV
-            </h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Import {entityName} from CSV</h3>
             <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
               <XMarkIcon className="h-5 w-5" />
             </button>
@@ -290,13 +270,7 @@ export default function Button_ImportCSV({
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only</p>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".csv"
-                onChange={handleFileChange}
-              />
+              <input ref={fileInputRef} type="file" className="hidden" accept=".csv" onChange={handleFileChange} />
             </label>
           </div>
 
@@ -315,7 +289,7 @@ export default function Button_ImportCSV({
                     setFile(null);
                     setParsedData([]);
                     setHeaders([]);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
+                    if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
                   className="text-blue-600 hover:text-blue-800"
                 >
@@ -328,9 +302,7 @@ export default function Button_ImportCSV({
           {/* Column Mapping Preview */}
           {headers.length > 0 && (
             <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Column Mapping:
-              </p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Column Mapping:</p>
 
               {mappingInfo ? (
                 <div className="space-y-2">
@@ -344,7 +316,8 @@ export default function Button_ImportCSV({
                       <div className="flex flex-wrap gap-1.5">
                         {mappingInfo.matched.map((m, i) => (
                           <span key={i} className="px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200">
-                            {m.csvHeader}{m.csvHeader.toLowerCase().replace(/\s+/g, '_') !== m.tableField && ` → ${m.tableLabel}`}
+                            {m.csvHeader}
+                            {m.csvHeader.toLowerCase().replace(/\s+/g, "_") !== m.tableField && ` → ${m.tableLabel}`}
                             {requiredFields.includes(m.tableField) && <span className="text-red-500 ml-0.5">*</span>}
                           </span>
                         ))}
@@ -373,17 +346,11 @@ export default function Button_ImportCSV({
                   {/* Missing Table Columns */}
                   {mappingInfo.missingTable.length > 0 && (
                     <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
-                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                        Not in CSV ({mappingInfo.missingTable.length})
-                      </p>
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Not in CSV ({mappingInfo.missingTable.length})</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Defaults will be used for these columns:</p>
                       <div className="flex flex-wrap gap-1.5">
                         {mappingInfo.missingTable.map((c, i) => (
-                          <span key={i} className={`px-2 py-0.5 rounded text-xs ${
-                            requiredFields.includes(c.field)
-                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                          }`}>
+                          <span key={i} className={`px-2 py-0.5 rounded text-xs ${requiredFields.includes(c.field) ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"}`}>
                             {c.label}
                             {requiredFields.includes(c.field) && <span className="text-red-500 ml-0.5">*</span>}
                           </span>
@@ -403,23 +370,17 @@ export default function Button_ImportCSV({
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
                   <div className="flex flex-wrap gap-2">
                     {headers.map((header, i) => {
-                      const mappedField = fieldMapping[header.toLowerCase()] ||
-                                         fieldMapping[header] ||
-                                         header.toLowerCase().replace(/\s+/g, '_');
+                      const mappedField = fieldMapping[header.toLowerCase()] || fieldMapping[header] || header.toLowerCase().replace(/\s+/g, "_");
                       const isRequired = requiredFields.includes(mappedField);
                       return (
                         <div
                           key={i}
                           className={`px-2 py-1 rounded text-xs ${
-                            isRequired
-                              ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                            isRequired ? "bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
                           }`}
                         >
                           <span className="font-medium">{header}</span>
-                          {header.toLowerCase().replace(/\s+/g, '_') !== mappedField && (
-                            <span className="text-gray-500 dark:text-gray-400"> → {mappedField}</span>
-                          )}
+                          {header.toLowerCase().replace(/\s+/g, "_") !== mappedField && <span className="text-gray-500 dark:text-gray-400"> → {mappedField}</span>}
                           {isRequired && <span className="text-red-500 ml-1">*</span>}
                         </div>
                       );
@@ -438,9 +399,7 @@ export default function Button_ImportCSV({
           {/* Preview Table */}
           {parsedData.length > 0 && (
             <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Preview (first 5 rows):
-              </p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview (first 5 rows):</p>
               <div className="overflow-x-auto max-h-48 border border-gray-200 dark:border-gray-600 rounded-lg">
                 <table className="min-w-full text-xs">
                   <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
@@ -456,12 +415,10 @@ export default function Button_ImportCSV({
                     {parsedData.slice(0, 5).map((row, i) => (
                       <tr key={i} className="bg-white dark:bg-gray-800">
                         {headers.map((header, j) => {
-                          const fieldName = fieldMapping[header.toLowerCase()] ||
-                                           fieldMapping[header] ||
-                                           header.toLowerCase().replace(/\s+/g, '_');
+                          const fieldName = fieldMapping[header.toLowerCase()] || fieldMapping[header] || header.toLowerCase().replace(/\s+/g, "_");
                           return (
                             <td key={j} className="px-2 py-1 text-gray-700 dark:text-gray-300 truncate max-w-32">
-                              {row[fieldName] || '-'}
+                              {row[fieldName] || "-"}
                             </td>
                           );
                         })}
@@ -470,11 +427,7 @@ export default function Button_ImportCSV({
                   </tbody>
                 </table>
               </div>
-              {parsedData.length > 5 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  ...and {parsedData.length - 5} more rows
-                </p>
-              )}
+              {parsedData.length > 5 && <p className="text-xs text-gray-500 mt-1">...and {parsedData.length - 5} more rows</p>}
             </div>
           )}
 
@@ -492,9 +445,7 @@ export default function Button_ImportCSV({
               <div className="flex items-start gap-2">
                 <CheckCircleIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                    Import Complete
-                  </p>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">Import Complete</p>
                   <p className="text-xs text-green-600 dark:text-green-300">
                     {results.success} records imported successfully
                     {results.failed > 0 && `, ${results.failed} failed`}
@@ -504,9 +455,7 @@ export default function Button_ImportCSV({
                       {results.errors.slice(0, 3).map((err, i) => (
                         <li key={i}>• {err}</li>
                       ))}
-                      {results.errors.length > 3 && (
-                        <li>...and {results.errors.length - 3} more errors</li>
-                      )}
+                      {results.errors.length > 3 && <li>...and {results.errors.length - 3} more errors</li>}
                     </ul>
                   )}
                 </div>
@@ -516,20 +465,11 @@ export default function Button_ImportCSV({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
-            >
-              {results ? 'Close' : 'Cancel'}
+            <button type="button" onClick={handleClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+              {results ? "Close" : "Cancel"}
             </button>
             {!results && (
-              <button
-                type="button"
-                onClick={handleImport}
-                disabled={parsedData.length === 0 || importing}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
+              <button type="button" onClick={handleImport} disabled={parsedData.length === 0 || importing} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                 {importing ? (
                   <>
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">

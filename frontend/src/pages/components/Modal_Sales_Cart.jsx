@@ -21,64 +21,47 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React from 'react';
-import Modal from './Modal';
-import { getDisplayImageUrl } from './Utils_Image';
-import {
-  ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon,
-  PlusIcon, MinusIcon, SparklesIcon, CubeIcon
-} from '@heroicons/react/24/outline';
+import React from "react";
+import Modal from "./Modal";
+import { getDisplayImageUrl } from "./Utils_Image";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "@heroicons/react/24/outline";
 
 // ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
-  const isService = item.itemType === 'service';
-  const isBundle  = item.itemType === 'bundle';
-  const isMix     = item.itemType === 'mix';
-  const imageUrl  = getDisplayImageUrl(item);
+  const isService = item.itemType === "service";
+  const isBundle = item.itemType === "bundle";
+  const isMix = item.itemType === "mix";
+  const imageUrl = getDisplayImageUrl(item);
 
   // Build a compact mix selection summary: "3× White, 7× Black"
-  const mixSummary = isMix && item.mixSelections?.length > 0
-    ? item.mixSelections.map(s => `${s.quantity}× ${s.product_name}`).join(', ')
-    : null;
+  const mixSummary = isMix && item.mixSelections?.length > 0 ? item.mixSelections.map((s) => `${s.quantity}× ${s.product_name}`).join(", ") : null;
 
   return (
     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
       {/* Mini Image/Icon */}
-      <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${
-        isService
-          ? 'bg-primary-100 dark:bg-primary-900'
-          : isBundle
-            ? 'bg-orange-100 dark:bg-orange-900'
-            : isMix
-              ? 'bg-pink-100 dark:bg-pink-900'
-              : 'bg-secondary-100 dark:bg-secondary-900'
-      }`}>
+      <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${isService ? "bg-primary-100 dark:bg-primary-900" : isBundle ? "bg-orange-100 dark:bg-orange-900" : isMix ? "bg-pink-100 dark:bg-pink-900" : "bg-secondary-100 dark:bg-secondary-900"}`}>
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={item.name}
             className="w-full h-full object-cover object-center"
             onError={(e) => {
-              e.target.style.display = 'none';
+              e.target.style.display = "none";
               const fallback = e.target.nextElementSibling;
-              if (fallback) fallback.style.display = 'flex';
+              if (fallback) fallback.style.display = "flex";
             }}
           />
         ) : null}
-        <div className={`w-full h-full flex items-center justify-center ${imageUrl ? 'hidden' : 'flex'}`}>
-          {isService ? (
-            <SparklesIcon className="h-6 w-6 text-primary-500" />
-          ) : (
-            <CubeIcon className={`h-6 w-6 ${isBundle ? 'text-orange-500' : isMix ? 'text-pink-500' : 'text-secondary-500'}`} />
-          )}
-        </div>
+        <div className={`w-full h-full flex items-center justify-center ${imageUrl ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="h-6 w-6 text-primary-500" /> : <CubeIcon className={`h-6 w-6 ${isBundle ? "text-orange-500" : isMix ? "text-pink-500" : "text-secondary-500"}`} />}</div>
       </div>
 
       {/* Item Info */}
       <div className="flex-1 min-w-0">
         <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">{item.name}</h4>
         {mixSummary && (
-          <p className="text-xs text-pink-600 dark:text-pink-400 truncate" title={mixSummary}>{mixSummary}</p>
+          <p className="text-xs text-pink-600 dark:text-pink-400 truncate" title={mixSummary}>
+            {mixSummary}
+          </p>
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400">
           ${item.price?.toFixed(2)} × {item.quantity}
@@ -87,30 +70,19 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
 
       {/* Quantity Controls */}
       <div className="flex items-center gap-1">
-        <button
-          onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)}
-          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
-        >
+        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors">
           <MinusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
         </button>
         <span className="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">{item.quantity}</span>
-        <button
-          onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)}
-          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
-        >
+        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)} className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors">
           <PlusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
         </button>
       </div>
 
       {/* Subtotal & Remove */}
       <div className="text-right">
-        <p className="font-semibold text-sm text-gray-900 dark:text-white">
-          ${(item.price * item.quantity).toFixed(2)}
-        </p>
-        <button
-          onClick={() => onRemove(item.cartKey)}
-          className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
-        >
+        <p className="font-semibold text-sm text-gray-900 dark:text-white">${(item.price * item.quantity).toFixed(2)}</p>
+        <button onClick={() => onRemove(item.cartKey)} className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400">
           Remove
         </button>
       </div>
@@ -174,14 +146,9 @@ export default function Modal_Cart_Sales({
                 <div className="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedClient.name}</p>
-                    {selectedClient.email && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>
-                    )}
+                    {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>}
                   </div>
-                  <button
-                    onClick={() => setSelectedClient(null)}
-                    className="p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors"
-                  >
+                  <button onClick={() => setSelectedClient(null)} className="p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors">
                     <XMarkIcon className="h-4 w-4 text-gray-500" />
                   </button>
                 </div>
@@ -192,18 +159,26 @@ export default function Modal_Cart_Sales({
                       type="text"
                       placeholder="Search customers..."
                       value={clientSearch}
-                      onChange={(e) => { setClientSearch(e.target.value); setShowClientDropdown(true); }}
-                      onFocus={() => { loadClients(); setShowClientDropdown(true); }}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setShowClientDropdown(true);
+                      }}
+                      onFocus={() => {
+                        loadClients();
+                        setShowClientDropdown(true);
+                      }}
                       className="app-search-input flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <button
                       type="button"
-                      onClick={() => openAddClientModal((newClient) => {
-                        handleSelectClient(newClient);
-                        setClientsLocal(prev => [...prev, newClient]);
-                        setClientSearch('');
-                        setShowClientDropdown(false);
-                      })}
+                      onClick={() =>
+                        openAddClientModal((newClient) => {
+                          handleSelectClient(newClient);
+                          setClientsLocal((prev) => [...prev, newClient]);
+                          setClientSearch("");
+                          setShowClientDropdown(false);
+                        })
+                      }
                       className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
                       title="Add new customer"
                     >
@@ -212,20 +187,30 @@ export default function Modal_Cart_Sales({
                   </div>
                   {showClientDropdown && clientSearch && (
                     <div className="absolute bottom-full mb-1 left-0 right-0 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                      {filteredClients.slice(0, 5).map(c => (
-                        <button key={c.id} onClick={() => { handleSelectClient(c); setClientSearch(''); setShowClientDropdown(false); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                      {filteredClients.slice(0, 5).map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            handleSelectClient(c);
+                            setClientSearch("");
+                            setShowClientDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                        >
                           <p className="font-medium">{c.name}</p>
                           {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
                         </button>
                       ))}
                       {filteredClients.length === 0 && (
                         <button
-                          onClick={() => openAddClientModal((newClient) => {
-                            handleSelectClient(newClient);
-                            setClientsLocal(prev => [...prev, newClient]);
-                            setClientSearch('');
-                            setShowClientDropdown(false);
-                          })}
+                          onClick={() =>
+                            openAddClientModal((newClient) => {
+                              handleSelectClient(newClient);
+                              setClientsLocal((prev) => [...prev, newClient]);
+                              setClientSearch("");
+                              setShowClientDropdown(false);
+                            })
+                          }
                           className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
                         >
                           <PlusIcon className="h-4 w-4" />
@@ -241,13 +226,8 @@ export default function Modal_Cart_Sales({
             {/* ─── 5 CART ITEMS LIST ──────────────────────────────────────── */}
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[35vh]">
-              {cart.map(item => (
-                <CartItem
-                  key={item.cartKey}
-                  item={item}
-                  onUpdateQuantity={updateCartQuantity}
-                  onRemove={removeFromCart}
-                />
+              {cart.map((item) => (
+                <CartItem key={item.cartKey} item={item} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} />
               ))}
             </div>
 
@@ -272,16 +252,16 @@ export default function Modal_Cart_Sales({
               {/* Row 1: Checkout + Continue */}
               <div className="flex gap-2 mb-2">
                 <button
-                  onClick={() => { onClose(); handleCheckout(); }}
+                  onClick={() => {
+                    onClose();
+                    handleCheckout();
+                  }}
                   className="flex-1 btn-app-primary font-semibold flex items-center justify-center gap-2"
                 >
                   <CreditCardIcon className="h-5 w-5" />
                   Checkout
                 </button>
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
+                <button onClick={onClose} className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   Continue Shopping
                 </button>
               </div>
@@ -289,10 +269,7 @@ export default function Modal_Cart_Sales({
               {/* Row 2: Clear All */}
               {cart.length > 0 && (
                 <div className="flex">
-                  <button
-                    onClick={() => setCart([])}
-                    className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                  >
+                  <button onClick={() => setCart([])} className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400">
                     Clear all
                   </button>
                 </div>

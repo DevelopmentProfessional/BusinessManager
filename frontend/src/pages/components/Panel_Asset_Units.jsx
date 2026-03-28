@@ -1,27 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { assetUnitsAPI } from '../../services/api';
-import { showConfirm } from '../../services/showConfirm';
+import React, { useState, useEffect, useCallback } from "react";
+import { assetUnitsAPI } from "../../services/api";
+import { showConfirm } from "../../services/showConfirm";
 
 const STATE_LABELS = {
-  available:     'Available',
-  in_use:        'In Use',
-  maintenance:   'Maintenance',
-  arriving_soon: 'Arriving Soon',
+  available: "Available",
+  in_use: "In Use",
+  maintenance: "Maintenance",
+  arriving_soon: "Arriving Soon",
 };
 
 const STATE_COLORS = {
-  available:     'success',
-  in_use:        'primary',
-  maintenance:   'warning',
-  arriving_soon: 'info',
+  available: "success",
+  in_use: "primary",
+  maintenance: "warning",
+  arriving_soon: "info",
 };
 
 /** Small inline editable cell — click to begin editing, blur or Enter to save */
-function InlineText({ value, onSave, placeholder = '—' }) {
+function InlineText({ value, onSave, placeholder = "—" }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
-  useEffect(() => { setDraft(value); }, [value]);
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
 
   const commit = () => {
     if (draft !== value) onSave(draft);
@@ -36,18 +38,16 @@ function InlineText({ value, onSave, placeholder = '—' }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
-        onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
-        style={{ minWidth: '80px' }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        style={{ minWidth: "80px" }}
       />
     );
   }
   return (
-    <span
-      onClick={() => setEditing(true)}
-      title="Click to edit"
-      className="text-muted small"
-      style={{ cursor: 'text', userSelect: 'none' }}
-    >
+    <span onClick={() => setEditing(true)} title="Click to edit" className="text-muted small" style={{ cursor: "text", userSelect: "none" }}>
       {value || <em>{placeholder}</em>}
     </span>
   );
@@ -56,11 +56,11 @@ function InlineText({ value, onSave, placeholder = '—' }) {
 export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
   const [addingUnit, setAddingUnit] = useState(false);
-  const [newLabel, setNewLabel]     = useState('');
-  const [newState, setNewState]     = useState('available');
-  const [newNotes, setNewNotes]     = useState('');
+  const [newLabel, setNewLabel] = useState("");
+  const [newState, setNewState] = useState("available");
+  const [newNotes, setNewNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -73,13 +73,15 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
       setUnits(list);
       onCountChange?.(list.length);
     } catch {
-      setError('Failed to load asset units.');
+      setError("Failed to load asset units.");
     } finally {
       setLoading(false);
     }
   }, [assetId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleAddUnit = async () => {
     setSaving(true);
@@ -89,55 +91,55 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
         state: newState,
         notes: newNotes.trim() || null,
       });
-      setNewLabel('');
-      setNewState('available');
-      setNewNotes('');
+      setNewLabel("");
+      setNewState("available");
+      setNewNotes("");
       setAddingUnit(false);
       await load();
     } catch {
-      setError('Failed to add unit.');
+      setError("Failed to add unit.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleStateChange = async (unitId, state) => {
-    setUnits(prev => prev.map(u => u.id === unitId ? { ...u, state } : u));
+    setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, state } : u)));
     try {
       await assetUnitsAPI.update(assetId, unitId, { state });
     } catch {
-      setError('Failed to update state.');
+      setError("Failed to update state.");
       load(); // revert on error
     }
   };
 
   const handleLabelSave = async (unitId, label) => {
-    setUnits(prev => prev.map(u => u.id === unitId ? { ...u, label } : u));
+    setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, label } : u)));
     try {
       await assetUnitsAPI.update(assetId, unitId, { label: label || null });
     } catch {
-      setError('Failed to save label.');
+      setError("Failed to save label.");
       load();
     }
   };
 
   const handleNotesSave = async (unitId, notes) => {
-    setUnits(prev => prev.map(u => u.id === unitId ? { ...u, notes } : u));
+    setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, notes } : u)));
     try {
       await assetUnitsAPI.update(assetId, unitId, { notes: notes || null });
     } catch {
-      setError('Failed to save notes.');
+      setError("Failed to save notes.");
       load();
     }
   };
 
   const handleRemove = async (unitId) => {
-    if (!await showConfirm('Remove this unit? This cannot be undone.', { confirmLabel: 'Remove' })) return;
+    if (!(await showConfirm("Remove this unit? This cannot be undone.", { confirmLabel: "Remove" }))) return;
     try {
       await assetUnitsAPI.remove(assetId, unitId);
-      await load();  // load() already calls onCountChange
+      await load(); // load() already calls onCountChange
     } catch {
-      setError('Failed to remove unit.');
+      setError("Failed to remove unit.");
     }
   };
 
@@ -170,11 +172,11 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
           <table className="table table-sm table-bordered align-middle mb-0">
             <thead className="table-light">
               <tr>
-                <th style={{ width: '2rem' }}>#</th>
+                <th style={{ width: "2rem" }}>#</th>
                 <th>Label</th>
-                <th style={{ width: '9rem' }}>State</th>
+                <th style={{ width: "9rem" }}>State</th>
                 <th>Notes</th>
-                <th style={{ width: '2rem' }}></th>
+                <th style={{ width: "2rem" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -182,36 +184,22 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
                 <tr key={unit.id}>
                   <td className="text-muted small">{idx + 1}</td>
                   <td>
-                    <InlineText
-                      value={unit.label || ''}
-                      onSave={(val) => handleLabelSave(unit.id, val)}
-                      placeholder="click to set label"
-                    />
+                    <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
                   </td>
                   <td>
-                    <select
-                      className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`}
-                      value={unit.state}
-                      onChange={(e) => handleStateChange(unit.id, e.target.value)}
-                    >
+                    <select className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`} value={unit.state} onChange={(e) => handleStateChange(unit.id, e.target.value)}>
                       {Object.entries(STATE_LABELS).map(([s, l]) => (
-                        <option key={s} value={s}>{l}</option>
+                        <option key={s} value={s}>
+                          {l}
+                        </option>
                       ))}
                     </select>
                   </td>
                   <td>
-                    <InlineText
-                      value={unit.notes || ''}
-                      onSave={(val) => handleNotesSave(unit.id, val)}
-                      placeholder="click to add notes"
-                    />
+                    <InlineText value={unit.notes || ""} onSave={(val) => handleNotesSave(unit.id, val)} placeholder="click to add notes" />
                   </td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-danger py-0 px-1 lh-1"
-                      onClick={() => handleRemove(unit.id)}
-                      title="Remove unit"
-                    >
+                    <button className="btn btn-sm btn-outline-danger py-0 px-1 lh-1" onClick={() => handleRemove(unit.id)} title="Remove unit">
                       &times;
                     </button>
                   </td>
@@ -230,38 +218,31 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
             className="form-control form-control-sm"
             placeholder="Label (optional)"
             value={newLabel}
-            style={{ maxWidth: '150px' }}
+            style={{ maxWidth: "150px" }}
             onChange={(e) => setNewLabel(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAddUnit(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleAddUnit();
+            }}
           />
-          <select
-            className="form-select form-select-sm"
-            style={{ maxWidth: '140px' }}
-            value={newState}
-            onChange={(e) => setNewState(e.target.value)}
-          >
+          <select className="form-select form-select-sm" style={{ maxWidth: "140px" }} value={newState} onChange={(e) => setNewState(e.target.value)}>
             {Object.entries(STATE_LABELS).map(([s, l]) => (
-              <option key={s} value={s}>{l}</option>
+              <option key={s} value={s}>
+                {l}
+              </option>
             ))}
           </select>
-          <input
-            type="text"
-            className="form-control form-control-sm"
-            placeholder="Notes (optional)"
-            value={newNotes}
-            style={{ maxWidth: '180px' }}
-            onChange={(e) => setNewNotes(e.target.value)}
-          />
-          <button
-            className="btn btn-sm btn-success"
-            onClick={handleAddUnit}
-            disabled={saving}
-          >
-            {saving ? '…' : 'Add'}
+          <input type="text" className="form-control form-control-sm" placeholder="Notes (optional)" value={newNotes} style={{ maxWidth: "180px" }} onChange={(e) => setNewNotes(e.target.value)} />
+          <button className="btn btn-sm btn-success" onClick={handleAddUnit} disabled={saving}>
+            {saving ? "…" : "Add"}
           </button>
           <button
             className="btn btn-sm btn-outline-secondary"
-            onClick={() => { setAddingUnit(false); setNewLabel(''); setNewState('available'); setNewNotes(''); }}
+            onClick={() => {
+              setAddingUnit(false);
+              setNewLabel("");
+              setNewState("available");
+              setNewNotes("");
+            }}
           >
             Cancel
           </button>
@@ -274,7 +255,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
 
       {error && (
         <div className="text-danger small mt-2">
-          {error}{' '}
+          {error}{" "}
           <button className="btn btn-link btn-sm p-0 text-danger text-decoration-underline" onClick={() => setError(null)}>
             dismiss
           </button>

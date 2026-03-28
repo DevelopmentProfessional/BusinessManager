@@ -1,22 +1,16 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import { templatesAPI, clientsAPI, clientCartAPI } from '../../services/api';
-import Modal_Template_Editor from './Modal_Template_Edit';
-import {
-  renderTemplate,
-  buildClientVariables,
-  buildEmployeeVariables,
-  buildSalesVariables,
-  buildScheduleVariables,
-} from './Utils_Template_Variables';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
+import { templatesAPI, clientsAPI, clientCartAPI } from "../../services/api";
+import Modal_Template_Editor from "./Modal_Template_Edit";
+import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildSalesVariables, buildScheduleVariables } from "./Utils_Template_Variables";
 
 const TYPE_BADGE_COLOR = {
-  email: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  invoice: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  receipt: 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300',
-  memo: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
-  quote: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
-  custom: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  email: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
+  invoice: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
+  receipt: "bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300",
+  memo: "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300",
+  quote: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
+  custom: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
 /**
@@ -32,22 +26,11 @@ const TYPE_BADGE_COLOR = {
  *  filterType    – (optional) only show templates of this type (e.g. 'email', 'invoice')
  *  onClose       – callback to close this modal
  */
-export default function Modal_Template_Use({
-  page,
-  entity,
-  currentUser,
-  settings,
-  items = [],
-  client,
-  employee,
-  service,
-  filterType = null,
-  onClose,
-}) {
+export default function Modal_Template_Use({ page, entity, currentUser, settings, items = [], client, employee, service, filterType = null, onClose }) {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
-  const [renderedHtml, setRenderedHtml] = useState('');
+  const [renderedHtml, setRenderedHtml] = useState("");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -56,8 +39,8 @@ export default function Modal_Template_Use({
   const [clientCartItems, setClientCartItems] = useState([]);
   const printIframeRef = useRef(null);
   const pdfCacheRef = useRef(new Map());
-  const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || 'Invoice';
-  const recipientEmail = (client?.email || entity?.email || '').trim();
+  const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || "Invoice";
+  const recipientEmail = (client?.email || entity?.email || "").trim();
 
   const parseSelectedOptions = useCallback((item) => {
     if (Array.isArray(item?.selectedOptions)) {
@@ -68,7 +51,7 @@ export default function Modal_Template_Use({
       return item.options_json;
     }
 
-    if (typeof item?.options_json === 'string' && item.options_json.trim()) {
+    if (typeof item?.options_json === "string" && item.options_json.trim()) {
       try {
         const parsed = JSON.parse(item.options_json);
         return Array.isArray(parsed) ? parsed : [];
@@ -81,21 +64,21 @@ export default function Modal_Template_Use({
   }, []);
 
   const normalizeImageAlignment = useCallback((html) => {
-    if (!html) return '';
+    if (!html) return "";
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+      const doc = parser.parseFromString(html, "text/html");
 
       // Fix image alignment
-      doc.querySelectorAll('img[data-float]').forEach((img) => {
-        const imageFloat = img.getAttribute('data-float') || 'none';
-        img.style.display = 'block';
-        if (imageFloat === 'left') {
-          img.style.margin = '0.5rem auto 0.5rem 0';
-        } else if (imageFloat === 'right') {
-          img.style.margin = '0.5rem 0 0.5rem auto';
+      doc.querySelectorAll("img[data-float]").forEach((img) => {
+        const imageFloat = img.getAttribute("data-float") || "none";
+        img.style.display = "block";
+        if (imageFloat === "left") {
+          img.style.margin = "0.5rem auto 0.5rem 0";
+        } else if (imageFloat === "right") {
+          img.style.margin = "0.5rem 0 0.5rem auto";
         } else {
-          img.style.margin = '0.5rem auto';
+          img.style.margin = "0.5rem auto";
         }
       });
 
@@ -103,10 +86,10 @@ export default function Modal_Template_Use({
       // Invalid HTML like <p><table>…</table></p> is auto-corrected by the
       // browser in unpredictable ways, leaving empty <p> tags that add
       // unwanted spacing. Pull them out so the DOM is clean.
-      doc.querySelectorAll('p > table, p > hr, p > div, p > ul, p > ol').forEach((block) => {
+      doc.querySelectorAll("p > table, p > hr, p > div, p > ul, p > ol").forEach((block) => {
         const p = block.parentNode;
         p.parentNode.insertBefore(block, p);
-        if (!p.textContent.trim() && !p.querySelector('*')) {
+        if (!p.textContent.trim() && !p.querySelector("*")) {
           p.parentNode.removeChild(p);
         }
       });
@@ -126,7 +109,8 @@ export default function Modal_Template_Use({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    templatesAPI.getAll(page)
+    templatesAPI
+      .getAll(page)
       .then((res) => {
         if (!cancelled) setTemplates(res.data || []);
       })
@@ -136,11 +120,16 @@ export default function Modal_Template_Use({
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [page]);
 
   useEffect(() => {
-    if (!selected) { setRenderedHtml(''); return; }
+    if (!selected) {
+      setRenderedHtml("");
+      return;
+    }
     const vars = buildVars();
     const rendered = renderTemplate(selected.content, vars);
     setRenderedHtml(normalizeImageAlignment(rendered));
@@ -150,7 +139,7 @@ export default function Modal_Template_Use({
     let cancelled = false;
 
     const loadLatestClientInvoice = async () => {
-      if (page !== 'clients' || !entity?.id) {
+      if (page !== "clients" || !entity?.id) {
         setClientInvoiceTx(null);
         setClientInvoiceItems([]);
         setClientCartItems([]);
@@ -158,13 +147,10 @@ export default function Modal_Template_Use({
       }
 
       try {
-        const [txRes, cartRes] = await Promise.all([
-          clientsAPI.getTransactions(entity.id),
-          clientCartAPI.getItems(entity.id),
-        ]);
+        const [txRes, cartRes] = await Promise.all([clientsAPI.getTransactions(entity.id), clientCartAPI.getItems(entity.id)]);
 
-        const txList = Array.isArray(txRes?.data) ? txRes.data : (Array.isArray(txRes) ? txRes : []);
-        const cartList = Array.isArray(cartRes?.data) ? cartRes.data : (Array.isArray(cartRes) ? cartRes : []);
+        const txList = Array.isArray(txRes?.data) ? txRes.data : Array.isArray(txRes) ? txRes : [];
+        const cartList = Array.isArray(cartRes?.data) ? cartRes.data : Array.isArray(cartRes) ? cartRes : [];
         if (!cancelled) setClientCartItems(cartList);
 
         if (!txList.length) {
@@ -185,7 +171,7 @@ export default function Modal_Template_Use({
         let lineItems = [];
         if (latestTx?.id != null) {
           const itemsRes = await clientsAPI.getTransactionItems(latestTx.id);
-          lineItems = Array.isArray(itemsRes?.data) ? itemsRes.data : (Array.isArray(itemsRes) ? itemsRes : []);
+          lineItems = Array.isArray(itemsRes?.data) ? itemsRes.data : Array.isArray(itemsRes) ? itemsRes : [];
         }
 
         if (!cancelled) {
@@ -202,18 +188,20 @@ export default function Modal_Template_Use({
     };
 
     loadLatestClientInvoice();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [page, entity?.id]);
 
   const buildVars = () => {
-    if (page === 'clients') {
+    if (page === "clients") {
       const baseVars = buildClientVariables(entity, currentUser, settings);
       const cartItems = (clientCartItems || []).map((item) => {
         const qty = Number(item?.quantity) || 1;
         const unitPrice = Number(item?.unit_price ?? item?.price) || 0;
         return {
-          item_name: item?.item_name || item?.name || '',
-          item_type: item?.item_type || item?.itemType || '',
+          item_name: item?.item_name || item?.name || "",
+          item_type: item?.item_type || item?.itemType || "",
           quantity: qty,
           unit_price: unitPrice,
           line_total: unitPrice * qty,
@@ -229,12 +217,12 @@ export default function Modal_Template_Use({
         const taxRate = toTaxRateDecimal(settings?.tax_rate);
         const taxAmount = subtotal * taxRate;
         txForInvoice = {
-          id: `CART-${entity?.id || 'CLIENT'}`,
+          id: `CART-${entity?.id || "CLIENT"}`,
           created_at: new Date().toISOString(),
           subtotal,
           tax_amount: taxAmount,
           total: subtotal + taxAmount,
-          payment_method: 'pending',
+          payment_method: "pending",
         };
         itemsForInvoice = cartItems;
       }
@@ -242,42 +230,31 @@ export default function Modal_Template_Use({
       const invoiceVars = buildSalesVariables(txForInvoice, entity, currentUser, settings, itemsForInvoice);
       return { ...invoiceVars, ...baseVars };
     }
-    if (page === 'employees') return buildEmployeeVariables(entity, currentUser, settings);
-    if (page === 'sales') return buildSalesVariables(entity, client || entity, currentUser, settings, items);
-    if (page === 'schedule') return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
+    if (page === "employees") return buildEmployeeVariables(entity, currentUser, settings);
+    if (page === "sales") return buildSalesVariables(entity, client || entity, currentUser, settings, items);
+    if (page === "schedule") return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
     return {};
   };
 
   const pdfFileName = useMemo(() => {
-    const safeName = (selected?.name || companyName || 'invoice')
-      .replace(/[^a-z0-9\-_\s]/gi, '')
+    const safeName = (selected?.name || companyName || "invoice")
+      .replace(/[^a-z0-9\-_\s]/gi, "")
       .trim()
-      .replace(/\s+/g, '_')
+      .replace(/\s+/g, "_")
       .toLowerCase();
-    return `${safeName || 'invoice'}.pdf`;
+    return `${safeName || "invoice"}.pdf`;
   }, [selected?.name, companyName]);
 
-  const emailSubject = useMemo(
-    () => `${selected?.name || 'Document'} from ${companyName}`,
-    [selected?.name, companyName]
-  );
+  const emailSubject = useMemo(() => `${selected?.name || "Document"} from ${companyName}`, [selected?.name, companyName]);
 
   const emailBody = useMemo(() => {
-    const customerName = client?.name || entity?.name || 'there';
-    return [
-      `Hello ${customerName},`,
-      '',
-      `Please find your document from ${companyName} attached.`,
-      'If you have any questions, reply to this email and we will help right away.',
-      '',
-      `Thanks,`,
-      companyName,
-    ].join('\n');
+    const customerName = client?.name || entity?.name || "there";
+    return [`Hello ${customerName},`, "", `Please find your document from ${companyName} attached.`, "If you have any questions, reply to this email and we will help right away.", "", `Thanks,`, companyName].join("\n");
   }, [client?.name, entity?.name, companyName]);
 
   // Build the full HTML document for print / preview iframe
   const iframeContent = useMemo(() => {
-    if (!renderedHtml) return '';
+    if (!renderedHtml) return "";
     return `<!DOCTYPE html><html><head>
       <meta charset="utf-8"/>
       <title>${companyName}</title>
@@ -298,12 +275,12 @@ export default function Modal_Template_Use({
   }, [renderedHtml, companyName]);
 
   const createPdfBlob = useCallback(async (fullHtml) => {
-    const html2pdf = (await import('html2pdf.js')).default;
+    const html2pdf = (await import("html2pdf.js")).default;
 
     // Render the full HTML document in a hidden iframe so all styles apply correctly.
     // z-index: -1 keeps it behind the modal; no opacity tricks that would make html2canvas capture blank pages.
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1px;z-index:-1;pointer-events:none;border:none;visibility:hidden;';
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:0;top:0;width:794px;height:1px;z-index:-1;pointer-events:none;border:none;visibility:hidden;";
     document.body.appendChild(iframe);
 
     try {
@@ -313,23 +290,27 @@ export default function Modal_Template_Use({
       doc.close();
 
       // Let fonts and layout settle
-      try { await iframe.contentWindow.document.fonts?.ready; } catch {}
+      try {
+        await iframe.contentWindow.document.fonts?.ready;
+      } catch {}
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
       // Wait for images
-      const imgs = Array.from(doc.querySelectorAll('img'));
-      await Promise.all(imgs.map((img) => {
-        if (img.complete) return Promise.resolve();
-        return new Promise((resolve) => {
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-          setTimeout(resolve, 3000);
-        });
-      }));
+      const imgs = Array.from(doc.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+            setTimeout(resolve, 3000);
+          });
+        })
+      );
 
       const contentHeight = Math.max(doc.body.scrollHeight, 1123);
       iframe.style.height = `${contentHeight}px`;
-      iframe.style.visibility = 'visible';
+      iframe.style.visibility = "visible";
 
       // One more frame after resizing so layout is finalised
       await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -337,23 +318,23 @@ export default function Modal_Template_Use({
       const blob = await html2pdf()
         .set({
           margin: [20, 20, 35, 20],
-          image: { type: 'jpeg', quality: 0.98 },
+          image: { type: "jpeg", quality: 0.98 },
           html2canvas: {
             scale: 2,
             useCORS: true,
-            backgroundColor: '#ffffff',
+            backgroundColor: "#ffffff",
             logging: false,
             windowWidth: 794,
             windowHeight: contentHeight,
           },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
         })
         .from(doc.body)
-        .outputPdf('blob');
+        .outputPdf("blob");
 
       if (!blob || blob.size < 2500) {
-        throw new Error('PDF output appears empty');
+        throw new Error("PDF output appears empty");
       }
       return blob;
     } finally {
@@ -363,7 +344,7 @@ export default function Modal_Template_Use({
 
   const downloadBlob = useCallback((blob, filename) => {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -391,7 +372,7 @@ export default function Modal_Template_Use({
       }
       downloadBlob(blob, pdfFileName);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
+      console.error("Failed to generate PDF:", error);
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -407,19 +388,19 @@ export default function Modal_Template_Use({
       }
 
       if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], pdfFileName, { type: 'application/pdf' });
+        const file = new File([blob], pdfFileName, { type: "application/pdf" });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ title: emailSubject, text: emailBody, files: [file] });
           return;
         }
       }
 
-      const to = recipientEmail ? encodeURIComponent(recipientEmail) : '';
+      const to = recipientEmail ? encodeURIComponent(recipientEmail) : "";
       const subject = encodeURIComponent(emailSubject);
       const body = encodeURIComponent(`${emailBody}\n\nAttachment: ${pdfFileName}`);
-      window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_self');
+      window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_self");
     } catch (error) {
-      console.error('Failed to prepare email draft:', error);
+      console.error("Failed to prepare email draft:", error);
     }
   };
 
@@ -434,25 +415,18 @@ export default function Modal_Template_Use({
     setIsEditorOpen(false);
   };
 
-  const visibleTemplates = filterType
-    ? templates.filter((t) => t.template_type === filterType)
-    : templates;
+  const visibleTemplates = filterType ? templates.filter((t) => t.template_type === filterType) : templates;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-          Use Template
-        </h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Use Template</h2>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left: template list */}
-        <div
-          className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto"
-          style={{ width: '200px' }}
-        >
+        <div className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ width: "200px" }}>
           {loading ? (
             <div className="p-4 text-sm text-gray-500">Loading...</div>
           ) : visibleTemplates.length === 0 ? (
@@ -461,25 +435,9 @@ export default function Modal_Template_Use({
             <ul className="py-1">
               {visibleTemplates.map((tpl) => (
                 <li key={tpl.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(tpl)}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                      selected?.id === tpl.id
-                        ? 'bg-primary-50 dark:bg-primary-900/20 border-r-2 border-primary-500'
-                        : ''
-                    }`}
-                  >
-                    <div className="font-medium text-gray-900 dark:text-white text-xs leading-tight">
-                      {tpl.name}
-                    </div>
-                    <span
-                      className={`inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium ${
-                        TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom
-                      }`}
-                    >
-                      {tpl.template_type}
-                    </span>
+                  <button type="button" onClick={() => setSelected(tpl)} className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${selected?.id === tpl.id ? "bg-primary-50 dark:bg-primary-900/20 border-r-2 border-primary-500" : ""}`}>
+                    <div className="font-medium text-gray-900 dark:text-white text-xs leading-tight">{tpl.name}</div>
+                    <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom}`}>{tpl.template_type}</span>
                   </button>
                 </li>
               ))}
@@ -493,80 +451,44 @@ export default function Modal_Template_Use({
             <>
               {/* Preview title bar */}
               <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-                  {selected.name}
-                </span>
-                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
-                  {selected.template_type}
-                </span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">{selected.name}</span>
+                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>{selected.template_type}</span>
               </div>
 
               {/* Live HTML preview in iframe — same content used by Print */}
               <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-800 p-3">
                 <div className="h-full rounded shadow-sm overflow-hidden bg-white">
-                  <iframe
-                    ref={printIframeRef}
-                    srcDoc={iframeContent}
-                    className="w-full h-full border-0"
-                    title="Template preview"
-                    sandbox="allow-same-origin allow-modals"
-                  />
+                  <iframe ref={printIframeRef} srcDoc={iframeContent} className="w-full h-full border-0" title="Template preview" sandbox="allow-same-origin allow-modals" />
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
-              Select a template to preview
-            </div>
+            <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Select a template to preview</div>
           )}
         </div>
       </div>
 
       {/* Footer actions */}
       <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="position-relative d-flex align-items-center" style={{ minHeight: '3rem' }}>
+        <div className="position-relative d-flex align-items-center" style={{ minHeight: "3rem" }}>
           <div className="d-flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-outline-secondary d-flex align-items-center gap-1"
-            >
+            <button type="button" onClick={onClose} className="btn btn-outline-secondary d-flex align-items-center gap-1">
               <XMarkIcon className="h-4 w-4" />
               Close
             </button>
-            <button
-              type="button"
-              onClick={() => setIsEditorOpen(true)}
-              disabled={!selected}
-              className="btn btn-outline-secondary d-flex align-items-center gap-1"
-            >
+            <button type="button" onClick={() => setIsEditorOpen(true)} disabled={!selected} className="btn btn-outline-secondary d-flex align-items-center gap-1">
               <PencilSquareIcon className="h-4 w-4" />
               Edit
             </button>
-            <button
-              type="button"
-              onClick={handlePrint}
-              disabled={!selected}
-              className="btn btn-primary d-flex align-items-center gap-1"
-            >
+            <button type="button" onClick={handlePrint} disabled={!selected} className="btn btn-primary d-flex align-items-center gap-1">
               <PrinterIcon className="h-4 w-4" />
               Print
             </button>
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={!selected || isDownloadingPdf}
-              className="btn btn-outline-primary d-flex align-items-center gap-1"
-            >
+            <button type="button" onClick={handleDownloadPdf} disabled={!selected || isDownloadingPdf} className="btn btn-outline-primary d-flex align-items-center gap-1">
               <ArrowDownTrayIcon className="h-4 w-4" />
-              {isDownloadingPdf ? 'Downloading...' : 'Download'}
+              {isDownloadingPdf ? "Downloading..." : "Download"}
             </button>
-            <button
-              type="button"
-              onClick={() => setIsEmailPreviewOpen(true)}
-              disabled={!selected}
-              className="btn btn-outline-secondary d-flex align-items-center gap-1"
-            >
+            <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="btn btn-outline-secondary d-flex align-items-center gap-1">
               <EnvelopeIcon className="h-4 w-4" />
               Email
             </button>
@@ -574,59 +496,41 @@ export default function Modal_Template_Use({
         </div>
       </div>
 
-      {isEditorOpen && selected && (
-        <Modal_Template_Editor
-          template={selected}
-          onSave={handleSaveTemplate}
-          onClose={() => setIsEditorOpen(false)}
-        />
-      )}
+      {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
 
       {isEmailPreviewOpen && selected && (
         <div className="fixed inset-0 z-[60] d-flex align-items-center justify-content-center bg-black/50 px-3">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded w-100" style={{ maxWidth: '760px' }}>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded w-100" style={{ maxWidth: "760px" }}>
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Email Preview</h3>
             </div>
 
             <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-bottom border-gray-200 dark:border-gray-700">
               <div className="small text-gray-500 mb-1">To</div>
-              <div className="text-sm text-gray-900 dark:text-white">{recipientEmail || 'No client email available'}</div>
+              <div className="text-sm text-gray-900 dark:text-white">{recipientEmail || "No client email available"}</div>
 
               <div className="small text-gray-500 mt-3 mb-1">Subject</div>
               <div className="text-sm text-gray-900 dark:text-white">{emailSubject}</div>
 
               <div className="small text-gray-500 mt-3 mb-1">Attachment</div>
-              <div className="text-sm text-gray-900 dark:text-white">
-                {pdfFileName} (generated on send)
-              </div>
+              <div className="text-sm text-gray-900 dark:text-white">{pdfFileName} (generated on send)</div>
             </div>
 
-            <div className="px-4 py-3 bg-white dark:bg-gray-900" style={{ maxHeight: '42vh', overflowY: 'auto' }}>
+            <div className="px-4 py-3 bg-white dark:bg-gray-900" style={{ maxHeight: "42vh", overflowY: "auto" }}>
               <div className="small text-gray-500 mb-2">Body</div>
-              <pre className="m-0 text-sm text-gray-800 dark:text-gray-200" style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+              <pre className="m-0 text-sm text-gray-800 dark:text-gray-200" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
                 {emailBody}
               </pre>
             </div>
 
             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div className="position-relative d-flex align-items-center" style={{ minHeight: '2.5rem' }}>
-                <button
-                  type="button"
-                  onClick={handleOpenEmailDraft}
-                  disabled={!selected}
-                  className="btn btn-primary d-flex align-items-center gap-1"
-                >
+              <div className="position-relative d-flex align-items-center" style={{ minHeight: "2.5rem" }}>
+                <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="btn btn-primary d-flex align-items-center gap-1">
                   <EnvelopeIcon className="h-4 w-4" />
                   Open Email Draft
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setIsEmailPreviewOpen(false)}
-                  className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute"
-                  style={{ left: '50%', transform: 'translateX(-50%)' }}
-                >
+                <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }}>
                   <XMarkIcon className="h-4 w-4" />
                   Close
                 </button>

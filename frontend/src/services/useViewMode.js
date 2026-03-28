@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 const useViewMode = create(
   persist(
@@ -25,11 +25,11 @@ const useViewMode = create(
         const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % zoomLevels.length : 1;
         set({ uiScale: zoomLevels[nextIndex] });
       },
-      footerAlign: 'left',
+      footerAlign: "left",
       setFooterAlign: (align) => set({ footerAlign: align }),
     }),
     {
-      name: 'view-mode-storage',
+      name: "view-mode-storage",
       storage: localStorage,
     }
   )

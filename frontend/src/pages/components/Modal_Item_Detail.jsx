@@ -28,229 +28,291 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  XMarkIcon, ShoppingCartIcon, TagIcon,
-  SparklesIcon, CubeIcon, PlusIcon, MinusIcon,
-  MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon,
-  TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon,
-  BeakerIcon, CogIcon
-} from '@heroicons/react/24/outline';
-import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
-import Button_Toolbar from './Button_Toolbar';
-import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI, inventoryCategoriesAPI } from '../../services/api';
-import { showConfirm } from '../../services/showConfirm';
-import Modal from './Modal';
-import cacheService from '../../services/cacheService';
-import { getImageSrc } from './Utils_Image';
-import Scanner_Barcode from './Scanner_Barcode';
-import Widget_Camera from './Widget_Camera';
-import FeatureSection from './Panel_Features';
-import AssetUnitsPanel from './Panel_Asset_Units';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { XMarkIcon, ShoppingCartIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon, CogIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
+import Button_Toolbar from "./Button_Toolbar";
+import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI, inventoryCategoriesAPI } from "../../services/api";
+import { showConfirm } from "../../services/showConfirm";
+import Modal from "./Modal";
+import cacheService from "../../services/cacheService";
+import { getImageSrc } from "./Utils_Image";
+import Scanner_Barcode from "./Scanner_Barcode";
+import Widget_Camera from "./Widget_Camera";
+import FeatureSection from "./Panel_Features";
+import AssetUnitsPanel from "./Panel_Asset_Units";
 
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode
 function ProductionRelationsPanel({ productId }) {
-  const [activeTab, setActiveTab] = useState('resources');
-  const [resources, setResources]   = useState([]);
-  const [assets, setAssets]         = useState([]);
-  const [locations, setLocations]   = useState([]);
+  const [activeTab, setActiveTab] = useState("resources");
+  const [resources, setResources] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [allInventory, setAllInventory] = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Add-row state
   const [addingResource, setAddingResource] = useState(false);
-  const [newResourceId, setNewResourceId]   = useState('');
+  const [newResourceId, setNewResourceId] = useState("");
   const [newResourceQty, setNewResourceQty] = useState(1);
-  const [addingAsset, setAddingAsset]       = useState(false);
-  const [newAssetId, setNewAssetId]         = useState('');
-  const [newAssetBatch, setNewAssetBatch]   = useState(1);
-  const [newAssetDur, setNewAssetDur]       = useState('');
+  const [addingAsset, setAddingAsset] = useState(false);
+  const [newAssetId, setNewAssetId] = useState("");
+  const [newAssetBatch, setNewAssetBatch] = useState(1);
+  const [newAssetDur, setNewAssetDur] = useState("");
   const [addingLocation, setAddingLocation] = useState(false);
-  const [newLocationId, setNewLocationId]   = useState('');
+  const [newLocationId, setNewLocationId] = useState("");
 
   const load = useCallback(async () => {
     if (!productId) return;
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const [rRes, aRes, lRes, invRes] = await Promise.all([
-        productRelationsAPI.getResources(productId),
-        productRelationsAPI.getAssets(productId),
-        productRelationsAPI.getLocations(productId),
-        inventoryAPI.getAll(),
-      ]);
+      const [rRes, aRes, lRes, invRes] = await Promise.all([productRelationsAPI.getResources(productId), productRelationsAPI.getAssets(productId), productRelationsAPI.getLocations(productId), inventoryAPI.getAll()]);
       setResources(Array.isArray(rRes?.data) ? rRes.data : []);
       setAssets(Array.isArray(aRes?.data) ? aRes.data : []);
       setLocations(Array.isArray(lRes?.data) ? lRes.data : []);
       setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
-    } catch { setError('Failed to load production relations.'); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Failed to load production relations.");
+    } finally {
+      setLoading(false);
+    }
   }, [productId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
-  const resourceItems  = allInventory.filter(i => (i.type || '').toUpperCase() === 'RESOURCE');
-  const assetItems     = allInventory.filter(i => (i.type || '').toUpperCase() === 'ASSET');
-  const locationItems  = allInventory.filter(i => (i.type || '').toUpperCase() === 'LOCATION');
+  const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
+  const resourceItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "RESOURCE");
+  const assetItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "ASSET");
+  const locationItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "LOCATION");
 
   const handleAddResource = async () => {
     if (!newResourceId) return;
-    try { await productRelationsAPI.addResource(productId, newResourceId, newResourceQty); load(); setAddingResource(false); setNewResourceId(''); setNewResourceQty(1); }
-    catch { setError('Failed to add resource.'); }
+    try {
+      await productRelationsAPI.addResource(productId, newResourceId, newResourceQty);
+      load();
+      setAddingResource(false);
+      setNewResourceId("");
+      setNewResourceQty(1);
+    } catch {
+      setError("Failed to add resource.");
+    }
   };
   const handleRemoveResource = async (id) => {
-    try { await productRelationsAPI.removeResource(id); load(); }
-    catch { setError('Failed to remove resource.'); }
+    try {
+      await productRelationsAPI.removeResource(id);
+      load();
+    } catch {
+      setError("Failed to remove resource.");
+    }
   };
   const handleUpdateResourceQty = async (id, qty) => {
-    try { await productRelationsAPI.updateResource(id, { quantity_per_batch: parseFloat(qty) || 1 }); load(); }
-    catch { setError('Failed to update resource.'); }
+    try {
+      await productRelationsAPI.updateResource(id, { quantity_per_batch: parseFloat(qty) || 1 });
+      load();
+    } catch {
+      setError("Failed to update resource.");
+    }
   };
 
   const handleAddAsset = async () => {
     if (!newAssetId) return;
     try {
       await productRelationsAPI.addAsset(productId, newAssetId, parseInt(newAssetBatch) || 1, newAssetDur ? parseFloat(newAssetDur) : null);
-      load(); setAddingAsset(false); setNewAssetId(''); setNewAssetBatch(1); setNewAssetDur('');
-    } catch { setError('Failed to add asset.'); }
+      load();
+      setAddingAsset(false);
+      setNewAssetId("");
+      setNewAssetBatch(1);
+      setNewAssetDur("");
+    } catch {
+      setError("Failed to add asset.");
+    }
   };
   const handleRemoveAsset = async (id) => {
-    try { await productRelationsAPI.removeAsset(id); load(); }
-    catch { setError('Failed to remove asset.'); }
+    try {
+      await productRelationsAPI.removeAsset(id);
+      load();
+    } catch {
+      setError("Failed to remove asset.");
+    }
   };
   const handleUpdateAsset = async (id, data) => {
-    try { await productRelationsAPI.updateAsset(id, data); load(); }
-    catch { setError('Failed to update asset.'); }
+    try {
+      await productRelationsAPI.updateAsset(id, data);
+      load();
+    } catch {
+      setError("Failed to update asset.");
+    }
   };
 
   const handleAddLocation = async () => {
     if (!newLocationId) return;
-    try { await productRelationsAPI.addLocation(productId, newLocationId); load(); setAddingLocation(false); setNewLocationId(''); }
-    catch { setError('Failed to add location.'); }
+    try {
+      await productRelationsAPI.addLocation(productId, newLocationId);
+      load();
+      setAddingLocation(false);
+      setNewLocationId("");
+    } catch {
+      setError("Failed to add location.");
+    }
   };
   const handleRemoveLocation = async (id) => {
-    try { await productRelationsAPI.removeLocation(id); load(); }
-    catch { setError('Failed to remove location.'); }
+    try {
+      await productRelationsAPI.removeLocation(id);
+      load();
+    } catch {
+      setError("Failed to remove location.");
+    }
   };
 
   const tabStyle = (t) => ({
-    padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600,
-    borderBottom: activeTab === t ? '2px solid #6366f1' : '2px solid transparent',
-    color: activeTab === t ? '#6366f1' : '#6b7280',
-    background: 'none', border: 'none', cursor: 'pointer',
+    padding: "4px 10px",
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    borderBottom: activeTab === t ? "2px solid #6366f1" : "2px solid transparent",
+    color: activeTab === t ? "#6366f1" : "#6b7280",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
   });
 
-  const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: '1px solid #e5e7eb', fontSize: '0.8rem' };
-  const inputSm = { fontSize: '0.75rem', padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' };
-  const btnDanger = { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontSize: 14 };
-  const btnPrimary = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer' };
-  const btnOutline = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: 'none', color: '#6366f1', border: '1px solid #6366f1', cursor: 'pointer' };
+  const rowStyle = { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #e5e7eb", fontSize: "0.8rem" };
+  const inputSm = { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" };
+  const btnDanger = { background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 2px", lineHeight: 1, fontSize: 14 };
+  const btnPrimary = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "#6366f1", color: "#fff", border: "none", cursor: "pointer" };
+  const btnOutline = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "none", color: "#6366f1", border: "1px solid #6366f1", cursor: "pointer" };
 
   return (
-    <div className="mt-3" style={{ border: '1px solid #e5e7eb', borderRadius: 8 }}>
+    <div className="mt-3" style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
       {/* Header */}
-      <div style={{ padding: '6px 10px 0', background: '#f9fafb', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex' }}>
+      <div style={{ padding: "6px 10px 0", background: "#f9fafb", borderRadius: "8px 8px 0 0", borderBottom: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex" }}>
           {[
-            { key: 'resources', label: 'Resources' },
-            { key: 'assets',    label: 'Assets'    },
+            { key: "resources", label: "Resources" },
+            { key: "assets", label: "Assets" },
           ].map(({ key, label }) => (
-            <button type="button" key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>{label}</button>
+            <button type="button" key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>
+              {label}
+            </button>
           ))}
         </div>
       </div>
 
-      <div style={{ padding: '8px 10px', minHeight: 80 }}>
-        {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Loading…</div>}
-        {error   && <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{error}</div>}
+      <div style={{ padding: "8px 10px", minHeight: 80 }}>
+        {loading && <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>Loading…</div>}
+        {error && <div style={{ fontSize: "0.75rem", color: "#ef4444" }}>{error}</div>}
 
         {/* ── Resources tab ── */}
-        {activeTab === 'resources' && !loading && (
+        {activeTab === "resources" && !loading && (
           <>
-            {resources.length === 0 && !addingResource && (
-              <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No resources linked. Add resources that are consumed when making a batch.</div>
-            )}
-            {resources.map(r => (
+            {resources.length === 0 && !addingResource && <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: 6 }}>No resources linked. Add resources that are consumed when making a batch.</div>}
+            {resources.map((r) => (
               <div key={r.id} style={rowStyle}>
-                <BeakerIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
+                <BeakerIcon style={{ width: 13, height: 13, color: "#6b7280", flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{invMap[r.resource_id]?.name || r.resource_id?.slice(0, 8)}</span>
-                <input
-                  type="number" min="0.01" step="0.01"
-                  defaultValue={r.quantity_per_batch}
-                  onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)}
-                  style={{ ...inputSm, width: 60 }}
-                  title="Quantity consumed per batch"
-                />
-                <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>/ batch</span>
-                <button type="button" style={btnDanger} onClick={() => handleRemoveResource(r.id)} title="Remove">×</button>
+                <input type="number" min="0.01" step="0.01" defaultValue={r.quantity_per_batch} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity consumed per batch" />
+                <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>/ batch</span>
+                <button type="button" style={btnDanger} onClick={() => handleRemoveResource(r.id)} title="Remove">
+                  ×
+                </button>
               </div>
             ))}
 
             {addingResource ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-                <select value={newResourceId} onChange={e => setNewResourceId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
+                <select value={newResourceId} onChange={(e) => setNewResourceId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
                   <option value="">Select resource…</option>
-                  {resourceItems.filter(i => !resources.some(r => r.resource_id === i.id)).map(i => (
-                    <option key={i.id} value={i.id}>{i.name}</option>
-                  ))}
+                  {resourceItems
+                    .filter((i) => !resources.some((r) => r.resource_id === i.id))
+                    .map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.name}
+                      </option>
+                    ))}
                 </select>
-                <input type="number" min="0.01" step="0.01" value={newResourceQty}
-                  onChange={e => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-                <button type="button" style={btnPrimary} onClick={handleAddResource}>Add</button>
-                <button type="button" style={btnOutline} onClick={() => { setAddingResource(false); setNewResourceId(''); setNewResourceQty(1); }}>Cancel</button>
+                <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
+                <button type="button" style={btnPrimary} onClick={handleAddResource}>
+                  Add
+                </button>
+                <button
+                  type="button"
+                  style={btnOutline}
+                  onClick={() => {
+                    setAddingResource(false);
+                    setNewResourceId("");
+                    setNewResourceQty(1);
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             ) : (
-              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingResource(true)}>+ Add Resource</button>
+              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingResource(true)}>
+                + Add Resource
+              </button>
             )}
           </>
         )}
 
         {/* ── Assets tab ── */}
-        {activeTab === 'assets' && !loading && (
+        {activeTab === "assets" && !loading && (
           <>
-            {assets.length === 0 && !addingAsset && (
-              <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No assets linked. Add equipment used to produce this item.</div>
-            )}
-            {assets.map(a => (
+            {assets.length === 0 && !addingAsset && <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: 6 }}>No assets linked. Add equipment used to produce this item.</div>}
+            {assets.map((a) => (
               <div key={a.id} style={rowStyle}>
-                <WrenchScrewdriverIcon style={{ width: 13, height: 13, color: '#6b7280', flexShrink: 0 }} />
+                <WrenchScrewdriverIcon style={{ width: 13, height: 13, color: "#6b7280", flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{invMap[a.asset_id]?.name || a.asset_id?.slice(0, 8)}</span>
-                <input type="number" min="1" step="1" defaultValue={a.batch_size}
-                  onBlur={(e) => handleUpdateAsset(a.id, { batch_size: parseInt(e.target.value) || 1 })}
-                  style={{ ...inputSm, width: 55 }} title="Units produced per batch" />
-                <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>units/batch</span>
-                <input type="number" min="0" step="1" defaultValue={a.duration_minutes ?? ''}
-                  onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })}
-                  style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
-                <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>min</span>
-                <button type="button" style={btnDanger} onClick={() => handleRemoveAsset(a.id)} title="Remove">×</button>
+                <input type="number" min="1" step="1" defaultValue={a.batch_size} onBlur={(e) => handleUpdateAsset(a.id, { batch_size: parseInt(e.target.value) || 1 })} style={{ ...inputSm, width: 55 }} title="Units produced per batch" />
+                <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>units/batch</span>
+                <input type="number" min="0" step="1" defaultValue={a.duration_minutes ?? ""} onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })} style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
+                <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>min</span>
+                <button type="button" style={btnDanger} onClick={() => handleRemoveAsset(a.id)} title="Remove">
+                  ×
+                </button>
               </div>
             ))}
 
             {addingAsset ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 6 }}>
-                <select value={newAssetId} onChange={e => setNewAssetId(e.target.value)} style={{ ...inputSm, flex: '1 1 120px' }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 6 }}>
+                <select value={newAssetId} onChange={(e) => setNewAssetId(e.target.value)} style={{ ...inputSm, flex: "1 1 120px" }}>
                   <option value="">Select asset…</option>
-                  {assetItems.filter(i => !assets.some(a => a.asset_id === i.id)).map(i => (
-                    <option key={i.id} value={i.id}>{i.name}</option>
-                  ))}
+                  {assetItems
+                    .filter((i) => !assets.some((a) => a.asset_id === i.id))
+                    .map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.name}
+                      </option>
+                    ))}
                 </select>
-                <input type="number" min="1" value={newAssetBatch} onChange={e => setNewAssetBatch(e.target.value)}
-                  style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
-                <input type="number" min="0" value={newAssetDur} onChange={e => setNewAssetDur(e.target.value)}
-                  style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
-                <button type="button" style={btnPrimary} onClick={handleAddAsset}>Add</button>
-                <button type="button" style={btnOutline} onClick={() => { setAddingAsset(false); setNewAssetId(''); setNewAssetBatch(1); setNewAssetDur(''); }}>Cancel</button>
+                <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
+                <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
+                <button type="button" style={btnPrimary} onClick={handleAddAsset}>
+                  Add
+                </button>
+                <button
+                  type="button"
+                  style={btnOutline}
+                  onClick={() => {
+                    setAddingAsset(false);
+                    setNewAssetId("");
+                    setNewAssetBatch(1);
+                    setNewAssetDur("");
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             ) : (
-              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingAsset(true)}>+ Add Asset</button>
+              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingAsset(true)}>
+                + Add Asset
+              </button>
             )}
           </>
         )}
-
       </div>
     </div>
   );
@@ -259,43 +321,49 @@ function ProductionRelationsPanel({ productId }) {
 // ─── Mix Setup Panel ─────────────────────────────────────────────────────────────
 // Shown only for MIX type items in inventory mode
 function MixSetupPanel({ mixId }) {
-  const [config, setConfig]         = useState(null);   // MixConfig record or null
+  const [config, setConfig] = useState(null); // MixConfig record or null
   const [components, setComponents] = useState([]);
   const [allInventory, setAllInventory] = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState('');
-  const [adding, setAdding]         = useState(false);
-  const [newCompId, setNewCompId]   = useState('');
-  const [newMaxQty, setNewMaxQty]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [newCompId, setNewCompId] = useState("");
+  const [newMaxQty, setNewMaxQty] = useState("");
   // local config edit state
-  const [totalQty, setTotalQty]     = useState(1);
-  const [hasMax, setHasMax]         = useState(false);
-  const [maxPer, setMaxPer]         = useState('');
+  const [totalQty, setTotalQty] = useState(1);
+  const [hasMax, setHasMax] = useState(false);
+  const [maxPer, setMaxPer] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!mixId) return;
-    setLoading(true); setError('');
+    setLoading(true);
+    setError("");
     try {
-      const [cfgRes, compRes, invRes] = await Promise.all([
-        mixAPI.getConfig(mixId),
-        mixAPI.getComponents(mixId),
-        inventoryAPI.getAll(),
-      ]);
+      const [cfgRes, compRes, invRes] = await Promise.all([mixAPI.getConfig(mixId), mixAPI.getComponents(mixId), inventoryAPI.getAll()]);
       const cfgList = Array.isArray(cfgRes?.data) ? cfgRes.data : [];
       const cfg = cfgList[0] || null;
       setConfig(cfg);
-      if (cfg) { setTotalQty(cfg.total_quantity); setHasMax(cfg.has_max_per_product); setMaxPer(cfg.max_per_product ?? ''); }
+      if (cfg) {
+        setTotalQty(cfg.total_quantity);
+        setHasMax(cfg.has_max_per_product);
+        setMaxPer(cfg.max_per_product ?? "");
+      }
       setComponents(Array.isArray(compRes?.data) ? compRes.data : []);
       setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
-    } catch { setError('Failed to load mix setup.'); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Failed to load mix setup.");
+    } finally {
+      setLoading(false);
+    }
   }, [mixId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const productItems = allInventory.filter(i => (i.type || '').toUpperCase() === 'PRODUCT');
-  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
+  const productItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "PRODUCT");
+  const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
 
   const handleSaveConfig = async () => {
     setConfigSaving(true);
@@ -304,7 +372,7 @@ function MixSetupPanel({ mixId }) {
         inventory_id: mixId,
         total_quantity: parseInt(totalQty) || 1,
         has_max_per_product: hasMax,
-        max_per_product: hasMax && maxPer !== '' ? parseInt(maxPer) : null,
+        max_per_product: hasMax && maxPer !== "" ? parseInt(maxPer) : null,
       };
       if (config?.id) {
         await mixAPI.updateConfig(config.id, payload);
@@ -312,102 +380,133 @@ function MixSetupPanel({ mixId }) {
         await mixAPI.saveConfig(payload);
       }
       load();
-    } catch { setError('Failed to save mix config.'); }
-    finally { setConfigSaving(false); }
+    } catch {
+      setError("Failed to save mix config.");
+    } finally {
+      setConfigSaving(false);
+    }
   };
 
   const handleAddComponent = async () => {
     if (!newCompId) return;
     try {
-      await mixAPI.addComponent(mixId, newCompId, newMaxQty !== '' ? parseInt(newMaxQty) : null);
-      load(); setAdding(false); setNewCompId(''); setNewMaxQty('');
-    } catch { setError('Failed to add component.'); }
+      await mixAPI.addComponent(mixId, newCompId, newMaxQty !== "" ? parseInt(newMaxQty) : null);
+      load();
+      setAdding(false);
+      setNewCompId("");
+      setNewMaxQty("");
+    } catch {
+      setError("Failed to add component.");
+    }
   };
   const handleRemoveComponent = async (id) => {
-    try { await mixAPI.removeComponent(id); load(); }
-    catch { setError('Failed to remove component.'); }
+    try {
+      await mixAPI.removeComponent(id);
+      load();
+    } catch {
+      setError("Failed to remove component.");
+    }
   };
   const handleUpdateMax = async (id, val) => {
-    try { await mixAPI.updateComponent(id, { max_quantity: val !== '' ? parseInt(val) : null }); load(); }
-    catch { setError('Failed to update.'); }
+    try {
+      await mixAPI.updateComponent(id, { max_quantity: val !== "" ? parseInt(val) : null });
+      load();
+    } catch {
+      setError("Failed to update.");
+    }
   };
 
   const s = {
-    row: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: '1px solid #fce7f3', fontSize: '0.8rem' },
-    input: { fontSize: '0.75rem', padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' },
-    del: { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontSize: 14 },
-    btn: { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: '#ec4899', color: '#fff', border: 'none', cursor: 'pointer' },
-    out: { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: 'none', color: '#ec4899', border: '1px solid #ec4899', cursor: 'pointer' },
-    label: { fontSize: '0.75rem', color: '#374151', fontWeight: 600 },
+    row: { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #fce7f3", fontSize: "0.8rem" },
+    input: { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" },
+    del: { background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 2px", lineHeight: 1, fontSize: 14 },
+    btn: { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "#ec4899", color: "#fff", border: "none", cursor: "pointer" },
+    out: { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "none", color: "#ec4899", border: "1px solid #ec4899", cursor: "pointer" },
+    label: { fontSize: "0.75rem", color: "#374151", fontWeight: 600 },
   };
 
   return (
-    <div className="mt-3" style={{ border: '1px solid #fbcfe8', borderRadius: 8 }}>
+    <div className="mt-3" style={{ border: "1px solid #fbcfe8", borderRadius: 8 }}>
       {/* Header */}
-      <div style={{ padding: '6px 10px 8px', background: '#fdf2f8', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #fbcfe8', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <SparklesIcon style={{ width: 14, height: 14, color: '#ec4899' }} />
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Mix Setup</span>
-        <span style={{ fontSize: '0.72rem', color: '#9ca3af', marginLeft: 4 }}>Client picks from a list</span>
+      <div style={{ padding: "6px 10px 8px", background: "#fdf2f8", borderRadius: "8px 8px 0 0", borderBottom: "1px solid #fbcfe8", display: "flex", alignItems: "center", gap: 6 }}>
+        <SparklesIcon style={{ width: 14, height: 14, color: "#ec4899" }} />
+        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#374151" }}>Mix Setup</span>
+        <span style={{ fontSize: "0.72rem", color: "#9ca3af", marginLeft: 4 }}>Client picks from a list</span>
       </div>
 
-      <div style={{ padding: '8px 10px' }}>
-        {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Loading…</div>}
-        {error   && <div style={{ fontSize: '0.75rem', color: '#ef4444', marginBottom: 4 }}>{error}</div>}
+      <div style={{ padding: "8px 10px" }}>
+        {loading && <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>Loading…</div>}
+        {error && <div style={{ fontSize: "0.75rem", color: "#ef4444", marginBottom: 4 }}>{error}</div>}
 
         {/* ── Config section ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #fbcfe8' }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #fbcfe8" }}>
           <div>
             <div style={s.label}>Total to pick</div>
-            <input type="number" min="1" value={totalQty} onChange={e => setTotalQty(e.target.value)}
-              style={{ ...s.input, width: 60 }} title="How many products the client must pick total" />
+            <input type="number" min="1" value={totalQty} onChange={(e) => setTotalQty(e.target.value)} style={{ ...s.input, width: 60 }} title="How many products the client must pick total" />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <input type="checkbox" id="mix-has-max" checked={hasMax} onChange={e => setHasMax(e.target.checked)} />
-            <label htmlFor="mix-has-max" style={{ ...s.label, fontWeight: 400, cursor: 'pointer' }}>Max per product</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <input type="checkbox" id="mix-has-max" checked={hasMax} onChange={(e) => setHasMax(e.target.checked)} />
+            <label htmlFor="mix-has-max" style={{ ...s.label, fontWeight: 400, cursor: "pointer" }}>
+              Max per product
+            </label>
           </div>
           {hasMax && (
             <div>
               <div style={s.label}>Max each</div>
-              <input type="number" min="1" value={maxPer} onChange={e => setMaxPer(e.target.value)}
-                style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
+              <input type="number" min="1" value={maxPer} onChange={(e) => setMaxPer(e.target.value)} style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
             </div>
           )}
           <button type="button" style={s.btn} disabled={configSaving} onClick={handleSaveConfig}>
-            {configSaving ? 'Saving…' : config ? 'Update' : 'Save Config'}
+            {configSaving ? "Saving…" : config ? "Update" : "Save Config"}
           </button>
         </div>
 
         {/* ── Products available in mix ── */}
         <div style={{ ...s.label, marginBottom: 4 }}>Products available in this mix</div>
-        {components.length === 0 && !adding && !loading && (
-          <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No products yet. Add products the client can choose from.</div>
-        )}
-        {components.map(c => (
+        {components.length === 0 && !adding && !loading && <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: 6 }}>No products yet. Add products the client can choose from.</div>}
+        {components.map((c) => (
           <div key={c.id} style={s.row}>
-            <CubeIcon style={{ width: 13, height: 13, color: '#ec4899', flexShrink: 0 }} />
+            <CubeIcon style={{ width: 13, height: 13, color: "#ec4899", flexShrink: 0 }} />
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
-            <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>max override:</span>
-            <input type="number" min="1" defaultValue={c.max_quantity ?? ''}
-              onBlur={e => handleUpdateMax(c.id, e.target.value)}
-              style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
-            <button type="button" style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">×</button>
+            <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>max override:</span>
+            <input type="number" min="1" defaultValue={c.max_quantity ?? ""} onBlur={(e) => handleUpdateMax(c.id, e.target.value)} style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
+            <button type="button" style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">
+              ×
+            </button>
           </div>
         ))}
         {adding ? (
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-            <select value={newCompId} onChange={e => setNewCompId(e.target.value)} style={{ ...s.input, flex: 1 }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
+            <select value={newCompId} onChange={(e) => setNewCompId(e.target.value)} style={{ ...s.input, flex: 1 }}>
               <option value="">Select product…</option>
-              {productItems.filter(i => i.id !== mixId && !components.some(c => c.component_id === i.id)).map(i => (
-                <option key={i.id} value={i.id}>{i.name}</option>
-              ))}
+              {productItems
+                .filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id))
+                .map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
             </select>
-            <input type="number" min="1" value={newMaxQty} onChange={e => setNewMaxQty(e.target.value)}
-              style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
-            <button type="button" style={s.btn} onClick={handleAddComponent}>Add</button>
-            <button type="button" style={s.out} onClick={() => { setAdding(false); setNewCompId(''); setNewMaxQty(''); }}>Cancel</button>
+            <input type="number" min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
+            <button type="button" style={s.btn} onClick={handleAddComponent}>
+              Add
+            </button>
+            <button
+              type="button"
+              style={s.out}
+              onClick={() => {
+                setAdding(false);
+                setNewCompId("");
+                setNewMaxQty("");
+              }}
+            >
+              Cancel
+            </button>
           </div>
         ) : (
-          <button type="button" style={{ ...s.out, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Product</button>
+          <button type="button" style={{ ...s.out, marginTop: 6 }} onClick={() => setAdding(true)}>
+            + Add Product
+          </button>
         )}
       </div>
     </div>
@@ -420,96 +519,122 @@ function BundleComponentsPanel({ bundleId }) {
   const [components, setComponents] = useState([]);
   const [allInventory, setAllInventory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
-  const [newComponentId, setNewComponentId] = useState('');
+  const [newComponentId, setNewComponentId] = useState("");
   const [newQty, setNewQty] = useState(1);
 
   const load = useCallback(async () => {
     if (!bundleId) return;
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const [cRes, invRes] = await Promise.all([
-        bundleAPI.getComponents(bundleId),
-        inventoryAPI.getAll(),
-      ]);
+      const [cRes, invRes] = await Promise.all([bundleAPI.getComponents(bundleId), inventoryAPI.getAll()]);
       setComponents(Array.isArray(cRes?.data) ? cRes.data : []);
       setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
-    } catch { setError('Failed to load bundle components.'); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Failed to load bundle components.");
+    } finally {
+      setLoading(false);
+    }
   }, [bundleId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const productItems = allInventory.filter(i => (i.type || '').toUpperCase() === 'PRODUCT');
-  const invMap = Object.fromEntries(allInventory.map(i => [i.id, i]));
+  const productItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "PRODUCT");
+  const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
 
   const handleAdd = async () => {
     if (!newComponentId) return;
     try {
       await bundleAPI.addComponent(bundleId, newComponentId, parseFloat(newQty) || 1);
-      load(); setAdding(false); setNewComponentId(''); setNewQty(1);
-    } catch { setError('Failed to add component.'); }
+      load();
+      setAdding(false);
+      setNewComponentId("");
+      setNewQty(1);
+    } catch {
+      setError("Failed to add component.");
+    }
   };
   const handleRemove = async (id) => {
-    try { await bundleAPI.removeComponent(id); load(); }
-    catch { setError('Failed to remove component.'); }
+    try {
+      await bundleAPI.removeComponent(id);
+      load();
+    } catch {
+      setError("Failed to remove component.");
+    }
   };
   const handleUpdateQty = async (id, qty) => {
-    try { await bundleAPI.updateComponent(id, { quantity: parseFloat(qty) || 1 }); load(); }
-    catch { setError('Failed to update quantity.'); }
+    try {
+      await bundleAPI.updateComponent(id, { quantity: parseFloat(qty) || 1 });
+      load();
+    } catch {
+      setError("Failed to update quantity.");
+    }
   };
 
-  const rowStyle = { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: '1px solid #e5e7eb', fontSize: '0.8rem' };
-  const inputSm = { fontSize: '0.75rem', padding: '3px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' };
-  const btnDanger = { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontSize: 14 };
-  const btnPrimary = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: '#f97316', color: '#fff', border: 'none', cursor: 'pointer' };
-  const btnOutline = { fontSize: '0.72rem', padding: '3px 8px', borderRadius: 4, background: 'none', color: '#f97316', border: '1px solid #f97316', cursor: 'pointer' };
+  const rowStyle = { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #e5e7eb", fontSize: "0.8rem" };
+  const inputSm = { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" };
+  const btnDanger = { background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 2px", lineHeight: 1, fontSize: 14 };
+  const btnPrimary = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "#f97316", color: "#fff", border: "none", cursor: "pointer" };
+  const btnOutline = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "none", color: "#f97316", border: "1px solid #f97316", cursor: "pointer" };
 
   return (
-    <div className="mt-3" style={{ border: '1px solid #fed7aa', borderRadius: 8 }}>
-      <div style={{ padding: '6px 10px 8px', background: '#fff7ed', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <CubeIcon style={{ width: 14, height: 14, color: '#f97316' }} />
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>Bundle Components</span>
-        <span style={{ fontSize: '0.72rem', color: '#9ca3af', marginLeft: 4 }}>Products included per unit sold</span>
+    <div className="mt-3" style={{ border: "1px solid #fed7aa", borderRadius: 8 }}>
+      <div style={{ padding: "6px 10px 8px", background: "#fff7ed", borderRadius: "8px 8px 0 0", borderBottom: "1px solid #fed7aa", display: "flex", alignItems: "center", gap: 6 }}>
+        <CubeIcon style={{ width: 14, height: 14, color: "#f97316" }} />
+        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#374151" }}>Bundle Components</span>
+        <span style={{ fontSize: "0.72rem", color: "#9ca3af", marginLeft: 4 }}>Products included per unit sold</span>
       </div>
-      <div style={{ padding: '8px 10px', minHeight: 60 }}>
-        {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Loading…</div>}
-        {error   && <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{error}</div>}
-        {components.length === 0 && !adding && !loading && (
-          <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: 6 }}>No components yet. Add products that make up this bundle.</div>
-        )}
-        {components.map(c => (
+      <div style={{ padding: "8px 10px", minHeight: 60 }}>
+        {loading && <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>Loading…</div>}
+        {error && <div style={{ fontSize: "0.75rem", color: "#ef4444" }}>{error}</div>}
+        {components.length === 0 && !adding && !loading && <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: 6 }}>No components yet. Add products that make up this bundle.</div>}
+        {components.map((c) => (
           <div key={c.id} style={rowStyle}>
-            <CubeIcon style={{ width: 13, height: 13, color: '#f97316', flexShrink: 0 }} />
+            <CubeIcon style={{ width: 13, height: 13, color: "#f97316", flexShrink: 0 }} />
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
-            <input
-              type="number" min="0.01" step="0.01"
-              defaultValue={c.quantity}
-              onBlur={(e) => handleUpdateQty(c.id, e.target.value)}
-              style={{ ...inputSm, width: 60 }}
-              title="Quantity per bundle unit"
-            />
-            <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>× each</span>
-            <button type="button" style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">×</button>
+            <input type="number" min="0.01" step="0.01" defaultValue={c.quantity} onBlur={(e) => handleUpdateQty(c.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity per bundle unit" />
+            <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>× each</span>
+            <button type="button" style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">
+              ×
+            </button>
           </div>
         ))}
         {adding ? (
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-            <select value={newComponentId} onChange={e => setNewComponentId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
+            <select value={newComponentId} onChange={(e) => setNewComponentId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
               <option value="">Select product…</option>
-              {productItems.filter(i => i.id !== bundleId && !components.some(c => c.component_id === i.id)).map(i => (
-                <option key={i.id} value={i.id}>{i.name}</option>
-              ))}
+              {productItems
+                .filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id))
+                .map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
             </select>
-            <input type="number" min="0.01" step="0.01" value={newQty}
-              onChange={e => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-            <button type="button" style={btnPrimary} onClick={handleAdd}>Add</button>
-            <button type="button" style={btnOutline} onClick={() => { setAdding(false); setNewComponentId(''); setNewQty(1); }}>Cancel</button>
+            <input type="number" min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
+            <button type="button" style={btnPrimary} onClick={handleAdd}>
+              Add
+            </button>
+            <button
+              type="button"
+              style={btnOutline}
+              onClick={() => {
+                setAdding(false);
+                setNewComponentId("");
+                setNewQty(1);
+              }}
+            >
+              Cancel
+            </button>
           </div>
         ) : (
-          <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAdding(true)}>+ Add Component</button>
+          <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAdding(true)}>
+            + Add Component
+          </button>
         )}
       </div>
     </div>
@@ -517,96 +642,76 @@ function BundleComponentsPanel({ bundleId }) {
 }
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Detail_Item({
-  isOpen,
-  onClose,
-  item,
-  itemType = 'product',
-  mode = 'sales',
-  onAddToCart,
-  onUpdateInventory,
-  onDelete,
-  canDelete = false,
-  isDeleting = false,
-  cartQuantity = 0,
-  existingSkus = []
-}) {
+export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, onUpdateInventory, onDelete, canDelete = false, isDeleting = false, cartQuantity = 0, existingSkus = [] }) {
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [availableLocations, setAvailableLocations] = useState([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scanError, setScanError] = useState('');
+  const [scanError, setScanError] = useState("");
   const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera' | 'upload'
-  const [newImageUrl, setNewImageUrl] = useState('');
+  const [newImageUrl, setNewImageUrl] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef(null);
-  const [imageError, setImageError] = useState('');
+  const [imageError, setImageError] = useState("");
   const [editingImageId, setEditingImageId] = useState(null);
-  const [editingImageUrl, setEditingImageUrl] = useState('');
+  const [editingImageUrl, setEditingImageUrl] = useState("");
   // Feature-derived values (updated by FeatureSection callbacks)
-  const [featureStock, setFeatureStock] = useState(null);       // total qty from features, or null
+  const [featureStock, setFeatureStock] = useState(null); // total qty from features, or null
   const [featuresPriceRange, setFeaturesPriceRange] = useState(null); // { min, max } or null
   const [salesPriceRange, setSalesPriceRange] = useState(null); // { min, max } or null — sales mode only
   const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
+    name: "",
+    sku: "",
     price: 0,
-    cost: '',
-    description: '',
+    cost: "",
+    description: "",
     quantity: 0,
     min_stock_level: 10,
-    location: '',
-    image_url: '',
-    type: 'PRODUCT',
-    supplier_id: '',
-    category: '',
+    location: "",
+    image_url: "",
+    type: "PRODUCT",
+    supplier_id: "",
+    category: "",
   });
   const [itemCategories, setItemCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
 
-  const upperType = (itemType || item?.type || 'product').toUpperCase();
-  const isService = upperType === 'SERVICE';
-  const isAsset = upperType === 'ASSET';
-  const isLocation = upperType === 'LOCATION';
-  const isResource = upperType === 'RESOURCE';
-  const isBundle = upperType === 'BUNDLE';
-  const isMix = upperType === 'MIX';
+  const upperType = (itemType || item?.type || "product").toUpperCase();
+  const isService = upperType === "SERVICE";
+  const isAsset = upperType === "ASSET";
+  const isLocation = upperType === "LOCATION";
+  const isResource = upperType === "RESOURCE";
+  const isBundle = upperType === "BUNDLE";
+  const isMix = upperType === "MIX";
   const hasImages = images.length > 0;
   const currentImage = hasImages ? images[currentImageIndex] : null;
   const displayImage = currentImage ? getImageSrc(currentImage) : null;
   const inCart = cartQuantity > 0;
-  const isSalesMode = mode === 'sales';
+  const isSalesMode = mode === "sales";
 
   const loadAvailableLocations = useCallback(async () => {
     try {
-      const [inventoryRes, distinctRes] = await Promise.all([
-        inventoryAPI.getAll(),
-        inventoryAPI.getLocations(),
-      ]);
+      const [inventoryRes, distinctRes] = await Promise.all([inventoryAPI.getAll(), inventoryAPI.getLocations()]);
       const inventoryRows = inventoryRes?.data ?? inventoryRes ?? [];
       const rawDistinct = distinctRes?.data;
-      const distinctRows = Array.isArray(rawDistinct)
-        ? rawDistinct
-        : Array.isArray(rawDistinct?.locations)
-          ? rawDistinct.locations
-          : [];
+      const distinctRows = Array.isArray(rawDistinct) ? rawDistinct : Array.isArray(rawDistinct?.locations) ? rawDistinct.locations : [];
 
       const all = new Set(cacheService.getLocations());
 
       distinctRows.forEach((loc) => {
-        const value = String(loc || '').trim();
+        const value = String(loc || "").trim();
         if (value) all.add(value);
       });
 
       if (Array.isArray(inventoryRows)) {
         inventoryRows.forEach((row) => {
-          const rowLocation = String(row?.location || '').trim();
+          const rowLocation = String(row?.location || "").trim();
           if (rowLocation) all.add(rowLocation);
-          if (String(row?.type || '').toUpperCase() === 'LOCATION') {
-            const locationName = String(row?.name || '').trim();
+          if (String(row?.type || "").toUpperCase() === "LOCATION") {
+            const locationName = String(row?.name || "").trim();
             if (locationName) all.add(locationName);
           }
         });
@@ -621,18 +726,18 @@ export default function Modal_Detail_Item({
   useEffect(() => {
     if (isOpen && item) {
       setFormData({
-        name: item.name || '',
-        sku: item.sku || '',
+        name: item.name || "",
+        sku: item.sku || "",
         price: item.price || 0,
-        cost: item.cost ?? '',
-        description: item.description || '',
+        cost: item.cost ?? "",
+        description: item.description || "",
         quantity: item.quantity || 0,
         min_stock_level: item.min_stock_level || 10,
-        location: item.location || '',
-        image_url: item.image_url || '',
-        type: (item.type || 'PRODUCT').toUpperCase(),
-        supplier_id: item.supplier_id || '',
-        category: item.category || '',
+        location: item.location || "",
+        image_url: item.image_url || "",
+        type: (item.type || "PRODUCT").toUpperCase(),
+        supplier_id: item.supplier_id || "",
+        category: item.category || "",
       });
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
@@ -644,18 +749,19 @@ export default function Modal_Detail_Item({
 
       // In sales mode, fetch feature price range for this item
       if (isSalesMode) {
-        inventoryFeaturesAPI.get(item.id).then(res => {
-          const features = res?.data ?? res;
-          if (!Array.isArray(features)) return;
-          const active = features.find(f => f.affects_price);
-          if (!active) return;
-          const prices = active.options
-            .filter(o => o.is_enabled && o.price != null)
-            .map(o => parseFloat(o.price));
-          if (prices.length) {
-            setSalesPriceRange({ min: Math.min(...prices), max: Math.max(...prices) });
-          }
-        }).catch(() => {});
+        inventoryFeaturesAPI
+          .get(item.id)
+          .then((res) => {
+            const features = res?.data ?? res;
+            if (!Array.isArray(features)) return;
+            const active = features.find((f) => f.affects_price);
+            if (!active) return;
+            const prices = active.options.filter((o) => o.is_enabled && o.price != null).map((o) => parseFloat(o.price));
+            if (prices.length) {
+              setSalesPriceRange({ min: Math.min(...prices), max: Math.max(...prices) });
+            }
+          })
+          .catch(() => {});
       }
 
       // Seed images immediately from already-fetched item data, then refresh async
@@ -667,25 +773,35 @@ export default function Modal_Detail_Item({
       loadAvailableLocations();
 
       // Load suppliers for dropdown
-      suppliersAPI.getAll().then(res => {
-        const data = res?.data ?? res;
-        setAvailableSuppliers(Array.isArray(data) ? data : []);
-      }).catch(() => {});
+      suppliersAPI
+        .getAll()
+        .then((res) => {
+          const data = res?.data ?? res;
+          setAvailableSuppliers(Array.isArray(data) ? data : []);
+        })
+        .catch(() => {});
     }
   }, [isOpen, item?.id, cartQuantity, isSalesMode, loadAvailableLocations]);
 
   // Load categories whenever item type changes (or modal opens with a new item).
   // cancelled flag prevents stale API responses from overwriting fresh results.
-  const currentItemType = (formData.type || 'PRODUCT').toLowerCase();
+  const currentItemType = (formData.type || "PRODUCT").toLowerCase();
   useEffect(() => {
     if (!isOpen || isSalesMode) return;
     let cancelled = false;
-    inventoryCategoriesAPI.getByType(currentItemType)
-      .then(res => { if (!cancelled) setItemCategories(Array.isArray(res?.data) ? res.data : []); })
-      .catch(() => { if (!cancelled) setItemCategories([]); });
+    inventoryCategoriesAPI
+      .getByType(currentItemType)
+      .then((res) => {
+        if (!cancelled) setItemCategories(Array.isArray(res?.data) ? res.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setItemCategories([]);
+      });
     setShowCategoryManager(false);
-    setNewCategoryName('');
-    return () => { cancelled = true; };
+    setNewCategoryName("");
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, currentItemType, isSalesMode]);
 
   const handleAddCategory = async () => {
@@ -694,8 +810,8 @@ export default function Modal_Detail_Item({
     const normalizedName = name.toLocaleLowerCase();
     const existingCategory = itemCategories.find((category) => category.name?.trim().toLocaleLowerCase() === normalizedName);
     if (existingCategory) {
-      setFormData(prev => ({ ...prev, category: existingCategory.name }));
-      setNewCategoryName('');
+      setFormData((prev) => ({ ...prev, category: existingCategory.name }));
+      setNewCategoryName("");
       setShowCategoryManager(false);
       return;
     }
@@ -703,21 +819,25 @@ export default function Modal_Detail_Item({
       const res = await inventoryCategoriesAPI.create(currentItemType, name);
       const created = res?.data;
       if (!created?.name) return;
-      setItemCategories(prev => [...prev.filter(c => c.id !== created?.id), created].sort((a, b) => a.name.localeCompare(b.name)));
-      setFormData(prev => ({ ...prev, category: created.name }));
-      setNewCategoryName('');
+      setItemCategories((prev) => [...prev.filter((c) => c.id !== created?.id), created].sort((a, b) => a.name.localeCompare(b.name)));
+      setFormData((prev) => ({ ...prev, category: created.name }));
+      setNewCategoryName("");
       setShowCategoryManager(false);
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   };
 
   const handleDeleteCategory = async (catId) => {
     try {
       await inventoryCategoriesAPI.delete(catId);
-      setItemCategories(prev => prev.filter(c => c.id !== catId));
-      if (formData.category === itemCategories.find(c => c.id === catId)?.name) {
-        setFormData(prev => ({ ...prev, category: '' }));
+      setItemCategories((prev) => prev.filter((c) => c.id !== catId));
+      if (formData.category === itemCategories.find((c) => c.id === catId)?.name) {
+        setFormData((prev) => ({ ...prev, category: "" }));
       }
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   };
 
   // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
@@ -735,26 +855,25 @@ export default function Modal_Detail_Item({
       if (item?.images && Array.isArray(item.images) && item.images.length > 0) {
         setImages(item.images);
         setCurrentImageIndex(0);
-        console.warn('Using cached images from item (offline mode or network error):', error?.message);
+        console.warn("Using cached images from item (offline mode or network error):", error?.message);
       } else {
         // No fallback available — truly offline with no cached images
-        console.error('Error loading images and no cached images available:', error);
+        console.error("Error loading images and no cached images available:", error);
         setImages([]);
       }
     }
   };
 
-
   // ─── 3 FORM & SKU HANDLERS ────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    const nextValue = type === 'number' ? (parseFloat(value) || 0) : value;
-    setFormData(prev => ({
+    const nextValue = type === "number" ? parseFloat(value) || 0 : value;
+    setFormData((prev) => ({
       ...prev,
-      [name]: nextValue
+      [name]: nextValue,
     }));
-    if (name === 'sku' && scanError) {
-      setScanError(isDuplicateSku(nextValue) ? scanError : '');
+    if (name === "sku" && scanError) {
+      setScanError(isDuplicateSku(nextValue) ? scanError : "");
     }
   };
 
@@ -764,24 +883,36 @@ export default function Modal_Detail_Item({
   };
 
   const isDuplicateSku = (value) => {
-    const normalized = String(value || '').trim().toLowerCase();
+    const normalized = String(value || "")
+      .trim()
+      .toLowerCase();
     if (!normalized) return false;
-    const currentSku = String(item?.sku || '').trim().toLowerCase();
-    return normalized !== currentSku && existingSkus.some(sku => String(sku || '').trim().toLowerCase() === normalized);
+    const currentSku = String(item?.sku || "")
+      .trim()
+      .toLowerCase();
+    return (
+      normalized !== currentSku &&
+      existingSkus.some(
+        (sku) =>
+          String(sku || "")
+            .trim()
+            .toLowerCase() === normalized
+      )
+    );
   };
 
   const handleBarcodeDetected = (code) => {
-    const scanned = String(code || '').trim();
+    const scanned = String(code || "").trim();
     if (!scanned) {
-      setScanError('No barcode detected. Please try again.');
+      setScanError("No barcode detected. Please try again.");
       return;
     }
     if (isDuplicateSku(scanned)) {
       setScanError(`Item with SKU "${scanned}" already exists.`);
       return;
     }
-    setScanError('');
-    setFormData(prev => ({ ...prev, sku: scanned }));
+    setScanError("");
+    setFormData((prev) => ({ ...prev, sku: scanned }));
     setIsScannerOpen(false);
   };
 
@@ -789,29 +920,29 @@ export default function Modal_Detail_Item({
   const handleAddImageUrl = async () => {
     const url = newImageUrl.trim();
     if (!url) return;
-    setImageError('');
+    setImageError("");
     try {
       await inventoryAPI.addImageUrl(item.id, { image_url: url, is_primary: images.length === 0 });
-      setNewImageUrl('');
+      setNewImageUrl("");
       setAddImageMode(null);
       // Fetch fresh images from database (not cached)
       await loadImages(item.id);
     } catch (err) {
-      setImageError('Failed to add image URL.');
+      setImageError("Failed to add image URL.");
     }
   };
 
   const handlePhotoCapture = async (blob) => {
     setIsCameraOpen(false);
     setAddImageMode(null);
-    setImageError('');
+    setImageError("");
     try {
-      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
       await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
       // Fetch fresh images from database (not cached)
       await loadImages(item.id);
     } catch (err) {
-      setImageError('Failed to upload photo.');
+      setImageError("Failed to upload photo.");
     }
   };
 
@@ -819,42 +950,45 @@ export default function Modal_Detail_Item({
     const file = e.target.files?.[0];
     if (!file) return;
     setAddImageMode(null);
-    setImageError('');
+    setImageError("");
     // Reset so the same file can be re-selected
-    e.target.value = '';
+    e.target.value = "";
     try {
       await inventoryAPI.uploadImageFile(item.id, file, images.length === 0);
       // Fetch fresh images from database (not cached)
       await loadImages(item.id);
     } catch (err) {
-      setImageError('Failed to upload photo.');
+      setImageError("Failed to upload photo.");
     }
   };
 
   const handleDeleteImage = async (imageId) => {
-    if (!await showConfirm('Delete this image?')) return;
-    setImageError('');
+    if (!(await showConfirm("Delete this image?"))) return;
+    setImageError("");
     try {
       await inventoryAPI.deleteImage(imageId);
-      if (editingImageId === imageId) { setEditingImageId(null); setEditingImageUrl(''); }
-      setCurrentImageIndex(prev => Math.max(0, prev - 1));
+      if (editingImageId === imageId) {
+        setEditingImageId(null);
+        setEditingImageUrl("");
+      }
+      setCurrentImageIndex((prev) => Math.max(0, prev - 1));
       await loadImages(item.id);
     } catch {
-      setImageError('Failed to delete image.');
+      setImageError("Failed to delete image.");
     }
   };
 
   const handleSaveEditImageUrl = async () => {
     const url = editingImageUrl.trim();
     if (!url) return;
-    setImageError('');
+    setImageError("");
     try {
       await inventoryAPI.updateImage(editingImageId, { image_url: url });
       setEditingImageId(null);
-      setEditingImageUrl('');
+      setEditingImageUrl("");
       await loadImages(item.id);
     } catch {
-      setImageError('Failed to update image URL.');
+      setImageError("Failed to update image URL.");
     }
   };
 
@@ -875,7 +1009,7 @@ export default function Modal_Detail_Item({
       sku: formData.sku,
       // When features manage price, preserve the existing fixed price (don't override with range)
       price: parseFloat(formData.price) || 0,
-      cost: formData.cost !== '' && formData.cost != null ? parseFloat(formData.cost) : null,
+      cost: formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null,
       description: formData.description,
       quantity: parseInt(formData.quantity) || 0,
       min_stock_level: parseInt(formData.min_stock_level) || 10,
@@ -889,14 +1023,14 @@ export default function Modal_Detail_Item({
 
   const handleDelete = async () => {
     if (isDeleting) return;
-    if (!await showConfirm('Are you sure you want to delete this item?')) return;
+    if (!(await showConfirm("Are you sure you want to delete this item?"))) return;
     onDelete?.(item.id);
     onClose();
   };
 
   // ─── 6 DISPLAY HELPERS ────────────────────────────────────────────────────
-  const incrementQuantity = () => setQuantity(q => q + 1);
-  const decrementQuantity = () => setQuantity(q => Math.max(1, q - 1));
+  const incrementQuantity = () => setQuantity((q) => q + 1);
+  const decrementQuantity = () => setQuantity((q) => Math.max(1, q - 1));
 
   const getTypeIcon = () => {
     if (isService) return <SparklesIcon className="h-16 w-16" />;
@@ -911,25 +1045,30 @@ export default function Modal_Detail_Item({
 
   // Reusable image display with navigation
   const renderImage = (containerStyle = {}) => (
-    <div className="position-relative" style={{ borderRadius: '8px', overflow: 'hidden', background: 'var(--bs-secondary-bg)', ...containerStyle }}>
+    <div className="position-relative" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", ...containerStyle }}>
       {displayImage ? (
         <img
           src={displayImage}
           alt={formData.name}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           onError={(e) => {
-            e.target.style.display = 'none';
+            e.target.style.display = "none";
             const placeholder = e.target.nextElementSibling;
-            if (placeholder) placeholder.style.display = 'flex';
+            if (placeholder) placeholder.style.display = "flex";
           }}
         />
       ) : null}
       <div
         style={{
-          display: displayImage ? 'none' : 'flex',
-          width: '100%', height: '100%',
-          alignItems: 'center', justifyContent: 'center',
-          color: '#adb5bd', position: 'absolute', top: 0, left: 0
+          display: displayImage ? "none" : "flex",
+          width: "100%",
+          height: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#adb5bd",
+          position: "absolute",
+          top: 0,
+          left: 0,
         }}
       >
         {getTypeIcon()}
@@ -937,29 +1076,17 @@ export default function Modal_Detail_Item({
 
       {hasImages && images.length > 1 && (
         <>
-          <button
-            type="button"
-            onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
-            className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1"
-            style={{ width: '28px', height: '28px', padding: 0 }}
-          >
+          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1" style={{ width: "28px", height: "28px", padding: 0 }}>
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
-            className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1"
-            style={{ width: '28px', height: '28px', padding: 0 }}
-          >
+          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1" style={{ width: "28px", height: "28px", padding: 0 }}>
             <ChevronRightIcon className="h-4 w-4" />
           </button>
-          <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1" style={{ fontSize: '0.7rem', borderTopLeftRadius: '4px' }}>
+          <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1" style={{ fontSize: "0.7rem", borderTopLeftRadius: "4px" }}>
             {currentImageIndex + 1} / {images.length}
           </div>
         </>
       )}
-
-
     </div>
   );
 
@@ -967,800 +1094,570 @@ export default function Modal_Detail_Item({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: '100%' }}>
-
-      {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
-      {/* Header for Inventory Mode - Fixed at top */}
-      {!isSalesMode && (
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Edit Item</h6>
-           
-        </div>
-      )}
-
-      {/* Sales Mode: Full-width image header */}
-      {isSalesMode && (
-        <div className="flex-shrink-0 position-relative">
-          <div className="square-image-container">
-            {displayImage ? (
-              <img
-                src={displayImage}
-                alt={formData.name}
-                className="square-image"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const placeholder = e.target.nextElementSibling;
-                  if (placeholder) placeholder.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div
-              className="square-image-placeholder"
-              style={{ display: displayImage ? 'none' : 'flex' }}
-            >
-              {getTypeIcon()}
-            </div>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+        {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
+        {/* Header for Inventory Mode - Fixed at top */}
+        {!isSalesMode && (
+          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
+            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Edit Item</h6>
           </div>
+        )}
 
-          {hasImages && images.length > 1 && (
+        {/* Sales Mode: Full-width image header */}
+        {isSalesMode && (
+          <div className="flex-shrink-0 position-relative">
+            <div className="square-image-container">
+              {displayImage ? (
+                <img
+                  src={displayImage}
+                  alt={formData.name}
+                  className="square-image"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    const placeholder = e.target.nextElementSibling;
+                    if (placeholder) placeholder.style.display = "flex";
+                  }}
+                />
+              ) : null}
+              <div className="square-image-placeholder" style={{ display: displayImage ? "none" : "flex" }}>
+                {getTypeIcon()}
+              </div>
+            </div>
+
+            {hasImages && images.length > 1 && (
+              <>
+                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2" style={{ width: "32px", height: "32px" }}>
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2" style={{ width: "32px", height: "32px" }}>
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+                <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
+                  {currentImageIndex + 1} / {images.length}
+                </div>
+              </>
+            )}
+
+            {!isLocation && !isAsset && (
+              <span className={`badge position-absolute bottom-0 end-0 m-3 ${isLowStock ? "bg-danger" : "bg-success"}`}>
+                {formData.quantity} in stock {isLowStock && "(Low)"}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Container_Scrollable Content Area */}
+        <div className="overflow-auto px-3 pt-3 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" style={{ flexGrow: 1 }}>
+          {isSalesMode ? (
+            /* Sales Mode - Display only */
+            <div>
+              <h4 className="fw-bold mb-2">{item.name}</h4>
+              <div className="fs-4 fw-bold text-primary mb-3">{salesPriceRange ? (salesPriceRange.min === salesPriceRange.max ? `$${salesPriceRange.min.toFixed(2)}` : `From $${salesPriceRange.min.toFixed(2)} to $${salesPriceRange.max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}</div>
+
+              {item.description && <p className="text-muted mb-3">{item.description}</p>}
+
+              <div className="d-flex gap-2 text-muted small mb-4">
+                {item.sku && (
+                  <span className="d-flex align-items-center gap-1">
+                    <TagIcon className="h-4 w-4" /> {item.sku}
+                  </span>
+                )}
+                {item.location && (
+                  <span className="d-flex align-items-center gap-1">
+                    <MapPinIcon className="h-4 w-4" /> {item.location}
+                  </span>
+                )}
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <span className="fw-medium">Quantity</span>
+                  {inCart && <div className="small text-muted">{cartQuantity} already in cart</div>}
+                </div>
+                <div className="d-flex align-items-center gap-3">
+                  <button onClick={decrementQuantity} disabled={quantity <= 1} className="btn btn-outline-secondary rounded-circle p-0" style={{ width: "44px", height: "44px" }}>
+                    <MinusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
+                  </button>
+                  <span className="fs-4 fw-semibold" style={{ minWidth: "50px", textAlign: "center" }}>
+                    {quantity}
+                  </span>
+                  <button onClick={incrementQuantity} className="btn btn-outline-secondary rounded-circle p-0" style={{ width: "44px", height: "44px" }}>
+                    <PlusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="d-grid align-items-center gap-2" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
+                <div>
+                  <small className="text-muted">Total</small>
+                  <div className="fs-3 fw-bold text-primary">{salesPriceRange && salesPriceRange.min !== salesPriceRange.max ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}` : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}</div>
+                </div>
+                <button onClick={onClose} className="btn btn-outline-secondary">
+                  Close
+                </button>
+                <button onClick={handleAddToCart} className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${inCart ? "btn-secondary" : "btn-primary"}`}>
+                  <ShoppingCartIcon className="h-5 w-5" />
+                  {inCart ? `Update (${cartQuantity} → ${quantity})` : `Add ${quantity} to Cart`}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Inventory Mode - Image + Stock fields at top, form fields below */
             <>
-              <button
-                type="button"
-                onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
-                className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2"
-                style={{ width: '32px', height: '32px' }}
-              >
-                <ChevronLeftIcon className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
-                className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2"
-                style={{ width: '32px', height: '32px' }}
-              >
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
-              <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
-                {currentImageIndex + 1} / {images.length}
+              <form onSubmit={handleUpdateInventory}>
+                {/* Top Section: Image (left) + Stock fields (right) */}
+                <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>
+                  {/* Image */}
+                  <div className="flex-shrink-0" style={{ width: "45%" }}>
+                    {renderImage({ width: "100%", aspectRatio: "1" })}
+                    {/* Add image panel */}
+                    {addImageMode !== null && (
+                      <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <div className="btn-group btn-group-sm">
+                            <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                              Camera
+                            </button>
+                            <button type="button" className={`btn ${addImageMode === "upload" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("upload")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                              Upload
+                            </button>
+                            <button type="button" className={`btn ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                              URL
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddImageMode(null);
+                              setNewImageUrl("");
+                              setImageError("");
+                            }}
+                            className="btn btn-link btn-sm p-0 ms-auto"
+                            style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {addImageMode === "camera" && (
+                          <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                              <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
+                              <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
+                            </svg>
+                            Open Camera
+                          </button>
+                        )}
+
+                        {addImageMode === "upload" && (
+                          <div>
+                            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />
+                              </svg>
+                              Choose from Device
+                            </button>
+                          </div>
+                        )}
+
+                        {addImageMode === "url" && (
+                          <div className="d-flex gap-1">
+                            <input type="url" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddImageUrl()} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} />
+                            <button type="button" onClick={handleAddImageUrl} className="btn btn-primary btn-sm flex-shrink-0">
+                              Add
+                            </button>
+                          </div>
+                        )}
+
+                        {imageError && (
+                          <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                            {imageError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stock fields stacked on the right */}
+                  <div className="flex-grow-1 d-flex flex-column  gap-1">
+                    {!isLocation && !isAsset ? (
+                      <>
+                        <div>
+                          <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
+                        </div>
+                        <div className="form-floating">
+                          <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
+                          <label htmlFor="min_stock_level">Min Count</label>
+                        </div>
+                        <div className="form-floating">
+                          <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
+                          <label htmlFor="quantity">Current Count</label>
+                        </div>
+
+                        <div className="mb-2">
+                          <div className="input-group">
+                            <div className="form-floating">
+                              <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                              <label htmlFor="detail_price">Price</label>
+                            </div>
+                          </div>
+                          {featuresPriceRange && (
+                            <div className="mt-1 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
+                          )}
+                        </div>
+
+                        {/* Cost field — ASSET type only */}
+                        {isAsset && (
+                          <div className="mb-2">
+                            <div className="form-floating">
+                              <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                              <label htmlFor="detail_cost">Cost (purchase / rental)</label>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="d-flex align-items-center gap-2 text-success">
+                        <CheckCircleSolid className="h-5 w-5" />
+                        <div>
+                          <div className="fw-medium">Status: OK</div>
+                          <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Photo management strip */}
+                <div className="mb-2">
+                  <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: "44px" }}>
+                    {images.map((img, idx) => (
+                      <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
+                        <div
+                          onClick={() => setCurrentImageIndex(idx)}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            position: "relative",
+                            cursor: "pointer",
+                            border: editingImageId === img.id ? "2px solid var(--bs-warning)" : idx === currentImageIndex ? "2px solid var(--bs-primary)" : "2px solid #dee2e6",
+                            background: "var(--bs-secondary-bg)",
+                          }}
+                        >
+                          <img
+                            src={getImageSrc(img)}
+                            alt=""
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                              const placeholder = e.currentTarget.nextElementSibling;
+                              if (placeholder) placeholder.style.display = "flex";
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: "none",
+                              width: "100%",
+                              height: "100%",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#9ca3af",
+                            }}
+                          >
+                            <CubeIcon style={{ width: 14, height: 14 }} />
+                          </div>
+                        </div>
+                        {/* Delete button — top right */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteImage(img.id)}
+                          style={{
+                            position: "absolute",
+                            top: "-5px",
+                            right: "-5px",
+                            width: "16px",
+                            height: "16px",
+                            borderRadius: "50%",
+                            background: "#dc3545",
+                            color: "#fff",
+                            border: "none",
+                            padding: 0,
+                            fontSize: "10px",
+                            lineHeight: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ×
+                        </button>
+                        {/* Edit URL button — bottom left (only for URL-based images) */}
+                        {img.image_url && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddImageMode(null);
+                              if (editingImageId === img.id) {
+                                setEditingImageId(null);
+                                setEditingImageUrl("");
+                              } else {
+                                setEditingImageId(img.id);
+                                setEditingImageUrl(img.image_url);
+                              }
+                            }}
+                            title="Edit image URL"
+                            style={{
+                              position: "absolute",
+                              bottom: "-5px",
+                              left: "-5px",
+                              width: "16px",
+                              height: "16px",
+                              borderRadius: "50%",
+                              background: editingImageId === img.id ? "#ffc107" : "#6c757d",
+                              color: "#fff",
+                              border: "none",
+                              padding: 0,
+                              fontSize: "9px",
+                              lineHeight: 1,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ✎
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add photo button */}
+                    {addImageMode === null && (
+                      <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "4px" }} title="Add photo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
+                          <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Edit existing image URL panel */}
+                  {editingImageId !== null && (
+                    <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Edit Image URL</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingImageId(null);
+                            setEditingImageUrl("");
+                            setImageError("");
+                          }}
+                          className="btn btn-link btn-sm p-0 ms-auto"
+                          style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="d-flex gap-1">
+                        <input type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} autoFocus />
+                        <button type="button" onClick={handleSaveEditImageUrl} className="btn btn-warning btn-sm flex-shrink-0">
+                          Save
+                        </button>
+                      </div>
+                      {imageError && (
+                        <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                          {imageError}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {imageError && addImageMode === null && editingImageId === null && (
+                    <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                      {imageError}
+                    </div>
+                  )}
+                </div>
+
+                {/* Full-width form fields below */}
+                <div className="form-floating mb-2">
+                  <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Name" required />
+                  <label htmlFor="detail_name">Name *</label>
+                </div>
+
+                <div className="form-floating mb-2">
+                  <select id="detail_type" name="type" value={formData.type} onChange={handleChange} className="form-select form-select-sm">
+                    <option value="PRODUCT">Product</option>
+                    <option value="BUNDLE">Bundle</option>
+                    <option value="MIX">Mix</option>
+                    <option value="RESOURCE">Resource</option>
+                    <option value="ASSET">Asset</option>
+                    <option value="LOCATION">Location</option>
+                    <option value="ITEM">Item</option>
+                  </select>
+                  <label htmlFor="detail_type">Type</label>
+                </div>
+
+                <div className="mb-2">
+                  <div className="form-floating position-relative">
+                    <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="SKU" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
+                    <label htmlFor="detail_sku">SKU</label>
+                    {!isSalesMode && (
+                      <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y" style={{ right: "0.5rem" }} title="Scan Barcode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
+                          <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {scanError && <div className="alert alert-danger py-1 small mt-2 mb-0">{scanError}</div>}
+                </div>
+
+                <div className="form-floating mb-2">
+                  <select id="detail_location" name="location" value={formData.location} onChange={handleChange} className="form-select form-select-sm">
+                    <option value="">Select a location...</option>
+                    {availableLocations.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                    <option value="[NEW]">+ Add new location...</option>
+                  </select>
+                  <label htmlFor="detail_location">Location</label>
+                </div>
+
+                {/* Supplier dropdown */}
+                <div className="form-floating mb-2">
+                  <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
+                    <option value="">— None —</option>
+                    {availableSuppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="detail_supplier">Supplier</label>
+                </div>
+
+                {formData.location === "[NEW]" && (
+                  <div className="form-floating mb-2">
+                    <input
+                      type="text"
+                      id="detail_new_location"
+                      name="location"
+                      value=""
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, location: e.target.value }));
+                      }}
+                      className="form-control form-control-sm"
+                      placeholder="Enter new location"
+                    />
+                    <label htmlFor="detail_new_location">New Location</label>
+                  </div>
+                )}
+
+                {/* Category picker — type-specific, above features */}
+                <div className="mb-2 mt-2">
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <div className="form-floating flex-grow-1">
+                      <select id="detail_category" name="category" value={formData.category} onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))} className="form-select form-select-sm">
+                        <option value="">— None —</option>
+                        {itemCategories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      <label htmlFor="detail_category">Category</label>
+                    </div>
+                    <button type="button" title={showCategoryManager ? "Close" : "Manage categories"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ height: "3.2rem", width: "2.6rem", fontSize: "0.8rem" }}>
+                      {showCategoryManager ? "×" : "⋯"}
+                    </button>
+                  </div>
+                  {showCategoryManager && (
+                    <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                      {itemCategories.length === 0 && <div className="small text-muted mb-2">No categories yet for this type.</div>}
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {itemCategories.map((cat) => (
+                          <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                            {cat.name}
+                            <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="btn-close btn-close-sm ms-1" style={{ fontSize: "0.55rem", padding: "0.1rem" }} aria-label="Remove" />
+                          </span>
+                        ))}
+                      </div>
+                      <div className="d-flex gap-1">
+                        <input
+                          type="text"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
+                          placeholder="New category name..."
+                          className="form-control form-control-sm"
+                          style={{ fontSize: "0.8rem" }}
+                        />
+                        <button type="button" onClick={handleAddCategory} className="btn btn-sm btn-outline-primary flex-shrink-0" style={{ fontSize: "0.78rem" }}>
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </form>
+
+              {/* Descriptive Features — most types, shown after item is saved */}
+              {item?.id && !isResource && !isLocation && !isService && <FeatureSection inventoryId={item.id} onStockChange={setFeatureStock} onPriceRangeChange={setFeaturesPriceRange} />}
+
+              {/* Asset Unit Management — ASSET type only */}
+              {item?.id && isAsset && <AssetUnitsPanel assetId={item.id} />}
+
+              {/* Production Setup — PRODUCT type only */}
+              {item?.id && upperType === "PRODUCT" && <ProductionRelationsPanel productId={item.id} />}
+
+              {/* Bundle Components — BUNDLE type only */}
+              {item?.id && isBundle && <BundleComponentsPanel bundleId={item.id} />}
+
+              {/* Mix Setup — MIX type only */}
+              {item?.id && isMix && <MixSetupPanel mixId={item.id} />}
+
+              <hr className="my-2" />
+              <div className="form-floating mb-2 border-0">
+                <textarea id="detail_description" name="description" value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="form-control form-control-sm border-0" placeholder="Description" style={{ height: "120px" }} />
+                <label htmlFor="detail_description">Description</label>
               </div>
             </>
           )}
-
-          {!isLocation && !isAsset && (
-            <span className={`badge position-absolute bottom-0 end-0 m-3 ${isLowStock ? 'bg-danger' : 'bg-success'}`}>
-              {formData.quantity} in stock {isLowStock && '(Low)'}
-            </span>
-          )}
         </div>
-      )}
 
-      {/* Container_Scrollable Content Area */}
-      <div className="overflow-auto px-3 pt-3 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" style={{ flexGrow: 1 }}>
-        {isSalesMode ? (
-          /* Sales Mode - Display only */
-          <div>
-            <h4 className="fw-bold mb-2">{item.name}</h4>
-            <div className="fs-4 fw-bold text-primary mb-3">
-              {salesPriceRange
-                ? salesPriceRange.min === salesPriceRange.max
-                  ? `$${salesPriceRange.min.toFixed(2)}`
-                  : `From $${salesPriceRange.min.toFixed(2)} to $${salesPriceRange.max.toFixed(2)}`
-                : `$${item.price?.toFixed(2)}`}
-            </div>
-
-            {item.description && (
-              <p className="text-muted mb-3">{item.description}</p>
-            )}
-
-            <div className="d-flex gap-2 text-muted small mb-4">
-              {item.sku && (
-                <span className="d-flex align-items-center gap-1">
-                  <TagIcon className="h-4 w-4" /> {item.sku}
-                </span>
-              )}
-              {item.location && (
-                <span className="d-flex align-items-center gap-1">
-                  <MapPinIcon className="h-4 w-4" /> {item.location}
-                </span>
-              )}
-            </div>
-
-            {/* Quantity Selector */}
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                <span className="fw-medium">Quantity</span>
-                {inCart && (
-                  <div className="small text-muted">{cartQuantity} already in cart</div>
-                )}
+        {/* Fixed Footer with Action Buttons */}
+        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          {!isSalesMode ? (
+            <div className="d-flex align-items-center">
+              <div>{canDelete && <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete Item"} onClick={handleDelete} className="btn-outline-danger" disabled={isDeleting} />}</div>
+              <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
+                <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
+                <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleUpdateInventory} className="btn-primary" />
               </div>
-              <div className="d-flex align-items-center gap-3">
-                <button
-                  onClick={decrementQuantity}
-                  disabled={quantity <= 1}
-                  className="btn btn-outline-secondary rounded-circle p-0"
-                  style={{ width: '44px', height: '44px' }}
-                >
-                  <MinusIcon className="h-5 w-5" style={{ margin: 'auto', display: 'block' }} />
-                </button>
-                <span className="fs-4 fw-semibold" style={{ minWidth: '50px', textAlign: 'center' }}>
-                  {quantity}
-                </span>
-                <button
-                  onClick={incrementQuantity}
-                  className="btn btn-outline-secondary rounded-circle p-0"
-                  style={{ width: '44px', height: '44px' }}
-                >
-                  <PlusIcon className="h-5 w-5" style={{ margin: 'auto', display: 'block' }} />
-                </button>
-              </div>
+              {/* Right spacer to balance delete */}
+              <div style={{ width: 40 }} />
             </div>
-
-            <div
-              className="d-grid align-items-center gap-2"
-              style={{ gridTemplateColumns: '1fr auto 1fr' }}
-            >
-              <div>
-                <small className="text-muted">Total</small>
-                <div className="fs-3 fw-bold text-primary">
-                  {salesPriceRange && salesPriceRange.min !== salesPriceRange.max
-                    ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}`
-                    : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="btn btn-outline-secondary"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleAddToCart}
-                className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${inCart ? 'btn-secondary' : 'btn-primary'}`}
-              >
-                <ShoppingCartIcon className="h-5 w-5" />
-                {inCart ? `Update (${cartQuantity} → ${quantity})` : `Add ${quantity} to Cart`}
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Inventory Mode - Image + Stock fields at top, form fields below */
-          <>
-          <form onSubmit={handleUpdateInventory}>
-            {/* Top Section: Image (left) + Stock fields (right) */}
-            <div className="d-flex gap-3 mb-3" style={{ minHeight: '200px' }}>
-              {/* Image */}
-              <div className="flex-shrink-0" style={{ width: '45%' }}>
-                {renderImage({ width: '100%', aspectRatio: '1' })}
-              {/* Add image panel */}
-              {addImageMode !== null && (
-                <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <div className="btn-group btn-group-sm">
-                      <button
-                        type="button"
-                        className={`btn ${addImageMode === 'camera' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        onClick={() => setAddImageMode('camera')}
-                        style={{ fontSize: '0.72rem', padding: '2px 10px' }}
-                      >Camera</button>
-                      <button
-                        type="button"
-                        className={`btn ${addImageMode === 'upload' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        onClick={() => setAddImageMode('upload')}
-                        style={{ fontSize: '0.72rem', padding: '2px 10px' }}
-                      >Upload</button>
-                      <button
-                        type="button"
-                        className={`btn ${addImageMode === 'url' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        onClick={() => setAddImageMode('url')}
-                        style={{ fontSize: '0.72rem', padding: '2px 10px' }}
-                      >URL</button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setAddImageMode(null); setNewImageUrl(''); setImageError(''); }}
-                      className="btn btn-link btn-sm p-0 ms-auto"
-                      style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}
-                    >✕</button>
-                  </div>
-
-                  {addImageMode === 'camera' && (
-                    <button
-                      type="button"
-                      onClick={() => setIsCameraOpen(true)}
-                      className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
-                      style={{ fontSize: '0.8rem' }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
-                        <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
-                      </svg>
-                      Open Camera
-                    </button>
-                  )}
-
-                  {addImageMode === 'upload' && (
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={handleFileUpload}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
-                        style={{ fontSize: '0.8rem' }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
-                          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z"/>
-                        </svg>
-                        Choose from Device
-                      </button>
-                    </div>
-                  )}
-
-                  {addImageMode === 'url' && (
-                    <div className="d-flex gap-1">
-                      <input
-                        type="url"
-                        value={newImageUrl}
-                        onChange={e => setNewImageUrl(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAddImageUrl()}
-                        placeholder="https://..."
-                        className="form-control form-control-sm"
-                        style={{ fontSize: '0.8rem' }}
-                      />
-                      <button type="button" onClick={handleAddImageUrl} className="btn btn-primary btn-sm flex-shrink-0">Add</button>
-                    </div>
-                  )}
-
-                  {imageError && (
-                    <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
-                  )}
-                </div>
-              )}
-
-                
-              </div>
-
-              {/* Stock fields stacked on the right */}
-              <div className="flex-grow-1 d-flex flex-column  gap-1">
-                {!isLocation && !isAsset ? (
-                  <>
-                  <div>
-                       <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
-                        {isLowStock ? 'Low Stock' : 'In Stock'}
-                      </div>
-                    </div>
-                    <div className="form-floating">
-                      <input
-                        type="number"
-                        id="min_stock_level"
-                        name="min_stock_level"
-                        value={formData.min_stock_level}
-                        onChange={handleChange}
-                        className="form-control form-control-sm"
-                        placeholder="Min Count"
-                        min="0"
-                      />
-                      <label htmlFor="min_stock_level">Min Count</label>
-                    </div>
-                    <div className="form-floating">
-                      <input
-                        type="number"
-                        id="quantity"
-                        name="quantity"
-                        value={formData.quantity}
-                        onChange={handleChange}
-                        className="form-control form-control-sm"
-                        placeholder="Current Count"
-                        min="0"
-                      />
-                      <label htmlFor="quantity">Current Count</label>
-                    </div>
-
-                                <div className="mb-2">
-              <div className="input-group">
-                 <div className="form-floating">
-                  <input
-                    type="number"
-                    id="detail_price"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    className="form-control form-control-sm"
-                    placeholder="Price"
-                    step="0.01"
-                    min="0"
-                  />
-                  <label htmlFor="detail_price">Price</label>
-                </div>
-              </div>
-              {featuresPriceRange && (
-                <div className="mt-1 small text-primary fw-semibold">
-                  {featuresPriceRange.min === featuresPriceRange.max
-                    ? `Feature price: $${featuresPriceRange.min.toFixed(2)}`
-                    : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`
-                  }
-                </div>
-              )}
-            </div>
-
-            {/* Cost field — ASSET type only */}
-            {isAsset && (
-              <div className="mb-2">
-                <div className="form-floating">
-                  <input
-                    type="number"
-                    id="detail_cost"
-                    name="cost"
-                    value={formData.cost}
-                    onChange={handleChange}
-                    className="form-control form-control-sm"
-                    placeholder="Cost"
-                    step="0.01"
-                    min="0"
-                  />
-                  <label htmlFor="detail_cost">Cost (purchase / rental)</label>
-                </div>
-              </div>
-            )}
-
-                  </>
-                ) : (
-                  <div className="d-flex align-items-center gap-2 text-success">
-                    <CheckCircleSolid className="h-5 w-5" />
-                    <div>
-                      <div className="fw-medium">Status: OK</div>
-                      <div className="small text-muted">{isLocation ? 'Locations' : 'Assets'} do not track stock</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Photo management strip */}
-            <div className="mb-2">
-              <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: '44px' }}>
-                {images.map((img, idx) => (
-                  <div key={img.id} style={{ position: 'relative', flexShrink: 0 }}>
-                    <div
-                      onClick={() => setCurrentImageIndex(idx)}
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        border: editingImageId === img.id
-                          ? '2px solid var(--bs-warning)'
-                          : idx === currentImageIndex
-                            ? '2px solid var(--bs-primary)'
-                            : '2px solid #dee2e6',
-                        background: 'var(--bs-secondary-bg)'
-                      }}
-                    >
-                      <img
-                        src={getImageSrc(img)}
-                        alt=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const placeholder = e.currentTarget.nextElementSibling;
-                          if (placeholder) placeholder.style.display = 'flex';
-                        }}
-                      />
-                      <div
-                        style={{
-                          display: 'none',
-                          width: '100%',
-                          height: '100%',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#9ca3af'
-                        }}
-                      >
-                        <CubeIcon style={{ width: 14, height: 14 }} />
-                      </div>
-                    </div>
-                    {/* Delete button — top right */}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteImage(img.id)}
-                      style={{
-                        position: 'absolute', top: '-5px', right: '-5px',
-                        width: '16px', height: '16px', borderRadius: '50%',
-                        background: '#dc3545', color: '#fff', border: 'none',
-                        padding: 0, fontSize: '10px', lineHeight: 1,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer'
-                      }}
-                    >×</button>
-                    {/* Edit URL button — bottom left (only for URL-based images) */}
-                    {img.image_url && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddImageMode(null);
-                          if (editingImageId === img.id) {
-                            setEditingImageId(null);
-                            setEditingImageUrl('');
-                          } else {
-                            setEditingImageId(img.id);
-                            setEditingImageUrl(img.image_url);
-                          }
-                        }}
-                        title="Edit image URL"
-                        style={{
-                          position: 'absolute', bottom: '-5px', left: '-5px',
-                          width: '16px', height: '16px', borderRadius: '50%',
-                          background: editingImageId === img.id ? '#ffc107' : '#6c757d',
-                          color: '#fff', border: 'none',
-                          padding: 0, fontSize: '9px', lineHeight: 1,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          cursor: 'pointer'
-                        }}
-                      >✎</button>
-                    )}
-                  </div>
-                ))}
-
-                {/* Add photo button */}
-                {addImageMode === null && (
-                  <button
-                    type="button"
-                    onClick={() => setAddImageMode('camera')}
-                    className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0"
-                    style={{ width: '40px', height: '40px', borderRadius: '4px' }}
-                    title="Add photo"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
-                      <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-
-
-              {/* Edit existing image URL panel */}
-              {editingImageId !== null && (
-                <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Edit Image URL</span>
-                    <button
-                      type="button"
-                      onClick={() => { setEditingImageId(null); setEditingImageUrl(''); setImageError(''); }}
-                      className="btn btn-link btn-sm p-0 ms-auto"
-                      style={{ fontSize: '0.75rem', color: '#6c757d', lineHeight: 1 }}
-                    >✕</button>
-                  </div>
-                  <div className="d-flex gap-1">
-                    <input
-                      type="url"
-                      value={editingImageUrl}
-                      onChange={e => setEditingImageUrl(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSaveEditImageUrl()}
-                      placeholder="https://..."
-                      className="form-control form-control-sm"
-                      style={{ fontSize: '0.8rem' }}
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveEditImageUrl}
-                      className="btn btn-warning btn-sm flex-shrink-0"
-                    >
-                      Save
-                    </button>
-                  </div>
-                  {imageError && (
-                    <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
-                  )}
-                </div>
-              )}
-
-              {imageError && addImageMode === null && editingImageId === null && (
-                <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>{imageError}</div>
-              )}
-            </div>
-
-            {/* Full-width form fields below */}
-            <div className="form-floating mb-2">
-              <input
-                type="text"
-                id="detail_name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="form-control form-control-sm"
-                placeholder="Name"
-                required
-              />
-              <label htmlFor="detail_name">Name *</label>
-            </div>
-
-
-
-            <div className="form-floating mb-2">
-              <select
-                id="detail_type"
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className="form-select form-select-sm"
-              >
-                <option value="PRODUCT">Product</option>
-                <option value="BUNDLE">Bundle</option>
-                <option value="MIX">Mix</option>
-                <option value="RESOURCE">Resource</option>
-                <option value="ASSET">Asset</option>
-                <option value="LOCATION">Location</option>
-                <option value="ITEM">Item</option>
-              </select>
-              <label htmlFor="detail_type">Type</label>
-            </div>
-
-
-
-            <div className="mb-2">
-              <div className="form-floating position-relative">
-                <input
-                  type="text"
-                  id="detail_sku"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleChange}
-                  className="form-control form-control-sm"
-                  placeholder="SKU"
-                  style={!isSalesMode ? { paddingRight: '3.25rem' } : undefined}
-                />
-                <label htmlFor="detail_sku">SKU</label>
-                {!isSalesMode && (
-                  <button
-                    type="button"
-                    onClick={handleOpenScanner}
-                    className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y"
-                    style={{ right: '0.5rem' }}
-                    title="Scan Barcode"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
-                      <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
-              {scanError && (
-                <div className="alert alert-danger py-1 small mt-2 mb-0">{scanError}</div>
-              )}
-            </div>
-
-            <div className="form-floating mb-2">
-              <select
-                id="detail_location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="form-select form-select-sm"
-              >
-                <option value="">Select a location...</option>
-                {availableLocations.map(location => (
-                  <option key={location} value={location}>
-                    {location}
-                  </option>
-                ))}
-                <option value="[NEW]">+ Add new location...</option>
-              </select>
-              <label htmlFor="detail_location">Location</label>
-            </div>
-
-            {/* Supplier dropdown */}
-            <div className="form-floating mb-2">
-              <select
-                id="detail_supplier"
-                name="supplier_id"
-                value={formData.supplier_id}
-                onChange={handleChange}
-                className="form-select form-select-sm"
-              >
-                <option value="">— None —</option>
-                {availableSuppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <label htmlFor="detail_supplier">Supplier</label>
-            </div>
-
-            {formData.location === '[NEW]' && (
-              <div className="form-floating mb-2">
-                <input
-                  type="text"
-                  id="detail_new_location"
-                  name="location"
-                  value=""
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, location: e.target.value }));
-                  }}
-                  className="form-control form-control-sm"
-                  placeholder="Enter new location"
-                />
-                <label htmlFor="detail_new_location">New Location</label>
-              </div>
-            )}
-
-          {/* Category picker — type-specific, above features */}
-          <div className="mb-2 mt-2">
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <div className="form-floating flex-grow-1">
-                <select
-                  id="detail_category"
-                  name="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  className="form-select form-select-sm"
-                >
-                  <option value="">— None —</option>
-                  {itemCategories.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
-                <label htmlFor="detail_category">Category</label>
-              </div>
-              <button
-                type="button"
-                title={showCategoryManager ? 'Close' : 'Manage categories'}
-                onClick={() => setShowCategoryManager(v => !v)}
-                className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                style={{ height: '3.2rem', width: '2.6rem', fontSize: '0.8rem' }}
-              >
-                {showCategoryManager ? '×' : '⋯'}
-              </button>
-            </div>
-            {showCategoryManager && (
-              <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                {itemCategories.length === 0 && (
-                  <div className="small text-muted mb-2">No categories yet for this type.</div>
-                )}
-                <div className="d-flex flex-wrap gap-1 mb-2">
-                  {itemCategories.map(cat => (
-                    <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: '0.78rem', fontWeight: 500 }}>
-                      {cat.name}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="btn-close btn-close-sm ms-1"
-                        style={{ fontSize: '0.55rem', padding: '0.1rem' }}
-                        aria-label="Remove"
-                      />
-                    </span>
-                  ))}
-                </div>
-                <div className="d-flex gap-1">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={e => setNewCategoryName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
-                    placeholder="New category name..."
-                    className="form-control form-control-sm"
-                    style={{ fontSize: '0.8rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCategory}
-                    className="btn btn-sm btn-outline-primary flex-shrink-0"
-                    style={{ fontSize: '0.78rem' }}
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          </form>
-
-          {/* Descriptive Features — most types, shown after item is saved */}
-          {item?.id && !isResource && !isLocation && !isService && (
-            <FeatureSection
-              inventoryId={item.id}
-              onStockChange={setFeatureStock}
-              onPriceRangeChange={setFeaturesPriceRange}
-            />
-          )}
-
-          {/* Asset Unit Management — ASSET type only */}
-          {item?.id && isAsset && (
-            <AssetUnitsPanel assetId={item.id} />
-          )}
-
-          {/* Production Setup — PRODUCT type only */}
-          {item?.id && upperType === 'PRODUCT' && (
-            <ProductionRelationsPanel productId={item.id} />
-          )}
-
-          {/* Bundle Components — BUNDLE type only */}
-          {item?.id && isBundle && (
-            <BundleComponentsPanel bundleId={item.id} />
-          )}
-
-          {/* Mix Setup — MIX type only */}
-          {item?.id && isMix && (
-            <MixSetupPanel mixId={item.id} />
-          )}
-
-          <hr className="my-2" />
-          <div className="form-floating mb-2 border-0">
-            <textarea
-              id="detail_description"
-              name="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="form-control form-control-sm border-0"
-              placeholder="Description"
-              style={{ height: '120px' }}
-            />
-            <label htmlFor="detail_description">Description</label>
-          </div>
-          </>
-        )}
-      </div>
-
-      {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        {!isSalesMode ? (
-          <div className="d-flex align-items-center">
-            <div>
-              {canDelete && (
-                <Button_Toolbar
-                  icon={TrashIcon}
-                  label={isDeleting ? 'Deleting...' : 'Delete Item'}
-                  onClick={handleDelete}
-                  className="btn-outline-danger"
-                  disabled={isDeleting}
-                />
-              )}
-            </div>
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Cancel"
-                onClick={onClose}
-                className="btn-outline-secondary"
-              />
-              <Button_Toolbar
-                icon={CheckIcon}
-                label="Save Changes"
-                onClick={handleUpdateInventory}
-                className="btn-primary"
-              />
-            </div>
-                {/* Right spacer to balance delete */}
-          <div style={{ width: 40 }} />
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
       </div>
 
       <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
-        <Scanner_Barcode
-          onDetected={handleBarcodeDetected}
-          onCancel={() => setIsScannerOpen(false)}
-        />
+        <Scanner_Barcode onDetected={handleBarcodeDetected} onCancel={() => setIsScannerOpen(false)} />
       </Modal>
 
-      {isCameraOpen && (
-        <Widget_Camera
-          onCapture={handlePhotoCapture}
-          onCancel={() => setIsCameraOpen(false)}
-        />
-      )}
+      {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onCancel={() => setIsCameraOpen(false)} />}
     </Modal>
   );
 }

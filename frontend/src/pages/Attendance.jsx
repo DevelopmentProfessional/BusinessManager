@@ -29,32 +29,32 @@
  */
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useState } from 'react';
-import { formatDate, formatTime } from '../utils/dateFormatters';
-import useFetchOnce from '../services/useFetchOnce';
-import usePagePermission from '../services/usePagePermission';
-import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
-import useStore from '../services/useStore';
-import { attendanceAPI, employeesAPI } from '../services/api';
-import Modal from './components/Modal';
-import Table_Mobile from './components/Table_Mobile';
-import Dropdown_Custom from './components/Dropdown_Custom';
-import Gate_Permission from './components/Gate_Permission';
+import React, { useEffect, useState } from "react";
+import { formatDate, formatTime } from "../utils/dateFormatters";
+import useFetchOnce from "../services/useFetchOnce";
+import usePagePermission from "../services/usePagePermission";
+import { ClockIcon, PlayIcon, StopIcon } from "@heroicons/react/24/outline";
+import useStore from "../services/useStore";
+import { attendanceAPI, employeesAPI } from "../services/api";
+import Modal from "./components/Modal";
+import Table_Mobile from "./components/Table_Mobile";
+import Dropdown_Custom from "./components/Dropdown_Custom";
+import Gate_Permission from "./components/Gate_Permission";
 
 // ─── [2] ATTENDANCEFORM COMPONENT ───────────────────────────────────────────
 function AttendanceForm({ onSubmit, onCancel }) {
   const { employees } = useStore();
   const [formData, setFormData] = useState({
-    employee_id: '',
-    date: new Date().toISOString().split('T')[0],
-    clock_in: '',
-    clock_out: '',
-    notes: ''
+    employee_id: "",
+    date: new Date().toISOString().split("T")[0],
+    clock_in: "",
+    clock_out: "",
+    notes: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
@@ -64,7 +64,7 @@ function AttendanceForm({ onSubmit, onCancel }) {
       date: new Date(formData.date).toISOString(),
       clock_in: formData.clock_in ? new Date(`${formData.date}T${formData.clock_in}`).toISOString() : null,
       clock_out: formData.clock_out ? new Date(`${formData.date}T${formData.clock_out}`).toISOString() : null,
-      notes: formData.notes
+      notes: formData.notes,
     };
     onSubmit(submitData);
   };
@@ -85,7 +85,7 @@ function AttendanceForm({ onSubmit, onCancel }) {
           onChange={handleChange}
           options={employees.map((employee) => ({
             value: employee.id,
-            label: `${employee.first_name} ${employee.last_name}`
+            label: `${employee.first_name} ${employee.last_name}`,
           }))}
           placeholder="Select an employee"
           required
@@ -93,57 +93,24 @@ function AttendanceForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="form-floating mb-2">
-        <input
-          type="date"
-          id="date"
-          name="date"
-          required
-          value={formData.date}
-          onChange={handleChange}
-          className="form-control form-control-sm"
-          placeholder="Date"
-        />
+        <input type="date" id="date" name="date" required value={formData.date} onChange={handleChange} className="form-control form-control-sm" placeholder="Date" />
         <label htmlFor="date">Date *</label>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="form-floating">
-          <input
-            type="time"
-            id="clock_in"
-            name="clock_in"
-            value={formData.clock_in}
-            onChange={handleChange}
-            className="form-control form-control-sm"
-            placeholder="Clock In"
-          />
+          <input type="time" id="clock_in" name="clock_in" value={formData.clock_in} onChange={handleChange} className="form-control form-control-sm" placeholder="Clock In" />
           <label htmlFor="clock_in">Clock In</label>
         </div>
 
         <div className="form-floating">
-          <input
-            type="time"
-            id="clock_out"
-            name="clock_out"
-            value={formData.clock_out}
-            onChange={handleChange}
-            className="form-control form-control-sm"
-            placeholder="Clock Out"
-          />
+          <input type="time" id="clock_out" name="clock_out" value={formData.clock_out} onChange={handleChange} className="form-control form-control-sm" placeholder="Clock Out" />
           <label htmlFor="clock_out">Clock Out</label>
         </div>
       </div>
 
       <div className="form-floating mb-2 mt-2">
-        <textarea
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleChange}
-          className="form-control form-control-sm"
-          placeholder="Notes"
-          style={{ height: '80px' }}
-        />
+        <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm" placeholder="Notes" style={{ height: "80px" }} />
         <label htmlFor="notes">Notes</label>
       </div>
 
@@ -160,34 +127,25 @@ function AttendanceForm({ onSubmit, onCancel }) {
 }
 
 export default function Attendance() {
-// ─── [3] STATE & REFS ───────────────────────────────────────────────────────
-  const {
-    attendanceRecords, setAttendanceRecords, addAttendanceRecord,
-    employees, setEmployees,
-    loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission,
-    user
-  } = useStore();
+  // ─── [3] STATE & REFS ───────────────────────────────────────────────────────
+  const { attendanceRecords, setAttendanceRecords, addAttendanceRecord, employees, setEmployees, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user } = useStore();
 
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [clockActionLoading, setClockActionLoading] = useState(false);
-  usePagePermission('attendance');
+  usePagePermission("attendance");
 
-// ─── [4] LIFECYCLE HOOK ─────────────────────────────────────────────────────
+  // ─── [4] LIFECYCLE HOOK ─────────────────────────────────────────────────────
   useFetchOnce(() => {
     loadAttendanceData();
     checkClockStatus();
   });
 
-// ─── [5] DATA LOADING ───────────────────────────────────────────────────────
+  // ─── [5] DATA LOADING ───────────────────────────────────────────────────────
   const loadAttendanceData = async () => {
     setLoading(true);
     try {
-      const [attendanceRes, employeesRes] = await Promise.all([
-        attendanceAPI.getAll(),
-        employeesAPI.getAll()
-      ]);
+      const [attendanceRes, employeesRes] = await Promise.all([attendanceAPI.getAll(), employeesAPI.getAll()]);
 
       // Handle both direct data and response.data formats
       const attendanceData = attendanceRes?.data ?? attendanceRes;
@@ -196,21 +154,21 @@ export default function Attendance() {
       if (Array.isArray(attendanceData)) {
         setAttendanceRecords(attendanceData);
       } else {
-        console.error('Invalid attendance data format:', attendanceData);
+        console.error("Invalid attendance data format:", attendanceData);
         setAttendanceRecords([]);
       }
 
       if (Array.isArray(employeesData)) {
         setEmployees(employeesData);
       } else {
-        console.error('Invalid employees data format:', employeesData);
+        console.error("Invalid employees data format:", employeesData);
         setEmployees([]);
       }
 
       clearError();
     } catch (err) {
-      setError('Failed to load attendance data');
-      console.error('Error loading attendance:', err);
+      setError("Failed to load attendance data");
+      console.error("Error loading attendance:", err);
       setAttendanceRecords([]);
       setEmployees([]);
     } finally {
@@ -218,19 +176,19 @@ export default function Attendance() {
     }
   };
 
-// ─── [6] CLOCK STATUS CHECK ─────────────────────────────────────────────────
+  // ─── [6] CLOCK STATUS CHECK ─────────────────────────────────────────────────
   const checkClockStatus = async () => {
     if (!user?.id) return;
-    
+
     try {
       // Check if user has an open attendance record for today
       const response = await attendanceAPI.checkUser();
-      
+
       if (response?.data) {
         // The checkUser endpoint should return current clock status
         const isCurrentlyClockedIn = response.data.is_clocked_in || false;
         setIsClockedIn(isCurrentlyClockedIn);
-        
+
         if (isCurrentlyClockedIn && response.data.current_record) {
           setCurrentRecord(response.data.current_record);
         } else {
@@ -238,15 +196,15 @@ export default function Attendance() {
         }
       } else {
         // Fallback: check attendance records for today
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         const meResponse = await attendanceAPI.me();
-        
+
         if (meResponse?.data && Array.isArray(meResponse.data)) {
-          const todayRecord = meResponse.data.find(record => {
-            const recordDate = new Date(record.date).toISOString().split('T')[0];
+          const todayRecord = meResponse.data.find((record) => {
+            const recordDate = new Date(record.date).toISOString().split("T")[0];
             return recordDate === today && record.clock_in && !record.clock_out;
           });
-          
+
           if (todayRecord) {
             setIsClockedIn(true);
             setCurrentRecord(todayRecord);
@@ -257,36 +215,36 @@ export default function Attendance() {
         }
       }
     } catch (error) {
-      console.error('Error checking clock status:', error);
+      console.error("Error checking clock status:", error);
       // Fallback: try me() endpoint
       try {
         const meResponse = await attendanceAPI.me();
         if (meResponse?.data && Array.isArray(meResponse.data)) {
-          const today = new Date().toISOString().split('T')[0];
-          const todayRecord = meResponse.data.find(record => {
-            const recordDate = new Date(record.date).toISOString().split('T')[0];
+          const today = new Date().toISOString().split("T")[0];
+          const todayRecord = meResponse.data.find((record) => {
+            const recordDate = new Date(record.date).toISOString().split("T")[0];
             return recordDate === today && record.clock_in && !record.clock_out;
           });
           setIsClockedIn(!!todayRecord);
           setCurrentRecord(todayRecord || null);
         }
       } catch (fallbackError) {
-        console.error('Fallback clock status check failed:', fallbackError);
+        console.error("Fallback clock status check failed:", fallbackError);
         setIsClockedIn(false);
         setCurrentRecord(null);
       }
     }
   };
 
-// ─── [7] CLOCK IN / OUT HANDLER ─────────────────────────────────────────────
+  // ─── [7] CLOCK IN / OUT HANDLER ─────────────────────────────────────────────
   const handleCheckInOut = async () => {
     if (!user?.id) {
-      setError('You must be logged in to clock in/out');
+      setError("You must be logged in to clock in/out");
       return;
     }
 
-    if (!hasPermission('attendance', 'write')) {
-      setError('You do not have permission to clock in/out');
+    if (!hasPermission("attendance", "write")) {
+      setError("You do not have permission to clock in/out");
       return;
     }
 
@@ -313,25 +271,24 @@ export default function Attendance() {
         await checkClockStatus();
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          (isClockedIn ? 'Failed to clock out' : 'Failed to clock in');
+      const errorMessage = err.response?.data?.detail || (isClockedIn ? "Failed to clock out" : "Failed to clock in");
       setError(errorMessage);
-      console.error('Clock in/out error:', err);
+      console.error("Clock in/out error:", err);
     } finally {
       setClockActionLoading(false);
     }
   };
 
-// ─── [8] CREATE RECORD HANDLER ──────────────────────────────────────────────
+  // ─── [8] CREATE RECORD HANDLER ──────────────────────────────────────────────
   const handleCreateRecord = () => {
-    if (!hasPermission('attendance', 'write')) {
-      setError('You do not have permission to create attendance records');
+    if (!hasPermission("attendance", "write")) {
+      setError("You do not have permission to create attendance records");
       return;
     }
-    openModal('attendance-form');
+    openModal("attendance-form");
   };
 
-// ─── [9] SUBMIT RECORD HANDLER ──────────────────────────────────────────────
+  // ─── [9] SUBMIT RECORD HANDLER ──────────────────────────────────────────────
   const handleSubmitRecord = async (recordData) => {
     try {
       const response = await attendanceAPI.create(recordData);
@@ -339,27 +296,27 @@ export default function Attendance() {
       closeModal();
       clearError();
     } catch (err) {
-      setError('Failed to save attendance record');
+      setError("Failed to save attendance record");
       console.error(err);
     }
   };
 
-// ─── [10] UTILITY HELPERS ───────────────────────────────────────────────────
+  // ─── [10] UTILITY HELPERS ───────────────────────────────────────────────────
   const getEmployeeName = (employeeId) => {
-    if (!employeeId) return 'Unknown Employee';
-    const employee = employees.find(e => e.id === employeeId);
-    return employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown Employee';
+    if (!employeeId) return "Unknown Employee";
+    const employee = employees.find((e) => e.id === employeeId);
+    return employee ? `${employee.first_name} ${employee.last_name}` : "Unknown Employee";
   };
 
   const calculateHours = (clockIn, clockOut) => {
-    if (!clockIn || !clockOut) return '-';
+    if (!clockIn || !clockOut) return "-";
     const start = new Date(clockIn);
     const end = new Date(clockOut);
     const hours = (end - start) / (1000 * 60 * 60);
-    return hours.toFixed(2) + ' hrs';
+    return hours.toFixed(2) + " hrs";
   };
 
-// ─── [11] RENDER ────────────────────────────────────────────────────────────
+  // ─── [11] RENDER ────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -374,23 +331,19 @@ export default function Attendance() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Attendance</h1>
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+      {error && <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
 
       {/* Attendance Records */}
       <div className="mt-6 flex-1">
         <Table_Mobile
           data={attendanceRecords}
           columns={[
-            { key: 'employee', title: 'Employee', render: (_, r) => getEmployeeName(r.user_id || r.employee_id) },
-            { key: 'date', title: 'Date', render: (v, r) => formatDate(r.date) },
-            { key: 'clock_in', title: 'In', render: (v) => (v ? formatTime(v) : '-') },
-            { key: 'clock_out', title: 'Out', render: (v) => (v ? formatTime(v) : '-') },
-            { key: 'hours', title: 'Hours', render: (_, r) => (r.total_hours ? `${r.total_hours.toFixed(2)} hrs` : calculateHours(r.clock_in, r.clock_out)) },
-            { key: 'notes', title: 'Notes', render: (v, r) => r.notes || '-' },
+            { key: "employee", title: "Employee", render: (_, r) => getEmployeeName(r.user_id || r.employee_id) },
+            { key: "date", title: "Date", render: (v, r) => formatDate(r.date) },
+            { key: "clock_in", title: "In", render: (v) => (v ? formatTime(v) : "-") },
+            { key: "clock_out", title: "Out", render: (v) => (v ? formatTime(v) : "-") },
+            { key: "hours", title: "Hours", render: (_, r) => (r.total_hours ? `${r.total_hours.toFixed(2)} hrs` : calculateHours(r.clock_in, r.clock_out)) },
+            { key: "notes", title: "Notes", render: (v, r) => r.notes || "-" },
           ]}
           emptyMessage="No attendance records found"
         />
@@ -403,10 +356,7 @@ export default function Attendance() {
           disabled={clockActionLoading || !user?.id}
           className={`
             fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30
-            ${isClockedIn
-              ? 'bg-red-600 hover:bg-red-700'
-              : 'bg-green-600 hover:bg-green-700'
-            }
+            ${isClockedIn ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
             text-white
             px-6 py-2 rounded-full shadow-lg hover:shadow-xl
             flex items-center gap-2 transition-all
@@ -434,13 +384,8 @@ export default function Attendance() {
       </Gate_Permission>
 
       {/* Modal for Attendance Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'attendance-form'} onClose={closeModal} noPadding={true} fullScreen={true}>
-        {isModalOpen && modalContent === 'attendance-form' && (
-          <AttendanceForm
-            onSubmit={handleSubmitRecord}
-            onCancel={closeModal}
-          />
-        )}
+      <Modal isOpen={isModalOpen && modalContent === "attendance-form"} onClose={closeModal} noPadding={true} fullScreen={true}>
+        {isModalOpen && modalContent === "attendance-form" && <AttendanceForm onSubmit={handleSubmitRecord} onCancel={closeModal} />}
       </Modal>
     </div>
   );

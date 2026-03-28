@@ -13,7 +13,7 @@
  * On logout the entire cache is cleared.
  */
 
-const CACHE_PREFIX = 'bm_cache_';
+const CACHE_PREFIX = "bm_cache_";
 
 const cacheService = {
   // ── Core get / set ──────────────────────────────────────────────
@@ -33,9 +33,9 @@ const cacheService = {
     if (!Array.isArray(rows)) return;
     try {
       const maxCreatedAt = rows.reduce((max, row) => {
-        const ca = row.created_at || row.createdAt || '';
+        const ca = row.created_at || row.createdAt || "";
         return ca > max ? ca : max;
-      }, '');
+      }, "");
       localStorage.setItem(
         `${CACHE_PREFIX}${key}`,
         JSON.stringify({
@@ -43,11 +43,11 @@ const cacheService = {
           count: rows.length,
           maxCreatedAt,
           cachedAt: new Date().toISOString(),
-        }),
+        })
       );
     } catch (e) {
       // localStorage full or unavailable — silently degrade
-      console.warn('Cache write failed:', e);
+      console.warn("Cache write failed:", e);
     }
   },
 
@@ -86,7 +86,7 @@ const cacheService = {
     if (!cached) return;
     this.set(
       key,
-      cached.rows.filter((r) => r.id !== rowId),
+      cached.rows.filter((r) => r.id !== rowId)
     );
   },
 
@@ -112,10 +112,10 @@ const cacheService = {
    * inventory table, sorted alphabetically.
    */
   getLocations() {
-    const rows = this.getRows('inventory');
+    const rows = this.getRows("inventory");
     const set = new Set();
     for (const row of rows) {
-      const loc = (row.location || '').trim();
+      const loc = (row.location || "").trim();
       if (loc) set.add(loc);
     }
     return [...set].sort();

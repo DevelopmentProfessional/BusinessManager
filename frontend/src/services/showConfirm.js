@@ -11,35 +11,33 @@
 
 function getCompanyName() {
   try {
-    const b = JSON.parse(localStorage.getItem('app_branding') || '{}');
-    return b.companyName || 'Confirm';
+    const b = JSON.parse(localStorage.getItem("app_branding") || "{}");
+    return b.companyName || "Confirm";
   } catch {
-    return 'Confirm';
+    return "Confirm";
   }
 }
 
-export function showConfirm(message, { confirmLabel = 'Delete', cancelLabel = 'Cancel', danger = true } = {}) {
+export function showConfirm(message, { confirmLabel = "Delete", cancelLabel = "Cancel", danger = true } = {}) {
   return new Promise((resolve) => {
     // Remove any stale dialog
-    document.getElementById('__bm_confirm_wrap')?.remove();
-    document.getElementById('__bm_confirm_bd')?.remove();
+    document.getElementById("__bm_confirm_wrap")?.remove();
+    document.getElementById("__bm_confirm_bd")?.remove();
 
     const companyName = getCompanyName();
-    const headerClass = danger ? 'bg-danger text-white' : 'bg-primary text-white';
-    const btnClass = danger ? 'btn-danger' : 'btn-primary';
+    const headerClass = danger ? "bg-danger text-white" : "bg-primary text-white";
+    const btnClass = danger ? "btn-danger" : "btn-primary";
 
     // Backdrop
-    const backdrop = document.createElement('div');
-    backdrop.id = '__bm_confirm_bd';
-    backdrop.style.cssText =
-      'position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,0.5);';
+    const backdrop = document.createElement("div");
+    backdrop.id = "__bm_confirm_bd";
+    backdrop.style.cssText = "position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,0.5);";
     document.body.appendChild(backdrop);
 
     // Dialog wrapper (centers the modal-content)
-    const wrap = document.createElement('div');
-    wrap.id = '__bm_confirm_wrap';
-    wrap.style.cssText =
-      'position:fixed;inset:0;z-index:1056;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    const wrap = document.createElement("div");
+    wrap.id = "__bm_confirm_wrap";
+    wrap.style.cssText = "position:fixed;inset:0;z-index:1056;display:flex;align-items:center;justify-content:center;padding:1rem;";
     wrap.innerHTML = `
       <div style="width:100%;max-width:400px;">
         <div class="modal-content shadow border-0 rounded-3">
@@ -64,8 +62,8 @@ export function showConfirm(message, { confirmLabel = 'Delete', cancelLabel = 'C
       resolve(result);
     };
 
-    document.getElementById('__bm_ok_btn').addEventListener('click', () => cleanup(true));
-    document.getElementById('__bm_cancel_btn').addEventListener('click', () => cleanup(false));
-    backdrop.addEventListener('click', () => cleanup(false));
+    document.getElementById("__bm_ok_btn").addEventListener("click", () => cleanup(true));
+    document.getElementById("__bm_cancel_btn").addEventListener("click", () => cleanup(false));
+    backdrop.addEventListener("click", () => cleanup(false));
   });
 }

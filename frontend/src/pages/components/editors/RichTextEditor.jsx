@@ -24,19 +24,19 @@
  * ============================================================
  */
 
-import React, { useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
-import Placeholder from '@tiptap/extension-placeholder';
-import { TextStyle, Color, FontFamily, FontSize, LineHeight } from '@tiptap/extension-text-style';
-import { Highlight } from '@tiptap/extension-highlight';
-import { Superscript } from '@tiptap/extension-superscript';
-import { Subscript } from '@tiptap/extension-subscript';
-import { ResizableImage } from './ResizableImage';
-import { Indent } from './extensions/Indent';
-import { SearchAndReplace } from './extensions/SearchAndReplace';
+import React, { useEffect, useImperativeHandle, forwardRef, useRef } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
+import Placeholder from "@tiptap/extension-placeholder";
+import { TextStyle, Color, FontFamily, FontSize, LineHeight } from "@tiptap/extension-text-style";
+import { Highlight } from "@tiptap/extension-highlight";
+import { Superscript } from "@tiptap/extension-superscript";
+import { Subscript } from "@tiptap/extension-subscript";
+import { ResizableImage } from "./ResizableImage";
+import { Indent } from "./extensions/Indent";
+import { SearchAndReplace } from "./extensions/SearchAndReplace";
 
 // ─── 1 RICHTEXTEDITOR COMPONENT ────────────────────────────────────────────────
 
@@ -52,11 +52,11 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
       }),
       Underline,
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
-        alignments: ['left', 'center', 'right', 'justify'],
+        types: ["heading", "paragraph"],
+        alignments: ["left", "center", "right", "justify"],
       }),
       Placeholder.configure({
-        placeholder: 'Start typing...',
+        placeholder: "Start typing...",
       }),
       TextStyle,
       Color,
@@ -70,7 +70,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
       SearchAndReplace,
       ResizableImage,
     ],
-    content: content || '',
+    content: content || "",
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       editorContentRef.current = html;
@@ -87,7 +87,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
     if (!editor) return;
     if (content === editorContentRef.current) return;
     editorContentRef.current = content;
-    editor.commands.setContent(content || '', false);
+    editor.commands.setContent(content || "", false);
   }, [content, editor]);
 
   if (!editor) {
@@ -100,10 +100,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({ content, onChange },
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <EditorContent
-        editor={editor}
-        className="flex-1 min-h-0 overflow-auto tiptap-editor"
-      />
+      <EditorContent editor={editor} className="flex-1 min-h-0 overflow-auto tiptap-editor" />
       {/* ─── 2 SCOPED CSS STYLES ─────────────────────────────────────────────── */}
       <style>{`
         .tiptap-editor .tiptap {

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import useStore from './useStore';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import useStore from "./useStore";
 
 /**
  * Guards a page by redirecting to /profile if the user lacks any
@@ -24,7 +24,7 @@ export default function usePagePermission(pageName) {
     if (!authReady) return;
 
     if (!hasPageAccess(pageName)) {
-      navigate('/profile', { replace: true });
+      navigate("/profile", { replace: true });
     }
   }, [authReady, permissions]); // eslint-disable-line react-hooks/exhaustive-deps
 }

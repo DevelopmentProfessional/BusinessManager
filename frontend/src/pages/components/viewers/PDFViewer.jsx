@@ -23,27 +23,17 @@
  * ============================================================
  */
 
-import React, { useState, useRef, useCallback } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-import {
-  PencilIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MagnifyingGlassPlusIcon,
-  MagnifyingGlassMinusIcon,
-  ArrowsPointingOutIcon,
-} from '@heroicons/react/24/outline';
-import { documentsAPI } from '../../../services/api';
+import React, { useState, useRef, useCallback } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import { PencilIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassPlusIcon, MagnifyingGlassMinusIcon, ArrowsPointingOutIcon } from "@heroicons/react/24/outline";
+import { documentsAPI } from "../../../services/api";
 
 // ─── 1 WORKER CONFIGURATION ────────────────────────────────────────────────────
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 // ─── 2 PDFVIEWER COMPONENT ─────────────────────────────────────────────────────
 
@@ -62,7 +52,7 @@ export default function PDFViewer({ document, onEdit }) {
   }, []);
 
   const onDocumentLoadError = useCallback((err) => {
-    console.error('react-pdf load error, falling back to iframe', err);
+    console.error("react-pdf load error, falling back to iframe", err);
     setLoadError(true);
   }, []);
 
@@ -87,7 +77,7 @@ export default function PDFViewer({ document, onEdit }) {
   const measuredRef = useCallback((node) => {
     if (node !== null) {
       containerRef.current = node;
-      if (typeof ResizeObserver !== 'undefined') {
+      if (typeof ResizeObserver !== "undefined") {
         const observer = new ResizeObserver((entries) => {
           for (const entry of entries) {
             setContainerWidth(entry.contentRect.width);
@@ -99,8 +89,8 @@ export default function PDFViewer({ document, onEdit }) {
         // Fallback: measure once and re-measure on window resize
         const measure = () => setContainerWidth(node.clientWidth);
         measure();
-        window.addEventListener('resize', measure, { passive: true });
-        return () => window.removeEventListener('resize', measure);
+        window.addEventListener("resize", measure, { passive: true });
+        return () => window.removeEventListener("resize", measure);
       }
     }
   }, []);
@@ -117,10 +107,7 @@ export default function PDFViewer({ document, onEdit }) {
           <span className="text-sm text-gray-600 dark:text-gray-300">PDF Document</span>
           <div className="flex items-center gap-2">
             {onEdit && (
-              <button
-                onClick={onEdit}
-                className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
-              >
+              <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
                 <PencilIcon className="h-4 w-4" />
                 Edit Metadata
               </button>
@@ -128,11 +115,7 @@ export default function PDFViewer({ document, onEdit }) {
           </div>
         </div>
         <div className="flex-1">
-          <iframe
-            title="PDF Preview"
-            src={fileUrl}
-            className="w-full h-full border-0"
-          />
+          <iframe title="PDF Preview" src={fileUrl} className="w-full h-full border-0" />
         </div>
       </div>
     );
@@ -149,7 +132,8 @@ export default function PDFViewer({ document, onEdit }) {
           <button
             onClick={goToPrev}
             disabled={pageNumber <= 1}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center" style={{ width: '3rem', height: '3rem' }}
+            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+            style={{ width: "3rem", height: "3rem" }}
             title="Previous page"
           >
             <ChevronLeftIcon className="h-4 w-4" />
@@ -163,12 +147,13 @@ export default function PDFViewer({ document, onEdit }) {
               onChange={handlePageInput}
               className="w-12 text-center border rounded bg-white dark:bg-gray-700 dark:text-gray-200 text-sm py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <span>/ {numPages || '...'}</span>
+            <span>/ {numPages || "..."}</span>
           </div>
           <button
             onClick={goToNext}
             disabled={pageNumber >= (numPages || 1)}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center" style={{ width: '3rem', height: '3rem' }}
+            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+            style={{ width: "3rem", height: "3rem" }}
             title="Next page"
           >
             <ChevronRightIcon className="h-4 w-4" />
@@ -177,41 +162,21 @@ export default function PDFViewer({ document, onEdit }) {
           <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
 
           {/* Zoom controls */}
-          <button
-            onClick={zoomOut}
-            disabled={scale <= 0.5}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40"
-            title="Zoom out"
-          >
+          <button onClick={zoomOut} disabled={scale <= 0.5} className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40" title="Zoom out">
             <MagnifyingGlassMinusIcon className="h-4 w-4" />
           </button>
-          <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[50px] text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <button
-            onClick={zoomIn}
-            disabled={scale >= 3}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40"
-            title="Zoom in"
-          >
+          <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[50px] text-center">{Math.round(scale * 100)}%</span>
+          <button onClick={zoomIn} disabled={scale >= 3} className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40" title="Zoom in">
             <MagnifyingGlassPlusIcon className="h-4 w-4" />
           </button>
-          <button
-            onClick={fitWidth}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-center"
-            style={{ width: '3rem', height: '3rem' }}
-            title="Fit width"
-          >
+          <button onClick={fitWidth} className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-center" style={{ width: "3rem", height: "3rem" }} title="Fit width">
             <ArrowsPointingOutIcon className="h-4 w-4" />
           </button>
         </div>
 
         <div className="flex items-center gap-2">
           {onEdit && (
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
-            >
+            <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
               <PencilIcon className="h-4 w-4" />
               Edit Metadata
             </button>
@@ -220,10 +185,7 @@ export default function PDFViewer({ document, onEdit }) {
       </div>
 
       {/* PDF Content */}
-      <div
-        ref={measuredRef}
-        className="flex-1 overflow-auto bg-white flex justify-center p-4"
-      >
+      <div ref={measuredRef} className="flex-1 overflow-auto bg-white flex justify-center p-4">
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}

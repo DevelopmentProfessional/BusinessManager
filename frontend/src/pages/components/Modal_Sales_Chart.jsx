@@ -19,29 +19,12 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-`import React from 'react';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { eachDayOfInterval, startOfMonth, endOfMonth, format } from 'date-fns';
+import React from "react";
+import { Line } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
+import { eachDayOfInterval, startOfMonth, endOfMonth, format } from "date-fns";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // ─── 1 MOCK DATA GENERATOR ─────────────────────────────────────────────────
 // Generate mock data for the current month
@@ -51,17 +34,17 @@ const generateMockData = () => {
   const end = endOfMonth(now);
   const days = eachDayOfInterval({ start, end });
 
-  const labels = days.map(day => format(day, 'd'));
+  const labels = days.map((day) => format(day, "d"));
   const data = days.map(() => Math.floor(Math.random() * 2000) + 500); // Random sales between 500 and 2500
 
   return {
     labels,
     datasets: [
       {
-        label: 'Daily Sales',
+        label: "Daily Sales",
         data,
         fill: false,
-        borderColor: 'rgb(75, 192, 192)',
+        borderColor: "rgb(75, 192, 192)",
         tension: 0.1,
       },
     ],
@@ -74,26 +57,26 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'top',
+      position: "top",
     },
     title: {
       display: true,
-      text: `Sales for ${format(new Date(), 'MMMM yyyy')}`,
+      text: `Sales for ${format(new Date(), "MMMM yyyy")}`,
       font: {
-        size: 18
-      }
+        size: 18,
+      },
     },
   },
   scales: {
     y: {
       beginAtZero: true,
       ticks: {
-        callback: function(value) {
-          return '$' + value;
-        }
-      }
-    }
-  }
+        callback: function (value) {
+          return "$" + value;
+        },
+      },
+    },
+  },
 };
 
 // ─── 3 MODAL COMPONENT ─────────────────────────────────────────────────────
@@ -111,7 +94,9 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
           <Line data={chartData} options={chartOptions} />
         </div>
         <div style={styles.buttonContainer}>
-          <button onClick={onClose} style={styles.button}>Close</button>
+          <button onClick={onClose} style={styles.button}>
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -121,43 +106,43 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
 // ─── 4 INLINE STYLES ───────────────────────────────────────────────────────
 const styles = {
   overlay: {
-    position: 'fixed',
+    position: "fixed",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
     zIndex: 1000,
   },
   modal: {
-    backgroundColor: 'var(--bs-body-bg)',
-    padding: '20px',
-    width: '100%',
-    maxHeight: '90vh',
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'relative',
-    borderRadius: '12px 12px 0 0',
+    backgroundColor: "var(--bs-body-bg)",
+    padding: "20px",
+    width: "100%",
+    maxHeight: "90vh",
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
+    borderRadius: "12px 12px 0 0",
   },
   chartContainer: {
     flex: 1,
-    overflow: 'auto',
+    overflow: "auto",
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: '20px',
-    right: '20px',
+    position: "absolute",
+    bottom: "20px",
+    right: "20px",
   },
   button: {
-    padding: '10px 20px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+    padding: "10px 20px",
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
   },
 };
 

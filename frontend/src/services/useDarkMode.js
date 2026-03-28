@@ -1,11 +1,11 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 const applyTheme = (isDark) => {
-  const theme = isDark ? 'dark' : 'light';
-  document.body.setAttribute('data-bs-theme', theme);
-  document.documentElement.setAttribute('data-bs-theme', theme);
-  document.documentElement.classList.toggle('dark', isDark);
+  const theme = isDark ? "dark" : "light";
+  document.body.setAttribute("data-bs-theme", theme);
+  document.documentElement.setAttribute("data-bs-theme", theme);
+  document.documentElement.classList.toggle("dark", isDark);
 };
 
 const useDarkMode = create(
@@ -28,15 +28,15 @@ const useDarkMode = create(
         const { isDarkMode } = get();
 
         applyTheme(isDarkMode);
-        
+
         // Force a re-render of the calendar by triggering a resize event
         setTimeout(() => {
-          window.dispatchEvent(new Event('resize'));
+          window.dispatchEvent(new Event("resize"));
         }, 100);
-      }
+      },
     }),
     {
-      name: 'dark-mode-storage',
+      name: "dark-mode-storage",
       storage: localStorage,
     }
   )

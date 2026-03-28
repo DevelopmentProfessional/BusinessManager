@@ -1,8 +1,8 @@
-const DEFAULT_ACTIVE_COLOR = '#3B82F6';
-const ACTIVE_COLOR_STORAGE_KEY = 'app_active_color';
+const DEFAULT_ACTIVE_COLOR = "#3B82F6";
+const ACTIVE_COLOR_STORAGE_KEY = "app_active_color";
 
 function isValidHexColor(value) {
-  return typeof value === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim());
+  return typeof value === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim());
 }
 
 function normalizeHexColor(value) {
@@ -34,16 +34,16 @@ function createHoverColor(hex) {
     g: shiftChannel(g, -16),
     b: shiftChannel(b, -16),
   };
-  return `#${hovered.r.toString(16).padStart(2, '0')}${hovered.g.toString(16).padStart(2, '0')}${hovered.b.toString(16).padStart(2, '0')}`.toUpperCase();
+  return `#${hovered.r.toString(16).padStart(2, "0")}${hovered.g.toString(16).padStart(2, "0")}${hovered.b.toString(16).padStart(2, "0")}`.toUpperCase();
 }
 
 export function getStoredActiveColor() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(ACTIVE_COLOR_STORAGE_KEY);
 }
 
 export function applyActiveColorTheme(color) {
-  if (typeof document === 'undefined') return DEFAULT_ACTIVE_COLOR;
+  if (typeof document === "undefined") return DEFAULT_ACTIVE_COLOR;
 
   const resolvedColor = normalizeHexColor(color || getStoredActiveColor() || DEFAULT_ACTIVE_COLOR);
   const hoverColor = createHoverColor(resolvedColor);
@@ -53,17 +53,17 @@ export function applyActiveColorTheme(color) {
   const body = document.body;
   const applyVars = (target) => {
     if (!target) return;
-    target.style.setProperty('--app-active-color', resolvedColor);
-    target.style.setProperty('--app-active-color-hover', hoverColor);
-    target.style.setProperty('--app-active-color-rgb', `${r}, ${g}, ${b}`);
-    target.style.setProperty('--bs-primary', resolvedColor);
-    target.style.setProperty('--bs-primary-rgb', `${r}, ${g}, ${b}`);
+    target.style.setProperty("--app-active-color", resolvedColor);
+    target.style.setProperty("--app-active-color-hover", hoverColor);
+    target.style.setProperty("--app-active-color-rgb", `${r}, ${g}, ${b}`);
+    target.style.setProperty("--bs-primary", resolvedColor);
+    target.style.setProperty("--bs-primary-rgb", `${r}, ${g}, ${b}`);
   };
 
   applyVars(root);
   applyVars(body);
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     localStorage.setItem(ACTIVE_COLOR_STORAGE_KEY, resolvedColor);
   }
 

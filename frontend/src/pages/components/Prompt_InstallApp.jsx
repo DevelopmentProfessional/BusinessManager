@@ -1,13 +1,13 @@
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import useStore from '../../services/useStore';
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import useStore from "../../services/useStore";
 
 export default function Prompt_InstallApp() {
   const location = useLocation();
   const isAuthenticated = useStore((state) => state.isAuthenticated);
 
   useEffect(() => {
-    const canCapturePrompt = isAuthenticated() && location.pathname !== '/login';
+    const canCapturePrompt = isAuthenticated() && location.pathname !== "/login";
 
     if (!canCapturePrompt) {
       window.__pwaDeferredPrompt = null;
@@ -23,13 +23,13 @@ export default function Prompt_InstallApp() {
       window.__pwaDeferredPrompt = null;
     };
 
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-    window.addEventListener('appinstalled', onAppInstalled);
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
 
     return () => {
       window.__pwaDeferredPrompt = null;
-      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', onAppInstalled);
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, [isAuthenticated, location.pathname]);
 

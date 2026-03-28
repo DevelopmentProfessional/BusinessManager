@@ -17,8 +17,8 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import React from "react";
+import { PlusIcon } from "@heroicons/react/24/outline";
 
 // ─── 1 BUTTON RENDER ───────────────────────────────────────────────────────────
 

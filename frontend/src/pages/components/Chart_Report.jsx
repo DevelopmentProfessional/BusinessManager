@@ -21,34 +21,13 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
-import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
+import React from "react";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from "chart.js";
+import { Line, Bar, Pie, Doughnut } from "react-chartjs-2";
 
 // ─── 1 CHART.JS REGISTRATION ───────────────────────────────────────────────────
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);
 
 // ─── 2 DEFAULT OPTIONS ─────────────────────────────────────────────────────────
 
@@ -57,7 +36,7 @@ const defaultOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'top',
+      position: "top",
     },
   },
 };
@@ -93,51 +72,51 @@ const Chart_Report = ({ data, type, title, loading }) => {
         text: title,
         font: {
           size: 16,
-          weight: 'bold'
-        }
+          weight: "bold",
+        },
       },
     },
   };
 
   // Add specific options for different chart types
   switch (type) {
-    case 'line':
+    case "line":
       chartOptions.scales = {
         y: {
           beginAtZero: true,
-        }
+        },
       };
       break;
-    case 'bar':
+    case "bar":
       chartOptions.scales = {
         y: {
           beginAtZero: true,
-        }
+        },
       };
       break;
-    case 'pie':
-    case 'doughnut':
+    case "pie":
+    case "doughnut":
       // Remove scales for pie/doughnut charts
       delete chartOptions.scales;
-      chartOptions.plugins.legend.position = 'bottom';
+      chartOptions.plugins.legend.position = "bottom";
       break;
     default:
       chartOptions.scales = {
         y: {
           beginAtZero: true,
-        }
+        },
       };
   }
 
   // Render appropriate chart component based on type
   switch (type) {
-    case 'line':
+    case "line":
       return <Line data={data} options={chartOptions} />;
-    case 'bar':
+    case "bar":
       return <Bar data={data} options={chartOptions} />;
-    case 'pie':
+    case "pie":
       return <Pie data={data} options={chartOptions} />;
-    case 'doughnut':
+    case "doughnut":
       return <Doughnut data={data} options={chartOptions} />;
     default:
       return <Line data={data} options={chartOptions} />;

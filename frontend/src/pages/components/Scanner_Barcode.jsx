@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
+import React, { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 
 export default function Scanner_Barcode({ onDetected, onCancel }) {
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const mediaStreamRef = useRef(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -15,13 +15,13 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
         const videoElement = videoRef.current;
         // First, request permission to access any video device. This helps enumeration return devices.
         try {
-          mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+          mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
           if (videoElement) {
             videoElement.srcObject = mediaStreamRef.current;
           }
         } catch (permErr) {
           // If permission denied, surface a clear error and stop.
-          throw new Error('The phone says camera permissions denied, please allow camera access and try again.');
+          throw new Error("The phone says camera permissions denied, please allow camera access and try again.");
         }
 
         let devices = [];
@@ -32,7 +32,7 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
         }
 
         // Prefer back camera when available
-        const backCamera = devices.find(d => /back|rear|environment/i.test(d.label));
+        const backCamera = devices.find((d) => /back|rear|environment/i.test(d.label));
         const deviceId = backCamera?.deviceId || devices[0]?.deviceId;
 
         // If still no device ID, fallback to default camera by passing undefined
@@ -45,8 +45,8 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
           // ignore err frames silently
         });
       } catch (e) {
-        console.error('Scanner error', e);
-        setError(e?.message || 'Failed to start camera');
+        console.error("Scanner error", e);
+        setError(e?.message || "Failed to start camera");
       }
     };
 
@@ -57,7 +57,7 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
         codeReaderRef.current?.reset();
       } catch {}
       try {
-        mediaStreamRef.current?.getTracks()?.forEach(t => t.stop());
+        mediaStreamRef.current?.getTracks()?.forEach((t) => t.stop());
       } catch {}
     };
   }, [onDetected, onCancel]);
@@ -67,11 +67,7 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
       <div className="aspect-video bg-black rounded overflow-hidden">
         <video ref={videoRef} className="w-full h-full object-cover" muted playsInline autoPlay />
       </div>
-      {error && (
-        <div className="text-sm text-red-600">
-          {error}
-        </div>
-      )}
+      {error && <div className="text-sm text-red-600">{error}</div>}
     </div>
   );
 }

@@ -27,182 +27,176 @@
  */
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  EyeIcon, 
-  EyeSlashIcon, 
-  UserIcon, 
-  LockClosedIcon, 
-  ExclamationTriangleIcon, 
-  CheckCircleIcon,
-  ArrowPathIcon 
-} from '@heroicons/react/24/outline';
-import useStore from '../services/useStore';
-import api from '../services/api';
-import { startPerformanceSession } from '../services/performanceTracker';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { EyeIcon, EyeSlashIcon, UserIcon, LockClosedIcon, ExclamationTriangleIcon, CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import useStore from "../services/useStore";
+import api from "../services/api";
+import { startPerformanceSession } from "../services/performanceTracker";
 
 const Login = () => {
-// ─── [2] STATE ───────────────────────────────────────────────────────────────
+  // ─── [2] STATE ───────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    company_id: '',
-    remember_me: false
+    username: "",
+    password: "",
+    company_id: "",
+    remember_me: false,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [resetData, setResetData] = useState({
-    username: '',
-    new_password: '',
-    confirm_password: ''
+    username: "",
+    new_password: "",
+    confirm_password: "",
   });
-  
+
   const navigate = useNavigate();
   const { setUser, setToken, setPermissions } = useStore();
   // Login page respects the active theme (light or dark) from store
 
-// ─── [6] COOKIE HELPERS ─────────────────────────────────────────────────────
+  // ─── [6] COOKIE HELPERS ─────────────────────────────────────────────────────
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    if (parts.length === 2) return parts.pop().split(";").shift();
     return null;
   };
 
-// ─── [3] LIFECYCLE HOOK ─────────────────────────────────────────────────────
+  // ─── [3] LIFECYCLE HOOK ─────────────────────────────────────────────────────
   useEffect(() => {
     // Check cookies for saved parameters
-    const savedRememberMe = getCookie('rememberMe') === 'true';
-    const savedUsername = getCookie('savedUsername');
-    const savedPassword = getCookie('savedPassword');
-    const savedCompanyId = getCookie('savedCompanyId');
+    const savedRememberMe = getCookie("rememberMe") === "true";
+    const savedUsername = getCookie("savedUsername");
+    const savedPassword = getCookie("savedPassword");
+    const savedCompanyId = getCookie("savedCompanyId");
 
-    console.log('Saved data found in cookies:', { savedRememberMe, savedUsername, savedPassword, savedCompanyId });
+    console.log("Saved data found in cookies:", { savedRememberMe, savedUsername, savedPassword, savedCompanyId });
 
     // If remember me is true, set the form values
     if (savedRememberMe) {
       setFormData({
-        username: savedUsername || '',
-        password: savedPassword || '',
-        company_id: savedCompanyId || '',
-        remember_me: true
+        username: savedUsername || "",
+        password: savedPassword || "",
+        company_id: savedCompanyId || "",
+        remember_me: true,
       });
     }
 
     // Check if user is already logged in
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
-      navigate('/profile');
+      navigate("/profile");
     }
   }, [navigate]);
 
-// ─── [4] FORM VALIDATION ────────────────────────────────────────────────────
+  // ─── [4] FORM VALIDATION ────────────────────────────────────────────────────
   const validateForm = () => {
     const errors = {};
 
     if (!formData.company_id.trim()) {
-      errors.company_id = 'Company ID is required';
+      errors.company_id = "Company ID is required";
     }
 
     if (!formData.username.trim()) {
-      errors.username = 'Username is required';
+      errors.username = "Username is required";
     } else if (formData.username.length < 2) {
-      errors.username = 'Username must be at least 2 characters';
+      errors.username = "Username must be at least 2 characters";
     }
 
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 3) {
-      errors.password = 'Password must be at least 3 characters';
+      errors.password = "Password must be at least 3 characters";
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-// ─── [5] INPUT CHANGE HANDLERS ──────────────────────────────────────────────
+  // ─── [5] INPUT CHANGE HANDLERS ──────────────────────────────────────────────
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    
+
     // Clear validation errors when user types
     if (validationErrors[name]) {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
-    
+
     // Clear general error when user makes changes
-    if (error) setError('');
-    if (success) setSuccess('');
+    if (error) setError("");
+    if (success) setSuccess("");
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const saveUserCredentials = (username, password, companyId, rememberMe) => { // (part of [6] COOKIE HELPERS)
+  const saveUserCredentials = (username, password, companyId, rememberMe) => {
+    // (part of [6] COOKIE HELPERS)
     try {
       if (rememberMe) {
-        console.log('Saving user credentials:', { username, companyId, rememberMe });
+        console.log("Saving user credentials:", { username, companyId, rememberMe });
         const expireDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
         document.cookie = `rememberMe=true; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedUsername=${encodeURIComponent(username)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedPassword=${encodeURIComponent(password)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedCompanyId=${encodeURIComponent(companyId)}; expires=${expireDate}; path=/; secure; samesite=strict`;
-        console.log('Data saved to cookies');
+        console.log("Data saved to cookies");
       } else {
-        console.log('Clearing saved credentials');
-        document.cookie = 'rememberMe=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'savedUsername=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'savedPassword=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'savedCompanyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        console.log("Clearing saved credentials");
+        document.cookie = "rememberMe=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "savedUsername=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "savedPassword=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "savedCompanyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       }
       return true;
     } catch (error) {
-      console.error('Failed to save credentials:', error);
+      console.error("Failed to save credentials:", error);
       return false;
     }
   };
 
-  const handleResetInputChange = (e) => { // (part of [5] INPUT CHANGE HANDLERS)
+  const handleResetInputChange = (e) => {
+    // (part of [5] INPUT CHANGE HANDLERS)
     const { name, value } = e.target;
-    setResetData(prev => ({
+    setResetData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-// ─── [7] LOGIN HANDLER ──────────────────────────────────────────────────────
+  // ─── [7] LOGIN HANDLER ──────────────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous states
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setValidationErrors({});
-    
+
     // Start performance tracking
     startPerformanceSession();
-    
+
     // Validate form before submission
     if (!validateForm()) {
-      setError('Please fix the validation errors below.');
+      setError("Please fix the validation errors below.");
       return;
     }
-    
+
     setLoading(true);
     const selectedStorage = formData.remember_me ? localStorage : sessionStorage;
-    
+
     const loginData = {
       username: formData.username.trim(),
       password: formData.password,
@@ -211,120 +205,116 @@ const Login = () => {
 
     try {
       const backendUrl = `${api.defaults.baseURL}/auth/login`;
-      
+
       const response = await fetch(backendUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(loginData),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
-        let errorMessage = 'Login failed. Please check your credentials.';
-        
+        let errorMessage = "Login failed. Please check your credentials.";
+
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.detail || errorMessage;
         } catch (parseError) {
           if (response.status === 401) {
-            errorMessage = 'Invalid username or password.';
+            errorMessage = "Invalid username or password.";
           } else if (response.status >= 500) {
-            errorMessage = 'Server error. Please try again later.';
+            errorMessage = "Server error. Please try again later.";
           }
         }
-        
+
         setError(errorMessage);
         return;
       }
-      
+
       const data = await response.json();
 
       if (data.access_token && data.user) {
         // Store authentication data
-        selectedStorage.setItem('token', data.access_token);
-        selectedStorage.setItem('user', JSON.stringify(data.user));
-        
+        selectedStorage.setItem("token", data.access_token);
+        selectedStorage.setItem("user", JSON.stringify(data.user));
+
         // Update Zustand store
         setToken(data.access_token);
         setUser(data.user);
         if (data.permissions) {
-          selectedStorage.setItem('permissions', JSON.stringify(data.permissions));
+          selectedStorage.setItem("permissions", JSON.stringify(data.permissions));
           setPermissions(data.permissions);
         }
-        
+
         // Save credentials if remember me is checked
         saveUserCredentials(formData.username.trim(), formData.password, formData.company_id.trim(), formData.remember_me);
 
         // Show success message briefly
-        setSuccess('Login successful! Redirecting...');
-        
+        setSuccess("Login successful! Redirecting...");
+
         // Navigate to profile after a brief delay
         setTimeout(() => {
-          navigate('/profile');
+          navigate("/profile");
         }, 1000);
       } else {
-        throw new Error('Invalid response format');
+        throw new Error("Invalid response format");
       }
     } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setError('Cannot connect to server. Please check if the server is running.');
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        setError("Cannot connect to server. Please check if the server is running.");
       } else {
-        setError(error.message || 'An unexpected error occurred. Please try again.');
+        setError(error.message || "An unexpected error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-// ─── [8] PASSWORD RESET HANDLER ─────────────────────────────────────────────
+  // ─── [8] PASSWORD RESET HANDLER ─────────────────────────────────────────────
   const handlePasswordReset = async (e) => {
     e.preventDefault();
-    
+
     if (resetData.new_password !== resetData.confirm_password) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
-    
+
     if (resetData.new_password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError("Password must be at least 6 characters long");
       return;
     }
-    
+
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      await api.post('/auth/reset-password', {
+      await api.post("/auth/reset-password", {
         username: resetData.username,
-        new_password: resetData.new_password
+        new_password: resetData.new_password,
       });
-      
-      setError('');
+
+      setError("");
       setShowPasswordReset(false);
-      setResetData({ username: '', new_password: '', confirm_password: '' });
-      alert('Password reset successfully! You can now login with your new password.');
-      
+      setResetData({ username: "", new_password: "", confirm_password: "" });
+      alert("Password reset successfully! You can now login with your new password.");
     } catch (err) {
-      setError(err.response?.data?.detail || 'Password reset failed. Please try again.');
+      setError(err.response?.data?.detail || "Password reset failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-// ─── [9] RENDER ─────────────────────────────────────────────────────────────
+  // ─── [9] RENDER ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-2 px-1 sm:px-1 lg:px-1">
       <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-3xl shadow-xl max-h-[calc(100vh-1rem)] overflow-y-auto">
         <div className="text-center">
-           
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            login
-          </h2> 
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">login</h2>
         </div>
-        
+
         {!showPasswordReset ? (
           <form className="mt-1 space-y-1" onSubmit={handleLogin}>
             {/* Success Message */}
@@ -354,102 +344,44 @@ const Login = () => {
             <div className="space-y-2">
               {/* Company ID Field */}
               <div className="form-floating mb-2">
-                <input
-                  id="company_id"
-                  name="company_id"
-                  type="text"
-                  required
-                  className={`form-control ${validationErrors.company_id ? 'is-invalid' : ''}`}
-                  placeholder="Company ID"
-                  value={formData.company_id}
-                  onChange={handleInputChange}
-                />
+                <input id="company_id" name="company_id" type="text" required className={`form-control ${validationErrors.company_id ? "is-invalid" : ""}`} placeholder="Company ID" value={formData.company_id} onChange={handleInputChange} />
                 <label htmlFor="company_id">Company ID</label>
-                {validationErrors.company_id && (
-                  <p className="mt-1 text-sm text-red-400">{validationErrors.company_id}</p>
-                )}
+                {validationErrors.company_id && <p className="mt-1 text-sm text-red-400">{validationErrors.company_id}</p>}
               </div>
 
               {/* Username Field */}
               <div className="form-floating mb-2">
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  className={`form-control ${
-                    validationErrors.username ? 'is-invalid' : ''
-                  }`}
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                />
+                <input id="username" name="username" type="text" required className={`form-control ${validationErrors.username ? "is-invalid" : ""}`} placeholder="Username" value={formData.username} onChange={handleInputChange} />
                 <label htmlFor="username">Username</label>
-                {validationErrors.username && (
-                  <p className="mt-1 text-sm text-red-400">{validationErrors.username}</p>
-                )}
+                {validationErrors.username && <p className="mt-1 text-sm text-red-400">{validationErrors.username}</p>}
               </div>
 
               {/* Password Field */}
               <div className="form-floating mb-2 position-relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className={`form-control ${
-                    validationErrors.password ? 'is-invalid' : ''
-                  }`}
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  style={{ paddingRight: '3rem' }}
-                />
+                <input id="password" name="password" type={showPassword ? "text" : "password"} required className={`form-control ${validationErrors.password ? "is-invalid" : ""}`} placeholder="Password" value={formData.password} onChange={handleInputChange} style={{ paddingRight: "3rem" }} />
                 <label htmlFor="password">Password</label>
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="position-absolute text-gray-400 hover:text-gray-300 transition-colors"
-                  style={{ right: '1rem', top: '50%', transform: 'translateY(-50%)', zIndex: 5, background: 'none', border: 'none' }}
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
+                <button type="button" onClick={togglePasswordVisibility} className="position-absolute text-gray-400 hover:text-gray-300 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5, background: "none", border: "none" }}>
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
-                {validationErrors.password && (
-                  <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>
-                )}
+                {validationErrors.password && <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>}
               </div>
             </div>
 
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input
-                  id="remember_me"
-                  name="remember_me"
-                  type="checkbox"
-                  className="h-4 w-4 mb-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded"
-                  checked={formData.remember_me}
-                  onChange={handleInputChange}
-                />
+                <input id="remember_me" name="remember_me" type="checkbox" className="h-4 w-4 mb-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded" checked={formData.remember_me} onChange={handleInputChange} />
                 <label htmlFor="remember_me" className="ml-2 mb-4 block text-sm text-gray-200 dark:text-gray-200">
                   Remember me for 30 days
                 </label>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowPasswordReset(true)}
-                className="text-sm font-medium mb-4 text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
+              <button type="button" onClick={() => setShowPasswordReset(true)} className="text-sm font-medium mb-4 text-indigo-400 hover:text-indigo-300 transition-colors">
                 Forgot password?
               </button>
             </div>
 
-            {/* Submit Button */}          
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -464,9 +396,9 @@ const Login = () => {
                   Signing in...
                 </div>
               ) : (
-                'Sign in'
+                "Sign in"
               )}
-            </button> 
+            </button>
           </form>
         ) : (
           <div className="mt-8">
@@ -474,7 +406,7 @@ const Login = () => {
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reset Password</h3>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Enter your username and new password</p>
             </div>
-            
+
             <form className="space-y-1" onSubmit={handlePasswordReset}>
               {/* Error Message */}
               {error && (
@@ -491,46 +423,19 @@ const Login = () => {
               <div className="space-y-2">
                 {/* Username Field */}
                 <div className="form-floating mb-2">
-                  <input
-                    id="reset-username"
-                    name="username"
-                    type="text"
-                    required
-                    className="form-control"
-                    placeholder="Username"
-                    value={resetData.username}
-                    onChange={handleResetInputChange}
-                  />
+                  <input id="reset-username" name="username" type="text" required className="form-control" placeholder="Username" value={resetData.username} onChange={handleResetInputChange} />
                   <label htmlFor="reset-username">Username</label>
                 </div>
 
                 {/* New Password Field */}
                 <div className="form-floating mb-2">
-                  <input
-                    id="new-password"
-                    name="new_password"
-                    type="password"
-                    required
-                    className="form-control"
-                    placeholder="New Password"
-                    value={resetData.new_password}
-                    onChange={handleResetInputChange}
-                  />
+                  <input id="new-password" name="new_password" type="password" required className="form-control" placeholder="New Password" value={resetData.new_password} onChange={handleResetInputChange} />
                   <label htmlFor="new-password">New Password</label>
                 </div>
 
                 {/* Confirm Password Field */}
                 <div className="form-floating mb-2">
-                  <input
-                    id="confirm-password"
-                    name="confirm_password"
-                    type="password"
-                    required
-                    className="form-control"
-                    placeholder="Confirm Password"
-                    value={resetData.confirm_password}
-                    onChange={handleResetInputChange}
-                  />
+                  <input id="confirm-password" name="confirm_password" type="password" required className="form-control" placeholder="Confirm Password" value={resetData.confirm_password} onChange={handleResetInputChange} />
                   <label htmlFor="confirm-password">Confirm Password</label>
                 </div>
               </div>
@@ -541,8 +446,8 @@ const Login = () => {
                   type="button"
                   onClick={() => {
                     setShowPasswordReset(false);
-                    setError('');
-                    setResetData({ username: '', new_password: '', confirm_password: '' });
+                    setError("");
+                    setResetData({ username: "", new_password: "", confirm_password: "" });
                   }}
                   className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                 >
@@ -562,7 +467,7 @@ const Login = () => {
                       Resetting...
                     </div>
                   ) : (
-                    'Reset Password'
+                    "Reset Password"
                   )}
                 </button>
               </div>

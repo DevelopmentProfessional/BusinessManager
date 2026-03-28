@@ -1,8 +1,8 @@
-import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { Extension } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
-const searchPluginKey = new PluginKey('searchAndReplace');
+const searchPluginKey = new PluginKey("searchAndReplace");
 
 function findMatches(doc, searchTerm, caseSensitive = false) {
   if (!searchTerm) return [];
@@ -31,19 +31,19 @@ function findMatches(doc, searchTerm, caseSensitive = false) {
  * Uses ProseMirror decorations to highlight matches.
  */
 export const SearchAndReplace = Extension.create({
-  name: 'searchAndReplace',
+  name: "searchAndReplace",
 
   addOptions() {
     return {
-      searchClass: 'search-result',
-      activeClass: 'search-result-active',
+      searchClass: "search-result",
+      activeClass: "search-result-active",
     };
   },
 
   addStorage() {
     return {
-      searchTerm: '',
-      replaceTerm: '',
+      searchTerm: "",
+      replaceTerm: "",
       results: [],
       currentIndex: 0,
       caseSensitive: false,
@@ -68,10 +68,7 @@ export const SearchAndReplace = Extension.create({
             extension.storage.results = results;
 
             const decorations = results.map((result, i) => {
-              const className =
-                i === currentIndex
-                  ? `${extension.options.searchClass} ${extension.options.activeClass}`
-                  : extension.options.searchClass;
+              const className = i === currentIndex ? `${extension.options.searchClass} ${extension.options.activeClass}` : extension.options.searchClass;
               return Decoration.inline(result.from, result.to, {
                 class: className,
               });
@@ -123,8 +120,7 @@ export const SearchAndReplace = Extension.create({
         ({ editor }) => {
           const { results } = this.storage;
           if (results.length === 0) return false;
-          this.storage.currentIndex =
-            (this.storage.currentIndex - 1 + results.length) % results.length;
+          this.storage.currentIndex = (this.storage.currentIndex - 1 + results.length) % results.length;
           editor.view.dispatch(editor.state.tr);
           const match = results[this.storage.currentIndex];
           if (match) {
@@ -142,12 +138,7 @@ export const SearchAndReplace = Extension.create({
           const match = results[currentIndex];
           if (!match) return false;
 
-          editor
-            .chain()
-            .focus()
-            .setTextSelection({ from: match.from, to: match.to })
-            .insertContent(replaceTerm)
-            .run();
+          editor.chain().focus().setTextSelection({ from: match.from, to: match.to }).insertContent(replaceTerm).run();
 
           // Clamp currentIndex so it doesn't exceed new results length
           const newResults = this.storage.results;
@@ -175,9 +166,7 @@ export const SearchAndReplace = Extension.create({
           // Replace from end to start so positions remain valid
           const chain = editor.chain().focus();
           for (let i = results.length - 1; i >= 0; i--) {
-            chain
-              .setTextSelection({ from: results[i].from, to: results[i].to })
-              .insertContent(replaceTerm);
+            chain.setTextSelection({ from: results[i].from, to: results[i].to }).insertContent(replaceTerm);
           }
           chain.run();
 
@@ -190,20 +179,18 @@ export const SearchAndReplace = Extension.create({
       clearSearch:
         () =>
         ({ editor }) => {
-          this.storage.searchTerm = '';
-          this.storage.replaceTerm = '';
+          this.storage.searchTerm = "";
+          this.storage.replaceTerm = "";
           this.storage.results = [];
           this.storage.currentIndex = 0;
           editor.view.dispatch(editor.state.tr);
           return true;
         },
 
-      setReplaceTerm:
-        (term) =>
-        () => {
-          this.storage.replaceTerm = term;
-          return true;
-        },
+      setReplaceTerm: (term) => () => {
+        this.storage.replaceTerm = term;
+        return true;
+      },
 
       setSearchCaseSensitive:
         (value) =>
@@ -217,7 +204,7 @@ export const SearchAndReplace = Extension.create({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-f': () => {
+      "Mod-f": () => {
         // This is handled by the toolbar to show the find panel
         // We just prevent the browser's default find
         return true;
