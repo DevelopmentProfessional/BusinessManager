@@ -26,9 +26,8 @@ export default function Login() {
   const [showPwd,  setShowPwd]  = useState(false)
   const [branding, setBranding] = useState(null)
 
-  const logoSrc = preselected?.has_logo_data
-    ? companiesAPI.logoUrl(preselected.company_id)
-    : preselected?.logo_url
+  const hasLogo = Boolean(preselected?.has_logo_data || preselected?.logo_url)
+  const logoSrc = hasLogo ? companiesAPI.logoUrl(preselected.company_id) : null
 
   // Load branding if company is pre-selected
   useEffect(() => {

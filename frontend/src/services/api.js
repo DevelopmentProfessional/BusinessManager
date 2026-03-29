@@ -596,11 +596,11 @@ export const adminAPI = {
   testAppointments: () => api.get("/admin/test-appointments"),
 };
 
-// DEPRECATED: Database environment is now stored in user profile (user.db_environment)
-// Use employeesAPI.updateUser(userId, { db_environment: 'development' }) to update
+// DEPRECATED: Runtime database routing is Render-only.
+// The db_environment profile field is retained only for backward compatibility.
 export const dbEnvironmentAPI = {
-  getCurrent: () => Promise.resolve({ data: { current: "development", environments: {} } }),
-  switch: () => Promise.resolve({ data: { message: "Use user profile to update db_environment" } }),
+  getCurrent: () => Promise.resolve({ data: { current: "production", environments: { production: { name: "Render", configured: true, is_current: true } } } }),
+  switch: () => Promise.resolve({ data: { message: "Database routing is fixed to the Render PostgreSQL environment." } }),
 };
 
 export const settingsAPI = {
