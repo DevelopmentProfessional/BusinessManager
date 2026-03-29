@@ -45,10 +45,10 @@ const NAV_H = 60;
 function getViewRange(calView, viewDate) {
   if (calView === "month") {
     const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-    const end   = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+    const end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
     return [start, addDays(end, 1)];
   } else if (calView === "week") {
-    const dow       = viewDate.getDay(); // 0 = Sunday
+    const dow = viewDate.getDay(); // 0 = Sunday
     const weekStart = startOfDay(addDays(viewDate, -dow));
     return [weekStart, addDays(weekStart, 7)];
   } else {
@@ -188,22 +188,15 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
   // ── Build calendar events ─────────────────────────────────────────────────
   const now = new Date();
 
-  const slotEvents = slots
-    .filter((s) => new Date(s.start) >= now)
-    .map((s, i) => ({
-      id: `slot-${i}`,
-      title: s.available ? format(new Date(s.start), "h:mm a") : "Unavailable",
-      start: new Date(s.start),
-      end: new Date(s.end),
-      slot: s,
-      eventType: "slot",
-    }));
+  // Only create events for bookings, not for available slots
+  // We'll use slotPropGetter to grey out unavailable times
+  const slotEvents = [];
 
   const bookingEvents = bookings
     .filter((b) => !["cancelled"].includes(b.status))
     .map((b) => {
       const start = new Date(b.appointment_date);
-      const end   = new Date(start.getTime() + (b.duration_minutes || 60) * 60_000);
+      const end = new Date(start.getTime() + (b.duration_minutes || 60) * 60_000);
       const isPast = start < now || ["completed", "no_show"].includes(b.status);
       return {
         id: `booking-${b.id}`,
@@ -216,7 +209,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
       };
     });
 
-  const events = [...slotEvents, ...bookingEvents];
+  const events = [...bookingEvents];
 
   // ── Event selection ───────────────────────────────────────────────────────
   function handleSelectEvent(ev) {
@@ -227,15 +220,14 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
   }
 
   // Clicking an empty calendar area snaps to the nearest available slot at that time
-  function handleSelectSlot({ start }) {
-    const TOLERANCE_MS = 16 * 60 * 1000; // 16-minute window
-    const match = slots.find((s) => {
-      if (!s.available) return false;
-      const slotStart = new Date(s.start);
-      if (slotStart < now) return false;
-      return Math.abs(slotStart.getTime() - start.getTime()) < TOLERANCE_MS;
+  function handleSelectSlot({ start, end }) {
+    // Only allow selection if a real slot exists and is available
+    const slot = slots.find((s) => {
+      const slotStart = new Date(s.start).getTime();
+      return slotStart === start.getTime();
     });
-    if (match) setSelected(match);
+    if (!slot || !slot.available) return;
+    setSelected(slot);
   }
 
   // ── Drag-to-reschedule ────────────────────────────────────────────────────
@@ -252,9 +244,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
     const originalDate = b.appointment_date;
 
     // Optimistic update so the event stays in the new position while the request is in-flight
-    setBookings((prev) =>
-      prev.map((x) => (x.id === b.id ? { ...x, appointment_date: start.toISOString() } : x))
-    );
+    setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, appointment_date: start.toISOString() } : x)));
     setError(null);
 
     try {
@@ -262,9 +252,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
       setBookings((prev) => prev.map((x) => (x.id === b.id ? updated : x)));
     } catch (err) {
       // Revert the optimistic update
-      setBookings((prev) =>
-        prev.map((x) => (x.id === b.id ? { ...x, appointment_date: originalDate } : x))
-      );
+      setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, appointment_date: originalDate } : x)));
       setError(err.response?.data?.detail || "That slot is unavailable. Try another time.");
     }
   }
@@ -305,13 +293,13 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
   }
 
   // ── Event styling ─────────────────────────────────────────────────────────
-  const PRIMARY  = "var(--cp-primary, #6366f1)";
+  const PRIMARY = "var(--cp-primary, #6366f1)";
   const PRIMARY_DARK = "#4338ca";
   // Amber for upcoming bookings, muted blue-grey for past
-  const BOOKING_FG   = "#92400e";
-  const BOOKING_BG   = "#fef3c7";
-  const PAST_FG      = "#475569";
-  const PAST_BG      = "#e2e8f0";
+  const BOOKING_FG = "#92400e";
+  const BOOKING_BG = "#fef3c7";
+  const PAST_FG = "#475569";
+  const PAST_BG = "#e2e8f0";
 
   const eventPropGetter = (ev) => {
     if (ev.eventType === "booking") {
@@ -328,34 +316,28 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
         },
       };
     }
-    // Slot events
-    const isSelected = ev.slot === selected;
-    if (!ev.slot.available) {
+    return {};
+  };
+
+  // Grey out slots where no eligible employee is available
+  function slotPropGetter(date) {
+    // Treat cells as unavailable if no slot exists or slot is unavailable
+    const slot = slots.find((s) => {
+      const slotStart = new Date(s.start).getTime();
+      return slotStart === date.getTime();
+    });
+    if (!slot || !slot.available) {
       return {
         style: {
-          background: "#d1d5db",
-          borderRadius: 5,
-          border: "none",
-          fontSize: "0.68rem",
-          fontWeight: 600,
-          color: "#4b5563",
-          opacity: 0.85,
+          background: "#f3f4f6",
+          pointerEvents: "none",
+          opacity: 0.7,
           cursor: "not-allowed",
         },
       };
     }
-    return {
-      style: {
-        background: isSelected ? PRIMARY_DARK : PRIMARY,
-        borderRadius: 5,
-        border: isSelected ? "2px solid #fff" : "none",
-        fontSize: "0.68rem",
-        fontWeight: 600,
-        color: "#fff",
-        cursor: "pointer",
-      },
-    };
-  };
+    return {};
+  }
 
   return (
     <div
@@ -363,12 +345,13 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
         position: "fixed",
         inset: 0,
         bottom: NAV_H,
-        zIndex: 999,
+        zIndex: 9999, // ensure always on top
         background: "#fff",
         display: "flex",
         flexDirection: "column",
         boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
         overflow: "hidden",
+        pointerEvents: "auto", // ensure modal is interactive
       }}
     >
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -387,8 +370,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
           <div>
             <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#111827" }}>{service?.name || "—"}</div>
             <div style={{ fontSize: "0.7rem", color: "#6b7280" }}>
-              {service?.duration_minutes != null ? `${service.duration_minutes} min` : "—"} ·{" "}
-              {typeof service?.price === "number" ? `$${service.price.toFixed(2)}` : "N/A"}
+              {service?.duration_minutes != null ? `${service.duration_minutes} min` : "—"} · {typeof service?.price === "number" ? `$${service.price.toFixed(2)}` : "N/A"}
             </div>
           </div>
         </div>
@@ -429,74 +411,68 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
         {error && !loading && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10, padding: "0 24px", textAlign: "center" }}>
             <div style={{ color: "#dc2626", fontSize: "0.82rem" }}>{error}</div>
-            <button
-              onClick={handleRetry}
-              style={{ padding: "6px 16px", background: PRIMARY, color: "#fff", border: "none", borderRadius: "0.4rem", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer" }}
-            >
+            <button onClick={handleRetry} style={{ padding: "6px 16px", background: PRIMARY, color: "#fff", border: "none", borderRadius: "0.4rem", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer" }}>
               Retry
             </button>
           </div>
         )}
-        {!loading && !error && (() => {
-          const hasAnyAvailable = slots.some((s) => s.available);
-          const slotsLoaded = slots.length > 0;
-          return (
-            <>
-              {/* No-availability banner — stays above the calendar so user can still navigate */}
-              {slotsLoaded && !hasAnyAvailable && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 10,
-                    background: "#fffbeb",
-                    borderBottom: "1px solid #fde68a",
-                    padding: "8px 14px",
-                    fontSize: "0.75rem",
-                    color: "#92400e",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <span style={{ fontSize: "1rem" }}>⚠️</span>
-                  <span>
-                    No available slots for <strong>{service?.name}</strong> in this period. This usually means
-                    no staff members have been assigned to this service yet — an admin can fix this in the
-                    business app under <em>Services → Employee Assignments</em>.
-                  </span>
-                </div>
-              )}
-              <DragAndDropCalendar
-                localizer={localizer}
-                events={events}
-                view={calView}
-                views={["month", "week", "day"]}
-                onView={setCalView}
-                step={30}
-                timeslots={2}
-                date={viewDate}
-                onNavigate={setViewDate}
-                onSelectEvent={handleSelectEvent}
-                onSelectSlot={handleSelectSlot}
-                onEventDrop={handleEventDrop}
-                draggableAccessor={draggableAccessor}
-                resizable={false}
-                selectable
-                style={{ height: "100%" }}
-                components={{ toolbar: NoToolbar }}
-                eventPropGetter={eventPropGetter}
-                dayPropGetter={(date) =>
-                  startOfDay(date) < startOfDay(now)
-                    ? { style: { background: "#f9fafb", pointerEvents: "none", opacity: 0.5 } }
-                    : {}
-                }
-              />
-            </>
-          );
-        })()}
+        {!loading &&
+          !error &&
+          (() => {
+            const hasAnyAvailable = slots.some((s) => s.available);
+            const slotsLoaded = slots.length > 0;
+            return (
+              <>
+                {/* No-availability banner — stays above the calendar so user can still navigate */}
+                {slotsLoaded && !hasAnyAvailable && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      zIndex: 10,
+                      background: "#fffbeb",
+                      borderBottom: "1px solid #fde68a",
+                      padding: "8px 14px",
+                      fontSize: "0.75rem",
+                      color: "#92400e",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span style={{ fontSize: "1rem" }}>⚠️</span>
+                    <span>
+                      No available slots for <strong>{service?.name}</strong> in this period. This usually means no staff members have been assigned to this service yet — an admin can fix this in the business app under <em>Services → Employee Assignments</em>.
+                    </span>
+                  </div>
+                )}
+                <DragAndDropCalendar
+                  localizer={localizer}
+                  events={events}
+                  view={calView}
+                  views={["month", "week", "day"]}
+                  onView={setCalView}
+                  step={30}
+                  timeslots={2}
+                  date={viewDate}
+                  onNavigate={setViewDate}
+                  onSelectEvent={handleSelectEvent}
+                  onSelectSlot={handleSelectSlot}
+                  onEventDrop={handleEventDrop}
+                  draggableAccessor={draggableAccessor}
+                  resizable={false}
+                  selectable
+                  style={{ height: "100%" }}
+                  components={{ toolbar: NoToolbar }}
+                  eventPropGetter={eventPropGetter}
+                  dayPropGetter={(date) => (startOfDay(date) < startOfDay(now) ? { style: { background: "#f9fafb", pointerEvents: "none", opacity: 0.5 } } : {})}
+                  slotPropGetter={slotPropGetter}
+                />
+              </>
+            );
+          })()}
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
@@ -514,7 +490,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
         {/* Row 1: Mode toggles + nav circles */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, overflowX: "auto" }}>
           {[
-            { key: "soft",   label: "Soft", title: "No payment now; can be overridden by a Hard booking" },
+            { key: "soft", label: "Soft", title: "No payment now; can be overridden by a Hard booking" },
             { key: "locked", label: "Hard", title: "Pay upfront to guarantee the slot" },
           ].map(({ key, label, title }) => (
             <button
@@ -570,9 +546,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
           <div style={{ flex: 1, minWidth: 0 }}>
             {selected ? (
               <div>
-                <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#111827" }}>
-                  {format(new Date(selected.start), "EEE MMM d · h:mm a")}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: "0.78rem", color: "#111827" }}>{format(new Date(selected.start), "EEE MMM d · h:mm a")}</div>
                 <div
                   style={{
                     display: "inline-block",
@@ -590,11 +564,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
               </div>
             ) : (
               <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>
-                Tap an{" "}
-                <span style={{ color: PRIMARY, fontWeight: 600 }}>indigo</span>{" "}
-                slot to book · Drag{" "}
-                <span style={{ color: BOOKING_FG, fontWeight: 600 }}>amber</span>{" "}
-                appointments to reschedule
+                Tap an <span style={{ color: PRIMARY, fontWeight: 600 }}>indigo</span> slot to book · Drag <span style={{ color: BOOKING_FG, fontWeight: 600 }}>amber</span> appointments to reschedule
               </span>
             )}
           </div>
