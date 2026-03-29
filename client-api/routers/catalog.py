@@ -13,6 +13,7 @@ GET /catalog/services/{id}/availability    — Available time slots (next 30 day
 Rate limit: 60 requests / minute per IP
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
@@ -36,10 +37,13 @@ from models import (
     Service,
     ServiceAsset,
     ServiceEmployee,
+    ServiceResource,
+    User,
 )
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 limiter = Limiter(key_func=get_remote_address)
+logger = logging.getLogger(__name__)
 
 # DAY_MAP: Python weekday() index → AppSettings field name
 _DAY_MAP = {
@@ -235,27 +239,16 @@ def get_availability(
 
     Algorithm:
       1. Load AppSettings for business hours and days of operation.
-      2. Load employees linked to this service (ServiceEmployee).
+      2. Load employees linked to this service (ServiceEmployee) with their lunch blocks.
       3. Load assets required by this service (ServiceAsset → AssetUnit).
-      4. For each day in the window, generate candidate slots.
-      5. For each slot, check:
-         a. At least one employee has no conflicting Schedule.
-         b. At least one unit of each required asset is available (state='available'
-            AND no conflicting Schedule linking that unit's schedule_id).
-      6. Return slots where ALL constraints are satisfied.
-
-    Response:
-    ```json
-    [
-      {
-        "start": "2026-03-22T09:00:00",
-        "end":   "2026-03-22T10:00:00",
-        "employee_id": "...",
-        "employee_name": "Alice",
-        "available": true
-      }
-    ]
-    ```
+      4. Load consumable resources required by this service (ServiceResource → Inventory).
+      5. For each day in the window, generate candidate slots (past slots are skipped).
+      6. For each slot, check:
+         a. At least one employee is free (no conflicting Schedule AND not during their lunch).
+         b. At least one unit of each required asset is available.
+         c. All required consumable resources have sufficient projected stock, OR a
+            procurement order placed today would arrive before the slot time.
+      7. Return slots where ALL constraints are satisfied.
     """
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     window_start = date_from or now
@@ -277,7 +270,7 @@ def get_availability(
     start_h, start_m = (int(x) for x in settings.start_of_day.split(":"))
     end_h,   end_m   = (int(x) for x in settings.end_of_day.split(":"))
 
-    # ── Load qualified employees ───────────────────────────────────────────────
+    # ── Load qualified employees (with lunch info) ─────────────────────────────
     se_rows = session.exec(
         select(ServiceEmployee).where(
             ServiceEmployee.service_id == service_id,
@@ -289,6 +282,25 @@ def get_availability(
     if not employee_ids:
         return []   # No employees configured for this service
 
+    # Build lunch blocks per employee: { emp_id: (lunch_h, lunch_m, duration_min) | None }
+    employee_lunch: dict = {}
+    for emp_id in employee_ids:
+        try:
+            user = session.exec(
+                select(User).where(User.id == UUID(emp_id))
+            ).first()
+        except Exception:
+            user = None
+        if user and user.lunch_start:
+            try:
+                lh, lm = (int(x) for x in user.lunch_start.split(":"))
+                ld = user.lunch_duration_minutes or 30
+                employee_lunch[emp_id] = (lh, lm, ld)
+            except Exception:
+                employee_lunch[emp_id] = None
+        else:
+            employee_lunch[emp_id] = None
+
     # ── Load required asset types ──────────────────────────────────────────────
     sa_rows = session.exec(
         select(ServiceAsset).where(
@@ -298,7 +310,30 @@ def get_availability(
     ).all()
     required_asset_inventory_ids = [str(row.inventory_id) for row in sa_rows]
 
-    # ── Pre-fetch all schedules in window (for conflict checking) ─────────────
+    # ── Load required consumable resources ────────────────────────────────────
+    sr_rows = session.exec(
+        select(ServiceResource).where(
+            ServiceResource.service_id == service_id,
+            ServiceResource.company_id == company_id,
+        )
+    ).all()
+    # [ (inventory_id_str, qty_per_service) ]
+    required_resources: list[tuple[str, float]] = [
+        (str(r.inventory_id), r.quantity) for r in sr_rows
+    ]
+
+    # Pre-fetch inventory records for resource items (for stock levels + procurement)
+    resource_inventory: dict[str, Inventory] = {}
+    for inv_id, _ in required_resources:
+        inv = session.exec(
+            select(Inventory).where(Inventory.id == UUID(inv_id))
+        ).first()
+        if inv:
+            resource_inventory[inv_id] = inv
+
+    # ── Pre-fetch all hard-confirmed schedules in window ──────────────────────
+    # "soft_hold" schedules are intentionally excluded: a slot held by a soft
+    # booking is still bookable by a hard booker, so it shows as available here.
     existing_schedules = session.exec(
         select(Schedule).where(
             Schedule.company_id == company_id,
@@ -308,15 +343,34 @@ def get_availability(
         )
     ).all()
 
+    # Count how many times each service has been scheduled (for resource consumption)
+    # We need all schedules that consume resources for THIS service type, but since
+    # Schedule only stores service_id we check schedules for the same service_id
+    resource_consuming_schedules = [
+        s for s in existing_schedules
+        if str(s.service_id) == str(service_id)
+    ]
+
+    # ── Helper: employee available at slot (no schedule conflict, not lunch) ───
     def employee_is_free(emp_id: str, slot_start: datetime, slot_end: datetime) -> bool:
+        # Check schedule conflicts
         for s in existing_schedules:
             if str(s.employee_id) != emp_id:
                 continue
             s_end = s.appointment_date + timedelta(minutes=s.duration_minutes or 60)
             if slot_start < s_end and slot_end > s.appointment_date:
                 return False
+        # Check lunch block
+        lunch = employee_lunch.get(emp_id)
+        if lunch:
+            lh, lm, ld = lunch
+            lunch_start_dt = slot_start.replace(hour=lh, minute=lm, second=0, microsecond=0)
+            lunch_end_dt = lunch_start_dt + timedelta(minutes=ld)
+            if slot_start < lunch_end_dt and slot_end > lunch_start_dt:
+                return False
         return True
 
+    # ── Helper: asset units available at slot ─────────────────────────────────
     def asset_units_available(slot_start: datetime, slot_end: datetime) -> bool:
         if not required_asset_inventory_ids:
             return True
@@ -327,7 +381,6 @@ def get_availability(
                     AssetUnit.company_id == company_id,
                 )
             ).all()
-            # Check if any unit is free during this slot
             has_free = False
             for unit in units:
                 if unit.state not in ("available", "arriving_soon"):
@@ -335,7 +388,7 @@ def get_availability(
                 if unit.schedule_id is None:
                     has_free = True
                     break
-                # Check if the linked schedule overlaps
+                # Check if the linked schedule overlaps this slot
                 linked = next((s for s in existing_schedules if str(s.id) == str(unit.schedule_id)), None)
                 if linked:
                     s_end = linked.appointment_date + timedelta(minutes=linked.duration_minutes or 60)
@@ -347,6 +400,51 @@ def get_availability(
                     break
             if not has_free:
                 return False
+        return True
+
+    # ── Helper: consumable resources available for this slot ──────────────────
+    def resources_available(slot_start: datetime) -> bool:
+        """
+        For each required consumable resource:
+          1. Count how many same-service bookings are scheduled BEFORE this slot
+             (they have consumed stock already or will before this slot).
+          2. projected_qty = current_qty - (prior_bookings * qty_per_service)
+          3. If projected_qty >= required_qty → OK.
+          4. Else check if procurement can arrive before slot:
+             procurement_lead_days is the days from order to delivery.
+             If (slot_start - now).days >= procurement_lead_days → restock arrives in time → OK.
+          5. Otherwise → not available.
+        """
+        if not required_resources:
+            return True
+
+        for inv_id, qty_needed in required_resources:
+            inv = resource_inventory.get(inv_id)
+            if not inv:
+                logger.warning("Availability check failed pessimistically because inventory resource %s is missing from resource_inventory.", inv_id)
+                return False
+
+            current_qty = inv.quantity
+
+            # Count bookings of this service scheduled before this slot
+            prior_bookings = sum(
+                1 for s in resource_consuming_schedules
+                if s.appointment_date < slot_start
+            )
+            projected_qty = current_qty - (prior_bookings * qty_needed)
+
+            if projected_qty >= qty_needed:
+                continue  # Enough stock
+
+            # Not enough stock — can a procurement order arrive in time?
+            lead_days = inv.procurement_lead_days
+            if lead_days is not None and lead_days >= 0:
+                days_until_slot = (slot_start - now).total_seconds() / 86400
+                if days_until_slot >= lead_days:
+                    continue  # Procurement arrives before slot; restock expected
+
+            return False  # Insufficient stock and no procurement rescue
+
         return True
 
     # ── Generate slots ─────────────────────────────────────────────────────────
@@ -365,18 +463,25 @@ def get_availability(
 
         while slot_time + duration <= day_end:
             slot_end = slot_time + duration
+
+            # Never return past slots
             if slot_time < now:
                 slot_time += slot_step
                 continue
 
-            # Check each employee
+            # Check resource availability (same for all employees)
+            if not resources_available(slot_time):
+                slot_time += slot_step
+                continue
+
+            # Check each employee — first free one wins
             for emp_id in employee_ids:
                 if employee_is_free(emp_id, slot_time, slot_end) and asset_units_available(slot_time, slot_end):
                     slots.append(AvailabilitySlot(
                         start=slot_time,
                         end=slot_end,
                         employee_id=emp_id,
-                        employee_name="",   # Populated below if needed; omitted for privacy
+                        employee_name="",   # Omitted for client privacy
                         available=True,
                     ))
                     break   # Only one slot per time-block needed

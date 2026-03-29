@@ -36,7 +36,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from database import engine
+from database import engine, create_client_tables
 from models import Company
 from routers import auth, catalog, bookings, orders, companies, cart
 
@@ -61,6 +61,17 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+
+@app.on_event("startup")
+def on_startup():
+    """Ensure DB schema is up-to-date before serving requests."""
+    try:
+        create_client_tables()
+        logger.info("DB schema migration complete.")
+    except Exception:
+        logger.exception("DB schema migration failed — API may be degraded.")
+        raise
 
 
 # ── CORS ─────────────────────────────────────────────────────────────────────────

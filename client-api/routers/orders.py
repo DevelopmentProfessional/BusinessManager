@@ -11,6 +11,7 @@ GET  /orders/{id}       — Order detail
 GET  /orders/{id}/items — Just the line items
 """
 
+import logging
 from typing import List
 from uuid import UUID
 
@@ -24,17 +25,20 @@ from database import get_session
 from models import (
     AppSettings,
     Client,
+    ClientBooking,
     ClientOrder,
     ClientOrderItem,
     Inventory,
     OrderCreate,
     OrderItemRead,
     OrderRead,
+    Schedule,
     Service,
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 limiter = Limiter(key_func=get_remote_address)
+logger = logging.getLogger(__name__)
 
 
 def _order_to_read(o: ClientOrder) -> OrderRead:
@@ -183,6 +187,59 @@ def pay_order(
     except Exception:
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to update order payment.")
+
+    # ── Auto-revoke soft bookings displaced by this hard ("locked") payment ──
+    # For every hard booking in this order, cancel any soft booking that overlaps
+    # the same service + time window for the same company.
+    try:
+        items = session.exec(
+            select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)
+        ).all()
+        for item in items:
+            if not item.booking_id:
+                continue
+            hard_booking = session.exec(
+                select(ClientBooking).where(ClientBooking.id == item.booking_id)
+            ).first()
+            if not hard_booking or hard_booking.booking_mode != "locked":
+                continue
+
+            slot_start = hard_booking.appointment_date
+            slot_end   = slot_start + __import__("datetime").timedelta(minutes=hard_booking.duration_minutes or 60)
+
+            # Find overlapping soft bookings for the same service (excluding this booking)
+            soft_bookings = session.exec(
+                select(ClientBooking).where(
+                    ClientBooking.service_id == hard_booking.service_id,
+                    ClientBooking.company_id == order.company_id,
+                    ClientBooking.booking_mode == "soft",
+                    ClientBooking.status.notin_(["cancelled", "completed"]),
+                    ClientBooking.id != hard_booking.id,
+                )
+            ).all()
+
+            from datetime import timedelta as _td
+            for sb in soft_bookings:
+                sb_end = sb.appointment_date + _td(minutes=sb.duration_minutes or 60)
+                # Check time overlap
+                if slot_start < sb_end and slot_end > sb.appointment_date:
+                    sb.status = "cancelled"
+                    session.add(sb)
+                    # Also cancel the linked soft_hold schedule
+                    if sb.schedule_id:
+                        sched = session.exec(
+                            select(Schedule).where(Schedule.id == sb.schedule_id)
+                        ).first()
+                        if sched and sched.status == "soft_hold":
+                            sched.status = "cancelled"
+                            session.add(sched)
+
+        session.commit()
+    except Exception:
+        # Non-fatal: order payment succeeded; log but don't fail the response
+        logger.exception("Failed to cancel overlapping soft bookings after order checkout for order %s", order.id)
+        session.rollback()
+
     return _order_to_read(order)
 
 

@@ -170,6 +170,8 @@ class Inventory(BaseModel, table=True):
     type: str = Field(default="product")
     image_url: Optional[str] = Field(default=None)
     quantity: int = Field(ge=0, default=0)
+    min_stock_level: int = Field(ge=0, default=10)
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     supplier_id: Optional[UUID] = Field(default=None)
     location: Optional[str] = Field(default=None)
     price_type: Optional[str] = Field(default="fixed")
@@ -234,6 +236,25 @@ class AssetUnit(BaseModel, table=True):
     schedule_id: Optional[UUID] = Field(default=None)
     notes: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ServiceResource(BaseModel, table=True):
+    """Consumable inventory items (resources) used during a service. Read-only mirror."""
+    __tablename__ = "service_resource"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    quantity: float = Field(default=1.0, ge=0)
+    consumption_rate_pct: Optional[float] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class User(BaseModel, table=True):
+    """Minimal read-only mirror of the user table — used for lunch-time availability checks."""
+    __tablename__ = "user"
+    username: str = Field(index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+    lunch_start: Optional[str] = Field(default=None)          # HH:MM, e.g. "12:00"
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
 
 
 # ─── SHARED CART TABLE (read/write from client portal) ─────────────────────────
