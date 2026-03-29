@@ -57,6 +57,14 @@ _DAY_MAP = {
 }
 
 
+def _to_utc_naive(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def _get_settings(company_id: str, session: Session) -> Optional[AppSettings]:
     return session.exec(
         select(AppSettings).where(AppSettings.company_id == company_id)
@@ -251,8 +259,8 @@ def get_availability(
       7. Return slots where ALL constraints are satisfied.
     """
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    window_start = date_from or now
-    window_end   = date_to   or (now + timedelta(days=30))
+    window_start = _to_utc_naive(date_from) or now
+    window_end = _to_utc_naive(date_to) or (now + timedelta(days=30))
 
     # ── Load settings ──────────────────────────────────────────────────────────
     settings = _get_settings(company_id, session)
@@ -378,6 +386,13 @@ def get_availability(
                     AssetUnit.company_id == company_id,
                 )
             ).all()
+            if not units:
+                # No individual asset units are being tracked for this inventory item.
+                # The service_asset link documents a requirement but the business has
+                # not yet created unit records in the asset tracker.  Treat the asset
+                # as available so services are bookable even when unit-level tracking
+                # has not been set up.
+                continue
             has_free = False
             for unit in units:
                 if unit.state not in ("available", "arriving_soon"):

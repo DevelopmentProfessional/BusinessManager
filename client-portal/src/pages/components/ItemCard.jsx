@@ -26,14 +26,21 @@ export default function ItemCard({ item, itemType = 'product', onSelect }) {
 
   const [imgErr, setImgErr] = useState(false)
 
-  const key    = `${item.id}_${itemType}`
+  // Key must match the format used by addToCart in useStore: "${itemType}-${id}"
+  const key    = `${itemType}-${item.id}`
   const inCart = cart.find(c => c._key === key)
   const qty    = inCart?.quantity || 0
   const isService = itemType === 'service'
 
   function handleAdd(e) {
     e.stopPropagation()
-    addToCart({ ...item, item_type: itemType, price: item.price })
+    if (isService) {
+      // Services must go through the booking calendar to select a time slot.
+      // Routing through onSelect opens BookingCalendar in the parent.
+      onSelect?.(item, itemType)
+    } else {
+      addToCart({ ...item, item_type: itemType, price: item.price })
+    }
   }
   function handleInc(e) {
     e.stopPropagation()

@@ -32,6 +32,18 @@ export default function Cart() {
 
   async function handleCheckout() {
     if (cart.length === 0) return;
+
+    // Services added to the cart without a booking slot (e.g. from an older session)
+    // have no time reserved — block checkout and direct the user to book first.
+    const unscheduled = cart.filter((c) => c.item_type === "service" && !c.booking_slot);
+    if (unscheduled.length > 0) {
+      setError(
+        `Please book a time slot for: ${unscheduled.map((c) => c.name).join(", ")}. ` +
+          "Visit the Shop, select the service, and choose an available time."
+      );
+      return;
+    }
+
     setChecking(true);
     setError(null);
     try {
