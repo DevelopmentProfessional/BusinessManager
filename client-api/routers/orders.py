@@ -41,6 +41,18 @@ limiter = Limiter(key_func=get_remote_address)
 logger = logging.getLogger(__name__)
 
 
+def _parse_optional_uuid(value: str | UUID | None, field_name: str, item_name: str) -> UUID | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, UUID):
+        return value
+    try:
+        return UUID(str(value))
+    except (TypeError, ValueError):
+        logger.warning("Checkout received invalid %s for item '%s': %r", field_name, item_name, value)
+        return None
+
+
 def _order_to_read(o: ClientOrder) -> OrderRead:
     return OrderRead(
         id=o.id,
@@ -108,45 +120,40 @@ def checkout(
     tax_amount = round(subtotal * tax_rate, 2)
     total = round(subtotal + tax_amount, 2)
 
-    order = ClientOrder(
-        client_id=current_client.id,
-        status="payment_pending",
-        subtotal=round(subtotal, 2),
-        tax_amount=tax_amount,
-        total=total,
-        payment_method=body.payment_method,
-        company_id=company_id,
-    )
-    session.add(order)
-
     try:
+        order = ClientOrder(
+            client_id=current_client.id,
+            status="payment_pending",
+            subtotal=round(subtotal, 2),
+            tax_amount=tax_amount,
+            total=total,
+            payment_method=body.payment_method,
+            company_id=company_id,
+        )
+        session.add(order)
+        session.flush()
+
+        for item in body.items:
+            line = ClientOrderItem(
+                order_id=order.id,
+                item_id=_parse_optional_uuid(item.item_id, "item_id", item.item_name),
+                item_type=item.item_type,
+                item_name=item.item_name,
+                unit_price=item.unit_price,
+                quantity=item.quantity,
+                line_total=round(item.unit_price * item.quantity, 2),
+                booking_id=_parse_optional_uuid(item.booking_id, "booking_id", item.item_name),
+                options_json=item.options_json,
+                company_id=company_id,
+            )
+            session.add(line)
+
         session.commit()
         session.refresh(order)
     except Exception:
+        logger.exception("Failed to create checkout order for client %s", current_client.id)
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to create order.")
-
-    # Create line items
-    for item in body.items:
-        line = ClientOrderItem(
-            order_id=order.id,
-            item_id=UUID(item.item_id) if item.item_id else None,
-            item_type=item.item_type,
-            item_name=item.item_name,
-            unit_price=item.unit_price,
-            quantity=item.quantity,
-            line_total=round(item.unit_price * item.quantity, 2),
-            booking_id=UUID(item.booking_id) if item.booking_id else None,
-            options_json=item.options_json,
-            company_id=company_id,
-        )
-        session.add(line)
-
-    try:
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create order items.")
 
     return {
         "order_id": str(order.id),

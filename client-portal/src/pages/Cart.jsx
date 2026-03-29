@@ -231,14 +231,14 @@ export default function Cart() {
               onClick={handleCheckout}
               disabled={checking || !isOnline}
               style={{
-                width: '100%', padding: '12px',
+                width: '100%', height: '3rem', padding: '0 1.25rem',
                 background: checking || !isOnline ? '#a5b4fc' : '#4f46e5',
-                color: '#fff', border: 'none', borderRadius: '0.7rem',
+                color: '#fff', border: 'none', borderRadius: '999px',
                 fontWeight: 700, fontSize: '0.9rem',
                 cursor: checking || !isOnline ? 'not-allowed' : 'pointer',
               }}
             >
-              {checking ? 'Preparing checkout…' : 'Proceed to Checkout'}
+              {checking ? 'Preparing order…' : 'Order'}
             </button>
           </div>
         )}

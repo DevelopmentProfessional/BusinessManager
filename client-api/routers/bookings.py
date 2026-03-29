@@ -18,6 +18,7 @@ Double-booking is prevented with a SELECT FOR UPDATE advisory pattern.
 """
 
 import os
+import logging
 import stripe
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -48,6 +49,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 limiter = Limiter(key_func=get_remote_address)
+logger = logging.getLogger(__name__)
 
 
 def _get_settings(company_id: str, session: Session) -> AppSettings:
@@ -266,43 +268,43 @@ def create_booking(
                 linked_booking.status = "cancelled"
                 session.add(linked_booking)
 
-    booking = ClientBooking(
-        client_id=current_client.id,
-        service_id=service_id,
-        booking_mode=body.booking_mode,
-        status="pending",
-        appointment_date=slot_start,
-        duration_minutes=svc.duration_minutes or 60,
-        notes=body.notes,
-        amount_paid=0.0,
-        company_id=company_id,
-    )
-    session.add(booking)
-
-    # Create internal Schedule record. Soft bookings use "soft_hold" so hard bookings
-    # can still take the slot; hard ("locked") bookings use "scheduled" to fully reserve.
-    sched_status = "soft_hold" if body.booking_mode == "soft" else "scheduled"
-    schedule = Schedule(
-        client_id=current_client.id,
-        service_id=service_id,
-        employee_id=UUID(emp_id),
-        appointment_date=slot_start,
-        status=sched_status,
-        duration_minutes=svc.duration_minutes or 60,
-        notes=body.notes,
-        task_type="service",
-        company_id=company_id,
-    )
-    session.add(schedule)
-
     try:
-        session.commit()
-        session.refresh(booking)
-        # Link booking → schedule
+        booking = ClientBooking(
+            client_id=current_client.id,
+            service_id=service_id,
+            booking_mode=body.booking_mode,
+            status="pending",
+            appointment_date=slot_start,
+            duration_minutes=svc.duration_minutes or 60,
+            notes=body.notes,
+            amount_paid=0.0,
+            company_id=company_id,
+        )
+        session.add(booking)
+
+        # Create internal Schedule record. Soft bookings use "soft_hold" so hard bookings
+        # can still take the slot; hard ("locked") bookings use "scheduled" to fully reserve.
+        sched_status = "soft_hold" if body.booking_mode == "soft" else "scheduled"
+        schedule = Schedule(
+            client_id=current_client.id,
+            service_id=service_id,
+            employee_id=UUID(emp_id),
+            appointment_date=slot_start,
+            status=sched_status,
+            duration_minutes=svc.duration_minutes or 60,
+            notes=body.notes,
+            task_type="service",
+            company_id=company_id,
+        )
+        session.add(schedule)
+        session.flush()
+
         booking.schedule_id = schedule.id
+        session.add(booking)
         session.commit()
         session.refresh(booking)
     except Exception:
+        logger.exception("Failed to create client booking and linked schedule for client %s", current_client.id)
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to create booking.")
 
