@@ -44,17 +44,7 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import {
-  UserIcon,
-  CogIcon,
-  HeartIcon,
-  CalendarDaysIcon,
-  ClockIcon,
-  PlusCircleIcon,
-  CheckCircleIcon,
-  CircleStackIcon,
-  CurrencyDollarIcon,
-} from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, ClockIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from "../services/api";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
@@ -217,28 +207,51 @@ const Profile = () => {
   const [dbSettings, setDbSettings] = useState({ connectionString: "", apiBaseUrl: "", onlyofficeUrl: "" });
 
   const [scheduleSettings, setScheduleSettings] = useState({
-    start_of_day: "06:00", end_of_day: "21:00", attendance_check_in_required: true,
-    monday_enabled: true, tuesday_enabled: true, wednesday_enabled: true,
-    thursday_enabled: true, friday_enabled: true, saturday_enabled: true, sunday_enabled: true,
+    start_of_day: "06:00",
+    end_of_day: "21:00",
+    attendance_check_in_required: true,
+    monday_enabled: true,
+    tuesday_enabled: true,
+    wednesday_enabled: true,
+    thursday_enabled: true,
+    friday_enabled: true,
+    saturday_enabled: true,
+    sunday_enabled: true,
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
 
   const [companyInfo, setCompanyInfo] = useState({
-    company_name: "", company_email: "", company_phone: "", company_address: "", tax_rate: 0,
+    company_name: "",
+    company_email: "",
+    company_phone: "",
+    company_address: "",
+    tax_rate: 0,
   });
   const [companyLoading, setCompanyLoading] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const [openAccordions, setOpenAccordions] = useState({
-    application: true, companyInfo: false, branding: false, clientPortal: false, notifications: false,
+    application: true,
+    companyInfo: false,
+    branding: false,
+    clientPortal: false,
+    notifications: false,
   });
 
   const [portalBranding, setPortalBranding] = useState({
-    portal_hero_title: "", portal_hero_subtitle: "", portal_hero_tagline: "",
-    portal_hero_bg_color: "#4f46e5", portal_hero_text_color: "#ffffff", portal_hero_image_url: "",
-    portal_banner_text: "", portal_banner_color: "#4f46e5",
-    portal_show_hero: true, portal_show_banner: false, portal_footer_text: "",
-    portal_primary_color: "#4f46e5", portal_secondary_color: "#0ea5e9",
+    portal_hero_title: "",
+    portal_hero_subtitle: "",
+    portal_hero_tagline: "",
+    portal_hero_bg_color: "#4f46e5",
+    portal_hero_text_color: "#ffffff",
+    portal_hero_image_url: "",
+    portal_banner_text: "",
+    portal_banner_color: "#4f46e5",
+    portal_show_hero: true,
+    portal_show_banner: false,
+    portal_footer_text: "",
+    portal_primary_color: "#4f46e5",
+    portal_secondary_color: "#0ea5e9",
   });
   const [portalBrandingLoading, setPortalBrandingLoading] = useState(false);
   const [heroImageUploading, setHeroImageUploading] = useState(false);
@@ -254,7 +267,10 @@ const Profile = () => {
   const csvFileInputRef = useRef(null);
 
   const [notifications, setNotifications] = useState({
-    emailEnabled: true, pushEnabled: false, appointmentReminders: true, dailyDigest: false,
+    emailEnabled: true,
+    pushEnabled: false,
+    appointmentReminders: true,
+    dailyDigest: false,
   });
 
   useEffect(() => {
@@ -274,8 +290,14 @@ const Profile = () => {
   }, []);
 
   const handleRow2Ref = useCallback((el) => {
-    if (row2ObsRef.current) { row2ObsRef.current.disconnect(); row2ObsRef.current = null; }
-    if (!el) { setRow2Height(0); return; }
+    if (row2ObsRef.current) {
+      row2ObsRef.current.disconnect();
+      row2ObsRef.current = null;
+    }
+    if (!el) {
+      setRow2Height(0);
+      return;
+    }
     const update = () => setRow2Height(el.offsetHeight);
     update();
     const obs = new ResizeObserver(update);
@@ -284,7 +306,9 @@ const Profile = () => {
   }, []);
 
   // ─── 6 SETTINGS LOAD EFFECTS ─────────────────────────────────────────────
-  useEffect(() => { setLocalBranding(branding); }, [branding]);
+  useEffect(() => {
+    setLocalBranding(branding);
+  }, [branding]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(getMobileEnvironment().isMobileViewport);
@@ -295,13 +319,21 @@ const Profile = () => {
   useEffect(() => {
     const savedDb = localStorage.getItem("app_db_settings");
     if (savedDb) {
-      try { setDbSettings(JSON.parse(savedDb)); } catch { /* ignore */ }
+      try {
+        setDbSettings(JSON.parse(savedDb));
+      } catch {
+        /* ignore */
+      }
     } else {
       setDbSettings({ connectionString: "", apiBaseUrl: import.meta.env.VITE_API_URL || "", onlyofficeUrl: import.meta.env.VITE_ONLYOFFICE_URL || "" });
     }
     const savedNotif = localStorage.getItem("app_notifications");
     if (savedNotif) {
-      try { setNotifications(JSON.parse(savedNotif)); } catch { /* ignore */ }
+      try {
+        setNotifications(JSON.parse(savedNotif));
+      } catch {
+        /* ignore */
+      }
     }
     const loadSchedule = async () => {
       try {
@@ -326,7 +358,7 @@ const Profile = () => {
             company_address: res.data.company_address || "",
             tax_rate: res.data.tax_rate ?? 0,
           });
-          setPortalBranding(prev => ({
+          setPortalBranding((prev) => ({
             ...prev,
             portal_hero_title: res.data.portal_hero_title || "",
             portal_hero_subtitle: res.data.portal_hero_subtitle || "",
@@ -343,7 +375,9 @@ const Profile = () => {
             portal_secondary_color: res.data.portal_secondary_color || "#0ea5e9",
           }));
         }
-      } catch { /* silently degrade */ }
+      } catch {
+        /* silently degrade */
+      }
     };
     loadSchedule();
   }, []);
@@ -400,9 +434,7 @@ const Profile = () => {
       // Backward-compatible bridge: if an existing local branding document is selected,
       // sync it into company logo_data so the client portal can render it.
       if (localBranding.logoDocumentId) {
-        const selectedDoc =
-          logoPickerDocs.find((d) => String(d.id) === String(localBranding.logoDocumentId)) ||
-          { id: localBranding.logoDocumentId, original_filename: `logo-${localBranding.logoDocumentId}.png`, content_type: "image/png" };
+        const selectedDoc = logoPickerDocs.find((d) => String(d.id) === String(localBranding.logoDocumentId)) || { id: localBranding.logoDocumentId, original_filename: `logo-${localBranding.logoDocumentId}.png`, content_type: "image/png" };
         await uploadDocumentAsCompanyLogo(selectedDoc);
       }
 
@@ -567,10 +599,16 @@ const Profile = () => {
       portal_hero_title: companyInfo.company_name || "",
       portal_hero_subtitle: "Browse our products and services",
       portal_hero_tagline: "",
-      portal_hero_bg_color: "#4f46e5", portal_hero_text_color: "#ffffff", portal_hero_image_url: "",
-      portal_banner_text: "", portal_banner_color: "#4f46e5",
-      portal_show_hero: true, portal_show_banner: false, portal_footer_text: "",
-      portal_primary_color: "#4f46e5", portal_secondary_color: "#0ea5e9",
+      portal_hero_bg_color: "#4f46e5",
+      portal_hero_text_color: "#ffffff",
+      portal_hero_image_url: "",
+      portal_banner_text: "",
+      portal_banner_color: "#4f46e5",
+      portal_show_hero: true,
+      portal_show_banner: false,
+      portal_footer_text: "",
+      portal_primary_color: "#4f46e5",
+      portal_secondary_color: "#0ea5e9",
     });
   };
 
@@ -593,7 +631,9 @@ const Profile = () => {
     try {
       const res = await schemaAPI.getTables();
       setAvailableTables(res.data || []);
-    } catch { /* silently degrade */ }
+    } catch {
+      /* silently degrade */
+    }
   };
 
   const loadTableColumns = async (tableName) => {
@@ -615,9 +655,14 @@ const Profile = () => {
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
-      if (char === '"') { inQuotes = !inQuotes; }
-      else if (char === "," && !inQuotes) { result.push(current.trim()); current = ""; }
-      else { current += char; }
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
     }
     result.push(current.trim());
     return result;
@@ -632,7 +677,9 @@ const Profile = () => {
       const values = parseCSVLine(lines[i]);
       if (values.length === headers.length) {
         const row = {};
-        headers.forEach((h, idx) => { row[h] = values[idx]; });
+        headers.forEach((h, idx) => {
+          row[h] = values[idx];
+        });
         data.push(row);
       }
     }
@@ -664,7 +711,10 @@ const Profile = () => {
   };
 
   const handleImport = async () => {
-    if (!csvData || csvData.length === 0) { setSettingsError("No data to import"); return; }
+    if (!csvData || csvData.length === 0) {
+      setSettingsError("No data to import");
+      return;
+    }
     setImportLoading(true);
     setSettingsError("");
     setImportResult(null);
@@ -710,7 +760,9 @@ const Profile = () => {
       setUser(mergedUser);
       if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
       if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
-    } catch { /* silently degrade */ }
+    } catch {
+      /* silently degrade */
+    }
   };
 
   useEffect(() => {
@@ -727,12 +779,16 @@ const Profile = () => {
       try {
         const res = await payrollAPI.getByEmployee(user.id);
         if (!cancelled) setPaySlips(Array.isArray(res?.data) ? res.data : []);
-      } catch { /* silently degrade */ } finally {
+      } catch {
+        /* silently degrade */
+      } finally {
         if (!cancelled) setPaySlipsLoading(false);
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [openAccordion, user?.id]);
 
   // ─── 12 LEAVE REQUEST EFFECTS & HANDLERS ─────────────────────────────────
@@ -747,12 +803,16 @@ const Profile = () => {
         if (cancelled) return;
         setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
         setSickRequests(Array.isArray(sickRes?.data) ? sickRes.data : []);
-      } catch { /* silently degrade */ } finally {
+      } catch {
+        /* silently degrade */
+      } finally {
         if (!cancelled) setLeaveRequestsLoading(false);
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [openAccordion, leaveManagementOpen, user?.id]);
 
   const refreshLeaveRequests = async () => {
@@ -762,7 +822,9 @@ const Profile = () => {
       const [vacRes, sickRes] = await Promise.all([leaveRequestsAPI.getByUser(user.id, "vacation"), leaveRequestsAPI.getByUser(user.id, "sick")]);
       setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
       setSickRequests(Array.isArray(sickRes?.data) ? sickRes.data : []);
-    } catch { /* silently degrade */ } finally {
+    } catch {
+      /* silently degrade */
+    } finally {
       setLeaveRequestsLoading(false);
     }
   };
@@ -777,14 +839,26 @@ const Profile = () => {
       if (isLeave) {
         const start = new Date(leaveForm.start_date);
         const end = new Date(leaveForm.end_date);
-        if (end < start) { setLeaveError("End date must be on or after start date."); setLeaveSubmitting(false); return; }
+        if (end < start) {
+          setLeaveError("End date must be on or after start date.");
+          setLeaveSubmitting(false);
+          return;
+        }
         const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
         if (leaveModalType === "vacation") {
           const remaining = Math.max(0, toNumber(user.vacation_days) - toNumber(user.vacation_days_used));
-          if (daysRequested > remaining) { setLeaveError(`You only have ${remaining} vacation day(s) remaining.`); setLeaveSubmitting(false); return; }
+          if (daysRequested > remaining) {
+            setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
+            setLeaveSubmitting(false);
+            return;
+          }
         } else {
           const remaining = Math.max(0, toNumber(user.sick_days) - toNumber(user.sick_days_used));
-          if (daysRequested > remaining) { setLeaveError(`You only have ${remaining} sick day(s) remaining.`); setLeaveSubmitting(false); return; }
+          if (daysRequested > remaining) {
+            setLeaveError(`You only have ${remaining} sick day(s) remaining.`);
+            setLeaveSubmitting(false);
+            return;
+          }
         }
         await leaveRequestsAPI.create({ user_id: user.id, supervisor_id: user.reports_to || null, leave_type: leaveModalType, start_date: leaveForm.start_date, end_date: leaveForm.end_date, days_requested: daysRequested, notes: leaveForm.notes || null, status: "pending" });
         await refreshLeaveRequests();
@@ -860,12 +934,18 @@ const Profile = () => {
       const trackedSections = ["Employee Information Section", "Theme Settings Section", "Database Environment Section", "Install App Section", "Access Token Section"];
       const checkSections = () => {
         const checkInterval = setInterval(() => {
-          trackedSections.forEach((section) => { if (getPerformanceSessionActive()) logComponentLoad(section); });
+          trackedSections.forEach((section) => {
+            if (getPerformanceSessionActive()) logComponentLoad(section);
+          });
           clearInterval(checkInterval);
         }, 100);
       };
       checkSections();
-      const rafId = requestAnimationFrame(() => { setTimeout(() => { finalizePerformanceReport(); }, 300); });
+      const rafId = requestAnimationFrame(() => {
+        setTimeout(() => {
+          finalizePerformanceReport();
+        }, 300);
+      });
       return () => cancelAnimationFrame(rafId);
     }
   }, [user]);
@@ -876,7 +956,9 @@ const Profile = () => {
       <div className="container-fluid py-1">
         <div className="card">
           <div className="card-body text-center">
-            <div className="spinner-border text-primary mb-3" role="status"><span className="visually-hidden">Loading...</span></div>
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
             <h2 className="h5 mb-2">Loading...</h2>
           </div>
         </div>
@@ -891,11 +973,16 @@ const Profile = () => {
 
   const getRoleBadgeColor = (role) => {
     switch (role?.toLowerCase()) {
-      case "admin": return "danger";
-      case "manager": return "warning";
-      case "employee": return "primary";
-      case "viewer": return "secondary";
-      default: return "secondary";
+      case "admin":
+        return "danger";
+      case "manager":
+        return "warning";
+      case "employee":
+        return "primary";
+      case "viewer":
+        return "secondary";
+      default:
+        return "secondary";
     }
   };
 
@@ -921,12 +1008,24 @@ const Profile = () => {
   const row1PanelBottom = totalFooterHeight;
 
   const settingsPanelStyle = {
-    position: "fixed", top: 0, bottom: `${totalFooterHeight}px`, left: 0, right: 0,
-    width: "100%", height: `calc(var(--vvp-height, 100dvh) - ${totalFooterHeight}px)`,
-    overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none",
-    backgroundColor: "var(--bs-body-bg)", zIndex: 1000,
-    paddingTop: "1rem", paddingLeft: "1rem", paddingRight: "1rem", paddingBottom: "0.25rem",
-    display: "flex", flexDirection: "column",
+    position: "fixed",
+    top: 0,
+    bottom: `${totalFooterHeight}px`,
+    left: 0,
+    right: 0,
+    width: "100%",
+    height: `calc(var(--vvp-height, 100dvh) - ${totalFooterHeight}px)`,
+    overflowY: "auto",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    backgroundColor: "var(--bs-body-bg)",
+    zIndex: 1000,
+    paddingTop: "1rem",
+    paddingLeft: "1rem",
+    paddingRight: "1rem",
+    paddingBottom: "0.25rem",
+    display: "flex",
+    flexDirection: "column",
   };
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
@@ -934,82 +1033,137 @@ const Profile = () => {
     <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: "100%" }}>
       <div className="flex-grow-1"></div>
 
-      {openAccordion === "profile" && (
-        <Panel_Profile user={user} isMobile={isMobile} row1PanelBottom={row1PanelBottom} formatDate={formatDate} getRoleBadgeColor={getRoleBadgeColor} />
-      )}
+      {openAccordion === "profile" && <Panel_Profile user={user} isMobile={isMobile} row1PanelBottom={row1PanelBottom} formatDate={formatDate} getRoleBadgeColor={getRoleBadgeColor} />}
 
       {openAccordion === "benefits" && (
         <Panel_Benefits
-          user={user} isMobile={isMobile} row1PanelBottom={row1PanelBottom}
-          leaveRequestsLoading={leaveRequestsLoading} vacationRequests={vacationRequests} sickRequests={sickRequests}
-          vacTotal={vacTotal} vacUsed={vacUsed} vacRemaining={vacRemaining}
-          sickTotal={sickTotal} sickUsed={sickUsed} sickRemaining={sickRemaining}
-          statusColor={statusColor} openLeaveModal={openLeaveModal}
+          user={user}
+          isMobile={isMobile}
+          row1PanelBottom={row1PanelBottom}
+          leaveRequestsLoading={leaveRequestsLoading}
+          vacationRequests={vacationRequests}
+          sickRequests={sickRequests}
+          vacTotal={vacTotal}
+          vacUsed={vacUsed}
+          vacRemaining={vacRemaining}
+          sickTotal={sickTotal}
+          sickUsed={sickUsed}
+          sickRemaining={sickRemaining}
+          statusColor={statusColor}
+          openLeaveModal={openLeaveModal}
         />
       )}
 
-      {openAccordion === "wages" && (
-        <Panel_Wages isMobile={isMobile} row1PanelBottom={row1PanelBottom} paySlipsLoading={paySlipsLoading} paySlips={paySlips} setSelectedSlip={setSelectedSlip} />
-      )}
+      {openAccordion === "wages" && <Panel_Wages isMobile={isMobile} row1PanelBottom={row1PanelBottom} paySlipsLoading={paySlipsLoading} paySlips={paySlips} setSelectedSlip={setSelectedSlip} />}
 
       {openAccordion === "settings" && (
         <Panel_Settings
-          isMobile={isMobile} row1PanelBottom={row1PanelBottom}
-          isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}
-          employeeColor={employeeColor} pendingColor={pendingColor} setPendingColor={setPendingColor}
-          colorPickerOpen={colorPickerOpen} setColorPickerOpen={setColorPickerOpen}
-          colorUpdating={colorUpdating} colorMessage={colorMessage} handleColorSave={handleColorSave}
-          FooterAlignIcon={FooterAlignIcon} cycleFooterAlign={cycleFooterAlign}
-          user={user} setSignatureModalOpen={setSignatureModalOpen}
-          isTrainingMode={isTrainingMode} toggleViewMode={toggleViewMode}
+          isMobile={isMobile}
+          row1PanelBottom={row1PanelBottom}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          employeeColor={employeeColor}
+          pendingColor={pendingColor}
+          setPendingColor={setPendingColor}
+          colorPickerOpen={colorPickerOpen}
+          setColorPickerOpen={setColorPickerOpen}
+          colorUpdating={colorUpdating}
+          colorMessage={colorMessage}
+          handleColorSave={handleColorSave}
+          FooterAlignIcon={FooterAlignIcon}
+          cycleFooterAlign={cycleFooterAlign}
+          user={user}
+          setSignatureModalOpen={setSignatureModalOpen}
+          isTrainingMode={isTrainingMode}
+          toggleViewMode={toggleViewMode}
           handleLogout={handleLogout}
-          currentDbEnvironment={currentDbEnvironment} dbLoading={dbLoading} dbMessage={dbMessage} dbError={dbError}
-          handleSwitchEnvironment={handleSwitchEnvironment} DB_ENVIRONMENTS={DB_ENVIRONMENTS}
+          currentDbEnvironment={currentDbEnvironment}
+          dbLoading={dbLoading}
+          dbMessage={dbMessage}
+          dbError={dbError}
+          handleSwitchEnvironment={handleSwitchEnvironment}
+          DB_ENVIRONMENTS={DB_ENVIRONMENTS}
         />
       )}
 
       {openAccordion === "schedule" && canAccessSettings && (
         <Panel_Schedule
-          isMobile={isMobile} settingsPanelStyle={settingsPanelStyle}
-          scheduleSettings={scheduleSettings} handleScheduleSettingsChange={handleScheduleSettingsChange}
-          handleSaveScheduleSettings={handleSaveScheduleSettings} scheduleLoading={scheduleLoading}
-          settingsError={settingsError} settingsSuccess={settingsSuccess}
-          userId={user.id} HelpIcon={HelpIcon}
+          isMobile={isMobile}
+          settingsPanelStyle={settingsPanelStyle}
+          scheduleSettings={scheduleSettings}
+          handleScheduleSettingsChange={handleScheduleSettingsChange}
+          handleSaveScheduleSettings={handleSaveScheduleSettings}
+          scheduleLoading={scheduleLoading}
+          settingsError={settingsError}
+          settingsSuccess={settingsSuccess}
+          userId={user.id}
+          HelpIcon={HelpIcon}
         />
       )}
 
       {openAccordion === "general" && canAccessGeneralSettings && (
         <Panel_General
-          isMobile={isMobile} settingsPanelStyle={settingsPanelStyle}
-          openAccordions={openAccordions} toggleAccordion={toggleAccordion}
-          uiScale={uiScale} setUiScale={setUiScale} cycleUiScale={cycleUiScale}
-          syncLoading={syncLoading} handleManualSync={handleManualSync}
-          user={user} companyInfo={companyInfo} companyLoading={companyLoading}
-          handleCompanyInfoChange={handleCompanyInfoChange} handleSaveCompanyInfo={handleSaveCompanyInfo}
-          localBranding={localBranding} brandingLogoUploading={brandingLogoUploading}
-          logoPickerOpen={logoPickerOpen} setLogoPickerOpen={setLogoPickerOpen}
-          logoPickerLoading={logoPickerLoading} logoPickerError={logoPickerError} logoPickerDocs={logoPickerDocs}
-          handleBrandingChange={handleBrandingChange} handleUploadBrandingLogo={handleUploadBrandingLogo}
-          handleSelectLogoFromDocuments={handleSelectLogoFromDocuments} handleSaveBranding={handleSaveBranding}
+          isMobile={isMobile}
+          settingsPanelStyle={settingsPanelStyle}
+          openAccordions={openAccordions}
+          toggleAccordion={toggleAccordion}
+          uiScale={uiScale}
+          setUiScale={setUiScale}
+          cycleUiScale={cycleUiScale}
+          syncLoading={syncLoading}
+          handleManualSync={handleManualSync}
+          user={user}
+          companyInfo={companyInfo}
+          companyLoading={companyLoading}
+          handleCompanyInfoChange={handleCompanyInfoChange}
+          handleSaveCompanyInfo={handleSaveCompanyInfo}
+          localBranding={localBranding}
+          brandingLogoUploading={brandingLogoUploading}
+          logoPickerOpen={logoPickerOpen}
+          setLogoPickerOpen={setLogoPickerOpen}
+          logoPickerLoading={logoPickerLoading}
+          logoPickerError={logoPickerError}
+          logoPickerDocs={logoPickerDocs}
+          handleBrandingChange={handleBrandingChange}
+          handleUploadBrandingLogo={handleUploadBrandingLogo}
+          handleSelectLogoFromDocuments={handleSelectLogoFromDocuments}
+          handleSaveBranding={handleSaveBranding}
           loadLogoPickerDocs={loadLogoPickerDocs}
-          notifications={notifications} handleNotificationChange={handleNotificationChange} handleSaveNotifications={handleSaveNotifications}
-          portalBranding={portalBranding} portalBrandingLoading={portalBrandingLoading} heroImageUploading={heroImageUploading}
-          handlePortalBrandingChange={handlePortalBrandingChange} handleSavePortalBranding={handleSavePortalBranding}
-          handleUploadHeroImage={handleUploadHeroImage} resetPortalBrandingDefaults={resetPortalBrandingDefaults}
-          settingsSuccess={settingsSuccess} HelpIcon={HelpIcon}
+          notifications={notifications}
+          handleNotificationChange={handleNotificationChange}
+          handleSaveNotifications={handleSaveNotifications}
+          portalBranding={portalBranding}
+          portalBrandingLoading={portalBrandingLoading}
+          heroImageUploading={heroImageUploading}
+          handlePortalBrandingChange={handlePortalBrandingChange}
+          handleSavePortalBranding={handleSavePortalBranding}
+          handleUploadHeroImage={handleUploadHeroImage}
+          resetPortalBrandingDefaults={resetPortalBrandingDefaults}
+          settingsSuccess={settingsSuccess}
+          HelpIcon={HelpIcon}
         />
       )}
 
       {openAccordion === "database" && canAccessSettings && (
         <Panel_Database
-          isMobile={isMobile} settingsPanelStyle={settingsPanelStyle}
-          availableTables={availableTables} selectedTable={selectedTable} setSelectedTable={setSelectedTable}
-          tableColumns={tableColumns} csvData={csvData} csvHeaders={csvHeaders}
-          columnMapping={columnMapping} handleColumnMappingChange={handleColumnMappingChange}
-          handleFileSelect={handleFileSelect} handleImport={handleImport}
-          importLoading={importLoading} importResult={importResult}
-          resetImport={resetImport} csvFileInputRef={csvFileInputRef}
-          settingsError={settingsError} HelpIcon={HelpIcon}
+          isMobile={isMobile}
+          settingsPanelStyle={settingsPanelStyle}
+          availableTables={availableTables}
+          selectedTable={selectedTable}
+          setSelectedTable={setSelectedTable}
+          tableColumns={tableColumns}
+          csvData={csvData}
+          csvHeaders={csvHeaders}
+          columnMapping={columnMapping}
+          handleColumnMappingChange={handleColumnMappingChange}
+          handleFileSelect={handleFileSelect}
+          handleImport={handleImport}
+          importLoading={importLoading}
+          importResult={importResult}
+          resetImport={resetImport}
+          csvFileInputRef={csvFileInputRef}
+          settingsError={settingsError}
+          HelpIcon={HelpIcon}
         />
       )}
 
@@ -1020,23 +1174,33 @@ const Profile = () => {
             <div className="card-body">
               <h6 className="card-title mb-3">Leave Management</h6>
               {leaveRequestsLoading ? (
-                <div className="text-center py-4"><div className="spinner-border spinner-border-sm text-primary" role="status" /></div>
+                <div className="text-center py-4">
+                  <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                </div>
               ) : (
                 <>
                   <div className="row g-2 mb-3">
                     <div className="col-6">
                       <div className="bg-light rounded p-2 small">
                         <div className="fw-semibold text-primary">Vacation Days</div>
-                        <div className="text-muted small mb-1">{vacUsed} / {vacTotal} used</div>
-                        <div className="progress" style={{ height: "4px" }}><div className="progress-bar bg-primary" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} /></div>
+                        <div className="text-muted small mb-1">
+                          {vacUsed} / {vacTotal} used
+                        </div>
+                        <div className="progress" style={{ height: "4px" }}>
+                          <div className="progress-bar bg-primary" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
+                        </div>
                         <div className="text-muted small mt-1">{vacRemaining} remaining</div>
                       </div>
                     </div>
                     <div className="col-6">
                       <div className="bg-light rounded p-2 small">
                         <div className="fw-semibold text-warning">Sick Days</div>
-                        <div className="text-muted small mb-1">{sickUsed} / {sickTotal} used</div>
-                        <div className="progress" style={{ height: "4px" }}><div className="progress-bar bg-warning" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} /></div>
+                        <div className="text-muted small mb-1">
+                          {sickUsed} / {sickTotal} used
+                        </div>
+                        <div className="progress" style={{ height: "4px" }}>
+                          <div className="progress-bar bg-warning" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
+                        </div>
                         <div className="text-muted small mt-1">{sickRemaining} remaining</div>
                       </div>
                     </div>
@@ -1048,15 +1212,31 @@ const Profile = () => {
                     ) : (
                       <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
                         <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
-                          <thead className="table-light"><tr><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th></tr></thead>
+                          <thead className="table-light">
+                            <tr>
+                              <th>Type</th>
+                              <th>From</th>
+                              <th>To</th>
+                              <th>Days</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
                           <tbody>
-                            {[...vacationRequests, ...sickRequests].filter((r) => r.status === "pending").map((req) => (
-                              <tr key={req.id}>
-                                <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
-                                <td>{req.start_date}</td><td>{req.end_date}</td><td>{req.days_requested ?? "—"}</td>
-                                <td><span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>{req.status}</span></td>
-                              </tr>
-                            ))}
+                            {[...vacationRequests, ...sickRequests]
+                              .filter((r) => r.status === "pending")
+                              .map((req) => (
+                                <tr key={req.id}>
+                                  <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
+                                  <td>{req.start_date}</td>
+                                  <td>{req.end_date}</td>
+                                  <td>{req.days_requested ?? "—"}</td>
+                                  <td>
+                                    <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
+                                      {req.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
                           </tbody>
                         </table>
                       </div>
@@ -1067,7 +1247,9 @@ const Profile = () => {
                       <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
                       Request Leave
                     </button>
-                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setLeaveManagementOpen(false)}>Close</button>
+                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setLeaveManagementOpen(false)}>
+                      Close
+                    </button>
                   </div>
                 </>
               )}
@@ -1084,8 +1266,19 @@ const Profile = () => {
               <div className="row g-0">
                 <div className="col-10">
                   <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
-                    {[{ id: "schedule", Icon: ClockIcon, title: "Schedule" }, { id: "database", Icon: CircleStackIcon, title: "Database" }].map(({ id, Icon, title }) => (
-                      <Button_Toolbar key={id} icon={Icon} label={title} onClick={() => setOpenAccordion(openAccordion === id ? "" : id)} className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`} style={{ height: "3rem" }} data-active={openAccordion === id} />
+                    {[
+                      { id: "schedule", Icon: ClockIcon, title: "Schedule" },
+                      { id: "database", Icon: CircleStackIcon, title: "Database" },
+                    ].map(({ id, Icon, title }) => (
+                      <Button_Toolbar
+                        key={id}
+                        icon={Icon}
+                        label={title}
+                        onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                        style={{ height: "3rem" }}
+                        data-active={openAccordion === id}
+                      />
                     ))}
                   </div>
                 </div>
@@ -1094,8 +1287,19 @@ const Profile = () => {
             <div className="d-none d-lg-block">
               <div className="row g-0">
                 <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
-                  {[{ id: "schedule", Icon: ClockIcon, title: "Schedule" }, { id: "database", Icon: CircleStackIcon, title: "Database" }].map(({ id, Icon, title }) => (
-                    <Button_Toolbar key={id} icon={Icon} label={title} onClick={() => setOpenAccordion(openAccordion === id ? "" : id)} className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`} style={{ height: "3rem" }} data-active={openAccordion === id} />
+                  {[
+                    { id: "schedule", Icon: ClockIcon, title: "Schedule" },
+                    { id: "database", Icon: CircleStackIcon, title: "Database" },
+                  ].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      style={{ height: "3rem" }}
+                      data-active={openAccordion === id}
+                    />
                   ))}
                 </div>
               </div>
@@ -1115,7 +1319,15 @@ const Profile = () => {
                     { id: "settings", Icon: CogIcon, title: "Settings" },
                     ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
                   ].map(({ id, Icon, title }) => (
-                    <Button_Toolbar key={id} icon={Icon} label={title} onClick={() => setOpenAccordion(openAccordion === id ? "" : id)} className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`} style={{ height: "3rem" }} data-active={openAccordion === id} />
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      style={{ height: "3rem" }}
+                      data-active={openAccordion === id}
+                    />
                   ))}
                 </div>
               </div>
@@ -1131,7 +1343,15 @@ const Profile = () => {
                   { id: "settings", Icon: CogIcon, title: "Settings" },
                   ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
                 ].map(({ id, Icon, title }) => (
-                  <Button_Toolbar key={id} icon={Icon} label={title} onClick={() => setOpenAccordion(openAccordion === id ? "" : id)} className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`} style={{ height: "3rem" }} data-active={openAccordion === id} />
+                  <Button_Toolbar
+                    key={id}
+                    icon={Icon}
+                    label={title}
+                    onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                    className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                    style={{ height: "3rem" }}
+                    data-active={openAccordion === id}
+                  />
                 ))}
               </div>
             </div>
@@ -1144,19 +1364,44 @@ const Profile = () => {
 
       {/* Request Modal */}
       {showLeaveModal && (
-        <div className="modal d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.45)" }} onClick={(e) => { if (e.target === e.currentTarget) { setShowLeaveModal(false); setLeaveError(""); } }}>
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLeaveModal(false);
+              setLeaveError("");
+            }
+          }}
+        >
           <div className="modal-dialog modal-sm modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header py-2">
                 <h6 className="modal-title mb-0">New Request</h6>
-                <button type="button" className="btn-close" onClick={() => { setShowLeaveModal(false); setLeaveError(""); }} />
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowLeaveModal(false);
+                    setLeaveError("");
+                  }}
+                />
               </div>
               <form onSubmit={handleLeaveSubmit}>
                 <div className="modal-body py-3">
                   {leaveError && <div className="alert alert-danger py-1 small mb-2">{leaveError}</div>}
                   <div className="mb-2">
                     <label className="form-label small mb-1">Request Type</label>
-                    <select className="form-select form-select-sm" value={leaveModalType} onChange={(e) => { setLeaveModalType(e.target.value); setLeaveForm({ start_date: "", end_date: "", notes: "" }); setLeaveError(""); }}>
+                    <select
+                      className="form-select form-select-sm"
+                      value={leaveModalType}
+                      onChange={(e) => {
+                        setLeaveModalType(e.target.value);
+                        setLeaveForm({ start_date: "", end_date: "", notes: "" });
+                        setLeaveError("");
+                      }}
+                    >
                       <option value="vacation">Vacation Leave</option>
                       <option value="sick">Sick Leave</option>
                       <option value="onboarding">Onboarding</option>
@@ -1186,8 +1431,19 @@ const Profile = () => {
                   </div>
                 </div>
                 <div className="modal-footer py-2">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setShowLeaveModal(false); setLeaveError(""); }}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>{leaveSubmitting ? "Submitting…" : "Submit Request"}</button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() => {
+                      setShowLeaveModal(false);
+                      setLeaveError("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
+                    {leaveSubmitting ? "Submitting…" : "Submit Request"}
+                  </button>
                 </div>
               </form>
             </div>
@@ -1197,7 +1453,14 @@ const Profile = () => {
 
       {/* Pay Slip Detail Modal */}
       {selectedSlip && (
-        <div className="modal d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 2000 }} onClick={(e) => { if (e.target === e.currentTarget) setSelectedSlip(null); }}>
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 2000 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedSlip(null);
+          }}
+        >
           <div className="modal-dialog modal-dialog-centered modal-sm">
             <div className="modal-content" id="pay-slip-print-area">
               <div className="modal-header py-2">
@@ -1206,23 +1469,33 @@ const Profile = () => {
               </div>
               <div className="modal-body" style={{ fontSize: "0.85rem" }}>
                 <div className="text-center mb-3">
-                  <div className="fw-bold fs-6">{user?.first_name} {user?.last_name}</div>
+                  <div className="fw-bold fs-6">
+                    {user?.first_name} {user?.last_name}
+                  </div>
                   <div className="text-muted small">{user?.role}</div>
                 </div>
                 <hr className="my-2" />
                 <div className="row g-1 mb-2">
                   <div className="col-6 text-muted">Pay Period</div>
-                  <div className="col-6 text-end">{selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}</div>
+                  <div className="col-6 text-end">
+                    {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
+                  </div>
                   <div className="col-6 text-muted">Type</div>
-                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>{selectedSlip.employment_type || "—"}</div>
+                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                    {selectedSlip.employment_type || "—"}
+                  </div>
                   {selectedSlip.employment_type === "hourly" && (
                     <>
-                      <div className="col-6 text-muted">Hours</div><div className="col-6 text-end">{selectedSlip.hours_worked ?? "—"}</div>
-                      <div className="col-6 text-muted">Rate</div><div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                      <div className="col-6 text-muted">Hours</div>
+                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? "—"}</div>
+                      <div className="col-6 text-muted">Rate</div>
+                      <div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
                     </>
                   )}
                   <div className="col-6 text-muted">Pay Frequency</div>
-                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>{selectedSlip.pay_frequency || "—"}</div>
+                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                    {selectedSlip.pay_frequency || "—"}
+                  </div>
                 </div>
                 <hr className="my-2" />
                 <div className="row g-1">
@@ -1246,17 +1519,27 @@ const Profile = () => {
                 {selectedSlip.notes && <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>}
               </div>
               <div className="modal-footer py-2">
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => {
-                  const el = document.getElementById("pay-slip-print-area");
-                  if (el) {
-                    const w = window.open("", "_blank");
-                    w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + "</body></html>");
-                    w.document.close();
-                    w.focus();
-                    setTimeout(() => { w.print(); }, 500);
-                  }
-                }}>Print</button>
-                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>Close</button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => {
+                    const el = document.getElementById("pay-slip-print-area");
+                    if (el) {
+                      const w = window.open("", "_blank");
+                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + "</body></html>");
+                      w.document.close();
+                      w.focus();
+                      setTimeout(() => {
+                        w.print();
+                      }, 500);
+                    }
+                  }}
+                >
+                  Print
+                </button>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>
+                  Close
+                </button>
               </div>
             </div>
           </div>

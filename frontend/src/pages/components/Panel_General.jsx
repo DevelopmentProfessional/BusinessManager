@@ -2,19 +2,7 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import {
-  CogIcon,
-  InformationCircleIcon,
-  BriefcaseIcon,
-  SwatchIcon,
-  BellIcon,
-  CheckCircleIcon,
-  ArrowUpTrayIcon,
-  ChevronDownIcon,
-  Squares2X2Icon,
-  ArrowPathIcon,
-  MagnifyingGlassPlusIcon,
-} from "@heroicons/react/24/outline";
+import { CogIcon, InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 import { documentsAPI } from "../../services/api";
@@ -214,7 +202,14 @@ const Panel_General = ({
                   >
                     Choose from Documents
                   </button>
-                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => { handleBrandingChange("logoDocumentId", null); handleBrandingChange("logoUrl", ""); }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => {
+                      handleBrandingChange("logoDocumentId", null);
+                      handleBrandingChange("logoUrl", "");
+                    }}
+                  >
                     Clear
                   </button>
                 </div>
@@ -326,50 +321,50 @@ const Panel_General = ({
           <div className="d-flex align-items-center gap-2">
             <Squares2X2Icon className="h-5 w-5 text-indigo-500" />
             <span className="fw-medium">Client Portal Page</span>
-            <span className="badge bg-primary-subtle text-primary ms-1" style={{ fontSize: "0.65rem" }}>Branding</span>
+            <span className="badge bg-primary-subtle text-primary ms-1" style={{ fontSize: "0.65rem" }}>
+              Branding
+            </span>
           </div>
           <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.clientPortal ? "rotate(180deg)" : "none" }} />
         </button>
         {openAccordions.clientPortal && (
           <div className="accordion-popup py-3">
             <div className="mb-4 rounded-xl overflow-hidden border" style={{ border: "1px solid var(--bs-border-color)" }}>
-              <div style={{ fontSize: "0.68rem", padding: "4px 10px", background: "var(--bs-secondary-bg)", color: "var(--bs-secondary-color)", borderBottom: "1px solid var(--bs-border-color)" }}>
-                Live Preview
-              </div>
+              <div style={{ fontSize: "0.68rem", padding: "4px 10px", background: "var(--bs-secondary-bg)", color: "var(--bs-secondary-color)", borderBottom: "1px solid var(--bs-border-color)" }}>Live Preview</div>
               {portalBranding.portal_show_hero && (
-                <div style={{
-                  background: portalBranding.portal_hero_bg_color || "#4f46e5",
-                  padding: "20px 16px", textAlign: "center", position: "relative", overflow: "hidden",
-                }}>
+                <div
+                  style={{
+                    background: portalBranding.portal_hero_bg_color || "#4f46e5",
+                    padding: "20px 16px",
+                    textAlign: "center",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
                   <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-                  {portalBranding.portal_hero_image_url && (
-                    <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${portalBranding.portal_hero_image_url})`, backgroundSize: "cover", backgroundPosition: "center", opacity: 0.3 }} />
-                  )}
+                  {portalBranding.portal_hero_image_url && <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${portalBranding.portal_hero_image_url})`, backgroundSize: "cover", backgroundPosition: "center", opacity: 0.3 }} />}
                   <div style={{ position: "relative" }}>
-                    <div style={{ fontWeight: 800, fontSize: "1rem", color: portalBranding.portal_hero_text_color || "#ffffff" }}>
-                      {portalBranding.portal_hero_title || companyInfo.company_name || "Your Business Name"}
-                    </div>
-                    {(portalBranding.portal_hero_subtitle) && (
-                      <div style={{ fontSize: "0.72rem", color: `${portalBranding.portal_hero_text_color || "#ffffff"}bb`, marginTop: 4 }}>
-                        {portalBranding.portal_hero_subtitle}
-                      </div>
-                    )}
-                    {portalBranding.portal_hero_tagline && (
-                      <div style={{ fontSize: "0.65rem", fontStyle: "italic", color: `${portalBranding.portal_hero_text_color || "#ffffff"}88`, marginTop: 3 }}>
-                        {portalBranding.portal_hero_tagline}
-                      </div>
-                    )}
+                    <div style={{ fontWeight: 800, fontSize: "1rem", color: portalBranding.portal_hero_text_color || "#ffffff" }}>{portalBranding.portal_hero_title || companyInfo.company_name || "Your Business Name"}</div>
+                    {portalBranding.portal_hero_subtitle && <div style={{ fontSize: "0.72rem", color: `${portalBranding.portal_hero_text_color || "#ffffff"}bb`, marginTop: 4 }}>{portalBranding.portal_hero_subtitle}</div>}
+                    {portalBranding.portal_hero_tagline && <div style={{ fontSize: "0.65rem", fontStyle: "italic", color: `${portalBranding.portal_hero_text_color || "#ffffff"}88`, marginTop: 3 }}>{portalBranding.portal_hero_tagline}</div>}
                   </div>
                 </div>
               )}
-              {portalBranding.portal_show_banner && portalBranding.portal_banner_text && (
-                <div style={{ background: portalBranding.portal_banner_color || "#4f46e5", color: "#fff", padding: "6px 12px", fontSize: "0.72rem", textAlign: "center" }}>
-                  {portalBranding.portal_banner_text}
-                </div>
-              )}
+              {portalBranding.portal_show_banner && portalBranding.portal_banner_text && <div style={{ background: portalBranding.portal_banner_color || "#4f46e5", color: "#fff", padding: "6px 12px", fontSize: "0.72rem", textAlign: "center" }}>{portalBranding.portal_banner_text}</div>}
               <div style={{ background: "#fff", borderTop: "1px solid #e5e7eb", display: "flex", padding: "8px 0" }}>
-                {["Shop", "Cart", "Orders", "Account"].map(n => (
-                  <div key={n} style={{ flex: 1, textAlign: "center", fontSize: "0.6rem", color: n === "Shop" ? (portalBranding.portal_primary_color || "#4f46e5") : "#9ca3af", fontWeight: n === "Shop" ? 700 : 400, borderBottom: n === "Shop" ? `2px solid ${portalBranding.portal_primary_color || "#4f46e5"}` : "2px solid transparent", paddingBottom: 4 }}>
+                {["Shop", "Cart", "Orders", "Account"].map((n) => (
+                  <div
+                    key={n}
+                    style={{
+                      flex: 1,
+                      textAlign: "center",
+                      fontSize: "0.6rem",
+                      color: n === "Shop" ? portalBranding.portal_primary_color || "#4f46e5" : "#9ca3af",
+                      fontWeight: n === "Shop" ? 700 : 400,
+                      borderBottom: n === "Shop" ? `2px solid ${portalBranding.portal_primary_color || "#4f46e5"}` : "2px solid transparent",
+                      paddingBottom: 4,
+                    }}
+                  >
                     {n}
                   </div>
                 ))}
@@ -389,7 +384,9 @@ const Panel_General = ({
 
             {portalBranding.portal_show_hero && (
               <div className="border rounded-xl p-3 mb-3" style={{ background: "var(--bs-tertiary-bg)" }}>
-                <p className="small fw-semibold text-muted mb-2 text-uppercase" style={{ fontSize: "0.68rem", letterSpacing: "0.06em" }}>Hero Section</p>
+                <p className="small fw-semibold text-muted mb-2 text-uppercase" style={{ fontSize: "0.68rem", letterSpacing: "0.06em" }}>
+                  Hero Section
+                </p>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div className="form-floating">
                     <input type="text" className="form-control form-control-sm" id="portal_hero_title" value={portalBranding.portal_hero_title} onChange={(e) => handlePortalBrandingChange("portal_hero_title", e.target.value)} placeholder="Title" />
@@ -424,7 +421,9 @@ const Panel_General = ({
                     <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleUploadHeroImage(e.target.files?.[0] || null)} disabled={heroImageUploading} />
                   </label>
                   {portalBranding.portal_hero_image_url && (
-                    <button type="button" className="btn btn-sm btn-outline-danger flex-shrink-0" onClick={() => handlePortalBrandingChange("portal_hero_image_url", "")}>Clear</button>
+                    <button type="button" className="btn btn-sm btn-outline-danger flex-shrink-0" onClick={() => handlePortalBrandingChange("portal_hero_image_url", "")}>
+                      Clear
+                    </button>
                   )}
                 </div>
               </div>
@@ -432,7 +431,9 @@ const Panel_General = ({
 
             {portalBranding.portal_show_banner && (
               <div className="border rounded-xl p-3 mb-3" style={{ background: "var(--bs-tertiary-bg)" }}>
-                <p className="small fw-semibold text-muted mb-2 text-uppercase" style={{ fontSize: "0.68rem", letterSpacing: "0.06em" }}>Announcement Banner</p>
+                <p className="small fw-semibold text-muted mb-2 text-uppercase" style={{ fontSize: "0.68rem", letterSpacing: "0.06em" }}>
+                  Announcement Banner
+                </p>
                 <div className="form-floating mb-2">
                   <input type="text" className="form-control form-control-sm" id="portal_banner_text" value={portalBranding.portal_banner_text} onChange={(e) => handlePortalBrandingChange("portal_banner_text", e.target.value)} placeholder="Banner message" />
                   <label htmlFor="portal_banner_text">Banner Message</label>
@@ -445,7 +446,9 @@ const Panel_General = ({
             )}
 
             <div className="border rounded-xl p-3 mb-3" style={{ background: "var(--bs-tertiary-bg)" }}>
-              <p className="small fw-semibold text-muted mb-2 text-uppercase" style={{ fontSize: "0.68rem", letterSpacing: "0.06em" }}>Colors & Footer</p>
+              <p className="small fw-semibold text-muted mb-2 text-uppercase" style={{ fontSize: "0.68rem", letterSpacing: "0.06em" }}>
+                Colors & Footer
+              </p>
               <div className="d-flex gap-3 mb-3 align-items-center flex-wrap">
                 <div className="d-flex align-items-center gap-2">
                   <label className="small text-muted">Primary</label>
@@ -466,7 +469,9 @@ const Panel_General = ({
 
             <div className="d-flex gap-2">
               <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save Portal Settings"} onClick={handleSavePortalBranding} className="btn-primary" disabled={portalBrandingLoading} />
-              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetPortalBrandingDefaults}>Reset to Defaults</button>
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetPortalBrandingDefaults}>
+                Reset to Defaults
+              </button>
             </div>
           </div>
         )}
