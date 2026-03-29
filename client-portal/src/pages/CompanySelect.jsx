@@ -34,7 +34,7 @@ function safeParseJson(val) {
 }
 
 function CompanyCard({ company, onClick }) {
-  const hasLogo = Boolean(company?.has_logo_data || company?.logo_url);
+  const hasLogo = Boolean(company?.has_logo_data);
   const logoSrc = hasLogo ? companiesAPI.logoUrl(company.company_id) : null;
 
   const [imgError, setImgError] = useState(false);

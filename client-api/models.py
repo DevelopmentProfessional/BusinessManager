@@ -128,7 +128,6 @@ class AppSettings(BaseModel, table=True):
     refund_percentage: float = Field(default=80.0)
 
     # Company logo (added by migration)
-    logo_url: Optional[str] = Field(default=None)
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
 
     # Client portal branding (added by migration)

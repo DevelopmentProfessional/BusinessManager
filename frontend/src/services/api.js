@@ -631,6 +631,14 @@ export const settingsAPI = {
     clearCache("schedule-settings");
     return api.put("/settings/schedule", data);
   },
+  uploadCompanyLogo: (file) => {
+    clearCache("schedule-settings");
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.put("/settings/logo", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
   // Aliases (same endpoint, both names work)
   getSettings: () => getCachedOrFetch("schedule-settings", () => api.get("/settings/schedule")),
   updateSettings: (data) => {

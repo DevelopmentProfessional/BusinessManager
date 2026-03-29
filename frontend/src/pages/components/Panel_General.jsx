@@ -195,10 +195,6 @@ const Panel_General = ({
                 <label htmlFor="tagline">Tagline</label>
               </div>
             </div>
-            <div className="form-floating">
-              <input type="url" id="logoUrl" value={localBranding.logoUrl} onChange={(e) => handleBrandingChange("logoUrl", e.target.value)} className="form-control form-control-sm" placeholder="Logo URL" />
-              <label htmlFor="logoUrl">Logo URL</label>
-            </div>
             <div className="border rounded p-2">
               <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
                 <div className="fw-medium">Logo Image</div>

@@ -94,7 +94,7 @@ export default function Shop() {
   const showHero = branding?.portal_show_hero !== false; // default true
   const showBanner = branding?.portal_show_banner && branding?.portal_banner_text;
 
-  const logoSrc = branding?.has_logo_data ? companiesAPI.logoUrl(companyId) : branding?.logo_url?.startsWith("http://") || branding?.logo_url?.startsWith("https://") ? branding.logo_url : null;
+  const logoSrc = branding?.has_logo_data ? companiesAPI.logoUrl(companyId) : null;
 
   const primaryColor = branding?.portal_primary_color || "#4f46e5";
 

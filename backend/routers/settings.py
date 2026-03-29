@@ -18,7 +18,7 @@
 # ============================================================
 
 import os
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, UploadFile, File
 from sqlmodel import Session, select
 from datetime import datetime
 from uuid import UUID
@@ -59,41 +59,111 @@ def get_company(session: Session, company_id: str = "") -> Company | None:
 
 
 def sync_settings_from_company(settings: AppSettings, company: Company | None) -> bool:
-    """Copy canonical company metadata into settings when settings are still blank."""
+    """Mirror canonical company metadata into app_settings for backward compatibility."""
     if not company:
         return False
 
     changed = False
-    if not (settings.company_name or "").strip() and (company.name or "").strip():
-        settings.company_name = company.name.strip()
+    company_name = (company.name or "").strip()
+    if settings.company_name != company_name:
+        settings.company_name = company_name
+        changed = True
+    if settings.company_email != company.company_email:
+        settings.company_email = company.company_email
+        changed = True
+    if settings.company_phone != company.company_phone:
+        settings.company_phone = company.company_phone
+        changed = True
+    if settings.company_address != company.company_address:
+        settings.company_address = company.company_address
+        changed = True
+    if (settings.tax_rate or 0.0) != (company.tax_rate or 0.0):
+        settings.tax_rate = company.tax_rate or 0.0
         changed = True
 
     return changed
 
 
 def upsert_company_from_settings(session: Session, company_id: str, settings: AppSettings) -> None:
-    """Keep the company registry aligned with the settings company name."""
+    """Keep the company registry aligned with company-level general settings."""
     if not company_id:
         return
 
     company_name = (settings.company_name or "").strip()
-    if not company_name:
-        return
+    company_email = (settings.company_email or "").strip() or None
+    company_phone = (settings.company_phone or "").strip() or None
+    company_address = (settings.company_address or "").strip() or None
+    tax_rate = settings.tax_rate if settings.tax_rate is not None else 0.0
 
     company = get_company(session, company_id)
     if company:
         if (company.name or "").strip() != company_name:
             company.name = company_name
             company.updated_at = datetime.utcnow()
+        if company.company_email != company_email:
+            company.company_email = company_email
+            company.updated_at = datetime.utcnow()
+        if company.company_phone != company_phone:
+            company.company_phone = company_phone
+            company.updated_at = datetime.utcnow()
+        if company.company_address != company_address:
+            company.company_address = company_address
+            company.updated_at = datetime.utcnow()
+        if (company.tax_rate or 0.0) != (tax_rate or 0.0):
+            company.tax_rate = tax_rate or 0.0
+            company.updated_at = datetime.utcnow()
         return
 
     session.add(
         Company(
             company_id=company_id,
-            name=company_name,
+            name=company_name or "Default Company",
+            company_email=company_email,
+            company_phone=company_phone,
+            company_address=company_address,
+            tax_rate=tax_rate or 0.0,
             is_active=True,
         )
     )
+
+
+def _backfill_company_from_settings_if_needed(company: Company | None, settings: AppSettings) -> bool:
+    """Fill newly added company columns from app_settings when company values are missing."""
+    if not company:
+        return False
+
+    changed = False
+    if not (company.name or "").strip() and (settings.company_name or "").strip():
+        company.name = settings.company_name.strip()
+        changed = True
+    if company.company_email is None and settings.company_email is not None:
+        company.company_email = settings.company_email
+        changed = True
+    if company.company_phone is None and settings.company_phone is not None:
+        company.company_phone = settings.company_phone
+        changed = True
+    if company.company_address is None and settings.company_address is not None:
+        company.company_address = settings.company_address
+        changed = True
+    if (company.tax_rate is None or company.tax_rate == 0.0) and (settings.tax_rate not in (None, 0.0)):
+        company.tax_rate = settings.tax_rate
+        changed = True
+
+    if changed:
+        company.updated_at = datetime.utcnow()
+    return changed
+
+
+def _to_settings_response(settings: AppSettings, company: Company | None) -> AppSettingsRead:
+    """Build settings response with company-level fields sourced from Company."""
+    response = AppSettingsRead.model_validate(settings)
+    if company:
+        response.company_name = (company.name or "").strip() or response.company_name
+        response.company_email = company.company_email if company.company_email is not None else response.company_email
+        response.company_phone = company.company_phone if company.company_phone is not None else response.company_phone
+        response.company_address = company.company_address if company.company_address is not None else response.company_address
+        response.tax_rate = company.tax_rate if company.tax_rate is not None else (response.tax_rate or 0.0)
+    return response
 
 def get_or_create_settings(session: Session, company_id: str = "") -> AppSettings:
     """Get existing settings for the company, or create defaults if none exist."""
@@ -110,6 +180,10 @@ def get_or_create_settings(session: Session, company_id: str = "") -> AppSetting
             end_of_day="21:00",
             attendance_check_in_required=True,
             company_name=(company.name.strip() if company and (company.name or "").strip() else None),
+            company_email=(company.company_email if company else None),
+            company_phone=(company.company_phone if company else None),
+            company_address=(company.company_address if company else None),
+            tax_rate=(company.tax_rate if company and company.tax_rate is not None else 0.0),
             company_id=company_id or None,
         )
         session.add(settings)
@@ -128,6 +202,13 @@ def get_or_create_settings(session: Session, company_id: str = "") -> AppSetting
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Failed to sync company settings: {str(e)}")
 
+    if _backfill_company_from_settings_if_needed(company, settings):
+        try:
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to backfill company settings: {str(e)}")
+
     return settings
 
 
@@ -139,8 +220,10 @@ def get_schedule_settings(
     session: Session = Depends(get_session),
 ):
     """Get schedule settings (auto-creates defaults if none exist)."""
-    settings = get_or_create_settings(session, current_user.company_id or "")
-    return AppSettingsRead.model_validate(settings)
+    company_id = current_user.company_id or ""
+    settings = get_or_create_settings(session, company_id)
+    company = get_company(session, company_id)
+    return _to_settings_response(settings, company)
 
 
 @router.put("/schedule", response_model=AppSettingsRead)
@@ -150,7 +233,8 @@ def update_schedule_settings(
     session: Session = Depends(get_session),
 ):
     """Update schedule settings."""
-    settings = get_or_create_settings(session, current_user.company_id or "")
+    company_id = current_user.company_id or ""
+    settings = get_or_create_settings(session, company_id)
 
     # Update fields if provided
     update_data = settings_data.model_dump(exclude_unset=True)
@@ -158,7 +242,7 @@ def update_schedule_settings(
         setattr(settings, field, value)
 
     settings.updated_at = datetime.utcnow()
-    upsert_company_from_settings(session, current_user.company_id or "", settings)
+    upsert_company_from_settings(session, company_id, settings)
     try:
         session.commit()
         session.refresh(settings)
@@ -166,7 +250,49 @@ def update_schedule_settings(
         session.rollback()
         raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
-    return AppSettingsRead.model_validate(settings)
+    company = get_company(session, company_id)
+    return _to_settings_response(settings, company)
+
+
+# ─── 2B COMPANY LOGO UPLOAD ────────────────────────────────────────────────────
+
+ALLOWED_LOGO_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+MAX_LOGO_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+@router.put("/logo", response_model=AppSettingsRead)
+def upload_company_logo(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Upload company logo as binary data (replaces previous logo)."""
+    if file.content_type not in ALLOWED_LOGO_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: JPEG, PNG, GIF, WebP"
+        )
+
+    content = file.file.read()
+    if len(content) > MAX_LOGO_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
+
+    company_id = current_user.company_id or ""
+    settings = get_or_create_settings(session, company_id)
+    
+    # Store binary logo data as the single logo source
+    settings.logo_data = content
+    settings.updated_at = datetime.utcnow()
+    
+    try:
+        session.commit()
+        session.refresh(settings)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
+    company = get_company(session, company_id)
+    return _to_settings_response(settings, company)
 
 
 # ─── 3 ADMIN SEED ENDPOINT ─────────────────────────────────────────────────────

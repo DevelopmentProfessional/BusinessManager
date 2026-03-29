@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.26.2"
+CURRENT_SCHEMA_VERSION = "2026.03.29.2"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -78,7 +78,11 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='user' AND column_name='department_id'"
             )).fetchone()
-            return department_column is not None
+            company_email_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='company_email'"
+            )).fetchone()
+            return department_column is not None and company_email_column is not None
     except Exception:
         return False
 
@@ -222,9 +226,30 @@ def _ensure_company_multitenancy_if_needed():
                 updated_at TIMESTAMP,
                 company_id VARCHAR UNIQUE NOT NULL,
                 name VARCHAR NOT NULL,
+                company_email VARCHAR,
+                company_phone VARCHAR,
+                company_address TEXT,
+                tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0.0,
                 is_active BOOLEAN NOT NULL DEFAULT TRUE
             )
         """))
+
+        company_cols = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='company'"
+        )).fetchall()}
+        if "company_email" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN company_email VARCHAR"))
+            print("  + Added company.company_email")
+        if "company_phone" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN company_phone VARCHAR"))
+            print("  + Added company.company_phone")
+        if "company_address" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN company_address TEXT"))
+            print("  + Added company.company_address")
+        if "tax_rate" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0.0"))
+            print("  + Added company.tax_rate")
 
         existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
         if not existing:
@@ -814,6 +839,7 @@ def create_db_and_tables():
     _ensure_schedule_recurrence_columns_if_needed()
     _ensure_chat_message_table_if_needed()
     _ensure_app_settings_company_columns_if_needed()
+    _ensure_app_settings_logo_columns_if_needed()
     _ensure_user_training_mode_if_needed()
     _ensure_schedule_payment_columns_if_needed()
     _ensure_service_recipe_if_needed()
@@ -1472,6 +1498,23 @@ def _ensure_app_settings_company_columns_if_needed():
         "company_email": "VARCHAR",
         "company_phone": "VARCHAR",
         "company_address": "TEXT",
+    }
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column app_settings.{col} ({pg_type})")
+
+# ─── MIGRATION: APP SETTINGS LOGO COLUMNS ─────────────────────────────────────
+def _ensure_app_settings_logo_columns_if_needed():
+    """Ensure app_settings table has logo_data column for company branding."""
+    new_cols = {
+        "logo_data": "BYTEA",
     }
     with engine.begin() as conn:
         cols = conn.execute(text(

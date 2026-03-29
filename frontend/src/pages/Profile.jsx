@@ -377,10 +377,44 @@ const Profile = () => {
 
   const toggleAccordion = (id) => setOpenAccordions((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const handleSaveBranding = () => {
-    updateBranding(localBranding);
-    setSettingsSuccess("Branding saved!");
-    setTimeout(() => setSettingsSuccess(""), 3000);
+  const uploadDocumentAsCompanyLogo = async (doc) => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const response = await fetch(documentsAPI.fileUrl(doc.id), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch document (${response.status})`);
+    }
+    const blob = await response.blob();
+    const filename = doc.original_filename || `logo-${doc.id}.png`;
+    const file = new File([blob], filename, {
+      type: blob.type || doc.content_type || "image/png",
+    });
+    await settingsAPI.uploadCompanyLogo(file);
+  };
+
+  const handleSaveBranding = async () => {
+    setBrandingLogoUploading(true);
+    setSettingsError("");
+    try {
+      // Backward-compatible bridge: if an existing local branding document is selected,
+      // sync it into company logo_data so the client portal can render it.
+      if (localBranding.logoDocumentId) {
+        const selectedDoc =
+          logoPickerDocs.find((d) => String(d.id) === String(localBranding.logoDocumentId)) ||
+          { id: localBranding.logoDocumentId, original_filename: `logo-${localBranding.logoDocumentId}.png`, content_type: "image/png" };
+        await uploadDocumentAsCompanyLogo(selectedDoc);
+      }
+
+      updateBranding(localBranding);
+      setSettingsSuccess("Branding saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      console.error("Failed to save branding", err);
+      setSettingsError("Failed to save branding.");
+    } finally {
+      setBrandingLogoUploading(false);
+    }
   };
   const handleBrandingChange = (field, value) => setLocalBranding((prev) => ({ ...prev, [field]: value }));
 
@@ -411,9 +445,14 @@ const Profile = () => {
     setBrandingLogoUploading(true);
     setSettingsError("");
     try {
-      const res = await documentsAPI.upload(file, "Branding logo");
-      const doc = res?.data;
-      if (doc?.id) setLocalBranding((prev) => ({ ...prev, logoDocumentId: doc.id, logoUrl: "" }));
+      await settingsAPI.uploadCompanyLogo(file);
+      setLocalBranding((prev) => ({
+        ...prev,
+        logoDocumentId: null,
+        logoUrl: URL.createObjectURL(file),
+      }));
+      setSettingsSuccess("Company logo uploaded!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
     } catch (err) {
       console.error("Branding logo upload failed", err);
       setSettingsError("Failed to upload logo.");
@@ -422,10 +461,22 @@ const Profile = () => {
     }
   };
 
-  const handleSelectLogoFromDocuments = (doc) => {
+  const handleSelectLogoFromDocuments = async (doc) => {
     if (!doc?.id) return;
-    setLocalBranding((prev) => ({ ...prev, logoDocumentId: doc.id, logoUrl: "" }));
-    setLogoPickerOpen(false);
+    setBrandingLogoUploading(true);
+    setSettingsError("");
+    try {
+      await uploadDocumentAsCompanyLogo(doc);
+      setLocalBranding((prev) => ({ ...prev, logoDocumentId: doc.id, logoUrl: "" }));
+      setLogoPickerOpen(false);
+      setSettingsSuccess("Company logo updated from document!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      console.error("Selecting branding logo from documents failed", err);
+      setSettingsError("Failed to set logo from document.");
+    } finally {
+      setBrandingLogoUploading(false);
+    }
   };
 
   const handleSaveDbSettings = () => {
