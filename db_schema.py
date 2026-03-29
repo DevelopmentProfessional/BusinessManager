@@ -1,8 +1,8 @@
 """
-db_schema.py — Print all tables and their columns from the current database environment.
+db_schema.py — Print all tables and their columns from the Render PostgreSQL database.
 
 Usage:
-    python db_schema.py              # uses db_config active environment
+    python db_schema.py              # uses the Render database URL from db_config
     python db_schema.py --json       # output as JSON
     python db_schema.py --table user # show only the 'user' table
 """

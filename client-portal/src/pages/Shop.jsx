@@ -103,7 +103,9 @@ export default function Shop() {
 
   const logoSrc = branding?.has_logo_data
     ? companiesAPI.logoUrl(companyId)
-    : branding?.logo_url
+    : (branding?.logo_url?.startsWith('http://') || branding?.logo_url?.startsWith('https://'))
+      ? branding.logo_url
+      : null
 
   const primaryColor = branding?.portal_primary_color || '#4f46e5'
 

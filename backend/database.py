@@ -8,8 +8,8 @@
 #
 # FUNCTIONAL PARTS:
 #   [1] Imports                              — SQLModel, SQLAlchemy, stdlib
-#   [2] Engine Setup                         — URL resolution, SQLite/PostgreSQL
-#                                              engine creation with appropriate settings
+#   [2] Engine Setup                         — PostgreSQL runtime URL resolution
+#                                              and engine creation
 #   [3] Schema Version Tracking             — CURRENT_SCHEMA_VERSION constant,
 #                                              _schema_is_current(), _mark_schema_current()
 #   [4] Migration: Documents Table           — nullability fix, entity_type enum -> VARCHAR
@@ -36,22 +36,22 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-03-29 | GitHub Copilot | Removed stale SQLite migration paths and aligned runtime helpers with PostgreSQL-only deployment
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy import text
-import os
 from typing import Generator
 
 # ─── 2 ENGINE SETUP ────────────────────────────────────────────────────────────
-# Import database configuration
+# Import PostgreSQL runtime database configuration
 try:
     from backend.db_config import get_database_url
 except ImportError:
     from db_config import get_database_url
 
-# Database URL from db_config (supports environment switching)
+# Database URL from db_config (PostgreSQL runtime only)
 DATABASE_URL = get_database_url()
 
 # PostgreSQL-only runtime: reject SQLite URLs up front.
@@ -105,106 +105,15 @@ def _mark_schema_current():
             except Exception:
                 # Table might already exist or permission denied, proceed
                 pass
-            
-            if DATABASE_URL.startswith("sqlite"):
-                conn.execute(
-                    text("INSERT OR REPLACE INTO schema_migration (version) VALUES (:v)"),
-                    {"v": CURRENT_SCHEMA_VERSION}
-                )
-            else:
-                conn.execute(
-                    text("INSERT INTO schema_migration (version) VALUES (:v) ON CONFLICT (version) DO NOTHING"),
-                    {"v": CURRENT_SCHEMA_VERSION}
-                )
+
+            conn.execute(
+                text("INSERT INTO schema_migration (version) VALUES (:v) ON CONFLICT (version) DO NOTHING"),
+                {"v": CURRENT_SCHEMA_VERSION}
+            )
     except Exception as e:
         print(f"Warning: Could not mark schema version: {e}")
 
-# ─── 4 MIGRATION: DOCUMENTS TABLE ──────────────────────────────────────────────
-def _migrate_documents_table_if_needed():
-    """Ensure SQLite 'document' table allows NULL for entity fields.
-    If existing table has NOT NULL constraints on entity_type/entity_id, migrate schema preserving data.
-    """
-    # Only handle SQLite simple migration
-    if not DATABASE_URL.startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        # Check if table exists
-        tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
-        )).fetchone()
-        if not tbl_exists:
-            return
-        # Inspect columns
-        cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
-        info = {row[1]: {"notnull": row[3]} for row in cols}
-
-        # Detect presence of e-signature columns
-        has_is_signed = "is_signed" in info
-        has_signed_by = "signed_by" in info
-        has_signed_at = "signed_at" in info
-
-        # Determine if we must rebuild table due to nullability constraints
-        needs_rebuild = False
-        for col in ("entity_type", "entity_id"):
-            if col in info and info[col]["notnull"] == 1:
-                needs_rebuild = True
-
-        # If we don't need a rebuild, but are missing e-sign columns, add them in-place
-        if not needs_rebuild:
-            if not has_is_signed:
-                conn.execute(text("ALTER TABLE document ADD COLUMN is_signed BOOLEAN NOT NULL DEFAULT 0"))
-                has_is_signed = True
-            if not has_signed_by:
-                conn.execute(text("ALTER TABLE document ADD COLUMN signed_by TEXT"))
-                has_signed_by = True
-            if not has_signed_at:
-                conn.execute(text("ALTER TABLE document ADD COLUMN signed_at DATETIME"))
-                has_signed_at = True
-            # Nothing else to do
-            return
-        # Perform migration: create new table with correct nullability
-        conn.execute(text(
-            """
-            CREATE TABLE IF NOT EXISTS document_new (
-              id TEXT PRIMARY KEY,
-              created_at DATETIME NOT NULL,
-              updated_at DATETIME,
-              filename TEXT NOT NULL,
-              original_filename TEXT NOT NULL,
-              file_path TEXT NOT NULL,
-              file_size INTEGER NOT NULL,
-              content_type TEXT NOT NULL,
-              entity_type VARCHAR,
-              entity_id TEXT,
-              description TEXT,
-              is_signed BOOLEAN NOT NULL DEFAULT 0,
-              signed_by TEXT,
-              signed_at DATETIME
-            )
-            """
-        ))
-        # Copy data
-        # Build SELECT list using literals for any missing columns
-        select_is_signed = "is_signed" if has_is_signed else "0 AS is_signed"
-        select_signed_by = "signed_by" if has_signed_by else "NULL AS signed_by"
-        select_signed_at = "signed_at" if has_signed_at else "NULL AS signed_at"
-
-        insert_sql = f"""
-            INSERT INTO document_new (
-              id, created_at, updated_at, filename, original_filename, file_path, file_size, content_type,
-              entity_type, entity_id, description, is_signed, signed_by, signed_at
-            )
-            SELECT 
-              id, created_at, updated_at, filename, original_filename, file_path, file_size, content_type,
-              entity_type, entity_id, description, {select_is_signed}, {select_signed_by}, {select_signed_at}
-            FROM document
-        """
-        conn.execute(text(insert_sql))
-        # Replace old table
-        conn.execute(text("DROP TABLE document"))
-        conn.execute(text("ALTER TABLE document_new RENAME TO document"))    
-    
-# ─── 4b MIGRATION: DOCUMENT ENTITY_TYPE ENUM -> VARCHAR ────────────────────────
+# ─── 4 MIGRATION: DOCUMENT ENTITY_TYPE ENUM -> VARCHAR ─────────────────────────
 def _migrate_document_entity_type_enum_to_varchar():
     """Convert document.entity_type from PostgreSQL enum to VARCHAR.
 
@@ -214,8 +123,6 @@ def _migrate_document_entity_type_enum_to_varchar():
     of type character varying'. This migration converts the column to
     VARCHAR and normalises existing values to lowercase.
     """
-    if DATABASE_URL.startswith("sqlite"):
-        return  # SQLite doesn't have enums
     with engine.begin() as conn:
         result = conn.execute(text(
             "SELECT udt_name FROM information_schema.columns "
@@ -252,48 +159,34 @@ def _ensure_schedule_payment_columns_if_needed():
     schedule_id to sale_transaction; consumption_rate_pct to service_resource."""
     tables = {
         "schedule": {
-            "is_paid": ("BOOLEAN NOT NULL DEFAULT 0", "BOOLEAN NOT NULL DEFAULT FALSE"),
-            "discount": ("REAL NOT NULL DEFAULT 0.0", "DOUBLE PRECISION NOT NULL DEFAULT 0.0"),
-            "sale_transaction_id": ("TEXT", "UUID"),
+            "is_paid": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "discount": "DOUBLE PRECISION NOT NULL DEFAULT 0.0",
+            "sale_transaction_id": "UUID",
         },
         "sale_transaction": {
-            "schedule_id": ("TEXT", "UUID"),
+            "schedule_id": "UUID",
         },
         "service_resource": {
-            "consumption_rate_pct": ("REAL", "DOUBLE PRECISION"),
+            "consumption_rate_pct": "DOUBLE PRECISION",
         },
     }
 
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            for table, cols in tables.items():
-                tbl_exists = conn.execute(text(
-                    f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
-                )).fetchone()
-                if not tbl_exists:
-                    continue
-                existing = {row[1] for row in conn.execute(text(f"PRAGMA table_info('{table}')")).fetchall()}
-                for col, (sqlite_type, _) in cols.items():
-                    if col not in existing:
-                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {sqlite_type}"))
-                        print(f"  + Added column {table}.{col}")
-    else:
-        with engine.begin() as conn:
-            for table, cols in tables.items():
-                tbl_exists = conn.execute(text(
-                    "SELECT EXISTS (SELECT FROM information_schema.tables "
-                    f"WHERE table_schema='public' AND table_name='{table}')"
-                )).scalar()
-                if not tbl_exists:
-                    continue
-                existing = {row[0] for row in conn.execute(text(
-                    "SELECT column_name FROM information_schema.columns "
-                    f"WHERE table_schema='public' AND table_name='{table}'"
-                )).fetchall()}
-                for col, (_, pg_type) in cols.items():
-                    if col not in existing:
-                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {pg_type}"))
-                        print(f"  + Added column {table}.{col} ({pg_type})")
+    with engine.begin() as conn:
+        for table, cols in tables.items():
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                f"WHERE table_schema='public' AND table_name='{table}')"
+            )).scalar()
+            if not tbl_exists:
+                continue
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}'"
+            )).fetchall()}
+            for col, pg_type in cols.items():
+                if col not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {pg_type}"))
+                    print(f"  + Added column {table}.{col} ({pg_type})")
 
 
 # ─── MIGRATION: MULTI-TENANCY COMPANY_ID COLUMNS ────────────────────────────────
@@ -321,130 +214,75 @@ def _ensure_company_multitenancy_if_needed():
     DEFAULT_COMPANY_ID = "DEFAULT"
     DEFAULT_COMPANY_NAME = "Default Company"
 
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            # Ensure company table exists
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS company (
-                    id TEXT PRIMARY KEY,
-                    created_at DATETIME NOT NULL,
-                    updated_at DATETIME,
-                    company_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    is_active BOOLEAN NOT NULL DEFAULT 1
-                )
-            """))
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS company (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP,
+                company_id VARCHAR UNIQUE NOT NULL,
+                name VARCHAR NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE
+            )
+        """))
 
-            # Create default company if none exists
-            existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
-            if not existing:
-                import uuid as _uuid
-                from datetime import datetime as _dt
-                default_id = str(_uuid.uuid4())
-                conn.execute(text(
-                    "INSERT INTO company (id, created_at, company_id, name, is_active) "
-                    "VALUES (:id, :created_at, :company_id, :name, 1)"
-                ), {"id": default_id, "created_at": _dt.utcnow().isoformat(), "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
-                print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
+        existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
+        if not existing:
+            import uuid as _uuid
+            from datetime import datetime as _dt
+            default_id = str(_uuid.uuid4())
+            conn.execute(text(
+                "INSERT INTO company (id, created_at, company_id, name, is_active) "
+                "VALUES (:id, :created_at, :company_id, :name, TRUE)"
+            ), {"id": default_id, "created_at": _dt.utcnow(), "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
+            print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
 
-            # Get the default company_id value
-            default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
-            default_cid = default_row[0] if default_row else DEFAULT_COMPANY_ID
+        default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
+        default_cid = default_row[0] if default_row else DEFAULT_COMPANY_ID
 
-            # Add company_id to each tenant table
-            for table in tenant_tables:
-                tbl_exists = conn.execute(text(
-                    f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
-                )).fetchone()
-                if not tbl_exists:
-                    continue
-                existing_cols = {row[1] for row in conn.execute(text(f"PRAGMA table_info('{table}')")).fetchall()}
-                if "company_id" not in existing_cols:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN company_id TEXT"))
-                    # Set existing rows to default company
-                    conn.execute(text(f"UPDATE {table} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
-                    print(f"  + Added company_id to {table}, set existing rows to '{default_cid}'")
-    else:
-        # PostgreSQL
-        with engine.begin() as conn:
-            # Ensure company table exists
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS company (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                    updated_at TIMESTAMP,
-                    company_id VARCHAR UNIQUE NOT NULL,
-                    name VARCHAR NOT NULL,
-                    is_active BOOLEAN NOT NULL DEFAULT TRUE
-                )
-            """))
+        for table in tenant_tables:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                f"WHERE table_schema='public' AND table_name='{table}')"
+            )).scalar()
+            if not tbl_exists:
+                continue
+            existing_cols = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}'"
+            )).fetchall()}
+            if "company_id" not in existing_cols:
+                quoted = f'"{table}"'
+                conn.execute(text(f"ALTER TABLE {quoted} ADD COLUMN company_id VARCHAR"))
+                conn.execute(text(f"UPDATE {quoted} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
+                print(f"  + Added company_id to {table}, set existing rows to '{default_cid}'")
 
-            # Create default company if none exists
-            existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
-            if not existing:
-                import uuid as _uuid
-                from datetime import datetime as _dt
-                default_id = str(_uuid.uuid4())
-                conn.execute(text(
-                    "INSERT INTO company (id, created_at, company_id, name, is_active) "
-                    "VALUES (:id, :created_at, :company_id, :name, TRUE)"
-                ), {"id": default_id, "created_at": _dt.utcnow(), "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
-                print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
-
-            # Get the default company_id value
-            default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
-            default_cid = default_row[0] if default_row else DEFAULT_COMPANY_ID
-
-            # Add company_id to each tenant table
-            for table in tenant_tables:
-                tbl_exists = conn.execute(text(
-                    "SELECT EXISTS (SELECT FROM information_schema.tables "
-                    f"WHERE table_schema='public' AND table_name='{table}')"
-                )).scalar()
-                if not tbl_exists:
-                    continue
-                existing_cols = {row[0] for row in conn.execute(text(
-                    "SELECT column_name FROM information_schema.columns "
-                    f"WHERE table_schema='public' AND table_name='{table}'"
-                )).fetchall()}
-                if "company_id" not in existing_cols:
-                    # Quote the table name to handle reserved words (e.g. "user")
-                    quoted = f'"{table}"'
-                    conn.execute(text(f"ALTER TABLE {quoted} ADD COLUMN company_id VARCHAR"))
-                    conn.execute(text(f"UPDATE {quoted} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
-                    print(f"  + Added company_id to {table}, set existing rows to '{default_cid}'")
-
-            # Drop old unique constraints that conflict with multi-tenancy
-            # (client.name, service.name, role.name, insurance_plan.name, inventory.sku, descriptive_feature.name)
-            for table, col in [
-                ("client", "name"), ("service", "name"), ("role", "name"),
-                ("insurance_plan", "name"), ("inventory", "sku"), ("descriptive_feature", "name"),
-            ]:
-                try:
-                    # Find unique constraint name
-                    result = conn.execute(text(f"""
-                        SELECT tc.constraint_name
-                        FROM information_schema.table_constraints tc
-                        JOIN information_schema.key_column_usage kcu
-                            ON tc.constraint_name = kcu.constraint_name
-                        WHERE tc.table_schema = 'public'
-                          AND tc.table_name = '{table}'
-                          AND kcu.column_name = '{col}'
-                          AND tc.constraint_type = 'UNIQUE'
-                    """)).fetchone()
-                    if result:
-                        constraint_name = result[0]
-                        conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {constraint_name}"))
-                        print(f"  + Dropped unique constraint {constraint_name} on {table}.{col}")
-                except Exception as e:
-                    print(f"  Warning: Could not drop unique constraint on {table}.{col}: {e}")
+        for table, col in [
+            ("client", "name"), ("service", "name"), ("role", "name"),
+            ("insurance_plan", "name"), ("inventory", "sku"), ("descriptive_feature", "name"),
+        ]:
+            try:
+                result = conn.execute(text(f"""
+                    SELECT tc.constraint_name
+                    FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                    WHERE tc.table_schema = 'public'
+                      AND tc.table_name = '{table}'
+                      AND kcu.column_name = '{col}'
+                      AND tc.constraint_type = 'UNIQUE'
+                """)).fetchone()
+                if result:
+                    constraint_name = result[0]
+                    conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {constraint_name}"))
+                    print(f"  + Dropped unique constraint {constraint_name} on {table}.{col}")
+            except Exception as e:
+                print(f"  Warning: Could not drop unique constraint on {table}.{col}: {e}")
 
 
 # ─── MIGRATION: ENSURE userrole ENUM HAS ALL EXPECTED VALUES ────────────────────
 def _ensure_userrole_enum_values_if_needed():
     """Add any missing values to the userrole PostgreSQL enum (idempotent)."""
-    if DATABASE_URL.startswith("sqlite"):
-        return
     required_values = ["admin", "manager", "employee", "viewer"]
     try:
         with engine.begin() as conn:
@@ -461,9 +299,6 @@ def _ensure_user_username_composite_unique_if_needed():
     and replace with a composite unique constraint on (company_id, username) so
     the same username can exist across different companies.
     """
-    if DATABASE_URL.startswith("sqlite"):
-        return  # SQLite doesn't support ALTER CONSTRAINT; fresh DBs won't have the old constraint
-
     try:
         with engine.begin() as conn:
             # Drop old single-column unique constraint on username if it exists
@@ -515,103 +350,57 @@ def _ensure_user_username_composite_unique_if_needed():
 # ─── MIGRATION: BUNDLE COMPONENT TABLE ──────────────────────────────────────────
 def _ensure_bundle_component_table_if_needed():
     """Create the bundle_component table for bundle item type support."""
-    sqlite = DATABASE_URL.startswith("sqlite")
     with engine.begin() as conn:
-        if sqlite:
-            exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='bundle_component'"
-            )).fetchone()
-        else:
-            exists = conn.execute(text(
-                "SELECT to_regclass('bundle_component')"
-            )).scalar()
+        exists = conn.execute(text("SELECT to_regclass('bundle_component')")).scalar()
         if not exists:
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE bundle_component (
-                        id TEXT PRIMARY KEY,
-                        created_at DATETIME NOT NULL,
-                        updated_at DATETIME,
-                        bundle_id TEXT NOT NULL,
-                        component_id TEXT NOT NULL,
-                        quantity REAL NOT NULL DEFAULT 1.0,
-                        notes TEXT,
-                        company_id TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE bundle_component (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(),
-                        updated_at TIMESTAMP,
-                        bundle_id UUID NOT NULL,
-                        component_id UUID NOT NULL,
-                        quantity REAL NOT NULL DEFAULT 1.0,
-                        notes TEXT,
-                        company_id VARCHAR
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE bundle_component (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    bundle_id UUID NOT NULL,
+                    component_id UUID NOT NULL,
+                    quantity REAL NOT NULL DEFAULT 1.0,
+                    notes TEXT,
+                    company_id VARCHAR
+                )
+            """))
             print("  + Created table bundle_component")
 
 
 # ─── MIGRATION: MIX TABLES ───────────────────────────────────────────────────────
 def _ensure_mix_tables_if_needed():
     """Create mix_config and mix_component tables for the mix item type."""
-    sqlite = DATABASE_URL.startswith("sqlite")
     with engine.begin() as conn:
         def tbl_exists(name):
-            if sqlite:
-                return conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name=:n"), {"n": name}).fetchone() is not None
             return conn.execute(text("SELECT to_regclass(:n)"), {"n": name}).scalar() is not None
 
         if not tbl_exists("mix_config"):
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE mix_config (
-                        id TEXT PRIMARY KEY, created_at DATETIME NOT NULL, updated_at DATETIME,
-                        inventory_id TEXT NOT NULL, total_quantity INTEGER NOT NULL DEFAULT 1,
-                        has_max_per_product BOOLEAN NOT NULL DEFAULT 0,
-                        max_per_product INTEGER, company_id TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE mix_config (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
-                        inventory_id UUID NOT NULL, total_quantity INTEGER NOT NULL DEFAULT 1,
-                        has_max_per_product BOOLEAN NOT NULL DEFAULT FALSE,
-                        max_per_product INTEGER, company_id VARCHAR
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE mix_config (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL, total_quantity INTEGER NOT NULL DEFAULT 1,
+                    has_max_per_product BOOLEAN NOT NULL DEFAULT FALSE,
+                    max_per_product INTEGER, company_id VARCHAR
+                )
+            """))
             print("  + Created table mix_config")
 
         if not tbl_exists("mix_component"):
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE mix_component (
-                        id TEXT PRIMARY KEY, created_at DATETIME NOT NULL, updated_at DATETIME,
-                        mix_id TEXT NOT NULL, component_id TEXT NOT NULL,
-                        max_quantity INTEGER, company_id TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE mix_component (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
-                        mix_id UUID NOT NULL, component_id UUID NOT NULL,
-                        max_quantity INTEGER, company_id VARCHAR
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE mix_component (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                    mix_id UUID NOT NULL, component_id UUID NOT NULL,
+                    max_quantity INTEGER, company_id VARCHAR
+                )
+            """))
             print("  + Created table mix_component")
 
 
 def _ensure_inventory_price_columns_if_needed():
     """Add price_type and price_percentage columns to inventory for bundle/mix pricing."""
-    if DATABASE_URL.startswith("sqlite"):
-        return
     try:
         with engine.begin() as conn:
             for col, coltype, default in [
@@ -631,8 +420,6 @@ def _ensure_inventory_price_columns_if_needed():
 
 def _ensure_sale_transaction_item_mix_selections_if_needed():
     """Add mix_selections TEXT column to sale_transaction_item for storing mix pick data."""
-    if DATABASE_URL.startswith("sqlite"):
-        return
     try:
         with engine.begin() as conn:
             exists = conn.execute(text(
@@ -648,8 +435,6 @@ def _ensure_sale_transaction_item_mix_selections_if_needed():
 
 def _ensure_sale_transaction_item_options_json_if_needed():
     """Add options_json TEXT column to sale_transaction_item for descriptive feature picks."""
-    if DATABASE_URL.startswith("sqlite"):
-        return
     try:
         with engine.begin() as conn:
             exists = conn.execute(text(
@@ -690,8 +475,6 @@ def _ensure_inventory_feature_combination_table_if_needed():
 
 def _ensure_client_order_workflow_columns_if_needed():
     """Add workflow-tracking columns to client_order and options_json to client_order_item."""
-    if DATABASE_URL.startswith("sqlite"):
-        return
     try:
         with engine.begin() as conn:
             for col, definition in [
@@ -734,50 +517,29 @@ def _ensure_client_order_workflow_columns_if_needed():
 # ─── MIGRATION: DISCOUNT RULE TABLE ─────────────────────────────────────────────
 def _ensure_discount_rule_table_if_needed():
     """Create the discount_rule table for scheduled inventory discounts."""
-    sqlite = DATABASE_URL.startswith("sqlite")
     with engine.begin() as conn:
-        if sqlite:
-            exists = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='discount_rule'")).fetchone()
-        else:
-            exists = conn.execute(text("SELECT to_regclass('discount_rule')")).scalar()
+        exists = conn.execute(text("SELECT to_regclass('discount_rule')")).scalar()
         if not exists:
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE discount_rule (
-                        id TEXT PRIMARY KEY, created_at DATETIME NOT NULL, updated_at DATETIME,
-                        name TEXT NOT NULL, applies_to TEXT NOT NULL DEFAULT 'all',
-                        item_ids TEXT, discount_type TEXT NOT NULL DEFAULT 'percentage',
-                        discount_value REAL NOT NULL DEFAULT 0,
-                        start_date DATETIME, end_date DATETIME,
-                        is_recurring BOOLEAN NOT NULL DEFAULT 0,
-                        recur_frequency TEXT, recur_days TEXT, recur_count INTEGER,
-                        times_per_day INTEGER, day_start_time TEXT, day_end_time TEXT,
-                        is_active BOOLEAN NOT NULL DEFAULT 1, company_id TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE discount_rule (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
-                        name VARCHAR NOT NULL, applies_to VARCHAR NOT NULL DEFAULT 'all',
-                        item_ids TEXT, discount_type VARCHAR NOT NULL DEFAULT 'percentage',
-                        discount_value DOUBLE PRECISION NOT NULL DEFAULT 0,
-                        start_date TIMESTAMP, end_date TIMESTAMP,
-                        is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
-                        recur_frequency VARCHAR, recur_days TEXT, recur_count INTEGER,
-                        times_per_day INTEGER, day_start_time VARCHAR, day_end_time VARCHAR,
-                        is_active BOOLEAN NOT NULL DEFAULT TRUE, company_id VARCHAR
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE discount_rule (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                    name VARCHAR NOT NULL, applies_to VARCHAR NOT NULL DEFAULT 'all',
+                    item_ids TEXT, discount_type VARCHAR NOT NULL DEFAULT 'percentage',
+                    discount_value DOUBLE PRECISION NOT NULL DEFAULT 0,
+                    start_date TIMESTAMP, end_date TIMESTAMP,
+                    is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+                    recur_frequency VARCHAR, recur_days TEXT, recur_count INTEGER,
+                    times_per_day INTEGER, day_start_time VARCHAR, day_end_time VARCHAR,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE, company_id VARCHAR
+                )
+            """))
             print("  + Created table discount_rule")
 
 
 # ─── MIGRATION: MAKE inventory.sku NULLABLE ─────────────────────────────────────
 def _ensure_inventory_sku_nullable_if_needed():
     """Drop NOT NULL constraint on inventory.sku so handmade products don't need a SKU."""
-    if DATABASE_URL.startswith("sqlite"):
-        return
     try:
         with engine.begin() as conn:
             result = conn.execute(text("""
@@ -795,14 +557,6 @@ def _ensure_inventory_category_column_if_needed():
     """Ensure inventory.category exists for environments that predate this column."""
     try:
         with engine.begin() as conn:
-            if DATABASE_URL.startswith("sqlite"):
-                cols = conn.execute(text("PRAGMA table_info('inventory')")).fetchall()
-                has_category = any(c[1] == "category" for c in cols)
-                if not has_category:
-                    conn.execute(text("ALTER TABLE inventory ADD COLUMN category VARCHAR"))
-                    print("  + Added inventory.category")
-                return
-
             exists = conn.execute(text(
                 """
                 SELECT 1
@@ -826,35 +580,54 @@ def _ensure_inventory_image_db_storage_if_needed():
     Before this migration images were written to the local filesystem (uploads/)
     which is ephemeral on cloud deployments. Now bytes are stored in the database
     so they survive redeployments indefinitely.
+    
+    Updates CHECK constraint check_image_source to allow image_data as an alternative
+    storage method to image_url or file_path. The revised constraint requires at least
+    one of image_url, file_path, or image_data to be non-null.
     """
     try:
         with engine.begin() as conn:
-            if DATABASE_URL.startswith("sqlite"):
-                cols = [c[1] for c in conn.execute(text("PRAGMA table_info('inventoryimage')")).fetchall()]
-                if "image_data" not in cols:
-                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN image_data BLOB"))
-                    print("  + Added inventoryimage.image_data (SQLite BLOB)")
-                if "mime_type" not in cols:
-                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
-                    print("  + Added inventoryimage.mime_type")
-                return
-
-            # PostgreSQL — table is 'inventoryimage' (SQLModel auto-name, no underscore)
             exists_data = conn.execute(text("""
                 SELECT 1 FROM information_schema.columns
                 WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='image_data'
             """)).fetchone()
             if not exists_data:
+                # Drop the existing check constraint before adding the new column
+                conn.execute(text("""
+                    ALTER TABLE inventoryimage DROP CONSTRAINT check_image_source
+                """))
+                print("  - Dropped inventoryimage.check_image_source constraint")
+                
+                # Add the new storage columns
                 conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN image_data BYTEA"))
                 print("  + Added inventoryimage.image_data (BYTEA)")
 
-            exists_mime = conn.execute(text("""
-                SELECT 1 FROM information_schema.columns
-                WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='mime_type'
-            """)).fetchone()
-            if not exists_mime:
-                conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
-                print("  + Added inventoryimage.mime_type")
+                exists_mime = conn.execute(text("""
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='mime_type'
+                """)).fetchone()
+                if not exists_mime:
+                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
+                    print("  + Added inventoryimage.mime_type")
+                
+                # Add revised constraint: at least one storage method must be non-null
+                conn.execute(text("""
+                    ALTER TABLE inventoryimage ADD CONSTRAINT check_image_source CHECK (
+                        (image_url IS NOT NULL) OR
+                        (file_path IS NOT NULL) OR
+                        (image_data IS NOT NULL)
+                    )
+                """))
+                print("  + Added revised inventoryimage.check_image_source constraint (includes image_data)")
+            else:
+                # image_data already exists, ensure mime_type is present
+                exists_mime = conn.execute(text("""
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='mime_type'
+                """)).fetchone()
+                if not exists_mime:
+                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
+                    print("  + Added inventoryimage.mime_type")
     except Exception as e:
         print(f"  Warning: Could not add inventoryimage storage columns: {e}")
 
@@ -869,11 +642,6 @@ def _drop_descriptive_feature_name_unique_index_if_needed():
     """
     try:
         with engine.begin() as conn:
-            if DATABASE_URL.startswith("sqlite"):
-                conn.execute(text("DROP INDEX IF EXISTS ix_descriptive_feature_name"))
-                print("  + Dropped legacy unique index ix_descriptive_feature_name (SQLite)")
-                return
-            # PostgreSQL: only drop if the index actually exists
             exists = conn.execute(text("""
                 SELECT 1 FROM pg_indexes
                 WHERE schemaname = 'public'
@@ -1027,12 +795,8 @@ def create_db_and_tables():
         return
 
     print(f"Running migrations to schema version {CURRENT_SCHEMA_VERSION}...")
-    _migrate_products_and_inventory_to_items_if_needed()
     _migrate_document_entity_type_enum_to_varchar()
-    _ensure_item_type_column_if_needed()
-    _migrate_documents_table_if_needed()
     _ensure_document_extra_columns_if_needed()
-    _ensure_employee_user_id_column_if_needed()
     _ensure_employee_supervisor_column_if_needed()
     _ensure_employee_color_column_if_needed()
     _normalize_item_types_if_needed()
@@ -1083,142 +847,77 @@ def _ensure_production_tables_if_needed():
     """Create product_resource, product_asset, product_location tables and
     add production columns to the schedule table for existing databases."""
 
-    sqlite = DATABASE_URL.startswith("sqlite")
-
     with engine.begin() as conn:
 
         def table_exists(name: str) -> bool:
-            if sqlite:
-                return conn.execute(text(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name=:n"
-                ), {"n": name}).fetchone() is not None
-            else:
-                return conn.execute(text(
-                    "SELECT to_regclass(:n)"
-                ), {"n": name}).scalar() is not None
+            return conn.execute(text(
+                "SELECT to_regclass(:n)"
+            ), {"n": name}).scalar() is not None
 
         def col_exists(tbl: str, col: str) -> bool:
-            if sqlite:
-                rows = conn.execute(text(f"PRAGMA table_info('{tbl}')")).fetchall()
-                return any(r[1] == col for r in rows)
-            else:
-                r = conn.execute(text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_name=:t AND column_name=:c"
-                ), {"t": tbl, "c": col}).fetchone()
-                return r is not None
+            result = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name=:t AND column_name=:c"
+            ), {"t": tbl, "c": col}).fetchone()
+            return result is not None
 
-        # ── product_resource ──────────────────────────────────────────────────
         if not table_exists("product_resource"):
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE product_resource (
-                        id TEXT PRIMARY KEY,
-                        created_at DATETIME NOT NULL,
-                        updated_at DATETIME,
-                        inventory_id TEXT NOT NULL,
-                        resource_id  TEXT NOT NULL,
-                        quantity_per_batch REAL NOT NULL DEFAULT 1.0,
-                        notes TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE product_resource (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(),
-                        updated_at TIMESTAMP,
-                        inventory_id UUID NOT NULL,
-                        resource_id  UUID NOT NULL,
-                        quantity_per_batch REAL NOT NULL DEFAULT 1.0,
-                        notes TEXT
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE product_resource (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL,
+                    resource_id  UUID NOT NULL,
+                    quantity_per_batch REAL NOT NULL DEFAULT 1.0,
+                    notes TEXT
+                )
+            """))
             print("  + Created table product_resource")
 
-        # ── product_asset ─────────────────────────────────────────────────────
         if not table_exists("product_asset"):
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE product_asset (
-                        id TEXT PRIMARY KEY,
-                        created_at DATETIME NOT NULL,
-                        updated_at DATETIME,
-                        inventory_id UUID NOT NULL,
-                        asset_id     TEXT NOT NULL,
-                        batch_size   INTEGER NOT NULL DEFAULT 1,
-                        duration_minutes REAL,
-                        notes TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE product_asset (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(),
-                        updated_at TIMESTAMP,
-                        inventory_id UUID NOT NULL,
-                        asset_id     UUID NOT NULL,
-                        batch_size   INTEGER NOT NULL DEFAULT 1,
-                        duration_minutes REAL,
-                        notes TEXT
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE product_asset (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL,
+                    asset_id     UUID NOT NULL,
+                    batch_size   INTEGER NOT NULL DEFAULT 1,
+                    duration_minutes REAL,
+                    notes TEXT
+                )
+            """))
             print("  + Created table product_asset")
 
-        # ── product_location ──────────────────────────────────────────────────
         if not table_exists("product_location"):
-            if sqlite:
-                conn.execute(text("""
-                    CREATE TABLE product_location (
-                        id TEXT PRIMARY KEY,
-                        created_at DATETIME NOT NULL,
-                        updated_at DATETIME,
-                        inventory_id TEXT NOT NULL,
-                        location_id  TEXT NOT NULL,
-                        notes TEXT
-                    )
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE product_location (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP NOT NULL DEFAULT now(),
-                        updated_at TIMESTAMP,
-                        inventory_id UUID NOT NULL,
-                        location_id  UUID NOT NULL,
-                        notes TEXT
-                    )
-                """))
+            conn.execute(text("""
+                CREATE TABLE product_location (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL,
+                    location_id  UUID NOT NULL,
+                    notes TEXT
+                )
+            """))
             print("  + Created table product_location")
 
-        # ── schedule production columns ───────────────────────────────────────
         if table_exists("schedule"):
-            cols_to_add = [
-                ("task_type",           "VARCHAR DEFAULT 'service'"),
-                ("production_item_id",  "TEXT"),
-                ("production_quantity", "INTEGER DEFAULT 1"),
-            ]
             pg_types = {
-                "task_type":           ("VARCHAR", "VARCHAR DEFAULT 'service'"),
-                "production_item_id":  ("UUID",    "UUID"),
-                "production_quantity": ("INTEGER", "INTEGER DEFAULT 1"),
+                "task_type": "VARCHAR DEFAULT 'service'",
+                "production_item_id": "UUID",
+                "production_quantity": "INTEGER DEFAULT 1",
             }
-            for col, sqlite_type in cols_to_add:
+            for col, pg_type in pg_types.items():
                 if not col_exists("schedule", col):
-                    if sqlite:
-                        conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {sqlite_type}"))
-                    else:
-                        _, pg_type = pg_types[col]
-                        conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {pg_type}"))
+                    conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {pg_type}"))
                     print(f"  + Added column schedule.{col}")
 
 
 # ─── 19 MIGRATION: SCHEDULE CLIENT_ID NULLABLE ──────────────────────────────────
 def _ensure_schedule_client_nullable_if_needed():
     """Make schedule.client_id and service_id nullable so meetings and tasks can exist without a client/service."""
-    if DATABASE_URL.startswith("sqlite"):
-        return  # SQLite already allows NULL for Optional fields; no ALTER needed
     try:
         with engine.begin() as conn:
             for col in ("client_id", "service_id"):
@@ -1242,8 +941,6 @@ def _ensure_document_template_name_unique_if_needed():
     wanting an "Invoice" template). This migration drops that index and replaces it
     with a composite index on (company_id, name).
     """
-    if DATABASE_URL.startswith("sqlite"):
-        return
     try:
         with engine.begin() as conn:
             # Drop the old single-column unique index if it exists
@@ -1273,114 +970,7 @@ def get_session() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
 
-# ─── 5 MIGRATION: ITEMS / INVENTORY ────────────────────────────────────────────
-def _migrate_products_and_inventory_to_items_if_needed():
-    """SQLite-safe migrations to remove legacy products/assets and move to items.
-
-    Steps:
-    - If both product and item tables exist, copy any missing rows from product -> item, then drop product.
-    - If only product exists, rename it to item.
-    - Update inventory table to use item_id instead of product_id (rebuild table if needed).
-    - Drop legacy asset table if it exists.
-    """
-    if not DATABASE_URL.startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        # Helpers
-        def table_exists(name: str) -> bool:
-            return conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=:name"
-            ), {"name": name}).fetchone() is not None
-
-        product_exists = table_exists("product")
-        item_exists = table_exists("item")
-
-        # Case 1: both product and item exist -> copy missing rows then drop product
-        if product_exists and item_exists:
-            # Inspect columns available on both; use intersection
-            prod_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('product')")).fetchall()]
-            item_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('item')")).fetchall()]
-            common_cols = [c for c in prod_cols if c in item_cols]
-            if common_cols:
-                cols_csv = ", ".join(common_cols)
-                insert_sql = f"INSERT OR IGNORE INTO item ({cols_csv}) SELECT {cols_csv} FROM product"
-                conn.execute(text(insert_sql))
-            # Drop product table after copy
-            conn.execute(text("DROP TABLE product"))
-            product_exists = False
-
-        # Case 2: only product exists -> rename to item
-        if product_exists and not item_exists:
-            conn.execute(text("ALTER TABLE product RENAME TO item"))
-            item_exists = True
-            product_exists = False
-
-        # Migrate inventory FK column from product_id -> item_id
-        if table_exists("inventory"):
-            cols = conn.execute(text("PRAGMA table_info('inventory')")).fetchall()
-            col_names = {row[1] for row in cols}
-            has_product_id = "product_id" in col_names
-            has_item_id = "item_id" in col_names
-            if has_product_id and not has_item_id:
-                # Rebuild inventory table with correct schema
-                conn.execute(text(
-                    """
-                    CREATE TABLE IF NOT EXISTS inventory_new (
-                      id TEXT PRIMARY KEY,
-                      created_at DATETIME NOT NULL,
-                      updated_at DATETIME,
-                      item_id TEXT NOT NULL,
-                      supplier_id TEXT,
-                      quantity INTEGER NOT NULL,
-                      min_stock_level INTEGER NOT NULL DEFAULT 10,
-                      location TEXT
-                    )
-                    """
-                ))
-                # Copy data mapping product_id -> item_id
-                conn.execute(text(
-                    """
-                    INSERT INTO inventory_new (
-                      id, created_at, updated_at, item_id, supplier_id, quantity, min_stock_level, location
-                    )
-                    SELECT 
-                      id, created_at, updated_at, product_id AS item_id, supplier_id, quantity, min_stock_level, location
-                    FROM inventory
-                    """
-                ))
-                conn.execute(text("DROP TABLE inventory"))
-                conn.execute(text("ALTER TABLE inventory_new RENAME TO inventory"))
-
-        # Drop legacy asset table if present
-        if table_exists("asset"):
-            conn.execute(text("DROP TABLE asset"))
-
-# ─── 5b MIGRATION: ITEM TYPE COLUMN ────────────────────────────────────────────
-def _ensure_item_type_column_if_needed():
-    """Ensure the 'item' table has a 'type' column; add it if missing (SQLite).
-
-    If the column is added, initialize existing rows with 'item'.
-    """
-    if not DATABASE_URL.startswith("sqlite"):
-        # For non-SQLite, assume external migrations handle schema.
-        return
-    with engine.begin() as conn:
-        # Check item table exists
-        tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='item'"
-        )).fetchone()
-        if not tbl_exists:
-            return
-        # Inspect columns
-        cols = conn.execute(text("PRAGMA table_info('item')")).fetchall()
-        col_names = {row[1] for row in cols}
-        if "type" not in col_names:
-            # Add column and backfill existing rows to 'item'
-            conn.execute(text("ALTER TABLE item ADD COLUMN type VARCHAR DEFAULT 'item'"))
-            # Ensure existing rows have a non-null value
-            conn.execute(text("UPDATE item SET type = 'item' WHERE type IS NULL"))
-
-# ─── 5c MIGRATION: NORMALIZE ITEM TYPES ────────────────────────────────────────
+# ─── 5 MIGRATION: ITEM TYPES ──────────────────────────────────────────────────
 def _normalize_item_types_if_needed():
     """Normalize legacy item.type values to 'item'.
 
@@ -1388,19 +978,17 @@ def _normalize_item_types_if_needed():
     to 'item'. This helps avoid enum parsing errors at the API layer.
     """
     with engine.begin() as conn:
-        # Ensure item table exists and has a 'type' column
         tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='item'"
-        )).fetchone() if DATABASE_URL.startswith("sqlite") else True
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='item')"
+        )).scalar()
         if not tbl_exists:
             return
-        # Attempt to perform normalization; works on SQLite and most SQL dialects
         try:
             conn.execute(text(
                 "UPDATE item SET type = 'item' WHERE LOWER(type) IN ('product', 'asset')"
             ))
         except Exception:
-            # Fallback for engines without LOWER or case-insensitive compare
             try:
                 conn.execute(text("UPDATE item SET type = 'item' WHERE type IN ('product','asset','PRODUCT','ASSET')"))
             except Exception:
@@ -1409,97 +997,53 @@ def _normalize_item_types_if_needed():
 # ─── 6 MIGRATION: DOCUMENT EXTRA COLUMNS ───────────────────────────────────────
 def _ensure_document_extra_columns_if_needed():
     """Ensure new columns exist on 'document' table: owner_id, review_date, category_id,
-    is_signed, signed_by, signed_at.  Works on both SQLite and PostgreSQL.
+    is_signed, signed_by, signed_at.
     """
-    # Column name -> (SQLite type, PostgreSQL type)
     extra_cols = {
-        "owner_id": ("TEXT", "UUID"),
-        "review_date": ("DATETIME", "TIMESTAMP WITH TIME ZONE"),
-        "category_id": ("TEXT", "UUID"),
-        "is_signed": ("BOOLEAN NOT NULL DEFAULT 0", "BOOLEAN NOT NULL DEFAULT FALSE"),
-        "signed_by": ("TEXT", "TEXT"),
-        "signed_at": ("DATETIME", "TIMESTAMP WITH TIME ZONE"),
+        "owner_id": "UUID",
+        "review_date": "TIMESTAMP WITH TIME ZONE",
+        "category_id": "UUID",
+        "is_signed": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "signed_by": "TEXT",
+        "signed_at": "TIMESTAMP WITH TIME ZONE",
     }
 
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
-            col_names = {row[1] for row in cols}
-            for col, (sqlite_type, _pg_type) in extra_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f"ALTER TABLE document ADD COLUMN {col} {sqlite_type}"))
-    else:
-        # PostgreSQL
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables "
-                "WHERE table_schema='public' AND table_name='document')"
-            )).scalar()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='document'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, (_sqlite_type, pg_type) in extra_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
-                    print(f"  + Added column document.{col} ({pg_type})")
-
-# ─── 7 MIGRATION: EMPLOYEE COLUMNS ─────────────────────────────────────────────
-def _ensure_employee_user_id_column_if_needed():
-    """Ensure the 'employee' table has a 'user_id' column; add it if missing (SQLite)."""
-    if not DATABASE_URL.startswith("sqlite"):
-        return
     with engine.begin() as conn:
-        # Check employee table exists
         tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='employee'"
-        )).fetchone()
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='document')"
+        )).scalar()
         if not tbl_exists:
             return
-        # Inspect columns
-        cols = conn.execute(text("PRAGMA table_info('employee')")).fetchall()
-        col_names = {row[1] for row in cols}
-        if "user_id" not in col_names:
-            # Add column
-            conn.execute(text("ALTER TABLE employee ADD COLUMN user_id TEXT"))
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in extra_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column document.{col} ({pg_type})")
+
+# ─── 7 MIGRATION: EMPLOYEE COLUMNS ─────────────────────────────────────────────
 
 
 def _ensure_employee_supervisor_column_if_needed():
     """Ensure the 'employee' table has a 'supervisor' column."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='employee'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('employee')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "supervisor" not in col_names:
-                conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor TEXT"))
-    else:
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables "
-                "WHERE table_schema='public' AND table_name='employee')"
-            )).scalar()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='employee'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "supervisor" not in col_names:
-                conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor VARCHAR"))
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='employee')"
+        )).scalar()
+        if not tbl_exists:
+            return
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='employee'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "supervisor" not in col_names:
+            conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor VARCHAR"))
 
 
 def _ensure_employee_color_column_if_needed():
@@ -1508,177 +1052,105 @@ def _ensure_employee_color_column_if_needed():
     Profile color is stored on `user.color` in current schema, but some older
     deployments still depend on data mirrored in `employee.color`.
     """
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='employee'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('employee')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "color" not in col_names:
-                conn.execute(text("ALTER TABLE employee ADD COLUMN color VARCHAR"))
-    else:
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables "
-                "WHERE table_schema='public' AND table_name='employee')"
-            )).scalar()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='employee'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "color" not in col_names:
-                conn.execute(text("ALTER TABLE employee ADD COLUMN color VARCHAR"))
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='employee')"
+        )).scalar()
+        if not tbl_exists:
+            return
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='employee'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "color" not in col_names:
+            conn.execute(text("ALTER TABLE employee ADD COLUMN color VARCHAR"))
 
 
 # ─── 8 MIGRATION: INVENTORYIMAGE TABLE ─────────────────────────────────────────
 def _ensure_inventory_image_table_if_needed():
     """Ensure InventoryImage table exists and has proper structure."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            # Check if inventoryimage table exists
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='inventoryimage'"
-            )).fetchone()
-            if not tbl_exists:
-                # Create the table if it doesn't exist
-                conn.execute(text("""
-                    CREATE TABLE inventoryimage (
-                        id TEXT PRIMARY KEY,
-                        inventory_id TEXT NOT NULL,
-                        image_url TEXT,
-                        file_path TEXT,
-                        file_name TEXT,
-                        is_primary BOOLEAN NOT NULL DEFAULT 0,
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        created_at DATETIME,
-                        updated_at DATETIME,
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'inventoryimage')"
+        )).scalar()
+        if not tbl_exists:
+            conn.execute(text("""
+                CREATE TABLE inventoryimage (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    inventory_id UUID NOT NULL,
+                    image_url TEXT,
+                    file_path TEXT,
+                    file_name TEXT,
+                    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_inventory_image_inventory 
                         FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
-                        CONSTRAINT check_image_source CHECK (
-                            (image_url IS NOT NULL AND file_path IS NULL) OR
-                            (image_url IS NULL AND file_path IS NOT NULL) OR
-                            (image_url IS NOT NULL AND file_path IS NOT NULL)
-                        )
+                    CONSTRAINT check_image_source CHECK (
+                        (image_url IS NOT NULL AND file_path IS NULL) OR
+                        (image_url IS NULL AND file_path IS NOT NULL) OR
+                        (image_url IS NOT NULL AND file_path IS NOT NULL)
                     )
-                """))
-                print("✓ Created InventoryImage table for SQLite")
-    else:
-        # PostgreSQL version
-        with engine.begin() as conn:
-            # Check if inventoryimage table exists
-            tbl_exists = conn.execute(text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'inventoryimage')"
-            )).scalar()
-            if not tbl_exists:
-                # Create the table if it doesn't exist
-                conn.execute(text("""
-                    CREATE TABLE inventoryimage (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        inventory_id UUID NOT NULL,
-                        image_url TEXT,
-                        file_path TEXT,
-                        file_name TEXT,
-                        is_primary BOOLEAN NOT NULL DEFAULT FALSE,
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        CONSTRAINT fk_inventory_image_inventory 
-                            FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
-                        CONSTRAINT check_image_source CHECK (
-                            (image_url IS NOT NULL AND file_path IS NULL) OR
-                            (image_url IS NULL AND file_path IS NOT NULL) OR
-                            (image_url IS NOT NULL AND file_path IS NOT NULL)
-                        )
-                    )
-                """))
-                
-                # Create indexes for better performance
-                conn.execute(text(
-                    "CREATE INDEX idx_inventoryimage_inventory_id ON inventoryimage(inventory_id)"
-                ))
-                conn.execute(text(
-                    "CREATE INDEX idx_inventoryimage_is_primary ON inventoryimage(inventory_id, is_primary) WHERE is_primary = TRUE"
-                ))
-                conn.execute(text(
-                    "CREATE INDEX idx_inventoryimage_sort_order ON inventoryimage(inventory_id, sort_order)"
-                ))
-                
-                # Create trigger to update updated_at timestamp
-                conn.execute(text("""
-                    CREATE OR REPLACE FUNCTION update_inventoryimage_updated_at()
-                    RETURNS TRIGGER AS $$
-                    BEGIN
-                        NEW.updated_at = CURRENT_TIMESTAMP;
-                        RETURN NEW;
-                    END;
-                    $$ LANGUAGE plpgsql;
-                """))
-                
-                conn.execute(text("""
-                    CREATE TRIGGER trigger_inventoryimage_updated_at
-                        BEFORE UPDATE ON inventoryimage
-                        FOR EACH ROW
-                        EXECUTE FUNCTION update_inventoryimage_updated_at();
-                """))
-                
-                print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")
+                )
+            """))
+
+            conn.execute(text(
+                "CREATE INDEX idx_inventoryimage_inventory_id ON inventoryimage(inventory_id)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX idx_inventoryimage_is_primary ON inventoryimage(inventory_id, is_primary) WHERE is_primary = TRUE"
+            ))
+            conn.execute(text(
+                "CREATE INDEX idx_inventoryimage_sort_order ON inventoryimage(inventory_id, sort_order)"
+            ))
+
+            conn.execute(text("""
+                CREATE OR REPLACE FUNCTION update_inventoryimage_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = CURRENT_TIMESTAMP;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+            """))
+
+            conn.execute(text("""
+                CREATE TRIGGER trigger_inventoryimage_updated_at
+                    BEFORE UPDATE ON inventoryimage
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_inventoryimage_updated_at();
+            """))
+
+            print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")
 
 
 # ─── 9 MIGRATION: SERVICE COLUMNS ──────────────────────────────────────────────
 def _ensure_service_duration_column_if_needed():
     """Ensure service table has duration_minutes column."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='service'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('service')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "duration_minutes" not in col_names:
-                conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns WHERE table_name='service'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "duration_minutes" not in col_names:
-                conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='service'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "duration_minutes" not in col_names:
+            conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
 
 
 # ─── 10 MIGRATION: SCHEDULE COLUMNS ────────────────────────────────────────────
 def _ensure_schedule_extra_columns_if_needed():
     """Ensure schedule table has appointment_type and duration_minutes columns."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='schedule'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('schedule')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "appointment_type" not in col_names:
-                conn.execute(text("ALTER TABLE schedule ADD COLUMN appointment_type VARCHAR DEFAULT 'one_time'"))
-            if "duration_minutes" not in col_names:
-                conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns WHERE table_name='schedule'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "appointment_type" not in col_names:
-                conn.execute(text("ALTER TABLE schedule ADD COLUMN appointment_type VARCHAR DEFAULT 'one_time'"))
-            if "duration_minutes" not in col_names:
-                conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='schedule'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "appointment_type" not in col_names:
+            conn.execute(text("ALTER TABLE schedule ADD COLUMN appointment_type VARCHAR DEFAULT 'one_time'"))
+        if "duration_minutes" not in col_names:
+            conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
 
 # ─── 11 MIGRATION: USER COLUMNS ────────────────────────────────────────────────
 def _ensure_user_extra_columns_if_needed():
@@ -1696,51 +1168,26 @@ def _ensure_user_extra_columns_if_needed():
         "sick_days": "INTEGER",
         "sick_days_used": "INTEGER DEFAULT 0",
     }
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
-            col_names = {row[1] for row in cols}
-            for col, col_type in new_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {col_type}"))
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, col_type in new_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, col_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
 
 
 # ─── 11b MIGRATION: USER PROFILE PICTURE ───────────────────────────────────────
 def _ensure_user_profile_picture_if_needed():
     """Ensure user table has profile_picture column."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "profile_picture" not in col_names:
-                conn.execute(text("ALTER TABLE user ADD COLUMN profile_picture VARCHAR"))
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "profile_picture" not in col_names:
-                conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_picture VARCHAR'))
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "profile_picture" not in col_names:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_picture VARCHAR'))
 
 
 # ─── 15 SEED: USER COLORS ──────────────────────────────────────────────────────
@@ -1771,14 +1218,9 @@ def _seed_user_colors_if_needed():
         "#0f766e", "#be123c", "#9333ea", "#15803d", "#c2410c", "#0e7490",
     ]
 
-    if DATABASE_URL.startswith("sqlite"):
-        user_table = "user"
-        id_col = "id"
-        color_col = "color"
-    else:
-        user_table = '"user"'
-        id_col = "id"
-        color_col = "color"
+    user_table = '"user"'
+    id_col = "id"
+    color_col = "color"
 
     with engine.begin() as conn:
         # Ensure column exists before seeding
@@ -1845,60 +1287,33 @@ def _ensure_signature_columns_if_needed():
     document.signed_by_user_id - FK to user who signed
     """
     user_cols = {
-        "signature_data": ("TEXT", "TEXT"),
+        "signature_data": "TEXT",
     }
     doc_cols = {
-        "signature_image": ("TEXT", "TEXT"),
-        "signed_by_user_id": ("TEXT", "UUID"),
+        "signature_image": "TEXT",
+        "signed_by_user_id": "UUID",
     }
 
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            # User table
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
-            )).fetchone()
-            if tbl_exists:
-                cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
-                col_names = {row[1] for row in cols}
-                for col, (sqlite_type, _) in user_cols.items():
-                    if col not in col_names:
-                        conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {sqlite_type}"))
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in user_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column user.{col} ({pg_type})")
 
-            # Document table
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
-            )).fetchone()
-            if tbl_exists:
-                cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
-                col_names = {row[1] for row in cols}
-                for col, (sqlite_type, _) in doc_cols.items():
-                    if col not in col_names:
-                        conn.execute(text(f"ALTER TABLE document ADD COLUMN {col} {sqlite_type}"))
-    else:
-        # PostgreSQL
-        with engine.begin() as conn:
-            # User table
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='user'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, (_, pg_type) in user_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
-                    print(f"  + Added column user.{col} ({pg_type})")
-
-            # Document table
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='document'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, (_, pg_type) in doc_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
-                    print(f"  + Added column document.{col} ({pg_type})")
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in doc_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column document.{col} ({pg_type})")
 
 
 # ─── 15b SEED: INSURANCE PLANS ─────────────────────────────────────────────────
@@ -1918,36 +1333,25 @@ def _seed_insurance_plans_if_needed():
     ]
 
     table = "insurance_plan"
-    if DATABASE_URL.startswith("sqlite"):
-        quoted_table = table
-    else:
-        quoted_table = table  # PostgreSQL table name as-is
 
     with engine.begin() as conn:
-        # Check if table exists (SQLModel.metadata.create_all should have created it)
-        if DATABASE_URL.startswith("sqlite"):
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=:tbl"
-            ), {"tbl": table}).fetchone()
-        else:
-            tbl_exists = conn.execute(text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables "
-                "WHERE table_schema='public' AND table_name=:tbl)"
-            ), {"tbl": table}).scalar()
-
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name=:tbl)"
+        ), {"tbl": table}).scalar()
         if not tbl_exists:
             return
 
-        count = conn.execute(text(f"SELECT COUNT(*) FROM {quoted_table}")).scalar()
+        count = conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
         if count and count > 0:
-            return  # Already seeded
+            return
 
         import uuid as _uuid
         from datetime import datetime as _dt
         now = _dt.utcnow().isoformat()
         for name, description in default_plans:
             conn.execute(text(
-                f"INSERT INTO {quoted_table} (id, name, description, is_active, created_at) "
+                f"INSERT INTO {table} (id, name, description, is_active, created_at) "
                 "VALUES (:id, :name, :description, :is_active, :created_at)"
             ), {
                 "id": str(_uuid.uuid4()),
@@ -1963,103 +1367,55 @@ def _seed_insurance_plans_if_needed():
 def _ensure_user_payroll_columns_if_needed():
     """Ensure user table has hourly_rate and employment_type columns for payroll support."""
     new_cols = {
-        "hourly_rate": ("FLOAT", "FLOAT"),
-        "employment_type": ("VARCHAR", "VARCHAR"),
+        "hourly_rate": "FLOAT",
+        "employment_type": "VARCHAR",
     }
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
-            col_names = {row[1] for row in cols}
-            for col, (sqlite_type, _) in new_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f"ALTER TABLE user ADD COLUMN {col} {sqlite_type}"))
-                    print(f"✓ Added user.{col} (SQLite)")
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='user'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, (_, pg_type) in new_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
-                    print(f"  + Added column user.{col} ({pg_type})")
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column user.{col} ({pg_type})")
 
 
 # ─── 11e MIGRATION: INSURANCE PLAN MONTHLY DEDUCTION ───────────────────────────
 def _ensure_insurance_plan_monthly_deduction_if_needed():
     """Ensure insurance_plan table has monthly_deduction column."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='insurance_plan'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('insurance_plan')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "monthly_deduction" not in col_names:
-                conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
-                print("✓ Added insurance_plan.monthly_deduction (SQLite)")
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='insurance_plan'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "monthly_deduction" not in col_names:
-                conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
-                print("  + Added column insurance_plan.monthly_deduction")
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='insurance_plan'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "monthly_deduction" not in col_names:
+            conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
+            print("  + Added column insurance_plan.monthly_deduction")
 
 
 # ─── 10b MIGRATION: SCHEDULE RECURRENCE COLUMNS ────────────────────────────────
 def _ensure_schedule_recurrence_columns_if_needed():
     """Ensure schedule table has recurrence-related columns."""
-    new_cols_sqlite = {
-        "recurrence_frequency": "VARCHAR",
-        "recurrence_end_date": "DATETIME",
-        "recurrence_count": "INTEGER",
-        "parent_schedule_id": "TEXT",
-        "is_recurring_master": "BOOLEAN DEFAULT 0",
-    }
-    new_cols_pg = {
+    new_cols = {
         "recurrence_frequency": "VARCHAR",
         "recurrence_end_date": "TIMESTAMP WITH TIME ZONE",
         "recurrence_count": "INTEGER",
         "parent_schedule_id": "UUID",
         "is_recurring_master": "BOOLEAN DEFAULT FALSE",
     }
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='schedule'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('schedule')")).fetchall()
-            col_names = {row[1] for row in cols}
-            for col, col_type in new_cols_sqlite.items():
-                if col not in col_names:
-                    conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
-                    print(f"✓ Added schedule.{col} (SQLite)")
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='schedule'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, col_type in new_cols_pg.items():
-                if col not in col_names:
-                    conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
-                    print(f"  + Added column schedule.{col} ({col_type})")
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='schedule'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, col_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
+                print(f"  + Added column schedule.{col} ({col_type})")
 
 
 # ─── 14 MIGRATION: CHAT MESSAGE TABLE ──────────────────────────────────────────
@@ -2070,189 +1426,103 @@ def _ensure_chat_message_table_if_needed():
     existing databases that were set up before chat was added need an explicit
     migration to create the table.
     """
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='chat_message'"
-            )).fetchone()
-            if not tbl_exists:
-                conn.execute(text("""
-                    CREATE TABLE chat_message (
-                        id TEXT PRIMARY KEY,
-                        created_at DATETIME NOT NULL,
-                        updated_at DATETIME,
-                        sender_id TEXT NOT NULL REFERENCES "user"(id),
-                        receiver_id TEXT NOT NULL REFERENCES "user"(id),
-                        content TEXT,
-                        message_type VARCHAR NOT NULL DEFAULT 'text',
-                        document_id TEXT REFERENCES document(id),
-                        is_read BOOLEAN NOT NULL DEFAULT 0
-                    )
-                """))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_sender_id ON chat_message(sender_id)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_receiver_id ON chat_message(receiver_id)"))
-                print("✓ Created chat_message table (SQLite)")
-    else:
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT EXISTS (SELECT FROM information_schema.tables "
-                "WHERE table_schema='public' AND table_name='chat_message')"
-            )).scalar()
-            if not tbl_exists:
-                conn.execute(text("""
-                    CREATE TABLE chat_message (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                        updated_at TIMESTAMP WITH TIME ZONE,
-                        sender_id UUID NOT NULL REFERENCES "user"(id),
-                        receiver_id UUID NOT NULL REFERENCES "user"(id),
-                        content TEXT,
-                        message_type VARCHAR NOT NULL DEFAULT 'text',
-                        document_id UUID REFERENCES document(id),
-                        is_read BOOLEAN NOT NULL DEFAULT FALSE
-                    )
-                """))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_sender_id ON chat_message(sender_id)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_receiver_id ON chat_message(receiver_id)"))
-                print("✓ Created chat_message table (PostgreSQL)")
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='chat_message')"
+        )).scalar()
+        if not tbl_exists:
+            conn.execute(text("""
+                CREATE TABLE chat_message (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE,
+                    sender_id UUID NOT NULL REFERENCES "user"(id),
+                    receiver_id UUID NOT NULL REFERENCES "user"(id),
+                    content TEXT,
+                    message_type VARCHAR NOT NULL DEFAULT 'text',
+                    document_id UUID REFERENCES document(id),
+                    is_read BOOLEAN NOT NULL DEFAULT FALSE
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_sender_id ON chat_message(sender_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_receiver_id ON chat_message(receiver_id)"))
+            print("✓ Created chat_message table (PostgreSQL)")
 
 
 # ─── 12 MIGRATION: LEAVE REQUEST SUPERVISOR ID ─────────────────────────────────
 def _ensure_leave_request_supervisor_id_if_needed():
     """Ensure leave_request table has a supervisor_id column."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='leave_request'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('leave_request')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "supervisor_id" not in col_names:
-                conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id TEXT"))
-                print("✓ Added leave_request.supervisor_id (SQLite)")
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='leave_request'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "supervisor_id" not in col_names:
-                conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id UUID"))
-                print("✓ Added leave_request.supervisor_id (PostgreSQL)")
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='leave_request'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "supervisor_id" not in col_names:
+            conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id UUID"))
+            print("✓ Added leave_request.supervisor_id (PostgreSQL)")
 
 
 # ─── 13 MIGRATION: APP SETTINGS COMPANY COLUMNS ────────────────────────────────
 def _ensure_app_settings_company_columns_if_needed():
     """Ensure app_settings table has company name, email, phone, and address columns."""
     new_cols = {
-        "company_name": ("VARCHAR", "VARCHAR"),
-        "company_email": ("VARCHAR", "VARCHAR"),
-        "company_phone": ("VARCHAR", "VARCHAR"),
-        "company_address": ("TEXT", "TEXT"),
+        "company_name": "VARCHAR",
+        "company_email": "VARCHAR",
+        "company_phone": "VARCHAR",
+        "company_address": "TEXT",
     }
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            tbl_exists = conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='app_settings'"
-            )).fetchone()
-            if not tbl_exists:
-                return
-            cols = conn.execute(text("PRAGMA table_info('app_settings')")).fetchall()
-            col_names = {row[1] for row in cols}
-            for col, (sqlite_type, _) in new_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f"ALTER TABLE app_settings ADD COLUMN {col} {sqlite_type}"))
-                    print(f"✓ Added app_settings.{col} (SQLite)")
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='app_settings'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            for col, (_, pg_type) in new_cols.items():
-                if col not in col_names:
-                    conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
-                    print(f"  + Added column app_settings.{col} ({pg_type})")
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column app_settings.{col} ({pg_type})")
 
 # ─── MIGRATION: USER TRAINING MODE ─────────────────────────────────────────────
 def _ensure_user_training_mode_if_needed():
     """Ensure user table has training_mode column."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            cols = conn.execute(text("PRAGMA table_info('user')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "training_mode" not in col_names:
-                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE"))
-                print("✓ Added user.training_mode (SQLite)")
-    else:
-        with engine.begin() as conn:
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='user'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "training_mode" not in col_names:
-                conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE'))
-                print("  + Added column user.training_mode (BOOLEAN)")
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "training_mode" not in col_names:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE'))
+            print("  + Added column user.training_mode (BOOLEAN)")
 
 
 # ─── 16 MIGRATION: SERVICE RECIPE TABLE + ASSET DURATION ───────────────────────
 def _ensure_service_recipe_if_needed():
     """Create service_recipe table and add asset_duration_minutes to service_asset."""
-    if DATABASE_URL.startswith("sqlite"):
-        with engine.begin() as conn:
-            # Create service_recipe table if it doesn't exist
-            tables = {row[0] for row in conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )).fetchall()}
-            if "service_recipe" not in tables:
-                conn.execute(text("""
-                    CREATE TABLE service_recipe (
-                        id TEXT PRIMARY KEY,
-                        service_id TEXT NOT NULL UNIQUE REFERENCES service(id),
-                        is_produced BOOLEAN NOT NULL DEFAULT 0,
-                        batch_size INTEGER NOT NULL DEFAULT 1,
-                        batch_duration_minutes REAL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """))
-                print("✓ Created service_recipe table (SQLite)")
-            # Add asset_duration_minutes to service_asset if missing
-            cols = conn.execute(text("PRAGMA table_info('service_asset')")).fetchall()
-            col_names = {row[1] for row in cols}
-            if "asset_duration_minutes" not in col_names:
-                conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes REAL"))
-                print("✓ Added service_asset.asset_duration_minutes (SQLite)")
-    else:
-        with engine.begin() as conn:
-            # Create service_recipe table if it doesn't exist
-            tables = {row[0] for row in conn.execute(text(
-                "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
-            )).fetchall()}
-            if "service_recipe" not in tables:
-                conn.execute(text("""
-                    CREATE TABLE service_recipe (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        service_id UUID NOT NULL UNIQUE REFERENCES service(id),
-                        is_produced BOOLEAN NOT NULL DEFAULT FALSE,
-                        batch_size INTEGER NOT NULL DEFAULT 1,
-                        batch_duration_minutes DOUBLE PRECISION,
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        updated_at TIMESTAMP DEFAULT NOW()
-                    )
-                """))
-                print("  + Created service_recipe table (PostgreSQL)")
-            # Add asset_duration_minutes to service_asset if missing
-            cols = conn.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='service_asset'"
-            )).fetchall()
-            col_names = {row[0] for row in cols}
-            if "asset_duration_minutes" not in col_names:
-                conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes DOUBLE PRECISION"))
-                print("  + Added column service_asset.asset_duration_minutes (DOUBLE PRECISION)")
+    with engine.begin() as conn:
+        tables = {row[0] for row in conn.execute(text(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+        )).fetchall()}
+        if "service_recipe" not in tables:
+            conn.execute(text("""
+                CREATE TABLE service_recipe (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    service_id UUID NOT NULL UNIQUE REFERENCES service(id),
+                    is_produced BOOLEAN NOT NULL DEFAULT FALSE,
+                    batch_size INTEGER NOT NULL DEFAULT 1,
+                    batch_duration_minutes DOUBLE PRECISION,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            print("  + Created service_recipe table (PostgreSQL)")
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='service_asset'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "asset_duration_minutes" not in col_names:
+            conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes DOUBLE PRECISION"))
+            print("  + Added column service_asset.asset_duration_minutes (DOUBLE PRECISION)")
