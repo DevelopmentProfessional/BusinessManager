@@ -65,8 +65,12 @@ def _find_available_employee(
     slot_start: datetime,
     slot_end: datetime,
     session: Session,
+    booking_mode: str = "soft",
 ) -> str | None:
-    """Return the first employee_id free for this slot, or None."""
+    """Return the first employee_id free for this slot, or None.
+
+    Hard bookings ("locked") can override soft-hold slots; soft bookings cannot.
+    """
     se_rows = session.exec(
         select(ServiceEmployee).where(
             ServiceEmployee.service_id == service_id,
@@ -74,10 +78,15 @@ def _find_available_employee(
         )
     ).all()
 
+    # Hard bookings only block on confirmed slots; soft bookings also block on soft_hold
+    blocking = ["scheduled", "confirmed"]
+    if booking_mode == "soft":
+        blocking.append("soft_hold")
+
     existing = session.exec(
         select(Schedule).where(
             Schedule.company_id == company_id,
-            Schedule.status.in_(["scheduled", "confirmed"]),
+            Schedule.status.in_(blocking),
             Schedule.appointment_date < slot_end,
         )
     ).all()
@@ -216,7 +225,7 @@ def create_booking(
     session.exec(text(f"SELECT pg_advisory_xact_lock({abs(lock_key) % (2**31)})"))
 
     # Re-check availability inside the lock
-    emp_id = _find_available_employee(service_id, company_id, slot_start, slot_end, session)
+    emp_id = _find_available_employee(service_id, company_id, slot_start, slot_end, session, body.booking_mode)
     if not emp_id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -228,6 +237,34 @@ def create_booking(
             status_code=status.HTTP_409_CONFLICT,
             detail="Required equipment is unavailable for this time slot.",
         )
+
+    if body.booking_mode == "locked":
+        conflicting_soft_holds = session.exec(
+            select(Schedule).where(
+                Schedule.company_id == company_id,
+                Schedule.employee_id == UUID(emp_id),
+                Schedule.status == "soft_hold",
+                Schedule.appointment_date < slot_end,
+            )
+        ).all()
+        for soft_hold in conflicting_soft_holds:
+            soft_hold_end = soft_hold.appointment_date + timedelta(minutes=soft_hold.duration_minutes or 60)
+            if not (slot_start < soft_hold_end and slot_end > soft_hold.appointment_date):
+                continue
+
+            soft_hold.status = "cancelled"
+            session.add(soft_hold)
+
+            linked_booking = session.exec(
+                select(ClientBooking).where(
+                    ClientBooking.schedule_id == soft_hold.id,
+                    ClientBooking.company_id == company_id,
+                    ClientBooking.status.notin_(["cancelled", "completed"]),
+                )
+            ).first()
+            if linked_booking:
+                linked_booking.status = "cancelled"
+                session.add(linked_booking)
 
     booking = ClientBooking(
         client_id=current_client.id,
@@ -242,13 +279,15 @@ def create_booking(
     )
     session.add(booking)
 
-    # Also create internal Schedule record so availability checks work immediately
+    # Create internal Schedule record. Soft bookings use "soft_hold" so hard bookings
+    # can still take the slot; hard ("locked") bookings use "scheduled" to fully reserve.
+    sched_status = "soft_hold" if body.booking_mode == "soft" else "scheduled"
     schedule = Schedule(
         client_id=current_client.id,
         service_id=service_id,
         employee_id=UUID(emp_id),
         appointment_date=slot_start,
-        status="scheduled",
+        status=sched_status,
         duration_minutes=svc.duration_minutes or 60,
         notes=body.notes,
         task_type="service",

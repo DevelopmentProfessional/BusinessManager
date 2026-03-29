@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.29.2"
+CURRENT_SCHEMA_VERSION = "2026.03.29.3"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -804,6 +804,37 @@ def _seed_inventory_categories_for_03897():
         print(f"  Warning: Could not seed inventory categories: {e}")
 
 
+# ─── MIGRATION: EMPLOYEE LUNCH TIME + INVENTORY PROCUREMENT LEAD ───────────────
+def _ensure_employee_lunch_and_procurement_if_needed():
+    """Add lunch_start / lunch_duration_minutes to user;
+    procurement_lead_days to inventory."""
+    tables = {
+        "user": {
+            "lunch_start": "VARCHAR",
+            "lunch_duration_minutes": "INTEGER",
+        },
+        "inventory": {
+            "procurement_lead_days": "INTEGER",
+        },
+    }
+    with engine.begin() as conn:
+        for table, cols in tables.items():
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                f"WHERE table_schema='public' AND table_name='{table}')"
+            )).scalar()
+            if not tbl_exists:
+                continue
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}'"
+            )).fetchall()}
+            for col, pg_type in cols.items():
+                if col not in existing:
+                    conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {pg_type}"))
+                    print(f"  + Added column {table}.{col} ({pg_type})")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Run safe migrations to bring schema to current version."""
@@ -865,6 +896,7 @@ def create_db_and_tables():
     _seed_inventory_categories_for_03897()
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
+    _ensure_employee_lunch_and_procurement_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

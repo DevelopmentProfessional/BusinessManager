@@ -48,7 +48,23 @@ from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID, uuid4
 from enum import Enum
+from pydantic import field_validator
+import re
 import bcrypt
+
+
+_LUNCH_START_PATTERN = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+
+
+def _validate_lunch_start_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if not _LUNCH_START_PATTERN.fullmatch(normalized):
+        raise ValueError("lunch_start must be a valid HH:MM time.")
+    return normalized
 
 # ─── 2 ENUMS ───────────────────────────────────────────────────────────────────
 class EntityType(str, Enum):
@@ -198,6 +214,11 @@ class User(BaseModel, table=True):
     vacation_days_used: Optional[int] = Field(default=0)
     sick_days: Optional[int] = Field(default=None)
     sick_days_used: Optional[int] = Field(default=0)
+
+    # Lunch / break scheduling (HH:MM, e.g. "12:00")
+    lunch_start: Optional[str] = Field(default=None)
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
+
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -214,6 +235,11 @@ class User(BaseModel, table=True):
     def verify_password(self, password: str) -> bool:
         """Verify a password against the stored hash"""
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+
+    @field_validator("lunch_start", mode="before")
+    @classmethod
+    def validate_lunch_start(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_lunch_start_value(value)
 
 # User Permission model for granular access control
 class UserPermission(BaseModel, table=True):
@@ -289,6 +315,8 @@ class Inventory(BaseModel, table=True):
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
     quantity: int = Field(ge=0, default=0)
     min_stock_level: int = Field(ge=0, default=10)
+    # How many days it takes to receive a restock order from supplier
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = Field(default=None)
 
     # Service link - for resources/assets tied to specific services
@@ -791,6 +819,7 @@ class InventoryCreate(SQLModel):
     image_url: Optional[str] = None
     quantity: int = 0
     min_stock_level: int = 10
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     supplier_id: Optional[UUID] = None
 
@@ -922,6 +951,7 @@ class InventoryRead(SQLModel):
     service_id: Optional[UUID] = None
     quantity: int
     min_stock_level: int
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     price_type: Optional[str] = "fixed"
     price_percentage: Optional[float] = None
@@ -1047,6 +1077,13 @@ class UserCreate(SQLModel):
     vacation_days_used: Optional[int] = 0
     sick_days: Optional[int] = None
     sick_days_used: Optional[int] = 0
+    lunch_start: Optional[str] = None
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
+
+    @field_validator("lunch_start", mode="before")
+    @classmethod
+    def validate_lunch_start(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_lunch_start_value(value)
 
 
 class UserUpdate(SQLModel):
@@ -1079,6 +1116,13 @@ class UserUpdate(SQLModel):
     vacation_days_used: Optional[int] = None
     sick_days: Optional[int] = None
     sick_days_used: Optional[int] = None
+    lunch_start: Optional[str] = None
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
+
+    @field_validator("lunch_start", mode="before")
+    @classmethod
+    def validate_lunch_start(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_lunch_start_value(value)
 
 
 class UserRead(SQLModel):
@@ -1113,6 +1157,8 @@ class UserRead(SQLModel):
     vacation_days_used: Optional[int] = 0
     sick_days: Optional[int] = None
     sick_days_used: Optional[int] = 0
+    lunch_start: Optional[str] = None
+    lunch_duration_minutes: Optional[int] = None
     company_id: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
