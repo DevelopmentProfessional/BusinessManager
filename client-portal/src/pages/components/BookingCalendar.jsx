@@ -144,19 +144,19 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
     loadSlots(now, addDays(now, 30));
   }, [loadSlots]);
 
-  // ── Events: only future available slots ───────────────────────────────────
+  // ── Events: include future unavailable slots so blocked times stay visible ─
   const events = slots
-    .filter((s) => s.available && new Date(s.start) >= now)
+    .filter((s) => new Date(s.start) >= now)
     .map((s, i) => ({
       id: i,
-      title: format(new Date(s.start), "h:mm a"),
+      title: s.available ? format(new Date(s.start), "h:mm a") : "Unavailable",
       start: new Date(s.start),
       end: new Date(s.end),
       slot: s,
     }));
 
   function handleSelectEvent(ev) {
-    if (new Date(ev.slot.start) < now) return;
+    if (!ev.slot.available || new Date(ev.slot.start) < now) return;
     setSelected(ev.slot);
   }
 
@@ -272,12 +272,14 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
             components={{ toolbar: NoToolbar }}
             eventPropGetter={(ev) => ({
               style: {
-                background: ev.slot === selected ? "#4338ca" : PRIMARY,
+                background: !ev.slot.available ? "#d1d5db" : ev.slot === selected ? "#4338ca" : PRIMARY,
                 borderRadius: 5,
-                border: ev.slot === selected ? "2px solid #fff" : "none",
+                border: ev.slot.available && ev.slot === selected ? "2px solid #fff" : "none",
                 fontSize: "0.68rem",
                 fontWeight: 600,
-                color: "#fff",
+                color: ev.slot.available ? "#fff" : "#4b5563",
+                opacity: ev.slot.available ? 1 : 0.85,
+                cursor: ev.slot.available ? "pointer" : "not-allowed",
               },
             })}
             dayPropGetter={(date) => (startOfDay(date) < startOfDay(now) ? { style: { background: "#f9fafb", pointerEvents: "none", opacity: 0.5 } } : {})}
@@ -376,7 +378,7 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
                 </div>
               </div>
             ) : (
-              <span style={{ fontSize: "0.73rem", color: "#9ca3af" }}>Tap an available slot to select.</span>
+              <span style={{ fontSize: "0.73rem", color: "#9ca3af" }}>Tap an available slot to select. Greyed out times are already unavailable.</span>
             )}
           </div>
 

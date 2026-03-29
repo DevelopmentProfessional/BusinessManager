@@ -279,9 +279,6 @@ def get_availability(
     ).all()
     employee_ids = [str(row.user_id) for row in se_rows]
 
-    if not employee_ids:
-        return []   # No employees configured for this service
-
     # Build lunch blocks per employee: { emp_id: (lunch_h, lunch_m, duration_min) | None }
     employee_lunch: dict = {}
     for emp_id in employee_ids:
@@ -471,20 +468,39 @@ def get_availability(
 
             # Check resource availability (same for all employees)
             if not resources_available(slot_time):
+                slots.append(AvailabilitySlot(
+                    start=slot_time,
+                    end=slot_end,
+                    employee_id="",
+                    employee_name="",
+                    available=False,
+                ))
                 slot_time += slot_step
                 continue
 
             # Check each employee — first free one wins
+            available_slot = None
             for emp_id in employee_ids:
                 if employee_is_free(emp_id, slot_time, slot_end) and asset_units_available(slot_time, slot_end):
-                    slots.append(AvailabilitySlot(
+                    available_slot = AvailabilitySlot(
                         start=slot_time,
                         end=slot_end,
                         employee_id=emp_id,
                         employee_name="",   # Omitted for client privacy
                         available=True,
-                    ))
+                    )
                     break   # Only one slot per time-block needed
+
+            slots.append(
+                available_slot
+                or AvailabilitySlot(
+                    start=slot_time,
+                    end=slot_end,
+                    employee_id="",
+                    employee_name="",
+                    available=False,
+                )
+            )
 
             slot_time += slot_step
 
