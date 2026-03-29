@@ -45,20 +45,7 @@ def _is_render_host(hostname: str) -> bool:
     )
 
 
-def _validate_render_database_url(url: str) -> str:
-    value = (url or "").strip()
-    if not value:
-        raise RuntimeError("A Render PostgreSQL database URL is required.")
-    if value.startswith("sqlite://"):
-        raise RuntimeError("SQLite URLs are disabled. Configure a Render PostgreSQL DATABASE_URL.")
-    if not _is_postgres_url(value):
-        raise RuntimeError("Only PostgreSQL DATABASE_URL values are supported.")
 
-    parsed = urlparse(value)
-    if not _is_render_host(parsed.hostname or ""):
-        raise RuntimeError("DATABASE_URL must point to a Render-hosted PostgreSQL database.")
-
-    return value
 
 
 # ─── 3 URL RESOLUTION ──────────────────────────────────────────────────────────
@@ -67,9 +54,9 @@ def get_database_url() -> str:
     env_url = os.getenv(RENDER_DATABASE_URL_ENV_VAR, "").strip()
     if not env_url:
         raise RuntimeError(
-            f"{RENDER_DATABASE_URL_ENV_VAR} is not set. Configure it with a Render-hosted PostgreSQL URL."
+            f"{RENDER_DATABASE_URL_ENV_VAR} is not set. Configure it with a PostgreSQL URL."
         )
-    return _validate_render_database_url(env_url)
+    return env_url
 
 
 # ─── 4 COMPATIBILITY HELPERS ───────────────────────────────────────────────────
