@@ -91,11 +91,20 @@ if (typeof window !== "undefined") {
 function createISUDApi(tableName, cacheKey) {
   const key = cacheKey ?? tableName;
   return {
-    getAll:   ()         => getCachedOrFetch(key, () => api.get(`/isud/${tableName}`)),
-    getById:  (id)       => api.get(`/isud/${tableName}/${id}`),
-    create:   (data)     => { clearCache(key); return api.post(`/isud/${tableName}`, data); },
-    update:   (id, data) => { clearCache(key); return api.put(`/isud/${tableName}/${id}`, data); },
-    delete:   (id)       => { clearCache(key); return api.delete(`/isud/${tableName}/${id}`); },
+    getAll: () => getCachedOrFetch(key, () => api.get(`/isud/${tableName}`)),
+    getById: (id) => api.get(`/isud/${tableName}/${id}`),
+    create: (data) => {
+      clearCache(key);
+      return api.post(`/isud/${tableName}`, data);
+    },
+    update: (id, data) => {
+      clearCache(key);
+      return api.put(`/isud/${tableName}/${id}`, data);
+    },
+    delete: (id) => {
+      clearCache(key);
+      return api.delete(`/isud/${tableName}/${id}`);
+    },
   };
 }
 
@@ -104,13 +113,13 @@ function createISUDApi(tableName, cacheKey) {
 // actionPrefix : URL prefix for the action endpoint, e.g. "leave-requests"
 function createRequestApi(tableName, actionPrefix) {
   return {
-    getAll:           ()                  => api.get(`/isud/${tableName}`),
-    getBySupervisor:  (supervisorId)      => api.get(`/isud/${tableName}?supervisor_id=${supervisorId}`),
-    getByUser:        (userId)            => api.get(`/isud/${tableName}?user_id=${userId}`),
-    create:           (data)              => api.post(`/isud/${tableName}`, data),
-    update:           (id, data)          => api.put(`/isud/${tableName}/${id}`, data),
-    delete:           (id)               => api.delete(`/isud/${tableName}/${id}`),
-    action:           (id, action)       => api.put(`/${actionPrefix}/${id}/action`, { action }),
+    getAll: () => api.get(`/isud/${tableName}`),
+    getBySupervisor: (supervisorId) => api.get(`/isud/${tableName}?supervisor_id=${supervisorId}`),
+    getByUser: (userId) => api.get(`/isud/${tableName}?user_id=${userId}`),
+    create: (data) => api.post(`/isud/${tableName}`, data),
+    update: (id, data) => api.put(`/isud/${tableName}/${id}`, data),
+    delete: (id) => api.delete(`/isud/${tableName}/${id}`),
+    action: (id, action) => api.put(`/${actionPrefix}/${id}/action`, { action }),
   };
 }
 
@@ -148,16 +157,21 @@ export const preloadStoreData = async ({ setClients, setServices, setEmployees, 
 // API endpoints for all entities
 export const clientsAPI = {
   ...createISUDApi("clients"),
-  uploadCSV: (formData) => { clearCache("clients"); return api.post("/clients/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } }); },
-  getSchedules:       (clientId)       => api.get(`/isud/schedules?client_id=${clientId}`),
-  getTransactions:    (clientId)       => api.get(`/isud/sale_transaction?client_id=${clientId}`),
-  getTransactionItems:(transactionId)  => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
-  getPortalOrders:    (clientId)       => api.get(`/isud/client_orders?client_id=${clientId}`),
-  getPortalOrderItems:(orderId)        => api.get(`/isud/client_order_items?order_id=${orderId}`),
+  uploadCSV: (formData) => {
+    clearCache("clients");
+    return api.post("/clients/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } });
+  },
+  getSchedules: (clientId) => api.get(`/isud/schedules?client_id=${clientId}`),
+  getTransactions: (clientId) => api.get(`/isud/sale_transaction?client_id=${clientId}`),
+  getTransactionItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
+  getPortalOrders: (clientId) => api.get(`/isud/client_orders?client_id=${clientId}`),
+  getPortalOrderItems: (orderId) => api.get(`/isud/client_order_items?order_id=${orderId}`),
   bulkImport: async (records) => {
     clearCache("clients");
     const results = [];
-    for (const record of records) { results.push((await api.post("/isud/clients", record))?.data); }
+    for (const record of records) {
+      results.push((await api.post("/isud/clients", record))?.data);
+    }
     return { created_count: results.length };
   },
 };
@@ -238,11 +252,16 @@ export const inventoryFeaturesAPI = {
 
 export const servicesAPI = {
   ...createISUDApi("services"),
-  uploadCSV: (formData) => { clearCache("services"); return api.post("/services/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } }); },
+  uploadCSV: (formData) => {
+    clearCache("services");
+    return api.post("/services/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } });
+  },
   bulkImport: async (records) => {
     clearCache("services");
     const results = [];
-    for (const record of records) { results.push((await api.post("/isud/services", record))?.data); }
+    for (const record of records) {
+      results.push((await api.post("/isud/services", record))?.data);
+    }
     return { created_count: results.length };
   },
 };
@@ -288,19 +307,24 @@ export const suppliersAPI = createISUDApi("suppliers");
 
 export const employeesAPI = {
   ...createISUDApi("users", "employees"),
-  getUserData:          (userId)                     => api.get(`/auth/users/${userId}`),
-  lockUser:             (userId)                     => api.post(`/auth/users/${userId}/lock`),
-  unlockUser:           (userId)                     => api.post(`/auth/users/${userId}/unlock`),
-  getUserPermissions:   (userId)                     => api.get(`/auth/users/${userId}/permissions`),
-  updateUser:           (userId, data)               => api.put(`/auth/users/${userId}`, data),
-  createUserPermission: (userId, data)               => api.post(`/auth/users/${userId}/permissions`, data),
+  getUserData: (userId) => api.get(`/auth/users/${userId}`),
+  lockUser: (userId) => api.post(`/auth/users/${userId}/lock`),
+  unlockUser: (userId) => api.post(`/auth/users/${userId}/unlock`),
+  getUserPermissions: (userId) => api.get(`/auth/users/${userId}/permissions`),
+  updateUser: (userId, data) => api.put(`/auth/users/${userId}`, data),
+  createUserPermission: (userId, data) => api.post(`/auth/users/${userId}/permissions`, data),
   updateUserPermission: (userId, permissionId, data) => api.put(`/auth/users/${userId}/permissions/${permissionId}`, data),
-  deleteUserPermission: (userId, permissionId)       => api.delete(`/auth/users/${userId}/permissions/${permissionId}`),
-  uploadCSV: (formData) => { clearCache("employees"); return api.post("/employees/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } }); },
+  deleteUserPermission: (userId, permissionId) => api.delete(`/auth/users/${userId}/permissions/${permissionId}`),
+  uploadCSV: (formData) => {
+    clearCache("employees");
+    return api.post("/employees/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } });
+  },
   bulkImport: async (records) => {
     clearCache("employees");
     const results = [];
-    for (const record of records) { results.push((await api.post("/isud/users", record))?.data); }
+    for (const record of records) {
+      results.push((await api.post("/isud/users", record))?.data);
+    }
     return { created_count: results.length };
   },
 };
@@ -346,8 +370,8 @@ export const rolesAPI = {
 
 export const scheduleAPI = {
   ...createISUDApi("schedules", "schedule"),
-  getByEmployee:      (userId) => api.get(`/isud/schedules?employee_id=${userId}`),
-  getAvailableEmployees:  ()   => api.get("/isud/users"),
+  getByEmployee: (userId) => api.get(`/isud/schedules?employee_id=${userId}`),
+  getAvailableEmployees: () => api.get("/isud/users"),
 };
 
 export const scheduleAttendeesAPI = {
@@ -386,12 +410,12 @@ export const tasksAPI = {
 
 export const attendanceAPI = {
   ...createISUDApi("attendance"),
-  getByUser:        (userId)       => api.get(`/isud/attendance?employee_id=${userId}`),
+  getByUser: (userId) => api.get(`/isud/attendance?employee_id=${userId}`),
   getByUserAndDate: (userId, date) => api.get(`/isud/attendance?employee_id=${userId}&date=${date}`),
-  me:        () => api.get("/auth/attendance/me"),
+  me: () => api.get("/auth/attendance/me"),
   checkUser: () => api.get("/auth/attendance/check-user"),
-  clockIn:   () => api.post("/auth/attendance/clock-in", {}),
-  clockOut:  () => api.post("/auth/attendance/clock-out", {}),
+  clockIn: () => api.post("/auth/attendance/clock-in", {}),
+  clockOut: () => api.post("/auth/attendance/clock-out", {}),
 };
 
 // Documents: full CRUD via ISUD pattern including file uploads.
@@ -478,12 +502,10 @@ export const documentCategoriesAPI = {
 export const leaveRequestsAPI = {
   ...createRequestApi("leave_request", "leave-requests"),
   // Override getByUser to support optional leaveType filter
-  getByUser: (userId, leaveType) => api.get(leaveType
-    ? `/isud/leave_request?user_id=${userId}&leave_type=${leaveType}`
-    : `/isud/leave_request?user_id=${userId}`),
+  getByUser: (userId, leaveType) => api.get(leaveType ? `/isud/leave_request?user_id=${userId}&leave_type=${leaveType}` : `/isud/leave_request?user_id=${userId}`),
 };
 
-export const onboardingRequestsAPI  = createRequestApi("onboarding_request",  "onboarding-requests");
+export const onboardingRequestsAPI = createRequestApi("onboarding_request", "onboarding-requests");
 export const offboardingRequestsAPI = createRequestApi("offboarding_request", "offboarding-requests");
 
 export const saleTransactionsAPI = {
