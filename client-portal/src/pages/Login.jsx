@@ -26,7 +26,7 @@ export default function Login() {
   const [showPwd, setShowPwd] = useState(false);
   const [branding, setBranding] = useState(null);
 
-  const hasLogo = Boolean(preselected?.has_logo_data || preselected?.logo_url);
+  const hasLogo = Boolean(preselected?.has_logo_data);
   const logoSrc = hasLogo ? companiesAPI.logoUrl(preselected.company_id) : null;
 
   // Load branding if company is pre-selected

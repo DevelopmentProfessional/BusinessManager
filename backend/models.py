@@ -131,6 +131,10 @@ class Company(BaseModel, table=True):
     __tablename__ = "company"
     company_id: str = Field(unique=True, index=True)  # User-facing code like "ACME"
     name: str = Field(index=True)                      # Full company name
+    company_email: Optional[str] = Field(default=None)
+    company_phone: Optional[str] = Field(default=None)
+    company_address: Optional[str] = Field(default=None)
+    tax_rate: float = Field(default=0.0)
     is_active: bool = Field(default=True)
 
 # ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
@@ -589,6 +593,10 @@ class AppSettings(BaseModel, table=True):
     portal_footer_text: Optional[str] = Field(default=None)
     portal_primary_color: Optional[str] = Field(default=None)
     portal_secondary_color: Optional[str] = Field(default=None)
+    
+    # Company logo (added by migration)
+    logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
+    
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1271,6 +1279,10 @@ class CompanyRead(SQLModel):
     id: UUID
     company_id: str
     name: str
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
+    tax_rate: float = 0.0
     is_active: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -1280,6 +1292,10 @@ class CompanyRead(SQLModel):
 class CompanyCreate(SQLModel):
     company_id: str
     name: str
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
+    tax_rate: float = 0.0
     is_active: bool = True
 
 

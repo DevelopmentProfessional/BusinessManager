@@ -10,7 +10,7 @@ export default function Register() {
   const setAuth = useStore((s) => s.setAuth);
   const loadCart = useStore((s) => s.loadCart);
   const preselected = location.state?.company || null;
-  const hasLogo = Boolean(preselected?.has_logo_data || preselected?.logo_url);
+  const hasLogo = Boolean(preselected?.has_logo_data);
   const logoSrc = hasLogo ? companiesAPI.logoUrl(preselected.company_id) : null;
 
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", phone: "", company_id: preselected?.company_id || "" });
