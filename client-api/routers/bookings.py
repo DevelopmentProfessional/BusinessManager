@@ -26,7 +26,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
-from sqlmodel import Session, select
+from sqlmodel import SQLModel, Session, select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -50,6 +50,10 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 limiter = Limiter(key_func=get_remote_address)
 logger = logging.getLogger(__name__)
+
+
+class RescheduleBody(SQLModel):
+    appointment_date: datetime
 
 
 def _get_settings(company_id: str, session: Session) -> AppSettings:
@@ -138,6 +142,11 @@ def _check_assets_available(
                 AssetUnit.company_id == company_id,
             )
         ).all()
+        if not units:
+            # No unit records exist for this asset type — treat as available.
+            # Mirrors the behaviour in the availability endpoint so booking
+            # confirmation is consistent with what the calendar showed.
+            continue
         has_free = False
         for unit in units:
             if unit.state not in ("available", "arriving_soon"):
@@ -413,5 +422,90 @@ def cancel_booking(
     except Exception:
         session.rollback()
         raise HTTPException(status_code=500, detail="Cancellation failed.")
+
+    return _booking_to_read(booking)
+
+
+@router.patch("/{booking_id}/reschedule", response_model=BookingRead)
+@limiter.limit("10/minute")
+def reschedule_booking(
+    request: Request,
+    booking_id: UUID,
+    body: RescheduleBody,
+    current_client: Client = Depends(auth_utils.get_current_client),
+    session: Session = Depends(get_session),
+):
+    """
+    Move an existing booking to a new date/time.
+
+    Rules:
+    - Only the booking's owner may reschedule it.
+    - Cancelled, completed, and no-show bookings cannot be moved.
+    - The new time must be in the future.
+    - Availability is re-checked at the new time (employee + assets); 409 if unavailable.
+    - The linked internal Schedule row is updated atomically with the booking.
+    """
+    booking = session.exec(
+        select(ClientBooking).where(
+            ClientBooking.id == booking_id,
+            ClientBooking.client_id == current_client.id,
+        )
+    ).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+    if booking.status in ("cancelled", "completed", "no_show"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot reschedule a {booking.status} booking.",
+        )
+
+    new_start = body.appointment_date
+    if new_start <= datetime.now():
+        raise HTTPException(status_code=400, detail="New appointment date must be in the future.")
+
+    svc = session.get(Service, booking.service_id)
+    if not svc:
+        raise HTTPException(status_code=404, detail="Service not found.")
+
+    slot_end = new_start + timedelta(minutes=svc.duration_minutes or 60)
+
+    # Advisory lock on the new slot to prevent concurrent double-bookings
+    lock_key = hash(f"{current_client.company_id}:{new_start.isoformat()}")
+    session.exec(text(f"SELECT pg_advisory_xact_lock({abs(lock_key) % (2**31)})"))
+
+    emp_id = _find_available_employee(
+        booking.service_id, current_client.company_id, new_start, slot_end, session, booking.booking_mode
+    )
+    if not emp_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No available employees for the requested time. Please choose another slot.",
+        )
+
+    if not _check_assets_available(booking.service_id, current_client.company_id, new_start, slot_end, session):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Required equipment is unavailable for the requested time.",
+        )
+
+    try:
+        booking.appointment_date = new_start
+        session.add(booking)
+
+        if booking.schedule_id:
+            schedule = session.exec(
+                select(Schedule).where(Schedule.id == booking.schedule_id)
+            ).first()
+            if schedule:
+                schedule.appointment_date = new_start
+                schedule.employee_id = UUID(emp_id)
+                session.add(schedule)
+
+        session.commit()
+        session.refresh(booking)
+    except Exception:
+        logger.exception("Failed to reschedule booking %s for client %s", booking_id, current_client.id)
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to reschedule booking.")
 
     return _booking_to_read(booking)

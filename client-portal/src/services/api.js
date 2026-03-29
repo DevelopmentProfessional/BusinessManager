@@ -139,10 +139,11 @@ export const cartAPI = {
 
 // ── Bookings ──────────────────────────────────────────────────────────────────
 export const bookingsAPI = {
-  create: (data)   => api.post('/bookings', data).then(r => r.data),
-  getAll: ()       => api.get('/bookings').then(r => r.data),
-  getOne: (id)     => api.get(`/bookings/${id}`).then(r => r.data),
-  cancel: (id)     => api.patch(`/bookings/${id}/cancel`).then(r => r.data),
+  create:     (data)                 => api.post('/bookings', data).then(r => r.data),
+  getAll:     ()                     => api.get('/bookings').then(r => r.data),
+  getOne:     (id)                   => api.get(`/bookings/${id}`).then(r => r.data),
+  cancel:     (id)                   => api.patch(`/bookings/${id}/cancel`).then(r => r.data),
+  reschedule: (id, appointment_date) => api.patch(`/bookings/${id}/reschedule`, { appointment_date }).then(r => r.data),
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
