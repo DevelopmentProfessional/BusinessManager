@@ -6,8 +6,8 @@ PUBLIC endpoints -- no authentication required.
 GET /companies              -- List all active companies
 GET /companies/{id}/logo    -- Serve binary logo image
 
-Queries the Company table (authoritative) and joins AppSettings
-for logo and extra info. Works even if AppSettings has no entry yet.
+Queries the Company table (authoritative) for profile + logo data.
+AppSettings is used only for optional portal theming fields.
 """
 
 from typing import List, Optional
@@ -60,27 +60,20 @@ def list_companies(
 ):
     """
     Returns all active companies for the company selection screen.
-    Pulls name from the Company table and logo from AppSettings (if set).
+    Pulls both name and logo from the Company table.
     """
     companies = session.exec(
         select(Company).where(Company.is_active == True)
     ).all()
 
-    result = []
-    for company in companies:
-        # Try to find matching AppSettings for logo
-        settings = session.exec(
-            select(AppSettings).where(AppSettings.company_id == company.company_id)
-        ).first()
-
-        has_logo_data = bool(settings.logo_data) if settings else False
-
-        result.append(CompanyListItem(
+    result = [
+        CompanyListItem(
             company_id    = company.company_id,
             name          = company.name,
-            has_logo_data = has_logo_data,
-        ))
-
+            has_logo_data = bool(company.logo_data),
+        )
+        for company in companies
+    ]
     return result
 
 
@@ -108,7 +101,7 @@ def get_branding(
     return PortalBranding(
         company_id=company_id,
         company_name=settings.company_name or company.name,
-        has_logo_data=bool(settings.logo_data),
+        has_logo_data=bool(company.logo_data),
         portal_hero_title=settings.portal_hero_title,
         portal_hero_subtitle=settings.portal_hero_subtitle,
         portal_hero_tagline=settings.portal_hero_tagline,
@@ -166,16 +159,16 @@ def get_logo(
     company_id: str,
     session: Session = Depends(get_session),
 ):
-    """Serve the binary logo stored in app_settings.logo_data."""
-    settings = session.exec(
-        select(AppSettings).where(AppSettings.company_id == company_id)
+    """Serve the binary logo stored in company.logo_data."""
+    company = session.exec(
+        select(Company).where(Company.company_id == company_id)
     ).first()
 
-    if not settings:
+    if not company:
         raise HTTPException(status_code=404, detail="Company not found.")
 
-    if settings.logo_data:
-        data = settings.logo_data
+    if company.logo_data:
+        data = company.logo_data
         if data[:4] == b'\x89PNG':
             media_type = "image/png"
         elif data[:2] == b'\xff\xd8':

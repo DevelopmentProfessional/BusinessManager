@@ -42,6 +42,7 @@ def create_client_tables():
     import models  # noqa — triggers SQLModel metadata registration
     SQLModel.metadata.create_all(engine)
     _ensure_client_order_workflow_columns()
+    _ensure_company_profile_columns()
 
 
 def _ensure_columns(conn, table: str, columns: list[tuple[str, str]]):
@@ -98,3 +99,18 @@ def _ensure_client_order_workflow_columns():
             ))
     except Exception as exc:
         logger.exception("Best-effort client-api migration attempt failed while patching shared DB schema: %s", exc)
+
+
+def _ensure_company_profile_columns():
+    """Ensure company table has canonical profile fields used by client portal."""
+    try:
+        with engine.begin() as conn:
+            _ensure_columns(conn, "company", [
+                ("company_email", "VARCHAR"),
+                ("company_phone", "VARCHAR"),
+                ("company_address", "TEXT"),
+                ("logo_data", "BYTEA"),
+                ("tax_rate", "DOUBLE PRECISION NOT NULL DEFAULT 0.0"),
+            ])
+    except Exception as exc:
+        logger.exception("Best-effort company profile migration failed: %s", exc)

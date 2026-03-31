@@ -72,6 +72,11 @@ class Company(BaseModel, table=True):
     __tablename__ = "company"
     company_id: str = Field(unique=True, index=True)
     name: str = Field(index=True)
+    company_email: Optional[str] = Field(default=None)
+    company_phone: Optional[str] = Field(default=None)
+    company_address: Optional[str] = Field(default=None)
+    logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
+    tax_rate: float = Field(default=0.0)
     is_active: bool = Field(default=True)
 
 

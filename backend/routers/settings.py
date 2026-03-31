@@ -266,7 +266,7 @@ def upload_company_logo(
     current_user=Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Upload company logo as binary data (replaces previous logo)."""
+    """Upload company logo as binary data (stored canonically on company)."""
     if file.content_type not in ALLOWED_LOGO_TYPES:
         raise HTTPException(
             status_code=400,
@@ -279,11 +279,16 @@ def upload_company_logo(
 
     company_id = current_user.company_id or ""
     settings = get_or_create_settings(session, company_id)
-    
-    # Store binary logo data as the single logo source
-    settings.logo_data = content
+
+    company = get_company(session, company_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found.")
+
+    # Canonical company profile storage: keep logo on company table.
+    company.logo_data = content
+    company.updated_at = datetime.utcnow()
     settings.updated_at = datetime.utcnow()
-    
+
     try:
         session.commit()
         session.refresh(settings)
@@ -291,7 +296,6 @@ def upload_company_logo(
         session.rollback()
         raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
-    company = get_company(session, company_id)
     return _to_settings_response(settings, company)
 
 
