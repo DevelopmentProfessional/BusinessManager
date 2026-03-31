@@ -144,6 +144,12 @@ def health_db():
         )
 
 
+# Render startup probe hits "/" with HEAD/GET.
+@app.get("/", include_in_schema=False)
+def root():
+    return {"status": "ok", "service": "client-api"}
+
+
 # ── Routers ──────────────────────────────────────────────────────────────────────
 PREFIX = "/api/client"
 
