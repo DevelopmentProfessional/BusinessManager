@@ -247,6 +247,9 @@ def _ensure_company_multitenancy_if_needed():
         if "company_address" not in company_cols:
             conn.execute(text("ALTER TABLE company ADD COLUMN company_address TEXT"))
             print("  + Added company.company_address")
+        if "logo_data" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN logo_data BYTEA"))
+            print("  + Added company.logo_data")
         if "tax_rate" not in company_cols:
             conn.execute(text("ALTER TABLE company ADD COLUMN tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0.0"))
             print("  + Added company.tax_rate")
@@ -886,6 +889,7 @@ def create_db_and_tables():
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()
     _ensure_company_multitenancy_if_needed()
+    _backfill_company_logo_from_settings_if_needed()
     _ensure_user_username_composite_unique_if_needed()
     _ensure_userrole_enum_values_if_needed()
     _ensure_inventory_sku_nullable_if_needed()
@@ -1558,6 +1562,38 @@ def _ensure_app_settings_logo_columns_if_needed():
             if col not in col_names:
                 conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
                 print(f"  + Added column app_settings.{col} ({pg_type})")
+
+
+def _backfill_company_logo_from_settings_if_needed():
+    """Move existing logo bytes from app_settings into company when missing."""
+    try:
+        with engine.begin() as conn:
+            company_logo_exists = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='logo_data'"
+            )).fetchone()
+            if not company_logo_exists:
+                return
+
+            settings_logo_exists = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='app_settings' AND column_name='logo_data'"
+            )).fetchone()
+            if not settings_logo_exists:
+                return
+
+            conn.execute(text(
+                """
+                UPDATE company c
+                SET logo_data = s.logo_data
+                FROM app_settings s
+                WHERE s.company_id = c.company_id
+                  AND c.logo_data IS NULL
+                  AND s.logo_data IS NOT NULL
+                """
+            ))
+    except Exception as e:
+        print(f"  Warning: Could not backfill company.logo_data from app_settings: {e}")
 
 # ─── MIGRATION: USER TRAINING MODE ─────────────────────────────────────────────
 def _ensure_user_training_mode_if_needed():
