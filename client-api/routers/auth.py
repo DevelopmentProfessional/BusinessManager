@@ -12,7 +12,9 @@ Rate limits:
   me:      60 / minute per IP
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import secrets
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 from slowapi import Limiter
@@ -27,10 +29,15 @@ from models import (
     ClientRegister,
     ClientTokenResponse,
     ClientUpdate,
+    PasswordResetRequest,
+    PasswordResetRequestResponse,
+    PasswordResetConfirm,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
+RESET_TOKEN_EXPIRY_MINUTES = int(os.getenv("CLIENT_RESET_TOKEN_EXPIRY_MINUTES", "30"))
+EXPOSE_RESET_TOKEN = os.getenv("CLIENT_EXPOSE_RESET_TOKEN", "true").lower() == "true"
 
 
 @router.post(
@@ -220,3 +227,81 @@ def update_me(
         company_id=client.company_id,
         created_at=client.created_at,
     )
+
+
+@router.post(
+    "/request-password-reset",
+    response_model=PasswordResetRequestResponse,
+    summary="Request a client password reset token",
+)
+@limiter.limit("5/minute")
+def request_password_reset(
+    request: Request,
+    body: PasswordResetRequest,
+    session: Session = Depends(get_session),
+):
+    client = session.exec(
+        select(Client).where(
+            Client.email == body.email,
+            Client.company_id == body.company_id,
+        )
+    ).first()
+
+    if not client:
+        return PasswordResetRequestResponse(
+            message="If this account exists, a reset token has been generated.",
+        )
+
+    token = secrets.token_urlsafe(24)
+    client.reset_token = token
+    client.reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)
+
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to prepare password reset.")
+
+    # In production, wire this to email/SMS; token echo is enabled for now.
+    return PasswordResetRequestResponse(
+        message="Password reset token generated.",
+        reset_token=token if EXPOSE_RESET_TOKEN else None,
+        expires_in_minutes=RESET_TOKEN_EXPIRY_MINUTES,
+    )
+
+
+@router.post("/reset-password", summary="Reset client password with token")
+@limiter.limit("10/minute")
+def reset_password(
+    request: Request,
+    body: PasswordResetConfirm,
+    session: Session = Depends(get_session),
+):
+    client = session.exec(
+        select(Client).where(
+            Client.email == body.email,
+            Client.company_id == body.company_id,
+        )
+    ).first()
+    if not client:
+        raise HTTPException(status_code=400, detail="Invalid reset request.")
+
+    if not client.reset_token or client.reset_token != body.reset_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+
+    now = datetime.now(timezone.utc)
+    expires_at = client.reset_token_expires
+    if not expires_at or expires_at.replace(tzinfo=timezone.utc) < now:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+
+    client.password_hash = auth_utils.hash_password(body.new_password)
+    client.reset_token = None
+    client.reset_token_expires = None
+
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to reset password.")
+
+    return {"message": "Password reset successful. You can now sign in."}

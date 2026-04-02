@@ -23,8 +23,20 @@ export default function Login() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
   const [branding, setBranding] = useState(null);
+  const [mode, setMode] = useState("login"); // login | request-reset | reset
+  const [resetRequest, setResetRequest] = useState({
+    email: "",
+    company_id: preselected?.company_id || "",
+  });
+  const [resetData, setResetData] = useState({
+    email: "",
+    company_id: preselected?.company_id || "",
+    reset_token: "",
+    new_password: "",
+  });
 
   const hasLogo = Boolean(preselected?.has_logo_data);
   const logoSrc = hasLogo ? companiesAPI.logoUrl(preselected.company_id) : null;
@@ -46,6 +58,7 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
     try {
       const data = await authAPI.login(form);
@@ -54,6 +67,50 @@ export default function Login() {
       navigate("/shop");
     } catch (err) {
       setError(err.response?.data?.detail || "Login failed. Check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRequestReset(e) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      const data = await authAPI.requestPasswordReset(resetRequest);
+      const next = {
+        email: resetRequest.email,
+        company_id: resetRequest.company_id,
+        reset_token: data?.reset_token || "",
+        new_password: "",
+      };
+      setResetData(next);
+      setMode("reset");
+      setSuccess(
+        data?.reset_token
+          ? `Reset token generated (expires in ${data.expires_in_minutes || 30} min).`
+          : (data?.message || "If this account exists, a reset token has been generated.")
+      );
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not start password reset.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      await authAPI.resetPassword(resetData);
+      setSuccess("Password reset successful. Please sign in with your new password.");
+      setForm((f) => ({ ...f, email: resetData.email, company_id: resetData.company_id, password: "" }));
+      setMode("login");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not reset password.");
     } finally {
       setLoading(false);
     }
@@ -181,15 +238,20 @@ export default function Login() {
             marginTop: -8,
           }}
         >
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <form onSubmit={mode === "login" ? handleSubmit : (mode === "request-reset" ? handleRequestReset : handleResetPassword)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Email */}
             <div>
               <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>Email address</label>
               <input
                 type="email"
                 placeholder="jane@example.com"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                value={mode === "login" ? form.email : (mode === "request-reset" ? resetRequest.email : resetData.email)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (mode === "login") setForm((f) => ({ ...f, email: value }));
+                  else if (mode === "request-reset") setResetRequest((f) => ({ ...f, email: value }));
+                  else setResetData((f) => ({ ...f, email: value }));
+                }}
                 required
                 autoFocus
                 style={{
@@ -208,6 +270,7 @@ export default function Login() {
             </div>
 
             {/* Password */}
+            {mode === "login" && (
             <div>
               <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>Password</label>
               <div style={{ position: "relative" }}>
@@ -249,6 +312,51 @@ export default function Login() {
                 </button>
               </div>
             </div>
+            )}
+
+            {mode === "reset" && (
+              <>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>Reset token</label>
+                  <input
+                    type="text"
+                    placeholder="Paste reset token"
+                    value={resetData.reset_token}
+                    onChange={(e) => setResetData((f) => ({ ...f, reset_token: e.target.value }))}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      fontSize: "0.88rem",
+                      border: "1.5px solid #e5e7eb",
+                      borderRadius: "0.6rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>New password</label>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Enter a new password"
+                    value={resetData.new_password}
+                    onChange={(e) => setResetData((f) => ({ ...f, new_password: e.target.value }))}
+                    minLength={8}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      fontSize: "0.88rem",
+                      border: "1.5px solid #e5e7eb",
+                      borderRadius: "0.6rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Company ID — hidden if pre-selected */}
             {!preselected ? (
@@ -257,8 +365,13 @@ export default function Login() {
                 <input
                   type="text"
                   placeholder="acme-corp"
-                  value={form.company_id}
-                  onChange={(e) => setForm((f) => ({ ...f, company_id: e.target.value }))}
+                  value={mode === "login" ? form.company_id : (mode === "request-reset" ? resetRequest.company_id : resetData.company_id)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (mode === "login") setForm((f) => ({ ...f, company_id: value }));
+                    else if (mode === "request-reset") setResetRequest((f) => ({ ...f, company_id: value }));
+                    else setResetData((f) => ({ ...f, company_id: value }));
+                  }}
                   required
                   style={{
                     width: "100%",
@@ -293,6 +406,20 @@ export default function Login() {
                 {error}
               </div>
             )}
+            {success && (
+              <div
+                style={{
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  borderRadius: "0.6rem",
+                  padding: "10px 12px",
+                  color: "#065f46",
+                  fontSize: "0.82rem",
+                }}
+              >
+                {success}
+              </div>
+            )}
 
             {/* Submit */}
             <button
@@ -311,9 +438,38 @@ export default function Login() {
                 marginTop: 4,
               }}
             >
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? "Please wait…" : (mode === "login" ? "Sign In" : (mode === "request-reset" ? "Generate Reset Token" : "Reset Password"))}
             </button>
           </form>
+
+          <p style={{ textAlign: "center", fontSize: "0.8rem", color: "#6b7280", marginTop: 12 }}>
+            {mode === "login" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("request-reset");
+                  setError(null);
+                  setSuccess(null);
+                  setResetRequest((r) => ({ ...r, email: form.email, company_id: form.company_id }));
+                }}
+                style={{ border: "none", background: "none", color: primaryColor, cursor: "pointer", fontWeight: 600 }}
+              >
+                Forgot password?
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError(null);
+                  setSuccess(null);
+                }}
+                style={{ border: "none", background: "none", color: primaryColor, cursor: "pointer", fontWeight: 600 }}
+              >
+                Back to sign in
+              </button>
+            )}
+          </p>
 
           <p style={{ textAlign: "center", fontSize: "0.82rem", color: "#6b7280", marginTop: 18 }}>
             Don't have an account?{" "}

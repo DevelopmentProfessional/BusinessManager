@@ -396,6 +396,24 @@ class ClientLogin(SQLModel):
     company_id: str
 
 
+class PasswordResetRequest(SQLModel):
+    email: str
+    company_id: str
+
+
+class PasswordResetRequestResponse(SQLModel):
+    message: str
+    reset_token: Optional[str] = None
+    expires_in_minutes: Optional[int] = None
+
+
+class PasswordResetConfirm(SQLModel):
+    email: str
+    company_id: str
+    reset_token: str
+    new_password: str
+
+
 class ClientTokenResponse(SQLModel):
     access_token: str
     token_type: str = "bearer"
