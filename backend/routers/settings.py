@@ -48,6 +48,21 @@ class SeedRequest(BaseModel):
 
 # ─── 1 SETTINGS SINGLETON HELPER ───────────────────────────────────────────────
 
+def resolve_company_id(session: Session, current_user) -> str:
+    """Resolve active company id for legacy users missing company_id."""
+    if current_user.company_id:
+        return current_user.company_id
+
+    companies = session.exec(select(Company).where(Company.is_active == True)).all()
+    if len(companies) == 1:
+        return companies[0].company_id
+
+    raise HTTPException(
+        status_code=400,
+        detail="No company is assigned to this user. Please set your company before uploading a logo.",
+    )
+
+
 def get_company(session: Session, company_id: str = "") -> Company | None:
     """Return the company row for the active tenant when available."""
     if not company_id:
@@ -220,7 +235,7 @@ def get_schedule_settings(
     session: Session = Depends(get_session),
 ):
     """Get schedule settings (auto-creates defaults if none exist)."""
-    company_id = current_user.company_id or ""
+    company_id = resolve_company_id(session, current_user)
     settings = get_or_create_settings(session, company_id)
     company = get_company(session, company_id)
     return _to_settings_response(settings, company)
@@ -233,7 +248,7 @@ def update_schedule_settings(
     session: Session = Depends(get_session),
 ):
     """Update schedule settings."""
-    company_id = current_user.company_id or ""
+    company_id = resolve_company_id(session, current_user)
     settings = get_or_create_settings(session, company_id)
 
     # Update fields if provided
@@ -277,7 +292,7 @@ def upload_company_logo(
     if len(content) > MAX_LOGO_SIZE:
         raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
 
-    company_id = current_user.company_id or ""
+    company_id = resolve_company_id(session, current_user)
     settings = get_or_create_settings(session, company_id)
 
     company = get_company(session, company_id)
