@@ -107,6 +107,8 @@ export const companiesAPI = {
 export const authAPI = {
   register: (data)   => api.post('/auth/register', data).then(r => r.data),
   login:    (data)   => api.post('/auth/login',    data).then(r => r.data),
+  requestPasswordReset: (data) => api.post('/auth/request-password-reset', data).then(r => r.data),
+  resetPassword: (data) => api.post('/auth/reset-password', data).then(r => r.data),
   me:       ()       => api.get('/auth/me').then(r => r.data),
   updateMe: (data)   => api.patch('/auth/me', data).then(r => r.data),
 }
