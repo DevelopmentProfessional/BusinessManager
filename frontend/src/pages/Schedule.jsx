@@ -156,21 +156,7 @@ export default function Schedule() {
     sunday_enabled: true,
   });
 
-  const {
-    currentDate,
-    setCurrentDate,
-    currentView,
-    setCurrentView,
-    swipeOffset,
-    handleNavigatePrevious,
-    handleNavigateNext,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-    getCalendarDays,
-    getTimeSlots,
-    isDayEnabled,
-  } = useCalendarView({ scheduleSettings });
+  const { currentDate, setCurrentDate, currentView, setCurrentView, swipeOffset, handleNavigatePrevious, handleNavigateNext, handleTouchStart, handleTouchMove, handleTouchEnd, getCalendarDays, getTimeSlots, isDayEnabled } = useCalendarView({ scheduleSettings });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
@@ -469,9 +455,7 @@ export default function Schedule() {
   // ─── 12 ATTENDEE SYNC UTILITIES ──────────────────────────────────────────────
   const normalizeIds = useCallback((value) => {
     if (Array.isArray(value)) {
-      return value
-        .map((id) => (id == null ? "" : String(id).trim()))
-        .filter(Boolean);
+      return value.map((id) => (id == null ? "" : String(id).trim())).filter(Boolean);
     }
     if (!value) return [];
     return [String(value).trim()].filter(Boolean);
