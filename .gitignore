@@ -79,8 +79,9 @@ simple_migration.py
 /tests/
 /regressiontest/
 
-# SSL certificates (local development only)
+# SSL certificates and keys (local development only)
 ssl/*.pem
+*.pem
 
 # Company provisioning tool (run locally, never deploy)
 CompanyCreation/

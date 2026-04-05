@@ -14,25 +14,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def _validate_render_database_url(url: str) -> str:
+def _validate_database_url(url: str) -> str:
     value = (url or "").strip()
     if not value:
-        raise RuntimeError("A Render PostgreSQL DATABASE_URL is required.")
+        raise RuntimeError("DATABASE_URL is not set.")
     if value.startswith("sqlite://"):
-        raise RuntimeError("SQLite URLs are disabled. Configure a Render PostgreSQL DATABASE_URL.")
+        raise RuntimeError("SQLite URLs are disabled. Configure a PostgreSQL DATABASE_URL.")
     if not value.startswith(("postgres://", "postgresql://", "postgresql+psycopg://")):
         raise RuntimeError("Only PostgreSQL DATABASE_URL values are supported.")
-
-    host = (urlparse(value).hostname or "").strip().rstrip(".").lower()
-    if not (
-        host == "render.com"
-        or host.endswith(".render.com")
-        or host == "render.internal"
-        or host.endswith(".render.internal")
-    ):
-        raise RuntimeError("DATABASE_URL must point to a Render-hosted PostgreSQL database.")
-
     return value
 
 
-DATABASE_URL = _validate_render_database_url(os.getenv("DATABASE_URL", ""))
+DATABASE_URL = _validate_database_url(os.getenv("DATABASE_URL", ""))

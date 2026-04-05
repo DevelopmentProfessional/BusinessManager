@@ -1,0 +1,38 @@
+name: Deploy Client API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client-api/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        run: |
+          cd client-api
+          docker build -t businessmanager-client-api .
+          docker tag businessmanager-client-api:latest 890749832422.dkr.ecr.us-east-1.amazonaws.com/businessmanager-client-api:latest
+          docker push 890749832422.dkr.ecr.us-east-1.amazonaws.com/businessmanager-client-api:latest
+
+      - name: Deploy to App Runner
+        run: |
+          aws apprunner start-deployment \
+            --service-arn arn:aws:apprunner:us-east-1:890749832422:service/businessmanager-client-api/7a4bdffc13864304a63c4750a831dbcd \
+            --region us-east-1

@@ -1,0 +1,39 @@
+name: Deploy Staff API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t businessmanager-staff-api .
+          docker tag businessmanager-staff-api:latest 890749832422.dkr.ecr.us-east-1.amazonaws.com/businessmanager-staff-api:latest
+          docker push 890749832422.dkr.ecr.us-east-1.amazonaws.com/businessmanager-staff-api:latest
+
+      - name: Deploy to App Runner
+        run: |
+          aws apprunner start-deployment \
+            --service-arn arn:aws:apprunner:us-east-1:890749832422:service/businessmanager-staff-api/0400d42ef55540f5a842fd44c86704d7 \
+            --region us-east-1
