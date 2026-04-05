@@ -1,0 +1,69 @@
+name: Deploy Frontends
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'client-portal/**'
+
+jobs:
+  deploy-staff-frontend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.commits[0].modified, 'frontend/') || contains(github.event.commits[0].added, 'frontend/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies and build
+        working-directory: frontend
+        run: |
+          npm ci
+          VITE_API_URL=https://49sppnv3pa.us-east-1.awsapprunner.com/api/v1 npm run build
+
+      - name: Deploy to S3
+        run: aws s3 sync frontend/dist/ s3://businessmanager-staff-frontend-890749832422 --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id E1U0Y4HOZ5YQUN \
+            --paths "/*"
+
+  deploy-client-portal:
+    runs-on: ubuntu-latest
+    if: contains(github.event.commits[0].modified, 'client-portal/') || contains(github.event.commits[0].added, 'client-portal/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies and build
+        working-directory: client-portal
+        run: |
+          npm ci
+          VITE_CLIENT_API_URL=https://pfz2fxpyms.us-east-1.awsapprunner.com/api/client npm run build
+
+      - name: Deploy to S3
+        run: aws s3 sync client-portal/dist/ s3://businessmanager-client-portal-890749832422 --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id E15XOGU780XAU9 \
+            --paths "/*"
