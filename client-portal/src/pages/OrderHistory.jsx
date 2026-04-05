@@ -1,12 +1,15 @@
 /**
  * ORDER HISTORY — Lists all past orders + booking history.
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { format } from 'date-fns'
 import { ClipboardDocumentListIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import Layout from './components/Layout'
 import { ordersAPI, bookingsAPI } from '../services/api'
 import useStore from '../store/useStore'
+
+const STALE_PAYMENT_PENDING_MINUTES = 2
+const AUTO_REFRESH_INTERVAL_MS = 90 * 1000
 
 const STATUS_CLS = {
   payment_pending: 'bg-warning text-dark',
@@ -114,13 +117,98 @@ export default function OrderHistory() {
   const [loading,  setLoading]  = useState(true)
   const [tab,      setTab]      = useState('orders')
   const [expanded, setExpanded] = useState({})
+  const [payingOrderId, setPayingOrderId] = useState(null)
+  const [lastSyncedAt, setLastSyncedAt] = useState(null)
+  const [syncingStatuses, setSyncingStatuses] = useState(false)
+  const syncInFlightRef = useRef(false)
+
+  function getApiErrorMessage(err, fallback) {
+    const detail = err?.response?.data?.detail
+    if (typeof detail === 'string' && detail.trim()) return detail
+    return fallback
+  }
+
+  function markSyncedNow() {
+    setLastSyncedAt(new Date())
+  }
+
+  function isStalePaymentPendingOrder(order) {
+    if (!order || order.status !== 'payment_pending') return false
+    const createdAtMs = new Date(order.created_at).getTime()
+    if (Number.isNaN(createdAtMs)) return true
+    return (Date.now() - createdAtMs) > (STALE_PAYMENT_PENDING_MINUTES * 60 * 1000)
+  }
+
+  const refreshStalePendingOrders = useCallback(async (loadedOrders) => {
+    const candidates = (loadedOrders || []).filter(isStalePaymentPendingOrder)
+    if (candidates.length === 0) return
+
+    const refreshed = await Promise.allSettled(candidates.map((order) => ordersAPI.getOne(order.id)))
+    const byId = new Map()
+    refreshed.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value?.id) {
+        byId.set(result.value.id, result.value)
+      }
+    })
+
+    if (byId.size === 0) return
+
+    let changedCount = 0
+    setOrders((current) => current.map((order) => {
+      const latest = byId.get(order.id)
+      if (!latest) return order
+      if (latest.status !== order.status) changedCount += 1
+      return latest
+    }))
+
+    if (changedCount > 0) {
+      addToast('Order statuses were refreshed.', 'info')
+    }
+    markSyncedNow()
+  }, [addToast])
+
+  const handleRefreshStatuses = useCallback(async ({ showSuccessToast = true, showErrorToast = true } = {}) => {
+    if (syncInFlightRef.current) return
+    syncInFlightRef.current = true
+    setSyncingStatuses(true)
+    try {
+      const latestOrders = await ordersAPI.getAll()
+      setOrders(latestOrders)
+      markSyncedNow()
+      await refreshStalePendingOrders(latestOrders)
+      if (showSuccessToast) {
+        addToast('Status refresh complete.', 'success')
+      }
+    } catch {
+      if (showErrorToast) {
+        addToast('Could not refresh order statuses.', 'error')
+      }
+    } finally {
+      syncInFlightRef.current = false
+      setSyncingStatuses(false)
+    }
+  }, [addToast, refreshStalePendingOrders])
 
   useEffect(() => {
     Promise.all([ordersAPI.getAll(), bookingsAPI.getAll()])
-      .then(([o, b]) => { setOrders(o); setBookings(b) })
+      .then(async ([o, b]) => {
+        setOrders(o)
+        setBookings(b)
+        markSyncedNow()
+        await refreshStalePendingOrders(o)
+      })
       .catch(() => addToast('Failed to load history.', 'error'))
       .finally(() => setLoading(false))
-  }, [addToast])
+  }, [addToast, refreshStalePendingOrders])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return
+      handleRefreshStatuses({ showSuccessToast: false, showErrorToast: false })
+    }, AUTO_REFRESH_INTERVAL_MS)
+
+    return () => clearInterval(timer)
+  }, [handleRefreshStatuses])
 
   async function handleCancelBooking(id) {
     if (!window.confirm('Cancel this booking? A cancellation fee may apply.')) return
@@ -138,12 +226,30 @@ export default function OrderHistory() {
   }
 
   async function handlePayOrder(orderId) {
+    if (payingOrderId === orderId) return
+    setPayingOrderId(orderId)
     try {
-      const updated = await ordersAPI.pay(orderId)
+      const updated = await ordersAPI.pay(orderId, { payment_method: 'card' })
       setOrders((current) => current.map((order) => order.id === orderId ? updated : order))
+      markSyncedNow()
       addToast('Payment recorded. Your order is now in the ordered queue.', 'success')
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Payment failed.', 'error')
+      const message = getApiErrorMessage(err, 'Payment failed.')
+      addToast(message, 'error')
+
+      // Keep UI in sync if the order transitioned on another device/session.
+      if (String(message).toLowerCase().includes('cannot pay') || String(message).toLowerCase().includes('cannot be paid')) {
+        try {
+          const latest = await ordersAPI.getOne(orderId)
+          setOrders((current) => current.map((order) => order.id === orderId ? latest : order))
+          markSyncedNow()
+          addToast(`Order is currently '${latest.status}'.`, 'info')
+        } catch {
+          // Keep existing error state if refresh fails.
+        }
+      }
+    } finally {
+      setPayingOrderId(null)
     }
   }
 
@@ -151,8 +257,28 @@ export default function OrderHistory() {
     <Layout>
       <div className="p-3" style={{ paddingBottom: '5rem' }}>
         <div className="d-flex align-items-center justify-content-between mb-4">
-          <h5 className="fw-bold mb-0">History</h5>
-          <div className="btn-group btn-group-sm">
+          <div>
+            <h5 className="fw-bold mb-0">History</h5>
+            {lastSyncedAt && (
+              <div className="d-flex align-items-center gap-2">
+                <p className="text-muted mb-0" style={{ fontSize: '0.72rem' }}>
+                  Last synced {format(lastSyncedAt, 'MMM d, h:mm:ss a')}
+                </p>
+                <span className="badge bg-success-subtle text-success" style={{ fontSize: '0.62rem' }}>
+                  Auto-refresh active
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              onClick={handleRefreshStatuses}
+              disabled={syncingStatuses}
+            >
+              {syncingStatuses ? 'Refreshing...' : 'Refresh Statuses'}
+            </button>
+            <div className="btn-group btn-group-sm">
             {[['orders','Orders'],['bookings','Bookings']].map(([v, l]) => (
               <button
                 key={v}
@@ -162,6 +288,7 @@ export default function OrderHistory() {
                 {l}
               </button>
             ))}
+            </div>
           </div>
         </div>
 
@@ -213,6 +340,7 @@ export default function OrderHistory() {
                         order={order}
                         clientName={client?.full_name}
                         onPay={handlePayOrder}
+                        isPaying={payingOrderId === order.id}
                       />
                     )}
                   </div>
@@ -271,7 +399,7 @@ export default function OrderHistory() {
 }
 
 // Lazy-loaded order line items
-function OrderItems({ order, clientName, onPay }) {
+function OrderItems({ order, clientName, onPay, isPaying = false }) {
   const [items, setItems] = useState(null)
   useEffect(() => {
     ordersAPI.getItems(order.id).then(setItems).catch(() => setItems([]))
@@ -291,8 +419,8 @@ function OrderItems({ order, clientName, onPay }) {
         </div>
         <div className="d-flex gap-2">
           {order.status === 'payment_pending' && (
-            <button className="btn btn-primary btn-sm" onClick={() => onPay(order.id)}>
-              Pay Now
+            <button className="btn btn-primary btn-sm" onClick={() => onPay(order.id)} disabled={isPaying}>
+              {isPaying ? 'Paying...' : 'Pay Now'}
             </button>
           )}
           <button className="btn btn-outline-secondary btn-sm" onClick={() => printInvoice(order, items, clientName)}>

@@ -758,6 +758,10 @@ export default function Sales() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const taxRatePercent = Number.isFinite(Number(appSettings?.tax_rate)) ? Number(appSettings.tax_rate) : 0;
+  const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+  const invoiceTaxAmount = roundCurrency(cartTotal * (taxRatePercent / 100));
+  const invoiceTotal = roundCurrency(cartTotal + invoiceTaxAmount);
 
   // ─── 8  CHECKOUT / PAYMENT HANDLERS ──────────────────────────────────────
   const handleCheckout = () => {
@@ -769,12 +773,14 @@ export default function Sales() {
   };
 
   const processPayment = async (paymentMethod) => {
-    const tax = cartTotal * 0.08;
-    const total = cartTotal + tax;
+    const tax = roundCurrency(cartTotal * (taxRatePercent / 100));
+    const total = roundCurrency(cartTotal + tax);
+
+    const provisionalSaleId = `local-${Date.now()}`;
 
     // Build local sale record for immediate UI update
     const sale = {
-      id: Date.now().toString(),
+      id: provisionalSaleId,
       date: new Date().toISOString(),
       client: selectedClient ? { name: selectedClient.name, email: selectedClient.email } : null,
       items: cart.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
@@ -786,6 +792,7 @@ export default function Sales() {
     setSalesHistory((prev) => [sale, ...prev].slice(0, 50));
 
     // Persist to database
+    let persistedSuccessfully = false;
     try {
       const txData = {
         client_id: selectedClient?.id || null,
@@ -853,10 +860,20 @@ export default function Sales() {
           }
           setLinkedScheduleId(null);
         }
+        persistedSuccessfully = true;
       }
     } catch (err) {
       console.error("Failed to persist sale transaction:", err);
-      // Continue — local sale record is already saved
+      // Keep provisional record when persistence fails.
+    }
+
+    if (persistedSuccessfully) {
+      try {
+        await loadTransactionHistory();
+        setSalesHistory((prev) => prev.filter((entry) => entry.id !== provisionalSaleId));
+      } catch {
+        // Fall back to the provisional local entry if history refresh fails.
+      }
     }
 
     // Clear DB cart now that transaction is complete
@@ -1321,7 +1338,7 @@ export default function Sales() {
       />
 
       {/* Sales History */}
-      <Modal_History_Sales isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} filteredHistory={filteredHistory} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} />
+      <Modal_History_Sales isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} filteredHistory={filteredHistory} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onPortalOrderUpdated={loadTransactionHistory} />
 
       {/* Pre-checkout Invoice Generator */}
       {showInvoiceModal && (
@@ -1332,8 +1349,8 @@ export default function Sales() {
               id: `DRAFT-${Date.now()}`,
               created_at: new Date().toISOString(),
               subtotal: cartTotal,
-              tax_amount: cartTotal * (appSettings?.tax_rate ?? 0.08),
-              total: cartTotal * (1 + (appSettings?.tax_rate ?? 0.08)),
+              tax_amount: invoiceTaxAmount,
+              total: invoiceTotal,
               payment_method: "pending",
             }}
             client={selectedClient}

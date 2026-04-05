@@ -170,10 +170,18 @@ def _deduct_inventory_for_order(session: Session, order: ClientOrder) -> None:
     session.add(order)
 
 
-def _set_order_status(session: Session, order: ClientOrder, next_status: str, current_user: User) -> ClientOrder:
+def _set_order_status(
+    session: Session,
+    order: ClientOrder,
+    next_status: str,
+    current_user: User,
+    allow_payment_transition: bool = False,
+) -> ClientOrder:
     current_status = order.status or "payment_pending"
     if next_status == current_status:
         return order
+    if current_status == "payment_pending" and next_status == "ordered" and not allow_payment_transition:
+        raise HTTPException(status_code=400, detail="Use the pay endpoint to move an order from payment_pending to ordered.")
     allowed = ORDER_STATUS_SEQUENCE.get(current_status, set())
     if next_status not in allowed:
         raise HTTPException(status_code=400, detail=f"Cannot move order from '{current_status}' to '{next_status}'.")
@@ -281,8 +289,11 @@ def mark_portal_order_paid(
     order = session.get(ClientOrder, order_id)
     if not order or order.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="Order not found.")
-    order.payment_method = body.payment_method or order.payment_method or "card"
-    order = _set_order_status(session, order, "ordered", current_user)
+    payment_method = body.payment_method or order.payment_method or "card"
+    if str(payment_method).strip().lower() in {"", "pending", "payment_pending"}:
+        payment_method = "card"
+    order.payment_method = payment_method
+    order = _set_order_status(session, order, "ordered", current_user, allow_payment_transition=True)
     return _build_order_read(session, order)
 
 

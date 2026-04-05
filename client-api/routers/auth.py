@@ -15,7 +15,10 @@ Rate limits:
 from datetime import datetime, timezone, timedelta
 import secrets
 import os
+import logging
+import hashlib
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -38,6 +41,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 RESET_TOKEN_EXPIRY_MINUTES = int(os.getenv("CLIENT_RESET_TOKEN_EXPIRY_MINUTES", "30"))
 EXPOSE_RESET_TOKEN = os.getenv("CLIENT_EXPOSE_RESET_TOKEN", "true").lower() == "true"
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -92,7 +96,15 @@ def register(
     try:
         session.commit()
         session.refresh(client)
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists.",
+        )
     except Exception:
+        email_hash = hashlib.sha256((body.email or "").strip().lower().encode("utf-8")).hexdigest()[:12]
+        logger.exception("Failed to register client for company %s (email_hash=%s)", body.company_id, email_hash)
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to create account.")
 

@@ -26,24 +26,39 @@
 #   2026-03-15 | Claude  | Added authentication + company_id scoping to all endpoints
 # ============================================================
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
+import logging
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoSuchTableError
 from backend.database import get_session
-from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip
+from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip, ClientOrder
 from backend.routers.auth import get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+REPORTABLE_PORTAL_ORDER_STATUSES = {
+    "ordered",
+    "processing",
+    "ready_for_pickup",
+    "out_for_delivery",
+    "delivered",
+    "picked_up",
+}
 
 
 # ─── 1 HELPER UTILITIES ────────────────────────────────────────────────────────
 
-def _parse_date(d: Optional[str]) -> Optional[datetime]:
+def _parse_date(d: Optional[str], end_of_day: bool = False) -> Optional[datetime]:
     if not d:
         return None
     try:
-        return datetime.strptime(d, "%Y-%m-%d")
+        parsed = datetime.strptime(d, "%Y-%m-%d")
+        if end_of_day:
+            return parsed + timedelta(days=1) - timedelta(microseconds=1)
+        return parsed
     except ValueError:
         return None
 
@@ -85,7 +100,7 @@ def get_appointments_report(
 ):
     """Appointments over time grouped by day/week/month."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     stmt = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt).all()
@@ -120,20 +135,28 @@ def get_revenue_report(
 ):
     """Revenue from completed appointments (service price) and sale transactions."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     # Load services for lookup
     stmt_service = select(Service).where(Service.company_id == current_user.company_id)
     services = session.exec(stmt_service).all()
     service_map = {str(s.id): s.price for s in services}
 
-    grouped: dict = {}
+    grouped_total: dict = {}
+    grouped_service: dict = {}
+    grouped_pos: dict = {}
+    grouped_portal: dict = {}
+    warnings: list[str] = []
 
     # Appointment-based revenue
     stmt_schedule = select(Schedule).where(Schedule.company_id == current_user.company_id)
     schedules = session.exec(stmt_schedule).all()
     for s in schedules:
         if s.status != "completed":
+            continue
+        # If the schedule is already tied to a POS sale transaction,
+        # revenue is accounted for by transactions and should not be double-counted.
+        if s.sale_transaction_id:
             continue
         dt = s.appointment_date
         if start and dt < start:
@@ -142,7 +165,8 @@ def get_revenue_report(
             continue
         price = service_map.get(str(s.service_id), 0) if s.service_id else 0
         label = _group_label(dt, group_by)
-        grouped[label] = grouped.get(label, 0) + price
+        grouped_service[label] = grouped_service.get(label, 0) + price
+        grouped_total[label] = grouped_total.get(label, 0) + price
 
     # Sale transaction revenue
     try:
@@ -157,12 +181,61 @@ def get_revenue_report(
             if end and dt > end:
                 continue
             label = _group_label(dt, group_by)
-            grouped[label] = grouped.get(label, 0) + (tx.total or 0)
-    except Exception:
-        pass  # SaleTransaction table may not exist yet
+            amount = tx.total or 0
+            grouped_pos[label] = grouped_pos.get(label, 0) + amount
+            grouped_total[label] = grouped_total.get(label, 0) + amount
+    except NoSuchTableError as e:
+        logger.exception(
+            "Revenue report: SaleTransaction table unavailable (query=select(SaleTransaction).where(company_id=%s), error=%s).",
+            current_user.company_id,
+            e,
+        )
+        warnings.append("POS sales data unavailable")
+    except SQLAlchemyError as e:
+        logger.exception(
+            "Revenue report: critical SaleTransaction query failure (query=select(SaleTransaction).where(company_id=%s), error=%s).",
+            current_user.company_id,
+            e,
+        )
+        raise HTTPException(status_code=500, detail="Failed to load POS sales data.")
 
-    sorted_keys = sorted(grouped.keys())
-    return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
+    # Portal paid orders revenue
+    try:
+        stmt_orders = select(ClientOrder).where(ClientOrder.company_id == current_user.company_id)
+        orders = session.exec(stmt_orders).all()
+        for order in orders:
+            if (order.status or "").lower() not in REPORTABLE_PORTAL_ORDER_STATUSES:
+                continue
+            dt = order.paid_at or order.created_at
+            if dt is None:
+                continue
+            if start and dt < start:
+                continue
+            if end and dt > end:
+                continue
+            label = _group_label(dt, group_by)
+            amount = order.total or 0
+            grouped_portal[label] = grouped_portal.get(label, 0) + amount
+            grouped_total[label] = grouped_total.get(label, 0) + amount
+    except (NoSuchTableError, SQLAlchemyError, IntegrityError) as exc:
+        logger.exception(
+            "Revenue report: failed portal orders query block for ClientOrder (query=select(ClientOrder).where(company_id=%s), error=%s).",
+            current_user.company_id,
+            exc,
+        )
+
+    sorted_keys = sorted(grouped_total.keys())
+    return {
+        "labels": sorted_keys,
+        "data": [grouped_total.get(k, 0) for k in sorted_keys],
+        "datasets": [
+            {"label": "Total Revenue", "data": [grouped_total.get(k, 0) for k in sorted_keys]},
+            {"label": "Service Revenue", "data": [grouped_service.get(k, 0) for k in sorted_keys]},
+            {"label": "POS Revenue", "data": [grouped_pos.get(k, 0) for k in sorted_keys]},
+            {"label": "Portal Revenue", "data": [grouped_portal.get(k, 0) for k in sorted_keys]},
+        ],
+        "warnings": warnings,
+    }
 
 
 # ─── 4 CLIENTS REPORT ──────────────────────────────────────────────────────────
@@ -177,7 +250,7 @@ def get_clients_report(
 ):
     """Client activity: new clients registered over time."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     stmt_client = select(Client).where(Client.company_id == current_user.company_id)
     clients = session.exec(stmt_client).all()
@@ -229,7 +302,7 @@ def get_services_report(
 ):
     """Service popularity: count of appointments per service."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     stmt_service = select(Service).where(Service.company_id == current_user.company_id)
     services = session.exec(stmt_service).all()
@@ -288,7 +361,7 @@ def get_employees_report(
 ):
     """Employee performance: appointments per employee."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     stmt_user = select(User).where(User.company_id == current_user.company_id)
     users = session.exec(stmt_user).all()
@@ -325,7 +398,7 @@ def get_attendance_report(
 ):
     """Attendance analytics: attendance records grouped over time."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     stmt = select(Attendance).where(Attendance.company_id == current_user.company_id)
     rows = session.exec(stmt).all()
@@ -361,26 +434,68 @@ def get_sales_report(
 ):
     """Sales analytics: transaction totals grouped over time."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
-    stmt = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
-    txs = session.exec(stmt).all()
-    grouped: dict = {}
+    grouped_total: dict = {}
+    grouped_pos: dict = {}
+    grouped_portal: dict = {}
 
-    for tx in txs:
-        dt = tx.created_at
-        if dt is None:
-            continue
-        if start and dt < start:
-            continue
-        if end and dt > end:
-            continue
+    try:
+        stmt = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
+        txs = session.exec(stmt).all()
+        for tx in txs:
+            dt = tx.created_at
+            if dt is None:
+                continue
+            if start and dt < start:
+                continue
+            if end and dt > end:
+                continue
 
-        label = _group_label(dt, group_by)
-        grouped[label] = grouped.get(label, 0) + (tx.total or 0)
+            label = _group_label(dt, group_by)
+            amount = tx.total or 0
+            grouped_pos[label] = grouped_pos.get(label, 0) + amount
+            grouped_total[label] = grouped_total.get(label, 0) + amount
+    except (NoSuchTableError, SQLAlchemyError, IntegrityError):
+        logger.exception(
+            "Sales report: failed SaleTransaction query block (query=select(SaleTransaction).where(company_id=%s)).",
+            current_user.company_id,
+        )
 
-    sorted_keys = sorted(grouped.keys())
-    return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
+    # Include paid portal orders so "sales" reflects total transaction volume.
+    try:
+        stmt_orders = select(ClientOrder).where(ClientOrder.company_id == current_user.company_id)
+        orders = session.exec(stmt_orders).all()
+        for order in orders:
+            if (order.status or "").lower() not in REPORTABLE_PORTAL_ORDER_STATUSES:
+                continue
+            dt = order.paid_at or order.created_at
+            if dt is None:
+                continue
+            if start and dt < start:
+                continue
+            if end and dt > end:
+                continue
+            label = _group_label(dt, group_by)
+            amount = order.total or 0
+            grouped_portal[label] = grouped_portal.get(label, 0) + amount
+            grouped_total[label] = grouped_total.get(label, 0) + amount
+    except (NoSuchTableError, SQLAlchemyError, IntegrityError):
+        logger.exception(
+            "Sales report: failed portal orders query block for ClientOrder (query=select(ClientOrder).where(company_id=%s)).",
+            current_user.company_id,
+        )
+
+    sorted_keys = sorted(grouped_total.keys())
+    return {
+        "labels": sorted_keys,
+        "data": [grouped_total.get(k, 0) for k in sorted_keys],
+        "datasets": [
+            {"label": "Total Sales", "data": [grouped_total.get(k, 0) for k in sorted_keys]},
+            {"label": "POS Sales", "data": [grouped_pos.get(k, 0) for k in sorted_keys]},
+            {"label": "Portal Sales", "data": [grouped_portal.get(k, 0) for k in sorted_keys]},
+        ],
+    }
 
 
 # ─── 10 PAYROLL REPORT ─────────────────────────────────────────────────────────
@@ -395,7 +510,7 @@ def get_payroll_report(
 ):
     """Payroll analytics: total net pay grouped over time."""
     start = _parse_date(start_date)
-    end = _parse_date(end_date)
+    end = _parse_date(end_date, end_of_day=True)
 
     stmt = select(PaySlip).where(PaySlip.company_id == current_user.company_id)
     slips = session.exec(stmt).all()

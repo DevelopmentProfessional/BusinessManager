@@ -468,9 +468,13 @@ export default function Schedule() {
 
   // ─── 12 ATTENDEE SYNC UTILITIES ──────────────────────────────────────────────
   const normalizeIds = useCallback((value) => {
-    if (Array.isArray(value)) return value.filter(Boolean);
+    if (Array.isArray(value)) {
+      return value
+        .map((id) => (id == null ? "" : String(id).trim()))
+        .filter(Boolean);
+    }
     if (!value) return [];
-    return [value];
+    return [String(value).trim()].filter(Boolean);
   }, []);
 
   const syncScheduleAttendees = useCallback(async (scheduleId, employeeIds, clientIds, primaryEmployeeId, primaryClientId) => {
@@ -480,12 +484,14 @@ export default function Schedule() {
       const existingResponse = await isudAPI.scheduleAttendees.getBySchedule(scheduleId);
       const existing = existingResponse?.data ?? existingResponse;
       if (Array.isArray(existing) && existing.length > 0) {
-        await Promise.all(existing.map((attendee) => isudAPI.scheduleAttendees.delete(attendee.id)));
+        await Promise.allSettled(existing.map((attendee) => isudAPI.scheduleAttendees.delete(attendee.id)));
       }
 
-      const dedupe = (ids) => Array.from(new Set(ids));
-      const employeeAttendees = dedupe(employeeIds).filter((id) => id && id !== primaryEmployeeId);
-      const clientAttendees = dedupe(clientIds).filter((id) => id && id !== primaryClientId);
+      const dedupe = (ids) => Array.from(new Set((ids || []).map((id) => String(id).trim()).filter(Boolean)));
+      const normalizedPrimaryEmployeeId = primaryEmployeeId ? String(primaryEmployeeId).trim() : "";
+      const normalizedPrimaryClientId = primaryClientId ? String(primaryClientId).trim() : "";
+      const employeeAttendees = dedupe(employeeIds).filter((id) => id && id !== normalizedPrimaryEmployeeId);
+      const clientAttendees = dedupe(clientIds).filter((id) => id && id !== normalizedPrimaryClientId);
 
       const createRequests = [
         ...employeeAttendees.map((userId) =>
@@ -503,7 +509,11 @@ export default function Schedule() {
       ];
 
       if (createRequests.length > 0) {
-        await Promise.all(createRequests);
+        const createResults = await Promise.allSettled(createRequests);
+        const rejectedCount = createResults.filter((result) => result.status === "rejected").length;
+        if (rejectedCount > 0) {
+          console.warn(`Schedule attendee sync had ${rejectedCount} failed create operation(s).`);
+        }
       }
     } catch (err) {
       console.error("Failed to sync schedule attendees:", err);
@@ -516,7 +526,7 @@ export default function Schedule() {
       const existingResponse = await isudAPI.scheduleAttendees.getBySchedule(scheduleId);
       const existing = existingResponse?.data ?? existingResponse;
       if (Array.isArray(existing) && existing.length > 0) {
-        await Promise.all(existing.map((attendee) => isudAPI.scheduleAttendees.delete(attendee.id)));
+        await Promise.allSettled(existing.map((attendee) => isudAPI.scheduleAttendees.delete(attendee.id)));
       }
     } catch (err) {
       console.error("Failed to delete schedule attendees:", err);
