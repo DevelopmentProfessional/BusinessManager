@@ -9,8 +9,24 @@ import { ordersAPI, bookingsAPI } from "../services/api";
 import useStore from "../store/useStore";
 
 const GRADIENTS = ["linear-gradient(135deg, #6366f1, #8b5cf6)", "linear-gradient(135deg, #0ea5e9, #06b6d4)", "linear-gradient(135deg, #10b981, #14b8a6)", "linear-gradient(135deg, #f59e0b, #ef4444)"];
+const STATUS_LABELS = {
+  payment_pending: "Payment pending",
+  ordered: "Ordered",
+  processing: "Processing",
+  ready_for_pickup: "Ready for pickup",
+  out_for_delivery: "Out for delivery",
+  delivered: "Delivered",
+  picked_up: "Picked up",
+  cancelled: "Cancelled",
+  refunded: "Refunded",
+};
+
 function tileGrad(name = "") {
   return GRADIENTS[name.charCodeAt(0) % GRADIENTS.length];
+}
+
+function humanizeOrderStatus(status) {
+  return STATUS_LABELS[status] || "Updated";
 }
 
 export default function Cart() {
@@ -29,6 +45,24 @@ export default function Cart() {
   const [currentOrderTotal, setCurrentOrderTotal] = useState(null);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState(null);
+
+  function getApiErrorMessage(err, fallback) {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail === "string" && detail.trim()) return detail;
+    return fallback;
+  }
+
+  function getBookingCheckoutErrorMessage(err, itemName) {
+    const detail = getApiErrorMessage(err, "");
+    const normalized = String(detail).toLowerCase();
+    if (normalized.includes("no available employees") || normalized.includes("unavailable") || normalized.includes("another time")) {
+      return `The slot for '${itemName}' is no longer available. Please rebook this service from Shop and try checkout again.`;
+    }
+    if (detail) {
+      return `Could not reserve '${itemName}': ${detail}`;
+    }
+    return `Could not reserve '${itemName}'. Please refresh availability and try again.`;
+  }
 
   async function handleCheckout() {
     if (cart.length === 0) return;
@@ -50,12 +84,17 @@ export default function Cart() {
       const items = [];
       for (const c of cart) {
         if (c.item_type === "service" && c.booking_slot) {
-          const booking = await bookingsAPI.create({
-            service_id: c.id,
-            appointment_date: c.booking_slot.start,
-            booking_mode: c.booking_slot.booking_mode || "soft",
-            notes: c.notes || "",
-          });
+          let booking;
+          try {
+            booking = await bookingsAPI.create({
+              service_id: c.id,
+              appointment_date: c.booking_slot.start,
+              booking_mode: c.booking_slot.booking_mode || "soft",
+              notes: c.notes || "",
+            });
+          } catch (bookingErr) {
+            throw new Error(getBookingCheckoutErrorMessage(bookingErr, c.name));
+          }
           items.push({ item_id: c.id, item_type: "service", item_name: c.name, unit_price: c.price, quantity: 1, booking_id: booking.id });
         } else {
           items.push({ item_id: c.id, item_type: c.item_type || "product", item_name: c.name, unit_price: c.price, quantity: c.quantity });
@@ -67,7 +106,7 @@ export default function Cart() {
       clearCart();
       addToast("Order created!", "success");
     } catch (err) {
-      setError(err.response?.data?.detail || "Checkout failed. Please try again.");
+      setError(err?.message || err?.response?.data?.detail || "Checkout failed. Please try again.");
     } finally {
       setChecking(false);
     }
@@ -78,11 +117,23 @@ export default function Cart() {
     setPaying(true);
     setError(null);
     try {
-      await ordersAPI.pay(currentOrderId);
+      await ordersAPI.pay(currentOrderId, { payment_method: "card" });
       addToast("Payment recorded!", "success");
       navigate("/orders");
     } catch (err) {
-      setError(err.response?.data?.detail || "Payment failed.");
+      const message = getApiErrorMessage(err, "Payment failed.");
+      setError(message);
+      // If payment was rejected because status moved meanwhile, refresh order info.
+      if (String(message).toLowerCase().includes("cannot pay") || String(message).toLowerCase().includes("cannot be paid")) {
+        try {
+          const latest = await ordersAPI.getOne(currentOrderId);
+          if (latest?.status && latest.status !== "payment_pending") {
+            addToast(`Order is now '${humanizeOrderStatus(latest.status)}'.`, "info");
+          }
+        } catch {
+          // Keep existing error message if refresh fails.
+        }
+      }
     } finally {
       setPaying(false);
     }

@@ -34,6 +34,19 @@ export default function Shop() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(null);
 
+  function bookingErrorMessage(err) {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail !== "string" || !detail.trim()) {
+      return "Could not book this slot. Please refresh availability and try again.";
+    }
+
+    const normalized = detail.toLowerCase();
+    if (normalized.includes("no available employees") || normalized.includes("unavailable") || normalized.includes("another time")) {
+      return "That slot was just taken. Please choose a different time from the refreshed calendar.";
+    }
+    return detail;
+  }
+
   const load = useCallback(async () => {
     if (!companyId) return;
     setLoading(true);
@@ -78,8 +91,10 @@ export default function Shop() {
       const confirmed = { service: bookingService, slot };
       setBookingService(null);
       setBookingConfirmed(confirmed);
+      return true;
     } catch (err) {
-      addToast(err?.response?.data?.detail || "Could not book this slot. Please try again.", "error");
+      addToast(bookingErrorMessage(err), "error");
+      return false;
     } finally {
       setBookingLoading(false);
     }

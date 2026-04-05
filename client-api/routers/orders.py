@@ -12,10 +12,12 @@ GET  /orders/{id}/items — Just the line items
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from pydantic import BaseModel as PydanticModel
 from sqlmodel import Session, select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -39,6 +41,11 @@ from models import (
 router = APIRouter(prefix="/orders", tags=["orders"])
 limiter = Limiter(key_func=get_remote_address)
 logger = logging.getLogger(__name__)
+
+
+def _utcnow() -> datetime:
+    # Keep naive UTC timestamps to match existing DB/model conventions.
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def _parse_optional_uuid(value: str | UUID | None, field_name: str, item_name: str) -> UUID | None:
@@ -73,6 +80,167 @@ def _order_to_read(o: ClientOrder) -> OrderRead:
 
 class PayOrderBody(OrderCreate):
     items: List = []
+
+
+class PayOrderRequest(PydanticModel):
+    payment_method: str | None = None
+
+
+NON_PAYABLE_ORDER_STATUSES = {"cancelled", "refunded"}
+TERMINAL_BOOKING_STATUSES = {"cancelled", "completed", "no_show"}
+
+
+def _normalize_payment_method(value: str | None) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized in {"", "pending", "payment_pending"}:
+        return "card"
+    return normalized
+
+
+def _deduct_inventory_for_order(order: ClientOrder, session: Session) -> None:
+    if order.inventory_deducted_at is not None:
+        return
+
+    items = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)).all()
+    for item in items:
+        if item.item_type != "product" or not item.item_id:
+            continue
+        inventory_item = session.exec(
+            select(Inventory).where(
+                Inventory.id == item.item_id,
+                Inventory.company_id == order.company_id,
+            )
+        ).first()
+        if not inventory_item:
+            continue
+        current_qty = int(inventory_item.quantity or 0)
+        deduction = int(item.quantity or 0)
+        inventory_item.quantity = max(0, current_qty - deduction)
+        session.add(inventory_item)
+
+    order.inventory_deducted_at = _utcnow()
+    session.add(order)
+
+
+def _reconcile_bookings_for_paid_order(order: ClientOrder, current_client_id: UUID, session: Session) -> None:
+    items = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)).all()
+    for item in items:
+        if not item.booking_id:
+            continue
+
+        booking = session.exec(
+            select(ClientBooking).where(
+                ClientBooking.id == item.booking_id,
+                ClientBooking.client_id == current_client_id,
+                ClientBooking.company_id == order.company_id,
+            )
+        ).first()
+        if not booking:
+            continue
+
+        # Paid orders finalize active bookings.
+        if booking.status not in {"cancelled", "completed", "no_show"}:
+            booking.status = "confirmed"
+
+        # Preserve a recorded paid amount for locked bookings; for soft bookings,
+        # this remains an informational value for downstream billing/reporting.
+        line_total = float(item.line_total or 0)
+        if line_total > 0:
+            booking.amount_paid = max(float(booking.amount_paid or 0), line_total)
+
+        session.add(booking)
+
+        if booking.schedule_id:
+            linked_schedule = session.exec(
+                select(Schedule).where(
+                    Schedule.id == booking.schedule_id,
+                    Schedule.company_id == order.company_id,
+                )
+            ).first()
+            if linked_schedule and linked_schedule.status == "soft_hold":
+                linked_schedule.status = "scheduled"
+                linked_schedule.is_paid = True
+                session.add(linked_schedule)
+
+
+def _validate_service_booking_for_checkout(
+    booking_id: UUID | None,
+    service_id: UUID | None,
+    current_client: Client,
+    session: Session,
+) -> UUID:
+    if not booking_id:
+        raise HTTPException(status_code=400, detail="Service items require a valid booking_id.")
+
+    booking = session.exec(
+        select(ClientBooking).where(
+            ClientBooking.id == booking_id,
+            ClientBooking.client_id == current_client.id,
+            ClientBooking.company_id == current_client.company_id,
+        )
+    ).first()
+    if not booking:
+        raise HTTPException(status_code=400, detail="Booking not found for this client.")
+
+    if service_id and booking.service_id != service_id:
+        raise HTTPException(status_code=400, detail="Booking does not match the selected service.")
+
+    if (booking.status or "").lower() in TERMINAL_BOOKING_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Booking is already '{booking.status}' and cannot be checked out.")
+
+    if booking.appointment_date and booking.appointment_date < _utcnow():
+        raise HTTPException(status_code=400, detail="Booking appointment is in the past. Please rebook before checkout.")
+
+    existing_order_lines = session.exec(
+        select(ClientOrderItem).where(
+            ClientOrderItem.booking_id == booking_id,
+            ClientOrderItem.company_id == current_client.company_id,
+        )
+    ).all()
+    for line in existing_order_lines:
+        existing_order = session.exec(
+            select(ClientOrder).where(
+                ClientOrder.id == line.order_id,
+                ClientOrder.client_id == current_client.id,
+            )
+        ).first()
+        if existing_order and (existing_order.status or "").lower() not in NON_PAYABLE_ORDER_STATUSES:
+            raise HTTPException(
+                status_code=400,
+                detail="This booking is already attached to an active order.",
+            )
+
+    return booking_id
+
+
+def _validate_order_bookings_for_payment(order: ClientOrder, current_client: Client, session: Session) -> None:
+    lines = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)).all()
+    for line in lines:
+        if line.item_type != "service" or not line.booking_id:
+            continue
+
+        booking = session.exec(
+            select(ClientBooking).where(
+                ClientBooking.id == line.booking_id,
+                ClientBooking.client_id == current_client.id,
+                ClientBooking.company_id == current_client.company_id,
+            )
+        ).first()
+        if not booking:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Order item '{line.item_name}' has an invalid booking reference.",
+            )
+
+        normalized_status = (booking.status or "").lower()
+        if normalized_status in TERMINAL_BOOKING_STATUSES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Cannot pay this order because '{line.item_name}' is tied to a "
+                    f"{normalized_status} booking. Please rebook and checkout again."
+                ),
+            )
 
 
 @router.post("/checkout", status_code=status.HTTP_201_CREATED)
@@ -127,22 +295,33 @@ def checkout(
             subtotal=round(subtotal, 2),
             tax_amount=tax_amount,
             total=total,
-            payment_method=body.payment_method,
+            payment_method=_normalize_payment_method(body.payment_method),
             company_id=company_id,
         )
         session.add(order)
         session.flush()
 
         for item in body.items:
+            parsed_item_id = _parse_optional_uuid(item.item_id, "item_id", item.item_name)
+            parsed_booking_id = _parse_optional_uuid(item.booking_id, "booking_id", item.item_name)
+
+            if item.item_type == "service":
+                parsed_booking_id = _validate_service_booking_for_checkout(
+                    parsed_booking_id,
+                    parsed_item_id,
+                    current_client,
+                    session,
+                )
+
             line = ClientOrderItem(
                 order_id=order.id,
-                item_id=_parse_optional_uuid(item.item_id, "item_id", item.item_name),
+                item_id=parsed_item_id,
                 item_type=item.item_type,
                 item_name=item.item_name,
                 unit_price=item.unit_price,
                 quantity=item.quantity,
                 line_total=round(item.unit_price * item.quantity, 2),
-                booking_id=_parse_optional_uuid(item.booking_id, "booking_id", item.item_name),
+                booking_id=parsed_booking_id,
                 options_json=item.options_json,
                 company_id=company_id,
             )
@@ -170,6 +349,7 @@ def checkout(
 def pay_order(
     request: Request,
     order_id: UUID,
+    body: PayOrderRequest,
     current_client: Client = Depends(auth_utils.get_current_client),
     session: Session = Depends(get_session),
 ):
@@ -181,14 +361,35 @@ def pay_order(
     ).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
-    if order.status != "payment_pending":
+
+    current_status = (order.status or "payment_pending").lower()
+    if current_status in NON_PAYABLE_ORDER_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Cannot pay an order in '{current_status}' status.")
+
+    if current_status == "ordered":
+        if order.inventory_deducted_at is None:
+            try:
+                _deduct_inventory_for_order(order, session)
+                _reconcile_bookings_for_paid_order(order, current_client.id, session)
+                session.commit()
+                session.refresh(order)
+            except Exception:
+                session.rollback()
+                raise HTTPException(status_code=500, detail="Failed to reconcile paid order inventory.")
         return _order_to_read(order)
 
+    if current_status != "payment_pending":
+        raise HTTPException(status_code=400, detail=f"Order cannot be paid from '{current_status}' status.")
+
+    _validate_order_bookings_for_payment(order, current_client, session)
+
     order.status = "ordered"
-    order.paid_at = order.paid_at or __import__("datetime").datetime.utcnow()
-    order.payment_method = order.payment_method or "card"
+    order.paid_at = order.paid_at or _utcnow()
+    order.payment_method = _normalize_payment_method(body.payment_method or order.payment_method)
     session.add(order)
     try:
+        _deduct_inventory_for_order(order, session)
+        _reconcile_bookings_for_paid_order(order, current_client.id, session)
         session.commit()
         session.refresh(order)
     except Exception:
@@ -212,7 +413,7 @@ def pay_order(
                 continue
 
             slot_start = hard_booking.appointment_date
-            slot_end   = slot_start + __import__("datetime").timedelta(minutes=hard_booking.duration_minutes or 60)
+            slot_end = slot_start + timedelta(minutes=hard_booking.duration_minutes or 60)
 
             # Find overlapping soft bookings for the same service (excluding this booking)
             soft_bookings = session.exec(
@@ -225,9 +426,8 @@ def pay_order(
                 )
             ).all()
 
-            from datetime import timedelta as _td
             for sb in soft_bookings:
-                sb_end = sb.appointment_date + _td(minutes=sb.duration_minutes or 60)
+                sb_end = sb.appointment_date + timedelta(minutes=sb.duration_minutes or 60)
                 # Check time overlap
                 if slot_start < sb_end and slot_end > sb.appointment_date:
                     sb.status = "cancelled"
@@ -367,14 +567,31 @@ async def stripe_webhook(
 
     if event["type"] == "payment_intent.succeeded":
         order.status = "ordered"
-        order.paid_at = order.paid_at or __import__("datetime").datetime.utcnow()
+        order.paid_at = order.paid_at or _utcnow()
         order.stripe_charge_id = pi.get("latest_charge")
+        session.add(order)
+        try:
+            session.commit()
+            session.refresh(order)
+        except Exception:
+            logger.exception("Failed to persist webhook payment success status for order %s", order.id)
+            session.rollback()
+            raise HTTPException(status_code=500, detail="Failed to persist paid order status.")
+
+        try:
+            _deduct_inventory_for_order(order, session)
+            _reconcile_bookings_for_paid_order(order, order.client_id, session)
+            session.commit()
+        except Exception:
+            logger.exception("Failed to reconcile webhook payment success for order %s", order.id)
+            session.rollback()
+            raise HTTPException(status_code=500, detail="Failed to reconcile paid order state.")
     elif event["type"] == "payment_intent.canceled":
         order.status = "cancelled"
-
-    try:
-        session.commit()
-    except Exception:
-        session.rollback()
+        session.add(order)
+        try:
+            session.commit()
+        except Exception:
+            session.rollback()
 
     return {"received": True}

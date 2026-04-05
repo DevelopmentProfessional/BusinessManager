@@ -38,6 +38,16 @@ const STATUS_LABELS = {
   completed: "Completed",
 };
 
+const NEXT_PORTAL_STATUSES = {
+  payment_pending: ["ordered", "cancelled"],
+  ordered: ["processing", "cancelled", "refunded"],
+  processing: ["ready_for_pickup", "out_for_delivery", "cancelled", "refunded"],
+  ready_for_pickup: ["picked_up", "cancelled"],
+  out_for_delivery: ["delivered", "cancelled"],
+  picked_up: ["refunded"],
+  delivered: ["refunded"],
+};
+
 function parseOptions(value) {
   if (!value) return [];
   try {
@@ -49,10 +59,13 @@ function parseOptions(value) {
 }
 
 // ─── 1 COMPONENT DEFINITION & JSX RENDER ─────────────────────────────────
-export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, historyFilters, setHistoryFilters }) {
+export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, historyFilters, setHistoryFilters, onPortalOrderUpdated }) {
   const [expandedId, setExpandedId] = useState(null);
   const [itemsCache, setItemsCache] = useState({}); // saleId → items[]
   const [loadingId, setLoadingId] = useState(null);
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
+  const [statusError, setStatusError] = useState("");
+  const [portalStatusOverrides, setPortalStatusOverrides] = useState({});
 
   const toggleSale = async (sale) => {
     if (expandedId === sale.id) {
@@ -74,6 +87,40 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
       setItemsCache((prev) => ({ ...prev, [sale.id]: [] }));
     } finally {
       setLoadingId(null);
+    }
+  };
+
+  const handlePortalStatusUpdate = async (sale, nextStatus) => {
+    if (!sale?.id) return;
+    setStatusError("");
+    setStatusUpdatingId(sale.id);
+    try {
+      const currentStatus = portalStatusOverrides[sale.id]?.status || sale.status || "payment_pending";
+      const isPaymentTransition = currentStatus === "payment_pending" && nextStatus === "ordered";
+      const normalizedPaymentMethod = String(sale.paymentMethod || "").toLowerCase();
+      const payMethod = normalizedPaymentMethod && normalizedPaymentMethod !== "pending" ? sale.paymentMethod : "card";
+      const res = isPaymentTransition ? await clientOrdersAPI.pay(sale.id, { payment_method: payMethod }) : await clientOrdersAPI.updateStatus(sale.id, nextStatus);
+      const updated = res?.data ?? res;
+      setPortalStatusOverrides((prev) => ({
+        ...prev,
+        [sale.id]: {
+          status: updated?.status || nextStatus,
+          paymentMethod: updated?.payment_method || payMethod,
+        },
+      }));
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setStatusError(typeof detail === "string" ? detail : "Failed to update order status.");
+    } finally {
+      setStatusUpdatingId(null);
+    }
+
+    if (onPortalOrderUpdated) {
+      try {
+        await onPortalOrderUpdated();
+      } catch (err) {
+        console.error("Refresh callback failed after status update attempt:", err);
+      }
     }
   };
 
@@ -103,6 +150,8 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredHistory.map((sale) => {
+                  const effectiveStatus = portalStatusOverrides[sale.id]?.status || sale.status;
+                  const effectivePaymentMethod = portalStatusOverrides[sale.id]?.paymentMethod || sale.paymentMethod;
                   const isExpanded = expandedId === sale.id;
                   const isLoading = loadingId === sale.id;
                   const loadedItems = itemsCache[sale.id];
@@ -118,13 +167,13 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                             <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${sale.source === "portal" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"}`}>
                               {sale.source === "portal" ? "Portal" : "POS"}
                             </span>
-                            {sale.status && <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{STATUS_LABELS[sale.status] || sale.status}</span>}
+                            {effectiveStatus && <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{STATUS_LABELS[effectiveStatus] || effectiveStatus}</span>}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             {sale.clientName && <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{sale.clientName}</span>}
                             {sale.employeeName && <span className="text-xs text-gray-400 dark:text-gray-500">· {sale.employeeName}</span>}
                           </div>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{sale.paymentMethod}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{effectivePaymentMethod}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <div className="text-right">
@@ -137,6 +186,16 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                       {/* ── Accordion Body ── */}
                       {isExpanded && (
                         <div className="px-4 pb-3 bg-gray-50 dark:bg-gray-800/30">
+                          {sale.source === "portal" && statusError && <p className="text-xs text-amber-600 dark:text-amber-400 py-2">{statusError}</p>}
+                          {sale.source === "portal" && (
+                            <div className="flex flex-wrap gap-2 pb-2 border-b border-gray-200 dark:border-gray-700 mb-2">
+                              {(NEXT_PORTAL_STATUSES[effectiveStatus] || []).map((nextStatus) => (
+                                <button key={`${sale.id}-${nextStatus}`} type="button" onClick={() => handlePortalStatusUpdate(sale, nextStatus)} className="btn btn-sm btn-outline-secondary text-xs" disabled={statusUpdatingId === sale.id}>
+                                  {STATUS_LABELS[nextStatus] || nextStatus}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           {isLoading ? (
                             <p className="text-xs text-gray-400 py-2">Loading items…</p>
                           ) : !loadedItems || loadedItems.length === 0 ? (

@@ -257,6 +257,8 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   const [tab, setTab] = useState("sales");
   const [portalOrders, setPortalOrders] = useState([]);
   const [portalItems, setPortalItems] = useState({});
+  const [statusUpdateError, setStatusUpdateError] = useState("");
+  const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !client) return;
@@ -324,6 +326,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   };
 
   const togglePortalExpand = (orderId) => {
+    setStatusUpdateError("");
     if (expandedId === orderId) {
       setExpandedId(null);
       return;
@@ -336,13 +339,23 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
     setInvoiceTx(tx);
   };
 
-  const handlePortalStatusUpdate = async (orderId, status) => {
+  const handlePortalStatusUpdate = async (order, status) => {
+    if (!order?.id) return;
+    setStatusUpdateError("");
+    setStatusUpdatingOrderId(order.id);
     try {
-      const res = await clientOrdersAPI.updateStatus(orderId, status);
+      const isPaymentTransition = (order.status || "payment_pending") === "payment_pending" && status === "ordered";
+      const normalizedPaymentMethod = String(order.payment_method || "").toLowerCase();
+      const payMethod = normalizedPaymentMethod && normalizedPaymentMethod !== "pending" ? order.payment_method : "card";
+      const res = isPaymentTransition ? await clientOrdersAPI.pay(order.id, { payment_method: payMethod }) : await clientOrdersAPI.updateStatus(order.id, status);
       const updated = res?.data ?? res;
-      setPortalOrders((prev) => prev.map((order) => (order.id === orderId ? updated : order)));
+      setPortalOrders((prev) => prev.map((entry) => (entry.id === order.id ? updated : entry)));
     } catch (err) {
       console.error("Failed to update portal order status:", err);
+      const detail = err?.response?.data?.detail;
+      setStatusUpdateError(typeof detail === "string" ? detail : "Failed to update order status.");
+    } finally {
+      setStatusUpdatingOrderId(null);
     }
   };
 
@@ -478,6 +491,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
                   {expandedId === order.id && (
                     <div className="pb-2 px-3">
+                      {statusUpdateError && <div className="alert alert-warning py-1 px-2 mb-2 small">{statusUpdateError}</div>}
                       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                         <div className="small text-muted">
                           <div>Created: {formatDate(order.created_at)}</div>
@@ -486,7 +500,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                         </div>
                         <div className="d-flex flex-wrap gap-2">
                           {(NEXT_PORTAL_STATUSES[order.status] || []).map((nextStatus) => (
-                            <button key={nextStatus} type="button" onClick={() => handlePortalStatusUpdate(order.id, nextStatus)} className="btn btn-outline-secondary btn-sm" style={{ fontSize: 11 }}>
+                            <button key={nextStatus} type="button" onClick={() => handlePortalStatusUpdate(order, nextStatus)} className="btn btn-outline-secondary btn-sm" style={{ fontSize: 11 }} disabled={statusUpdatingOrderId === order.id}>
                               {PORTAL_STATUS_LABELS[nextStatus] || nextStatus}
                             </button>
                           ))}

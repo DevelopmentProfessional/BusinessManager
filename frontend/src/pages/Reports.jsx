@@ -309,28 +309,54 @@ export default function Reports() {
 
   const transformRevenueData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [
-      {
-        label: "Revenue ($)",
-        data: data.data,
-        backgroundColor: chartType === "pie" || chartType === "doughnut" ? data.data.map((_, i) => `hsl(${(i * 360) / data.data.length}, 70%, 60%)`) : "rgba(34, 197, 94, 0.5)",
-        borderColor: "rgb(34, 197, 94)",
-        borderWidth: 2,
-      },
-    ],
+    datasets:
+      Array.isArray(data.datasets) && data.datasets.length > 0
+        ? data.datasets.map((dataset, idx) => {
+            const hue = [142, 204, 25, 276][idx % 4];
+            const values = dataset.data || [];
+            return {
+              label: dataset.label || `Revenue ${idx + 1}`,
+              data: values,
+              backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
+              borderColor: `hsl(${hue}, 70%, 45%)`,
+              borderWidth: 2,
+            };
+          })
+        : [
+            {
+              label: "Revenue ($)",
+              data: data.data || [],
+              backgroundColor: chartType === "pie" || chartType === "doughnut" ? (data.data || []).map((_, i) => `hsl(${(i * 360) / Math.max((data.data || []).length, 1)}, 70%, 60%)`) : "rgba(34, 197, 94, 0.5)",
+              borderColor: "rgb(34, 197, 94)",
+              borderWidth: 2,
+            },
+          ],
   });
 
   const transformClientsData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [
-      {
-        label: "Clients",
-        data: data.data,
-        backgroundColor: ["rgba(147, 51, 234, 0.5)", "rgba(59, 130, 246, 0.5)", "rgba(107, 114, 128, 0.5)"],
-        borderColor: ["rgb(147, 51, 234)", "rgb(59, 130, 246)", "rgb(107, 114, 128)"],
-        borderWidth: 2,
-      },
-    ],
+    datasets:
+      Array.isArray(data.datasets) && data.datasets.length > 0
+        ? data.datasets.map((dataset, idx) => {
+            const palette = getPalette((data.labels || []).length, chartType === "pie" || chartType === "doughnut" ? 0.6 : 0.35);
+            const hue = (idx * 120) % 360;
+            return {
+              label: dataset.label || `Series ${idx + 1}`,
+              data: dataset.data || [],
+              backgroundColor: chartType === "pie" || chartType === "doughnut" ? palette : `hsla(${hue}, 70%, 55%, 0.35)`,
+              borderColor: `hsl(${hue}, 70%, 45%)`,
+              borderWidth: 2,
+            };
+          })
+        : [
+            {
+              label: "Clients",
+              data: data.data || [],
+              backgroundColor: ["rgba(147, 51, 234, 0.5)", "rgba(59, 130, 246, 0.5)", "rgba(107, 114, 128, 0.5)"],
+              borderColor: ["rgb(147, 51, 234)", "rgb(59, 130, 246)", "rgb(107, 114, 128)"],
+              borderWidth: 2,
+            },
+          ],
   });
 
   const transformServicesData = (data, chartType) => ({
@@ -387,15 +413,28 @@ export default function Reports() {
 
   const transformSalesData = (data, chartType) => ({
     labels: data.labels,
-    datasets: [
-      {
-        label: "Sales Total ($)",
-        data: data.data || [],
-        backgroundColor: "rgba(16, 185, 129, 0.5)",
-        borderColor: "rgb(16, 185, 129)",
-        borderWidth: 2,
-      },
-    ],
+    datasets:
+      Array.isArray(data.datasets) && data.datasets.length > 0
+        ? data.datasets.map((dataset, idx) => {
+            const hue = [160, 205, 285][idx % 3];
+            const values = dataset.data || [];
+            return {
+              label: dataset.label || `Sales ${idx + 1}`,
+              data: values,
+              backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
+              borderColor: `hsl(${hue}, 70%, 45%)`,
+              borderWidth: 2,
+            };
+          })
+        : [
+            {
+              label: "Sales Total ($)",
+              data: data.data || [],
+              backgroundColor: "rgba(16, 185, 129, 0.5)",
+              borderColor: "rgb(16, 185, 129)",
+              borderWidth: 2,
+            },
+          ],
   });
 
   const transformPayrollData = (data, chartType) => ({
@@ -518,8 +557,12 @@ export default function Reports() {
   // ─── 11 CSV EXPORT HANDLER ───────────────────────────────────────────────
   const handleExportCsv = () => {
     if (!reportData?.labels?.length || !selectedReport) return;
-    const datasetLabel = reportData.datasets?.[0]?.label || "Value";
-    const rows = [["Period", datasetLabel], ...reportData.labels.map((label, i) => [label, reportData.datasets?.[0]?.data?.[i] ?? ""])];
+    const datasets = Array.isArray(reportData.datasets) && reportData.datasets.length > 0 ? reportData.datasets : [{ label: "Value", data: [] }];
+    const header = ["Period", ...datasets.map((dataset) => dataset.label || "Value")];
+    const rows = [
+      header,
+      ...reportData.labels.map((label, i) => [label, ...datasets.map((dataset) => dataset?.data?.[i] ?? "")]),
+    ];
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -598,14 +641,22 @@ export default function Reports() {
                       <thead className="sticky-top bg-white dark:bg-gray-900">
                         <tr>
                           <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold">Period</th>
-                          <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">{reportData.datasets?.[0]?.label || "Value"}</th>
+                          {(reportData.datasets || []).map((dataset, idx) => (
+                            <th key={`col-${idx}`} className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">
+                              {dataset?.label || `Value ${idx + 1}`}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {reportData.labels.map((label, i) => (
                           <tr key={i}>
                             <td className="text-sm text-gray-700 dark:text-gray-300">{label}</td>
-                            <td className="text-sm text-gray-900 dark:text-white text-end font-medium">{reportData.datasets?.[0]?.data?.[i] ?? "—"}</td>
+                            {(reportData.datasets || []).map((dataset, idx) => (
+                              <td key={`row-${i}-col-${idx}`} className="text-sm text-gray-900 dark:text-white text-end font-medium">
+                                {dataset?.data?.[i] ?? "—"}
+                              </td>
+                            ))}
                           </tr>
                         ))}
                       </tbody>

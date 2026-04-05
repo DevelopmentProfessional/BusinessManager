@@ -257,9 +257,20 @@ export default function BookingCalendar({ service, companyId, onSelect, onClose,
     }
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!selected) return;
-    onSelect?.({ ...selected, booking_mode: mode });
+    try {
+      const result = await onSelect?.({ ...selected, booking_mode: mode });
+      if (result === false) {
+        setError("Booking failed. Please choose another slot.");
+        setSelected(null);
+        handleRetry();
+      }
+    } catch (e) {
+      setError(e?.message || "Booking failed.");
+      setSelected(null);
+      handleRetry();
+    }
   }
 
   // ── Nav helpers ────────────────────────────────────────────────────────────

@@ -17,17 +17,22 @@ NEW                — ClientBooking, ClientOrder, ClientOrderItem
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column, LargeBinary
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from enum import Enum
 
 
 # ─── BASE ──────────────────────────────────────────────────────────────────────
 
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class BaseModel(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 # ─── ENUMS ─────────────────────────────────────────────────────────────────────

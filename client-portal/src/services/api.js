@@ -151,7 +151,7 @@ export const bookingsAPI = {
 // ── Orders ────────────────────────────────────────────────────────────────────
 export const ordersAPI = {
   checkout: (data) => api.post('/orders/checkout', data).then(r => r.data),
-  pay:      (id)   => api.post(`/orders/${id}/pay`).then(r => r.data),
+  pay:      (id, data = {}) => api.post(`/orders/${id}/pay`, data).then(r => r.data),
   getAll:   ()     => api.get('/orders').then(r => r.data),
   getOne:   (id)   => api.get(`/orders/${id}`).then(r => r.data),
   getItems: (id)   => api.get(`/orders/${id}/items`).then(r => r.data),
