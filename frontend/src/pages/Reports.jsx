@@ -559,10 +559,7 @@ export default function Reports() {
     if (!reportData?.labels?.length || !selectedReport) return;
     const datasets = Array.isArray(reportData.datasets) && reportData.datasets.length > 0 ? reportData.datasets : [{ label: "Value", data: [] }];
     const header = ["Period", ...datasets.map((dataset) => dataset.label || "Value")];
-    const rows = [
-      header,
-      ...reportData.labels.map((label, i) => [label, ...datasets.map((dataset) => dataset?.data?.[i] ?? "")]),
-    ];
+    const rows = [header, ...reportData.labels.map((label, i) => [label, ...datasets.map((dataset) => dataset?.data?.[i] ?? "")])];
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

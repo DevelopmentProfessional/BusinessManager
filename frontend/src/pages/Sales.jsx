@@ -992,9 +992,11 @@ export default function Sales() {
               onClick={() => setShowCartModal(true)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
               style={{
-                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                color: '#fff', border: 'none', cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(79,70,229,0.35)',
+                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
               }}
             >
               <ShoppingCartIcon className="h-4 w-4" />
@@ -1019,7 +1021,7 @@ export default function Sales() {
           <div className="mb-6">
             {showProducts && (
               <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'linear-gradient(135deg, #4f46e510, #7c3aed10)', color: '#4f46e5', border: '1px solid #4f46e530' }}>
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #4f46e510, #7c3aed10)", color: "#4f46e5", border: "1px solid #4f46e530" }}>
                   <SparklesIcon className="h-3.5 w-3.5" />
                   Services
                 </div>
@@ -1049,7 +1051,7 @@ export default function Sales() {
           <div className="mb-6">
             {showServices && (
               <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: 'linear-gradient(135deg, #0ea5e910, #06b6d410)', color: '#0ea5e9', border: '1px solid #0ea5e930' }}>
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #0ea5e910, #06b6d410)", color: "#0ea5e9", border: "1px solid #0ea5e930" }}>
                   <CubeIcon className="h-3.5 w-3.5" />
                   Products
                 </div>
