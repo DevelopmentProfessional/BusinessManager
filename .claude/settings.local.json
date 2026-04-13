@@ -119,7 +119,14 @@
       "Bash(aws s3api put-bucket-policy --bucket businessmanager-staff-frontend-890749832422 --policy '{:*)",
       "Bash(aws s3api put-bucket-policy --bucket businessmanager-client-portal-890749832422 --policy '{:*)",
       "Bash(VITE_CLIENT_API_URL=https://pfz2fxpyms.us-east-1.awsapprunner.com/api/client npm run build)",
-      "Bash(aws cloudfront:*)"
+      "Bash(aws cloudfront:*)",
+      "Bash(pg_dump --version)",
+      "Bash(winget install:*)",
+      "Bash(choco install:*)",
+      "Bash(cmd.exe /c \"winget install --id PostgreSQL.PostgreSQL.16 --accept-source-agreements --accept-package-agreements\")",
+      "Bash(cmd.exe /c \"winget install --id PostgreSQL.PostgreSQL.16 --accept-source-agreements --accept-package-agreements 2>&1\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(wait)"
     ]
   }
 }
