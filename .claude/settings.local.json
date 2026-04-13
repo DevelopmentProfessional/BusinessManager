@@ -126,7 +126,8 @@
       "Bash(cmd.exe /c \"winget install --id PostgreSQL.PostgreSQL.16 --accept-source-agreements --accept-package-agreements\")",
       "Bash(cmd.exe /c \"winget install --id PostgreSQL.PostgreSQL.16 --accept-source-agreements --accept-package-agreements 2>&1\")",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(npm run:*)"
     ]
   }
 }
