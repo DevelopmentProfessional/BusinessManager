@@ -44,7 +44,7 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, ClockIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, ClockIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from "../services/api";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
@@ -57,6 +57,7 @@ import Panel_Settings from "./components/Panel_Settings";
 import Panel_Schedule from "./components/Panel_Schedule";
 import Panel_General from "./components/Panel_General";
 import Panel_Database from "./components/Panel_Database";
+import Panel_Payroll from "./components/Panel_Payroll";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
@@ -220,6 +221,19 @@ const Profile = () => {
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
 
+  const [paySchedule, setPaySchedule] = useState({
+    frequency: "monthly",
+    work_days: "mon,tue,wed,thu,fri",
+    payday_weekday: "fri",
+    monthly_payday_type: "date",
+    monthly_payday_date: 28,
+    monthly_payday_week: null,
+    monthly_payday_weekday: null,
+    pay_timing: "arrears",
+    cycle_anchor_date: null,
+  });
+  const [payScheduleSaving, setPayScheduleSaving] = useState(false);
+
   const [companyInfo, setCompanyInfo] = useState({
     company_name: "",
     company_email: "",
@@ -380,6 +394,17 @@ const Profile = () => {
       }
     };
     loadSchedule();
+
+    const loadPaySchedule = async () => {
+      try {
+        const res = await payrollAPI.getSchedule();
+        const d = res?.data ?? res;
+        if (d?.frequency) setPaySchedule((p) => ({ ...p, ...d }));
+      } catch {
+        /* silently degrade */
+      }
+    };
+    loadPaySchedule();
   }, []);
 
   // ─── 7 DATABASE / IMPORT EFFECTS ─────────────────────────────────────────
@@ -539,6 +564,21 @@ const Profile = () => {
       setSettingsError(err.response?.data?.detail || "Failed to save schedule settings");
     } finally {
       setScheduleLoading(false);
+    }
+  };
+
+  const handleSavePaySchedule = async () => {
+    setPayScheduleSaving(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      await payrollAPI.updateSchedule(paySchedule);
+      setSettingsSuccess("Payroll settings saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      setSettingsError(err?.response?.data?.detail || "Failed to save payroll settings");
+    } finally {
+      setPayScheduleSaving(false);
     }
   };
 
@@ -1101,6 +1141,20 @@ const Profile = () => {
         />
       )}
 
+      {openAccordion === "payroll" && canAccessGeneralSettings && (
+        <Panel_Payroll
+          isMobile={isMobile}
+          settingsPanelStyle={settingsPanelStyle}
+          paySchedule={paySchedule}
+          setPaySchedule={setPaySchedule}
+          handleSavePaySchedule={handleSavePaySchedule}
+          payScheduleSaving={payScheduleSaving}
+          settingsError={settingsError}
+          settingsSuccess={settingsSuccess}
+          HelpIcon={HelpIcon}
+        />
+      )}
+
       {openAccordion === "general" && canAccessGeneralSettings && (
         <Panel_General
           isMobile={isMobile}
@@ -1317,7 +1371,7 @@ const Profile = () => {
                     { id: "benefits", Icon: HeartIcon, title: "Benefits" },
                     { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
                     { id: "settings", Icon: CogIcon, title: "Settings" },
-                    ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
+                    ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }, { id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
@@ -1341,7 +1395,7 @@ const Profile = () => {
                   { id: "benefits", Icon: HeartIcon, title: "Benefits" },
                   { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
                   { id: "settings", Icon: CogIcon, title: "Settings" },
-                  ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
+                  ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }, { id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
                 ].map(({ id, Icon, title }) => (
                   <Button_Toolbar
                     key={id}

@@ -1761,6 +1761,67 @@ class PaySlipRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ── Pay Schedule (company-level payroll configuration) ────────────────────────
+
+class PaySchedule(BaseModel, table=True):
+    __tablename__ = "pay_schedule"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    company_id: str = Field(index=True)
+
+    # "weekly", "biweekly", "monthly"
+    frequency: str = Field(default="monthly")
+
+    # Weekly / biweekly — comma-separated short names e.g. "mon,tue,wed,thu,fri"
+    work_days: Optional[str] = Field(default=None)
+    # Payday weekday for weekly/biweekly: "mon"–"sun"
+    payday_weekday: Optional[str] = Field(default=None)
+
+    # Monthly payday options
+    monthly_payday_type: Optional[str] = Field(default=None)   # "date" | "weekday"
+    monthly_payday_date: Optional[int] = Field(default=None)   # 1–31
+    monthly_payday_week: Optional[int] = Field(default=None)   # 1,2,3,4 or -1 (last)
+    monthly_payday_weekday: Optional[str] = Field(default=None)  # "mon"–"sun"
+
+    # "arrears" = pay after work done | "advance" = pay before work starts
+    pay_timing: str = Field(default="arrears")
+
+    # ISO date string — anchor date for cycle alignment (weekly/biweekly)
+    cycle_anchor_date: Optional[str] = Field(default=None)
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PayScheduleCreate(SQLModel):
+    frequency: str = "monthly"
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str = "arrears"
+    cycle_anchor_date: Optional[str] = None
+
+
+class PayScheduleRead(SQLModel):
+    id: UUID
+    company_id: str
+    frequency: str
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str
+    cycle_anchor_date: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 # Sale transaction models
 class SaleTransaction(BaseModel, table=True):
     __tablename__ = "sale_transaction"
