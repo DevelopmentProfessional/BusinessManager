@@ -2,13 +2,13 @@
 # FILE: db_config.py
 #
 # PURPOSE:
-#   Provides a Render-only PostgreSQL database configuration for the backend.
+#   Provides PostgreSQL database configuration for the backend.
 #   Local database selection and SQLite fallback are intentionally disabled,
 #   and the connection string must come from the environment.
 #
 # FUNCTIONAL PARTS:
-#   [1] Imports & Constants            — stdlib imports and Render env constants
-#   [2] URL Validation                 — Render-hosted PostgreSQL checks
+#   [1] Imports & Constants            — stdlib imports and env constants
+#   [2] URL Validation                 — PostgreSQL URL checks
 #   [3] URL Resolution                 — get_database_url()
 #   [4] Compatibility Helpers          — environment inspection shims
 #
@@ -18,9 +18,10 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-29 | GitHub Copilot | Removed backend environment switching and enforced Render-only PostgreSQL routing
 #   2026-03-29 | GitHub Copilot | Removed hardcoded DB fallback and tightened Render host validation
+#   2026-04-08 | Claude  | Removed Render-host restriction to support AWS RDS migration
 # ============================================================
 
-"""Render-only backend database configuration."""
+"""PostgreSQL database configuration (supports Render, AWS RDS, and any PostgreSQL host)."""
 
 # ─── 1 IMPORTS & CONSTANTS ─────────────────────────────────────────────────────
 import os
@@ -33,18 +34,6 @@ RENDER_DATABASE_URL_ENV_VAR = "DATABASE_URL"
 # ─── 2 URL VALIDATION ──────────────────────────────────────────────────────────
 def _is_postgres_url(url: str) -> bool:
     return url.startswith(("postgresql://", "postgres://", "postgresql+psycopg://"))
-
-
-def _is_render_host(hostname: str) -> bool:
-    host = (hostname or "").strip().rstrip(".").lower()
-    return (
-        host == "render.com"
-        or host.endswith(".render.com")
-        or host == "render.internal"
-        or host.endswith(".render.internal")
-    )
-
-
 
 
 
@@ -114,9 +103,5 @@ def add_environment(name: str, url: str) -> bool:
 
 
 def validate_database_url(url: str) -> bool:
-    """Return True only for Render-hosted PostgreSQL URLs."""
-    try:
-        _validate_render_database_url(url)
-    except RuntimeError:
-        return False
-    return True
+    """Return True for any valid PostgreSQL URL."""
+    return _is_postgres_url(url)
