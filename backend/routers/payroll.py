@@ -25,11 +25,11 @@ from datetime import datetime
 
 try:
     from backend.database import get_session
-    from backend.models import PaySlip, PaySlipCreate, PaySlipRead, User, InsurancePlan
+    from backend.models import PaySlip, PaySlipCreate, PaySlipRead, User, InsurancePlan, PaySchedule, PayScheduleCreate, PayScheduleRead
     from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
-    from models import PaySlip, PaySlipCreate, PaySlipRead, User, InsurancePlan
+    from models import PaySlip, PaySlipCreate, PaySlipRead, User, InsurancePlan, PaySchedule, PayScheduleCreate, PayScheduleRead
     from routers.auth import get_current_user
 
 router = APIRouter()
@@ -162,3 +162,53 @@ def check_payment_eligibility(
         "can_pay": existing is None,
         "existing_slip_id": str(existing.id) if existing else None,
     }
+
+
+# ─── 4 PAY SCHEDULE (COMPANY-LEVEL SETTINGS) ───────────────────────────────────
+
+@router.get("/payroll/schedule", response_model=PayScheduleRead, tags=["payroll"])
+def get_pay_schedule(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return the company's payroll schedule settings. Returns defaults if none configured."""
+    company_id = current_user.company_id or ""
+    schedule = session.exec(
+        select(PaySchedule).where(PaySchedule.company_id == company_id)
+    ).first()
+    if not schedule:
+        # Return a sensible default (not persisted)
+        return PayScheduleRead(
+            id="00000000-0000-0000-0000-000000000000",
+            company_id=company_id,
+            frequency="monthly",
+            work_days="mon,tue,wed,thu,fri",
+            payday_weekday="fri",
+            monthly_payday_type="date",
+            monthly_payday_date=28,
+            pay_timing="arrears",
+        )
+    return schedule
+
+
+@router.put("/payroll/schedule", response_model=PayScheduleRead, tags=["payroll"])
+def upsert_pay_schedule(
+    data: PayScheduleCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Create or update the company's payroll schedule settings."""
+    company_id = current_user.company_id or ""
+    schedule = session.exec(
+        select(PaySchedule).where(PaySchedule.company_id == company_id)
+    ).first()
+    if schedule:
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(schedule, field, value)
+        schedule.updated_at = datetime.utcnow()
+    else:
+        schedule = PaySchedule(company_id=company_id, **data.model_dump())
+    session.add(schedule)
+    session.commit()
+    session.refresh(schedule)
+    return schedule
