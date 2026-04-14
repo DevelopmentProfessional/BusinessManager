@@ -27,7 +27,7 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
-          VITE_API_URL=https://49sppnv3pa.us-east-1.awsapprunner.com/api/v1 npm run build
+          VITE_API_URL=https://d26nmpoviuf1jh.cloudfront.net/api/v1 npm run build
 
       - name: Deploy to S3
         run: aws s3 sync frontend/dist/ s3://businessmanager-staff-frontend-890749832422 --delete
@@ -57,7 +57,7 @@ jobs:
         working-directory: client-portal
         run: |
           npm ci
-          VITE_CLIENT_API_URL=https://pfz2fxpyms.us-east-1.awsapprunner.com/api/client npm run build
+          VITE_CLIENT_API_URL=https://d26nmpoviuf1jh.cloudfront.net/api/client npm run build
 
       - name: Deploy to S3
         run: aws s3 sync client-portal/dist/ s3://businessmanager-client-portal-890749832422 --delete
