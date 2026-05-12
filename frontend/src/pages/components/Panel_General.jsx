@@ -48,6 +48,9 @@ const Panel_General = ({
   resetPortalBrandingDefaults,
   settingsSuccess,
   HelpIcon,
+  onCheckStartDatabase,
+  dbCheckLoading,
+  dbCheckStatus,
 }) => (
   <div className="accordion-popup" style={settingsPanelStyle}>
     <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
@@ -100,6 +103,22 @@ const Panel_General = ({
                     </select>
                   </div>
                 </div>
+                {/* Admin-only: Check/Start Database Button */}
+                {user?.role === "admin" && (
+                  <div className="d-flex align-items-center gap-2 mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={onCheckStartDatabase}
+                      disabled={dbCheckLoading}
+                    >
+                      {dbCheckLoading ? "Checking/Starting Database..." : "Check/Start Database"}
+                    </button>
+                    {dbCheckStatus && (
+                      <span className={`small ${dbCheckStatus.startsWith("Error") ? "text-danger" : "text-success"}`}>{dbCheckStatus}</span>
+                    )}
+                  </div>
+                )}
                 <button type="button" onClick={handleManualSync} disabled={syncLoading} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
                   <ArrowPathIcon className="h-4 w-4" />
                   <span>{syncLoading ? "Syncing…" : "Sync Now"}</span>

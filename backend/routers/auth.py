@@ -1,3 +1,11 @@
+# ─── [X] ADMIN ROLE DEPENDENCY ───────────────────────────────────────────────
+from fastapi import HTTPException
+from fastapi import status as fastapi_status
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if str(current_user.role).lower() != "admin":
+        raise HTTPException(status_code=fastapi_status.HTTP_403_FORBIDDEN, detail="Admin access required.")
+    return current_user
 # ============================================================
 # FILE: auth.py
 #
