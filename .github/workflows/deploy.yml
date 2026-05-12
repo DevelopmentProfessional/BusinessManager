@@ -1,42 +1,41 @@
-name: Deploy to AWS EC2
+name: Deploy to AWS EC2 via CodeDeploy
 
 on:
   push:
     branches:
-      - Document-Management
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-            # Pull latest code
-            cd /home/ubuntu/BusinessManager
-            git fetch origin
-            git checkout Document-Management
-            git pull origin Document-Management
+      - name: Create and upload deployment bundle to S3
+        run: |
+          zip -r deploy.zip . \
+            -x '*.git*' \
+            -x '*/node_modules/*' \
+            -x 'frontend/dist/*' \
+            -x 'backend/uploads/*' \
+            -x '*.pyc' \
+            -x '*/__pycache__/*'
+          aws s3 cp deploy.zip s3://businessmanager-deployments-890749832422/deploy.zip
 
-            # Build frontend
-            cd /home/ubuntu/BusinessManager/frontend
-            npm install
-            npm run build
-            sudo cp -r dist/. /var/www/html/
-
-            # Install backend dependencies
-            cd /home/ubuntu/BusinessManager/backend
-            source /home/ubuntu/BusinessManager/venv/bin/activate
-            pip install -r requirements.txt
-
-            # Restart backend service
-            sudo systemctl restart businessmanager
-
-            echo "Deployment complete"
+      - name: Trigger CodeDeploy deployment
+        run: |
+          aws deploy create-deployment \
+            --application-name BusinessManagerApp \
+            --deployment-group-name BusinessManagerDG \
+            --s3-location bucket=businessmanager-deployments-890749832422,key=deploy.zip,bundleType=zip \
+            --deployment-config-name CodeDeployDefault.AllAtOnce \
+            --description "Deploy ${{ github.sha }} by ${{ github.actor }}"
