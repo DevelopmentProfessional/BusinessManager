@@ -45,7 +45,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, ClockIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/24/outline";
-import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI } from "../services/api";
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI } from "../services/api";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
 import useBranding from "../services/useBranding";
@@ -150,6 +150,23 @@ const Profile = () => {
   }, [footerAlign, setFooterAlign]);
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
+    // Admin-only: Check/Start Database button state
+    const [dbCheckLoading, setDbCheckLoading] = useState(false);
+    const [dbCheckStatus, setDbCheckStatus] = useState("");
+
+    // Admin-only: Check/Start Database handler
+    const handleCheckStartDatabase = async () => {
+      setDbCheckLoading(true);
+      setDbCheckStatus("");
+      try {
+        const res = await adminAPI.checkOrStartDatabase();
+        setDbCheckStatus(res?.data?.message || "Database is running.");
+      } catch (err) {
+        setDbCheckStatus("Error: " + (err?.response?.data?.detail || err?.message || "Failed to check/start database."));
+      } finally {
+        setDbCheckLoading(false);
+      }
+    };
   useEffect(() => {
     if (getPerformanceSessionActive()) logComponentLoad("Profile Component");
   }, []);
@@ -1195,6 +1212,9 @@ const Profile = () => {
           resetPortalBrandingDefaults={resetPortalBrandingDefaults}
           settingsSuccess={settingsSuccess}
           HelpIcon={HelpIcon}
+          onCheckStartDatabase={handleCheckStartDatabase}
+          dbCheckLoading={dbCheckLoading}
+          dbCheckStatus={dbCheckStatus}
         />
       )}
 

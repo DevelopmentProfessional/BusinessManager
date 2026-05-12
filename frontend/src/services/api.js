@@ -618,6 +618,7 @@ export const adminAPI = {
   },
   getSystemInfo: () => api.get("/admin/system-info"),
   testAppointments: () => api.get("/admin/test-appointments"),
+  checkOrStartDatabase: () => api.post("/admin/check-or-start-database"),
 };
 
 // DEPRECATED: Runtime database routing is Render-only.
