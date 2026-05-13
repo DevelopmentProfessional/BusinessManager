@@ -126,7 +126,11 @@ def _extend_allowed_origins_from_env(allowed_origins: list[str]) -> list[str]:
     if not env_origins:
         return allowed_origins
 
-    additional_origins = [origin.strip() for origin in env_origins.split(",") if origin.strip()]
+    additional_origins = [
+        origin.strip()
+        for origin in env_origins.split(",")
+        if origin.strip() and origin.strip() != "*"
+    ]
     allowed_origins.extend(additional_origins)
     return allowed_origins
 
@@ -146,6 +150,12 @@ def ensure_database_ready() -> None:
 
 # Configure CORS with explicit production domains
 allowed_origins = [
+    # Production domains
+    "https://vadpivi.com",
+    "https://www.vadpivi.com",
+    "https://app.vadpivi.com",
+    "https://clients.vadpivi.com",
+    "https://api.vadpivi.com",
     # Local development
     "http://localhost:5173",
     "https://localhost:5173",
