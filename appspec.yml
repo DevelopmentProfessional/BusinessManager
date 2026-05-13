@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /home/ec2-user/businessmanager
+    destination: /opt/businessmanager
     overwrite: true
 file_exists_behavior: OVERWRITE
 hooks:
@@ -13,7 +13,7 @@ hooks:
   AfterInstall:
     - location: scripts/install_dependencies.sh
       timeout: 300
-      runas: ec2-user
+      runas: root
   ApplicationStart:
     - location: scripts/restart_server.sh
       timeout: 180
