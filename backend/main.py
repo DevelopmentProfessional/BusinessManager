@@ -46,11 +46,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, whatsapp_import
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin", "backend.routers.whatsapp_import"}:
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, whatsapp_import  # type: ignore
     else:
         raise
 
@@ -215,6 +215,7 @@ app.include_router(document_tags.router, prefix="/api/v1", tags=["document-tags"
 app.include_router(workflows.router, prefix="/api/v1", tags=["workflows"])
 app.include_router(audit.router, prefix="/api/v1", tags=["audit"])
 app.include_router(financial.router, prefix="/api/v1", tags=["financial"])
+app.include_router(whatsapp_import.router, prefix="/api/v1", tags=["whatsapp-import"])
 
 # ─── 7 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
 # Document file operations only: upload (create record + file) and download (serve file).

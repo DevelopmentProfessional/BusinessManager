@@ -32,6 +32,7 @@
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { S } from "../utils/strings";
 import { itemTypeVariant, stockVariant } from "../utils/colorMapping";
 import Badge from "./components/Badge";
@@ -42,7 +43,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_Table_Footer";
 import PageTableHeader from "./components/Page_Table_Header";
 import PageTableRow from "./components/Page_Table_Row";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
 import Modal_Discount_Rules from "./components/Modal_Discount_Rules";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -58,6 +59,7 @@ import InventoryIntelligence from "./components/InventoryIntelligence";
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
+  const navigate = useNavigate();
   const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
   // Use the permission refresh hook
@@ -192,6 +194,14 @@ export default function Inventory() {
       return;
     }
     setShowBulkImport(true);
+  };
+
+  const handleOpenWhatsAppImport = () => {
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to import items");
+      return;
+    }
+    navigate("/import-whatsapp");
   };
 
   const handleOpenAddItem = () => {
@@ -425,6 +435,8 @@ export default function Inventory() {
           <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
 
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
+
+          <Button_Toolbar icon={ChatBubbleLeftIcon} label="WhatsApp" onClick={handleOpenWhatsAppImport} className="btn-app-secondary" />
         </Gate_Permission>
 
         {/* Type Filter */}
