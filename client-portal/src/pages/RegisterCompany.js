@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 function RegisterCompany() {
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     logo: null,
-    contactNumber: '',
-    email: ''
+    contactNumber: "",
+    email: "",
   });
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: files ? files[0] : value
+      [name]: files ? files[0] : value,
     }));
   };
 
@@ -25,23 +25,23 @@ function RegisterCompany() {
     });
 
     try {
-      const response = await fetch('/api/register-company', {
-        method: 'POST',
-        body: formDataToSend
+      const response = await fetch("/api/register-company", {
+        method: "POST",
+        body: formDataToSend,
       });
       if (response.ok) {
-        alert('Company registration submitted successfully!');
+        alert("Company registration submitted successfully!");
       } else {
-        alert('Failed to submit registration.');
+        alert("Failed to submit registration.");
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('An error occurred.');
+      console.error("Error submitting form:", error);
+      alert("An error occurred.");
     }
   };
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: "20px" }}>
       <h1>Register Your Company</h1>
       <form onSubmit={handleSubmit}>
         <div>
