@@ -1,8 +1,8 @@
 // ...existing imports...
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import RegisterCompany from './pages/RegisterCompany';
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import RegisterCompany from "./pages/RegisterCompany";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Router>
     <Routes>
