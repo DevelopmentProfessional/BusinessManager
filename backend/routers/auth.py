@@ -1,11 +1,3 @@
-# ─── [X] ADMIN ROLE DEPENDENCY ───────────────────────────────────────────────
-from fastapi import HTTPException
-from fastapi import status as fastapi_status
-
-def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    if str(current_user.role).lower() != "admin":
-        raise HTTPException(status_code=fastapi_status.HTTP_403_FORBIDDEN, detail="Admin access required.")
-    return current_user
 # ============================================================
 # FILE: auth.py
 #
@@ -151,6 +143,12 @@ def get_current_user(
             session.commit()
     
     return user
+
+# ─── [X] ADMIN ROLE DEPENDENCY ───────────────────────────────────────────────
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if str(current_user.role).lower() != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
+    return current_user
 
 def get_current_company_id(
     payload: dict = Depends(verify_token),
