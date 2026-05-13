@@ -259,10 +259,11 @@ def _ensure_company_multitenancy_if_needed():
             import uuid as _uuid
             from datetime import datetime as _dt
             default_id = str(_uuid.uuid4())
+            now = _dt.utcnow()
             conn.execute(text(
-                "INSERT INTO company (id, created_at, company_id, name, tax_rate, is_active) "
-                "VALUES (:id, :created_at, :company_id, :name, 0.0, TRUE)"
-            ), {"id": default_id, "created_at": _dt.utcnow(), "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
+                "INSERT INTO company (id, created_at, updated_at, company_id, name, tax_rate, is_active) "
+                "VALUES (:id, :created_at, :updated_at, :company_id, :name, 0.0, TRUE)"
+            ), {"id": default_id, "created_at": now, "updated_at": now, "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
             print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
 
         default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
