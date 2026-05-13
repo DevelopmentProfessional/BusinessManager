@@ -78,14 +78,21 @@ def on_startup():
 # Only allow the client portal domain and the existing sales/marketing page.
 # The internal API domain is intentionally NOT in this list.
 _base_origins = [
-    "https://clients.yourdomain.com",                             # client portal (Render custom domain)
+    "https://vadpivi.com",
+    "https://www.vadpivi.com",
+    "https://clients.vadpivi.com",
+    "https://app.vadpivi.com",
     "https://businessmanager-client-portal.onrender.com",         # client portal (Render default subdomain)
     "https://businessmanager-reference.onrender.com",             # existing sales page
     "http://localhost:5174",                                       # local dev — client portal
     "http://localhost:5175",
 ]
 
-_extra = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+_extra = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", "").split(",")
+    if o.strip() and o.strip() != "*"
+]
 _all_origins = list(dict.fromkeys(_base_origins + _extra))   # Deduplicate, preserve order
 
 app.add_middleware(
