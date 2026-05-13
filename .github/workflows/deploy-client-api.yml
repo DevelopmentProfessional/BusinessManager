@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, Document-Management]
     paths:
-      - 'client-api/**'
+      - "client-api/**"
   workflow_dispatch:
 
 concurrency:

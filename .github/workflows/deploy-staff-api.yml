@@ -4,9 +4,9 @@ on:
   push:
     branches: [main, Document-Management]
     paths:
-      - 'backend/**'
-      - 'Dockerfile'
-      - '.dockerignore'
+      - "backend/**"
+      - "Dockerfile"
+      - ".dockerignore"
   workflow_dispatch:
 
 concurrency:
