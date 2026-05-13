@@ -313,7 +313,12 @@ const Login = () => {
     <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-2 px-1 sm:px-1 lg:px-1">
       <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-3xl shadow-xl max-h-[calc(100vh-1rem)] overflow-y-auto">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">login</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">login</h2>
+          {import.meta.env.VITE_BUILD_TIME && (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Last Deploy: {import.meta.env.VITE_BUILD_TIME} UTC
+            </p>
+          )}
         </div>
 
         {!showPasswordReset ? (

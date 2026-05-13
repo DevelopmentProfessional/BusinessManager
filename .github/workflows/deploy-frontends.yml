@@ -61,7 +61,7 @@ jobs:
       - name: Install dependencies and build
         run: |
           npm ci
-          VITE_API_URL=${{ env.VITE_API_URL }} npm run build
+          VITE_API_URL=${{ env.VITE_API_URL }} VITE_BUILD_TIME=$(date -u +"%Y/%m/%d %H:%M") npm run build
 
       - name: Deploy to S3
         run: aws s3 sync frontend/dist/ s3://${{ env.STAFF_FRONTEND_BUCKET }} --delete
