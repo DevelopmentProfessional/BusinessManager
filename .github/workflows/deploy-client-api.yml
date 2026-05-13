@@ -2,9 +2,20 @@ name: Deploy Client API
 
 on:
   push:
-    branches: [main]
+    branches: [main, Document-Management]
     paths:
       - 'client-api/**'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-client-api-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 890749832422.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: businessmanager-client-api
+  APP_RUNNER_SERVICE_ARN: arn:aws:apprunner:us-east-1:890749832422:service/businessmanager-client-api/7a4bdffc13864304a63c4750a831dbcd
 
 jobs:
   deploy:
@@ -19,7 +30,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -27,12 +38,13 @@ jobs:
       - name: Build and push Docker image
         run: |
           cd client-api
-          docker build -t businessmanager-client-api .
-          docker tag businessmanager-client-api:latest 890749832422.dkr.ecr.us-east-1.amazonaws.com/businessmanager-client-api:latest
-          docker push 890749832422.dkr.ecr.us-east-1.amazonaws.com/businessmanager-client-api:latest
+          IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
+          docker build -t "$IMAGE_URI:${{ github.sha }}" -t "$IMAGE_URI:latest" .
+          docker push "$IMAGE_URI:${{ github.sha }}"
+          docker push "$IMAGE_URI:latest"
 
       - name: Deploy to App Runner
         run: |
           aws apprunner start-deployment \
-            --service-arn arn:aws:apprunner:us-east-1:890749832422:service/businessmanager-client-api/7a4bdffc13864304a63c4750a831dbcd \
-            --region us-east-1
+            --service-arn "${{ env.APP_RUNNER_SERVICE_ARN }}" \
+            --region "${{ env.AWS_REGION }}"

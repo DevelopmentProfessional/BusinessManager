@@ -5,6 +5,18 @@ on:
     branches:
       - main
       - Document-Management
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-codedeploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  DEPLOY_BUCKET: businessmanager-deployments-890749832422
+  DEPLOY_KEY: codedeploy/deploy-${{ github.sha }}.zip
+  CODEDEPLOY_APP_NAME: BusinessManager
+  CODEDEPLOY_GROUP_NAME: BusinessManagerDG
 
 jobs:
   deploy:
@@ -19,7 +31,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Create and upload deployment bundle to S3
         run: |
@@ -30,13 +42,22 @@ jobs:
             -x 'backend/uploads/*' \
             -x '*.pyc' \
             -x '*/__pycache__/*'
-          aws s3 cp deploy.zip s3://businessmanager-deployments-890749832422/deploy.zip
+          aws s3 cp deploy.zip s3://${{ env.DEPLOY_BUCKET }}/${{ env.DEPLOY_KEY }}
 
       - name: Trigger CodeDeploy deployment
+        id: create_deployment
         run: |
-          aws deploy create-deployment \
-            --application-name BusinessManagerApp \
-            --deployment-group-name BusinessManagerDG \
-            --s3-location bucket=businessmanager-deployments-890749832422,key=deploy.zip,bundleType=zip \
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+            --application-name "${{ env.CODEDEPLOY_APP_NAME }}" \
+            --deployment-group-name "${{ env.CODEDEPLOY_GROUP_NAME }}" \
+            --s3-location bucket=${{ env.DEPLOY_BUCKET }},key=${{ env.DEPLOY_KEY }},bundleType=zip \
             --deployment-config-name CodeDeployDefault.AllAtOnce \
-            --description "Deploy ${{ github.sha }} by ${{ github.actor }}"
+            --description "Deploy ${{ github.sha }} by ${{ github.actor }}" \
+            --query deploymentId \
+            --output text)
+
+          echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for deployment to complete
+        run: |
+          aws deploy wait deployment-successful --deployment-id "${{ steps.create_deployment.outputs.deployment_id }}"
