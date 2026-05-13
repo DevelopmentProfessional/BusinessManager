@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.03.29.3"
+CURRENT_SCHEMA_VERSION = "2026.05.13.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -809,6 +809,20 @@ def _seed_inventory_categories_for_03897():
 
 
 # ─── MIGRATION: EMPLOYEE LUNCH TIME + INVENTORY PROCUREMENT LEAD ───────────────
+def _ensure_user_db_environment_if_needed():
+    """Add db_environment column to user table if missing."""
+    with engine.begin() as conn:
+        col_exists = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name='user' AND column_name='db_environment'"
+        )).fetchone()
+        if not col_exists:
+            conn.execute(text(
+                'ALTER TABLE "user" ADD COLUMN db_environment VARCHAR DEFAULT \'production\''
+            ))
+            print("  + Added column user.db_environment")
+
+
 def _ensure_employee_lunch_and_procurement_if_needed():
     """Add lunch_start / lunch_duration_minutes to user;
     procurement_lead_days to inventory."""
@@ -902,6 +916,7 @@ def create_db_and_tables():
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_user_db_environment_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 
