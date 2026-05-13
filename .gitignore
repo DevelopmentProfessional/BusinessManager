@@ -82,6 +82,3 @@ simple_migration.py
 # SSL certificates and keys (local development only)
 ssl/*.pem
 *.pem
-
-# Company provisioning tool (run locally, never deploy)
-CompanyCreation/

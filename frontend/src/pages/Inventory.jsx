@@ -265,7 +265,6 @@ export default function Inventory() {
     return labels[type] || type || "Product";
   };
 
-
   // Location and Asset items always have "OK" status
   const isLocationOrAsset = (item) => {
     const upperType = (item.type || "").toUpperCase();
@@ -292,7 +291,6 @@ export default function Inventory() {
     if (stockFilter === "ok") return "bg-green-600 text-white";
     return "btn-app-secondary";
   };
-
 
   const getPriceDisplay = (item) => {
     const s = featureSummary[item.id];
@@ -386,11 +384,7 @@ export default function Inventory() {
             <tbody>
               {filteredInventory.map((inv, index) => (
                 <PageTableRow key={inv.id || index} onClick={() => handleUpdateInventory(inv)}>
-                  <Inventory_RowDetail
-                    item={inv}
-                    priceDisplay={getPriceDisplay(inv)}
-                    featureNames={featureSummary[inv.id]?.feature_names || []}
-                  />
+                  <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
 
                   {/* Type */}
                   <td className="main-page-table-data">
