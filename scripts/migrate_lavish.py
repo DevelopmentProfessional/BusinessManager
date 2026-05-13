@@ -2,7 +2,7 @@
 """
 One-time migration: clients, services, schedule from Render (lavish_beauty_db) -> AWS.
 - All records assigned company_id = 03200
-- All schedule records assigned to employee tpinto
+- All schedule records assigned to employee tpino
 - ON CONFLICT (id) DO NOTHING — safe to re-run
 """
 
@@ -81,11 +81,11 @@ def main():
         with new_conn.cursor() as cur:
             cur.execute(
                 'SELECT id FROM "user" WHERE username = %s AND company_id = %s',
-                ("tpinto", COMPANY_ID)
+                ("tpino", COMPANY_ID)
             )
             row = cur.fetchone()
             if not row:
-                cur.execute('SELECT id FROM "user" WHERE username = %s', ("tpinto",))
+                cur.execute('SELECT id FROM "user" WHERE username = %s', ("tpino",))
                 row = cur.fetchone()
             if not row:
                 print("ERROR: user 'tpinto' not found in the database. Aborting.")
