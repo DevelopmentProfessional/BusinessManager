@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.05.13.1"
+CURRENT_SCHEMA_VERSION = "2026.05.13.2"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -809,6 +809,23 @@ def _seed_inventory_categories_for_03897():
 
 
 # ─── MIGRATION: EMPLOYEE LUNCH TIME + INVENTORY PROCUREMENT LEAD ───────────────
+def _ensure_user_hierarchy_columns_if_needed():
+    """Add reports_to and role_id columns to user table if missing."""
+    cols_to_add = {
+        "reports_to": "UUID",
+        "role_id": "UUID",
+    }
+    with engine.begin() as conn:
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()}
+        for col, pg_type in cols_to_add.items():
+            if col not in existing:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column user.{col}")
+
+
 def _ensure_user_db_environment_if_needed():
     """Add db_environment column to user table if missing."""
     with engine.begin() as conn:
@@ -916,6 +933,7 @@ def create_db_and_tables():
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_user_hierarchy_columns_if_needed()
     _ensure_user_db_environment_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
