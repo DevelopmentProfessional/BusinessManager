@@ -25,7 +25,7 @@ DATABASE_URL=$DATABASE_URL
 CLIENT_JWT_SECRET=$CLIENT_JWT_SECRET
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-ALLOWED_ORIGINS=https://vadpivi.com,https://www.vadpivi.com,https://clients.vadpivi.com,https://app.vadpivi.com
+ALLOWED_ORIGINS=https://vadpivi.com,https://www.vadpivi.com,https://clients.vadpivi.com,https://app.vadpivi.com,https://register.vadpivi.com
 EOF
 
 	chmod 600 "$CLIENT_ENV_FILE"

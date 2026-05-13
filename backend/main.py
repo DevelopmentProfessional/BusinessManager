@@ -155,6 +155,7 @@ allowed_origins = [
     "https://www.vadpivi.com",
     "https://app.vadpivi.com",
     "https://clients.vadpivi.com",
+    "https://register.vadpivi.com",
     "https://api.vadpivi.com",
     # Local development
     "http://localhost:5173",
@@ -167,6 +168,8 @@ allowed_origins = [
     "http://192.168.4.118:5173",
     "https://192.168.4.118:5174",
     "http://192.168.4.118:5174",
+    # CompanyCreation portal — local dev
+    "http://localhost:5175",
     # Render / production frontend (set in Render env or add your deployed frontend URL)
     "https://businessmanager-reference.onrender.com",
     "https://businessmanager-reference-api.onrender.com",

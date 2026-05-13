@@ -153,6 +153,8 @@ class Company(BaseModel, table=True):
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
     tax_rate: float = Field(default=0.0)
     is_active: bool = Field(default=True)
+    registration_status: Optional[str] = Field(default="approved")  # pending | approved | denied
+    registration_notes: Optional[str] = Field(default=None)
 
 # ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
 # User model for authentication (consolidated user/employee)
