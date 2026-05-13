@@ -9,8 +9,13 @@ git history, rotate the database password immediately in the Render dashboard an
 the DATABASE_URL secret in all deployed environments using the new credentials.
 """
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 from dotenv import load_dotenv
+
+_local_env = Path(__file__).with_name(".env.local")
+if _local_env.exists():
+    load_dotenv(_local_env, override=True)
 
 load_dotenv()
 
