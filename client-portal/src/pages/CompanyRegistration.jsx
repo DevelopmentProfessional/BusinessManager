@@ -1,496 +1,307 @@
-/**
- * COMPANY REGISTRATION PAGE
- * Public-facing form for new company registration
- *
- * Allows users to:
- * - Enter company details (ID, name)
- * - Create admin user account
- * - View list of created companies
- */
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
-import React, { useEffect, useState } from "react";
+const API = "/api/v1/company-registration";
+
+const INIT = {
+  company_id: "",
+  company_name: "",
+  company_email: "",
+  company_phone: "",
+  company_address: "",
+  admin_first_name: "",
+  admin_last_name: "",
+  admin_username: "",
+  admin_email: "",
+  admin_password: "",
+  admin_password_confirm: "",
+};
 
 export default function CompanyRegistration() {
-  const [step, setStep] = useState("form"); // 'form', 'success', 'list'
+  const [form, setForm] = useState(INIT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [dbStatus, setDbStatus] = useState(null);
-  const [companies, setCompanies] = useState([]);
-  const [successData, setSuccessData] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    company_id: "",
-    company_name: "",
-    admin_username: "",
-    admin_password: "",
-    admin_confirm_password: "",
-    admin_first_name: "Admin",
-    admin_last_name: "User",
-    admin_email: "",
-  });
+  const set = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const API_BASE = "/api/v1/company-registration";
-
-  // Check database status on mount
-  useEffect(() => {
-    checkDatabaseStatus();
-  }, []);
-
-  const checkDatabaseStatus = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/status`);
-      const data = await res.json();
-      setDbStatus(data);
-    } catch (err) {
-      console.error("Failed to check database status:", err);
-    }
-  };
-
-  const loadCompanies = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/companies`);
-      if (!res.ok) throw new Error("Failed to load companies");
-      const data = await res.json();
-      setCompanies(data);
-    } catch (err) {
-      console.error("Failed to load companies:", err);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const validateForm = () => {
-    if (!formData.company_id.trim()) {
-      setError("Company ID is required");
-      return false;
-    }
-    if (!/^[A-Z0-9_-]+$/.test(formData.company_id)) {
-      setError("Company ID may only contain letters, numbers, hyphens and underscores");
-      return false;
-    }
-    if (!formData.company_name.trim()) {
-      setError("Company Name is required");
-      return false;
-    }
-    if (!formData.admin_username.trim()) {
-      setError("Admin username is required");
-      return false;
-    }
-    if (formData.admin_password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return false;
-    }
-    if (formData.admin_password !== formData.admin_confirm_password) {
-      setError("Passwords do not match");
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setLoading(true);
     setError(null);
 
+    if (form.admin_password !== form.admin_password_confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (form.admin_password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/register`, {
+      const res = await fetch(`${API}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          company_id: formData.company_id.toUpperCase(),
-          company_name: formData.company_name,
-          admin_username: formData.admin_username,
-          admin_password: formData.admin_password,
-          admin_first_name: formData.admin_first_name || "Admin",
-          admin_last_name: formData.admin_last_name || "User",
-          admin_email: formData.admin_email || null,
+          company_id: form.company_id.trim().toUpperCase(),
+          company_name: form.company_name.trim(),
+          company_email: form.company_email.trim() || null,
+          company_phone: form.company_phone.trim() || null,
+          company_address: form.company_address.trim() || null,
+          admin_username: form.admin_username.trim(),
+          admin_password: form.admin_password,
+          admin_first_name: form.admin_first_name.trim() || "Admin",
+          admin_last_name: form.admin_last_name.trim() || "User",
+          admin_email: form.admin_email.trim() || null,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        setError(data.detail || "Registration failed");
+        setError(data.detail || "Registration failed.");
         return;
       }
-
-      // Success
-      setSuccessData(data);
-      loadCompanies();
-      setStep("success");
-
-      // Reset form
-      setTimeout(() => {
-        setFormData({
-          company_id: "",
-          company_name: "",
-          admin_username: "",
-          admin_password: "",
-          admin_confirm_password: "",
-          admin_first_name: "Admin",
-          admin_last_name: "User",
-          admin_email: "",
-        });
-      }, 2000);
-    } catch (err) {
-      setError(err.message || "Network error");
+      setSuccess(data);
+      setForm(INIT);
+    } catch {
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setStep("form");
-    setSuccessData(null);
-    setError(null);
-  };
-
-  const styles = {
-    container: {
-      maxWidth: 900,
-      margin: "0 auto",
-      padding: "2rem 1rem 4rem",
-      fontFamily: "system-ui, sans-serif",
-      background: "#f8fafc",
-    },
-    header: {
-      textAlign: "center",
-      marginBottom: "2rem",
-    },
-    title: {
-      fontSize: "2rem",
-      fontWeight: 700,
-      marginBottom: "0.5rem",
-      color: "#1e293b",
-    },
-    subtitle: {
-      fontSize: "1rem",
-      color: "#64748b",
-      marginBottom: "1.5rem",
-    },
-    layout: {
-      display: "flex",
-      gap: "2rem",
-      alignItems: "flex-start",
-      flexWrap: "wrap",
-    },
-    column: {
-      flex: "1 1 400px",
-      background: "#fff",
-      border: "1px solid #e2e8f0",
-      borderRadius: "0.75rem",
-      padding: "1.5rem",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-    },
-    form: {
-      flex: "1 1 400px",
-    },
-    field: {
-      marginBottom: "1rem",
-    },
-    label: {
-      display: "block",
-      marginBottom: "0.35rem",
-      fontWeight: 600,
-      fontSize: "0.9rem",
-      color: "#1e293b",
-    },
-    required: {
-      color: "#ef4444",
-    },
-    input: {
-      width: "100%",
-      padding: "0.625rem",
-      border: "1px solid #cbd5e1",
-      borderRadius: "0.375rem",
-      fontSize: "0.9rem",
-      boxSizing: "border-box",
-      fontFamily: "inherit",
-    },
-    inputFocus: {
-      outline: "none",
-      borderColor: "#4f46e5",
-      boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)",
-    },
-    row: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "1rem",
-      marginBottom: "1rem",
-    },
-    hint: {
-      fontSize: "0.8rem",
-      color: "#64748b",
-      marginTop: "0.25rem",
-    },
-    error: {
-      padding: "1rem",
-      background: "#fee2e2",
-      border: "1px solid #fecaca",
-      color: "#dc2626",
-      borderRadius: "0.5rem",
-      marginBottom: "1rem",
-      fontSize: "0.9rem",
-    },
-    success: {
-      padding: "1.5rem",
-      background: "#ecfdf5",
-      border: "1px solid #d1fae5",
-      color: "#059669",
-      borderRadius: "0.5rem",
-      marginBottom: "1rem",
-      textAlign: "center",
-    },
-    button: {
-      width: "100%",
-      padding: "0.75rem 1rem",
-      background: "#4f46e5",
-      color: "#fff",
-      border: "none",
-      borderRadius: "0.375rem",
-      fontWeight: 600,
-      cursor: "pointer",
-      fontSize: "0.9rem",
-      marginTop: "1rem",
-    },
-    buttonDisabled: {
-      opacity: 0.5,
-      cursor: "not-allowed",
-    },
-    buttonSecondary: {
-      background: "#6b7280",
-    },
-    check: {
-      fontSize: "3rem",
-      marginBottom: "1rem",
-    },
-    badgeSuccess: {
-      display: "inline-block",
-      background: "#dbeafe",
-      color: "#1e40af",
-      padding: "0.5rem 1rem",
-      borderRadius: "9999px",
-      fontWeight: 600,
-      marginBottom: "1rem",
-      fontSize: "0.9rem",
-    },
-    companyList: {
-      flex: "1 1 350px",
-    },
-    companyCard: {
-      padding: "1rem",
-      border: "1px solid #e2e8f0",
-      borderRadius: "0.5rem",
-      marginBottom: "0.75rem",
-      background: "#f8fafc",
-    },
-    companyName: {
-      fontWeight: 600,
-      color: "#1e293b",
-      marginBottom: "0.25rem",
-    },
-    companyId: {
-      fontSize: "0.85rem",
-      color: "#64748b",
-      fontFamily: "monospace",
-      marginBottom: "0.5rem",
-    },
-    companyMeta: {
-      fontSize: "0.8rem",
-      color: "#94a3b8",
-    },
-    noCompanies: {
-      textAlign: "center",
-      padding: "2rem 1rem",
-      color: "#64748b",
-      fontSize: "0.9rem",
-    },
-    statusBox: {
-      padding: "1rem",
-      marginBottom: "1rem",
-      borderRadius: "0.375rem",
-      fontSize: "0.85rem",
-    },
-    statusGood: {
-      background: "#ecfdf5",
-      border: "1px solid #d1fae5",
-      color: "#059669",
-    },
-    statusBad: {
-      background: "#fee2e2",
-      border: "1px solid #fecaca",
-      color: "#dc2626",
-    },
-  };
+  if (success) {
+    return (
+      <div style={s.page}>
+        <div style={{ ...s.card, textAlign: "center", maxWidth: 520 }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🎉</div>
+          <h2 style={s.heading}>Registration Submitted!</h2>
+          <p style={s.muted}>
+            Your company <strong>{success.company_name}</strong> has been submitted for review.
+          </p>
+          <div style={s.pendingBadge}>Status: Pending Approval</div>
+          <p style={{ ...s.muted, marginTop: "1rem" }}>
+            You will be notified once your account is approved. Your login details will work as soon
+            as the account is active.
+          </p>
+          <div style={{ marginTop: "1.5rem", background: "#f8fafc", borderRadius: "0.5rem", padding: "1rem", textAlign: "left" }}>
+            <p style={s.detailRow}><span style={s.detailLabel}>Company ID</span><code>{success.company_id}</code></p>
+            <p style={s.detailRow}><span style={s.detailLabel}>Admin Username</span><code>{success.admin_username}</code></p>
+          </div>
+          <button style={{ ...s.btn, marginTop: "1.5rem" }} onClick={() => setSuccess(null)}>
+            Register Another Company
+          </button>
+          <Link to="/" style={s.backLink}>← Back to Portal</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>BusinessManager — Company Registration</h1>
-        <p style={styles.subtitle}>Create a new company and admin account</p>
-      </div>
+    <div style={s.page}>
+      <div style={s.card}>
+        <h1 style={s.heading}>Register Your Company</h1>
+        <p style={s.muted}>Fill in the details below to request access. Your account will be reviewed before activation.</p>
 
-      {dbStatus && (
-        <div
-          style={{
-            ...styles.statusBox,
-            ...(dbStatus.connected ? styles.statusGood : styles.statusBad),
-          }}
-        >
-          {dbStatus.message}
-        </div>
-      )}
+        {error && <div style={s.errorBox}>{error}</div>}
 
-      <div style={styles.layout}>
-        {/* FORM COLUMN */}
-        {step === "form" && (
-          <div style={{ ...styles.column, ...styles.form }}>
-            {error && <div style={styles.error}>{error}</div>}
+        <form onSubmit={submit}>
+          <div style={s.sectionTitle}>Company Details</div>
 
-            <form onSubmit={handleSubmit}>
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Company ID <span style={styles.required}>*</span>
-                </label>
-                <input type="text" name="company_id" style={styles.input} value={formData.company_id} onChange={handleInputChange} placeholder="e.g., ACME-CORP" disabled={loading} maxLength="50" required />
-                <div style={styles.hint}>Letters, numbers, hyphens only</div>
-              </div>
-
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Company Name <span style={styles.required}>*</span>
-                </label>
-                <input type="text" name="company_name" style={styles.input} value={formData.company_name} onChange={handleInputChange} placeholder="e.g., Acme Corporation" disabled={loading} required />
-              </div>
-
-              <div style={styles.field}>
-                <label style={styles.label}>Admin Email</label>
-                <input type="email" name="admin_email" style={styles.input} value={formData.admin_email} onChange={handleInputChange} placeholder="admin@company.com" disabled={loading} />
-              </div>
-
-              <div style={styles.row}>
-                <div style={styles.field}>
-                  <label style={styles.label}>First Name</label>
-                  <input type="text" name="admin_first_name" style={styles.input} value={formData.admin_first_name} onChange={handleInputChange} placeholder="First" disabled={loading} />
-                </div>
-                <div style={styles.field}>
-                  <label style={styles.label}>Last Name</label>
-                  <input type="text" name="admin_last_name" style={styles.input} value={formData.admin_last_name} onChange={handleInputChange} placeholder="Last" disabled={loading} />
-                </div>
-              </div>
-
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Admin Username <span style={styles.required}>*</span>
-                </label>
-                <input type="text" name="admin_username" style={styles.input} value={formData.admin_username} onChange={handleInputChange} placeholder="username" disabled={loading} required />
-              </div>
-
-              <div style={styles.row}>
-                <div style={styles.field}>
-                  <label style={styles.label}>
-                    Password <span style={styles.required}>*</span>
-                  </label>
-                  <input type="password" name="admin_password" style={styles.input} value={formData.admin_password} onChange={handleInputChange} placeholder="••••••••" disabled={loading} required />
-                  <div style={styles.hint}>Min 6 characters</div>
-                </div>
-                <div style={styles.field}>
-                  <label style={styles.label}>
-                    Confirm Password <span style={styles.required}>*</span>
-                  </label>
-                  <input type="password" name="admin_confirm_password" style={styles.input} value={formData.admin_confirm_password} onChange={handleInputChange} placeholder="••••••••" disabled={loading} required />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                style={{
-                  ...styles.button,
-                  ...(loading && styles.buttonDisabled),
-                }}
-                disabled={loading}
-              >
-                {loading ? "Creating Company..." : "Create Company"}
-              </button>
-            </form>
+          <div style={s.row}>
+            <div style={s.field}>
+              <label style={s.label}>Company ID <span style={s.req}>*</span></label>
+              <input style={s.input} name="company_id" value={form.company_id} onChange={set} placeholder="e.g. ACME" required disabled={loading} />
+              <span style={s.hint}>Letters and numbers only</span>
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Company Name <span style={s.req}>*</span></label>
+              <input style={s.input} name="company_name" value={form.company_name} onChange={set} placeholder="Acme Corporation" required disabled={loading} />
+            </div>
           </div>
-        )}
 
-        {/* SUCCESS STATE */}
-        {step === "success" && successData && (
-          <div style={{ ...styles.column, ...styles.form, textAlign: "center" }}>
-            <div style={styles.check}>✅</div>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "#1e293b" }}>Company Created!</h2>
-            <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>Your new company is ready to use.</p>
-
-            <div style={{ marginBottom: "1.5rem" }}>
-              <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "0.5rem" }}>Company ID</p>
-              <div style={styles.badgeSuccess}>{successData.company_id}</div>
+          <div style={s.row}>
+            <div style={s.field}>
+              <label style={s.label}>Business Email</label>
+              <input style={s.input} type="email" name="company_email" value={form.company_email} onChange={set} placeholder="info@company.com" disabled={loading} />
             </div>
-
-            <div style={{ marginBottom: "1.5rem", background: "#f0f9ff", padding: "1rem", borderRadius: "0.375rem" }}>
-              <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "0.25rem" }}>Admin Username</p>
-              <p style={{ fontFamily: "monospace", fontWeight: 600, color: "#1e293b" }}>{successData.admin_username}</p>
+            <div style={s.field}>
+              <label style={s.label}>Phone Number</label>
+              <input style={s.input} type="tel" name="company_phone" value={form.company_phone} onChange={set} placeholder="+1 (555) 000-0000" disabled={loading} />
             </div>
-
-            <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "1.5rem" }}>Users can now log in using the Company ID above.</p>
-
-            <button
-              onClick={() => {
-                resetForm();
-                loadCompanies();
-              }}
-              style={{ ...styles.button, ...styles.buttonSecondary }}
-            >
-              Register Another Company
-            </button>
           </div>
-        )}
 
-        {/* COMPANIES LIST */}
-        <div style={{ ...styles.column, ...styles.companyList }}>
-          <h3 style={{ marginBottom: "1rem", color: "#1e293b", fontSize: "1.1rem" }}>Registered Companies</h3>
+          <div style={s.field}>
+            <label style={s.label}>Business Address</label>
+            <input style={s.input} name="company_address" value={form.company_address} onChange={set} placeholder="123 Main St, City, State, ZIP" disabled={loading} />
+          </div>
 
-          {companies.length === 0 ? (
-            <div style={styles.noCompanies}>No companies registered yet</div>
-          ) : (
-            <div>
-              {companies.map((company) => (
-                <div key={company.company_id} style={styles.companyCard}>
-                  <div style={styles.companyName}>{company.name}</div>
-                  <div style={styles.companyId}>{company.company_id}</div>
-                  <div style={styles.companyMeta}>
-                    {company.employee_count || 0} user{company.employee_count !== 1 ? "s" : ""}
-                    {" • "}
-                    {company.is_active ? <span style={{ color: "#059669" }}>Active</span> : <span style={{ color: "#ef4444" }}>Inactive</span>}
-                  </div>
-                </div>
-              ))}
+          <div style={{ ...s.sectionTitle, marginTop: "1.5rem" }}>Admin Account</div>
+
+          <div style={s.row}>
+            <div style={s.field}>
+              <label style={s.label}>First Name</label>
+              <input style={s.input} name="admin_first_name" value={form.admin_first_name} onChange={set} placeholder="First" disabled={loading} />
             </div>
-          )}
+            <div style={s.field}>
+              <label style={s.label}>Last Name</label>
+              <input style={s.input} name="admin_last_name" value={form.admin_last_name} onChange={set} placeholder="Last" disabled={loading} />
+            </div>
+          </div>
 
-          <button
-            onClick={loadCompanies}
-            style={{
-              ...styles.button,
-              ...styles.buttonSecondary,
-              marginTop: "1rem",
-            }}
-          >
-            Refresh List
+          <div style={s.row}>
+            <div style={s.field}>
+              <label style={s.label}>Username <span style={s.req}>*</span></label>
+              <input style={s.input} name="admin_username" value={form.admin_username} onChange={set} placeholder="admin_user" required disabled={loading} />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Admin Email</label>
+              <input style={s.input} type="email" name="admin_email" value={form.admin_email} onChange={set} placeholder="admin@company.com" disabled={loading} />
+            </div>
+          </div>
+
+          <div style={s.row}>
+            <div style={s.field}>
+              <label style={s.label}>Password <span style={s.req}>*</span></label>
+              <input style={s.input} type="password" name="admin_password" value={form.admin_password} onChange={set} placeholder="Min 6 characters" required disabled={loading} />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Confirm Password <span style={s.req}>*</span></label>
+              <input style={s.input} type="password" name="admin_password_confirm" value={form.admin_password_confirm} onChange={set} placeholder="Repeat password" required disabled={loading} />
+            </div>
+          </div>
+
+          <button style={{ ...s.btn, opacity: loading ? 0.6 : 1 }} type="submit" disabled={loading}>
+            {loading ? "Submitting..." : "Submit Registration"}
           </button>
-        </div>
+        </form>
+
+        <Link to="/" style={s.backLink}>← Back to Portal</Link>
       </div>
     </div>
   );
 }
+
+const s = {
+  page: {
+    minHeight: "100vh",
+    background: "#f1f5f9",
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    padding: "2rem 1rem 4rem",
+  },
+  card: {
+    background: "#fff",
+    borderRadius: "0.75rem",
+    padding: "2rem",
+    width: "100%",
+    maxWidth: 720,
+    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+  },
+  heading: {
+    fontSize: "1.6rem",
+    fontWeight: 700,
+    color: "#0f172a",
+    marginBottom: "0.4rem",
+  },
+  muted: {
+    color: "#64748b",
+    fontSize: "0.9rem",
+    marginBottom: "1.25rem",
+  },
+  sectionTitle: {
+    fontWeight: 700,
+    fontSize: "0.85rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    color: "#94a3b8",
+    borderBottom: "1px solid #e2e8f0",
+    paddingBottom: "0.4rem",
+    marginBottom: "1rem",
+  },
+  row: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "1rem",
+  },
+  field: {
+    marginBottom: "1rem",
+    display: "flex",
+    flexDirection: "column",
+  },
+  label: {
+    fontWeight: 600,
+    fontSize: "0.85rem",
+    color: "#1e293b",
+    marginBottom: "0.3rem",
+  },
+  req: { color: "#ef4444" },
+  input: {
+    padding: "0.6rem 0.75rem",
+    border: "1px solid #cbd5e1",
+    borderRadius: "0.375rem",
+    fontSize: "0.9rem",
+    fontFamily: "inherit",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  hint: {
+    fontSize: "0.75rem",
+    color: "#94a3b8",
+    marginTop: "0.2rem",
+  },
+  btn: {
+    width: "100%",
+    padding: "0.75rem",
+    background: "#4f46e5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "0.375rem",
+    fontWeight: 700,
+    fontSize: "1rem",
+    cursor: "pointer",
+    marginTop: "0.5rem",
+  },
+  errorBox: {
+    background: "#fee2e2",
+    border: "1px solid #fca5a5",
+    color: "#dc2626",
+    padding: "0.75rem 1rem",
+    borderRadius: "0.375rem",
+    fontSize: "0.9rem",
+    marginBottom: "1rem",
+  },
+  pendingBadge: {
+    display: "inline-block",
+    background: "#fef3c7",
+    color: "#92400e",
+    border: "1px solid #fde68a",
+    borderRadius: "9999px",
+    padding: "0.4rem 1rem",
+    fontWeight: 700,
+    fontSize: "0.85rem",
+    marginTop: "0.75rem",
+  },
+  detailRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "0.875rem",
+    margin: "0.25rem 0",
+    color: "#1e293b",
+  },
+  detailLabel: {
+    color: "#64748b",
+    fontWeight: 500,
+  },
+  backLink: {
+    display: "block",
+    textAlign: "center",
+    marginTop: "1.25rem",
+    color: "#6366f1",
+    fontSize: "0.875rem",
+    textDecoration: "none",
+  },
+};
+

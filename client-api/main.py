@@ -81,6 +81,7 @@ _base_origins = [
     "https://vadpivi.com",
     "https://www.vadpivi.com",
     "https://clients.vadpivi.com",
+    "https://register.vadpivi.com",
     "https://app.vadpivi.com",
     "https://businessmanager-client-portal.onrender.com",         # client portal (Render default subdomain)
     "https://businessmanager-reference.onrender.com",             # existing sales page
