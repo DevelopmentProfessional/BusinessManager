@@ -21,7 +21,7 @@ def get_columns(conn, table):
             "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
             (table,)
         )
-        return {row[0] for row in cur.fetchall()}
+        return {row["column_name"] for row in cur.fetchall()}
 
 
 def migrate_table(old_conn, new_conn, table, rows, extra_overrides=None):
