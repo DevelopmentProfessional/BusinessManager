@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.05.13.3"
+CURRENT_SCHEMA_VERSION = "2026.05.13.4"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -809,6 +809,46 @@ def _seed_inventory_categories_for_03897():
 
 
 # ─── MIGRATION: EMPLOYEE LUNCH TIME + INVENTORY PROCUREMENT LEAD ───────────────
+def _ensure_app_settings_core_columns_if_needed():
+    """Add all app_settings columns that have no dedicated migration."""
+    cols_to_add = [
+        ("start_of_day",                 "VARCHAR",          "'06:00'"),
+        ("end_of_day",                   "VARCHAR",          "'21:00'"),
+        ("attendance_check_in_required", "BOOLEAN",          "TRUE"),
+        ("monday_enabled",               "BOOLEAN",          "TRUE"),
+        ("tuesday_enabled",              "BOOLEAN",          "TRUE"),
+        ("wednesday_enabled",            "BOOLEAN",          "TRUE"),
+        ("thursday_enabled",             "BOOLEAN",          "TRUE"),
+        ("friday_enabled",               "BOOLEAN",          "TRUE"),
+        ("saturday_enabled",             "BOOLEAN",          "TRUE"),
+        ("sunday_enabled",               "BOOLEAN",          "TRUE"),
+        ("tax_rate",                     "DOUBLE PRECISION", "0.0"),
+        ("portal_hero_title",            "VARCHAR",          None),
+        ("portal_hero_subtitle",         "VARCHAR",          None),
+        ("portal_hero_tagline",          "VARCHAR",          None),
+        ("portal_hero_bg_color",         "VARCHAR",          None),
+        ("portal_hero_text_color",       "VARCHAR",          None),
+        ("portal_hero_image_url",        "VARCHAR",          None),
+        ("portal_banner_text",           "VARCHAR",          None),
+        ("portal_banner_color",          "VARCHAR",          None),
+        ("portal_show_hero",             "BOOLEAN",          "TRUE"),
+        ("portal_show_banner",           "BOOLEAN",          "FALSE"),
+        ("portal_footer_text",           "VARCHAR",          None),
+        ("portal_primary_color",         "VARCHAR",          None),
+        ("portal_secondary_color",       "VARCHAR",          None),
+    ]
+    with engine.begin() as conn:
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()}
+        for col, pg_type, default in cols_to_add:
+            if col not in existing:
+                default_clause = f" DEFAULT {default}" if default is not None else ""
+                conn.execute(text(f"ALTER TABLE app_settings ADD COLUMN {col} {pg_type}{default_clause}"))
+                print(f"  + Added column app_settings.{col}")
+
+
 def _ensure_inventory_core_columns_if_needed():
     """Add core inventory columns missing from older schemas where inventory
     was a separate stock-tracking table without product detail fields."""
@@ -970,6 +1010,7 @@ def create_db_and_tables():
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
