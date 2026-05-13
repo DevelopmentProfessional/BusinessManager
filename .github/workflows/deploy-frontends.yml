@@ -14,6 +14,12 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
+  STAFF_FRONTEND_BUCKET: businessmanager-staff-frontend-890749832422
+  CLIENT_PORTAL_BUCKET: businessmanager-client-portal-890749832422
+  STAFF_CLOUDFRONT_DIST_ID: E1U0Y4HOZ5YQUN
+  CLIENT_PORTAL_CLOUDFRONT_DIST_ID: E15XOGU780XAU9
+  VITE_API_URL: ${{ vars.VITE_API_URL || 'https://d26nmpoviuf1jh.cloudfront.net/api/v1' }}
+  VITE_CLIENT_API_URL: ${{ vars.VITE_CLIENT_API_URL || 'https://d26nmpoviuf1jh.cloudfront.net/api/client' }}
 
 jobs:
   changes:
@@ -39,7 +45,7 @@ jobs:
   deploy-staff-frontend:
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.frontend == 'true'
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -53,24 +59,23 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Install dependencies and build
-        working-directory: frontend
         run: |
           npm ci
-          VITE_API_URL=https://d26nmpoviuf1jh.cloudfront.net/api/v1 npm run build
+          VITE_API_URL=${{ env.VITE_API_URL }} npm run build
 
       - name: Deploy to S3
-        run: aws s3 sync frontend/dist/ s3://businessmanager-staff-frontend-890749832422 --delete
+        run: aws s3 sync frontend/dist/ s3://${{ env.STAFF_FRONTEND_BUCKET }} --delete
 
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id E1U0Y4HOZ5YQUN \
+            --distribution-id ${{ env.STAFF_CLOUDFRONT_DIST_ID }} \
             --paths "/*"
 
   deploy-client-portal:
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.client_portal == 'true'
+    if: needs.changes.outputs.client_portal == 'true' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -87,13 +92,13 @@ jobs:
         working-directory: client-portal
         run: |
           npm ci
-          VITE_CLIENT_API_URL=https://d26nmpoviuf1jh.cloudfront.net/api/client npm run build
+          VITE_CLIENT_API_URL=${{ env.VITE_CLIENT_API_URL }} npm run build
 
       - name: Deploy to S3
-        run: aws s3 sync client-portal/dist/ s3://businessmanager-client-portal-890749832422 --delete
+        run: aws s3 sync client-portal/dist/ s3://${{ env.CLIENT_PORTAL_BUCKET }} --delete
 
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id E15XOGU780XAU9 \
+            --distribution-id ${{ env.CLIENT_PORTAL_CLOUDFRONT_DIST_ID }} \
             --paths "/*"
