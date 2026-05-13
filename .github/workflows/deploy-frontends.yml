@@ -4,8 +4,8 @@ on:
   push:
     branches: [main, Document-Management]
     paths:
-      - 'frontend/**'
-      - 'client-portal/**'
+      - "frontend/**"
+      - "client-portal/**"
   workflow_dispatch:
 
 concurrency:
