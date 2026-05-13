@@ -344,6 +344,9 @@ const Login = () => {
             <div className="space-y-2">
               {/* Company ID Field */}
               <div className="form-floating mb-2">
+                <button type="button" className="position-absolute text-gray-400 hover:text-gray-300 transition-colors" style={{ left: "0.75rem", top: "50%", transform: "translateY(-50%)", zIndex: 5, background: "none", border: "none" }}>
+                  <UserIcon className="h-5 w-5" />
+                </button>
                 <input id="company_id" name="company_id" type="text" required className={`form-control ${validationErrors.company_id ? "is-invalid" : ""}`} placeholder="Company ID" value={formData.company_id} onChange={handleInputChange} />
                 <label htmlFor="company_id">Company ID</label>
                 {validationErrors.company_id && <p className="mt-1 text-sm text-red-400">{validationErrors.company_id}</p>}
