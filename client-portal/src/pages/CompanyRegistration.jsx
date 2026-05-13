@@ -80,18 +80,23 @@ export default function CompanyRegistration() {
             Your company <strong>{success.company_name}</strong> has been submitted for review.
           </p>
           <div style={s.pendingBadge}>Status: Pending Approval</div>
-          <p style={{ ...s.muted, marginTop: "1rem" }}>
-            You will be notified once your account is approved. Your login details will work as soon
-            as the account is active.
-          </p>
+          <p style={{ ...s.muted, marginTop: "1rem" }}>You will be notified once your account is approved. Your login details will work as soon as the account is active.</p>
           <div style={{ marginTop: "1.5rem", background: "#f8fafc", borderRadius: "0.5rem", padding: "1rem", textAlign: "left" }}>
-            <p style={s.detailRow}><span style={s.detailLabel}>Company ID</span><code>{success.company_id}</code></p>
-            <p style={s.detailRow}><span style={s.detailLabel}>Admin Username</span><code>{success.admin_username}</code></p>
+            <p style={s.detailRow}>
+              <span style={s.detailLabel}>Company ID</span>
+              <code>{success.company_id}</code>
+            </p>
+            <p style={s.detailRow}>
+              <span style={s.detailLabel}>Admin Username</span>
+              <code>{success.admin_username}</code>
+            </p>
           </div>
           <button style={{ ...s.btn, marginTop: "1.5rem" }} onClick={() => setSuccess(null)}>
             Register Another Company
           </button>
-          <Link to="/" style={s.backLink}>← Back to Portal</Link>
+          <Link to="/" style={s.backLink}>
+            ← Back to Portal
+          </Link>
         </div>
       </div>
     );
@@ -110,12 +115,16 @@ export default function CompanyRegistration() {
 
           <div style={s.row}>
             <div style={s.field}>
-              <label style={s.label}>Company ID <span style={s.req}>*</span></label>
+              <label style={s.label}>
+                Company ID <span style={s.req}>*</span>
+              </label>
               <input style={s.input} name="company_id" value={form.company_id} onChange={set} placeholder="e.g. ACME" required disabled={loading} />
               <span style={s.hint}>Letters and numbers only</span>
             </div>
             <div style={s.field}>
-              <label style={s.label}>Company Name <span style={s.req}>*</span></label>
+              <label style={s.label}>
+                Company Name <span style={s.req}>*</span>
+              </label>
               <input style={s.input} name="company_name" value={form.company_name} onChange={set} placeholder="Acme Corporation" required disabled={loading} />
             </div>
           </div>
@@ -151,7 +160,9 @@ export default function CompanyRegistration() {
 
           <div style={s.row}>
             <div style={s.field}>
-              <label style={s.label}>Username <span style={s.req}>*</span></label>
+              <label style={s.label}>
+                Username <span style={s.req}>*</span>
+              </label>
               <input style={s.input} name="admin_username" value={form.admin_username} onChange={set} placeholder="admin_user" required disabled={loading} />
             </div>
             <div style={s.field}>
@@ -162,11 +173,15 @@ export default function CompanyRegistration() {
 
           <div style={s.row}>
             <div style={s.field}>
-              <label style={s.label}>Password <span style={s.req}>*</span></label>
+              <label style={s.label}>
+                Password <span style={s.req}>*</span>
+              </label>
               <input style={s.input} type="password" name="admin_password" value={form.admin_password} onChange={set} placeholder="Min 6 characters" required disabled={loading} />
             </div>
             <div style={s.field}>
-              <label style={s.label}>Confirm Password <span style={s.req}>*</span></label>
+              <label style={s.label}>
+                Confirm Password <span style={s.req}>*</span>
+              </label>
               <input style={s.input} type="password" name="admin_password_confirm" value={form.admin_password_confirm} onChange={set} placeholder="Repeat password" required disabled={loading} />
             </div>
           </div>
@@ -176,7 +191,9 @@ export default function CompanyRegistration() {
           </button>
         </form>
 
-        <Link to="/" style={s.backLink}>← Back to Portal</Link>
+        <Link to="/" style={s.backLink}>
+          ← Back to Portal
+        </Link>
       </div>
     </div>
   );
@@ -304,4 +321,3 @@ const s = {
     textDecoration: "none",
   },
 };
-
