@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.05.13.2"
+CURRENT_SCHEMA_VERSION = "2026.05.13.3"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -809,6 +809,43 @@ def _seed_inventory_categories_for_03897():
 
 
 # ─── MIGRATION: EMPLOYEE LUNCH TIME + INVENTORY PROCUREMENT LEAD ───────────────
+def _ensure_inventory_core_columns_if_needed():
+    """Add core inventory columns missing from older schemas where inventory
+    was a separate stock-tracking table without product detail fields."""
+    cols_to_add = [
+        ("name",        "VARCHAR",          "''"),
+        ("sku",         "VARCHAR",          None),
+        ("price",       "DOUBLE PRECISION", "0"),
+        ("description", "VARCHAR",          None),
+        ("type",        "VARCHAR",          "'product'"),
+        ("image_url",   "VARCHAR",          None),
+        ("service_id",  "UUID",             None),
+        ("cost",        "DOUBLE PRECISION", None),
+    ]
+    with engine.begin() as conn:
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='inventory'"
+        )).fetchall()}
+        for col, pg_type, default in cols_to_add:
+            if col not in existing:
+                default_clause = f" DEFAULT {default}" if default is not None else ""
+                conn.execute(text(f"ALTER TABLE inventory ADD COLUMN {col} {pg_type}{default_clause}"))
+                print(f"  + Added column inventory.{col}")
+
+
+def _ensure_service_image_url_if_needed():
+    """Add image_url column to service table if missing."""
+    with engine.begin() as conn:
+        exists = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='service' AND column_name='image_url'"
+        )).fetchone()
+        if not exists:
+            conn.execute(text("ALTER TABLE service ADD COLUMN image_url VARCHAR"))
+            print("  + Added column service.image_url")
+
+
 def _ensure_user_hierarchy_columns_if_needed():
     """Add reports_to and role_id columns to user table if missing."""
     cols_to_add = {
@@ -933,6 +970,8 @@ def create_db_and_tables():
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_inventory_core_columns_if_needed()
+    _ensure_service_image_url_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
     _ensure_user_db_environment_if_needed()
     _mark_schema_current()
