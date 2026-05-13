@@ -2,15 +2,44 @@ name: Deploy Frontends
 
 on:
   push:
-    branches: [main]
+    branches: [main, Document-Management]
     paths:
       - 'frontend/**'
       - 'client-portal/**'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontends-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
 
 jobs:
-  deploy-staff-frontend:
+  changes:
     runs-on: ubuntu-latest
-    if: contains(github.event.commits[0].modified, 'frontend/') || contains(github.event.commits[0].added, 'frontend/')
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      client_portal: ${{ steps.filter.outputs.client_portal }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            client_portal:
+              - 'client-portal/**'
+
+  deploy-staff-frontend:
+    needs: changes
+    runs-on: ubuntu-latest
+    if: needs.changes.outputs.frontend == 'true'
 
     steps:
       - name: Checkout code
@@ -21,7 +50,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Install dependencies and build
         working-directory: frontend
@@ -39,8 +68,9 @@ jobs:
             --paths "/*"
 
   deploy-client-portal:
+    needs: changes
     runs-on: ubuntu-latest
-    if: contains(github.event.commits[0].modified, 'client-portal/') || contains(github.event.commits[0].added, 'client-portal/')
+    if: needs.changes.outputs.client_portal == 'true'
 
     steps:
       - name: Checkout code
@@ -51,7 +81,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Install dependencies and build
         working-directory: client-portal
