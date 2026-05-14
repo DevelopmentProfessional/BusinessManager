@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 const useViewMode = create(
   persist(
     (set, get) => ({
-      isTrainingMode: false,
+      isTrainingMode: true,
       uiScale: 100,
       toggleViewMode: () => {
         const { isTrainingMode } = get();

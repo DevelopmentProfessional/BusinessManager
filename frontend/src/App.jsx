@@ -131,10 +131,9 @@ function App() {
 
   // Sync training mode and dark mode from database when user loads
   useEffect(() => {
-    if (user?.training_mode !== undefined) {
-      setTrainingMode(user.training_mode);
-    }
-  }, [user?.training_mode, setTrainingMode]);
+    if (!user) return;
+    setTrainingMode(user.training_mode_explicit ? user.training_mode !== false : true);
+  }, [user, setTrainingMode]);
 
   useEffect(() => {
     if (user?.dark_mode !== undefined) {

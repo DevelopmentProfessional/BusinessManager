@@ -1719,8 +1719,14 @@ def _ensure_user_training_mode_if_needed():
         )).fetchall()
         col_names = {row[0] for row in cols}
         if "training_mode" not in col_names:
-            conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT FALSE'))
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT TRUE'))
             print("  + Added column user.training_mode (BOOLEAN)")
+        else:
+            conn.execute(text('ALTER TABLE "user" ALTER COLUMN training_mode SET DEFAULT TRUE'))
+
+        if "training_mode_explicit" not in col_names:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode_explicit BOOLEAN DEFAULT FALSE'))
+            print("  + Added column user.training_mode_explicit (BOOLEAN)")
 
 
 # ─── 16 MIGRATION: SERVICE RECIPE TABLE + ASSET DURATION ───────────────────────

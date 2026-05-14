@@ -150,10 +150,14 @@ const Panel_Settings = ({
       <button
         type="button"
         onClick={async () => {
+          const nextTrainingMode = !isTrainingMode;
           toggleViewMode();
           if (user?.id) {
             try {
-              await api.put(`/isud/user/${user.id}`, { training_mode: !isTrainingMode });
+              await api.put(`/isud/user/${user.id}`, {
+                training_mode: nextTrainingMode,
+                training_mode_explicit: true,
+              });
             } catch (_) {}
           }
         }}

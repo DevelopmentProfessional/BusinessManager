@@ -186,7 +186,8 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
-    training_mode: bool = Field(default=False)  # User's training/compact mode preference
+    training_mode: bool = Field(default=True)  # User's training/compact mode preference
+    training_mode_explicit: bool = Field(default=False)  # Whether the user chose the mode manually
     db_environment: str = Field(default="production")  # User's preferred database environment
 
     # Hierarchy - who this user reports to
@@ -1105,6 +1106,7 @@ class UserUpdate(SQLModel):
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: Optional[bool] = None
     training_mode: Optional[bool] = None
+    training_mode_explicit: Optional[bool] = None
     db_environment: Optional[str] = None  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
@@ -1145,7 +1147,8 @@ class UserRead(SQLModel):
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     dark_mode: bool = False
-    training_mode: bool = False
+    training_mode: bool = True
+    training_mode_explicit: bool = False
     db_environment: str = "production"  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
