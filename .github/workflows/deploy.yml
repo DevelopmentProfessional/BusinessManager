@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+      - Document-Management
+    paths:
+      - "backend/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "appspec.yml"
+      - "scripts/**"
   workflow_dispatch:
 
 concurrency:
