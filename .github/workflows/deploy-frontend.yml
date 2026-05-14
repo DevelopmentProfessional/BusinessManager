@@ -10,12 +10,6 @@ on:
       - "package.json"
       - "package-lock.json"
   workflow_dispatch:
-    inputs:
-      run_migration:
-        description: "Also migrate company 03200 data after deploying the staff frontend"
-        required: false
-        default: false
-        type: boolean
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
@@ -63,25 +57,3 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ env.STAFF_CLOUDFRONT_DIST_ID }} \
             --paths "/*"
-
-  migrate-company-03200:
-    needs: deploy-staff-frontend
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_migration == true)
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install migration dependency
-        run: |
-          python -m pip install --upgrade pip
-          pip install psycopg[binary]
-
-      - name: Run company migration
-        run: python scripts/migrate_lavish.py
