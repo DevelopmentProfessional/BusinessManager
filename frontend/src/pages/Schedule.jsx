@@ -256,7 +256,7 @@ export default function Schedule() {
           });
         }
 
-        const canReadLeaveRequests = hasPermission("leave_request", "read") || hasPermission("leave_requests", "read");
+        const canReadLeaveRequests = hasPermission("leave", "read") || hasPermission("leave_request", "read") || hasPermission("leave_requests", "read");
         const graceful403 = (promise) =>
           promise.catch((error) => {
             if (error?.response?.status === 403) return { data: [] };
