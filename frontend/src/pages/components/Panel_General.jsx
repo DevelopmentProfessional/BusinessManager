@@ -119,9 +119,9 @@ const Panel_General = ({
                     )}
                   </div>
                 )}
-                <button type="button" onClick={handleManualSync} disabled={syncLoading} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                <button type="button" onClick={handleManualSync} disabled={syncLoading} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" title="Refresh cached app data and reload this device">
                   <ArrowPathIcon className="h-4 w-4" />
-                  <span>{syncLoading ? "Syncing…" : "Sync Now"}</span>
+                  <span>{syncLoading ? "Refreshing…" : "Refresh App"}</span>
                 </button>
               </div>
             </div>
