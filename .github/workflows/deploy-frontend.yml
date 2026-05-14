@@ -27,8 +27,6 @@ env:
   STAFF_FRONTEND_BUCKET: businessmanager-staff-frontend-890749832422
   STAFF_CLOUDFRONT_DIST_ID: E1U0Y4HOZ5YQUN
   VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.vadpivi.com/api/v1' }}
-  MIGRATION_COMPANY_ID: "03200"
-  MIGRATION_TARGET_USERNAME: tpinto
 
 jobs:
   deploy-staff-frontend:
@@ -75,11 +73,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate migration secrets
-        run: |
-          test -n "${{ secrets.MIGRATION_OLD_DATABASE_URL }}"
-          test -n "${{ secrets.MIGRATION_NEW_DATABASE_URL }}"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -91,9 +84,4 @@ jobs:
           pip install psycopg[binary]
 
       - name: Run company migration
-        env:
-          MIGRATION_OLD_DATABASE_URL: ${{ secrets.MIGRATION_OLD_DATABASE_URL }}
-          MIGRATION_NEW_DATABASE_URL: ${{ secrets.MIGRATION_NEW_DATABASE_URL }}
-          MIGRATION_COMPANY_ID: ${{ env.MIGRATION_COMPANY_ID }}
-          MIGRATION_TARGET_USERNAME: ${{ env.MIGRATION_TARGET_USERNAME }}
         run: python scripts/migrate_lavish.py
