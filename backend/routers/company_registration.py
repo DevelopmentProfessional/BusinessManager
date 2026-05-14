@@ -25,6 +25,18 @@ from typing import List, Optional
 import bcrypt
 
 try:
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError
+except ModuleNotFoundError:
+    boto3 = None
+
+    class BotoCoreError(Exception):
+        pass
+
+    class ClientError(Exception):
+        pass
+
+try:
     from backend.database import get_session
     from backend.models import Company, User, UserRole
 except ModuleNotFoundError:
@@ -92,14 +104,69 @@ def send_pending_registration_email(
     company_id: str,
     recipients: List[str],
 ) -> bool:
+    recipients = [address.strip() for address in recipients if (address or "").strip()]
+    if not recipients:
+        return False
+
+    ses_sender = (
+        (os.getenv("AWS_SES_FROM_EMAIL") or "").strip()
+        or (os.getenv("SMTP_FROM_EMAIL") or "").strip()
+        or "no-reply@vadpivi.com"
+    )
+    ses_region = (os.getenv("AWS_SES_REGION") or os.getenv("AWS_REGION") or "us-east-1").strip()
+
+    if boto3 is not None and ses_sender:
+        text_body = "\n".join(
+            [
+                "Hello,",
+                "",
+                f"Your company registration for {company_name} ({company_id}) has been received.",
+                "",
+                "Status: Pending approval",
+                "",
+                "We will notify you once the registration has been reviewed and approved.",
+                "",
+                "BusinessManager",
+            ]
+        )
+        html_body = "".join(
+            [
+                "<p>Hello,</p>",
+                f"<p>Your company registration for <strong>{company_name}</strong> ({company_id}) has been received.</p>",
+                "<p><strong>Status:</strong> Pending approval</p>",
+                "<p>We will notify you once the registration has been reviewed and approved.</p>",
+                "<p>BusinessManager</p>",
+            ]
+        )
+
+        try:
+            client = boto3.client("sesv2", region_name=ses_region)
+            for recipient in recipients:
+                client.send_email(
+                    FromEmailAddress=ses_sender,
+                    Destination={"ToAddresses": [recipient]},
+                    Content={
+                        "Simple": {
+                            "Subject": {"Data": f"{company_name} registration is pending approval"},
+                            "Body": {
+                                "Text": {"Data": text_body},
+                                "Html": {"Data": html_body},
+                            },
+                        }
+                    },
+                )
+            return True
+        except (BotoCoreError, ClientError, Exception):
+            logger.exception("Failed to send company registration pending email through SES")
+
     smtp_host = (os.getenv("SMTP_HOST") or "").strip()
-    if not smtp_host or not recipients:
+    if not smtp_host:
         return False
 
     sender = (
         (os.getenv("SMTP_FROM_EMAIL") or "").strip()
         or (os.getenv("SMTP_USERNAME") or "").strip()
-        or "no-reply@vadpivi.com"
+        or ses_sender
     )
     smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
     smtp_username = (os.getenv("SMTP_USERNAME") or "").strip()
