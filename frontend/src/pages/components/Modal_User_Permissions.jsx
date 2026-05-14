@@ -21,50 +21,75 @@
  * ============================================================
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import Modal from "./Modal";
 import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 
 function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   const [open, setOpen] = useState(false);
-  const selected = options.find(o => o === value);
+  const [menuStyle, setMenuStyle] = useState({});
+  const btnRef = useRef(null);
+
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setMenuStyle({
+        position: "fixed",
+        left: rect.left,
+        bottom: window.innerHeight - rect.top + 4,
+        width: rect.width,
+        zIndex: 9999,
+        maxHeight: 220,
+        overflowY: "auto",
+      });
+    }
+  }, [open]);
+
+  const menu = open ? ReactDOM.createPortal(
+    <>
+      <div
+        style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+        onClick={() => setOpen(false)}
+      />
+      <ul
+        className={`border rounded shadow-lg p-1 ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white"}`}
+        style={menuStyle}
+      >
+        <li>
+          <button type="button" className="dropdown-item small text-muted" onClick={() => { onChange(""); setOpen(false); }}>
+            {placeholder}
+          </button>
+        </li>
+        {options.map(opt => (
+          <li key={opt}>
+            <button
+              type="button"
+              className={`dropdown-item small ${opt === value ? "active" : ""}`}
+              onClick={() => { onChange(opt); setOpen(false); }}
+            >
+              {opt}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>,
+    document.body
+  ) : null;
+
   return (
-    <div className="position-relative">
+    <div>
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`form-select form-select-sm text-start d-flex align-items-center justify-content-between ${isDarkMode ? "bg-gray-800 text-light border-gray-600" : ""}`}
+        className={`form-select form-select-sm text-start d-flex align-items-center justify-content-between w-100 ${isDarkMode ? "bg-gray-800 text-light border-gray-600" : ""}`}
       >
-        <span>{selected || <span className="text-muted">{placeholder}</span>}</span>
+        <span>{value || <span className="text-muted">{placeholder}</span>}</span>
         <ChevronUpIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
       </button>
-      {open && (
-        <>
-          <div className="position-fixed top-0 start-0 w-100 h-100" style={{ zIndex: 49 }} onClick={() => setOpen(false)} />
-          <ul
-            className={`position-absolute bottom-100 start-0 mb-1 border rounded shadow-lg p-1 z-50 w-100 ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white"}`}
-            style={{ maxHeight: 220, overflowY: "auto", zIndex: 50 }}
-          >
-            <li>
-              <button type="button" className="dropdown-item small text-muted" onClick={() => { onChange(""); setOpen(false); }}>
-                {placeholder}
-              </button>
-            </li>
-            {options.map(opt => (
-              <li key={opt}>
-                <button
-                  type="button"
-                  className={`dropdown-item small ${opt === value ? "active" : ""}`}
-                  onClick={() => { onChange(opt); setOpen(false); }}
-                >
-                  {opt}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {menu}
     </div>
   );
 }
