@@ -20,8 +20,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 import bcrypt
 
-from database import get_session
-from models import Company, User, UserRole
+try:
+    from backend.database import get_session
+    from backend.models import Company, User, UserRole
+except ModuleNotFoundError:
+    from database import get_session
+    from models import Company, User, UserRole
 
 router = APIRouter(prefix="/company-registration", tags=["company-registration"])
 basic_auth = HTTPBasic()
