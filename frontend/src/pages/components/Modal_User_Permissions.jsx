@@ -21,75 +21,61 @@
  * ============================================================
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Modal from "./Modal";
-import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 
-function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
+function DropupSelect({ value, onChange, options, placeholder }) {
   const [open, setOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState({});
   const btnRef = useRef(null);
 
-  useEffect(() => {
-    if (open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setMenuStyle({
-        position: "fixed",
-        left: rect.left,
-        bottom: window.innerHeight - rect.top + 4,
-        width: rect.width,
-        zIndex: 9999,
-        maxHeight: 220,
-        overflowY: "auto",
-      });
-    }
-  }, [open]);
-
-  const menu = open ? ReactDOM.createPortal(
-    <>
-      <div
-        style={{ position: "fixed", inset: 0, zIndex: 9998 }}
-        onClick={() => setOpen(false)}
-      />
-      <ul
-        className={`border rounded shadow-lg p-1 ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white"}`}
-        style={menuStyle}
-      >
-        <li>
-          <button type="button" className="dropdown-item small text-muted" onClick={() => { onChange(""); setOpen(false); }}>
-            {placeholder}
-          </button>
-        </li>
-        {options.map(opt => (
-          <li key={opt}>
-            <button
-              type="button"
-              className={`dropdown-item small ${opt === value ? "active" : ""}`}
-              onClick={() => { onChange(opt); setOpen(false); }}
-            >
-              {opt}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </>,
-    document.body
-  ) : null;
+  const getMenuStyle = () => {
+    if (!btnRef.current) return {};
+    const rect = btnRef.current.getBoundingClientRect();
+    return {
+      position: "fixed",
+      left: rect.left,
+      bottom: window.innerHeight - rect.top + 4,
+      width: rect.width,
+      zIndex: 9999,
+      background: "#fff",
+      border: "1px solid #dee2e6",
+      borderRadius: 6,
+      boxShadow: "0 -4px 12px rgba(0,0,0,0.15)",
+      overflowY: "auto",
+      maxHeight: 200,
+    };
+  };
 
   return (
     <div>
-      <button
+      <select
         ref={btnRef}
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className={`form-select form-select-sm text-start d-flex align-items-center justify-content-between w-100 ${isDarkMode ? "bg-gray-800 text-light border-gray-600" : ""}`}
+        className="form-select form-select-sm"
+        value={value}
+        onMouseDown={(e) => { e.preventDefault(); setOpen(o => !o); }}
+        onChange={() => {}}
       >
-        <span>{value || <span className="text-muted">{placeholder}</span>}</span>
-        <ChevronUpIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
-      </button>
-      {menu}
+        <option>{value || placeholder}</option>
+      </select>
+      {open && ReactDOM.createPortal(
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
+          <ul style={getMenuStyle()} className="list-unstyled mb-0 py-1">
+            <li>
+              <button type="button" className="dropdown-item text-muted small" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
+            </li>
+            {options.map(opt => (
+              <li key={opt}>
+                <button type="button" className={`dropdown-item small ${opt === value ? "fw-semibold text-primary" : ""}`} onClick={() => { onChange(opt); setOpen(false); }}>{opt}</button>
+              </li>
+            ))}
+          </ul>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
