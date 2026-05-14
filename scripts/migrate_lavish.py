@@ -6,12 +6,21 @@ One-time migration: clients, services, schedule from Render (lavish_beauty_db) -
 - ON CONFLICT (id) DO NOTHING — safe to re-run
 """
 
+import os
+
 import psycopg
 from psycopg.rows import dict_row
 
-OLD_DB = "postgresql://lavish_beauty_db_user:1haMVuAaGaJN3kWTKJrRNY211mSAAnw3@dpg-d2qsadmr433s73eqpd40-a.oregon-postgres.render.com/lavish_beauty_db"
-NEW_DB = "postgresql://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@127.0.0.1:5432/businessmanager"
-COMPANY_ID = "03200"
+OLD_DB = os.getenv(
+    "MIGRATION_OLD_DATABASE_URL",
+    "postgresql://lavish_beauty_db_user:1haMVuAaGaJN3kWTKJrRNY211mSAAnw3@dpg-d2qsadmr433s73eqpd40-a.oregon-postgres.render.com/lavish_beauty_db",
+)
+NEW_DB = os.getenv(
+    "MIGRATION_NEW_DATABASE_URL",
+    "postgresql://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@127.0.0.1:5432/businessmanager",
+)
+COMPANY_ID = os.getenv("MIGRATION_COMPANY_ID", "03200")
+TARGET_USERNAME = os.getenv("MIGRATION_TARGET_USERNAME", "tpinto")
 
 
 def get_columns(conn, table):
@@ -81,17 +90,17 @@ def main():
         with new_conn.cursor() as cur:
             cur.execute(
                 'SELECT id FROM "user" WHERE username = %s AND company_id = %s',
-                ("tpinto", COMPANY_ID)
+                (TARGET_USERNAME, COMPANY_ID)
             )
             row = cur.fetchone()
             if not row:
-                cur.execute('SELECT id FROM "user" WHERE username = %s', ("tpinto",))
+                cur.execute('SELECT id FROM "user" WHERE username = %s', (TARGET_USERNAME,))
                 row = cur.fetchone()
             if not row:
-                print("ERROR: user 'tpinto' not found in the database. Aborting.")
+                print(f"ERROR: user '{TARGET_USERNAME}' not found in the database. Aborting.")
                 return
             tpinto_id = row["id"]
-            print(f"Resolved tpinto -> {tpinto_id}")
+            print(f"Resolved {TARGET_USERNAME} -> {tpinto_id}")
 
         # ── Services ────────────────────────────────────────────────────────
         print("\n[1/3] Migrating services...")

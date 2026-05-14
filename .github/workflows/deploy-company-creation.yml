@@ -1,0 +1,63 @@
+name: Deploy Company Creation
+
+on:
+  push:
+    branches:
+      - main
+      - Document-Management
+    paths:
+      - "CompanyCreation/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-company-creation-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  AWS_REGION: us-east-1
+  COMPANY_CREATION_BUCKET: ${{ vars.COMPANY_CREATION_BUCKET }}
+  COMPANY_CREATION_CLOUDFRONT_DIST_ID: ${{ vars.COMPANY_CREATION_CLOUDFRONT_DIST_ID }}
+  VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.vadpivi.com/api/v1' }}
+
+jobs:
+  deploy-company-creation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: CompanyCreation/package-lock.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate CompanyCreation deploy settings
+        run: |
+          test -n "${{ env.COMPANY_CREATION_BUCKET }}"
+          test -n "${{ env.COMPANY_CREATION_CLOUDFRONT_DIST_ID }}"
+
+      - name: Install dependencies and build
+        working-directory: CompanyCreation
+        run: |
+          npm ci
+          VITE_API_URL=${{ env.VITE_API_URL }} npm run build
+
+      - name: Deploy to S3
+        run: aws s3 cp CompanyCreation/dist/ s3://${{ env.COMPANY_CREATION_BUCKET }}/ --recursive
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.COMPANY_CREATION_CLOUDFRONT_DIST_ID }} \
+            --paths "/*"
