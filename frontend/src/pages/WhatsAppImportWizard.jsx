@@ -11,7 +11,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useStore from "../store/useStore";
+import useStore from "../services/useStore";
 
 export default function WhatsAppImportWizard() {
   const navigate = useNavigate();
