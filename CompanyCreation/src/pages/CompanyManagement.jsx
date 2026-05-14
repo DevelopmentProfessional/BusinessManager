@@ -11,7 +11,7 @@ const STATUS_COLORS = {
 
 function authHeaders() {
   const token = localStorage.getItem("cc_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return token ? { Authorization: token } : {};
 }
 
 export default function CompanyManagement() {

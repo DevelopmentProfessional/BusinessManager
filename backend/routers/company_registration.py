@@ -10,7 +10,11 @@ Endpoints:
   PATCH /company-registration/companies/{company_id}/status — Approve or deny a company
 """
 
+import os
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlmodel import Session, select, text
 from pydantic import BaseModel
 from typing import List, Optional
@@ -20,6 +24,7 @@ from database import get_session
 from models import Company, User, UserRole
 
 router = APIRouter(prefix="/company-registration", tags=["company-registration"])
+basic_auth = HTTPBasic()
 
 
 class CompanyRegistrationRequest(BaseModel):
@@ -71,6 +76,25 @@ class CompanyStatusUpdate(BaseModel):
 def hash_password(password: str) -> str:
     """Hash password with bcrypt."""
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def require_company_creation_auth(
+    credentials: HTTPBasicCredentials = Depends(basic_auth),
+):
+    expected_username = os.getenv("COMPANY_CREATION_ADMIN_USERNAME", "admin")
+    expected_password = os.getenv("COMPANY_CREATION_ADMIN_PASSWORD", "admin123")
+
+    username_ok = secrets.compare_digest(credentials.username, expected_username)
+    password_ok = secrets.compare_digest(credentials.password, expected_password)
+
+    if not (username_ok and password_ok):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid company creation credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    return credentials.username
 
 
 # ─── ENDPOINTS ────────────────────────────────────────────────────────────────
@@ -150,7 +174,10 @@ def get_database_status(session: Session = Depends(get_session)):
 
 
 @router.get("/companies", response_model=List[CompanyInfo])
-def list_companies(session: Session = Depends(get_session)):
+def list_companies(
+    _: str = Depends(require_company_creation_auth),
+    session: Session = Depends(get_session),
+):
     """List all companies with registration status (for the management UI)."""
     try:
         companies = session.exec(select(Company).order_by(Company.created_at)).all()
@@ -179,6 +206,7 @@ def list_companies(session: Session = Depends(get_session)):
 def update_company_status(
     company_id: str,
     body: CompanyStatusUpdate,
+    _: str = Depends(require_company_creation_auth),
     session: Session = Depends(get_session),
 ):
     """

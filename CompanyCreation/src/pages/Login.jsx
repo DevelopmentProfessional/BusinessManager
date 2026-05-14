@@ -1,6 +1,9 @@
 // credentials are checked locally — no API needed for login
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const API = `${import.meta.env.VITE_API_URL || "/api/v1"}/company-registration`;
+
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: "", password: "" });
@@ -14,16 +17,26 @@ export default function Login() {
     setError(null);
     setLoading(true);
 
-    // Small artificial delay so it doesn't feel instant
-    setTimeout(() => {
-      if (form.username.trim() === "admin" && form.password === "admin123") {
-        localStorage.setItem("cc_token", "cc-admin-session");
+    const username = form.username.trim();
+    const basicToken = btoa(`${username}:${form.password}`);
+
+    fetch(`${API}/companies`, {
+      headers: { Authorization: `Basic ${basicToken}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const message = res.status === 401 ? "Invalid username or password." : "Unable to sign in right now.";
+          throw new Error(message);
+        }
+        localStorage.setItem("cc_token", `Basic ${basicToken}`);
         navigate("/");
-      } else {
-        setError("Invalid username or password.");
-      }
-      setLoading(false);
-    }, 400);
+      })
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   return (
