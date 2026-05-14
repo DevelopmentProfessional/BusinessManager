@@ -58,11 +58,13 @@ function getPanelStyle(select) {
   const rect = select.getBoundingClientRect();
   const width = Math.min(Math.max(rect.width, PANEL_MIN_WIDTH), window.innerWidth - PANEL_SIDE_MARGIN * 2);
   const left = Math.min(Math.max(rect.left, PANEL_SIDE_MARGIN), window.innerWidth - width - PANEL_SIDE_MARGIN);
-  const maxHeight = Math.max(180, Math.min(PANEL_MAX_HEIGHT, window.innerHeight - rect.bottom - 24));
+  const maxHeight = Math.max(180, Math.min(PANEL_MAX_HEIGHT, rect.top - PANEL_SIDE_MARGIN));
+  const panelHeight = maxHeight;
+  const top = Math.max(PANEL_SIDE_MARGIN, rect.top - panelHeight);
 
   return {
     left,
-    top: Math.min(rect.bottom + PANEL_GAP, window.innerHeight - maxHeight - PANEL_SIDE_MARGIN),
+    top,
     width,
     maxHeight,
   };
@@ -278,14 +280,6 @@ export default function SearchableSelectOverlay() {
     <div className="searchable-select-overlay-root">
       <button type="button" className="searchable-select-backdrop" aria-label="Close searchable dropdown" onClick={closeOverlay} />
       <div ref={panelRef} className="searchable-select-panel" style={panelStyle} role="dialog" aria-modal="true" aria-label={label}>
-        <div className="searchable-select-panel-header">
-          <div className="searchable-select-input-shell">
-            <input ref={inputRef} type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={handleInputKeyDown} className="form-control searchable-select-input" placeholder={label ? `Search ${label}` : "Search options"} />
-            <ChevronDownIcon className="searchable-select-input-icon" />
-          </div>
-          {selectedOption && !searchTerm && <div className="searchable-select-current-value">Selected: {selectedOption.label || "Blank value"}</div>}
-        </div>
-
         <div className="searchable-select-options" role="listbox" aria-label={label}>
           {filteredOptions.length === 0 ? (
             <div className="searchable-select-empty-state">No matches found</div>
@@ -313,6 +307,14 @@ export default function SearchableSelectOverlay() {
               );
             })
           )}
+        </div>
+
+        <div className="searchable-select-panel-header searchable-select-panel-footer">
+          <div className="searchable-select-input-shell">
+            <input ref={inputRef} type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={handleInputKeyDown} className="form-control searchable-select-input" placeholder={label ? `Search ${label}` : "Search options"} />
+            <ChevronDownIcon className="searchable-select-input-icon" />
+          </div>
+          {selectedOption && !searchTerm && <div className="searchable-select-current-value">Selected: {selectedOption.label || "Blank value"}</div>}
         </div>
       </div>
     </div>,
