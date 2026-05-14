@@ -27,9 +27,10 @@ import Modal from "./Modal";
 import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 
-function DropupSelect({ value, onChange, options, placeholder }) {
+function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef(null);
+  const menuIdRef = useRef(`dropup-menu-${Math.random().toString(36).slice(2)}`);
 
   const getMenuStyle = () => {
     if (!btnRef.current) return {};
@@ -40,10 +41,10 @@ function DropupSelect({ value, onChange, options, placeholder }) {
       bottom: window.innerHeight - rect.top + 4,
       width: rect.width,
       zIndex: 9999,
-      background: "#fff",
-      border: "1px solid #dee2e6",
+      background: isDarkMode ? "#1f2937" : "#fff",
+      border: `1px solid ${isDarkMode ? "#374151" : "#dee2e6"}`,
       borderRadius: 6,
-      boxShadow: "0 -4px 12px rgba(0,0,0,0.15)",
+      boxShadow: isDarkMode ? "0 -4px 10px rgba(0,0,0,0.35)" : "0 -4px 12px rgba(0,0,0,0.15)",
       overflowY: "auto",
       maxHeight: 200,
     };
@@ -51,25 +52,33 @@ function DropupSelect({ value, onChange, options, placeholder }) {
 
   return (
     <div>
-      <select
+      <button
+        type="button"
         ref={btnRef}
-        className="form-select form-select-sm"
-        value={value}
-        onMouseDown={(e) => { e.preventDefault(); setOpen(o => !o); }}
-        onChange={() => {}}
+        className={`form-select form-select-sm text-start ${isDarkMode ? "text-light bg-dark border-secondary" : ""}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuIdRef.current}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            setOpen((o) => !o);
+          }
+        }}
       >
-        <option>{value || placeholder}</option>
-      </select>
+        {value || placeholder}
+      </button>
       {open && ReactDOM.createPortal(
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-          <ul style={getMenuStyle()} className="list-unstyled mb-0 py-1">
+          <ul id={menuIdRef.current} role="menu" style={getMenuStyle()} className="list-unstyled mb-0 py-1">
             <li>
-              <button type="button" className="dropdown-item text-muted small" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
+              <button type="button" role="menuitem" className="dropdown-item text-muted small" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
             </li>
             {options.map(opt => (
               <li key={opt}>
-                <button type="button" className={`dropdown-item small ${opt === value ? "fw-semibold text-primary" : ""}`} onClick={() => { onChange(opt); setOpen(false); }}>{opt}</button>
+                <button type="button" role="menuitem" className={`dropdown-item small ${opt === value ? "fw-semibold text-primary" : ""}`} onClick={() => { onChange(opt); setOpen(false); }}>{opt}</button>
               </li>
             ))}
           </ul>
