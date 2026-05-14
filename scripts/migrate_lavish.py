@@ -15,9 +15,9 @@ OLD_DB = os.getenv(
     "MIGRATION_OLD_DATABASE_URL",
     "postgresql://lavish_beauty_db_user:1haMVuAaGaJN3kWTKJrRNY211mSAAnw3@dpg-d2qsadmr433s73eqpd40-a.oregon-postgres.render.com/lavish_beauty_db",
 )
-NEW_DB = os.getenv(
-    "MIGRATION_NEW_DATABASE_URL",
-    "postgresql://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@businessmanager-db.ckz8auiccetx.us-east-1.rds.amazonaws.com:5432/businessmanager",
+NEW_DB = (
+    os.getenv("MIGRATION_NEW_DATABASE_URL", "").strip()
+    or os.getenv("DATABASE_URL", "").strip()
 )
 COMPANY_ID = os.getenv("MIGRATION_COMPANY_ID", "03200")
 TARGET_USERNAME = os.getenv("MIGRATION_TARGET_USERNAME", "tpinto")
@@ -147,6 +147,11 @@ def migrate_schedule_rows(old_conn, new_conn, schedules, service_duration_by_id,
 
 
 def main():
+    if not NEW_DB:
+        raise RuntimeError(
+            "Target AWS database URL is not configured. Set MIGRATION_NEW_DATABASE_URL or DATABASE_URL."
+        )
+
     print("Connecting to databases...")
     with psycopg.connect(OLD_DB, row_factory=dict_row, connect_timeout=30) as old_conn, \
          psycopg.connect(NEW_DB, row_factory=dict_row, connect_timeout=15) as new_conn:

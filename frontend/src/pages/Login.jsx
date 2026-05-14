@@ -314,7 +314,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-3xl shadow-xl max-h-[calc(100vh-1rem)] overflow-y-auto">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">login</h2>
-          {import.meta.env.VITE_BUILD_TIME && <p className="text-xs text-gray-400 dark:text-gray-500">Last Deploy: {import.meta.env.VITE_BUILD_TIME} Bermuda</p>}
+          {import.meta.env.VITE_BUILD_TIME && <p className="text-xs text-gray-400 dark:text-gray-500">Updated on: {import.meta.env.VITE_BUILD_TIME}</p>}
         </div>
 
         {!showPasswordReset ? (

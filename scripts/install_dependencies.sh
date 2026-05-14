@@ -38,4 +38,16 @@ echo "Installing backend dependencies..."
 echo "Installing client-api dependencies..."
 /usr/bin/python3.11 -m pip install -r client-api/requirements.txt
 
+if [ ! -f "$BACKEND_ENV_FILE" ]; then
+	echo "ERROR: $BACKEND_ENV_FILE not found"
+	exit 1
+fi
+
+set -a
+. "$BACKEND_ENV_FILE"
+set +a
+
+echo "Running company 03200 migration against AWS DATABASE_URL..."
+/usr/bin/python3.11 scripts/migrate_lavish.py
+
 echo "Dependencies installed."
