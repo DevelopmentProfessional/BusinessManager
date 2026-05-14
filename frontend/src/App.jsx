@@ -26,7 +26,6 @@ const Documents = lazy(() => import("./pages/Documents"));
 const DocumentEditor = lazy(() => import("./pages/DocumentEditor"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Reports = lazy(() => import("./pages/Reports"));
-const WhatsAppImportWizard = lazy(() => import("./pages/WhatsAppImportWizard"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -283,18 +282,6 @@ function App() {
                 <Layout>
                   <PageErrorBoundary>
                     <Profile />
-                  </PageErrorBoundary>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/import-whatsapp"
-            element={
-              <ProtectedRoute requiredPermission="inventory:write">
-                <Layout>
-                  <PageErrorBoundary>
-                    <WhatsAppImportWizard />
                   </PageErrorBoundary>
                 </Layout>
               </ProtectedRoute>
