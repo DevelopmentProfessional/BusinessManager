@@ -81,6 +81,71 @@ def migrate_table(old_conn, new_conn, table, rows, extra_overrides=None):
     return inserted
 
 
+def migrate_schedule_rows(old_conn, new_conn, schedules, service_duration_by_id, employee_id):
+    if not schedules:
+        print("  No rows found in schedule")
+        return 0
+
+    new_cols = get_columns(new_conn, "schedule")
+    inserted = 0
+    errors = 0
+
+    with new_conn.cursor() as cur:
+        for row in schedules:
+            service_id = row.get("service_id")
+            record = {
+                "id": row.get("id"),
+                "created_at": row.get("created_at"),
+                "updated_at": row.get("updated_at"),
+                "client_id": row.get("client_id"),
+                "service_id": service_id,
+                "employee_id": employee_id,
+                "appointment_date": row.get("appointment_date"),
+                "status": row.get("status") or "scheduled",
+                "notes": row.get("notes"),
+                "appointment_type": "one_time",
+                "duration_minutes": service_duration_by_id.get(service_id, 60),
+                "recurrence_frequency": None,
+                "recurrence_end_date": None,
+                "recurrence_count": None,
+                "parent_schedule_id": None,
+                "is_recurring_master": False,
+                "is_paid": False,
+                "discount": 0.0,
+                "sale_transaction_id": None,
+                "task_type": "service",
+                "production_item_id": None,
+                "production_quantity": 1,
+                "company_id": COMPANY_ID,
+            }
+
+            record = {key: value for key, value in record.items() if key in new_cols}
+
+            cols_sql = ", ".join(f'"{c}"' for c in record)
+            placeholders = ", ".join(["%s"] * len(record))
+            vals = list(record.values())
+
+            try:
+                cur.execute(
+                    f'INSERT INTO "schedule" ({cols_sql}) VALUES ({placeholders}) '
+                    f"ON CONFLICT (id) DO NOTHING",
+                    vals,
+                )
+                if cur.rowcount > 0:
+                    inserted += 1
+            except Exception as e:
+                errors += 1
+                if errors <= 3:
+                    print(f"  Warning [schedule] row {record.get('id')}: {e}")
+                new_conn.rollback()
+                continue
+
+        new_conn.commit()
+
+    print(f"  Inserted {inserted}/{len(schedules)} rows ({errors} skipped/errored)")
+    return inserted
+
+
 def main():
     print("Connecting to databases...")
     with psycopg.connect(OLD_DB, row_factory=dict_row, connect_timeout=30) as old_conn, \
@@ -110,6 +175,11 @@ def main():
         print(f"  Found {len(services)} services in old DB")
         migrate_table(old_conn, new_conn, "service", services)
 
+        service_duration_by_id = {
+            row["id"]: row.get("duration_minutes") or 60
+            for row in services
+        }
+
         # ── Clients ─────────────────────────────────────────────────────────
         print("\n[2/3] Migrating clients...")
         with old_conn.cursor() as cur:
@@ -124,8 +194,7 @@ def main():
             cur.execute("SELECT * FROM schedule")
             schedules = cur.fetchall()
         print(f"  Found {len(schedules)} schedule records in old DB")
-        migrate_table(old_conn, new_conn, "schedule", schedules,
-                      extra_overrides={"employee_id": tpinto_id})
+        migrate_schedule_rows(old_conn, new_conn, schedules, service_duration_by_id, tpinto_id)
 
         print("\nMigration complete.")
 
