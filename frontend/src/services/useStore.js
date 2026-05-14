@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import cacheService from "./cacheService";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://businessmanager-reference-api.onrender.com/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.vadpivi.com/api/v1";
 
 const IMPLIED_PERMISSIONS = {
   read: ["read", "read_all", "view_all", "write", "write_all", "delete", "admin"],
