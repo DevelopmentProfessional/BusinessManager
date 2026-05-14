@@ -17,7 +17,7 @@ OLD_DB = os.getenv(
 )
 NEW_DB = os.getenv(
     "MIGRATION_NEW_DATABASE_URL",
-    "postgresql://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@127.0.0.1:5432/businessmanager",
+    "postgresql://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@businessmanager-db.ckz8auiccetx.us-east-1.rds.amazonaws.com:5432/businessmanager",
 )
 COMPANY_ID = os.getenv("MIGRATION_COMPANY_ID", "03200")
 TARGET_USERNAME = os.getenv("MIGRATION_TARGET_USERNAME", "tpinto")
