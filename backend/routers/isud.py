@@ -76,6 +76,8 @@ def _resolve_permission_pages(table_name: str) -> set[str]:
         pages.add(f"{base}s")
     if base in {"user", "users"}:
         pages.add("employees")
+    if base in {"leave_request", "leave_requests"}:
+        pages.add("leave")
     return {p for p in pages if p}
 
 
