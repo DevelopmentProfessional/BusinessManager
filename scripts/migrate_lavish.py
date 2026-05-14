@@ -74,8 +74,8 @@ def migrate_table(old_conn, new_conn, table, rows, extra_overrides=None):
 
 def main():
     print("Connecting to databases...")
-    with psycopg.connect(OLD_DB, row_factory=dict_row) as old_conn, \
-         psycopg.connect(NEW_DB, row_factory=dict_row) as new_conn:
+    with psycopg.connect(OLD_DB, row_factory=dict_row, connect_timeout=30) as old_conn, \
+         psycopg.connect(NEW_DB, row_factory=dict_row, connect_timeout=15) as new_conn:
 
         # Resolve tpinto's UUID
         with new_conn.cursor() as cur:
