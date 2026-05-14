@@ -93,6 +93,11 @@ def _require_isud_permission(
     for page in _resolve_permission_pages(table_name):
         if f"{page}:{action}" in permissions or f"{page}:admin" in permissions:
             return
+        # write/write_all/delete implies read
+        if action == "read" and any(
+            f"{page}:{p}" in permissions for p in ("write", "write_all", "delete")
+        ):
+            return
 
     raise HTTPException(status_code=403, detail=f"Missing permission: {table_name}:{action}")
 

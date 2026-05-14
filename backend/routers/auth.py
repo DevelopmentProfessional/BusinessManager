@@ -531,8 +531,8 @@ def get_user(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get specific user (admin only)"""
-    if current_user.role != UserRole.ADMIN:
+    """Get specific user. Admins can fetch any user; non-admins can only fetch their own profile."""
+    if current_user.role != UserRole.ADMIN and str(current_user.id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
