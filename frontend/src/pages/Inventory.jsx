@@ -196,14 +196,6 @@ export default function Inventory() {
     setShowBulkImport(true);
   };
 
-  const handleOpenWhatsAppImport = () => {
-    if (!hasPermission("inventory", "write")) {
-      setError("You do not have permission to import items");
-      return;
-    }
-    navigate("/import-whatsapp");
-  };
-
   const handleOpenAddItem = () => {
     if (!hasPermission("inventory", "write")) {
       setError("You do not have permission to add items");
@@ -429,8 +421,6 @@ export default function Inventory() {
           <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
 
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
-
-          <Button_Toolbar icon={ChatBubbleLeftIcon} label="WhatsApp" onClick={handleOpenWhatsAppImport} className="btn-app-secondary" />
         </Gate_Permission>
 
         {/* Type Filter */}
