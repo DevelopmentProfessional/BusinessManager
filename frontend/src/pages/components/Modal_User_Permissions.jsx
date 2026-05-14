@@ -21,10 +21,53 @@
  * ============================================================
  */
 
-import React from "react";
+import React, { useState } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+
+function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o === value);
+  return (
+    <div className="position-relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`form-select form-select-sm text-start d-flex align-items-center justify-content-between ${isDarkMode ? "bg-gray-800 text-light border-gray-600" : ""}`}
+      >
+        <span>{selected || <span className="text-muted">{placeholder}</span>}</span>
+        <ChevronUpIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
+      </button>
+      {open && (
+        <>
+          <div className="position-fixed top-0 start-0 w-100 h-100" style={{ zIndex: 49 }} onClick={() => setOpen(false)} />
+          <ul
+            className={`position-absolute bottom-100 start-0 mb-1 border rounded shadow-lg p-1 z-50 w-100 ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white"}`}
+            style={{ maxHeight: 220, overflowY: "auto", zIndex: 50 }}
+          >
+            <li>
+              <button type="button" className="dropdown-item small text-muted" onClick={() => { onChange(""); setOpen(false); }}>
+                {placeholder}
+              </button>
+            </li>
+            {options.map(opt => (
+              <li key={opt}>
+                <button
+                  type="button"
+                  className={`dropdown-item small ${opt === value ? "active" : ""}`}
+                  onClick={() => { onChange(opt); setOpen(false); }}
+                >
+                  {opt}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleViewAllToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
@@ -47,24 +90,22 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
             <h5 className={`mb-3 ${isDarkMode ? "text-light" : "text-dark"}`}>Add New Permission</h5>
             <div className="row g-3">
               <div className="col-md-6">
-                <select value={newPermission.page} onChange={(e) => setNewPermission({ ...newPermission, page: e.target.value })} className="form-select form-select-sm" required>
-                  <option value="">Select Page</option>
-                  {pages.map((page) => (
-                    <option key={page} value={page}>
-                      {page}
-                    </option>
-                  ))}
-                </select>
+                <DropupSelect
+                  value={newPermission.page}
+                  onChange={(val) => setNewPermission({ ...newPermission, page: val })}
+                  options={pages}
+                  placeholder="Select Page"
+                  isDarkMode={isDarkMode}
+                />
               </div>
               <div className="col-md-6">
-                <select value={newPermission.permission} onChange={(e) => setNewPermission({ ...newPermission, permission: e.target.value })} className="form-select form-select-sm" required>
-                  <option value="">Select Permission</option>
-                  {permissions.map((permission) => (
-                    <option key={permission} value={permission}>
-                      {permission}
-                    </option>
-                  ))}
-                </select>
+                <DropupSelect
+                  value={newPermission.permission}
+                  onChange={(val) => setNewPermission({ ...newPermission, permission: val })}
+                  options={permissions}
+                  placeholder="Select Permission"
+                  isDarkMode={isDarkMode}
+                />
               </div>
             </div>
             <button type="submit" className="btn btn-primary mt-3">
