@@ -20,11 +20,18 @@ import json
 from datetime import datetime
 from uuid import uuid4
 
-from database import get_session
-from models import (
-    Inventory, InventoryImage, DescriptiveFeature, FeatureOption,
-    InventoryFeature, InventoryFeatureOptionData
-)
+try:
+    from backend.database import get_session
+    from backend.models import (
+        Inventory, InventoryImage, DescriptiveFeature, FeatureOption,
+        InventoryFeature, InventoryFeatureOptionData
+    )
+except ModuleNotFoundError:
+    from database import get_session
+    from models import (
+        Inventory, InventoryImage, DescriptiveFeature, FeatureOption,
+        InventoryFeature, InventoryFeatureOptionData
+    )
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
