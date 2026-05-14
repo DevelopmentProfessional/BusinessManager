@@ -5,7 +5,7 @@
  * - Wipes stale cache/localStorage (except nav pref) on load.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BuildingOffice2Icon, MagnifyingGlassIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { companiesAPI } from "../services/api";
 import useStore from "../store/useStore";
@@ -356,6 +356,35 @@ export default function CompanySelect() {
           </div>
         )}
       </main>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "0 20px 20px",
+        }}
+      >
+        <Link
+          to="/company-registration"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: 220,
+            padding: "12px 18px",
+            borderRadius: "999px",
+            background: "#ffffff",
+            border: "1.5px solid #dbe3ff",
+            boxShadow: "0 10px 28px rgba(79,70,229,0.12)",
+            color: "#4338ca",
+            fontSize: "0.9rem",
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          Register Company
+        </Link>
+      </div>
 
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer style={{ textAlign: "center", padding: "20px", fontSize: "0.72rem", color: "#c4c9d4" }}>Powered by BusinessManager</footer>
