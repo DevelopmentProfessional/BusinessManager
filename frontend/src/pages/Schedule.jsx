@@ -256,7 +256,18 @@ export default function Schedule() {
           });
         }
 
-        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse, leavesResponse] = await Promise.all([scheduleAPI.getAll(), clientsAPI.getAll(), servicesAPI.getAll(), employeesAPI.getAll(), leaveRequestsAPI.getAll()]);
+        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse, leavesResponse] = await Promise.all([
+          scheduleAPI.getAll(),
+          clientsAPI.getAll(),
+          servicesAPI.getAll(),
+          employeesAPI.getAll(),
+          leaveRequestsAPI.getAll().catch((error) => {
+            if (error?.response?.status === 403) {
+              return { data: [] };
+            }
+            throw error;
+          }),
+        ]);
 
         const scheduleData = scheduleResponse?.data ?? scheduleResponse;
         if (Array.isArray(scheduleData)) {
