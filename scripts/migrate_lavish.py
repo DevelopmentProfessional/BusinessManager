@@ -7,6 +7,7 @@ One-time migration: clients, services, schedule from Render (lavish_beauty_db) -
 """
 
 import os
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import psycopg
 from psycopg.rows import dict_row
@@ -15,12 +16,43 @@ OLD_DB = os.getenv(
     "MIGRATION_OLD_DATABASE_URL",
     "postgresql://lavish_beauty_db_user:1haMVuAaGaJN3kWTKJrRNY211mSAAnw3@dpg-d2qsadmr433s73eqpd40-a.oregon-postgres.render.com/lavish_beauty_db",
 )
-NEW_DB = (
-    os.getenv("MIGRATION_NEW_DATABASE_URL", "").strip()
-    or os.getenv("DATABASE_URL", "").strip()
-)
 COMPANY_ID = os.getenv("MIGRATION_COMPANY_ID", "03200")
 TARGET_USERNAME = os.getenv("MIGRATION_TARGET_USERNAME", "tpinto")
+
+
+def normalize_postgres_url(url):
+    url = (url or "").strip()
+    if url.startswith("postgresql+psycopg://"):
+        return "postgresql://" + url[len("postgresql+psycopg://") :]
+    if url.startswith("postgres://"):
+        return "postgresql://" + url[len("postgres://") :]
+    return url
+
+
+def apply_target_ssl_options(url):
+    sslmode = os.getenv("MIGRATION_NEW_DB_SSLMODE", "").strip()
+    sslrootcert = os.getenv("MIGRATION_NEW_DB_SSLROOTCERT", "").strip()
+
+    if not url or (not sslmode and not sslrootcert):
+        return url
+
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+
+    if sslmode and "sslmode" not in query:
+        query["sslmode"] = sslmode
+    if sslrootcert and "sslrootcert" not in query:
+        query["sslrootcert"] = sslrootcert.replace("\\", "/")
+
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def get_target_db_url():
+    configured_url = (
+        os.getenv("MIGRATION_NEW_DATABASE_URL", "").strip()
+        or os.getenv("DATABASE_URL", "").strip()
+    )
+    return apply_target_ssl_options(normalize_postgres_url(configured_url))
 
 
 def get_columns(conn, table):
@@ -147,14 +179,16 @@ def migrate_schedule_rows(old_conn, new_conn, schedules, service_duration_by_id,
 
 
 def main():
-    if not NEW_DB:
+    new_db = get_target_db_url()
+
+    if not new_db:
         raise RuntimeError(
             "Target AWS database URL is not configured. Set MIGRATION_NEW_DATABASE_URL or DATABASE_URL."
         )
 
     print("Connecting to databases...")
     with psycopg.connect(OLD_DB, row_factory=dict_row, connect_timeout=30) as old_conn, \
-         psycopg.connect(NEW_DB, row_factory=dict_row, connect_timeout=15) as new_conn:
+         psycopg.connect(new_db, row_factory=dict_row, connect_timeout=15) as new_conn:
 
         # Resolve tpinto's UUID
         with new_conn.cursor() as cur:
