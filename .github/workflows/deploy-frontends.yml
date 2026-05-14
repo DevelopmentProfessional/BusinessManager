@@ -8,6 +8,17 @@ on:
       - "client-portal/**"
       - "CompanyCreation/**"
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Which frontend to deploy"
+        required: true
+        default: "company-creation"
+        type: choice
+        options:
+          - company-creation
+          - client-portal
+          - frontend
+          - all
 
 concurrency:
   group: deploy-frontends-${{ github.ref }}
@@ -51,7 +62,7 @@ jobs:
   deploy-staff-frontend:
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.frontend == 'true' || (github.event_name == 'workflow_dispatch' && (inputs.target == 'frontend' || inputs.target == 'all'))
 
     steps:
       - name: Checkout code
@@ -88,7 +99,7 @@ jobs:
   deploy-client-portal:
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.client_portal == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.client_portal == 'true' || (github.event_name == 'workflow_dispatch' && (inputs.target == 'client-portal' || inputs.target == 'all'))
 
     steps:
       - name: Checkout code
@@ -126,7 +137,7 @@ jobs:
   deploy-company-creation:
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.company_creation == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.company_creation == 'true' || (github.event_name == 'workflow_dispatch' && (inputs.target == 'company-creation' || inputs.target == 'all'))
 
     steps:
       - name: Checkout code
@@ -158,7 +169,7 @@ jobs:
           VITE_API_URL=${{ env.VITE_API_URL }} npm run build
 
       - name: Deploy to S3
-        run: aws s3 sync CompanyCreation/dist/ s3://${{ env.COMPANY_CREATION_BUCKET }} --delete
+        run: aws s3 cp CompanyCreation/dist/ s3://${{ env.COMPANY_CREATION_BUCKET }}/ --recursive
 
       - name: Invalidate CloudFront cache
         run: |
