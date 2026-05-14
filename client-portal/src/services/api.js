@@ -6,7 +6,7 @@
 import axios from "axios";
 
 function normalizeClientApiBase(rawBase) {
-  const fallback = "https://businessmanager-client-api.onrender.com/api/client";
+  const fallback = "https://api.vadpivi.com/api/client";
   const trimmed = String(rawBase || "").trim();
 
   if (!trimmed) return fallback;

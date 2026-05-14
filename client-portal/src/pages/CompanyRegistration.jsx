@@ -1,7 +1,15 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
-const API = "/api/v1/company-registration";
+const normalizeApiBase = (value) => {
+  const raw = (value || "https://api.vadpivi.com/api/v1").trim();
+  if (!raw) return "https://api.vadpivi.com/api/v1";
+  if (raw.endsWith("/api/v1")) return raw;
+  if (raw.endsWith("/api/v1/")) return raw.slice(0, -1);
+  return `${raw.replace(/\/+$/, "")}/api/v1`;
+};
+
+const API = `${normalizeApiBase(import.meta.env.VITE_API_URL)}/company-registration`;
 
 const INIT = {
   company_id: "",
@@ -91,6 +99,7 @@ export default function CompanyRegistration() {
               <code>{success.admin_username}</code>
             </p>
           </div>
+          <p style={{ ...s.muted, marginTop: "1rem", marginBottom: 0 }}>A confirmation email has been sent to the registration email address on file when email delivery is configured.</p>
           <button style={{ ...s.btn, marginTop: "1.5rem" }} onClick={() => setSuccess(null)}>
             Register Another Company
           </button>

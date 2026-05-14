@@ -12,6 +12,10 @@ Endpoints:
 
 import os
 import secrets
+import logging
+import smtplib
+import ssl
+from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -29,6 +33,7 @@ except ModuleNotFoundError:
 
 router = APIRouter(prefix="/company-registration", tags=["company-registration"])
 basic_auth = HTTPBasic()
+logger = logging.getLogger(__name__)
 
 
 class CompanyRegistrationRequest(BaseModel):
@@ -80,6 +85,65 @@ class CompanyStatusUpdate(BaseModel):
 def hash_password(password: str) -> str:
     """Hash password with bcrypt."""
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def send_pending_registration_email(
+    company_name: str,
+    company_id: str,
+    recipients: List[str],
+) -> bool:
+    smtp_host = (os.getenv("SMTP_HOST") or "").strip()
+    if not smtp_host or not recipients:
+        return False
+
+    sender = (
+        (os.getenv("SMTP_FROM_EMAIL") or "").strip()
+        or (os.getenv("SMTP_USERNAME") or "").strip()
+        or "no-reply@vadpivi.com"
+    )
+    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+    smtp_username = (os.getenv("SMTP_USERNAME") or "").strip()
+    smtp_password = os.getenv("SMTP_PASSWORD") or ""
+    use_ssl = (os.getenv("SMTP_USE_SSL") or "").strip().lower() in {"1", "true", "yes", "on"}
+    use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    msg = EmailMessage()
+    msg["Subject"] = f"{company_name} registration is pending approval"
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipients)
+    msg.set_content(
+        "\n".join(
+            [
+                f"Hello,",
+                "",
+                f"Your company registration for {company_name} ({company_id}) has been received.",
+                "",
+                "Status: Pending approval",
+                "",
+                "We will notify you once the registration has been reviewed and approved.",
+                "",
+                "BusinessManager",
+            ]
+        )
+    )
+
+    try:
+        if use_ssl:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ssl.create_default_context(), timeout=20) as server:
+                if smtp_username:
+                    server.login(smtp_username, smtp_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+                if use_tls:
+                    server.starttls(context=ssl.create_default_context())
+                if smtp_username:
+                    server.login(smtp_username, smtp_password)
+                server.send_message(msg)
+        return True
+    except Exception:
+        logger.exception("Failed to send company registration pending email")
+        return False
 
 
 def require_company_creation_auth(
@@ -152,12 +216,28 @@ def register_company(
         session.add(admin_user)
         session.commit()
 
+        recipients = []
+        for address in [req.company_email, req.admin_email]:
+            cleaned = (address or "").strip()
+            if cleaned and cleaned not in recipients:
+                recipients.append(cleaned)
+
+        email_sent = send_pending_registration_email(
+            company_name=req.company_name.strip(),
+            company_id=cid,
+            recipients=recipients,
+        )
+
         return CompanyRegistrationResponse(
             ok=True,
             company_id=cid,
             company_name=req.company_name.strip(),
             admin_username=req.admin_username.strip(),
-            message="Registration submitted. Your company is pending review.",
+            message=(
+                "Registration submitted. Your company is pending review. A confirmation email has been sent."
+                if email_sent
+                else "Registration submitted. Your company is pending review."
+            ),
         )
 
     except HTTPException:

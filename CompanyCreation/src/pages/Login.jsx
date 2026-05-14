@@ -2,7 +2,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API = `${import.meta.env.VITE_API_URL || "/api/v1"}/company-registration`;
+const normalizeApiBase = (value) => {
+  const raw = (value || "/api/v1").trim();
+  if (!raw) return "/api/v1";
+  if (raw.endsWith("/api/v1")) return raw;
+  if (raw.endsWith("/api/v1/")) return raw.slice(0, -1);
+  return `${raw.replace(/\/+$/, "")}/api/v1`;
+};
+
+const API = `${normalizeApiBase(import.meta.env.VITE_API_URL)}/company-registration`;
 
 export default function Login() {
   const navigate = useNavigate();
