@@ -7,6 +7,15 @@ export async function runAppSync() {
       if (k && k.startsWith("bm_cache_")) keysToRemove.push(k);
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.removeItem("user");
+    localStorage.removeItem("permissions");
+  } catch {
+    /* storage may be unavailable */
+  }
+
+  try {
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("permissions");
   } catch {
     /* storage may be unavailable */
   }
