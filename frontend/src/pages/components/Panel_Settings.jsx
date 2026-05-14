@@ -2,15 +2,7 @@
 // Renders the personal settings accordion panel: dark mode, calendar color, footer alignment, signature, training mode toggle, and logout.
 
 import React from "react";
-import {
-  SunIcon,
-  MoonIcon,
-  CalendarDaysIcon,
-  PencilIcon,
-  ArrowLeftOnRectangleIcon,
-  BookOpenIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/outline";
+import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import api from "../../services/api";
