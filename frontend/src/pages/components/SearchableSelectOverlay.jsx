@@ -75,6 +75,7 @@ export default function SearchableSelectOverlay() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [panelStyle, setPanelStyle] = useState(null);
   const inputRef = useRef(null);
+  const panelRef = useRef(null);
   const optionRefs = useRef([]);
 
   const closeOverlay = useCallback(() => {
@@ -138,7 +139,13 @@ export default function SearchableSelectOverlay() {
       setPanelStyle(getPanelStyle(activeSelect));
     };
 
-    const handleScroll = () => closeOverlay();
+    const handleScroll = (event) => {
+      if (panelRef.current && event.target instanceof Node && panelRef.current.contains(event.target)) {
+        return;
+      }
+
+      closeOverlay();
+    };
 
     window.addEventListener("resize", handleViewportChange);
     window.addEventListener("scroll", handleScroll, true);
@@ -270,7 +277,7 @@ export default function SearchableSelectOverlay() {
   return createPortal(
     <div className="searchable-select-overlay-root">
       <button type="button" className="searchable-select-backdrop" aria-label="Close searchable dropdown" onClick={closeOverlay} />
-      <div className="searchable-select-panel" style={panelStyle} role="dialog" aria-modal="true" aria-label={label}>
+      <div ref={panelRef} className="searchable-select-panel" style={panelStyle} role="dialog" aria-modal="true" aria-label={label}>
         <div className="searchable-select-panel-header">
           <div className="searchable-select-input-shell">
             <input ref={inputRef} type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={handleInputKeyDown} className="form-control searchable-select-input" placeholder={label ? `Search ${label}` : "Search options"} />
