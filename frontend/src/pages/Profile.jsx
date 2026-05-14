@@ -150,23 +150,23 @@ const Profile = () => {
   }, [footerAlign, setFooterAlign]);
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
-    // Admin-only: Check/Start Database button state
-    const [dbCheckLoading, setDbCheckLoading] = useState(false);
-    const [dbCheckStatus, setDbCheckStatus] = useState("");
+  // Admin-only: Check/Start Database button state
+  const [dbCheckLoading, setDbCheckLoading] = useState(false);
+  const [dbCheckStatus, setDbCheckStatus] = useState("");
 
-    // Admin-only: Check/Start Database handler
-    const handleCheckStartDatabase = async () => {
-      setDbCheckLoading(true);
-      setDbCheckStatus("");
-      try {
-        const res = await adminAPI.checkOrStartDatabase();
-        setDbCheckStatus(res?.data?.message || "Database is running.");
-      } catch (err) {
-        setDbCheckStatus("Error: " + (err?.response?.data?.detail || err?.message || "Failed to check/start database."));
-      } finally {
-        setDbCheckLoading(false);
-      }
-    };
+  // Admin-only: Check/Start Database handler
+  const handleCheckStartDatabase = async () => {
+    setDbCheckLoading(true);
+    setDbCheckStatus("");
+    try {
+      const res = await adminAPI.checkOrStartDatabase();
+      setDbCheckStatus(res?.data?.message || "Database is running.");
+    } catch (err) {
+      setDbCheckStatus("Error: " + (err?.response?.data?.detail || err?.message || "Failed to check/start database."));
+    } finally {
+      setDbCheckLoading(false);
+    }
+  };
   useEffect(() => {
     if (getPerformanceSessionActive()) logComponentLoad("Profile Component");
   }, []);
@@ -674,11 +674,7 @@ const Profile = () => {
     setSettingsError("");
     setSettingsSuccess("");
     try {
-      await Promise.allSettled([
-        refreshUserPermissions?.(),
-        refetchPermissions?.(),
-        syncCurrentUser(),
-      ]);
+      await Promise.allSettled([refreshUserPermissions?.(), refetchPermissions?.(), syncCurrentUser()]);
       setSettingsSuccess("App data refreshed. Reloading...");
       await runAppSync();
     } catch {
@@ -1396,7 +1392,12 @@ const Profile = () => {
                     { id: "benefits", Icon: HeartIcon, title: "Benefits" },
                     { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
                     { id: "settings", Icon: CogIcon, title: "Settings" },
-                    ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }, { id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
+                    ...(canAccessGeneralSettings
+                      ? [
+                          { id: "general", Icon: CogIcon, title: "General" },
+                          { id: "payroll", Icon: BanknotesIcon, title: "Payroll" },
+                        ]
+                      : []),
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
@@ -1420,7 +1421,12 @@ const Profile = () => {
                   { id: "benefits", Icon: HeartIcon, title: "Benefits" },
                   { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
                   { id: "settings", Icon: CogIcon, title: "Settings" },
-                  ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }, { id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
+                  ...(canAccessGeneralSettings
+                    ? [
+                        { id: "general", Icon: CogIcon, title: "General" },
+                        { id: "payroll", Icon: BanknotesIcon, title: "Payroll" },
+                      ]
+                    : []),
                 ].map(({ id, Icon, title }) => (
                   <Button_Toolbar
                     key={id}

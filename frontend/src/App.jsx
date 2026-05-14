@@ -115,10 +115,7 @@ function App() {
           // Self-heal mobile/stale sessions where token survives but user data does not.
           if (!restoredUser) {
             try {
-              const [meResponse, permissionsResponse] = await Promise.all([
-                api.get("/auth/me"),
-                api.get("/auth/me/permissions").catch(() => null),
-              ]);
+              const [meResponse, permissionsResponse] = await Promise.all([api.get("/auth/me"), api.get("/auth/me/permissions").catch(() => null)]);
               restoredUser = meResponse?.data ?? null;
               const fetchedPermissions = permissionsResponse?.data?.permissions;
               if (Array.isArray(fetchedPermissions)) {

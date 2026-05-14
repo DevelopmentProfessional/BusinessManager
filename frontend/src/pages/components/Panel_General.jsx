@@ -106,17 +106,10 @@ const Panel_General = ({
                 {/* Admin-only: Check/Start Database Button */}
                 {user?.role === "admin" && (
                   <div className="d-flex align-items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={onCheckStartDatabase}
-                      disabled={dbCheckLoading}
-                    >
+                    <button type="button" className="btn btn-outline-primary btn-sm" onClick={onCheckStartDatabase} disabled={dbCheckLoading}>
                       {dbCheckLoading ? "Checking/Starting Database..." : "Check/Start Database"}
                     </button>
-                    {dbCheckStatus && (
-                      <span className={`small ${dbCheckStatus.startsWith("Error") ? "text-danger" : "text-success"}`}>{dbCheckStatus}</span>
-                    )}
+                    {dbCheckStatus && <span className={`small ${dbCheckStatus.startsWith("Error") ? "text-danger" : "text-success"}`}>{dbCheckStatus}</span>}
                   </div>
                 )}
                 <button type="button" onClick={handleManualSync} disabled={syncLoading} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" title="Refresh cached app data and reload this device">
