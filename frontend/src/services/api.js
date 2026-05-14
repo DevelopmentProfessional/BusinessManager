@@ -20,8 +20,8 @@ const getApiBaseUrl = () => {
     return "/api/v1";
   }
 
-  // Production fallback: static frontend is hosted separately from backend API on Render.
-  return "https://businessmanager-reference-api.onrender.com/api/v1";
+  // Production fallback: use the public API domain when build-time env is absent.
+  return "https://api.vadpivi.com/api/v1";
 };
 
 const API_BASE_URL = getApiBaseUrl();
