@@ -68,25 +68,25 @@ import Modal_Filter_Schedule from "./components/Modal_Schedule_Filter";
 import Modal_Template_Use from "./components/Modal_Template_Use";
 
 // SVG icon wrappers for schedule view buttons
-const MonthViewIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+const MonthViewIcon = ({ className, size = 16 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16" className={className}>
     <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z" />
     <path d="M2.5 7a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 9a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5M2.5 11a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5m4 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5" />
   </svg>
 );
-const WeekViewIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+const WeekViewIcon = ({ className, size = 16 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16" className={className}>
     <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
     <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
   </svg>
 );
-const DayViewIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+const DayViewIcon = ({ className, size = 16 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16" className={className}>
     <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0" />
   </svg>
 );
-const TodayIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={className}>
+const TodayIcon = ({ className, size = 16 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16" className={className}>
     <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z" />
     <text x="8" y="12" textAnchor="middle" fontSize="8" fontWeight="bold">
       {new Date().getDate()}
@@ -96,28 +96,28 @@ const TodayIcon = ({ className }) => (
 
 const MonthFooterIcon = () => (
   <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <MonthViewIcon />
+    <MonthViewIcon size={12} />
     <span className="text-xxs app-label--bold">M</span>
   </span>
 );
 
 const WeekFooterIcon = () => (
   <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <WeekViewIcon />
+    <WeekViewIcon size={12} />
     <span className="text-xxs app-label--bold">W</span>
   </span>
 );
 
 const DayFooterIcon = () => (
   <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <DayViewIcon />
+    <DayViewIcon size={12} />
     <span className="text-xxs app-label--bold">D</span>
   </span>
 );
 
 const TodayFooterIcon = () => (
   <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <TodayIcon />
+    <TodayIcon size={12} />
     <span className="text-xxs app-label--bold">T</span>
   </span>
 );
@@ -256,17 +256,18 @@ export default function Schedule() {
           });
         }
 
-        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse, leavesResponse] = await Promise.all([
-          scheduleAPI.getAll(),
-          clientsAPI.getAll(),
-          servicesAPI.getAll(),
-          employeesAPI.getAll(),
-          leaveRequestsAPI.getAll().catch((error) => {
-            if (error?.response?.status === 403) {
-              return { data: [] };
-            }
+        const canReadLeaveRequests = hasPermission("leave_request", "read") || hasPermission("leave_requests", "read");
+        const graceful403 = (promise) =>
+          promise.catch((error) => {
+            if (error?.response?.status === 403) return { data: [] };
             throw error;
-          }),
+          });
+        const [scheduleResponse, clientsResponse, servicesResponse, employeesResponse, leavesResponse] = await Promise.all([
+          graceful403(scheduleAPI.getAll()),
+          graceful403(clientsAPI.getAll()),
+          graceful403(servicesAPI.getAll()),
+          graceful403(employeesAPI.getAll()),
+          canReadLeaveRequests ? graceful403(leaveRequestsAPI.getAll()) : Promise.resolve({ data: [] }),
         ]);
 
         const scheduleData = scheduleResponse?.data ?? scheduleResponse;
