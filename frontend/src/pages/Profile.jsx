@@ -137,7 +137,7 @@ const statusColor = (status) => {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, logout, setUser, hasPermission } = useStore();
+  const { user, logout, setUser, hasPermission, refetchPermissions, refreshUserPermissions } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
@@ -674,10 +674,15 @@ const Profile = () => {
     setSettingsError("");
     setSettingsSuccess("");
     try {
-      setSettingsSuccess("Sync complete. Refreshing app shell...");
+      await Promise.allSettled([
+        refreshUserPermissions?.(),
+        refetchPermissions?.(),
+        syncCurrentUser(),
+      ]);
+      setSettingsSuccess("App data refreshed. Reloading...");
       await runAppSync();
     } catch {
-      setSettingsError("Sync failed. Please try again.");
+      setSettingsError("App refresh failed. Please try again.");
     } finally {
       setSyncLoading(false);
     }

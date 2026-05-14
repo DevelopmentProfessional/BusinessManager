@@ -4,7 +4,7 @@ import Layout from "./pages/components/Layout";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import useStore from "./services/useStore";
-import { preloadStoreData } from "./services/api";
+import api, { preloadStoreData } from "./services/api";
 import useDarkMode from "./services/useDarkMode";
 import useViewMode from "./services/useViewMode";
 import useBranding from "./services/useBranding";
@@ -90,19 +90,65 @@ function App() {
         const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
         const permissionsData = localStorage.getItem("permissions") || sessionStorage.getItem("permissions");
 
-        if (token && userData) {
-          const user = JSON.parse(userData);
-          const permissions = permissionsData ? JSON.parse(permissionsData) : [];
+        if (token) {
+          let restoredUser = null;
+          let permissions = [];
 
-          // Set the data in the store
+          if (userData) {
+            try {
+              restoredUser = JSON.parse(userData);
+            } catch {
+              restoredUser = null;
+            }
+          }
+
+          if (permissionsData) {
+            try {
+              permissions = JSON.parse(permissionsData);
+            } catch {
+              permissions = [];
+            }
+          }
+
           setToken(token);
-          setUser(user);
-          setPermissions(permissions);
+
+          // Self-heal mobile/stale sessions where token survives but user data does not.
+          if (!restoredUser) {
+            try {
+              const [meResponse, permissionsResponse] = await Promise.all([
+                api.get("/auth/me"),
+                api.get("/auth/me/permissions").catch(() => null),
+              ]);
+              restoredUser = meResponse?.data ?? null;
+              const fetchedPermissions = permissionsResponse?.data?.permissions;
+              if (Array.isArray(fetchedPermissions)) {
+                permissions = fetchedPermissions;
+              }
+
+              if (restoredUser) {
+                if (localStorage.getItem("token")) {
+                  localStorage.setItem("user", JSON.stringify(restoredUser));
+                  localStorage.setItem("permissions", JSON.stringify(permissions));
+                }
+                if (sessionStorage.getItem("token")) {
+                  sessionStorage.setItem("user", JSON.stringify(restoredUser));
+                  sessionStorage.setItem("permissions", JSON.stringify(permissions));
+                }
+              }
+            } catch (error) {
+              console.error("Error restoring session from API:", error);
+            }
+          }
+
+          if (restoredUser) {
+            setUser(restoredUser);
+            setPermissions(permissions);
+          }
 
           // If permissions are missing (e.g. sessionStorage was cleared by iOS after the app
           // was backgrounded/killed), silently re-fetch them from the server so all
           // permission-gated pages work correctly without forcing a new login.
-          if (permissions.length === 0 && user.role !== "admin") {
+          if (restoredUser && permissions.length === 0 && restoredUser.role !== "admin") {
             refetchPermissions();
           }
 
