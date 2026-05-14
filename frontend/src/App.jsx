@@ -9,6 +9,7 @@ import useDarkMode from "./services/useDarkMode";
 import useViewMode from "./services/useViewMode";
 import useBranding from "./services/useBranding";
 import { initializeActiveColorTheme } from "./services/activeColorTheme";
+import { getMobileEnvironment } from "./services/mobileEnvironment";
 import Modal_Client from "./pages/components/Modal_Client";
 import Manager_MobileAddressBar from "./pages/components/Manager_MobileAddressBar";
 import Prompt_InstallApp from "./pages/components/Prompt_InstallApp";
@@ -93,6 +94,7 @@ function App() {
         if (token) {
           let restoredUser = null;
           let permissions = [];
+          const mobileEnv = getMobileEnvironment();
 
           if (userData) {
             try {
@@ -112,8 +114,10 @@ function App() {
 
           setToken(token);
 
-          // Self-heal mobile/stale sessions where token survives but user data does not.
-          if (!restoredUser) {
+          // Installed mobile sessions can keep stale user blobs across deploys, so
+          // force a fresh auth sync there instead of trusting persisted user state.
+          const shouldRefreshSessionFromApi = !restoredUser || mobileEnv.isStandalone;
+          if (shouldRefreshSessionFromApi) {
             try {
               const [meResponse, permissionsResponse] = await Promise.all([api.get("/auth/me"), api.get("/auth/me/permissions").catch(() => null)]);
               restoredUser = meResponse?.data ?? null;
