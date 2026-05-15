@@ -7,12 +7,10 @@ from backend.database import engine
 import logging
 import os
 from datetime import datetime
-from pathlib import Path
 from sqlalchemy import text
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 logger = logging.getLogger("admin_audit")
-LAVISH_IMPORT_SQL_PATH = Path(__file__).resolve().parents[1] / "scripts" / "sql" / "lavish_schedule_only_import.sql"
 LAVISH_COMPANY_ID = "03200"
 
 def emit_audit_log(actor: str, action: str, target: str = "", extra: dict = None):
@@ -41,34 +39,6 @@ def run_lavish_schedule_import(current_user: User = Depends(get_current_admin_us
     if (current_user.company_id or "") != LAVISH_COMPANY_ID:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Lavish import is restricted to company 03200.")
 
-    if not LAVISH_IMPORT_SQL_PATH.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lavish import SQL file not found.")
-
-    sql_text = LAVISH_IMPORT_SQL_PATH.read_text(encoding="utf-8").strip()
-    if not sql_text:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Lavish import SQL file is empty.")
-
-    raw_conn = engine.raw_connection()
-    try:
-        with raw_conn.cursor() as cursor:
-            cursor.execute(sql_text)
-        raw_conn.commit()
-    except Exception as exc:
-        raw_conn.rollback()
-        logger.exception("Lavish schedule import failed")
-        emit_audit_log(
-            actor=str(current_user.id),
-            action="run_lavish_schedule_import",
-            target="schedule",
-            extra={"status": "failed", "error": str(exc)},
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Lavish schedule import failed.",
-        ) from exc
-    finally:
-        raw_conn.close()
-
     counts = {
         "schedule_count": _count_company_rows("schedule", LAVISH_COMPANY_ID),
     }
@@ -76,11 +46,12 @@ def run_lavish_schedule_import(current_user: User = Depends(get_current_admin_us
         actor=str(current_user.id),
         action="run_lavish_schedule_import",
         target="schedule",
-        extra={"status": "completed", **counts},
+        extra={"status": "skipped_disabled", **counts},
     )
     return {
-        "message": "Lavish schedule import executed.",
+        "message": "Lavish schedule import is disabled.",
         "company_id": LAVISH_COMPANY_ID,
+        "import_executed": False,
         **counts,
     }
 
