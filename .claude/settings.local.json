@@ -121,7 +121,7 @@
       "Bash(VITE_CLIENT_API_URL=https://pfz2fxpyms.us-east-1.awsapprunner.com/api/client npm run build)",
       "Bash(aws cloudfront:*)",
       "Bash(aws sts:*)",
-      "Bash(pg_dump postgresql://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@businessmanager-db.ckz8auiccetx.us-east-1.rds.amazonaws.com:5432/businessmanager -Fc -f /tmp/businessmanager_backup.dump)",
+      "Bash(pg_dump \"$DATABASE_URL\" -Fc -f /tmp/businessmanager_backup.dump)",
       "Bash(aws ssm:*)",
       "Bash(VITE_API_URL=http://34.239.30.179/api/v1 npm run build)",
       "Bash(VITE_CLIENT_API_URL=http://34.239.30.179/api/client npm run build)",

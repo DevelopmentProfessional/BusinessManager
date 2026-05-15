@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-DB_URL="postgresql+psycopg://businessmanager:BizMgr0cfc1d86d23b1df4abc12918X@127.0.0.1:5432/businessmanager"
-
 # Staff API systemd service
 cat > /etc/systemd/system/staff-api.service << 'EOF'
 [Unit]
