@@ -25,6 +25,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-14 | GitHub Copilot | Added temporary post-login Lavish schedule import trigger for company 03200 admins
+ *   2026-05-15 | GitHub Copilot | Removed Lavish schedule import trigger from login (one-time use completed)
  * ============================================================
  */
 
@@ -144,33 +145,6 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
-  const runLavishScheduleImport = async (accessToken) => {
-    const importUrl = `${api.defaults.baseURL}/admin/run-lavish-schedule-import`;
-    const response = await fetch(importUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-      },
-    });
-
-    const responseText = await response.text();
-    let payload = {};
-    if (responseText) {
-      try {
-        payload = JSON.parse(responseText);
-      } catch {
-        payload = {};
-      }
-    }
-
-    if (!response.ok) {
-      throw new Error(payload.detail || "Lavish schedule import failed.");
-    }
-
-    return payload;
-  };
-
   const saveUserCredentials = (username, password, companyId, rememberMe) => {
     // (part of [6] COOKIE HELPERS)
     try {
@@ -266,15 +240,7 @@ const Login = () => {
       const data = await response.json();
 
       if (data.access_token && data.user) {
-        const normalizedRole = String(data.user.role || "").toLowerCase();
         const companyId = formData.company_id.trim();
-        const shouldRunLavishImport = normalizedRole === "admin" && companyId === "03200";
-        let importResult = null;
-
-        if (shouldRunLavishImport) {
-          setSuccess("Login successful. Running Lavish schedule import...");
-          importResult = await runLavishScheduleImport(data.access_token);
-        }
 
         // Store authentication data
         selectedStorage.setItem("token", data.access_token);
@@ -292,11 +258,7 @@ const Login = () => {
         saveUserCredentials(formData.username.trim(), formData.password, companyId, formData.remember_me);
 
         // Show success message briefly
-        if (importResult?.schedule_count) {
-          setSuccess(`Login successful. Lavish schedule import completed with ${importResult.schedule_count} schedules. Redirecting...`);
-        } else {
-          setSuccess("Login successful! Redirecting...");
-        }
+        setSuccess("Login successful! Redirecting...");
 
         // Navigate to profile after a brief delay
         setTimeout(() => {
