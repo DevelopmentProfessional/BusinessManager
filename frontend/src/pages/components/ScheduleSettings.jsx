@@ -4,20 +4,31 @@
  *
  * PURPOSE:
  *   User profile schedule settings component. Allows users to
- *   configure auto-accept bookings and grace period settings.
+ *   configure business hours, days of operation, attendance
+ *   check-in, and auto-accept bookings with grace period settings.
  * ============================================================
  */
 
 import React, { useState, useEffect } from "react";
-import { CheckIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, ExclamationTriangleIcon, ClockIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 
-const ScheduleSettings = ({ userId }) => {
+const ScheduleSettings = ({ userId, HelpIcon }) => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [formData, setFormData] = useState({
+    start_of_day: "06:00",
+    end_of_day: "21:00",
+    monday_enabled: true,
+    tuesday_enabled: true,
+    wednesday_enabled: true,
+    thursday_enabled: true,
+    friday_enabled: true,
+    saturday_enabled: true,
+    sunday_enabled: true,
+    attendance_check_in_required: true,
     auto_accept_client_bookings: false,
     auto_accept_pending_hours: null,
   });
@@ -33,12 +44,32 @@ const ScheduleSettings = ({ userId }) => {
       const data = response?.data;
       setSettings(data);
       setFormData({
+        start_of_day: data.start_of_day || "06:00",
+        end_of_day: data.end_of_day || "21:00",
+        monday_enabled: data.monday_enabled ?? true,
+        tuesday_enabled: data.tuesday_enabled ?? true,
+        wednesday_enabled: data.wednesday_enabled ?? true,
+        thursday_enabled: data.thursday_enabled ?? true,
+        friday_enabled: data.friday_enabled ?? true,
+        saturday_enabled: data.saturday_enabled ?? true,
+        sunday_enabled: data.sunday_enabled ?? true,
+        attendance_check_in_required: data.attendance_check_in_required ?? true,
         auto_accept_client_bookings: data.auto_accept_client_bookings || false,
         auto_accept_pending_hours: data.auto_accept_pending_hours || null,
       });
     } catch (error) {
       if (error?.response?.status === 404) {
         setFormData({
+          start_of_day: "06:00",
+          end_of_day: "21:00",
+          monday_enabled: true,
+          tuesday_enabled: true,
+          wednesday_enabled: true,
+          thursday_enabled: true,
+          friday_enabled: true,
+          saturday_enabled: true,
+          sunday_enabled: true,
+          attendance_check_in_required: true,
           auto_accept_client_bookings: false,
           auto_accept_pending_hours: null,
         });
@@ -58,6 +89,13 @@ const ScheduleSettings = ({ userId }) => {
     }));
   };
 
+  const handleInputChange = (key, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
   const handleGraceHoursChange = (value) => {
     const numValue = value === "" ? null : parseInt(value);
     setFormData((prev) => ({
@@ -74,7 +112,7 @@ const ScheduleSettings = ({ userId }) => {
       const response = await api.put(`/schedule-settings/${userId}`, formData);
       const updated = response?.data;
       setSettings(updated);
-      setMessage({ type: "success", text: "✓ Schedule settings saved successfully" });
+      setMessage({ type: "success", text: "✓ All schedule settings saved successfully" });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error("Failed to save settings:", error);
@@ -91,8 +129,10 @@ const ScheduleSettings = ({ userId }) => {
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 border-t-4 border-blue-600 space-y-6">
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-1">📅 Schedule Settings</h3>
-        <p className="text-gray-600">Configure how bookings are handled automatically</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+          <ClockIcon className="h-6 w-6" /> Schedule Settings
+        </h3>
+        <p className="text-gray-600">Configure your business hours, availability, and booking preferences</p>
       </div>
 
       {/* Message Display */}
@@ -102,6 +142,91 @@ const ScheduleSettings = ({ userId }) => {
           <p className={`text-sm font-medium ${message.type === "success" ? "text-green-800" : "text-red-800"}`}>{message.text}</p>
         </div>
       )}
+
+      {/* Business Hours */}
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          Business Hours {HelpIcon && <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />}
+        </h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="form-floating">
+            <input
+              type="time"
+              id="start_of_day"
+              value={formData.start_of_day}
+              onChange={(e) => handleInputChange("start_of_day", e.target.value)}
+              className="form-control form-control-sm"
+              placeholder="Start of Day"
+            />
+            <label htmlFor="start_of_day">Start of Day</label>
+          </div>
+          <div className="form-floating">
+            <input
+              type="time"
+              id="end_of_day"
+              value={formData.end_of_day}
+              onChange={(e) => handleInputChange("end_of_day", e.target.value)}
+              className="form-control form-control-sm"
+              placeholder="End of Day"
+            />
+            <label htmlFor="end_of_day">End of Day</label>
+          </div>
+        </div>
+      </div>
+
+      {/* Days of Operation */}
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          Days of Operation {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}
+        </h4>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { key: "monday_enabled", label: "Mon", fullLabel: "Monday" },
+            { key: "tuesday_enabled", label: "Tue", fullLabel: "Tuesday" },
+            { key: "wednesday_enabled", label: "Wed", fullLabel: "Wednesday" },
+            { key: "thursday_enabled", label: "Thu", fullLabel: "Thursday" },
+            { key: "friday_enabled", label: "Fri", fullLabel: "Friday" },
+            { key: "saturday_enabled", label: "Sat", fullLabel: "Saturday" },
+            { key: "sunday_enabled", label: "Sun", fullLabel: "Sunday" },
+          ].map((day) => (
+            <div key={day.key} className="flex items-center p-2 bg-white rounded-lg border border-gray-200">
+              <input
+                type="checkbox"
+                id={day.key}
+                checked={formData[day.key]}
+                onChange={(e) => handleInputChange(day.key, e.target.checked)}
+                className="h-4 w-4 rounded"
+              />
+              <label htmlFor={day.key} className="ml-2 text-sm font-medium cursor-pointer">
+                <span className="hidden sm:inline">{day.fullLabel}</span>
+                <span className="sm:hidden">{day.label}</span>
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Attendance Check-in */}
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          Attendance {HelpIcon && <HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" />}
+        </h4>
+        <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Attendance Check-in</span>
+            {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.attendance_check_in_required}
+              onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
 
       {/* Auto-Accept Toggle */}
       <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-transparent">
