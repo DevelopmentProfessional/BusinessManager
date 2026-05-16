@@ -401,18 +401,18 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
           {/* Action buttons */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <button onClick={resetForm} style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid var(--bs-border-color)", background: "none", cursor: "pointer", fontSize: "0.85rem", color: "var(--bs-body-color)" }}>
-              {editingId ? "New Rule" : "Clear"}
+              {editingId ? "New" : "Clear"}
             </button>
             <button onClick={handleSave} disabled={saving} style={{ padding: "6px 18px", borderRadius: 6, border: "none", background: "#6366f1", color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 6 }}>
               {saving ? (
                 "Saving…"
               ) : editingId ? (
                 <>
-                  <PencilIcon style={{ width: 14, height: 14 }} /> Update Rule
+                  <PencilIcon style={{ width: 14, height: 14 }} /> Save
                 </>
               ) : (
                 <>
-                  <CheckIcon style={{ width: 14, height: 14 }} /> Save Rule
+                  <CheckIcon style={{ width: 14, height: 14 }} /> Save
                 </>
               )}
             </button>

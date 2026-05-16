@@ -19,16 +19,26 @@
 #   2026-03-29 | GitHub Copilot | Removed backend environment switching and enforced Render-only PostgreSQL routing
 #   2026-03-29 | GitHub Copilot | Removed hardcoded DB fallback and tightened Render host validation
 #   2026-04-08 | Claude  | Removed Render-host restriction to support AWS RDS migration
+#   2026-05-15 | GitHub Copilot | Load backend and repo env files for consistent local AWS database startup
 # ============================================================
 
 """PostgreSQL database configuration (supports Render, AWS RDS, and any PostgreSQL host)."""
 
 # ─── 1 IMPORTS & CONSTANTS ─────────────────────────────────────────────────────
 import os
+from pathlib import Path
 from urllib.parse import urlparse
+from dotenv import load_dotenv
 
 RENDER_ENVIRONMENT_NAME = "render"
 RENDER_DATABASE_URL_ENV_VAR = "DATABASE_URL"
+
+_CURRENT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _CURRENT_DIR.parent
+
+load_dotenv(_REPO_ROOT / ".env", override=False)
+load_dotenv(_CURRENT_DIR / ".env", override=False)
+load_dotenv(_CURRENT_DIR / ".env.local", override=True)
 
 
 # ─── 2 URL VALIDATION ──────────────────────────────────────────────────────────

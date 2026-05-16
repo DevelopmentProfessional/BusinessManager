@@ -1,3 +1,5 @@
+import compactButtonLabel from "../utils/compactButtonLabel";
+
 /**
  * showConfirm — Bootstrap-styled imperative confirmation dialog.
  *
@@ -27,6 +29,8 @@ export function showConfirm(message, { confirmLabel = "Delete", cancelLabel = "C
     const companyName = getCompanyName();
     const headerClass = danger ? "bg-danger text-white" : "bg-primary text-white";
     const btnClass = danger ? "btn-danger" : "btn-primary";
+    const compactConfirmLabel = compactButtonLabel(confirmLabel);
+    const compactCancelLabel = compactButtonLabel(cancelLabel);
 
     // Backdrop
     const backdrop = document.createElement("div");
@@ -48,8 +52,8 @@ export function showConfirm(message, { confirmLabel = "Delete", cancelLabel = "C
             <p class="mb-0">${message}</p>
           </div>
           <div class="modal-footer border-top-0 px-4 pb-3 pt-1 gap-2 justify-content-end">
-            <button type="button" class="btn btn-secondary btn-sm" id="__bm_cancel_btn">${cancelLabel}</button>
-            <button type="button" class="btn ${btnClass} btn-sm" id="__bm_ok_btn">${confirmLabel}</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="__bm_cancel_btn">${compactCancelLabel}</button>
+            <button type="button" class="btn ${btnClass} btn-sm" id="__bm_ok_btn">${compactConfirmLabel}</button>
           </div>
         </div>
       </div>

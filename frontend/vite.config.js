@@ -35,7 +35,7 @@ export default defineConfig(({ command }) => {
       // Backend runs on HTTP internally, Vite handles the HTTPS for the browser
       proxy: {
         '/api': {
-          target: process.env.VITE_API_PROXY_TARGET || 'https://businessmanager-reference-api.onrender.com',
+          target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
           configure: (proxy, _options) => {

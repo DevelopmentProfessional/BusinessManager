@@ -50,7 +50,7 @@ function New-LocalDatabaseUrl {
         throw "DATABASE_URL is missing a database name."
     }
 
-    return "postgresql://$($uri.UserInfo)@localhost:$LocalPort/$dbName"
+    return "postgresql://$($uri.UserInfo)@localhost:$LocalPort/$dbName?sslmode=require"
 }
 
 function Read-InputValue {

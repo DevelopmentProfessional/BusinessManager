@@ -45,6 +45,7 @@
  *   2026-03-11 | Claude  | Added is_paid green-$ badge to all three calendar views
  *   2026-03-14 | Copilot | Updated footer buttons to one row, shortened labels, and fixed 3rem square sizing
  *   2026-03-23 | Copilot | Fixed month-view January cell truncation by using date-based cutoff across year boundaries
+ *   2026-05-15 | Copilot | Added client and service labels to schedule events across calendar views
  * ============================================================
  */
 
@@ -668,6 +669,33 @@ export default function Schedule() {
     return appointmentsForDate;
   };
 
+  const getAppointmentDisplay = useCallback(
+    (appointment) => {
+      const client = clients.find((c) => c.id === appointment.client_id);
+      const service = services.find((s) => s.id === appointment.service_id);
+      const clientName = client?.name || "Unknown Client";
+      const serviceName = service?.name || "Unknown Service";
+      const primaryLabel =
+        appointment.appointment_type === "meeting"
+          ? appointment.notes || "Meeting"
+          : appointment.appointment_type === "task"
+            ? appointment.notes || "Task"
+            : serviceName;
+      const secondaryLabel =
+        appointment.appointment_type === "meeting" || appointment.appointment_type === "task"
+          ? [client?.name, service?.name].filter(Boolean).join(" - ")
+          : clientName;
+
+      return {
+        clientName,
+        serviceName,
+        primaryLabel,
+        secondaryLabel,
+      };
+    },
+    [clients, services]
+  );
+
   // ─── 18 RENDER ───────────────────────────────────────────────────────────────
   if (loading) {
     return <div className="p-4">{S.loading}</div>;
@@ -817,10 +845,7 @@ export default function Schedule() {
                                   );
                                 })()
                               : appointmentsForTimeSlot.map((appointment) => {
-                                  const client = clients.find((c) => c.id === appointment.client_id);
-                                  const clientName = client ? client.name : "Unknown Client";
-                                  const service = services.find((s) => s.id === appointment.service_id);
-                                  const serviceName = service ? service.name : "Unknown Service";
+                                  const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
                                   const appointmentTime = new Date(appointment.appointment_date);
                                   const timeString = appointmentTime.toLocaleTimeString("en-US", {
                                     hour: "2-digit",
@@ -856,15 +881,10 @@ export default function Schedule() {
                                       onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
-                                      {isMeeting ? (
-                                        <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                          {appointment.notes || "Meeting"}
-                                        </div>
-                                      ) : (
-                                        <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                          {serviceName}
-                                        </div>
-                                      )}
+                                      <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
+                                        {primaryLabel}
+                                      </div>
+                                      {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                       <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
                                         {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>$</span>}
                                         {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
@@ -952,10 +972,7 @@ export default function Schedule() {
                                   );
                                 })()
                               : appointmentsForTimeSlot.map((appointment) => {
-                                  const client = clients.find((c) => c.id === appointment.client_id);
-                                  const clientName = client ? client.name : "Unknown Client";
-                                  const service = services.find((s) => s.id === appointment.service_id);
-                                  const serviceName = service ? service.name : "Unknown Service";
+                                  const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
                                   const appointmentTime = new Date(appointment.appointment_date);
                                   const timeString = appointmentTime.toLocaleTimeString("en-US", {
                                     hour: "2-digit",
@@ -992,23 +1009,10 @@ export default function Schedule() {
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
                                       <div className="appointment-time">{timeString}</div>
-                                      {isMeeting ? (
-                                        <>
-                                          <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                            {appointment.notes || "Meeting"}
-                                          </div>
-                                          <div className="appointment-client text-xxs" style={{ opacity: 0.85 }}>
-                                            Meeting
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                            {serviceName}
-                                          </div>
-                                          <div className="appointment-client">{clientName}</div>
-                                        </>
-                                      )}
+                                      <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
+                                        {primaryLabel}
+                                      </div>
+                                      {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                       <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
                                         {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>$</span>}
                                         {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
@@ -1045,13 +1049,7 @@ export default function Schedule() {
                           {!filters.showOutOfOffice && appointmentsForDate.length > 0 && (
                             <div className="appointments">
                               {appointmentsForDate.map((appointment) => {
-                                // Get client name
-                                const client = clients.find((c) => c.id === appointment.client_id);
-                                const clientName = client ? client.name : "Unknown Client";
-
-                                // Get service name
-                                const service = services.find((s) => s.id === appointment.service_id);
-                                const serviceName = service ? service.name : "Unknown Service";
+                                const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
 
                                 // Get time
                                 const appointmentTime = new Date(appointment.appointment_date);
@@ -1082,10 +1080,15 @@ export default function Schedule() {
                                   >
                                     <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
                                       <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                                        {isMeeting ? appointment.notes || "Meeting" : serviceName}
+                                        {primaryLabel}
                                       </span>
                                       {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1, flexShrink: 0 }}>$</span>}
                                     </div>
+                                    {secondaryLabel && (
+                                      <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {secondaryLabel}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1226,17 +1229,13 @@ export default function Schedule() {
                 return nameA.localeCompare(nameB);
               })
               .map((appt) => {
-                const client = clients.find((c) => c.id === appt.client_id);
-                const clientName = client ? client.name : "";
-                const service = services.find((s) => s.id === appt.service_id);
-                const serviceName = service ? service.name : "";
+                const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appt);
                 const emp = employees.find((e) => e.id === appt.employee_id);
                 const empName = emp ? `${emp.first_name} ${emp.last_name}` : "";
                 const apptTime = new Date(appt.appointment_date);
                 const timeStr = apptTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
                 const empColor = employeeColorMap.get(appt.employee_id) || "#2563eb";
                 const duration = appt.duration_minutes || 60;
-                const label = appt.appointment_type === "meeting" ? appt.notes || "Meeting" : appt.appointment_type === "task" ? appt.notes || "Task" : serviceName || "Appointment";
 
                 return (
                   <div
@@ -1253,8 +1252,8 @@ export default function Schedule() {
                     <div className="overlap-event-info">
                       <div className="overlap-event-primary">
                         <span className="overlap-event-time">{timeStr}</span>
-                        <span className="overlap-event-label">{label}</span>
-                        {clientName && <span className="overlap-event-client">{clientName}</span>}
+                        <span className="overlap-event-label">{primaryLabel}</span>
+                        {secondaryLabel && <span className="overlap-event-client">{secondaryLabel}</span>}
                       </div>
                       <div className="overlap-event-secondary">
                         {empName && <span>{empName}</span>}

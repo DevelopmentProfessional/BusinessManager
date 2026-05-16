@@ -26,6 +26,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-01 | Claude  | P10-A: KPI summary cards; P10-B: collapsible data table; P10-C: CSV export
+ *   2026-05-15 | Copilot | Shortened standalone report action labels for compact training-mode layouts
  * ============================================================
  */
 
@@ -630,7 +631,7 @@ export default function Reports() {
               <div className="mt-3">
                 <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
                   <ChevronUpDownIcon className="h-4 w-4" />
-                  {showDataTable ? "Hide" : "Show"} Data Table
+                  {showDataTable ? "Hide" : "Show"}
                 </button>
                 {showDataTable && (
                   <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: "16rem" }}>

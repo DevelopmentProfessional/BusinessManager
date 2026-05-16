@@ -30,6 +30,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for footer filter options
+ *   2026-05-15 | Copilot | Shortened standalone document action button labels for compact training-mode layouts
  * ============================================================
  */
 
@@ -172,7 +173,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
           Cancel
         </button>
         <button type="submit" className="btn-primary" disabled={uploading || !formData.file}>
-          {uploading ? "Uploading..." : "Upload Document"}
+          {uploading ? "Uploading..." : "Upload"}
         </button>
       </div>
     </form>
@@ -1024,7 +1025,7 @@ export default function Documents() {
               </div>
               <div className="d-flex gap-2">
                 <button type="button" onClick={() => setShowWorkflowAssign(true)} className="btn btn-primary btn-sm">
-                  Assign Workflow
+                  Assign
                 </button>
                 <button type="button" onClick={() => setShowWorkflowStatus(false)} className="btn btn-outline-secondary btn-sm">
                   Close
@@ -1092,7 +1093,7 @@ export default function Documents() {
               </div>
               <div className="flex justify-end">
                 <button type="submit" className="btn-primary">
-                  Replace Content
+                  Replace
                 </button>
               </div>
             </form>
@@ -1123,7 +1124,7 @@ export default function Documents() {
                     Cancel
                   </button>
                   <button type="button" onClick={handleSubmitSign} className="btn-primary" disabled={signLoading}>
-                    {signLoading ? "Signing..." : "Apply Signature"}
+                    {signLoading ? "Signing..." : "Sign"}
                   </button>
                 </div>
               </>
