@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import cacheService from "./cacheService";
+import { getApiBaseUrl } from "./api";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.vadpivi.com/api/v1";
+const API_BASE_URL = getApiBaseUrl();
 
 const IMPLIED_PERMISSIONS = {
   read: ["read", "read_all", "view_all", "write", "write_all", "delete", "admin"],

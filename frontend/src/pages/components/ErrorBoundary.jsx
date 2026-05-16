@@ -43,7 +43,7 @@ export default class PageErrorBoundary extends React.Component {
           )}
           <div className="d-flex gap-2 mt-3">
             <button className="btn btn-primary btn-sm" onClick={() => this.handleReload()}>
-              Try Again
+              Retry
             </button>
             <button
               className="btn btn-outline-secondary btn-sm"
@@ -52,7 +52,7 @@ export default class PageErrorBoundary extends React.Component {
                 this.handleReload();
               }}
             >
-              Go Back
+              Back
             </button>
           </div>
         </div>

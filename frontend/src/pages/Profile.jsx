@@ -28,6 +28,9 @@
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
+ *   2026-05-15 | Copilot | Shortened leave-management action labels for compact training-mode layouts
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Reduced Profile footer tab width and side padding
  *   2026-03-07 | Claude  | Fixed compact-mode footer centering and training toggle width
@@ -1320,7 +1323,7 @@ const Profile = () => {
                   <div className="d-flex gap-2">
                     <button type="button" className="btn btn-primary btn-sm flex-grow-1" onClick={() => openLeaveModal()}>
                       <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
-                      Request Leave
+                      Request
                     </button>
                     <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setLeaveManagementOpen(false)}>
                       Close
@@ -1527,7 +1530,7 @@ const Profile = () => {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
-                    {leaveSubmitting ? "Submitting…" : "Submit Request"}
+                    {leaveSubmitting ? "Submitting…" : "Submit"}
                   </button>
                 </div>
               </form>

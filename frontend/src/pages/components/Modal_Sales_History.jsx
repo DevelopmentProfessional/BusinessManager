@@ -17,6 +17,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-15 | Copilot | Shortened footer filter action labels for compact training-mode layouts
  * ============================================================
  */
 
@@ -393,7 +394,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
               }
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
             >
-              Clear Filters
+              Clear
             </button>
           </div>
         </div>

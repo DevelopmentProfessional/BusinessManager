@@ -569,11 +569,11 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
               <div className="d-flex align-items-center gap-1">
                 <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
                 <button type="button" className="btn btn-outline-secondary" onClick={handleAddRows} disabled={isSaving}>
-                  Add Rows
+                  Add
                 </button>
               </div>
               <button type="button" className="btn btn-outline-secondary" onClick={handleClearGrid} disabled={isSaving}>
-                Clear Grid
+                Clear
               </button>
               <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={isSaving}>
                 Cancel

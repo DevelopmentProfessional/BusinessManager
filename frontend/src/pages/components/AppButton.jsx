@@ -3,6 +3,7 @@
 // training mode shows icon+label pill; non-training shows icon-only circle
 import React from "react";
 import useViewMode from "../../services/useViewMode";
+import compactButtonLabel from "../../utils/compactButtonLabel";
 
 const VARIANT_CLASS = {
   primary: "btn-app-primary",
@@ -21,13 +22,7 @@ function adjustTrainingMargins(className) {
 }
 
 function simplifyLabel(label) {
-  if (!label) return label;
-  const action = label.match(/^(add|update|delete)\b/i);
-  if (action) {
-    const a = action[1].toLowerCase();
-    return a.charAt(0).toUpperCase() + a.slice(1);
-  }
-  return label.replace(/^filter\s*/i, "").trim();
+  return compactButtonLabel(label);
 }
 
 export default function AppButton({

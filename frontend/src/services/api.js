@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // API Configuration - Determine backend URL based on environment
-const getApiBaseUrl = () => {
+export const getApiBaseUrl = () => {
   // Check for explicit environment variable first
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;

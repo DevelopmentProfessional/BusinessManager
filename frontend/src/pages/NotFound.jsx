@@ -18,6 +18,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-15 | Copilot | Shortened fallback screen button labels for compact training-mode layouts
  * ============================================================
  */
 
@@ -43,13 +44,13 @@ const NotFound = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Try reloading, then return to the main site.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={reloadPage} className="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors">
-            Reload Page
+            Reload
           </button>
           <button onClick={goToRoot} className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors">
-            Go to Main Site
+            Home
           </button>
           <button onClick={goToLogin} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
-            Go to Login
+            Login
           </button>
         </div>
       </div>

@@ -21,6 +21,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-15 | Copilot | Shortened document action button labels for compact training-mode layouts
  * ============================================================
  */
 
@@ -116,7 +117,7 @@ export default function DocumentEditor() {
         <p className="text-gray-600 mb-4">{error || "The document could not be loaded."}</p>
         <button onClick={handleClose} className="btn-primary flex items-center">
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back to Documents
+          Back
         </button>
       </div>
     );

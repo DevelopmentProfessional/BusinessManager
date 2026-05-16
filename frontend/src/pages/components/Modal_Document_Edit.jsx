@@ -23,6 +23,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-26 | Claude  | Added file-info display (size, type, dates),
  *                          document tags section with search + add + remove
+ *   2026-05-15 | Copilot | Shortened modal action button labels for compact training-mode layouts
  * ============================================================
  */
 
@@ -289,7 +290,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
             Cancel
           </button>
           <button type="submit" form="doc-edit-form" className="btn-primary" disabled={saving}>
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? "Saving…" : "Save"}
           </button>
         </div>
       }
