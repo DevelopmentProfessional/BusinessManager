@@ -167,6 +167,8 @@ export default function Schedule() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [overlapEvents, setOverlapEvents] = useState(null);
   const [selectedAttendees, setSelectedAttendees] = useState([]);
+  const [pastDateError, setPastDateError] = useState("");
+  const [pastDateErrorTimer, setPastDateErrorTimer] = useState(null);
   const [filters, setFilters] = useState({
     employeeIds: [],
     clientIds: [],
@@ -228,6 +230,13 @@ export default function Schedule() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Cleanup past date error timer on unmount
+  useEffect(() => {
+    return () => {
+      if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+    };
+  }, [pastDateErrorTimer]);
 
   // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   // Load schedule data and supporting lookups
@@ -443,12 +452,30 @@ export default function Schedule() {
         console.warn("Insufficient permission to create an appointment. Modal will not open.");
         return;
       }
+      
+      // Check if the selected date is in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        setPastDateError("Cannot book appointments in the past");
+        if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+        const timer = setTimeout(() => {
+          setPastDateError("");
+          setPastDateErrorTimer(null);
+        }, 2000);
+        setPastDateErrorTimer(timer);
+        return;
+      }
+      
       setEditingAppointment({
         appointment_date: date,
       });
       setIsModalOpen(true);
     },
-    [canCreateSchedule]
+    [canCreateSchedule, pastDateErrorTimer]
   );
 
   // ─── 11 DATA REFRESH ─────────────────────────────────────────────────────────
@@ -704,6 +731,17 @@ export default function Schedule() {
   return (
     <div className="schedule-page h-100 d-flex flex-column">
       <Gate_Permission page="schedule" permission="read">
+        {/* Past Date Error Message */}
+        {pastDateError && (
+          <div className="alert alert-warning alert-dismissible fade show mx-2 mt-2 mb-0" role="alert" style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}>
+            {pastDateError}
+            <button type="button" className="btn-close" onClick={() => {
+              setPastDateError("");
+              if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+            }} />
+          </div>
+        )}
+        
         {/* Attendance Widget - Clock In/Out (conditionally rendered based on settings) */}
         {scheduleSettings.attendance_check_in_required && (
           <div className="mb-3 px-2">

@@ -257,6 +257,7 @@ const Login = () => {
 
         // Show success message briefly
         setSuccess("Login successful! Redirecting...");
+        setSuccess("Login successful! Redirecting...");
 
         // Navigate to profile after a brief delay
         setTimeout(() => {
