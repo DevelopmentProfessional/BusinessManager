@@ -112,7 +112,7 @@ export default function Dropdown_Custom({ value, onChange, options = [], placeho
       )}
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+        <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col">
           {loading ? (
             <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
               <span className="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
@@ -121,24 +121,36 @@ export default function Dropdown_Custom({ value, onChange, options = [], placeho
           ) : filteredOptions.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No options available</div>
           ) : (
-            filteredOptions.map((option) => {
-              const isSelected = multiSelect ? selectedSet.has(option.value) : option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option)}
-                  className={`
-                  w-full px-3 py-2 text-left focus:outline-none
-                  hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
-                  ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"}
-                `}
-                  aria-pressed={isSelected}
-                >
-                  {option.label}
-                </button>
-              );
-            })
+            <div className="overflow-y-auto">
+              {filteredOptions.map((option) => {
+                const isSelected = multiSelect ? selectedSet.has(option.value) : option.value === value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleSelect(option)}
+                    className={`
+                    w-full px-3 py-2 text-left focus:outline-none
+                    hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
+                    ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"}
+                  `}
+                    aria-pressed={isSelected}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          
+          {multiSelect && (
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="px-3 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none text-sm sticky bottom-0"
+            >
+              OK
+            </button>
           )}
         </div>
       )}
