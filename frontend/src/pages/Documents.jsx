@@ -732,15 +732,9 @@ export default function Documents() {
                         <td className="px-2">
                           <div className="d-flex align-items-center gap-2">
                             <span className="fw-medium text-truncate">{tpl.name}</span>
-                            {tpl.is_standard && (
-                              <span className="badge bg-warning text-dark text-xxs">
-                                Standard
-                              </span>
-                            )}
+                            {tpl.is_standard && <span className="badge bg-warning text-dark text-xxs">Standard</span>}
                           </div>
-                          <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>
-                            {tpl.template_type}
-                          </span>
+                          <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>{tpl.template_type}</span>
                         </td>
                         <td className="text-center px-1">
                           <button onClick={() => handleEditTemplate(tpl)} className="btn btn-sm btn-outline-primary border-0 p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Edit">
@@ -928,10 +922,7 @@ export default function Documents() {
                 isOpen={isFilterCategoriesOpen}
                 setIsOpen={setIsFilterCategoriesOpen}
                 showHelp={isTrainingMode}
-                options={[
-                  { value: "all", label: "All Categories", description: "Shows documents from every category." },
-                  ...categories.map((cat) => ({ value: String(cat.id), label: cat.name, description: `Shows only documents in the "${cat.name}" category.` })),
-                ]}
+                options={[{ value: "all", label: "All Categories", description: "Shows documents from every category." }, ...categories.map((cat) => ({ value: String(cat.id), label: cat.name, description: `Shows only documents in the "${cat.name}" category.` }))]}
               />
 
               {/* Status Filter */}
@@ -945,9 +936,9 @@ export default function Documents() {
                 activeClass={getStatusFilterButtonClass()}
                 showHelp={isTrainingMode}
                 options={[
-                  { value: "all",      label: "All Statuses", description: "Shows both signed and unsigned documents." },
-                  { value: "signed",   label: "Signed",       description: "Shows only documents that have signatures." },
-                  { value: "unsigned", label: "Unsigned",     description: "Shows only documents without signatures." },
+                  { value: "all", label: "All Statuses", description: "Shows both signed and unsigned documents." },
+                  { value: "signed", label: "Signed", description: "Shows only documents that have signatures." },
+                  { value: "unsigned", label: "Unsigned", description: "Shows only documents without signatures." },
                 ]}
               />
 
@@ -962,10 +953,7 @@ export default function Documents() {
                 activeClass="bg-indigo-600 hover:bg-indigo-700 text-white"
                 showHelp={isTrainingMode}
                 dropdownStyle={{ maxHeight: "300px", overflowY: "auto" }}
-                options={[
-                  { value: "all", label: "All Types", description: "Shows all document entity types." },
-                  ...entityTypeOptions.map((type) => ({ value: type, label: type, description: `Shows only documents with type "${type}".` })),
-                ]}
+                options={[{ value: "all", label: "All Types", description: "Shows all document entity types." }, ...entityTypeOptions.map((type) => ({ value: type, label: type, description: `Shows only documents with type "${type}".` }))]}
               />
             </>
           )}

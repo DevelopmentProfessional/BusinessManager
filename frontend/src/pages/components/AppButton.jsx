@@ -14,36 +14,29 @@ const VARIANT_CLASS = {
 };
 
 function adjustTrainingMargins(className) {
-  return (className || "").split(/\s+/).filter(Boolean).map((token) => {
-    const match = token.match(/^(m|mx|my|mt|me|mb|ms)-([0-5])$/);
-    if (!match) return token;
-    return `${match[1]}-${Math.max(Number(match[2]) - 1, 0)}`;
-  }).join(" ");
+  return (className || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => {
+      const match = token.match(/^(m|mx|my|mt|me|mb|ms)-([0-5])$/);
+      if (!match) return token;
+      return `${match[1]}-${Math.max(Number(match[2]) - 1, 0)}`;
+    })
+    .join(" ");
 }
 
 function simplifyLabel(label) {
   return compactButtonLabel(label);
 }
 
-export default function AppButton({
-  icon: Icon,
-  label,
-  onClick,
-  variant,
-  className = "",
-  disabled = false,
-  badge,
-  compact = false,
-  type = "button",
-  ...rest
-}) {
+export default function AppButton({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", ...rest }) {
   const { isTrainingMode } = useViewMode();
   const training = isTrainingMode && !compact;
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
   const displayLabel = training ? simplifyLabel(normalizedLabel) : normalizedLabel;
   const showText = training && displayLabel.length > 0;
   const iconClass = `flex-shrink-0 ${compact ? "h-4 p-0" : "h-5 px-1"} ${showText ? "me-0" : ""}`;
-  const variantClass = variant ? (VARIANT_CLASS[variant] || variant) : "";
+  const variantClass = variant ? VARIANT_CLASS[variant] || variant : "";
   const effectiveClass = training ? adjustTrainingMargins(className) : className;
 
   return (
@@ -56,9 +49,7 @@ export default function AppButton({
       className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
         ${training ? "rounded-pill ps-0 pe-1" : "rounded-circle p-0"}
         ${variantClass} ${effectiveClass}`.trim()}
-      style={training
-        ? { height: "3rem" }
-        : { width: "3rem", height: "3rem", minWidth: "3rem", minHeight: "3rem" }}
+      style={training ? { height: "3rem" } : { width: "3rem", height: "3rem", minWidth: "3rem", minHeight: "3rem" }}
       {...rest}
     >
       {Icon && <Icon className={iconClass} />}
