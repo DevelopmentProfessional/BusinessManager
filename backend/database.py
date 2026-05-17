@@ -827,7 +827,7 @@ def _ensure_app_settings_core_columns_if_needed():
     cols_to_add = [
         ("start_of_day",                 "VARCHAR",          "'06:00'"),
         ("end_of_day",                   "VARCHAR",          "'21:00'"),
-        ("attendance_check_in_required", "BOOLEAN",          "TRUE"),
+        ("attendance_check_in_required", "BOOLEAN",          "FALSE"),
         ("monday_enabled",               "BOOLEAN",          "TRUE"),
         ("tuesday_enabled",              "BOOLEAN",          "TRUE"),
         ("wednesday_enabled",            "BOOLEAN",          "TRUE"),

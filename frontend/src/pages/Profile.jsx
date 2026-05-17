@@ -376,7 +376,7 @@ const Profile = () => {
           setScheduleSettings({
             start_of_day: res.data.start_of_day || "06:00",
             end_of_day: res.data.end_of_day || "21:00",
-            attendance_check_in_required: res.data.attendance_check_in_required ?? true,
+            attendance_check_in_required: res.data.attendance_check_in_required ?? false,
             monday_enabled: res.data.monday_enabled ?? true,
             tuesday_enabled: res.data.tuesday_enabled ?? true,
             wednesday_enabled: res.data.wednesday_enabled ?? true,

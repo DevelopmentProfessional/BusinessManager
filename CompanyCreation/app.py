@@ -332,9 +332,9 @@ def create_company(req: CreateRequest):
                     monday_enabled, tuesday_enabled, wednesday_enabled, thursday_enabled,
                     friday_enabled, saturday_enabled, sunday_enabled, company_name, company_id)
                 VALUES
-                   (:id, :ca, '06:00', '21:00', :t, :t, :t, :t, :t, :t, :t, :t, :cname, :cid)""",
+                   (:id, :ca, '06:00', '21:00', :f, :t, :t, :t, :t, :t, :t, :t, :cname, :cid)""",
                 {"id": settings_uuid, "ca": now,
-                  "t": True,
+                  "f": False, "t": True,
                  "cname": req.company_name.strip(), "cid": cid}
             )
 
