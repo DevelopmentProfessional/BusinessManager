@@ -595,7 +595,7 @@ class AppSettings(BaseModel, table=True):
     __tablename__ = "app_settings"
     start_of_day: str = Field(default="06:00")  # HH:MM format
     end_of_day: str = Field(default="21:00")  # HH:MM format
-    attendance_check_in_required: bool = Field(default=True)
+    attendance_check_in_required: bool = Field(default=False)
     # Days of operation (True = business operates on this day)
     monday_enabled: bool = Field(default=True)
     tuesday_enabled: bool = Field(default=True)
@@ -1378,7 +1378,7 @@ class PasswordChangeRequest(SQLModel):
 class AppSettingsCreate(SQLModel):
     start_of_day: str = "06:00"
     end_of_day: str = "21:00"
-    attendance_check_in_required: bool = True
+    attendance_check_in_required: bool = False
     monday_enabled: bool = True
     tuesday_enabled: bool = True
     wednesday_enabled: bool = True

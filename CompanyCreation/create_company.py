@@ -178,7 +178,7 @@ def create_company():
             INSERT INTO app_settings (id, created_at, start_of_day, end_of_day, attendance_check_in_required,
                                       monday_enabled, tuesday_enabled, wednesday_enabled, thursday_enabled,
                                       friday_enabled, saturday_enabled, sunday_enabled, company_name, company_id)
-            VALUES (:id, :created_at, '06:00', '21:00', 1, 1, 1, 1, 1, 1, 1, 1, :company_name, :company_id)
+            VALUES (:id, :created_at, '06:00', '21:00', 0, 1, 1, 1, 1, 1, 1, 1, :company_name, :company_id)
         """), {
             "id": settings_uuid,
             "created_at": now,

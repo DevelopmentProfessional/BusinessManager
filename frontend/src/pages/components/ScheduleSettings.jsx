@@ -12,7 +12,7 @@
 import React, { useState, useEffect } from "react";
 import { CheckIcon, ExclamationTriangleIcon, ClockIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
-import useDarkMode from "../../store/useDarkMode";
+import useDarkMode from "../../services/useDarkMode";
 
 const ScheduleSettings = ({ userId, HelpIcon }) => {
   const { isDarkMode } = useDarkMode();
@@ -30,7 +30,7 @@ const ScheduleSettings = ({ userId, HelpIcon }) => {
     friday_enabled: true,
     saturday_enabled: true,
     sunday_enabled: true,
-    attendance_check_in_required: true,
+    attendance_check_in_required: false,
     auto_accept_client_bookings: false,
     auto_accept_pending_hours: null,
   });
@@ -55,7 +55,7 @@ const ScheduleSettings = ({ userId, HelpIcon }) => {
         friday_enabled: data.friday_enabled ?? true,
         saturday_enabled: data.saturday_enabled ?? true,
         sunday_enabled: data.sunday_enabled ?? true,
-        attendance_check_in_required: data.attendance_check_in_required ?? true,
+        attendance_check_in_required: data.attendance_check_in_required ?? false,
         auto_accept_client_bookings: data.auto_accept_client_bookings || false,
         auto_accept_pending_hours: data.auto_accept_pending_hours || null,
       });
@@ -71,7 +71,7 @@ const ScheduleSettings = ({ userId, HelpIcon }) => {
           friday_enabled: true,
           saturday_enabled: true,
           sunday_enabled: true,
-          attendance_check_in_required: true,
+          attendance_check_in_required: false,
           auto_accept_client_bookings: false,
           auto_accept_pending_hours: null,
         });

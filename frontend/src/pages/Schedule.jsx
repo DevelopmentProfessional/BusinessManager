@@ -255,7 +255,7 @@ export default function Schedule() {
           setScheduleSettings({
             start_of_day: settingsResponse.data.start_of_day || "06:00",
             end_of_day: settingsResponse.data.end_of_day || "21:00",
-            attendance_check_in_required: settingsResponse.data.attendance_check_in_required ?? true,
+            attendance_check_in_required: settingsResponse.data.attendance_check_in_required ?? false,
             monday_enabled: settingsResponse.data.monday_enabled ?? true,
             tuesday_enabled: settingsResponse.data.tuesday_enabled ?? true,
             wednesday_enabled: settingsResponse.data.wednesday_enabled ?? true,

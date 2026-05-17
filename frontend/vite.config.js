@@ -22,13 +22,13 @@ export default defineConfig(({ command }) => {
     },
     plugins,
     server: {
-      // HTTPS in dev: use custom cert (LAN IP in SAN) when available, else fall back to basic ssl
-      https: isDev ? (hasCustomCert ? { key: fs.readFileSync(sslKey), cert: fs.readFileSync(sslCert) } : true) : false,
+      // HTTP in dev for easier testing; remove 'https' config to disable SSL
+      https: false,
       // Allow override via env var VITE_PORT; default to 5173
       port: Number(process.env.VITE_PORT || 5173),
       host: true,
       // Proxy API calls to the backend to avoid mixed content and CORS (development only)
-      // Backend runs on HTTP internally, Vite handles the HTTPS for the browser
+      // Backend runs on HTTP internally, Vite handles proxying for the browser
       proxy: {
         "/api": {
           target: process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:8000",
