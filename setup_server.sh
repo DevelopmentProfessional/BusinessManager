@@ -5,12 +5,13 @@ set -e
 cat > /etc/systemd/system/staff-api.service << 'EOF'
 [Unit]
 Description=BusinessManager Staff API
-After=network.target postgresql.service
+After=network.target docker.service
 
 [Service]
 User=root
 WorkingDirectory=/opt/businessmanager
 EnvironmentFile=/opt/businessmanager/backend/.env
+ExecStartPre=/bin/bash /opt/businessmanager/scripts/ensure_local_postgres.sh
 ExecStart=/usr/bin/python3.11 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=5
@@ -23,12 +24,13 @@ EOF
 cat > /etc/systemd/system/client-api.service << 'EOF'
 [Unit]
 Description=BusinessManager Client API
-After=network.target postgresql.service
+After=network.target docker.service
 
 [Service]
 User=root
 WorkingDirectory=/opt/businessmanager/client-api
 EnvironmentFile=/opt/businessmanager/client-api/.env
+ExecStartPre=/bin/bash /opt/businessmanager/scripts/ensure_local_postgres.sh
 ExecStart=/usr/bin/python3.11 -m uvicorn main:app --host 127.0.0.1 --port 8001
 Restart=always
 RestartSec=5
