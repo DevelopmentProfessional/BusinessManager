@@ -254,7 +254,7 @@ function Ensure-AwsDbTunnel {
 	}
 
 	$failureMessage = "AWS database tunnel did not become ready on localhost:$localPort. " +
-		"Start scripts\\start-db-tunnel.ps1 to reconfigure it, or set AWS_DB_TUNNEL_ENABLED=false if a tunnel is no longer required and DATABASE_URL now points directly to your remote DB."
+	"Start scripts\\start-db-tunnel.ps1 to reconfigure it, or set AWS_DB_TUNNEL_ENABLED=false if a tunnel is no longer required and DATABASE_URL now points directly to your remote DB."
 
 	if ($sshProcess.HasExited) {
 		Write-Host "SSH tunnel process exited early with code $($sshProcess.ExitCode)." -ForegroundColor Yellow

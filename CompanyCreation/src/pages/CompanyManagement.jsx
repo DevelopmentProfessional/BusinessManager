@@ -148,14 +148,11 @@ export default function CompanyManagement() {
 
     setCredentialSaving(true);
     try {
-      const res = await fetch(
-        `${API}/companies/${encodeURIComponent(selected.company_id)}/users/${encodeURIComponent(editingUser.id)}/credentials`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API}/companies/${encodeURIComponent(selected.company_id)}/users/${encodeURIComponent(editingUser.id)}/credentials`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(payload),
+      });
       if (res.status === 401) {
         logout();
         return;
@@ -350,22 +347,20 @@ export default function CompanyManagement() {
                 <div style={s.userPanel}>
                   <div style={s.userPanelTitle}>Company Users</div>
                   {usersLoading && <div style={s.userPanelHint}>Loading users...</div>}
-                  {!usersLoading && companyUsers.length === 0 && (
-                    <div style={s.userPanelHint}>No users found for this company.</div>
-                  )}
+                  {!usersLoading && companyUsers.length === 0 && <div style={s.userPanelHint}>No users found for this company.</div>}
                   {!usersLoading && companyUsers.length > 0 && (
                     <div style={s.userList}>
                       {companyUsers.map((user) => (
                         <div key={user.id} style={s.userRow}>
                           <div>
-                            <div style={s.userName}>{user.first_name} {user.last_name}</div>
-                            <div style={s.userMeta}>@{user.username} · {user.role}</div>
+                            <div style={s.userName}>
+                              {user.first_name} {user.last_name}
+                            </div>
+                            <div style={s.userMeta}>
+                              @{user.username} · {user.role}
+                            </div>
                           </div>
-                          <button
-                            style={s.userEditBtn}
-                            onClick={() => openCredentialEditor(user)}
-                            disabled={credentialSaving}
-                          >
+                          <button style={s.userEditBtn} onClick={() => openCredentialEditor(user)} disabled={credentialSaving}>
                             Edit Login
                           </button>
                         </div>
@@ -375,51 +370,26 @@ export default function CompanyManagement() {
 
                   {editingUser && (
                     <div style={s.credentialBox}>
-                      <div style={s.credentialTitle}>Update Login for {editingUser.first_name} {editingUser.last_name}</div>
+                      <div style={s.credentialTitle}>
+                        Update Login for {editingUser.first_name} {editingUser.last_name}
+                      </div>
                       <div style={s.credentialField}>
                         <label style={s.notesLabel}>Username</label>
-                        <input
-                          style={s.credentialInput}
-                          value={credentialForm.username}
-                          onChange={(e) => setCredentialForm((prev) => ({ ...prev, username: e.target.value }))}
-                          disabled={credentialSaving}
-                        />
+                        <input style={s.credentialInput} value={credentialForm.username} onChange={(e) => setCredentialForm((prev) => ({ ...prev, username: e.target.value }))} disabled={credentialSaving} />
                       </div>
                       <div style={s.credentialField}>
                         <label style={s.notesLabel}>New Password (optional)</label>
-                        <input
-                          type="password"
-                          style={s.credentialInput}
-                          value={credentialForm.password}
-                          onChange={(e) => setCredentialForm((prev) => ({ ...prev, password: e.target.value }))}
-                          placeholder="Leave blank to keep current password"
-                          disabled={credentialSaving}
-                        />
+                        <input type="password" style={s.credentialInput} value={credentialForm.password} onChange={(e) => setCredentialForm((prev) => ({ ...prev, password: e.target.value }))} placeholder="Leave blank to keep current password" disabled={credentialSaving} />
                       </div>
                       <label style={s.checkboxRow}>
-                        <input
-                          type="checkbox"
-                          checked={credentialForm.force_password_reset}
-                          onChange={(e) =>
-                            setCredentialForm((prev) => ({ ...prev, force_password_reset: e.target.checked }))
-                          }
-                          disabled={credentialSaving}
-                        />
+                        <input type="checkbox" checked={credentialForm.force_password_reset} onChange={(e) => setCredentialForm((prev) => ({ ...prev, force_password_reset: e.target.checked }))} disabled={credentialSaving} />
                         Force password reset on next login
                       </label>
                       <div style={s.credentialActions}>
-                        <button
-                          style={{ ...s.approveBtn, opacity: credentialSaving ? 0.6 : 1 }}
-                          onClick={saveCredentials}
-                          disabled={credentialSaving}
-                        >
+                        <button style={{ ...s.approveBtn, opacity: credentialSaving ? 0.6 : 1 }} onClick={saveCredentials} disabled={credentialSaving}>
                           {credentialSaving ? "Saving..." : "Save Login"}
                         </button>
-                        <button
-                          style={s.credentialCancelBtn}
-                          onClick={cancelCredentialEditor}
-                          disabled={credentialSaving}
-                        >
+                        <button style={s.credentialCancelBtn} onClick={cancelCredentialEditor} disabled={credentialSaving}>
                           Cancel
                         </button>
                       </div>
