@@ -39,7 +39,12 @@ function New-LocalTunnelDatabaseUrl {
 		$dbName = 'postgres'
 	}
 
-	return "postgresql://$($RemoteUri.UserInfo)@localhost:$LocalPort/$dbName?sslmode=require"
+	$query = if ([string]::IsNullOrWhiteSpace($RemoteUri.Query)) { "" } else { $RemoteUri.Query.TrimStart('?') }
+	if ([string]::IsNullOrWhiteSpace($query)) {
+		$query = if ($RemoteUri.Host -in @("localhost", "127.0.0.1", "::1")) { "sslmode=disable" } else { "sslmode=require" }
+	}
+
+	return "postgresql://$($RemoteUri.UserInfo)@localhost:$LocalPort/$($dbName)?$query"
 }
 
 function Test-TcpPortOpen {
@@ -150,7 +155,8 @@ function Ensure-AwsDbTunnel {
 	param(
 		[string]$RootPath,
 		[string]$DatabaseUrl = $env:DATABASE_URL,
-		[string]$RoleName = "Local app"
+		[string]$RoleName = "Local app",
+		[switch]$RequireReady
 	)
 
 	$enabledValue = "true"
@@ -225,6 +231,8 @@ function Ensure-AwsDbTunnel {
 		"-N",
 		"-L", $forwardSpec,
 		"-o", "ExitOnForwardFailure=yes",
+		"-o", "BatchMode=yes",
+		"-o", "ConnectTimeout=8",
 		"-o", "ServerAliveInterval=30",
 		"-o", "ServerAliveCountMax=3",
 		"-o", "StrictHostKeyChecking=accept-new",
@@ -245,6 +253,17 @@ function Ensure-AwsDbTunnel {
 		Start-Sleep -Milliseconds 500
 	}
 
-	Write-Host "AWS database tunnel did not become ready on localhost:$localPort. Start scripts\start-db-tunnel.ps1 if you need to reconfigure it." -ForegroundColor Yellow
+	$failureMessage = "AWS database tunnel did not become ready on localhost:$localPort. " +
+		"Start scripts\\start-db-tunnel.ps1 to reconfigure it, or set AWS_DB_TUNNEL_ENABLED=false if a tunnel is no longer required and DATABASE_URL now points directly to your remote DB."
+
+	if ($sshProcess.HasExited) {
+		Write-Host "SSH tunnel process exited early with code $($sshProcess.ExitCode)." -ForegroundColor Yellow
+	}
+
+	if ($RequireReady) {
+		throw $failureMessage
+	}
+
+	Write-Host $failureMessage -ForegroundColor Yellow
 	return $false
 }

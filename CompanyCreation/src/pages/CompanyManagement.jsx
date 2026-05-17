@@ -32,6 +32,15 @@ export default function CompanyManagement() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [companyUsers, setCompanyUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [credentialSaving, setCredentialSaving] = useState(false);
+  const [credentialForm, setCredentialForm] = useState({
+    username: "",
+    password: "",
+    force_password_reset: false,
+  });
 
   const logout = () => {
     localStorage.removeItem("cc_token");
@@ -60,14 +69,110 @@ export default function CompanyManagement() {
     load();
   }, []);
 
-  const openReview = (company) => {
+  const loadCompanyUsers = async (companyId) => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`${API}/companies/${encodeURIComponent(companyId)}/users`, {
+        headers: authHeaders(),
+      });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.detail || "Failed to load company users");
+      }
+      const users = await res.json();
+      setCompanyUsers(Array.isArray(users) ? users : []);
+    } catch (e) {
+      showToast(e.message || "Failed to load company users", "error");
+      setCompanyUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const openReview = async (company) => {
     setSelected(company);
     setNotes(company.registration_notes || "");
+    setEditingUser(null);
+    setCredentialForm({ username: "", password: "", force_password_reset: false });
+    await loadCompanyUsers(company.company_id);
   };
 
   const closeReview = () => {
     setSelected(null);
     setNotes("");
+    setCompanyUsers([]);
+    setEditingUser(null);
+    setCredentialForm({ username: "", password: "", force_password_reset: false });
+  };
+
+  const openCredentialEditor = (user) => {
+    setEditingUser(user);
+    setCredentialForm({
+      username: user.username || "",
+      password: "",
+      force_password_reset: Boolean(user.force_password_reset),
+    });
+  };
+
+  const cancelCredentialEditor = () => {
+    setEditingUser(null);
+    setCredentialForm({ username: "", password: "", force_password_reset: false });
+  };
+
+  const saveCredentials = async () => {
+    if (!selected || !editingUser) return;
+
+    const nextUsername = credentialForm.username.trim();
+    const nextPassword = credentialForm.password.trim();
+
+    if (!nextUsername) {
+      showToast("Username is required.", "error");
+      return;
+    }
+    if (nextPassword && nextPassword.length < 6) {
+      showToast("Password must be at least 6 characters.", "error");
+      return;
+    }
+
+    const payload = {
+      username: nextUsername,
+      force_password_reset: credentialForm.force_password_reset,
+    };
+    if (nextPassword) {
+      payload.password = nextPassword;
+    }
+
+    setCredentialSaving(true);
+    try {
+      const res = await fetch(
+        `${API}/companies/${encodeURIComponent(selected.company_id)}/users/${encodeURIComponent(editingUser.id)}/credentials`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.detail || "Failed to update credentials");
+      }
+
+      showToast(`Updated credentials for ${nextUsername}.`, "success");
+      await loadCompanyUsers(selected.company_id);
+      cancelCredentialEditor();
+    } catch (e) {
+      showToast(e.message || "Failed to update credentials", "error");
+    } finally {
+      setCredentialSaving(false);
+    }
   };
 
   const updateStatus = async (status) => {
@@ -242,6 +347,86 @@ export default function CompanyManagement() {
                   </div>
                 </div>
 
+                <div style={s.userPanel}>
+                  <div style={s.userPanelTitle}>Company Users</div>
+                  {usersLoading && <div style={s.userPanelHint}>Loading users...</div>}
+                  {!usersLoading && companyUsers.length === 0 && (
+                    <div style={s.userPanelHint}>No users found for this company.</div>
+                  )}
+                  {!usersLoading && companyUsers.length > 0 && (
+                    <div style={s.userList}>
+                      {companyUsers.map((user) => (
+                        <div key={user.id} style={s.userRow}>
+                          <div>
+                            <div style={s.userName}>{user.first_name} {user.last_name}</div>
+                            <div style={s.userMeta}>@{user.username} · {user.role}</div>
+                          </div>
+                          <button
+                            style={s.userEditBtn}
+                            onClick={() => openCredentialEditor(user)}
+                            disabled={credentialSaving}
+                          >
+                            Edit Login
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {editingUser && (
+                    <div style={s.credentialBox}>
+                      <div style={s.credentialTitle}>Update Login for {editingUser.first_name} {editingUser.last_name}</div>
+                      <div style={s.credentialField}>
+                        <label style={s.notesLabel}>Username</label>
+                        <input
+                          style={s.credentialInput}
+                          value={credentialForm.username}
+                          onChange={(e) => setCredentialForm((prev) => ({ ...prev, username: e.target.value }))}
+                          disabled={credentialSaving}
+                        />
+                      </div>
+                      <div style={s.credentialField}>
+                        <label style={s.notesLabel}>New Password (optional)</label>
+                        <input
+                          type="password"
+                          style={s.credentialInput}
+                          value={credentialForm.password}
+                          onChange={(e) => setCredentialForm((prev) => ({ ...prev, password: e.target.value }))}
+                          placeholder="Leave blank to keep current password"
+                          disabled={credentialSaving}
+                        />
+                      </div>
+                      <label style={s.checkboxRow}>
+                        <input
+                          type="checkbox"
+                          checked={credentialForm.force_password_reset}
+                          onChange={(e) =>
+                            setCredentialForm((prev) => ({ ...prev, force_password_reset: e.target.checked }))
+                          }
+                          disabled={credentialSaving}
+                        />
+                        Force password reset on next login
+                      </label>
+                      <div style={s.credentialActions}>
+                        <button
+                          style={{ ...s.approveBtn, opacity: credentialSaving ? 0.6 : 1 }}
+                          onClick={saveCredentials}
+                          disabled={credentialSaving}
+                        >
+                          {credentialSaving ? "Saving..." : "Save Login"}
+                        </button>
+                        <button
+                          style={s.credentialCancelBtn}
+                          onClick={cancelCredentialEditor}
+                          disabled={credentialSaving}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ marginBottom: "1.25rem" }}>
                   <label style={s.notesLabel}>Internal Notes (optional)</label>
                   <textarea style={s.notesInput} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add a note about this decision..." disabled={saving} />
@@ -385,6 +570,106 @@ const s = {
     fontFamily: "inherit",
     resize: "vertical",
     boxSizing: "border-box",
+  },
+  userPanel: {
+    marginBottom: "1.25rem",
+    border: "1px solid #e2e8f0",
+    borderRadius: "0.5rem",
+    padding: "0.9rem",
+    background: "#f8fafc",
+  },
+  userPanelTitle: {
+    fontWeight: 700,
+    color: "#0f172a",
+    fontSize: "0.9rem",
+    marginBottom: "0.6rem",
+  },
+  userPanelHint: {
+    fontSize: "0.85rem",
+    color: "#64748b",
+  },
+  userList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.5rem",
+  },
+  userRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "0.75rem",
+    padding: "0.55rem 0.65rem",
+    borderRadius: "0.4rem",
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+  },
+  userName: {
+    fontWeight: 600,
+    color: "#1e293b",
+    fontSize: "0.85rem",
+  },
+  userMeta: {
+    fontSize: "0.78rem",
+    color: "#64748b",
+  },
+  userEditBtn: {
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    color: "#4f46e5",
+    fontWeight: 600,
+    borderRadius: "0.35rem",
+    padding: "0.35rem 0.65rem",
+    cursor: "pointer",
+    fontSize: "0.78rem",
+    whiteSpace: "nowrap",
+  },
+  credentialBox: {
+    marginTop: "0.75rem",
+    background: "#fff",
+    border: "1px solid #dbeafe",
+    borderRadius: "0.45rem",
+    padding: "0.75rem",
+  },
+  credentialTitle: {
+    fontWeight: 700,
+    color: "#1e3a8a",
+    fontSize: "0.83rem",
+    marginBottom: "0.55rem",
+  },
+  credentialField: {
+    marginBottom: "0.55rem",
+  },
+  credentialInput: {
+    width: "100%",
+    padding: "0.55rem 0.65rem",
+    border: "1px solid #cbd5e1",
+    borderRadius: "0.35rem",
+    fontSize: "0.84rem",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.45rem",
+    color: "#334155",
+    fontSize: "0.82rem",
+    marginBottom: "0.7rem",
+  },
+  credentialActions: {
+    display: "flex",
+    gap: "0.6rem",
+  },
+  credentialCancelBtn: {
+    flex: 1,
+    padding: "0.75rem",
+    background: "#e2e8f0",
+    color: "#334155",
+    border: "none",
+    borderRadius: "0.375rem",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "0.95rem",
   },
   modalActions: { display: "flex", gap: "0.75rem" },
   approveBtn: { flex: 1, padding: "0.75rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: "0.375rem", fontWeight: 700, cursor: "pointer", fontSize: "0.95rem" },

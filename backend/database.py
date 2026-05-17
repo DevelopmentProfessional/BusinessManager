@@ -82,7 +82,20 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='company' AND column_name='company_email'"
             )).fetchone()
-            return department_column is not None and company_email_column is not None
+            registration_status_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='registration_status'"
+            )).fetchone()
+            registration_notes_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='registration_notes'"
+            )).fetchone()
+            return (
+                department_column is not None
+                and company_email_column is not None
+                and registration_status_column is not None
+                and registration_notes_column is not None
+            )
     except Exception:
         return False
 
@@ -947,6 +960,36 @@ def _ensure_employee_lunch_and_procurement_if_needed():
                     print(f"  + Added column {table}.{col} ({pg_type})")
 
 
+def _ensure_company_registration_columns_if_needed():
+    """Ensure company registration columns exist for approval workflow."""
+    with engine.begin() as conn:
+        has_company = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='company')"
+        )).scalar()
+        if not has_company:
+            return
+
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='company'"
+        )).fetchall()}
+
+        if "registration_status" not in existing:
+            conn.execute(text(
+                "ALTER TABLE company "
+                "ADD COLUMN registration_status VARCHAR DEFAULT 'approved'"
+            ))
+            print("  + Added column company.registration_status")
+
+        if "registration_notes" not in existing:
+            conn.execute(text(
+                "ALTER TABLE company "
+                "ADD COLUMN registration_notes TEXT DEFAULT NULL"
+            ))
+            print("  + Added column company.registration_notes")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Run safe migrations to bring schema to current version."""
@@ -1010,6 +1053,7 @@ def create_db_and_tables():
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_company_registration_columns_if_needed()
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()

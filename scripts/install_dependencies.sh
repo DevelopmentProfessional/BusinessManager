@@ -38,6 +38,10 @@ echo "Installing backend dependencies..."
 echo "Installing client-api dependencies..."
 /usr/bin/python3.11 -m pip install -r client-api/requirements.txt
 
+if [ -f /opt/businessmanager/scripts/ensure_local_postgres.sh ]; then
+	chmod +x /opt/businessmanager/scripts/ensure_local_postgres.sh
+fi
+
 RUN_COMPANY_03200_MIGRATION="false"
 if [ -f "$BACKEND_ENV_FILE" ]; then
 	RUN_COMPANY_03200_MIGRATION=$(grep -E '^RUN_COMPANY_03200_MIGRATION=' "$BACKEND_ENV_FILE" | head -n 1 | cut -d '=' -f2-)

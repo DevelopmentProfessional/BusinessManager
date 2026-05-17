@@ -50,7 +50,12 @@ function New-LocalDatabaseUrl {
         throw "DATABASE_URL is missing a database name."
     }
 
-    return "postgresql://$($uri.UserInfo)@localhost:$LocalPort/$dbName?sslmode=require"
+    $query = if ([string]::IsNullOrWhiteSpace($uri.Query)) { "" } else { $uri.Query.TrimStart('?') }
+    if ([string]::IsNullOrWhiteSpace($query)) {
+        $query = if ($uri.Host -in @("localhost", "127.0.0.1", "::1")) { "sslmode=disable" } else { "sslmode=require" }
+    }
+
+    return "postgresql://$($uri.UserInfo)@localhost:$LocalPort/$($dbName)?$query"
 }
 
 function Read-InputValue {

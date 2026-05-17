@@ -22,6 +22,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlmodel import Session, select, text
 from pydantic import BaseModel
 from typing import List, Optional
+from uuid import UUID
 import bcrypt
 
 try:
@@ -90,6 +91,25 @@ class CompanyInfo(BaseModel):
 class CompanyStatusUpdate(BaseModel):
     status: str           # "approved" | "denied"
     notes: Optional[str] = None
+
+
+class CompanyUserInfo(BaseModel):
+    id: str
+    company_id: Optional[str] = None
+    username: str
+    email: Optional[str] = None
+    first_name: str
+    last_name: str
+    role: str
+    is_active: bool
+    is_locked: bool
+    force_password_reset: bool
+
+
+class CompanyUserCredentialsUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    force_password_reset: Optional[bool] = None
 
 
 # ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -390,4 +410,107 @@ def update_company_status(
         "is_active": company.is_active,
         "message": f"Company '{company.company_id}' has been {body.status}.",
     }
+
+
+@router.get("/companies/{company_id}/users", response_model=List[CompanyUserInfo])
+def list_company_users(
+    company_id: str,
+    _: str = Depends(require_company_creation_auth),
+    session: Session = Depends(get_session),
+):
+    """List users for a company (for company creation management UI)."""
+    cid = company_id.strip().upper()
+    users = session.exec(
+        select(User).where(User.company_id == cid).order_by(User.created_at)
+    ).all()
+    return [
+        CompanyUserInfo(
+            id=str(user.id),
+            company_id=user.company_id,
+            username=user.username,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.role.value if hasattr(user.role, "value") else str(user.role),
+            is_active=user.is_active,
+            is_locked=user.is_locked,
+            force_password_reset=user.force_password_reset,
+        )
+        for user in users
+    ]
+
+
+@router.patch("/companies/{company_id}/users/{user_id}/credentials", response_model=CompanyUserInfo)
+def update_company_user_credentials(
+    company_id: str,
+    user_id: str,
+    body: CompanyUserCredentialsUpdate,
+    _: str = Depends(require_company_creation_auth),
+    session: Session = Depends(get_session),
+):
+    """Update a company user's login credentials and related auth flags."""
+    if body.username is None and body.password is None and body.force_password_reset is None:
+        raise HTTPException(status_code=400, detail="Provide at least one credential field to update.")
+
+    cid = company_id.strip().upper()
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user id.")
+
+    user = session.exec(
+        select(User)
+        .where(User.id == user_uuid)
+        .where(User.company_id == cid)
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found for this company.")
+
+    if body.username is not None:
+        next_username = body.username.strip()
+        if not next_username:
+            raise HTTPException(status_code=400, detail="Username cannot be empty.")
+
+        duplicate = session.exec(
+            select(User)
+            .where(User.company_id == cid)
+            .where(User.username == next_username)
+            .where(User.id != user.id)
+        ).first()
+        if duplicate:
+            raise HTTPException(status_code=409, detail="Username already exists for this company.")
+
+        user.username = next_username
+
+    if body.password is not None:
+        if len(body.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+        user.password_hash = hash_password(body.password)
+
+    if body.force_password_reset is not None:
+        user.force_password_reset = body.force_password_reset
+
+    try:
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update credentials: {str(exc)}")
+
+    return CompanyUserInfo(
+        id=str(user.id),
+        company_id=user.company_id,
+        username=user.username,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        is_active=user.is_active,
+        is_locked=user.is_locked,
+        force_password_reset=user.force_password_reset,
+    )
 
