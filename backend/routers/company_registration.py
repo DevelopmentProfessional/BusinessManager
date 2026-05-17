@@ -486,6 +486,10 @@ def update_company_user_credentials(
         if len(body.password) < 6:
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
         user.password_hash = hash_password(body.password)
+        user.is_locked = False
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        user.is_active = True
 
     if body.force_password_reset is not None:
         user.force_password_reset = body.force_password_reset
