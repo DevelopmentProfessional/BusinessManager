@@ -39,6 +39,29 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+# Daily delayed app startup (10:10 AM Bermuda)
+cat > /etc/systemd/system/businessmanager-app-start.service << 'EOF'
+[Unit]
+Description=Start BusinessManager APIs (staff + client)
+After=network.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/businessmanager/scripts/restart_server.sh
+EOF
+
+cat > /etc/systemd/system/businessmanager-app-start.timer << 'EOF'
+[Unit]
+Description=Run BusinessManager API startup daily at 10:10 AM Bermuda time
+
+[Timer]
+OnCalendar=*-*-* 10:10:00 America/Bermuda
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # Nginx config
 cat > /etc/nginx/conf.d/businessmanager.conf << 'EOF'
 server {
@@ -64,18 +87,16 @@ server {
 EOF
 
 systemctl daemon-reload
-systemctl enable staff-api client-api
-systemctl start staff-api
-sleep 5
-systemctl start client-api
-sleep 5
+timedatectl set-timezone Atlantic/Bermuda || true
+systemctl disable staff-api client-api || true
+systemctl stop staff-api || true
+systemctl stop client-api || true
+systemctl enable businessmanager-app-start.timer
+systemctl start businessmanager-app-start.timer
 systemctl restart nginx
 
-echo "=== Staff API Status ==="
-systemctl status staff-api --no-pager | tail -5
-echo "=== Client API Status ==="
-systemctl status client-api --no-pager | tail -5
-echo "=== Test staff API ==="
-curl -s http://127.0.0.1:8000/health | head -c 100
-echo ""
+echo "=== Timer Status ==="
+systemctl status businessmanager-app-start.timer --no-pager | tail -8
+echo "=== Next Startup Window ==="
+systemctl list-timers businessmanager-app-start.timer --all --no-pager
 echo "SETUP_COMPLETE"
