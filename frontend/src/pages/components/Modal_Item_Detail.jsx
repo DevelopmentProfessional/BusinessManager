@@ -676,6 +676,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   });
   const [itemCategories, setItemCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showNewLocationInput, setShowNewLocationInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
 
@@ -798,6 +799,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         if (!cancelled) setItemCategories([]);
       });
     setShowCategoryManager(false);
+    setShowNewLocationInput(false);
     setNewCategoryName("");
     return () => {
       cancelled = true;
@@ -1320,12 +1322,20 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         )}
                       </>
                     ) : (
-                      <div className="d-flex align-items-center gap-2 text-success">
-                        <CheckCircleSolid className="h-5 w-5" />
-                        <div>
-                          <div className="fw-medium">Status: OK</div>
-                          <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                      <div className="d-flex flex-column gap-2">
+                        <div className="d-flex align-items-center gap-2 text-success">
+                          <CheckCircleSolid className="h-5 w-5" />
+                          <div>
+                            <div className="fw-medium">Status: OK</div>
+                            <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                          </div>
                         </div>
+                        {isLocation && (
+                          <div className="form-floating">
+                            <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                            <label htmlFor="detail_cost">Cost</label>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1506,7 +1516,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   <label htmlFor="detail_type">Type</label>
                 </div>
 
-                <div className="mb-2">
+                {!isLocation && <div className="mb-2">
                   <div className="form-floating position-relative">
                     <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="SKU" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
                     <label htmlFor="detail_sku">SKU</label>
@@ -1520,23 +1530,50 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     )}
                   </div>
                   {scanError && <div className="alert alert-danger py-1 small mt-2 mb-0">{scanError}</div>}
-                </div>
+                </div>}
 
-                <div className="form-floating mb-2">
-                  <select id="detail_location" name="location" value={formData.location} onChange={handleChange} className="form-select form-select-sm">
-                    <option value="">Select a location...</option>
-                    {availableLocations.map((location) => (
-                      <option key={location} value={location}>
-                        {location}
-                      </option>
-                    ))}
-                    <option value="[NEW]">+ Add new location...</option>
-                  </select>
-                  <label htmlFor="detail_location">Location</label>
-                </div>
+                {!isLocation && <div className="d-flex align-items-center gap-2 mb-2">
+                  <div className="form-floating flex-grow-1 mb-0">
+                    <select
+                      id="detail_location"
+                      name="location"
+                      value={showNewLocationInput ? "" : formData.location}
+                      onChange={(e) => {
+                        setShowNewLocationInput(false);
+                        handleChange(e);
+                      }}
+                      className="form-select form-select-sm"
+                    >
+                      <option value="">Select location</option>
+                      {availableLocations.map((location) => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="detail_location">Location</label>
+                  </div>
+                  <button
+                    type="button"
+                    title={showNewLocationInput ? "Close" : "Add location"}
+                    onClick={() => {
+                      setShowNewLocationInput((prev) => {
+                        const next = !prev;
+                        if (next) {
+                          setFormData((current) => ({ ...current, location: "" }));
+                        }
+                        return next;
+                      });
+                    }}
+                    className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                    style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}
+                  >
+                    {showNewLocationInput ? "×" : "+"}
+                  </button>
+                </div>}
 
                 {/* Supplier dropdown */}
-                <div className="form-floating mb-2">
+                {!isLocation && <div className="form-floating mb-2">
                   <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
                     <option value="">— None —</option>
                     {availableSuppliers.map((s) => (
@@ -1546,15 +1583,15 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     ))}
                   </select>
                   <label htmlFor="detail_supplier">Supplier</label>
-                </div>
+                </div>}
 
-                {formData.location === "[NEW]" && (
+                {showNewLocationInput && (
                   <div className="form-floating mb-2">
                     <input
                       type="text"
                       id="detail_new_location"
                       name="location"
-                      value=""
+                      value={formData.location}
                       onChange={(e) => {
                         setFormData((prev) => ({ ...prev, location: e.target.value }));
                       }}
@@ -1566,7 +1603,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                 )}
 
                 {/* Category picker — type-specific, above features */}
-                <div className="mb-2 mt-2">
+                {!isLocation && <div className="mb-2 mt-2">
                   <div className="d-flex align-items-center gap-2 mb-1">
                     <div className="form-floating flex-grow-1">
                       <select id="detail_category" name="category" value={formData.category} onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))} className="form-select form-select-sm">
@@ -1579,8 +1616,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       </select>
                       <label htmlFor="detail_category">Category</label>
                     </div>
-                    <button type="button" title={showCategoryManager ? "Close" : "Manage categories"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ height: "3.2rem", width: "2.6rem", fontSize: "0.8rem" }}>
-                      {showCategoryManager ? "×" : "⋯"}
+                    <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}>
+                      {showCategoryManager ? "×" : "+"}
                     </button>
                   </div>
                   {showCategoryManager && (
@@ -1610,7 +1647,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
               </form>
 
               {/* Descriptive Features — most types, shown after item is saved */}

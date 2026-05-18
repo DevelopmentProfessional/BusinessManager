@@ -709,6 +709,14 @@ export const reportsAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/payroll?${queryParams}`);
   },
+  getOrdersReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/orders?${queryParams}`);
+  },
+  getTasksReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/tasks?${queryParams}`);
+  },
 };
 
 /**

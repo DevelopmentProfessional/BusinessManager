@@ -64,6 +64,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   });
   const [itemCategories, setItemCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showNewLocationInput, setShowNewLocationInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -202,6 +203,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         if (!cancelled) setItemCategories([]);
       });
     setShowCategoryManager(false);
+    setShowNewLocationInput(false);
     setNewCategoryName("");
     return () => {
       cancelled = true;
@@ -573,12 +575,22 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   )}
                 </>
               ) : (
-                <div className="d-flex align-items-center gap-2 text-success">
-                  <CheckCircleSolid className="h-5 w-5" />
-                  <div>
-                    <div className="fw-medium">Status: OK</div>
-                    <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                <div className="d-flex flex-column gap-2">
+                  <div className="d-flex align-items-center gap-2 text-success">
+                    <CheckCircleSolid className="h-5 w-5" />
+                    <div>
+                      <div className="fw-medium">Status: OK</div>
+                      <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                    </div>
                   </div>
+                  {isLocation && (
+                    <div className="mb-2">
+                      <div className="form-floating">
+                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <label htmlFor="cost">Cost</label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -685,8 +697,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               })()}
           </div>
 
-          {/* Category picker — appears once a type is selected */}
-          <div className="mb-2">
+          {/* Category picker — hidden for LOCATION type */}
+          {!isLocation && <div className="mb-2">
             <div className="d-flex align-items-center gap-2 mb-1">
               <div className="form-floating flex-grow-1">
                 <select id="category" name="category" value={formData.category} onChange={handleChange} className="form-select form-select-sm">
@@ -699,8 +711,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 </select>
                 <label htmlFor="category">Category</label>
               </div>
-              <button type="button" title={showCategoryManager ? "Close" : "Manage categories"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ height: "3.2rem", width: "2.6rem", fontSize: "0.8rem" }}>
-                {showCategoryManager ? "×" : "⋯"}
+              <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}>
+                {showCategoryManager ? "×" : "+"}
               </button>
             </div>
             {showCategoryManager && (
@@ -730,9 +742,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 </div>
               </div>
             )}
-          </div>
+          </div>}
 
-          <div className="mb-2">
+          {!isLocation && <div className="mb-2">
             <div className="form-floating position-relative">
               <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="SKU" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
               <label htmlFor="sku">SKU</label>
@@ -745,41 +757,70 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 </button>
               )}
             </div>
-          </div>
-          {scanError && <div className="alert alert-danger py-1 small mb-2">{scanError}</div>}
+            {scanError && <div className="alert alert-danger py-1 small mb-2">{scanError}</div>}
+          </div>}
 
-          <div className="form-floating mb-2">
-            <select id="location" name="location" value={formData.location} onChange={handleChange} className="form-select form-select-sm">
-              <option value="">Select a location...</option>
-              {availableLocations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-              <option value="[NEW]">+ Add new location...</option>
-            </select>
-            <label htmlFor="location">Location</label>
-          </div>
-
-          {formData.location === "[NEW]" && (
-            <div className="form-floating mb-2">
-              <input
-                type="text"
-                id="new_location"
-                name="location"
-                value=""
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, location: e.target.value }));
+          {!isLocation && <>
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <div className="form-floating flex-grow-1 mb-0">
+                <select
+                  id="location"
+                  name="location"
+                  value={showNewLocationInput ? "" : formData.location}
+                  onChange={(e) => {
+                    setShowNewLocationInput(false);
+                    handleChange(e);
+                  }}
+                  className="form-select form-select-sm"
+                >
+                  <option value="">Select location</option>
+                  {availableLocations.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="location">Location</label>
+              </div>
+              <button
+                type="button"
+                title={showNewLocationInput ? "Close" : "Add location"}
+                onClick={() => {
+                  setShowNewLocationInput((prev) => {
+                    const next = !prev;
+                    if (next) {
+                      setFormData((current) => ({ ...current, location: "" }));
+                    }
+                    return next;
+                  });
                 }}
-                className="form-control form-control-sm"
-                placeholder="Enter new location"
-              />
-              <label htmlFor="new_location">New Location</label>
+                className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}
+              >
+                {showNewLocationInput ? "×" : "+"}
+              </button>
             </div>
-          )}
 
-          {/* Supplier */}
-          <div className="form-floating mb-2">
+            {showNewLocationInput && (
+              <div className="form-floating mb-2">
+                <input
+                  type="text"
+                  id="new_location"
+                  name="location"
+                  value={formData.location}
+                  onChange={(e) => {
+                    setFormData((prev) => ({ ...prev, location: e.target.value }));
+                  }}
+                  className="form-control form-control-sm"
+                  placeholder="Enter new location"
+                />
+                <label htmlFor="new_location">New Location</label>
+              </div>
+            )}
+          </>}
+
+          {/* Supplier — hidden for LOCATION type */}
+          {!isLocation && <div className="form-floating mb-2">
             <select id="supplier_id" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
               <option value="">No supplier</option>
               {availableSuppliers.map((supplier) => (
@@ -789,7 +830,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               ))}
             </select>
             <label htmlFor="supplier_id">Supplier (optional)</label>
-          </div>
+          </div>}
 
           {/* Linked Service - only for RESOURCE or ASSET types */}
           {(formData.type === "RESOURCE" || formData.type === "ASSET") && (
