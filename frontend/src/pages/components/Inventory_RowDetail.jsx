@@ -4,6 +4,7 @@ import React from "react";
 
 export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [] }) {
   const isLocation = (item.type || "").toUpperCase() === "LOCATION";
+  const isAsset = (item.type || "").toUpperCase() === "ASSET";
   const formatMoney = (value) => {
     if (value === undefined || value === null || value === "") return null;
     return Number(value).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2 });
@@ -17,7 +18,7 @@ export default function Inventory_RowDetail({ item, priceDisplay, featureNames =
         </span>
       )}
       {!isLocation && priceDisplay && <div className="small text-primary fw-semibold">{priceDisplay}</div>}
-      {isLocation && item.cost !== undefined && item.cost !== null && item.cost !== "" && <div className="small text-info fw-semibold">{formatMoney(item.cost)}</div>}
+      {(isLocation || isAsset) && item.cost !== undefined && item.cost !== null && item.cost !== "" && <div className="small text-info fw-semibold">{formatMoney(item.cost)}</div>}
       {featureNames.length > 0 && (
         <div className="d-flex flex-wrap gap-1 mt-1">
           {featureNames.map((name) => (
