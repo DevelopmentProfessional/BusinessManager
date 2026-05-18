@@ -170,7 +170,7 @@ export default function Modal_BulkImport({
           {/* Per-row details: type + photo (inventory only) */}
           {showRowDetails && parsedNames.length > 0 && (
             <div className="d-flex flex-column gap-1">
-            <p className="small text-muted mb-0 fw-medium">
+              <p className="small text-muted mb-0 fw-medium">
                 {allowPhotoUpload && itemTypes ? "Type, Category & Photo" : allowPhotoUpload ? "Photos" : itemTypes ? "Type & Category" : "Category"}
                 <span className="fw-normal"> (optional)</span>
               </p>
