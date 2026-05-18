@@ -586,7 +586,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                     <CheckCircleSolid className="h-5 w-5" />
                     <div>
                       <div className="fw-medium">Status: OK</div>
-                      <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                      <div className="small text-muted">{isLocation ? "Locations do not track stock" : "To add more units, scroll down to Asset Units and select Add Unit"}</div>
                     </div>
                   </div>
                   {isLocation && (
@@ -598,12 +598,20 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                     </div>
                   )}
                   {isAsset && (
-                    <div className="mb-2">
-                      <div className="form-floating">
-                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
-                        <label htmlFor="cost">Cost (purchase / rental)</label>
+                    <>
+                      <div className="mb-2">
+                        <div className="form-floating">
+                          <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                          <label htmlFor="price">Price (rental / resale)</label>
+                        </div>
                       </div>
-                    </div>
+                      <div className="mb-2">
+                        <div className="form-floating">
+                          <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                          <label htmlFor="cost">Cost (purchase / acquisition)</label>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -736,8 +744,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   <div className="d-flex flex-wrap gap-1 mb-2">
                     {itemCategories.map((cat) => (
                       <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                        <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="d-flex align-items-center justify-content-center p-0 border-0 bg-transparent text-secondary-emphasis lh-1" style={{ fontSize: "1rem", width: "0.9rem", height: "0.9rem", cursor: "pointer" }} aria-label="Remove">−</button>
                         {cat.name}
-                        <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="btn-close btn-close-sm ms-1" style={{ fontSize: "0.55rem", padding: "0.1rem" }} aria-label="Remove" />
                       </span>
                     ))}
                   </div>

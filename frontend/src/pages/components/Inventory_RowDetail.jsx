@@ -17,8 +17,30 @@ export default function Inventory_RowDetail({ item, priceDisplay, featureNames =
           {item.category}
         </span>
       )}
-      {!isLocation && priceDisplay && <div className="small text-primary fw-semibold">{priceDisplay}</div>}
-      {(isLocation || isAsset) && item.cost !== undefined && item.cost !== null && item.cost !== "" && <div className="small text-info fw-semibold">{formatMoney(item.cost)}</div>}
+      {!isLocation && !isAsset && priceDisplay && <div className="small text-primary fw-semibold">{priceDisplay}</div>}
+      {isAsset && (
+        <div className="d-flex flex-wrap gap-2 mt-1">
+          {item.price != null && item.price !== "" && (
+            <span className="small text-primary fw-semibold">Price: {formatMoney(item.price)}</span>
+          )}
+          {item.cost != null && item.cost !== "" && (
+            <span className="small text-info fw-semibold">Cost: {formatMoney(item.cost)}</span>
+          )}
+        </div>
+      )}
+      {isLocation && item.cost != null && item.cost !== "" && (
+        <div className="small text-info fw-semibold">{formatMoney(item.cost)}</div>
+      )}
+      {isAsset && (item.date_of_purchase || item.date_of_sale) && (
+        <div className="d-flex flex-wrap gap-2 mt-1">
+          {item.date_of_purchase && (
+            <span className="text-xxs text-muted">Purchased: {item.date_of_purchase.slice(0, 10)}</span>
+          )}
+          {item.date_of_sale && (
+            <span className="text-xxs text-muted">Sold: {item.date_of_sale.slice(0, 10)}</span>
+          )}
+        </div>
+      )}
       {featureNames.length > 0 && (
         <div className="d-flex flex-wrap gap-1 mt-1">
           {featureNames.map((name) => (
