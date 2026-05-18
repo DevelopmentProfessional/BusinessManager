@@ -698,139 +698,147 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
           </div>
 
           {/* Category picker — hidden for LOCATION type */}
-          {!isLocation && <div className="mb-2">
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <div className="form-floating flex-grow-1">
-                <select id="category" name="category" value={formData.category} onChange={handleChange} className="form-select form-select-sm">
-                  <option value="">— None —</option>
-                  {itemCategories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="category">Category</label>
-              </div>
-              <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}>
-                {showCategoryManager ? "×" : "+"}
-              </button>
-            </div>
-            {showCategoryManager && (
-              <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                {itemCategories.length === 0 && <div className="small text-muted mb-2">No categories yet for this type.</div>}
-                <div className="d-flex flex-wrap gap-1 mb-2">
-                  {itemCategories.map((cat) => (
-                    <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
-                      {cat.name}
-                      <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="btn-close btn-close-sm ms-1" style={{ fontSize: "0.55rem", padding: "0.1rem" }} aria-label="Remove" />
-                    </span>
-                  ))}
+          {!isLocation && (
+            <div className="mb-2">
+              <div className="d-flex align-items-center gap-2 mb-1">
+                <div className="form-floating flex-grow-1">
+                  <select id="category" name="category" value={formData.category} onChange={handleChange} className="form-select form-select-sm">
+                    <option value="">— None —</option>
+                    {itemCategories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="category">Category</label>
                 </div>
-                <div className="d-flex gap-1">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
-                    placeholder="New category name..."
-                    className="form-control form-control-sm"
-                    style={{ fontSize: "0.8rem" }}
-                  />
-                  <button type="button" onClick={handleAddCategory} className="btn btn-sm btn-outline-primary flex-shrink-0" style={{ fontSize: "0.78rem" }}>
-                    Add
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>}
-
-          {!isLocation && <div className="mb-2">
-            <div className="form-floating position-relative">
-              <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="SKU" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
-              <label htmlFor="sku">SKU</label>
-              {showScanner && (
-                <button type="button" onClick={() => setIsScannerOpen(true)} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center" style={{ right: "0.25rem", width: "3rem", height: "3rem" }} title="Scan Barcode">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
-                    <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
-                  </svg>
+                <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}>
+                  {showCategoryManager ? "×" : "+"}
                 </button>
+              </div>
+              {showCategoryManager && (
+                <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  {itemCategories.length === 0 && <div className="small text-muted mb-2">No categories yet for this type.</div>}
+                  <div className="d-flex flex-wrap gap-1 mb-2">
+                    {itemCategories.map((cat) => (
+                      <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                        {cat.name}
+                        <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="btn-close btn-close-sm ms-1" style={{ fontSize: "0.55rem", padding: "0.1rem" }} aria-label="Remove" />
+                      </span>
+                    ))}
+                  </div>
+                  <div className="d-flex gap-1">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
+                      placeholder="New category name..."
+                      className="form-control form-control-sm"
+                      style={{ fontSize: "0.8rem" }}
+                    />
+                    <button type="button" onClick={handleAddCategory} className="btn btn-sm btn-outline-primary flex-shrink-0" style={{ fontSize: "0.78rem" }}>
+                      Add
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-            {scanError && <div className="alert alert-danger py-1 small mb-2">{scanError}</div>}
-          </div>}
+          )}
 
-          {!isLocation && <>
-            <div className="d-flex align-items-center gap-2 mb-2">
-              <div className="form-floating flex-grow-1 mb-0">
-                <select
-                  id="location"
-                  name="location"
-                  value={showNewLocationInput ? "" : formData.location}
-                  onChange={(e) => {
-                    setShowNewLocationInput(false);
-                    handleChange(e);
-                  }}
-                  className="form-select form-select-sm"
-                >
-                  <option value="">Select location</option>
-                  {availableLocations.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="location">Location</label>
+          {!isLocation && (
+            <div className="mb-2">
+              <div className="form-floating position-relative">
+                <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="SKU" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
+                <label htmlFor="sku">SKU</label>
+                {showScanner && (
+                  <button type="button" onClick={() => setIsScannerOpen(true)} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center" style={{ right: "0.25rem", width: "3rem", height: "3rem" }} title="Scan Barcode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
+                      <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
+                    </svg>
+                  </button>
+                )}
               </div>
-              <button
-                type="button"
-                title={showNewLocationInput ? "Close" : "Add location"}
-                onClick={() => {
-                  setShowNewLocationInput((prev) => {
-                    const next = !prev;
-                    if (next) {
-                      setFormData((current) => ({ ...current, location: "" }));
-                    }
-                    return next;
-                  });
-                }}
-                className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}
-              >
-                {showNewLocationInput ? "×" : "+"}
-              </button>
+              {scanError && <div className="alert alert-danger py-1 small mb-2">{scanError}</div>}
             </div>
+          )}
 
-            {showNewLocationInput && (
-              <div className="form-floating mb-2">
-                <input
-                  type="text"
-                  id="new_location"
-                  name="location"
-                  value={formData.location}
-                  onChange={(e) => {
-                    setFormData((prev) => ({ ...prev, location: e.target.value }));
+          {!isLocation && (
+            <>
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="form-floating flex-grow-1 mb-0">
+                  <select
+                    id="location"
+                    name="location"
+                    value={showNewLocationInput ? "" : formData.location}
+                    onChange={(e) => {
+                      setShowNewLocationInput(false);
+                      handleChange(e);
+                    }}
+                    className="form-select form-select-sm"
+                  >
+                    <option value="">Select location</option>
+                    {availableLocations.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="location">Location</label>
+                </div>
+                <button
+                  type="button"
+                  title={showNewLocationInput ? "Close" : "Add location"}
+                  onClick={() => {
+                    setShowNewLocationInput((prev) => {
+                      const next = !prev;
+                      if (next) {
+                        setFormData((current) => ({ ...current, location: "" }));
+                      }
+                      return next;
+                    });
                   }}
-                  className="form-control form-control-sm"
-                  placeholder="Enter new location"
-                />
-                <label htmlFor="new_location">New Location</label>
+                  className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                  style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}
+                >
+                  {showNewLocationInput ? "×" : "+"}
+                </button>
               </div>
-            )}
-          </>}
+
+              {showNewLocationInput && (
+                <div className="form-floating mb-2">
+                  <input
+                    type="text"
+                    id="new_location"
+                    name="location"
+                    value={formData.location}
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, location: e.target.value }));
+                    }}
+                    className="form-control form-control-sm"
+                    placeholder="Enter new location"
+                  />
+                  <label htmlFor="new_location">New Location</label>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Supplier — hidden for LOCATION type */}
-          {!isLocation && <div className="form-floating mb-2">
-            <select id="supplier_id" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
-              <option value="">No supplier</option>
-              {availableSuppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="supplier_id">Supplier (optional)</label>
-          </div>}
+          {!isLocation && (
+            <div className="form-floating mb-2">
+              <select id="supplier_id" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
+                <option value="">No supplier</option>
+                {availableSuppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="supplier_id">Supplier (optional)</label>
+            </div>
+          )}
 
           {/* Linked Service - only for RESOURCE or ASSET types */}
           {(formData.type === "RESOURCE" || formData.type === "ASSET") && (
