@@ -744,7 +744,15 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   <div className="d-flex flex-wrap gap-1 mb-2">
                     {itemCategories.map((cat) => (
                       <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
-                        <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="d-flex align-items-center justify-content-center p-0 border-0 bg-transparent text-secondary-emphasis lh-1" style={{ fontSize: "1rem", width: "0.9rem", height: "0.9rem", cursor: "pointer" }} aria-label="Remove">−</button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="d-flex align-items-center justify-content-center p-0 border-0 bg-transparent text-secondary-emphasis lh-1"
+                          style={{ fontSize: "1rem", width: "0.9rem", height: "0.9rem", cursor: "pointer" }}
+                          aria-label="Remove"
+                        >
+                          −
+                        </button>
                         {cat.name}
                       </span>
                     ))}
