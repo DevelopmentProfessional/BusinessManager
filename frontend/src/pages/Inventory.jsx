@@ -362,7 +362,7 @@ export default function Inventory() {
 
   return (
     <PageLayout title="Inventory" error={error}>
-      <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Stock", width: 50 }]} />
+      <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
 
       {/* Container_Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
@@ -371,7 +371,7 @@ export default function Inventory() {
             <colgroup>
               <col />
               <col style={{ width: "80px" }} />
-              <col style={{ width: "50px" }} />
+              <col style={{ width: "60px" }} />
             </colgroup>
             <tbody>
               {filteredInventory.map((inv, index) => (
@@ -383,7 +383,7 @@ export default function Inventory() {
                     <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
                   </td>
 
-                  {/* Stock */}
+                  {/* Count */}
                   <td className="main-page-table-data text-center">
                     <Badge variant={stockVariant(inv)} pill label={String(inv.quantity)} />
                   </td>

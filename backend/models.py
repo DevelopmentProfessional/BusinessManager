@@ -330,6 +330,9 @@ class Inventory(BaseModel, table=True):
     price_percentage: Optional[float] = Field(default=None)
     # Asset cost tracking (purchase/acquisition cost per unit, for future cost analysis)
     cost: Optional[float] = Field(default=None)
+    # Date tracking
+    date_of_purchase: Optional[datetime] = Field(default=None)
+    date_of_sale: Optional[datetime] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -817,6 +820,7 @@ class InventoryCreate(SQLModel):
     name: str
     sku: Optional[str] = None
     price: float = 0
+    cost: Optional[float] = None
     description: Optional[str] = None
     category: Optional[str] = None
     type: Optional[Union[ItemType, str]] = "product"
@@ -826,6 +830,8 @@ class InventoryCreate(SQLModel):
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     supplier_id: Optional[UUID] = None
+    date_of_purchase: Optional[datetime] = None
+    date_of_sale: Optional[datetime] = None
 
 
 # ─── 17c SERVICE SCHEMAS ───────────────────────────────────────────────────────
@@ -960,6 +966,8 @@ class InventoryRead(SQLModel):
     price_type: Optional[str] = "fixed"
     price_percentage: Optional[float] = None
     cost: Optional[float] = None
+    date_of_purchase: Optional[datetime] = None
+    date_of_sale: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     images: List["InventoryImageRead"] = []

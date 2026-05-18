@@ -61,6 +61,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     quantity: 0,
     min_stock_level: 10,
     category: "",
+    date_of_purchase: "",
+    date_of_sale: "",
   });
   const [itemCategories, setItemCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
@@ -125,6 +127,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         quantity: item.quantity || 0,
         min_stock_level: item.min_stock_level || 10,
         category: item.category || "",
+        date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
+        date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
       });
     } else if (initialSku) {
       setFormData((prev) => ({ ...prev, sku: initialSku }));
@@ -343,6 +347,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       supplier_id: formData.supplier_id || undefined,
       category: formData.category || undefined,
       min_stock_level: parseInt(formData.min_stock_level) || 10,
+      date_of_purchase: formData.date_of_purchase || undefined,
+      date_of_sale: formData.date_of_sale || undefined,
     };
     const qty = parseInt(formData.quantity) || 0;
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
@@ -588,6 +594,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                       <div className="form-floating">
                         <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
                         <label htmlFor="cost">Cost</label>
+                      </div>
+                    </div>
+                  )}
+                  {isAsset && (
+                    <div className="mb-2">
+                      <div className="form-floating">
+                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <label htmlFor="cost">Cost (purchase / rental)</label>
                       </div>
                     </div>
                   )}
@@ -856,6 +870,19 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
           )}
 
           <hr className="my-2" />
+
+          {/* Date of Purchase / Date of Sale */}
+          <div className="d-flex gap-2 mb-2">
+            <div className="form-floating flex-grow-1">
+              <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Purchase" />
+              <label htmlFor="date_of_purchase">Date of Purchase</label>
+            </div>
+            <div className="form-floating flex-grow-1">
+              <input type="date" id="date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Sale" />
+              <label htmlFor="date_of_sale">Date of Sale</label>
+            </div>
+          </div>
+
           <div className="form-floating mb-2">
             <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm border-0 min-h-[80px]" placeholder="Description" />
             <label htmlFor="description">Description</label>
