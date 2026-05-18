@@ -47,7 +47,7 @@ import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, Tag
 import Modal_Discount_Rules from "./components/Modal_Discount_Rules";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
-import { inventoryAPI, featuresAPI } from "../services/api";
+import { inventoryAPI, featuresAPI, assetUnitsAPI } from "../services/api";
 import Modal_Detail_Item from "./components/Modal_Item_Detail";
 import Gate_Permission from "./components/Gate_Permission";
 import Suppliers_Panel from "./components/Panel_Suppliers";
@@ -206,7 +206,15 @@ export default function Inventory() {
 
   const handleCreateInventory = async (createData) => {
     try {
-      await inventoryAPI.create(createData);
+      const res = await inventoryAPI.create(createData);
+      const newItem = res?.data ?? res;
+      if ((createData.type || "").toUpperCase() === "ASSET" && newItem?.id) {
+        try {
+          await assetUnitsAPI.add(newItem.id, { label: "Unit 1", state: "available", notes: null });
+        } catch (e) {
+          console.warn("Failed to auto-create asset unit:", e);
+        }
+      }
       await loadInventoryData();
       setShowAddItemModal(false);
       clearError();
