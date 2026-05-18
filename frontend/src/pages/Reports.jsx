@@ -33,7 +33,7 @@
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, CalculatorIcon } from "@heroicons/react/24/outline";
+import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, CalculatorIcon, ShoppingCartIcon, ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
 import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
@@ -127,6 +127,24 @@ const AVAILABLE_REPORTS = [
     tables: ["attendance", "user"],
     chartTypes: ["line", "bar"],
   },
+  {
+    id: "orders",
+    title: "Portal Orders",
+    description: "Track order volume and revenue from the client portal",
+    icon: ShoppingCartIcon,
+    color: "cyan",
+    tables: ["sale_transaction", "client"],
+    chartTypes: ["bar", "line", "area"],
+  },
+  {
+    id: "tasks",
+    title: "Task Completion",
+    description: "Monitor completed vs open tasks over time",
+    icon: ClipboardDocumentCheckIcon,
+    color: "violet",
+    tables: ["user", "schedule"],
+    chartTypes: ["bar", "line"],
+  },
 ];
 
 const DATE_RANGE_OPTIONS = [
@@ -182,6 +200,8 @@ export default function Reports() {
         attendance: "attendance",
         sale_transaction: "sales",
         pay_slip: "profile",
+        client_order: "clients",
+        task: "employees",
       };
       const page = pageMap[table];
       if (page === "profile") return true;
@@ -255,6 +275,14 @@ export default function Reports() {
         case "payroll":
           response = await reportsAPI.getPayrollReport(apiParams);
           setReportData(transformPayrollData(response.data, filters.chartType));
+          break;
+        case "orders":
+          response = await reportsAPI.getOrdersReport(apiParams);
+          setReportData(transformMultiDatasetData(response.data, filters.chartType));
+          break;
+        case "tasks":
+          response = await reportsAPI.getTasksReport(apiParams);
+          setReportData(transformMultiDatasetData(response.data, filters.chartType));
           break;
         default:
           setReportData({ labels: [], datasets: [] });
@@ -451,6 +479,33 @@ export default function Reports() {
     ],
   });
 
+  // Generic multi-dataset transform for reports that already return datasets array
+  const transformMultiDatasetData = (data, chartType) => {
+    if (!Array.isArray(data.datasets) || data.datasets.length === 0) {
+      return { labels: data.labels || [], datasets: [] };
+    }
+    const palette = [
+      { bg: "rgba(59,130,246,0.5)", border: "rgb(59,130,246)" },
+      { bg: "rgba(239,68,68,0.5)", border: "rgb(239,68,68)" },
+      { bg: "rgba(16,185,129,0.5)", border: "rgb(16,185,129)" },
+      { bg: "rgba(245,158,11,0.5)", border: "rgb(245,158,11)" },
+    ];
+    return {
+      labels: data.labels,
+      datasets: data.datasets.map((dataset, idx) => {
+        const colors = palette[idx % palette.length];
+        const values = dataset.data || [];
+        return {
+          label: dataset.label || `Series ${idx + 1}`,
+          data: values,
+          backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(values.length, 0.6) : colors.bg,
+          borderColor: colors.border,
+          borderWidth: 2,
+        };
+      }),
+    };
+  };
+
   // ─── 9 LIFECYCLE HOOKS ───────────────────────────────────────────────────
   useEffect(() => {
     if (accessibleReports.length > 0 && !selectedReportId) {
@@ -591,8 +646,6 @@ export default function Reports() {
       <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
         <div className="d-flex align-items-center gap-2">
-          <Button_Toolbar icon={CurrencyDollarIcon} label="Financial" onClick={() => setShowFinancialDashboard(true)} className="btn-app-primary" />
-          <Button_Toolbar icon={CalculatorIcon} label="Forecast" onClick={() => setShowForecastCalculator(true)} className="btn-app-primary" />
           <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
           <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
         </div>
@@ -806,6 +859,18 @@ export default function Reports() {
 
               {reportMenuOpen && (
                 <div className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", zIndex: 20 }}>
+                  {/* Financial Dashboard — always first */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFinancialDashboard(true);
+                      setReportMenuOpen(false);
+                    }}
+                    className="btn btn-sm w-100 d-flex align-items-center gap-2 text-start btn-outline-secondary mb-1 border-bottom pb-1"
+                  >
+                    <CurrencyDollarIcon className="h-4 w-4 flex-shrink-0 text-green-600" />
+                    <span className="text-truncate font-semibold">Financial</span>
+                  </button>
                   {accessibleReports.map((report) => {
                     const isActive = selectedReportId === report.id;
                     return (

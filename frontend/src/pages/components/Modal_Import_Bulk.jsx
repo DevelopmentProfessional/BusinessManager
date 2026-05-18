@@ -42,9 +42,14 @@ export default function Modal_BulkImport({
   const [text, setText] = useState("");
   const [photos, setPhotos] = useState({}); // { [index]: { file: File, url: string } }
   const [types, setTypes] = useState({}); // { [index]: string }
+  const [categories, setCategories] = useState({}); // { [index]: string }
   const [saving, setSaving] = useState(false);
   const [resultMsg, setResultMsg] = useState(null);
+  const [openTypeDropdown, setOpenTypeDropdown] = useState(null); // index or null
+  const [openCategoryDropdown, setOpenCategoryDropdown] = useState(null); // index or null
   const fileInputRefs = useRef({});
+  const typeInputRefs = useRef({});
+  const categoryInputRefs = useRef({});
 
   // Reset state whenever modal opens
   useEffect(() => {
@@ -52,9 +57,14 @@ export default function Modal_BulkImport({
       setText("");
       setPhotos({});
       setTypes({});
+      setCategories({});
       setResultMsg(null);
       setSaving(false);
+      setOpenTypeDropdown(null);
+      setOpenCategoryDropdown(null);
       fileInputRefs.current = {};
+      typeInputRefs.current = {};
+      categoryInputRefs.current = {};
     }
   }, [isOpen]);
 
@@ -90,6 +100,12 @@ export default function Modal_BulkImport({
 
   const handleTypeChange = (index, value) => {
     setTypes((prev) => ({ ...prev, [index]: value }));
+    setOpenTypeDropdown(null);
+  };
+
+  const handleCategoryChange = (index, value) => {
+    setCategories((prev) => ({ ...prev, [index]: value }));
+    setOpenCategoryDropdown(null);
   };
 
   const handleSave = async () => {
@@ -99,6 +115,7 @@ export default function Modal_BulkImport({
       name,
       photo: photos[i]?.file ?? null,
       ...(itemTypes ? { type: types[i] || defaultItemType } : {}),
+      ...(categories[i] ? { category: categories[i] } : {}),
     }));
 
     setSaving(true);
@@ -113,7 +130,7 @@ export default function Modal_BulkImport({
     }
   };
 
-  const showRowDetails = allowPhotoUpload || itemTypes;
+  const showRowDetails = allowPhotoUpload || itemTypes || true; // always show for category
 
   return (
     /* Backdrop */
@@ -153,8 +170,8 @@ export default function Modal_BulkImport({
           {/* Per-row details: type + photo (inventory only) */}
           {showRowDetails && parsedNames.length > 0 && (
             <div className="d-flex flex-column gap-1">
-              <p className="small text-muted mb-0 fw-medium">
-                {allowPhotoUpload && itemTypes ? "Type & Photo" : allowPhotoUpload ? "Photos" : "Type"}
+            <p className="small text-muted mb-0 fw-medium">
+                {allowPhotoUpload && itemTypes ? "Type, Category & Photo" : allowPhotoUpload ? "Photos" : itemTypes ? "Type & Category" : "Category"}
                 <span className="fw-normal"> (optional)</span>
               </p>
               <div className="d-flex flex-column gap-1">
@@ -168,20 +185,111 @@ export default function Modal_BulkImport({
                     )}
 
                     {/* Name */}
-                    <span className="flex-grow-1 small text-truncate" style={{ minWidth: 0 }}>
+                    <span className="flex-grow-0 small text-truncate" style={{ minWidth: "60px", maxWidth: "100px" }}>
                       {name}
                     </span>
 
-                    {/* Type select */}
+                    {/* Type combobox */}
                     {itemTypes && (
-                      <select className="form-select form-select-sm flex-shrink-0" style={{ width: "auto", fontSize: "0.72rem" }} value={types[i] || defaultItemType} onChange={(e) => handleTypeChange(i, e.target.value)} disabled={saving}>
-                        {itemTypes.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div style={{ position: "relative", flex: "0 0 auto" }}>
+                        <input
+                          ref={(el) => {
+                            typeInputRefs.current[i] = el;
+                          }}
+                          type="text"
+                          className="form-control form-control-sm"
+                          style={{ width: "100px", fontSize: "0.72rem" }}
+                          placeholder="Type"
+                          value={types[i] || ""}
+                          onChange={(e) => {
+                            setTypes((prev) => ({ ...prev, [i]: e.target.value }));
+                            setOpenTypeDropdown(i);
+                          }}
+                          onFocus={() => setOpenTypeDropdown(i)}
+                          onBlur={() => setTimeout(() => setOpenTypeDropdown(null), 100)}
+                          disabled={saving}
+                        />
+                        {openTypeDropdown === i && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              background: "white",
+                              border: "1px solid #dee2e6",
+                              borderRadius: "4px",
+                              maxHeight: "120px",
+                              overflowY: "auto",
+                              zIndex: 1000,
+                              marginTop: "2px",
+                            }}
+                          >
+                            {itemTypes
+                              .filter((t) => !types[i] || t.label.toLowerCase().includes(types[i].toLowerCase()) || t.value.toLowerCase().includes(types[i].toLowerCase()))
+                              .map((t) => (
+                                <div
+                                  key={t.value}
+                                  style={{
+                                    padding: "4px 8px",
+                                    fontSize: "0.72rem",
+                                    cursor: "pointer",
+                                    background: types[i] === t.value ? "#e7f1ff" : "white",
+                                    borderBottom: "1px solid #f0f0f0",
+                                  }}
+                                  onMouseDown={() => handleTypeChange(i, t.value)}
+                                >
+                                  {t.label}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
                     )}
+
+                    {/* Category combobox */}
+                    <div style={{ position: "relative", flex: "0 0 auto" }}>
+                      <input
+                        ref={(el) => {
+                          categoryInputRefs.current[i] = el;
+                        }}
+                        type="text"
+                        className="form-control form-control-sm"
+                        style={{ width: "100px", fontSize: "0.72rem" }}
+                        placeholder="Category"
+                        value={categories[i] || ""}
+                        onChange={(e) => {
+                          setCategories((prev) => ({ ...prev, [i]: e.target.value }));
+                          setOpenCategoryDropdown(i);
+                        }}
+                        onFocus={() => setOpenCategoryDropdown(i)}
+                        onBlur={() => setTimeout(() => setOpenCategoryDropdown(null), 100)}
+                        disabled={saving}
+                      />
+                      {/* Dropdown hint for category */}
+                      {openCategoryDropdown === i && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            background: "white",
+                            border: "1px solid #dee2e6",
+                            borderRadius: "4px",
+                            maxHeight: "120px",
+                            overflowY: "auto",
+                            zIndex: 1000,
+                            marginTop: "2px",
+                            padding: "4px 8px",
+                            fontSize: "0.7rem",
+                            color: "#999",
+                          }}
+                        >
+                          Paste custom category or select from existing
+                        </div>
+                      )}
+                    </div>
 
                     {/* Photo upload / remove */}
                     {allowPhotoUpload &&

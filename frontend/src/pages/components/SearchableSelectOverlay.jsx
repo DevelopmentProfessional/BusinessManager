@@ -13,13 +13,21 @@ function isSearchableSelect(select) {
 }
 
 function getSelectOptions(select) {
-  return Array.from(select.options).map((option, index) => ({
-    index,
-    value: option.value,
-    label: (option.label || option.textContent || "").trim(),
-    disabled: option.disabled,
-    selected: option.selected,
-  }));
+  return Array.from(select.options)
+    .map((option, index) => ({
+      index,
+      value: option.value,
+      label: (option.label || option.textContent || "").trim(),
+      disabled: option.disabled,
+      selected: option.selected,
+    }))
+    .filter((option) => {
+      if (option.value !== "") {
+        return true;
+      }
+
+      return !/^select\b|^choose\b/i.test(option.label);
+    });
 }
 
 function getSelectLabel(select) {
@@ -107,10 +115,6 @@ export default function SearchableSelectOverlay() {
   const filteredOptions = useMemo(() => {
     return options.filter((option) => matchesWildcardText(searchTerm, option.label, option.value));
   }, [options, searchTerm]);
-
-  const selectedOption = useMemo(() => {
-    return options.find((option) => option.selected) || null;
-  }, [options]);
 
   useEffect(() => {
     if (!activeSelect) {
@@ -314,7 +318,6 @@ export default function SearchableSelectOverlay() {
             <input ref={inputRef} type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={handleInputKeyDown} className="form-control searchable-select-input" placeholder={label ? `Search ${label}` : "Search options"} />
             <ChevronDownIcon className="searchable-select-input-icon" />
           </div>
-          {selectedOption && !searchTerm && <div className="searchable-select-current-value">Selected: {selectedOption.label || "Blank value"}</div>}
         </div>
       </div>
     </div>,

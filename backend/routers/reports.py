@@ -33,7 +33,7 @@ from typing import Optional
 import logging
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoSuchTableError
 from backend.database import get_session
-from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip, ClientOrder
+from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip, ClientOrder, Task
 from backend.routers.auth import get_current_user
 
 router = APIRouter()
@@ -530,3 +530,94 @@ def get_payroll_report(
 
     sorted_keys = sorted(grouped.keys())
     return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
+
+
+# ─── 11 PORTAL ORDERS REPORT ──────────────────────────────────────────────────
+
+@router.get("/reports/orders")
+def get_orders_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    group_by: str = Query("month"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Portal orders analytics: order count and revenue grouped over time."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date, end_of_day=True)
+
+    stmt = select(ClientOrder).where(ClientOrder.company_id == current_user.company_id)
+    orders = session.exec(stmt).all()
+
+    count_grouped: dict = {}
+    revenue_grouped: dict = {}
+
+    for order in orders:
+        dt = order.created_at
+        if dt is None:
+            continue
+        if start and dt < start:
+            continue
+        if end and dt > end:
+            continue
+        if order.status in ("payment_pending", "cancelled", "refunded"):
+            continue
+
+        label = _group_label(dt, group_by)
+        count_grouped[label] = count_grouped.get(label, 0) + 1
+        revenue_grouped[label] = revenue_grouped.get(label, 0) + (order.total or 0)
+
+    sorted_keys = sorted(set(list(count_grouped.keys()) + list(revenue_grouped.keys())))
+    return {
+        "labels": sorted_keys,
+        "datasets": [
+            {"label": "Orders", "data": [count_grouped.get(k, 0) for k in sorted_keys]},
+            {"label": "Revenue ($)", "data": [round(revenue_grouped.get(k, 0), 2) for k in sorted_keys]},
+        ],
+    }
+
+
+# ─── 12 TASKS REPORT ──────────────────────────────────────────────────────────
+
+@router.get("/reports/tasks")
+def get_tasks_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    group_by: str = Query("month"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Tasks analytics: completed vs open task counts grouped over time."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date, end_of_day=True)
+
+    stmt = select(Task).where(Task.company_id == current_user.company_id)
+    tasks = session.exec(stmt).all()
+
+    completed_grouped: dict = {}
+    open_grouped: dict = {}
+
+    for task in tasks:
+        dt = task.created_at
+        if dt is None:
+            continue
+        if start and dt < start:
+            continue
+        if end and dt > end:
+            continue
+
+        label = _group_label(dt, group_by)
+        if task.status == "completed":
+            completed_grouped[label] = completed_grouped.get(label, 0) + 1
+        else:
+            open_grouped[label] = open_grouped.get(label, 0) + 1
+
+    sorted_keys = sorted(set(list(completed_grouped.keys()) + list(open_grouped.keys())))
+    return {
+        "labels": sorted_keys,
+        "datasets": [
+            {"label": "Completed", "data": [completed_grouped.get(k, 0) for k in sorted_keys]},
+            {"label": "Open", "data": [open_grouped.get(k, 0) for k in sorted_keys]},
+        ],
+    }
+
