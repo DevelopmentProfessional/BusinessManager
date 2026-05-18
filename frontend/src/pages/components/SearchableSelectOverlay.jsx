@@ -66,13 +66,14 @@ function getPanelStyle(select) {
   const rect = select.getBoundingClientRect();
   const width = Math.min(Math.max(rect.width, PANEL_MIN_WIDTH), window.innerWidth - PANEL_SIDE_MARGIN * 2);
   const left = Math.min(Math.max(rect.left, PANEL_SIDE_MARGIN), window.innerWidth - width - PANEL_SIDE_MARGIN);
-  const maxHeight = Math.max(180, Math.min(PANEL_MAX_HEIGHT, rect.top - PANEL_SIDE_MARGIN));
-  const panelHeight = maxHeight;
-  const top = Math.max(PANEL_SIDE_MARGIN, rect.top - panelHeight);
+  const availableAbove = Math.max(96, rect.top - PANEL_SIDE_MARGIN - PANEL_GAP);
+  const maxHeight = Math.min(PANEL_MAX_HEIGHT, availableAbove);
+  const bottom = Math.max(PANEL_SIDE_MARGIN, window.innerHeight - rect.top + PANEL_GAP);
 
   return {
     left,
-    top,
+    top: "auto",
+    bottom,
     width,
     maxHeight,
   };
