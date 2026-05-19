@@ -286,7 +286,10 @@ class RolePermission(BaseModel, table=True):
 # ─── 5 CLIENT MODELS ───────────────────────────────────────────────────────────
 # Client model
 class Client(BaseModel, table=True):
-    name: str = Field(index=True)  # Client names must be unique per company
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_client_company_name"),
+    )
+    name: str = Field(index=True)
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)

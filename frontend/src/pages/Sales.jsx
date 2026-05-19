@@ -34,7 +34,7 @@ import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI } from "../services/api";
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, discountRulesAPI } from "../services/api";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
 import Modal_Detail_Item from "./components/Modal_Item_Detail";
@@ -340,6 +340,7 @@ export default function Sales() {
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [appSettings, setAppSettings] = useState(null);
+  const [discountRules, setDiscountRules] = useState([]);
   // Invoice template modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [historyFilters, setHistoryFilters] = useState({
@@ -362,6 +363,10 @@ export default function Sales() {
     settingsAPI
       .getSettings()
       .then((res) => setAppSettings(res.data))
+      .catch(() => {});
+    discountRulesAPI
+      .getAll()
+      .then((res) => setDiscountRules(Array.isArray(res?.data) ? res.data : []))
       .catch(() => {});
   });
 
@@ -759,6 +764,37 @@ export default function Sales() {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const taxRatePercent = Number.isFinite(Number(appSettings?.tax_rate)) ? Number(appSettings.tax_rate) : 0;
+
+  // Calculate applicable discount from active rules
+  const cartDiscount = (() => {
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const currentDay = dayNames[now.getDay()];
+    let total = 0;
+    for (const rule of discountRules) {
+      if (!rule.is_active) continue;
+      if (rule.start_date && today < rule.start_date.slice(0, 10)) continue;
+      if (rule.end_date && today > rule.end_date.slice(0, 10)) continue;
+      if (rule.is_recurring && rule.recur_days) {
+        let days = [];
+        try { days = typeof rule.recur_days === "string" ? JSON.parse(rule.recur_days) : rule.recur_days; } catch { days = []; }
+        if (days.length > 0 && !days.includes(currentDay)) continue;
+      }
+      if (rule.day_start_time && currentTime < rule.day_start_time) continue;
+      if (rule.day_end_time && currentTime > rule.day_end_time) continue;
+      let base = cartTotal;
+      if (rule.applies_to !== "all") {
+        let ids = [];
+        try { ids = typeof rule.item_ids === "string" ? JSON.parse(rule.item_ids) : (rule.item_ids || []); } catch { ids = []; }
+        base = cart.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.price * i.quantity, 0);
+      }
+      const amt = rule.discount_type === "percentage" ? base * (rule.discount_value / 100) : Math.min(rule.discount_value, base);
+      total += amt;
+    }
+    return Math.min(total, cartTotal);
+  })();
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
   const invoiceTaxAmount = roundCurrency(cartTotal * (taxRatePercent / 100));
   const invoiceTotal = roundCurrency(cartTotal + invoiceTaxAmount);
@@ -1292,6 +1328,8 @@ export default function Sales() {
         filteredClients={filteredClients}
         cartItemCount={cartItemCount}
         cartTotal={cartTotal}
+        taxRate={taxRatePercent}
+        discountAmount={cartDiscount}
         loadClients={loadClients}
         openAddClientModal={openAddClientModal}
         handleSelectClient={handleSelectClient}
@@ -1322,7 +1360,7 @@ export default function Sales() {
       <Modal_Detail_Item isOpen={showProductModal} onClose={() => setShowProductModal(false)} item={selectedItem} itemType={selectedItemType} mode="sales" onAddToCart={addToCartWithFeatureCheck} cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0} />
 
       {/* Checkout Modal */}
-      <Modal_Checkout_Sales isOpen={showCheckout} onClose={() => setShowCheckout(false)} cart={cart} cartTotal={cartTotal} selectedClient={selectedClient} onProcessPayment={processPayment} taxRate={appSettings?.tax_rate ?? 0} currentUser={user} appSettings={appSettings} />
+      <Modal_Checkout_Sales isOpen={showCheckout} onClose={() => setShowCheckout(false)} cart={cart} cartTotal={cartTotal} discountAmount={cartDiscount} selectedClient={selectedClient} onProcessPayment={processPayment} taxRate={appSettings?.tax_rate ?? 0} currentUser={user} appSettings={appSettings} />
 
       {/* Feature Selection Modal — opens when a product with features is added to cart */}
       <Modal_Feature_Select_Sales
