@@ -31,6 +31,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Converted type select to custom dropdown with per-option help popovers
+ *   2026-05-19 | GitHub Copilot | Added cost type/date fields and bundle/mix subtotal summaries
  * ============================================================
  */
 
@@ -61,6 +62,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
     quantity: 0,
     min_stock_level: 10,
     category: "",
+    cost_type: "one_time",
     date_of_purchase: "",
     date_of_sale: "",
   });
@@ -127,6 +129,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         quantity: item.quantity || 0,
         min_stock_level: item.min_stock_level || 10,
         category: item.category || "",
+        cost_type: item.cost_type || "one_time",
         date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
         date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
       });
@@ -346,6 +349,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       service_id: formData.service_id || undefined,
       supplier_id: formData.supplier_id || undefined,
       category: formData.category || undefined,
+      cost_type: formData.cost_type || "one_time",
       min_stock_level: parseInt(formData.min_stock_level) || 10,
       date_of_purchase: formData.date_of_purchase || undefined,
       date_of_sale: formData.date_of_sale || undefined,
@@ -388,6 +392,29 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
   const isLocation = upperType === "LOCATION";
   const isResource = upperType === "RESOURCE";
   const isLowStock = formData.quantity <= formData.min_stock_level;
+  const bundleSummary = bundleComponents.reduce(
+    (acc, comp) => {
+      const qty = parseFloat(comp.quantity) || 0;
+      const price = parseFloat(comp.price) || 0;
+      const cost = parseFloat(comp.cost ?? comp.price) || 0;
+      acc.quantityTotal += qty;
+      acc.priceSubtotal += price * qty;
+      acc.costSubtotal += cost * qty;
+      return acc;
+    },
+    { quantityTotal: 0, priceSubtotal: 0, costSubtotal: 0 }
+  );
+  const mixSummary = mixComponents.reduce(
+    (acc, comp) => {
+      const price = parseFloat(comp.price) || 0;
+      const cost = parseFloat(comp.cost ?? comp.price) || 0;
+      acc.itemCount += 1;
+      acc.priceSubtotal += price;
+      acc.costSubtotal += cost;
+      return acc;
+    },
+    { itemCount: 0, priceSubtotal: 0, costSubtotal: 0 }
+  );
 
   const getTypeIcon = () => {
     if (upperType === "SERVICE") return <SparklesIcon className="h-16 w-16" />;
@@ -568,13 +595,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                     </div>
                   </div>
 
-                  {/* Cost — ASSET type only */}
-                  {isAsset && (
+                  {/* Cost — all stock-tracked types */}
+                  {!isLocation && (
                     <div className="mb-2">
                       <div className="input-group">
                         <div className="form-floating">
                           <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
-                          <label htmlFor="cost">Cost (purchase / rental)</label>
+                          <label htmlFor="cost">Cost</label>
                         </div>
                       </div>
                     </div>
@@ -888,6 +915,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
           <hr className="my-2" />
 
           {/* Date of Purchase / Date of Sale */}
+          <div className="form-floating mb-2">
+            <select id="cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
+              <option value="one_time">One-Time Purchase</option>
+              <option value="recurring">Recurring Rental</option>
+            </select>
+            <label htmlFor="cost_type">Cost Type</label>
+          </div>
+
           <div className="d-flex gap-2 mb-2">
             <div className="form-floating flex-grow-1">
               <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Purchase" />
@@ -930,15 +965,23 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               {bundleComponents.length > 0 && (
                 <div className="mb-2">
                   {bundleComponents.map((comp) => (
-                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-2 rounded bg-white border" style={{ borderColor: "#fed7aa" }}>
+                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-1 rounded bg-white border" style={{ borderColor: "#fed7aa" }}>
                       <span className="flex-grow-1 small">{comp.name}</span>
-                      <span className="small text-muted">${comp.price?.toFixed(2)}</span>
+                      <span className="small text-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
+                      <span className="small text-muted">${(comp.price ?? 0).toFixed(2)} sell</span>
                       <input type="number" min="0.1" step="0.1" className="form-control form-control-sm" style={{ width: 60 }} value={comp.quantity} onChange={(e) => setBundleComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c)))} />
+                      <span className="small fw-semibold">${((parseFloat(comp.price) || 0) * (parseFloat(comp.quantity) || 0)).toFixed(2)}</span>
                       <button type="button" className="btn btn-sm btn-link text-danger p-0" onClick={() => setBundleComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
                         ✕
                       </button>
                     </div>
                   ))}
+                  <div className="d-flex justify-content-between align-items-center p-1 mt-1 rounded border bg-white" style={{ borderColor: "#fed7aa" }}>
+                    <span className="small fw-semibold">Totals</span>
+                    <span className="small">Qty: {bundleSummary.quantityTotal.toFixed(2)}</span>
+                    <span className="small">Cost: ${bundleSummary.costSubtotal.toFixed(2)}</span>
+                    <span className="small">Price: ${bundleSummary.priceSubtotal.toFixed(2)}</span>
+                  </div>
                 </div>
               )}
 
@@ -962,7 +1005,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   onClick={() => {
                     const prod = allProducts.find((p) => p.id === bundleNewProductId);
                     if (!prod) return;
-                    setBundleComponents((prev) => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, quantity: parseFloat(bundleNewQty) || 1 }]);
+                    setBundleComponents((prev) => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, cost: prod.cost || 0, quantity: parseFloat(bundleNewQty) || 1 }]);
                     setBundleNewProductId("");
                     setBundleNewQty(1);
                     setProductSearch("");
@@ -1000,8 +1043,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               {mixComponents.length > 0 && (
                 <div className="mb-2">
                   {mixComponents.map((comp) => (
-                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-2 rounded bg-white border" style={{ borderColor: "#fbcfe8" }}>
+                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-1 rounded bg-white border" style={{ borderColor: "#fbcfe8" }}>
                       <span className="flex-grow-1 small">{comp.name}</span>
+                      <span className="small text-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
                       <span className="small text-muted">${comp.price?.toFixed(2)}</span>
                       <input
                         type="number"
@@ -1017,6 +1061,12 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                       </button>
                     </div>
                   ))}
+                  <div className="d-flex justify-content-between align-items-center p-1 mt-1 rounded border bg-white" style={{ borderColor: "#fbcfe8" }}>
+                    <span className="small fw-semibold">Totals</span>
+                    <span className="small">Items: {mixSummary.itemCount}</span>
+                    <span className="small">Cost: ${mixSummary.costSubtotal.toFixed(2)}</span>
+                    <span className="small">Price: ${mixSummary.priceSubtotal.toFixed(2)}</span>
+                  </div>
                 </div>
               )}
 
@@ -1041,7 +1091,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   onClick={() => {
                     const prod = allProducts.find((p) => p.id === mixNewProductId);
                     if (!prod) return;
-                    setMixComponents((prev) => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, max_quantity: mixNewMax !== "" ? parseInt(mixNewMax) : null }]);
+                    setMixComponents((prev) => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, cost: prod.cost || 0, max_quantity: mixNewMax !== "" ? parseInt(mixNewMax) : null }]);
                     setMixNewProductId("");
                     setMixNewMax("");
                     setProductSearch("");

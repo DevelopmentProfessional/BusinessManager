@@ -26,6 +26,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-19 | GitHub Copilot | Added cost type/date editing and bundle/mix subtotal summaries
  * ============================================================
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -364,6 +365,16 @@ function MixSetupPanel({ mixId }) {
 
   const productItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "PRODUCT");
   const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
+  const mixSummary = components.reduce(
+    (acc, comp) => {
+      const item = invMap[comp.component_id] || {};
+      acc.count += 1;
+      acc.price += parseFloat(item.price) || 0;
+      acc.cost += parseFloat(item.cost ?? item.price) || 0;
+      return acc;
+    },
+    { count: 0, price: 0, cost: 0 }
+  );
 
   const handleSaveConfig = async () => {
     setConfigSaving(true);
@@ -468,6 +479,8 @@ function MixSetupPanel({ mixId }) {
           <div key={c.id} style={s.row}>
             <CubeIcon style={{ width: 13, height: 13, color: "#ec4899", flexShrink: 0 }} />
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
+            <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>${(invMap[c.component_id]?.cost ?? invMap[c.component_id]?.price ?? 0).toFixed(2)} cost</span>
+            <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
             <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>max override:</span>
             <input type="number" min="1" defaultValue={c.max_quantity ?? ""} onBlur={(e) => handleUpdateMax(c.id, e.target.value)} style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
             <button type="button" style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">
@@ -475,6 +488,14 @@ function MixSetupPanel({ mixId }) {
             </button>
           </div>
         ))}
+        {components.length > 0 && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "4px", marginTop: 6, border: "1px solid #fbcfe8", borderRadius: 6, background: "#fff" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>Totals</span>
+            <span style={{ fontSize: "0.72rem" }}>Items: {mixSummary.count}</span>
+            <span style={{ fontSize: "0.72rem" }}>Cost: ${mixSummary.cost.toFixed(2)}</span>
+            <span style={{ fontSize: "0.72rem" }}>Price: ${mixSummary.price.toFixed(2)}</span>
+          </div>
+        )}
         {adding ? (
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
             <select value={newCompId} onChange={(e) => setNewCompId(e.target.value)} style={{ ...s.input, flex: 1 }}>
@@ -545,6 +566,19 @@ function BundleComponentsPanel({ bundleId }) {
 
   const productItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "PRODUCT");
   const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
+  const bundleSummary = components.reduce(
+    (acc, comp) => {
+      const item = invMap[comp.component_id] || {};
+      const qty = parseFloat(comp.quantity) || 0;
+      const price = parseFloat(item.price) || 0;
+      const cost = parseFloat(item.cost ?? item.price) || 0;
+      acc.count += qty;
+      acc.price += price * qty;
+      acc.cost += cost * qty;
+      return acc;
+    },
+    { count: 0, price: 0, cost: 0 }
+  );
 
   const handleAdd = async () => {
     if (!newComponentId) return;
@@ -596,6 +630,8 @@ function BundleComponentsPanel({ bundleId }) {
           <div key={c.id} style={rowStyle}>
             <CubeIcon style={{ width: 13, height: 13, color: "#f97316", flexShrink: 0 }} />
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
+            <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>${(invMap[c.component_id]?.cost ?? invMap[c.component_id]?.price ?? 0).toFixed(2)} cost</span>
+            <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
             <input type="number" min="0.01" step="0.01" defaultValue={c.quantity} onBlur={(e) => handleUpdateQty(c.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity per bundle unit" />
             <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>× each</span>
             <button type="button" style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">
@@ -603,6 +639,14 @@ function BundleComponentsPanel({ bundleId }) {
             </button>
           </div>
         ))}
+        {components.length > 0 && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "4px", marginTop: 6, border: "1px solid #fed7aa", borderRadius: 6, background: "#fff" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>Totals</span>
+            <span style={{ fontSize: "0.72rem" }}>Qty: {bundleSummary.count.toFixed(2)}</span>
+            <span style={{ fontSize: "0.72rem" }}>Cost: ${bundleSummary.cost.toFixed(2)}</span>
+            <span style={{ fontSize: "0.72rem" }}>Price: ${bundleSummary.price.toFixed(2)}</span>
+          </div>
+        )}
         {adding ? (
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
             <select value={newComponentId} onChange={(e) => setNewComponentId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
@@ -649,6 +693,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [availableLocations, setAvailableLocations] = useState([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [saleDateError, setSaleDateError] = useState("");
   const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera' | 'upload'
   const [newImageUrl, setNewImageUrl] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -665,6 +710,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     sku: "",
     price: 0,
     cost: "",
+    cost_type: "one_time",
+    date_of_purchase: "",
+    date_of_sale: "",
     description: "",
     quantity: 0,
     min_stock_level: 10,
@@ -731,6 +779,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         sku: item.sku || "",
         price: item.price || 0,
         cost: item.cost ?? "",
+        cost_type: item.cost_type || "one_time",
+        date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
+        date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
         description: item.description || "",
         quantity: item.quantity || 0,
         min_stock_level: item.min_stock_level || 10,
@@ -747,6 +798,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       setFeatureStock(null);
       setFeaturesPriceRange(null);
       setSalesPriceRange(null);
+      setSaleDateError("");
 
       // In sales mode, fetch feature price range for this item
       if (isSalesMode) {
@@ -877,6 +929,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     if (name === "sku" && scanError) {
       setScanError(isDuplicateSku(nextValue) ? scanError : "");
     }
+    if ((name === "date_of_purchase" || name === "date_of_sale") && saleDateError) {
+      setSaleDateError("");
+    }
   };
 
   const handleOpenScanner = () => {
@@ -1002,16 +1057,28 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
   const handleUpdateInventory = (e) => {
     e.preventDefault();
+    setSaleDateError("");
     if (isDuplicateSku(formData.sku)) {
       setScanError(`Item with SKU "${formData.sku}" already exists.`);
       return;
     }
+
+    const purchaseDate = formData.date_of_purchase ? new Date(formData.date_of_purchase) : null;
+    const saleDate = formData.date_of_sale ? new Date(formData.date_of_sale) : null;
+    if (purchaseDate && saleDate && saleDate < purchaseDate) {
+      setSaleDateError("Date of Sale cannot be earlier than Date of Purchase.");
+      return;
+    }
+
     onUpdateInventory?.(item.id, {
       name: formData.name,
       sku: formData.sku,
       // When features manage price, preserve the existing fixed price (don't override with range)
       price: parseFloat(formData.price) || 0,
       cost: formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null,
+      cost_type: formData.cost_type || "one_time",
+      date_of_purchase: formData.date_of_purchase || null,
+      date_of_sale: formData.date_of_sale || null,
       description: formData.description,
       quantity: parseInt(formData.quantity) || 0,
       min_stock_level: parseInt(formData.min_stock_level) || 10,
@@ -1590,6 +1657,26 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     <label htmlFor="detail_supplier">Supplier</label>
                   </div>
                 )}
+
+                <div className="form-floating mb-2">
+                  <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
+                    <option value="one_time">One-Time Purchase</option>
+                    <option value="recurring">Recurring Rental</option>
+                  </select>
+                  <label htmlFor="detail_cost_type">Cost Type</label>
+                </div>
+
+                <div className="d-flex gap-2 mb-2">
+                  <div className="form-floating flex-grow-1">
+                    <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Purchase" />
+                    <label htmlFor="detail_date_of_purchase">Date of Purchase</label>
+                  </div>
+                  <div className="form-floating flex-grow-1">
+                    <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Sale" />
+                    <label htmlFor="detail_date_of_sale">Date of Sale</label>
+                  </div>
+                </div>
+                {saleDateError && <div className="alert alert-danger py-1 small mt-1 mb-2">{saleDateError}</div>}
 
                 {showNewLocationInput && (
                   <div className="form-floating mb-2">
