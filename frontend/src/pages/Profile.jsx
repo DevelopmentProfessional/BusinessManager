@@ -1330,6 +1330,7 @@ const Profile = () => {
                   <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                     {[
                       { id: "database", Icon: CircleStackIcon, title: "Database" },
+                      ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
                     ].map(({ id, Icon, title }) => (
                       <Button_Toolbar
                         key={id}
@@ -1350,6 +1351,7 @@ const Profile = () => {
                 <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
                   {[
                     { id: "database", Icon: CircleStackIcon, title: "Database" },
+                    ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
@@ -1380,7 +1382,6 @@ const Profile = () => {
                     ...(canAccessGeneralSettings
                       ? [
                           { id: "general", Icon: CogIcon, title: "General" },
-                          { id: "payroll", Icon: BanknotesIcon, title: "Payroll" },
                         ]
                       : []),
                   ].map(({ id, Icon, title }) => (
@@ -1409,7 +1410,6 @@ const Profile = () => {
                   ...(canAccessGeneralSettings
                     ? [
                         { id: "general", Icon: CogIcon, title: "General" },
-                        { id: "payroll", Icon: BanknotesIcon, title: "Payroll" },
                       ]
                     : []),
                 ].map(({ id, Icon, title }) => (
