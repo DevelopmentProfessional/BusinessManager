@@ -46,7 +46,35 @@ import Modal_Pay_Employee from "./Modal_Employee_Pay";
 import useStore from "../../services/useStore";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
-const PAGES = ["clients", "inventory", "sales", "services", "employees", "schedule", "documents", "templates", "insurance", "tasks", "leave", "reports", "admin"];
+const PAGE_OPTION_GROUPS = [
+  {
+    label: "Employee Settings",
+    options: [
+      { value: "requests", label: "Requests" },
+      { value: "insurance", label: "Insurance" },
+      { value: "wages", label: "Wages" },
+      { value: "benefits", label: "Benefits" },
+      { value: "payroll", label: "Payroll" },
+    ],
+  },
+  {
+    label: "Core Pages",
+    options: [
+      { value: "clients", label: "Clients" },
+      { value: "inventory", label: "Inventory" },
+      { value: "sales", label: "Sales" },
+      { value: "services", label: "Services" },
+      { value: "employees", label: "Employees" },
+      { value: "schedule", label: "Schedule" },
+      { value: "documents", label: "Documents" },
+      { value: "templates", label: "Templates" },
+      { value: "tasks", label: "Tasks" },
+      { value: "reports", label: "Reports" },
+      { value: "leave", label: "Leave" },
+      { value: "admin", label: "Admin" },
+    ],
+  },
+];
 const PERMISSION_TYPES = ["read", "write", "admin"];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
@@ -1313,10 +1341,14 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
               <div className="col">
                 <select value={newPermission.page} onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))} className="form-select form-select-sm">
                   <option value="">Select Page</option>
-                  {PAGES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
+                  {PAGE_OPTION_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
