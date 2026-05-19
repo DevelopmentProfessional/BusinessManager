@@ -54,7 +54,7 @@ function InlineText({ value, onSave, placeholder = "—" }) {
 }
 
 export default function AssetUnitsPanel({ assetId, onCountChange }) {
-  const [units, setUnits] = useState([]);
+           placeholder="Label (optional)"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [addingUnit, setAddingUnit] = useState(false);
@@ -64,7 +64,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    if (!assetId) return;
+           placeholder="Notes (optional)"
     setLoading(true);
     setError(null);
     try {
@@ -149,7 +149,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
   }, {});
 
   return (
-    <div className="mt-3 mb-2 border rounded p-3">
+    <div className="mt-3 mb-2 border rounded p-1">
       {/* Header */}
       <div className="d-flex align-items-center gap-2 mb-2">
         <h6 className="mb-0 fw-semibold">Asset Units</h6>
@@ -170,18 +170,23 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
       {units.length > 0 && (
         <div className="table-responsive mb-2">
           <table className="table table-sm table-bordered align-middle mb-0">
-            <thead className="table-light">
-              <tr>
-                <th style={{ width: "2rem" }}>#</th>
-                <th>Label</th>
-                <th style={{ width: "9rem" }}>State</th>
-                <th>Notes</th>
+            <thead className="">
+              <tr>                
                 <th style={{ width: "2rem" }}></th>
+                <th></th>
+                <th>Label</th>
+                <th>State</th>
+                <th>Notes</th>
               </tr>
             </thead>
             <tbody>
               {units.map((unit, idx) => (
                 <tr key={unit.id}>
+                   <td>
+                    <button className="btn btn-sm btn-outline-danger py-0 px-1 lh-1" onClick={() => handleRemove(unit.id)} title="Remove unit">
+                      &times;
+                    </button>
+                  </td>
                   <td className="text-muted small">{idx + 1}</td>
                   <td>
                     <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
@@ -198,11 +203,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
                   <td>
                     <InlineText value={unit.notes || ""} onSave={(val) => handleNotesSave(unit.id, val)} placeholder="click to add notes" />
                   </td>
-                  <td>
-                    <button className="btn btn-sm btn-outline-danger py-0 px-1 lh-1" onClick={() => handleRemove(unit.id)} title="Remove unit">
-                      &times;
-                    </button>
-                  </td>
+                 
                 </tr>
               ))}
             </tbody>

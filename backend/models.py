@@ -43,7 +43,7 @@
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, LargeBinary, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, LargeBinary, UniqueConstraint
 from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -284,6 +284,42 @@ class RolePermission(BaseModel, table=True):
 
 
 # ─── 5 CLIENT MODELS ───────────────────────────────────────────────────────────
+class Membership(BaseModel, table=True):
+    __tablename__ = "membership"
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_membership_company_name"),
+    )
+
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    price: float = Field(default=0.0, ge=0)
+    billing_frequency: str = Field(default="monthly")  # weekly, monthly, yearly, custom
+    lock_term_count: int = Field(default=0, ge=0)
+    lock_term_unit: str = Field(default="months")  # days, weeks, months, years
+    is_active: bool = Field(default=True)
+    payment_gateway_plan_id: Optional[str] = Field(default=None)
+    external_reference: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientMembership(BaseModel, table=True):
+    __tablename__ = "client_membership"
+    __table_args__ = (
+        UniqueConstraint("company_id", "client_id", "membership_id", name="uq_client_membership_company_pair"),
+    )
+
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    membership_id: UUID = Field(sa_column=Column(ForeignKey("membership.id", ondelete="CASCADE"), nullable=False, index=True))
+    start_date: Optional[datetime] = Field(default=None)
+    end_date: Optional[datetime] = Field(default=None)
+    status: str = Field(default="active")
+    billing_frequency_override: Optional[str] = Field(default=None)
+    price_override: Optional[float] = Field(default=None, ge=0)
+    lock_term_count_override: Optional[int] = Field(default=None, ge=0)
+    lock_term_unit_override: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
 # Client model
 class Client(BaseModel, table=True):
     name: str = Field(index=True)  # Client names must be unique per company
@@ -330,6 +366,8 @@ class Inventory(BaseModel, table=True):
     price_percentage: Optional[float] = Field(default=None)
     # Asset cost tracking (purchase/acquisition cost per unit, for future cost analysis)
     cost: Optional[float] = Field(default=None)
+    # Cost behavior: one_time (purchase) or recurring (monthly rental/lease)
+    cost_type: Optional[str] = Field(default="one_time")
     # Date tracking
     date_of_purchase: Optional[datetime] = Field(default=None)
     date_of_sale: Optional[datetime] = Field(default=None)
@@ -748,6 +786,62 @@ class DocumentTagRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class MembershipCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+    price: float = 0.0
+    billing_frequency: str = "monthly"
+    lock_term_count: int = 0
+    lock_term_unit: str = "months"
+    is_active: bool = True
+    payment_gateway_plan_id: Optional[str] = None
+    external_reference: Optional[str] = None
+
+
+class MembershipUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    billing_frequency: Optional[str] = None
+    lock_term_count: Optional[int] = None
+    lock_term_unit: Optional[str] = None
+    is_active: Optional[bool] = None
+    payment_gateway_plan_id: Optional[str] = None
+    external_reference: Optional[str] = None
+
+
+class MembershipRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    price: float = 0.0
+    billing_frequency: str = "monthly"
+    lock_term_count: int = 0
+    lock_term_unit: str = "months"
+    is_active: bool = True
+    payment_gateway_plan_id: Optional[str] = None
+    external_reference: Optional[str] = None
+    company_id: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ClientMembershipRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    membership_id: UUID
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    status: str = "active"
+    billing_frequency_override: Optional[str] = None
+    price_override: Optional[float] = None
+    lock_term_count_override: Optional[int] = None
+    lock_term_unit_override: Optional[str] = None
+    company_id: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 # ─── 17 READ / CREATE / UPDATE SCHEMAS ─────────────────────────────────────────
 # ─── 17a CLIENT SCHEMAS ────────────────────────────────────────────────────────
 # Request/Response models for API
@@ -761,6 +855,7 @@ class ClientCreate(SQLModel):
     membership_since: Optional[datetime] = None
     membership_expires: Optional[datetime] = None
     membership_points: Optional[int] = 0
+    membership_ids: Optional[List[UUID]] = None
 
 
 class ClientUpdate(SQLModel):
@@ -773,6 +868,7 @@ class ClientUpdate(SQLModel):
     membership_since: Optional[datetime] = None
     membership_expires: Optional[datetime] = None
     membership_points: Optional[int] = None
+    membership_ids: Optional[List[UUID]] = None
 
 
 class ClientRead(SQLModel):
@@ -786,6 +882,8 @@ class ClientRead(SQLModel):
     membership_since: Optional[datetime] = None
     membership_expires: Optional[datetime] = None
     membership_points: int = 0
+    membership_ids: List[UUID] = Field(default_factory=list)
+    membership_names: List[str] = Field(default_factory=list)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -809,6 +907,8 @@ class ClientRead(SQLModel):
             membership_since=obj.membership_since,
             membership_expires=obj.membership_expires,
             membership_points=obj.membership_points or 0,
+            membership_ids=[],
+            membership_names=[],
             created_at=obj.created_at,
             updated_at=obj.updated_at
         )
@@ -821,6 +921,7 @@ class InventoryCreate(SQLModel):
     sku: Optional[str] = None
     price: float = 0
     cost: Optional[float] = None
+    cost_type: Optional[str] = "one_time"
     description: Optional[str] = None
     category: Optional[str] = None
     type: Optional[Union[ItemType, str]] = "product"
@@ -966,6 +1067,7 @@ class InventoryRead(SQLModel):
     price_type: Optional[str] = "fixed"
     price_percentage: Optional[float] = None
     cost: Optional[float] = None
+    cost_type: Optional[str] = "one_time"
     date_of_purchase: Optional[datetime] = None
     date_of_sale: Optional[datetime] = None
     created_at: Optional[datetime] = None
