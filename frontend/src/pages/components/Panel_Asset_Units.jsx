@@ -98,9 +98,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
       await load();
     } catch {
       setError("Failed to add unit.");
-    } finally {
-      setSaving(false);
-    }
+    } finally {setSaving(false);}
   };
 
   const handleStateChange = async (unitId, state) => {
