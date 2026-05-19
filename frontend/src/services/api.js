@@ -176,6 +176,14 @@ export const clientsAPI = {
   },
 };
 
+export const membershipsAPI = {
+  ...createISUDApi("memberships"),
+};
+
+export const clientMembershipsAPI = {
+  ...createISUDApi("client_memberships"),
+};
+
 // Inventory API (replaces both items and inventory APIs)
 export const inventoryAPI = {
   getAll: () => getCachedOrFetch("inventory", () => api.get("/isud/inventory")),
@@ -709,6 +717,10 @@ export const reportsAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/payroll?${queryParams}`);
   },
+  getExpensesReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/expenses?${queryParams}`);
+  },
   getOrdersReport: (params) => {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/orders?${queryParams}`);
@@ -734,6 +746,8 @@ export const assetUnitsAPI = {
 
 export const isudAPI = {
   clients: clientsAPI,
+  memberships: membershipsAPI,
+  clientMemberships: clientMembershipsAPI,
   inventory: inventoryAPI,
   services: servicesAPI,
   suppliers: suppliersAPI,

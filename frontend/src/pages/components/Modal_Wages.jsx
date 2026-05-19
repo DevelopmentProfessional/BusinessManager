@@ -915,7 +915,7 @@ function ProcessTab({
             <PaydayBadge payday={currentProcPeriod.payday} schedule={schedule} />
           ) : (
             <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style={{ fontSize: "0.68rem" }}>
-              No payday configured — set in Profile → Payroll
+              No payday configured — set in Settings → Payroll
             </span>
           )}
           {batchProgress && (

@@ -42,7 +42,7 @@ import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import { PlusIcon, DocumentIcon, TrashIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, XMarkIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, DocumentIcon, TrashIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, XMarkIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -249,6 +249,7 @@ export default function Documents() {
   // Categories management state
   const [categories, setCategories] = useState([]);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
   const [editingCatId, setEditingCatId] = useState(null);
@@ -668,9 +669,14 @@ export default function Documents() {
       {/* Header */}
       <div className="flex-shrink-0 border-bottom p-3 d-flex align-items-center justify-content-between">
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Documents</h1>
-        <button type="button" onClick={() => setIsCategoriesOpen(true)} className="btn d-flex align-items-center gap-1 p-0 border-0" title="Manage categories" aria-label="Manage categories">
-          <span style={{ fontSize: "1.5rem" }}>🗄️</span>
-        </button>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+            <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+          </button>
+          <button type="button" onClick={() => setIsCategoriesOpen(true)} className="btn d-flex align-items-center gap-1 p-0 border-0" title="Manage categories" aria-label="Manage categories">
+            <span style={{ fontSize: "1.5rem" }}>🗄️</span>
+          </button>
+        </div>
       </div>
 
       {/* Error Alert */}
@@ -1251,6 +1257,18 @@ export default function Documents() {
                 <div style={{ width: 40 }} />
               </div>
             </form>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Document Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to manage document and template views.</div>
+          <div className="small">Search, filters, upload, templates, and category tools are available in the footer and header actions.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
           </div>
         </div>
       </Modal>

@@ -24,6 +24,7 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-15 | Claude  | Added authentication + company_id scoping to all endpoints
+#   2026-05-19 | GitHub Copilot | Added integrated inventory expenses report with recurring and one-time cost behavior
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -84,6 +85,32 @@ def _date_filter(items, date_field_getter, start, end):
             continue
         result.append(item)
     return result
+
+
+def _period_floor(dt: datetime, group_by: str) -> datetime:
+    if group_by == "month":
+        return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if group_by == "week":
+        d = dt - timedelta(days=dt.weekday())
+        return d.replace(hour=0, minute=0, second=0, microsecond=0)
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _period_next(dt: datetime, group_by: str) -> datetime:
+    if group_by == "month":
+        if dt.month == 12:
+            return dt.replace(year=dt.year + 1, month=1)
+        return dt.replace(month=dt.month + 1)
+    if group_by == "week":
+        return dt + timedelta(days=7)
+    return dt + timedelta(days=1)
+
+
+def _iter_periods(start: datetime, end: datetime, group_by: str):
+    cur = _period_floor(start, group_by)
+    while cur <= end:
+        yield cur
+        cur = _period_next(cur, group_by)
 
 
 # ─── 2 APPOINTMENTS REPORT ─────────────────────────────────────────────────────
@@ -532,7 +559,92 @@ def get_payroll_report(
     return {"labels": sorted_keys, "data": [grouped[k] for k in sorted_keys]}
 
 
-# ─── 11 PORTAL ORDERS REPORT ──────────────────────────────────────────────────
+# ─── 11 EXPENSES REPORT ───────────────────────────────────────────────────────
+
+@router.get("/reports/expenses")
+def get_expenses_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    group_by: str = Query("month"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Expenses from inventory costs by purchase/rental behavior.
+
+    one_time: counted once on date_of_purchase (or created_at fallback)
+    recurring: counted each period from purchase date until sale date (if sold)
+    """
+    start = _parse_date(start_date)
+    end = _parse_date(end_date, end_of_day=True)
+
+    stmt = select(Inventory).where(Inventory.company_id == current_user.company_id)
+    items = session.exec(stmt).all()
+
+    one_time_grouped: dict = {}
+    recurring_grouped: dict = {}
+    all_labels: set[str] = set()
+
+    if start and end:
+        periods = list(_iter_periods(start, end, group_by))
+    else:
+        periods = []
+
+    if not periods:
+        has_recurring = any(str(item.cost_type or "one_time").lower() == "recurring" for item in items)
+        if has_recurring:
+            raise HTTPException(
+                status_code=400,
+                detail="start_date and end_date are required when recurring costs are present.",
+            )
+
+    for item in items:
+        amount = float(item.cost or 0)
+        if amount <= 0:
+            continue
+
+        cost_type = str(item.cost_type or "one_time").lower()
+        purchase_dt = item.date_of_purchase or item.created_at
+        sale_dt = item.date_of_sale
+
+        if purchase_dt is None:
+            continue
+
+        if cost_type == "recurring" and periods:
+            for period_start in periods:
+                period_end = _period_next(period_start, group_by) - timedelta(microseconds=1)
+                if purchase_dt > period_end:
+                    continue
+                if sale_dt and sale_dt < period_start:
+                    continue
+                label = _group_label(period_start, group_by)
+                recurring_grouped[label] = recurring_grouped.get(label, 0) + amount
+                all_labels.add(label)
+            continue
+
+        event_dt = purchase_dt
+        if start and event_dt < start:
+            continue
+        if end and event_dt > end:
+            continue
+        label = _group_label(event_dt, group_by)
+        one_time_grouped[label] = one_time_grouped.get(label, 0) + amount
+        all_labels.add(label)
+
+    sorted_keys = sorted(all_labels)
+    total_data = [round(one_time_grouped.get(k, 0) + recurring_grouped.get(k, 0), 2) for k in sorted_keys]
+
+    return {
+        "labels": sorted_keys,
+        "data": total_data,
+        "datasets": [
+            {"label": "Total Expenses", "data": total_data},
+            {"label": "One-Time Purchases", "data": [round(one_time_grouped.get(k, 0), 2) for k in sorted_keys]},
+            {"label": "Recurring Rentals", "data": [round(recurring_grouped.get(k, 0), 2) for k in sorted_keys]},
+        ],
+    }
+
+
+# ─── 12 PORTAL ORDERS REPORT ──────────────────────────────────────────────────
 
 @router.get("/reports/orders")
 def get_orders_report(
@@ -577,7 +689,7 @@ def get_orders_report(
     }
 
 
-# ─── 12 TASKS REPORT ──────────────────────────────────────────────────────────
+# ─── 13 TASKS REPORT ──────────────────────────────────────────────────────────
 
 @router.get("/reports/tasks")
 def get_tasks_report(

@@ -874,6 +874,7 @@ def _ensure_inventory_core_columns_if_needed():
         ("image_url",   "VARCHAR",          None),
         ("service_id",  "UUID",             None),
         ("cost",        "DOUBLE PRECISION", None),
+        ("cost_type",   "VARCHAR",          "'one_time'"),
     ]
     with engine.begin() as conn:
         existing = {row[0] for row in conn.execute(text(
@@ -990,6 +991,57 @@ def _ensure_company_registration_columns_if_needed():
             print("  + Added column company.registration_notes")
 
 
+def _ensure_client_membership_fk_cascade_if_needed():
+    """Ensure client_membership.membership_id FK cascades on membership delete."""
+    with engine.begin() as conn:
+        has_client_membership = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='client_membership')"
+        )).scalar()
+        has_membership = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='membership')"
+        )).scalar()
+        if not has_client_membership or not has_membership:
+            return
+
+        fk_rows = conn.execute(text(
+            "SELECT tc.constraint_name, rc.delete_rule "
+            "FROM information_schema.table_constraints tc "
+            "JOIN information_schema.key_column_usage kcu "
+            "  ON tc.constraint_name = kcu.constraint_name "
+            " AND tc.table_schema = kcu.table_schema "
+            "JOIN information_schema.constraint_column_usage ccu "
+            "  ON ccu.constraint_name = tc.constraint_name "
+            " AND ccu.table_schema = tc.table_schema "
+            "JOIN information_schema.referential_constraints rc "
+            "  ON rc.constraint_name = tc.constraint_name "
+            " AND rc.constraint_schema = tc.table_schema "
+            "WHERE tc.table_schema = 'public' "
+            "  AND tc.table_name = 'client_membership' "
+            "  AND tc.constraint_type = 'FOREIGN KEY' "
+            "  AND kcu.column_name = 'membership_id' "
+            "  AND ccu.table_name = 'membership'"
+        )).fetchall()
+
+        if not fk_rows:
+            return
+
+        has_cascade = any((row[1] or "").upper() == "CASCADE" for row in fk_rows)
+        if has_cascade:
+            return
+
+        for row in fk_rows:
+            conn.execute(text(f'ALTER TABLE client_membership DROP CONSTRAINT IF EXISTS "{row[0]}"'))
+
+        conn.execute(text(
+            "ALTER TABLE client_membership "
+            "ADD CONSTRAINT fk_client_membership_membership_id "
+            "FOREIGN KEY (membership_id) REFERENCES membership(id) ON DELETE CASCADE"
+        ))
+        print("  + Updated client_membership.membership_id FK to ON DELETE CASCADE")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Run safe migrations to bring schema to current version."""
@@ -1054,6 +1106,7 @@ def create_db_and_tables():
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
     _ensure_company_registration_columns_if_needed()
+    _ensure_client_membership_fk_cascade_if_needed()
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()

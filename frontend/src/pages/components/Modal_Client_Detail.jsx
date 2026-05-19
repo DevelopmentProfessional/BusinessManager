@@ -41,35 +41,24 @@ import Modal_Template_Use from "./Modal_Template_Use";
 import { formatDate, formatDateTime } from "../../utils/dateFormatters";
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
-const MEMBERSHIP_TIERS = [
-  { value: "none", label: "None", description: "No membership tier. Standard pricing and access apply." },
-  { value: "bronze", label: "Bronze", description: "Entry-level membership with basic benefits and discounts." },
-  { value: "silver", label: "Silver", description: "Mid-tier membership with enhanced benefits and priority booking." },
-  { value: "gold", label: "Gold", description: "Premium membership with exclusive perks and significant discounts." },
-  { value: "platinum", label: "Platinum", description: "Top-tier membership with maximum benefits and VIP treatment." },
-];
-
-const getTierAvatarColor = (tier) => {
-  const t = (tier || "none").toLowerCase();
-  if (t === "platinum") return "#8b5cf6";
-  if (t === "gold") return "#d97706";
-  if (t === "silver") return "#6b7280";
-  if (t === "bronze") return "#d97706"; // orange-ish
+const getTierAvatarColor = (membershipCount) => {
+  if (membershipCount >= 3) return "#7c3aed";
+  if (membershipCount === 2) return "#2563eb";
+  if (membershipCount === 1) return "#0d9488";
   return "#3b82f6";
 };
 
-const getTierBadgeClass = (tier) => {
-  const t = (tier || "none").toLowerCase();
-  if (t === "platinum") return "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300";
-  if (t === "gold") return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300";
-  if (t === "silver") return "bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200";
-  if (t === "bronze") return "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300";
+const getTierBadgeClass = (membershipCount) => {
+  if (membershipCount >= 3) return "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300";
+  if (membershipCount === 2) return "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300";
+  if (membershipCount === 1) return "bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300";
   return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
 };
 
-const getTierLabel = (tier) => {
-  const labels = { none: "None", bronze: "Bronze", silver: "Silver", gold: "Gold", platinum: "Platinum" };
-  return labels[(tier || "none").toLowerCase()] || "None";
+const getMembershipLabel = (membershipNames) => {
+  if (!Array.isArray(membershipNames) || membershipNames.length === 0) return "No Subscription";
+  if (membershipNames.length === 1) return membershipNames[0];
+  return `${membershipNames[0]} +${membershipNames.length - 1}`;
 };
 
 const PORTAL_STATUS_LABELS = {
@@ -572,7 +561,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
 // ─── 4 MAIN COMPONENT ──────────────────────────────────────────────────────
 
-export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate, onDelete, canDelete = false, currentUser = null, appSettings = null }) {
+export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate, onDelete, canDelete = false, currentUser = null, appSettings = null, memberships = [] }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -584,15 +573,13 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
     membership_since: "",
     membership_expires: "",
     membership_points: 0,
+    membership_ids: [],
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [showServiceHistory, setShowServiceHistory] = useState(false);
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cartItems, setCartItems] = useState([]);
-  const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
-  const [tierHelpKey, setTierHelpKey] = useState(null);
-  const [tierHelpPos, setTierHelpPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (isOpen && client) {
@@ -606,6 +593,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         membership_since: client.membership_since ? client.membership_since.split("T")[0] : "",
         membership_expires: client.membership_expires ? client.membership_expires.split("T")[0] : "",
         membership_points: client.membership_points || 0,
+        membership_ids: Array.isArray(client.membership_ids) ? client.membership_ids : [],
       });
       setFieldErrors({});
       // Load cart items for badge count
@@ -634,9 +622,21 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
   const handleSubmit = () => {
     const submitData = { ...formData };
+    const primaryMembership = memberships.find((m) => submitData.membership_ids?.includes(m.id));
+    submitData.membership_tier = primaryMembership?.name ? String(primaryMembership.name).toLowerCase() : "none";
     if (!submitData.membership_since) submitData.membership_since = null;
     if (!submitData.membership_expires) submitData.membership_expires = null;
     onUpdate?.(client.id, submitData);
+  };
+
+  const toggleMembership = (membershipId) => {
+    setFormData((prev) => {
+      const exists = prev.membership_ids.includes(membershipId);
+      return {
+        ...prev,
+        membership_ids: exists ? prev.membership_ids.filter((id) => id !== membershipId) : [...prev.membership_ids, membershipId],
+      };
+    });
   };
 
   const handleDelete = async () => {
@@ -653,7 +653,11 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
   };
 
   const cartCount = cartItems.reduce((s, i) => s + (i.quantity || 1), 0);
-  const avatarColor = getTierAvatarColor(formData.membership_tier);
+  const selectedMembershipNames = memberships.filter((m) => formData.membership_ids.includes(m.id)).map((m) => m.name);
+  const badgeMembershipNames = selectedMembershipNames.length > 0
+    ? selectedMembershipNames
+    : (formData.membership_tier && String(formData.membership_tier).toLowerCase() !== "none" ? [String(formData.membership_tier)] : []);
+  const avatarColor = getTierAvatarColor(badgeMembershipNames.length);
   const initials = (formData.name || "?")
     .trim()
     .split(/\s+/)
@@ -683,8 +687,8 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             </div>
             <div className="min-w-0">
               <div className="fw-bold fs-6 text-truncate">{formData.name || "Client"}</div>
-              <span className={`badge rounded-pill ${getTierBadgeClass(formData.membership_tier)}`}>
-                {getTierLabel(formData.membership_tier)} · {formData.membership_points} pts
+              <span className={`badge rounded-pill ${getTierBadgeClass(badgeMembershipNames.length)}`}>
+                {getMembershipLabel(badgeMembershipNames)} · {formData.membership_points} pts
               </span>
             </div>
           </div>
@@ -732,92 +736,25 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
           {/* Membership section */}
           <hr className="my-2" />
-          <div className="small fw-semibold text-muted mb-2">Membership</div>
+          <div className="small fw-semibold text-muted mb-2">Subscriptions</div>
           <div className="row g-2 mb-2">
-            <div className="col-6">
-              <div className="position-relative">
-                <label className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                  Tier
-                </label>
-                <div className="position-relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextOpen = !isTierDropdownOpen;
-                      setIsTierDropdownOpen(nextOpen);
-                      if (!nextOpen) setTierHelpKey(null);
-                    }}
-                    className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span>{MEMBERSHIP_TIERS.find((opt) => opt.value === formData.membership_tier)?.label || "Select Tier"}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                      <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                    </svg>
-                  </button>
-                  {isTierDropdownOpen && (
-                    <div className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                      {MEMBERSHIP_TIERS.map((option) => {
-                        const isHelpOpen = tierHelpKey === option.value;
-                        return (
-                          <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleChange({ target: { name: "membership_tier", value: option.value } });
-                                setIsTierDropdownOpen(false);
-                                setTierHelpKey(null);
-                              }}
-                              className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
-                              style={{ fontSize: "0.875rem" }}
-                            >
-                              {option.label}
-                            </button>
-                            <div className="flex-shrink-0">
-                              <button
-                                type="button"
-                                className="btn btn-link btn-sm p-0 text-primary border-0"
-                                aria-label={`${option.label} help`}
-                                onMouseEnter={(e) => {
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setTierHelpPos({ top: rect.top, left: rect.right + 8 });
-                                  setTierHelpKey(option.value);
-                                }}
-                                onMouseLeave={() => setTierHelpKey((prev) => (prev === option.value ? null : prev))}
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setTierHelpPos({ top: rect.top, left: rect.right + 8 });
-                                  setTierHelpKey((prev) => (prev === option.value ? null : option.value));
-                                }}
-                                style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                              >
-                                ?
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+            <div className="col-12">
+              <div className="border rounded p-2">
+                <div className="small text-muted mb-2">Assign one or more subscriptions to this client.</div>
+                <div className="d-flex flex-column gap-2" style={{ maxHeight: "170px", overflowY: "auto" }}>
+                  {memberships.length === 0 ? (
+                    <div className="small text-muted">No subscriptions created yet.</div>
+                  ) : (
+                    memberships.map((membership) => (
+                      <label key={membership.id} className="d-flex align-items-start gap-2">
+                        <input type="checkbox" checked={formData.membership_ids.includes(membership.id)} onChange={() => toggleMembership(membership.id)} />
+                        <span className="small">
+                          <span className="fw-semibold">{membership.name}</span>
+                          <span className="text-muted"> {`- $${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</span>
+                        </span>
+                      </label>
+                    ))
                   )}
-                  {/* Fixed-position tooltip — escapes overflow:auto container */}
-                  {tierHelpKey &&
-                    (() => {
-                      const opt = MEMBERSHIP_TIERS.find((o) => o.value === tierHelpKey);
-                      if (!opt) return null;
-                      return (
-                        <div
-                          style={{ position: "fixed", top: tierHelpPos.top, left: tierHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                          className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                        >
-                          <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                            {opt.label}
-                          </div>
-                          <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
-                        </div>
-                      );
-                    })()}
                 </div>
               </div>
             </div>

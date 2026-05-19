@@ -36,7 +36,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_Table_Footer";
 import PageTableHeader from "./components/Page_Table_Header";
 import PageTableRow from "./components/Page_Table_Row";
-import { PlusIcon, FolderOpenIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI } from "../services/api";
@@ -58,6 +58,7 @@ export default function Services() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
+  const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
 
@@ -193,7 +194,15 @@ export default function Services() {
   }
 
   return (
-    <PageLayout title="Services" error={error}>
+    <PageLayout
+      title="Services"
+      error={error}
+      headerRight={
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+        </button>
+      }
+    >
       <PageTableHeader columns={[{ label: "Service" }, { label: "Price", width: 80 }, { label: "Duration", width: 70 }]} />
 
       {/* Scrollable rows – grow upwards from bottom */}
@@ -383,6 +392,18 @@ export default function Services() {
             onBulkImport={!editingService ? handleBulkImportServices : null}
           />
         )}
+      </Modal>
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Service Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to manage the Services page view.</div>
+          <div className="small">Search, category filter, and add actions are available in the footer.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
+          </div>
+        </div>
       </Modal>
     </PageLayout>
   );

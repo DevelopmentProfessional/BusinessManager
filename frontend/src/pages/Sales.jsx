@@ -23,18 +23,19 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-19 | GitHub Copilot | Added unified filter dropdown with client search and services/products/subscriptions filters; added checkout-time subscription start assignment
  * ============================================================
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, discountRulesAPI } from "../services/api";
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI } from "../services/api";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
 import Modal_Detail_Item from "./components/Modal_Item_Detail";
@@ -312,11 +313,13 @@ export default function Sales() {
   // POS State
   const [showServices, setShowServices] = useState(true);
   const [showProducts, setShowProducts] = useState(true);
+  const [showSubscriptions, setShowSubscriptions] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clients, setClientsLocal] = useState([]);
   const [clientsLoaded, setClientsLoaded] = useState(false);
+  const [memberships, setMemberships] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -339,8 +342,11 @@ export default function Sales() {
   // Sales History State
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
   const [appSettings, setAppSettings] = useState(null);
-  const [discountRules, setDiscountRules] = useState([]);
+  const [showSalesFilterDropdown, setShowSalesFilterDropdown] = useState(false);
+  const [filterClientSearch, setFilterClientSearch] = useState("");
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   // Invoice template modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [historyFilters, setHistoryFilters] = useState({
@@ -360,6 +366,7 @@ export default function Sales() {
   useFetchOnce(() => {
     loadServices();
     loadProducts();
+    loadMemberships();
     settingsAPI
       .getSettings()
       .then((res) => setAppSettings(res.data))
@@ -666,6 +673,19 @@ export default function Sales() {
     }
   };
 
+  const loadMemberships = async () => {
+    try {
+      const response = await membershipsAPI.getAll();
+      const data = response?.data ?? response;
+      if (Array.isArray(data)) {
+        setMemberships(data.filter((m) => m.is_active !== false));
+      }
+    } catch (err) {
+      console.error("Failed to load memberships for POS:", err);
+      setMemberships([]);
+    }
+  };
+
   // ─── 7  CART HANDLERS ─────────────────────────────────────────────────────
   // Open product detail modal
   const handleSelectItem = (item, itemType) => {
@@ -779,7 +799,11 @@ export default function Sales() {
       if (rule.end_date && today > rule.end_date.slice(0, 10)) continue;
       if (rule.is_recurring && rule.recur_days) {
         let days = [];
-        try { days = typeof rule.recur_days === "string" ? JSON.parse(rule.recur_days) : rule.recur_days; } catch { days = []; }
+        try {
+          days = typeof rule.recur_days === "string" ? JSON.parse(rule.recur_days) : rule.recur_days;
+        } catch {
+          days = [];
+        }
         if (days.length > 0 && !days.includes(currentDay)) continue;
       }
       if (rule.day_start_time && currentTime < rule.day_start_time) continue;
@@ -787,7 +811,11 @@ export default function Sales() {
       let base = cartTotal;
       if (rule.applies_to !== "all") {
         let ids = [];
-        try { ids = typeof rule.item_ids === "string" ? JSON.parse(rule.item_ids) : (rule.item_ids || []); } catch { ids = []; }
+        try {
+          ids = typeof rule.item_ids === "string" ? JSON.parse(rule.item_ids) : rule.item_ids || [];
+        } catch {
+          ids = [];
+        }
         base = cart.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.price * i.quantity, 0);
       }
       const amt = rule.discount_type === "percentage" ? base * (rule.discount_value / 100) : Math.min(rule.discount_value, base);
@@ -799,12 +827,80 @@ export default function Sales() {
   const invoiceTaxAmount = roundCurrency(cartTotal * (taxRatePercent / 100));
   const invoiceTotal = roundCurrency(cartTotal + invoiceTaxAmount);
 
+  const salesFilterActive = !!selectedClient || !showServices || !showProducts || !showSubscriptions;
+
+  const filteredFilterClients = useMemo(() => {
+    const q = filterClientSearch.trim().toLowerCase();
+    if (!q) return clients.slice(0, 8);
+    return clients
+      .filter((c) => {
+        const name = String(c.name || "").toLowerCase();
+        const email = String(c.email || "").toLowerCase();
+        return name.includes(q) || email.includes(q);
+      })
+      .slice(0, 8);
+  }, [clients, filterClientSearch]);
+
+  const addSubscriptionToCart = (subscription) => {
+    const cartKey = `subscription-${subscription.id}`;
+    const existing = cart.find((c) => c.cartKey === cartKey);
+    const startDate = subscriptionStartDate || new Date().toISOString().slice(0, 10);
+    const nextItem = {
+      ...subscription,
+      cartKey,
+      itemType: "subscription",
+      quantity: 1,
+      price: Number(subscription.price || 0),
+      subscriptionStartDate: startDate,
+      selectedOptions: [],
+    };
+
+    if (existing) {
+      setCart(cart.map((c) => (c.cartKey === cartKey ? nextItem : c)));
+    } else {
+      setCart([...cart, nextItem]);
+    }
+  };
+
+  const applySubscriptionsForSale = async (clientId, soldSubscriptionItems) => {
+    if (!clientId || soldSubscriptionItems.length === 0) return;
+
+    const existingRes = await clientMembershipsAPI.getAll();
+    const existingRows = Array.isArray(existingRes?.data) ? existingRes.data : [];
+    const currentClientRows = existingRows.filter((row) => String(row.client_id) === String(clientId));
+
+    for (const item of soldSubscriptionItems) {
+      const existing = currentClientRows.find((row) => String(row.membership_id) === String(item.id));
+      const startDateValue = item.subscriptionStartDate ? new Date(`${item.subscriptionStartDate}T00:00:00`) : new Date();
+      const payload = {
+        client_id: clientId,
+        membership_id: item.id,
+        start_date: startDateValue.toISOString(),
+        end_date: null,
+        status: "active",
+      };
+
+      if (existing?.id) {
+        await clientMembershipsAPI.update(existing.id, payload);
+      } else {
+        await clientMembershipsAPI.create(payload);
+      }
+    }
+  };
+
   // ─── 8  CHECKOUT / PAYMENT HANDLERS ──────────────────────────────────────
   const handleCheckout = () => {
     if (cart.length === 0) {
       setError("Cart is empty");
       return;
     }
+
+    const hasSubscriptions = cart.some((item) => item.itemType === "subscription");
+    if (hasSubscriptions && !selectedClient?.id) {
+      setError("Select a client before checking out subscriptions.");
+      return;
+    }
+
     setShowCheckout(true);
   };
 
@@ -857,6 +953,12 @@ export default function Sales() {
             })
           )
         );
+
+        const soldSubscriptions = cart.filter((item) => item.itemType === "subscription");
+        if (selectedClient?.id && soldSubscriptions.length > 0) {
+          await applySubscriptionsForSale(selectedClient.id, soldSubscriptions);
+        }
+
         // ── Inventory deduction ──────────────────────────────────────────
         // Plain products: deducted by the backend insert hook automatically.
         // Feature-option products: call deduct-stock so option quantities and
@@ -952,6 +1054,8 @@ export default function Sales() {
 
   const filteredProducts = products.filter((p) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  const filteredSubscriptions = memberships.filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+
   const filteredClients = clients.filter((c) => c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()));
 
   // Check if item is in cart
@@ -1023,22 +1127,27 @@ export default function Sales() {
               </div>
             )}
           </div>
-          {cartItemCount > 0 && (
-            <button
-              onClick={() => setShowCartModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
-              style={{
-                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                color: "#fff",
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
-              }}
-            >
-              <ShoppingCartIcon className="h-4 w-4" />
-              {cartItemCount} · ${cartTotal.toFixed(2)}
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+              <Cog6ToothIcon style={{ width: 18, height: 18 }} />
             </button>
-          )}
+            {cartItemCount > 0 && (
+              <button
+                onClick={() => setShowCartModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
+                }}
+              >
+                <ShoppingCartIcon className="h-4 w-4" />
+                {cartItemCount} · ${cartTotal.toFixed(2)}
+              </button>
+            )}
+          </div>
         </div>
         {error && (
           <div className="mb-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-xl flex items-center justify-between text-sm">
@@ -1115,8 +1224,38 @@ export default function Sales() {
           </div>
         )}
 
+        {/* Subscriptions Section */}
+        {showSubscriptions && filteredSubscriptions.length > 0 && (
+          <div className="mb-6">
+            {(showServices || showProducts) && (
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #16a34a10, #22c55e10)", color: "#15803d", border: "1px solid #16a34a30" }}>
+                  <UserIcon className="h-3.5 w-3.5" />
+                  Subscriptions
+                </div>
+                <span className="text-xs text-gray-400">{filteredSubscriptions.length} available</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {filteredSubscriptions.map((subscription) => (
+                <ItemCard
+                  key={`subscription-${subscription.id}`}
+                  item={subscription}
+                  itemType="subscription"
+                  onSelect={() => addSubscriptionToCart(subscription)}
+                  inCart={isInCart(subscription.id, "subscription")}
+                  cartQuantity={getCartQuantity(subscription.id, "subscription")}
+                  onIncrement={() => addSubscriptionToCart(subscription)}
+                  onDecrement={() => removeFromCart(`subscription-${subscription.id}`)}
+                  onAddToCart={() => addSubscriptionToCart(subscription)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Empty State */}
-        {filteredServices.length === 0 && filteredProducts.length === 0 && (
+        {filteredServices.length === 0 && filteredProducts.length === 0 && filteredSubscriptions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
               <MagnifyingGlassIcon className="h-8 w-8 text-gray-400" />
@@ -1271,41 +1410,84 @@ export default function Sales() {
 
               {/* Controls Row 2 - Client, Clear, Filters */}
               <div className={`search-hide-on-focus flex items-center gap-1 pb-2 ${footerJustify}`} style={{ minHeight: "3rem" }}>
-                {/* Account / Client Icon */}
-                <Button_Toolbar
-                  icon={UserCircleIcon}
-                  label="Client"
-                  onClick={() => {
-                    setShowClientPanel((p) => !p);
-                    if (!showClientPanel) {
-                      loadClients();
-                    }
-                  }}
-                  className={selectedClient ? "btn-success" : "btn-outline-secondary"}
-                  title={selectedClient ? `Client: ${selectedClient.name}` : "Select client"}
-                  data-active={!!selectedClient}
-                  style={{ position: "relative" }}
-                  badge={selectedClient ? <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 border-2 border-white dark:border-gray-800" /> : null}
-                />
-
-                {/* Clear Filters Button - Shows when any filter is active */}
-                {(showServices || showProducts) && (
+                {/* Unified Sales Filter Button */}
+                <div className="position-relative">
                   <Button_Toolbar
-                    icon={XMarkIcon}
-                    label="Clear"
+                    icon={FunnelIcon}
+                    label="Filter"
                     onClick={() => {
-                      setShowServices(false);
-                      setShowProducts(false);
+                      setShowSalesFilterDropdown((prev) => !prev);
+                      loadClients();
                     }}
-                    className="btn-danger"
+                    className={salesFilterActive ? "btn-primary" : "btn-outline-secondary"}
+                    data-active={salesFilterActive}
                   />
-                )}
 
-                {/* Service Toggle Button */}
-                <Button_Toolbar icon={SparklesIcon} label="Services" onClick={() => setShowServices((prev) => !prev)} aria-pressed={showServices} data-active={showServices} className={showServices ? "btn-primary" : "btn-outline-secondary"} style={{ opacity: showServices ? 1 : 0.5 }} />
+                  {showSalesFilterDropdown && (
+                    <div className="position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <div className="small fw-semibold text-muted">Sales Filter</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowServices(true);
+                            setShowProducts(true);
+                            setShowSubscriptions(true);
+                            setSelectedClient(null);
+                            setFilterClientSearch("");
+                          }}
+                          className="btn btn-sm btn-outline-secondary"
+                        >
+                          Clear
+                        </button>
+                      </div>
 
-                {/* Product Toggle Button */}
-                <Button_Toolbar icon={CubeIcon} label="Products" onClick={() => setShowProducts((prev) => !prev)} aria-pressed={showProducts} data-active={showProducts} className={showProducts ? "btn-secondary" : "btn-outline-secondary"} style={{ opacity: showProducts ? 1 : 0.5 }} />
+                      <div className="mb-2">
+                        <label className="small text-muted d-block mb-1">Client</label>
+                        <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
+                        {filterClientSearch && (
+                          <div className="app-card mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
+                            {filteredFilterClients.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                  handleSelectClient(c);
+                                  setFilterClientSearch("");
+                                }}
+                                className="w-100 text-start px-2 py-1 border-0 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
+                              >
+                                <div className="small fw-semibold">{c.name}</div>
+                                {c.email && <div className="small text-muted">{c.email}</div>}
+                              </button>
+                            ))}
+                            {filteredFilterClients.length === 0 && <div className="small text-muted px-2 py-1">No matching clients</div>}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mb-2">
+                        <label className="small text-muted d-block mb-1">Show</label>
+                        <div className="d-flex gap-1 flex-wrap">
+                          <button type="button" onClick={() => setShowServices((prev) => !prev)} className={`btn btn-sm ${showServices ? "btn-primary" : "btn-outline-secondary"}`}>
+                            Services
+                          </button>
+                          <button type="button" onClick={() => setShowProducts((prev) => !prev)} className={`btn btn-sm ${showProducts ? "btn-secondary" : "btn-outline-secondary"}`}>
+                            Products
+                          </button>
+                          <button type="button" onClick={() => setShowSubscriptions((prev) => !prev)} className={`btn btn-sm ${showSubscriptions ? "btn-success" : "btn-outline-secondary"}`}>
+                            Subscriptions
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="small text-muted d-block mb-1">Subscription start date</label>
+                        <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control form-control-sm" />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {/* col-span-10 */}
@@ -1360,7 +1542,18 @@ export default function Sales() {
       <Modal_Detail_Item isOpen={showProductModal} onClose={() => setShowProductModal(false)} item={selectedItem} itemType={selectedItemType} mode="sales" onAddToCart={addToCartWithFeatureCheck} cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0} />
 
       {/* Checkout Modal */}
-      <Modal_Checkout_Sales isOpen={showCheckout} onClose={() => setShowCheckout(false)} cart={cart} cartTotal={cartTotal} discountAmount={cartDiscount} selectedClient={selectedClient} onProcessPayment={processPayment} taxRate={appSettings?.tax_rate ?? 0} currentUser={user} appSettings={appSettings} />
+      <Modal_Checkout_Sales
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        cart={cart}
+        cartTotal={cartTotal}
+        discountAmount={cartDiscount}
+        selectedClient={selectedClient}
+        onProcessPayment={processPayment}
+        taxRate={appSettings?.tax_rate ?? 0}
+        currentUser={user}
+        appSettings={appSettings}
+      />
 
       {/* Feature Selection Modal — opens when a product with features is added to cart */}
       <Modal_Feature_Select_Sales
@@ -1420,6 +1613,18 @@ export default function Sales() {
           }}
         />
       )}
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Sales Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to manage the sales experience on this page.</div>
+          <div className="small">Search, filters, client selection, cart, and history tools are available in the footer controls.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
