@@ -47,7 +47,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null, 
     address: "",
     notes: "",
     membership_tier: "none",
-    membership_since: "",
+    membership_since: new Date().toISOString().split("T")[0],
     membership_expires: "",
     membership_points: 0,
   });

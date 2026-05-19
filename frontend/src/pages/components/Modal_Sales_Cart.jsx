@@ -21,7 +21,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React from "react";
+import React, { useState } from "react";
 import Modal from "./Modal";
 import { getDisplayImageUrl } from "./Utils_Image";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "@heroicons/react/24/outline";
@@ -104,6 +104,8 @@ export default function Modal_Cart_Sales({
   filteredClients,
   cartItemCount,
   cartTotal,
+  taxRate = 0,
+  discountAmount = 0,
   loadClients,
   openAddClientModal,
   handleSelectClient,
@@ -113,6 +115,11 @@ export default function Modal_Cart_Sales({
   setCart,
   handleCheckout,
 }) {
+  const [tipAmount, setTipAmount] = useState("");
+  const tip = parseFloat(tipAmount) || 0;
+  const discountedSubtotal = Math.max(cartTotal - discountAmount, 0);
+  const taxAmount = discountedSubtotal * (taxRate / 100);
+  const grandTotal = discountedSubtotal + taxAmount + tip;
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true}>
       <div className="flex flex-col max-h-[90vh]">
@@ -239,13 +246,37 @@ export default function Modal_Cart_Sales({
                   <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartItemCount} items)</span>
                   <span className="text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Tax (8%)</span>
-                  <span className="text-gray-900 dark:text-white">${(cartTotal * 0.08).toFixed(2)}</span>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600 dark:text-emerald-400">Discount</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {taxRate > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
+                    <span className="text-gray-900 dark:text-white">${taxAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {/* Tip */}
+                <div className="flex items-center justify-between text-sm gap-2">
+                  <span className="text-gray-500 dark:text-gray-400">Tip</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-400 dark:text-gray-500 text-sm">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={tipAmount}
+                      onChange={(e) => setTipAmount(e.target.value)}
+                      className="w-24 text-right text-sm px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
                   <span className="text-gray-900 dark:text-white">Total</span>
-                  <span className="text-secondary-600 dark:text-secondary-400">${(cartTotal * 1.08).toFixed(2)}</span>
+                  <span className="text-secondary-600 dark:text-secondary-400">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
 
