@@ -52,7 +52,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import FilterDropdown from "./components/FilterDropdown";
 import useStore from "../services/useStore";
@@ -91,6 +91,7 @@ export default function Employees() {
   const [userPermissions, setUserPermissions] = useState([]);
   const [newPermission, setNewPermission] = useState({ page: "", permission: "", granted: true });
   const [success, setSuccess] = useState("");
+  const [showPageControls, setShowPageControls] = useState(false);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
@@ -921,6 +922,9 @@ export default function Employees() {
       {/* Header - sticky on mobile */}
       <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex justify-content-between" style={{ position: "sticky", top: 0, zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+        </button>
       </div>
 
       {/* Error / Success Alerts */}
@@ -1291,6 +1295,18 @@ export default function Employees() {
 
       {/* Wages Modal */}
       {showWagesModal && <Modal_Wages employees={employees} onClose={() => setShowWagesModal(false)} />}
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Employee Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to manage employee views and actions.</div>
+          <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

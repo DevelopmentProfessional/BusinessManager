@@ -33,7 +33,7 @@
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, CalculatorIcon, ShoppingCartIcon, ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
+import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, CalculatorIcon, ShoppingCartIcon, ClipboardDocumentCheckIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
 import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
@@ -99,6 +99,15 @@ const AVAILABLE_REPORTS = [
     color: "teal",
     tables: ["pay_slip", "user"],
     chartTypes: ["bar", "line", "area"],
+  },
+  {
+    id: "expenses",
+    title: "Expense Analysis",
+    description: "Track one-time and recurring inventory expenses",
+    icon: CurrencyDollarIcon,
+    color: "rose",
+    tables: ["inventory"],
+    chartTypes: ["line", "bar", "area"],
   },
   {
     id: "inventory",
@@ -177,6 +186,7 @@ export default function Reports() {
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [showForecastCalculator, setShowForecastCalculator] = useState(false);
   const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     dateRange: "last30days",
     groupBy: "month",
@@ -275,6 +285,10 @@ export default function Reports() {
         case "payroll":
           response = await reportsAPI.getPayrollReport(apiParams);
           setReportData(transformPayrollData(response.data, filters.chartType));
+          break;
+        case "expenses":
+          response = await reportsAPI.getExpensesReport(apiParams);
+          setReportData(transformMultiDatasetData(response.data, filters.chartType));
           break;
         case "orders":
           response = await reportsAPI.getOrdersReport(apiParams);
@@ -646,6 +660,9 @@ export default function Reports() {
       <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
         <div className="d-flex align-items-center gap-2">
+          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+            <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+          </button>
           <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
           <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
         </div>
@@ -905,6 +922,18 @@ export default function Reports() {
             <Button_Toolbar icon={ChartBarIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" />
           </div>
           <FinancialDashboard />
+        </div>
+      </Modal>
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Report Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to configure reports and exports.</div>
+          <div className="small">Choose report, period, chart type, and export options using the toolbar controls.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

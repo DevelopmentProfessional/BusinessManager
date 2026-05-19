@@ -41,6 +41,7 @@ import os
 import inspect
 import uuid as uuid_module
 import jwt as pyjwt
+from datetime import datetime
 from typing import Type, Dict, Any, Optional
 from uuid import UUID
 
@@ -64,6 +65,15 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Tables without company_id (system tables, never filter by company)
 SYSTEM_TABLES = {"company", "database_connection", "document_blob", "schema_migration"}
+
+
+def _normalize_inventory_cost_fields(record_data: Dict[str, Any], apply_default_purchase_date: bool = False) -> None:
+    """Normalize inventory cost fields so reports can rely on consistent semantics."""
+    raw_cost_type = str(record_data.get("cost_type") or "one_time").strip().lower()
+    record_data["cost_type"] = "recurring" if raw_cost_type in {"recurring", "rental", "rent", "lease", "monthly"} else "one_time"
+
+    if apply_default_purchase_date and not record_data.get("date_of_purchase"):
+        record_data["date_of_purchase"] = datetime.utcnow()
 
 
 def _resolve_permission_pages(table_name: str) -> set[str]:
@@ -119,6 +129,10 @@ def _resolve_document_path(file_path: str, upload_dir: str) -> str:
 READ_SCHEMA_MAP = {
     'client': ClientRead,
     'clients': ClientRead,
+    'membership': MembershipRead,
+    'memberships': MembershipRead,
+    'client_membership': ClientMembershipRead,
+    'client_memberships': ClientMembershipRead,
     'inventory': InventoryRead,
     'service': ServiceRead,
     'services': ServiceRead,
@@ -195,6 +209,38 @@ def _serialize_record(record, table_name: str, session=None):
         
     read_schema = READ_SCHEMA_MAP.get(table_name.lower())
     if read_schema:
+        if table_name.lower() in ['client', 'clients'] and session:
+            try:
+                record_dict = record.model_dump() if hasattr(record, 'model_dump') else record.__dict__.copy()
+                cm_stmt = sql_select(ClientMembership).where(ClientMembership.client_id == record.id)
+                memberships_stmt = sql_select(Membership)
+
+                if getattr(record, 'company_id', None):
+                    cm_stmt = cm_stmt.where(ClientMembership.company_id == record.company_id)
+                    memberships_stmt = memberships_stmt.where(Membership.company_id == record.company_id)
+
+                client_memberships = session.exec(cm_stmt).all()
+                membership_rows = session.exec(memberships_stmt).all()
+                membership_lookup = {m.id: m for m in membership_rows}
+
+                selected_ids = []
+                selected_names = []
+                for link in client_memberships:
+                    selected_ids.append(link.membership_id)
+                    membership = membership_lookup.get(link.membership_id)
+                    if membership:
+                        selected_names.append(membership.name)
+
+                record_dict['membership_ids'] = selected_ids
+                record_dict['membership_names'] = selected_names
+
+                validated = read_schema.model_validate(record_dict)
+                if hasattr(validated, 'model_dump'):
+                    return validated.model_dump(mode='json')
+                return validated
+            except Exception as e:
+                print(f"Warning: Failed to include client memberships for client {getattr(record, 'id', 'unknown')}: {e}")
+
         # Special handling for inventory to include images
         if table_name.lower() in ['inventory'] and session:
             try:
@@ -323,6 +369,45 @@ def get_model_class(table_name: str) -> Type[SQLModel]:
             detail=f"Table '{table_name}' not found. Available tables: {list(mapping.keys())}"
         )
     return mapping[table_name]
+
+
+def _sync_client_memberships(
+    session: Session,
+    client_id: UUID,
+    membership_ids: Optional[list[UUID]],
+    company_id: Optional[str],
+) -> None:
+    if membership_ids is None:
+        return
+
+    requested_ids = set(membership_ids)
+    existing_stmt = sql_select(ClientMembership).where(ClientMembership.client_id == client_id)
+    if company_id:
+        existing_stmt = existing_stmt.where(ClientMembership.company_id == company_id)
+    existing_links = session.exec(existing_stmt).all()
+    existing_ids = {link.membership_id for link in existing_links}
+
+    to_remove = [link for link in existing_links if link.membership_id not in requested_ids]
+    for link in to_remove:
+        session.delete(link)
+
+    to_add_ids = [mid for mid in requested_ids if mid not in existing_ids]
+    if to_add_ids:
+        valid_membership_stmt = sql_select(Membership).where(Membership.id.in_(to_add_ids))
+        if company_id:
+            valid_membership_stmt = valid_membership_stmt.where(Membership.company_id == company_id)
+        valid_memberships = session.exec(valid_membership_stmt).all()
+        valid_ids = {m.id for m in valid_memberships}
+
+        for membership_id in to_add_ids:
+            if membership_id in valid_ids:
+                session.add(
+                    ClientMembership(
+                        client_id=client_id,
+                        membership_id=membership_id,
+                        company_id=company_id,
+                    )
+                )
 
 # ─── [6] ROUTER DEFINITION ────────────────────────────────────────────────────
 router = APIRouter()
@@ -472,6 +557,10 @@ async def insert(
     model_class = get_model_class(table_name)
     _require_isud_permission(current_user, session, table_name, "write")
 
+    membership_ids = None
+    if table_name.lower() in ('client', 'clients'):
+        membership_ids = record_data.pop('membership_ids', None)
+
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
         plain_password = record_data.pop('password')
@@ -481,6 +570,9 @@ async def insert(
     # Auto-inject company_id for tenant-scoped tables
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         record_data['company_id'] = current_user.company_id or ""
+
+    if table_name.lower() in ('inventory', 'item', 'items'):
+        _normalize_inventory_cost_fields(record_data, apply_default_purchase_date=True)
 
     try:
         record = model_class(**record_data)
@@ -494,6 +586,15 @@ async def insert(
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
+
+    if table_name.lower() in ('client', 'clients') and membership_ids is not None:
+        try:
+            _sync_client_memberships(session, record.id, membership_ids, current_user.company_id)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to save client memberships: {str(e)}")
+        session.refresh(record)
 
     # ── P1-E: Decrement inventory stock when a product is sold ────────────────
     # Runs after the sale_transaction_item is committed so a failure here does
@@ -567,7 +668,7 @@ async def insert(
                 session.rollback()
                 print(f"Warning: bundle stock decrement failed for bundle {item_id}: {e}")
 
-    return _serialize_record(record, table_name)
+    return _serialize_record(record, table_name, session)
 
 # ─── [9] UPDATE ENDPOINTS ──────────────────────────────────────────────────────
 @router.put("/{table_name}/{record_id}")
@@ -588,6 +689,13 @@ async def update_by_id(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
+    membership_ids = None
+    if table_name.lower() in ('client', 'clients'):
+        membership_ids = record_data.pop('membership_ids', None)
+
+    if table_name.lower() in ('inventory', 'item', 'items') and 'cost_type' in record_data:
+        _normalize_inventory_cost_fields(record_data)
+
     for key, value in record_data.items():
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
             setattr(record, key, value)
@@ -603,6 +711,16 @@ async def update_by_id(
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
+
+    if table_name.lower() in ('client', 'clients') and membership_ids is not None:
+        try:
+            _sync_client_memberships(session, record.id, membership_ids, current_user.company_id)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to save client memberships: {str(e)}")
+        session.refresh(record)
+
     return _serialize_record(record, table_name, session)
 
 
@@ -783,6 +901,9 @@ async def update(
 
     update_many = not any(k == "id" for k, _ in raw_filters)
 
+    if table_name.lower() in ('inventory', 'item', 'items') and 'cost_type' in record_data:
+        _normalize_inventory_cost_fields(record_data)
+
     if update_many:
         records = session.exec(stmt).all()
         if not records:
@@ -808,7 +929,7 @@ async def update(
     session.add(record)
     session.commit()
     session.refresh(record)
-    return _serialize_record(record, table_name)
+    return _serialize_record(record, table_name, session)
 
 # ─── [12] DELETE ENDPOINT ──────────────────────────────────────────────────────
 
@@ -873,10 +994,15 @@ def _cascade_delete(session: Session, table_name: str, record_id: UUID, record) 
     # ── CLIENT ───────────────────────────────────────────────────────────────
     elif tn in ("client", "clients"):
         cid = record_id
+        _del(ClientMembership, client_id=cid)
         _null(Schedule, "client_id", cid, "client_id")
         _del(ScheduleAttendee, client_id=cid)
         _del(ClientCartItem,   client_id=cid)
         _null(SaleTransaction, "client_id", cid, "client_id")
+
+    # ── MEMBERSHIP ──────────────────────────────────────────────────────────
+    elif tn in ("membership", "memberships"):
+        _del(ClientMembership, membership_id=record_id)
 
     # ── SCHEDULE ─────────────────────────────────────────────────────────────
     elif tn in ("schedule", "schedules"):

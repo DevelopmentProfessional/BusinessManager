@@ -47,7 +47,7 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, ClockIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI } from "../services/api";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
@@ -57,7 +57,6 @@ import Panel_Profile from "./components/Panel_Profile";
 import Panel_Benefits from "./components/Panel_Benefits";
 import Panel_Wages from "./components/Panel_Wages";
 import Panel_Settings from "./components/Panel_Settings";
-import Panel_Schedule from "./components/Panel_Schedule";
 import Panel_General from "./components/Panel_General";
 import Panel_Database from "./components/Panel_Database";
 import Panel_Payroll from "./components/Panel_Payroll";
@@ -1147,21 +1146,6 @@ const Profile = () => {
         />
       )}
 
-      {openAccordion === "schedule" && canAccessSettings && (
-        <Panel_Schedule
-          isMobile={isMobile}
-          settingsPanelStyle={settingsPanelStyle}
-          scheduleSettings={scheduleSettings}
-          handleScheduleSettingsChange={handleScheduleSettingsChange}
-          handleSaveScheduleSettings={handleSaveScheduleSettings}
-          scheduleLoading={scheduleLoading}
-          settingsError={settingsError}
-          settingsSuccess={settingsSuccess}
-          userId={user.id}
-          HelpIcon={HelpIcon}
-        />
-      )}
-
       {openAccordion === "payroll" && canAccessGeneralSettings && (
         <Panel_Payroll
           isMobile={isMobile}
@@ -1345,7 +1329,6 @@ const Profile = () => {
                 <div className="col-10">
                   <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
                     {[
-                      { id: "schedule", Icon: ClockIcon, title: "Schedule" },
                       { id: "database", Icon: CircleStackIcon, title: "Database" },
                     ].map(({ id, Icon, title }) => (
                       <Button_Toolbar
@@ -1366,7 +1349,6 @@ const Profile = () => {
               <div className="row g-0">
                 <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
                   {[
-                    { id: "schedule", Icon: ClockIcon, title: "Schedule" },
                     { id: "database", Icon: CircleStackIcon, title: "Database" },
                   ].map(({ id, Icon, title }) => (
                     <Button_Toolbar

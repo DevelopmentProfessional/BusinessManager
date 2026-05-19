@@ -43,7 +43,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_Table_Footer";
 import PageTableHeader from "./components/Page_Table_Header";
 import PageTableRow from "./components/Page_Table_Row";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon, ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon, ChatBubbleLeftIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Modal_Discount_Rules from "./components/Modal_Discount_Rules";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -81,6 +81,7 @@ export default function Inventory() {
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
   const [deletingInventoryId, setDeletingInventoryId] = useState(null);
+  const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
   const [showIntelligence, setShowIntelligence] = useState(false);
   const scrollRef = useRef(null);
@@ -369,7 +370,15 @@ export default function Inventory() {
   }
 
   return (
-    <PageLayout title="Inventory" error={error}>
+    <PageLayout
+      title="Inventory"
+      error={error}
+      headerRight={
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+        </button>
+      }
+    >
       <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
 
       {/* Container_Scrollable rows – grow upwards from bottom */}
@@ -610,6 +619,18 @@ export default function Inventory() {
       <Suppliers_Panel isOpen={showSuppliersPanel} onClose={() => setShowSuppliersPanel(false)} />
 
       <Modal_Discount_Rules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to manage inventory views and actions.</div>
+          <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </PageLayout>
   );
 }

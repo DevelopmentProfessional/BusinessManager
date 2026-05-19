@@ -31,7 +31,7 @@ import React, { useEffect, useState } from "react";
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI } from "../services/api";
@@ -339,6 +339,7 @@ export default function Sales() {
   // Sales History State
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
   const [appSettings, setAppSettings] = useState(null);
   // Invoice template modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -987,22 +988,27 @@ export default function Sales() {
               </div>
             )}
           </div>
-          {cartItemCount > 0 && (
-            <button
-              onClick={() => setShowCartModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
-              style={{
-                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                color: "#fff",
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
-              }}
-            >
-              <ShoppingCartIcon className="h-4 w-4" />
-              {cartItemCount} · ${cartTotal.toFixed(2)}
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+              <Cog6ToothIcon style={{ width: 18, height: 18 }} />
             </button>
-          )}
+            {cartItemCount > 0 && (
+              <button
+                onClick={() => setShowCartModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
+                }}
+              >
+                <ShoppingCartIcon className="h-4 w-4" />
+                {cartItemCount} · ${cartTotal.toFixed(2)}
+              </button>
+            )}
+          </div>
         </div>
         {error && (
           <div className="mb-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-xl flex items-center justify-between text-sm">
@@ -1382,6 +1388,18 @@ export default function Sales() {
           }}
         />
       )}
+
+      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Sales Page Controls" centered={true}>
+        <div className="d-flex flex-column gap-2">
+          <div className="small text-muted">Use these controls to manage the sales experience on this page.</div>
+          <div className="small">Search, filters, client selection, cart, and history tools are available in the footer controls.</div>
+          <div className="d-flex justify-content-end">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
