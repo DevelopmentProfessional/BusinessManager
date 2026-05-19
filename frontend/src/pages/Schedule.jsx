@@ -786,12 +786,12 @@ export default function Schedule() {
             <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
               {currentView === "day" ? (
                 <>
-                  <div className="calendar-header-cell">Time</div>
-                  <div className="calendar-header-cell">Appointments</div>
+                  <div className="calendar-header-cell"></div>
+                  <div className="calendar-header-cell"></div>
                 </>
               ) : currentView === "week" ? (
                 <>
-                  <div className="calendar-header-cell">Time</div>
+                  <div className="calendar-header-cell"></div>
                   {days.map((date, index) => {
                     const isToday = date.toDateString() === new Date().toDateString();
                     return (
