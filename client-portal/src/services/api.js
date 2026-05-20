@@ -41,10 +41,7 @@ export function getDetailedApiErrorMessage(error, fallback = "Request failed") {
   const detail = error?.response?.data?.detail;
   const message = error?.response?.data?.message;
 
-  const parts = [
-    ...flattenErrorDetail(detail),
-    ...flattenErrorDetail(message),
-  ].filter(Boolean);
+  const parts = [...flattenErrorDetail(detail), ...flattenErrorDetail(message)].filter(Boolean);
 
   if (!parts.length && typeof error?.message === "string") {
     parts.push(error.message);
