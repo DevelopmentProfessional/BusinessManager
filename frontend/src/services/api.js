@@ -1,5 +1,85 @@
 import axios from "axios";
 
+const flattenErrorDetail = (detail) => {
+  if (!detail) return [];
+
+  if (typeof detail === "string") {
+    return [detail];
+  }
+
+  if (Array.isArray(detail)) {
+    return detail.flatMap((item) => flattenErrorDetail(item));
+  }
+
+  if (typeof detail === "object") {
+    // FastAPI validation errors often arrive as { loc, msg, type }
+    if (typeof detail.msg === "string") {
+      const loc = Array.isArray(detail.loc) ? detail.loc.join(" -> ") : "";
+      return [loc ? `${loc}: ${detail.msg}` : detail.msg];
+    }
+
+    const values = Object.values(detail);
+    if (values.length) {
+      return values.flatMap((value) => flattenErrorDetail(value));
+    }
+
+    return [JSON.stringify(detail)];
+  }
+
+  return [String(detail)];
+};
+
+export const getDetailedApiErrorMessage = (error, fallback = "Request failed") => {
+  if (!error) return fallback;
+
+  const status = error?.response?.status;
+  const statusText = error?.response?.statusText;
+  const method = error?.config?.method ? String(error.config.method).toUpperCase() : "";
+  const url = error?.config?.url || "";
+  const detail = error?.response?.data?.detail;
+  const message = error?.response?.data?.message;
+
+  const parts = [
+    ...flattenErrorDetail(detail),
+    ...flattenErrorDetail(message),
+  ].filter(Boolean);
+
+  if (!parts.length && typeof error?.message === "string") {
+    parts.push(error.message);
+  }
+
+  const uniqueParts = [...new Set(parts.map((part) => String(part).trim()).filter(Boolean))];
+  const base = uniqueParts.length ? uniqueParts.join(" | ") : fallback;
+  const requestContext = [method, url].filter(Boolean).join(" ");
+
+  if (status) {
+    return `${requestContext ? `${requestContext} -> ` : ""}HTTP ${status}${statusText ? ` ${statusText}` : ""}: ${base}`;
+  }
+
+  return requestContext ? `${requestContext}: ${base}` : base;
+};
+
+const normalizeAxiosError = (error, fallback = "Request failed") => {
+  if (!error) return error;
+
+  const detailed = getDetailedApiErrorMessage(error, fallback);
+
+  error.message = detailed;
+
+  if (error.response) {
+    if (!error.response.data || typeof error.response.data !== "object") {
+      error.response.data = { detail: detailed };
+    } else {
+      error.response.data.detail = detailed;
+      if (!error.response.data.message) {
+        error.response.data.message = detailed;
+      }
+    }
+  }
+
+  return error;
+};
+
 // API Configuration - Determine backend URL based on environment
 export const getApiBaseUrl = () => {
   // Check for explicit environment variable first
@@ -83,7 +163,7 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(normalizeAxiosError(error));
   }
 );
 

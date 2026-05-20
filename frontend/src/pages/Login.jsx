@@ -33,6 +33,7 @@ import { useNavigate } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon, UserIcon, LockClosedIcon, ExclamationTriangleIcon, CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import api from "../services/api";
+import { getDetailedApiErrorMessage } from "../services/api";
 import { startPerformanceSession } from "../services/performanceTracker";
 
 const Login = () => {
@@ -205,37 +206,8 @@ const Login = () => {
     };
 
     try {
-      const backendUrl = `${api.defaults.baseURL}/auth/login`;
-
-      const response = await fetch(backendUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(loginData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Login failed. Please check your credentials.";
-
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.detail || errorMessage;
-        } catch (parseError) {
-          if (response.status === 401) {
-            errorMessage = "Invalid username or password.";
-          } else if (response.status >= 500) {
-            errorMessage = "Server error. Please try again later.";
-          }
-        }
-
-        setError(errorMessage);
-        return;
-      }
-
-      const data = await response.json();
+      const response = await api.post("/auth/login", loginData);
+      const data = response?.data;
 
       if (data.access_token && data.user) {
         const companyId = formData.company_id.trim();
@@ -257,7 +229,6 @@ const Login = () => {
 
         // Show success message briefly
         setSuccess("Login successful! Redirecting...");
-        setSuccess("Login successful! Redirecting...");
 
         // Navigate to profile after a brief delay
         setTimeout(() => {
@@ -267,10 +238,10 @@ const Login = () => {
         throw new Error("Invalid response format");
       }
     } catch (error) {
-      if (error.name === "TypeError" && error.message.includes("fetch")) {
-        setError("Cannot connect to server. Please check if the server is running.");
+      if (error.name === "TypeError" && String(error.message || "").includes("fetch")) {
+        setError(`Cannot connect to server: ${error.message || "network failure"}`);
       } else {
-        setError(error.message || "An unexpected error occurred. Please try again.");
+        setError(getDetailedApiErrorMessage(error, "Login failed"));
       }
     } finally {
       setLoading(false);
@@ -305,7 +276,7 @@ const Login = () => {
       setResetData({ username: "", new_password: "", confirm_password: "" });
       alert("Password reset successfully! You can now login with your new password.");
     } catch (err) {
-      setError(err.response?.data?.detail || "Password reset failed. Please try again.");
+      setError(getDetailedApiErrorMessage(err, "Password reset failed"));
     } finally {
       setLoading(false);
     }
