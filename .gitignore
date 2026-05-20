@@ -77,8 +77,6 @@ simple_migration.py
 # Root-level test folders (ensure not deployed nor committed by default)
 /test/
 /tests/
-/regressiontest/
-
-# SSL certificates and keys (local development only)
+/regressiontest/# SSL certificates and keys (local development only)
 ssl/*.pem
 *.pem
