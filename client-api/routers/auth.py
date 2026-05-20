@@ -138,6 +138,12 @@ def login(
     ```
     Response: JWT Bearer token (24-hour expiry).
     """
+    if not body.email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required.")
+
+    if not body.company_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Company ID is required.")
+
     client = session.exec(
         select(Client).where(
             Client.email == body.email,
@@ -145,11 +151,30 @@ def login(
         )
     ).first()
 
-    if not client or not client.password_hash:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.")
+    if not client:
+        any_company_match = session.exec(
+            select(Client).where(Client.email == body.email)
+        ).first()
+
+        if any_company_match:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Account exists, but not for company '{body.company_id}'.",
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"No client account found for email '{body.email}'.",
+        )
+
+    if not client.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account password is not configured. Please contact support.",
+        )
 
     if not auth_utils.verify_password(body.password, client.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
 
     client.last_login = datetime.now(timezone.utc)
     try:

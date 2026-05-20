@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeftIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { authAPI, companiesAPI } from "../services/api";
+import { authAPI, companiesAPI, getDetailedApiErrorMessage } from "../services/api";
 import useStore from "../store/useStore";
 
 export default function Login() {
@@ -66,7 +66,7 @@ export default function Login() {
       await loadCart();
       navigate("/shop");
     } catch (err) {
-      setError(err.response?.data?.detail || "Login failed. Check your credentials.");
+      setError(getDetailedApiErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export default function Login() {
           : (data?.message || "If this account exists, a reset token has been generated.")
       );
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not start password reset.");
+      setError(getDetailedApiErrorMessage(err, "Could not start password reset"));
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export default function Login() {
       setForm((f) => ({ ...f, email: resetData.email, company_id: resetData.company_id, password: "" }));
       setMode("login");
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not reset password.");
+      setError(getDetailedApiErrorMessage(err, "Could not reset password"));
     } finally {
       setLoading(false);
     }

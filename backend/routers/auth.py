@@ -240,6 +240,12 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     username_or_email = (login_data.username or "").strip()
     company_id = (login_data.company_id or "").strip().upper()
 
+    if not username_or_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email is required."
+        )
+
     # Find user by (username + company_id) when company_id is provided, else by username/email globally
     if company_id:
         user = session.exec(
@@ -257,6 +263,11 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
             ).first()
             if candidate and candidate.company_id in (None, "", "DEFAULT"):
                 user = candidate
+            elif candidate:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Account was found, but it belongs to company '{candidate.company_id}', not '{company_id}'."
+                )
     else:
         user = session.exec(
             select(User).where(
@@ -267,7 +278,10 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            detail=(
+                f"No account found for '{username_or_email}'"
+                + (f" in company '{company_id}'." if company_id else ".")
+            )
         )
 
     # Check if account is locked
@@ -302,7 +316,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
         session.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            detail=f"Incorrect password. Attempt {user.failed_login_attempts} of 5 before temporary lock."
         )
     
     # Reset failed attempts on successful login
