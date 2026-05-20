@@ -15,7 +15,18 @@ export const getApiBaseUrl = () => {
   // Check for private/local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
   const isPrivateIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
 
-  if (isLocalhost || isPrivateIP) {
+  // The production app is served from app.vadpivi.com, which should call the
+  // API through the same origin path so we do not depend on a separate public
+  // API hostname for authentication.
+  const isVadpiviWebHost = [
+    "vadpivi.com",
+    "www.vadpivi.com",
+    "app.vadpivi.com",
+    "clients.vadpivi.com",
+    "register.vadpivi.com",
+  ].includes(hostname);
+
+  if (isLocalhost || isPrivateIP || isVadpiviWebHost) {
     // Local development uses Vite proxy
     return "/api/v1";
   }
