@@ -62,41 +62,92 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-# Nginx config
+# Nginx config - Pure API Proxy (no static files)
 cat > /etc/nginx/conf.d/businessmanager.conf << 'EOF'
+# Upstream servers
+upstream staff_api {
+    server 127.0.0.1:8000 max_fails=3 fail_timeout=30s;
+}
+
+upstream client_api {
+    server 127.0.0.1:8001 max_fails=3 fail_timeout=30s;
+}
+
+# Disable default server
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 444;
+}
+
+# API Proxy server
 server {
     listen 80;
-    server_name _;
+    listen [::]:80;
+    server_name api.vadpivi.com ~^.*\.vadpivi\.com$;
 
+    # Staff API routes
     location /api/v1/ {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://staff_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 60;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
         client_max_body_size 50M;
     }
 
+    # Client API routes
     location /api/client/ {
-        proxy_pass http://127.0.0.1:8001;
+        proxy_pass http://client_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 60;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
         client_max_body_size 50M;
+    }
+
+    # Health check endpoint
+    location /health {
+        proxy_pass http://staff_api/health;
+        proxy_set_header Host $host;
+        access_log off;
+    }
+
+    # Catch-all - return 404
+    location / {
+        return 404;
     }
 }
 EOF
 
 systemctl daemon-reload
 timedatectl set-timezone Atlantic/Bermuda || true
-systemctl disable staff-api client-api || true
-systemctl stop staff-api || true
-systemctl stop client-api || true
-systemctl enable businessmanager-app-start.timer
-systemctl start businessmanager-app-start.timer
+
+# Enable services to run continuously (not scheduled)
+systemctl enable staff-api client-api
+systemctl start staff-api
+systemctl start client-api
+
+# Disable and stop the startup timer (services run continuously)
+systemctl disable businessmanager-app-start.timer || true
+systemctl stop businessmanager-app-start.timer || true
+
 systemctl restart nginx
 
-echo "=== Timer Status ==="
-systemctl status businessmanager-app-start.timer --no-pager | tail -8
-echo "=== Next Startup Window ==="
-systemctl list-timers businessmanager-app-start.timer --all --no-pager
+echo "=== Service Status ==="
+systemctl status staff-api --no-pager | tail -3
+systemctl status client-api --no-pager | tail -3
+echo "=== Nginx Status ==="
+systemctl status nginx --no-pager | tail -3
 echo "SETUP_COMPLETE"
