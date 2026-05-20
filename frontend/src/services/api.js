@@ -39,10 +39,7 @@ export const getDetailedApiErrorMessage = (error, fallback = "Request failed") =
   const detail = error?.response?.data?.detail;
   const message = error?.response?.data?.message;
 
-  const parts = [
-    ...flattenErrorDetail(detail),
-    ...flattenErrorDetail(message),
-  ].filter(Boolean);
+  const parts = [...flattenErrorDetail(detail), ...flattenErrorDetail(message)].filter(Boolean);
 
   if (!parts.length && typeof error?.message === "string") {
     parts.push(error.message);
@@ -98,13 +95,7 @@ export const getApiBaseUrl = () => {
   // The production app is served from app.vadpivi.com, which should call the
   // API through the same origin path so we do not depend on a separate public
   // API hostname for authentication.
-  const isVadpiviWebHost = [
-    "vadpivi.com",
-    "www.vadpivi.com",
-    "app.vadpivi.com",
-    "clients.vadpivi.com",
-    "register.vadpivi.com",
-  ].includes(hostname);
+  const isVadpiviWebHost = ["vadpivi.com", "www.vadpivi.com", "app.vadpivi.com", "clients.vadpivi.com", "register.vadpivi.com"].includes(hostname);
 
   if (isLocalhost || isPrivateIP || isVadpiviWebHost) {
     // Local development uses Vite proxy

@@ -87,11 +87,7 @@ export default function Login() {
       };
       setResetData(next);
       setMode("reset");
-      setSuccess(
-        data?.reset_token
-          ? `Reset token generated (expires in ${data.expires_in_minutes || 30} min).`
-          : (data?.message || "If this account exists, a reset token has been generated.")
-      );
+      setSuccess(data?.reset_token ? `Reset token generated (expires in ${data.expires_in_minutes || 30} min).` : data?.message || "If this account exists, a reset token has been generated.");
     } catch (err) {
       setError(getDetailedApiErrorMessage(err, "Could not start password reset"));
     } finally {
@@ -238,14 +234,14 @@ export default function Login() {
             marginTop: -8,
           }}
         >
-          <form onSubmit={mode === "login" ? handleSubmit : (mode === "request-reset" ? handleRequestReset : handleResetPassword)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <form onSubmit={mode === "login" ? handleSubmit : mode === "request-reset" ? handleRequestReset : handleResetPassword} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Email */}
             <div>
               <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>Email address</label>
               <input
                 type="email"
                 placeholder="jane@example.com"
-                value={mode === "login" ? form.email : (mode === "request-reset" ? resetRequest.email : resetData.email)}
+                value={mode === "login" ? form.email : mode === "request-reset" ? resetRequest.email : resetData.email}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (mode === "login") setForm((f) => ({ ...f, email: value }));
@@ -271,47 +267,47 @@ export default function Login() {
 
             {/* Password */}
             {mode === "login" && (
-            <div>
-              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>Password</label>
-              <div style={{ position: "relative" }}>
-                <input
-                  type={showPwd ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "10px 40px 10px 12px",
-                    fontSize: "0.88rem",
-                    border: "1.5px solid #e5e7eb",
-                    borderRadius: "0.6rem",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    transition: "border-color 0.15s",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = primaryColor)}
-                  onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((s) => !s)}
-                  style={{
-                    position: "absolute",
-                    right: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#9ca3af",
-                    padding: 2,
-                  }}
-                >
-                  {showPwd ? <EyeSlashIcon style={{ width: 16, height: 16 }} /> : <EyeIcon style={{ width: 16, height: 16 }} />}
-                </button>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#374151", marginBottom: 5 }}>Password</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "10px 40px 10px 12px",
+                      fontSize: "0.88rem",
+                      border: "1.5px solid #e5e7eb",
+                      borderRadius: "0.6rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      transition: "border-color 0.15s",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                    onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((s) => !s)}
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#9ca3af",
+                      padding: 2,
+                    }}
+                  >
+                    {showPwd ? <EyeSlashIcon style={{ width: 16, height: 16 }} /> : <EyeIcon style={{ width: 16, height: 16 }} />}
+                  </button>
+                </div>
               </div>
-            </div>
             )}
 
             {mode === "reset" && (
@@ -365,7 +361,7 @@ export default function Login() {
                 <input
                   type="text"
                   placeholder="acme-corp"
-                  value={mode === "login" ? form.company_id : (mode === "request-reset" ? resetRequest.company_id : resetData.company_id)}
+                  value={mode === "login" ? form.company_id : mode === "request-reset" ? resetRequest.company_id : resetData.company_id}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (mode === "login") setForm((f) => ({ ...f, company_id: value }));
@@ -438,7 +434,7 @@ export default function Login() {
                 marginTop: 4,
               }}
             >
-              {loading ? "Please wait…" : (mode === "login" ? "Sign In" : (mode === "request-reset" ? "Generate Reset Token" : "Reset Password"))}
+              {loading ? "Please wait…" : mode === "login" ? "Sign In" : mode === "request-reset" ? "Generate Reset Token" : "Reset Password"}
             </button>
           </form>
 
