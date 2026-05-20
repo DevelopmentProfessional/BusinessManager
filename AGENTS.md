@@ -50,3 +50,30 @@ Do not read these areas unless the task explicitly requires them.
 
 ## Escalation
 If the task is ambiguous about which app area it belongs to, inspect only the active file and one adjacent dependency first, then expand outward.
+
+## Infrastructure & Deployment
+
+### EC2 Instance Setup
+The BusinessManager application is deployed on AWS EC2 with the following architecture:
+
+**Services:**
+- **staff-api**: FastAPI application on port 8000 (`/api/v1/*` endpoints)
+- **client-api**: FastAPI application on port 8001 (`/api/client/*` endpoints)
+- Both services managed by systemd with `Restart=always` for continuous operation
+- Database: PostgreSQL RDS (separate from EC2)
+
+**Nginx Reverse Proxy:**
+- Listens on port 80 for `api.vadpivi.com`
+- Routes requests to backend APIs via upstream proxy blocks
+- Includes CORS headers, request timeouts, and forwarded IP tracking
+- Does NOT serve static files (frontend deployed separately via CDN)
+
+**Important:** The `setup_server.sh` script contains the authoritative server configuration. Any changes to systemd services or Nginx must be made there AND applied to the running instance.
+
+### Critical Infrastructure Decisions
+1. **Frontend & Backend Separation**: React frontend deployed at `https://app.vadpivi.com` via CloudFront CDN. EC2 only proxies API requests at `https://api.vadpivi.com`.
+2. **Continuous Operation**: Services run continuously with auto-restart, not on a schedule. The `businessmanager-app-start.timer` is disabled (kept in config as reference but must remain disabled).
+3. **No Static File Serving**: Nginx does NOT serve any static HTML/CSS/JS files. It only proxies `/api/v1/*` and `/api/client/*` to the backend services.
+
+**Recent Fix (May 20, 2026):** 
+Instance was previously scheduled to stop/start daily at 10:10 AM via systemd timer, and Nginx was misconfigured to serve static files. Both issues have been resolved in `setup_server.sh`. See `/memories/repo/infrastructure-schedule-nginx-fix.md` for details.
