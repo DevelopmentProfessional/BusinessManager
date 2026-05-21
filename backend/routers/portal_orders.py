@@ -17,6 +17,7 @@ try:
         ClientOrderItem,
         ClientOrderItemRead,
         ClientOrderRead,
+        DiscountRule,
         FeatureOption,
         Inventory,
         InventoryFeatureCombination,
@@ -24,6 +25,7 @@ try:
         User,
     )
     from backend.routers.auth import get_current_user
+    from backend.utils.discount_service import get_applicable_discounts, apply_discount_to_cart_item
 except ModuleNotFoundError:
     from database import get_session
     from models import (
@@ -34,6 +36,7 @@ except ModuleNotFoundError:
         ClientOrderItem,
         ClientOrderItemRead,
         ClientOrderRead,
+        DiscountRule,
         FeatureOption,
         Inventory,
         InventoryFeatureCombination,
@@ -41,6 +44,7 @@ except ModuleNotFoundError:
         User,
     )
     from routers.auth import get_current_user
+    from utils.discount_service import get_applicable_discounts, apply_discount_to_cart_item  # type: ignore
 
 
 router = APIRouter()
