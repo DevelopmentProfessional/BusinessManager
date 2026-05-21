@@ -524,7 +524,7 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">{document.original_filename}</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={handleClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }}>
+            <button type="button" onClick={handleClose} className="btn btn-outline-secondary p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 d-flex align-items-center justify-content-center">
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>

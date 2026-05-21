@@ -93,7 +93,6 @@ const CodeEditor = forwardRef(function CodeEditor({ content, onChange, language 
         extensions={extensions}
         theme={isDark ? oneDark : "light"}
         height="100%"
-        style={{ height: "100%", width: "100%" }}
         basicSetup={{
           lineNumbers: true,
           highlightActiveLineGutter: true,

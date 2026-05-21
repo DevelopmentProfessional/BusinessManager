@@ -922,7 +922,7 @@ export default function Employees() {
       {/* Header - sticky on mobile */}
       <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex justify-content-between" style={{ position: "sticky", top: 0, zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>
       </div>
@@ -975,7 +975,7 @@ export default function Employees() {
                     {isAdmin && (
                       <td className="main-page-table-data text-center p-0">
                         {employee.is_locked && employee.id !== currentUser?.id && (
-                          <button type="button" onClick={(e) => handleToggleLock(e, employee)} className="btn btn-outline-danger m-0 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Account locked — click to unlock">
+                          <button type="button" onClick={(e) => handleToggleLock(e, employee)} className="btn btn-outline-danger m-0 d-flex align-items-center justify-content-center" title="Account locked — click to unlock">
                             <LockClosedIcon style={{ width: 22, height: 22 }} />
                           </button>
                         )}
@@ -993,7 +993,7 @@ export default function Employees() {
                         <button
                           type="button"
                           className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? "btn-primary" : "btn-outline-secondary"}`}
-                          style={{ width: "3rem", height: "3rem", border: "none" }}
+                          
                           title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ""}`}
                           onClick={(e) => {
                             e.stopPropagation();

@@ -293,7 +293,6 @@ const Panel_Payroll = ({
           onClick={handleSavePaySchedule}
           disabled={payScheduleSaving}
           className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
-          style={{ height: "2.5rem" }}
         />
       </div>
     </div>

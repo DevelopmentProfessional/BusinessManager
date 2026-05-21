@@ -253,7 +253,7 @@ const Panel_General = ({
                     {label} <HelpIcon id={helpId} text={helpText} />
                   </label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="rounded border cursor-pointer flex-shrink-0" style={{ width: "2.5rem", height: "2.5rem" }} />
+                    <input type="color" value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="rounded border cursor-pointer flex-shrink-0" />
                     <input type="text" value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="flex-1 min-w-0 px-2 py-1 border rounded text-xs font-mono" />
                   </div>
                 </div>

@@ -1130,7 +1130,7 @@ export default function Sales() {
             )}
           </div>
           <div className="d-flex align-items-center gap-2">
-            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
               <Cog6ToothIcon style={{ width: 18, height: 18 }} />
             </button>
             {cartItemCount > 0 && (
@@ -1357,7 +1357,6 @@ export default function Sales() {
                       })
                     }
                     className="flex-shrink-0 flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors"
-                    style={{ width: "3rem", height: "3rem" }}
                     title="Add new client"
                   >
                     <PlusIcon className="h-5 w-5" />

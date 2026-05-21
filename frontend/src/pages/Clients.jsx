@@ -330,7 +330,7 @@ export default function Clients() {
   // ─── [8] RENDER ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "16rem" }}>
+      <div className="d-flex justify-content-center align-items-center">
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -343,7 +343,7 @@ export default function Clients() {
       title="Clients"
       error={error}
       headerRight={
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>
       }
@@ -379,7 +379,7 @@ export default function Clients() {
                       type="button"
                       onClick={handleOpenTemplate(client)}
                       className="btn btn-sm border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded d-flex align-items-center justify-content-center"
-                      style={{ width: "2.5rem", height: "2.5rem", margin: "0 auto" }}
+                      
                       title="Use template"
                     >
                       <EnvelopeIcon className="h-6 w-6" />

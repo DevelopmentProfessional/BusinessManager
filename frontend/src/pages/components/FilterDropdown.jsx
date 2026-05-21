@@ -76,7 +76,7 @@ export default function FilterDropdown({
                       type="button"
                       aria-label={`${option.label} help`}
                       className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
-                      style={{ width: "1.75rem", height: "1.75rem" }}
+                      
                       onMouseEnter={() => setHelpKey(option.value)}
                       onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
                       onMouseDown={(e) => {

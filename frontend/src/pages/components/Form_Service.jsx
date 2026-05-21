@@ -332,7 +332,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
   // ── Layout: flex column filling the modal body ───────────────────
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+    <div className="d-flex flex-column bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{service ? "Edit Service" : "Add Service"}</h6>
@@ -394,7 +394,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     {/* Camera button */}
                     <div className="mt-1 d-flex align-items-center gap-1">
                       {addImageMode === null && (
-                        <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "4px" }} title="Add photo">
+                        <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                             <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -458,7 +458,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
 
                 {/* Description at the bottom */}
                 <div className="form-floating mb-2">
-                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Description" style={{ height: "72px" }} />
+                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Description" />
                   <label htmlFor="description">Description</label>
                 </div>
               </form>
@@ -581,7 +581,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     {resources.map((r) => (
                       <tr key={r.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={() => handleRemoveResource(r.id)}>
+                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"  onClick={() => handleRemoveResource(r.id)}>
                             <TrashIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
@@ -615,7 +615,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 </select>
                 <input type="number" min="0.01" step="0.01" className="form-control form-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
                 <input type="number" min="0" max="100" step="0.1" className="form-control form-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={handleAddResource}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddResource}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -647,7 +647,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                     {assets.map((a) => (
                       <tr key={a.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={() => handleRemoveAsset(a.id)}>
+                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"  onClick={() => handleRemoveAsset(a.id)}>
                             <TrashIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
@@ -676,7 +676,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                       </option>
                     ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={handleAddAsset}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddAsset}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -699,7 +699,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <ul className="list-group list-group-flush mb-0">
                   {svcEmployees.map((se) => (
                     <li key={se.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} onClick={() => handleRemoveEmployee(se.id)}>
+                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"  onClick={() => handleRemoveEmployee(se.id)}>
                         <TrashIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="rounded-circle flex-shrink-0" style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: "inline-block" }} />
@@ -722,7 +722,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                       </option>
                     ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={handleAddEmployee}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddEmployee}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -745,7 +745,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                 <ul className="list-group list-group-flush mb-0">
                   {locations.map((loc) => (
                     <li key={loc.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} onClick={() => handleRemoveLocation(loc.id)}>
+                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"  onClick={() => handleRemoveLocation(loc.id)}>
                         <TrashIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
@@ -767,7 +767,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                       </option>
                     ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={handleAddLocation}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddLocation}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>

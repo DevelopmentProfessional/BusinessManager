@@ -456,7 +456,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const formTitle = appointment ? (formData.appointment_type === "meeting" ? "Edit Meeting" : formData.appointment_type === "task" ? "Edit Task" : "Edit Appointment") : formData.appointment_type === "meeting" ? "New Meeting" : formData.appointment_type === "task" ? "New Task" : "New Appointment";
 
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+    <div className="d-flex flex-column bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{formTitle}</h6>
@@ -470,7 +470,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {/* Notes — shown at top for appointment/series types */}
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
             <div className="form-floating">
-              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" style={{ height: "60px" }} />
+              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
               <label htmlFor="notes">Notes (optional)</label>
             </div>
           )}
@@ -721,7 +721,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   }}
                   className="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center"
                   title="Open Sales checkout for this appointment"
-                  style={{ width: "1rem", height: "1rem" }}
                 >
                   <CreditCardIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
                 </button>

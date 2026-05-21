@@ -60,6 +60,11 @@
   /* Bootstrap primary bridge so existing btn/active variants follow app active color */
   --bs-primary: var(--app-active-color);
   --bs-primary-rgb: var(--app-active-color-rgb);
+
+  /* App-wide button dimensions (edit here to change every button) */
+  --app-btn-height: 1.2rem;
+  --app-btn-width: 4rem;
+  --app-btn-nav-width: 2rem;
 }
 
 /* Global shadow reset (requested app-wide) */
@@ -179,12 +184,25 @@ footer[aria-label="Actions"] .btn {
 
 /* ========================================
    GLOBAL BUTTON STYLES
-   All buttons application-wide
+   All .btn elements — dimensions from :root variables above
    ======================================== */
 .btn {
-  height: 3rem !important;
+  height: var(--app-btn-height) !important;
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   box-shadow: none !important;
   --bs-btn-focus-box-shadow: none !important;
+}
+
+/* Bottom-right navigation menu toggle (Layout.jsx) */
+.btn.btn-app-nav {
+  width: var(--app-btn-nav-width) !important;
+  min-width: var(--app-btn-nav-width) !important;
+  max-width: var(--app-btn-nav-width) !important;
 }
 
 button,
@@ -221,16 +239,12 @@ div[role="combobox"] {
 
 /* Footer nav/filter buttons — scale up icon when active/selected */
 .app-footer-search .btn svg,
-.profile-footer-nav .btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
-  transition: width 0.15s ease, height 0.15s ease;
-}
-
-/* Schedule footer icons: slightly smaller so 3rem buttons don't feel cramped */
-.schedule-footer .btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.profile-footer-nav .btn svg,
+.schedule-footer .btn svg,
+.modal-footer .btn svg,
+[class*="footer"] .btn svg {
+  width: 1rem;
+  height: 1rem;
   transition: width 0.15s ease, height 0.15s ease;
 }
 
@@ -241,15 +255,12 @@ div[role="combobox"] {
 }
 
 .app-footer-search .btn.rounded-circle[data-active="true"] svg,
-.profile-footer-nav .btn.rounded-circle[data-active="true"] svg {
-  width: 2.1rem !important;
-  height: 2.1rem !important;
-}
-
-/* Schedule footer active icon bump: smaller than other footers */
-.schedule-footer .btn.rounded-circle[data-active="true"] svg {
-  width: 1.6rem !important;
-  height: 1.6rem !important;
+.profile-footer-nav .btn.rounded-circle[data-active="true"] svg,
+.schedule-footer .btn.rounded-circle[data-active="true"] svg,
+.modal-footer .btn.rounded-circle[data-active="true"] svg,
+[class*="footer"] .btn.rounded-circle[data-active="true"] svg {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
 }
 
 .searchable-select-overlay-root {
@@ -373,40 +384,31 @@ div[role="combobox"] {
   color: #cbd5e1;
 }
 
-/* ========================================
-   COMPACT MODE BUTTON STYLES
-   Buttons in compact/icon-only mode
-   ======================================== */
+/* Icon-only / circular toolbar buttons */
 .btn.rounded-circle {
-  width: 1rem !important;
-  height: 1rem !important;
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
+  padding: 0 !important;
 }
 
-/* Inline compact icon buttons (modals, forms) — overrides global .btn height */
-.btn[style*="height: 1rem"],
-.btn[style*='height: "1rem"'] {
-  width: 1rem !important;
-  height: 1rem !important;
-  min-width: 1rem !important;
-  min-height: 1rem !important;
-}
-
-/* Button_Icon component and other icon-only action buttons */
-button.rounded-lg.w-12.h-12 {
-  width: 1rem !important;
-  height: 1rem !important;
-}
-
-/* Floating action buttons with rounded-full */
+/* Legacy icon button classes */
+button.rounded-lg.w-12.h-12,
 button.rounded-full.fixed {
-  width: 1rem !important;
-  height: 1rem !important;
+  width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
 }
 
 /* ========================================
    TRAINING MODE BUTTON STYLES
    Buttons with labels in training mode
    ======================================== */
+body.training-mode .btn.rounded-pill {
+  width: auto !important;
+  max-width: none !important;
+  min-width: var(--app-btn-width) !important;
+}
+
 body.training-mode .app-footer-search .btn,
 body.training-mode .schedule-footer .btn,
 body.training-mode .profile-footer-nav .btn,
@@ -416,7 +418,7 @@ body.training-mode .flex-shrink-0.border-top .btn,
 body.training-mode .flex-shrink-0.border-t .btn,
 body.training-mode [class*="footer"] .btn {
   margin: 0.0625rem !important;
-  min-width: 3.4rem !important;
+  min-width: var(--app-btn-width) !important;
   padding-left: 0.25rem !important;
   padding-right: 0.5rem !important;
 }
@@ -460,12 +462,11 @@ footer[aria-label="Actions"] .btn.rounded-circle,
 .flex-shrink-0.border-t .btn.rounded-circle,
 [class*="footer"] .btn.rounded-circle {
   padding: 0 !important;
-  width: 1rem !important;
-  height: 1rem !important;
-  min-width: 1rem !important;
+  width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
+  min-width: var(--app-btn-width) !important;
 }
 
-/* Compact circles: lock to exact size in all modes including training mode */
 body.training-mode .app-footer-search .btn.rounded-circle,
 body.training-mode .schedule-footer .btn.rounded-circle,
 body.training-mode .profile-footer-nav .btn.rounded-circle,
@@ -474,10 +475,10 @@ body.training-mode footer[aria-label="Actions"] .btn.rounded-circle,
 body.training-mode .flex-shrink-0.border-top .btn.rounded-circle,
 body.training-mode .flex-shrink-0.border-t .btn.rounded-circle,
 body.training-mode [class*="footer"] .btn.rounded-circle {
-  width: 1rem !important;
-  min-width: 1rem !important;
-  max-width: 1rem !important;
-  height: 1rem !important;
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
   margin: 0 !important;
   padding: 0 !important;
 }

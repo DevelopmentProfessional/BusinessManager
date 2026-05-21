@@ -154,7 +154,7 @@ export default function Modal_BulkImport({
         {/* Header */}
         <div className="flex-shrink-0 d-flex justify-content-between align-items-center p-3 border-bottom border-gray-200 dark:border-gray-700">
           <h6 className="mb-0 fw-semibold">Bulk Import {entityLabel}</h6>
-          <button type="button" className="btn btn-sm p-0 text-gray-500 dark:text-gray-400" onClick={onClose} style={{ lineHeight: 1 }}>
+          <button type="button" className="btn btn-sm p-0 text-gray-500 dark:text-gray-400" onClick={onClose} >
             <XMarkIcon style={{ width: 20, height: 20 }} />
           </button>
         </div>

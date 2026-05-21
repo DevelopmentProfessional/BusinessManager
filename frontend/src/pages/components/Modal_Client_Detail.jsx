@@ -180,7 +180,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Service History</h6>
@@ -350,7 +350,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
           <div className="d-flex gap-2 me-2">
@@ -670,7 +670,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
@@ -781,12 +781,12 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           {/* Address & Notes */}
           <hr className="my-2" />
           <div className="form-floating mb-2">
-            <textarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Address" style={{ height: "60px" }} />
+            <textarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Address" />
             <label htmlFor="dc_address">Address</label>
           </div>
 
           <div className="form-floating mb-2">
-            <textarea id="dc_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" style={{ height: "80px" }} />
+            <textarea id="dc_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
             <label htmlFor="dc_notes">Notes</label>
           </div>
         </div>

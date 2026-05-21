@@ -505,7 +505,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   ];
 
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+    <div className="d-flex flex-column bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{employee ? "Edit Employee" : "Add Employee"}</h6>
@@ -1052,7 +1052,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           <small className="text-muted">
                             Vacation: {formData.vacation_days_used || 0} / {formData.vacation_days} used
                           </small>
-                          <div className="progress" style={{ height: "6px" }}>
+                          <div className="progress">
                             <div
                               className="progress-bar bg-primary"
                               style={{
@@ -1067,7 +1067,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           <small className="text-muted">
                             Sick: {formData.sick_days_used || 0} / {formData.sick_days} used
                           </small>
-                          <div className="progress" style={{ height: "6px" }}>
+                          <div className="progress">
                             <div
                               className="progress-bar bg-warning"
                               style={{
@@ -1390,7 +1390,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   if (await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" })) onDelete(employee.id);
                 }}
                 className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center rounded-circle"
-                style={{ width: "2rem", height: "2rem" }}
                 title="Delete Employee"
               >
                 <TrashIcon style={{ width: 14, height: 14 }} />

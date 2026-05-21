@@ -335,7 +335,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 placeholder="Template name"
               />
               <div className="position-relative">
-                <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" style={{ width: "2rem", height: "2rem" }} onClick={() => setShowDescriptionHelp((prev) => !prev)} title="Template description">
+                <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center"  onClick={() => setShowDescriptionHelp((prev) => !prev)} title="Template description">
                   <QuestionMarkCircleIcon className="h-4 w-4" />
                 </button>
                 {showDescriptionHelp && (
