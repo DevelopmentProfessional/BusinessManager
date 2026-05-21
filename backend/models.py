@@ -2078,6 +2078,14 @@ class ClientCartItemRead(SQLModel):
     line_total: float
     options_json: Optional[str] = None
     created_at: Optional[datetime] = None
+    # Discount fields (optional, populated when discount is applicable)
+    unit_price_original: Optional[float] = None
+    unit_price_discounted: Optional[float] = None
+    unit_discount_amount: Optional[float] = None
+    line_total_before_discount: Optional[float] = None
+    line_discount_amount: Optional[float] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
 
     model_config = {"from_attributes": True}
 
@@ -2161,6 +2169,14 @@ class ClientOrderItemRead(SQLModel):
     booking_id: Optional[UUID] = None
     options_json: Optional[str] = None
     created_at: Optional[datetime] = None
+    # Discount fields (optional, populated when discount was applied)
+    unit_price_original: Optional[float] = None
+    unit_price_discounted: Optional[float] = None
+    unit_discount_amount: Optional[float] = None
+    line_total_before_discount: Optional[float] = None
+    line_discount_amount: Optional[float] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
     
     model_config = {"from_attributes": True}
 
