@@ -66,7 +66,7 @@ import Form_Schedule from "./components/Form_Schedule";
 import Gate_Permission from "./components/Gate_Permission";
 import Widget_Attendance from "./components/Widget_Attendance";
 import useDarkMode from "../services/useDarkMode";
-import Modal_Filter_Schedule from "./components/Modal_Schedule_Filter";
+import FilterDropup_Schedule from "./components/FilterDropup_Schedule";
 import Modal_Template_Use from "./components/Modal_Template_Use";
 import ScheduleSettings from "./components/ScheduleSettings";
 
@@ -95,34 +95,6 @@ const TodayIcon = ({ className, size = 16 }) => (
       {new Date().getDate()}
     </text>
   </svg>
-);
-
-const MonthFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <MonthViewIcon size={12} />
-    <span className="text-xxs app-label--bold">M</span>
-  </span>
-);
-
-const WeekFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <WeekViewIcon size={12} />
-    <span className="text-xxs app-label--bold">W</span>
-  </span>
-);
-
-const DayFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <DayViewIcon size={12} />
-    <span className="text-xxs app-label--bold">D</span>
-  </span>
-);
-
-const TodayFooterIcon = () => (
-  <span className="d-inline-flex align-items-center justify-content-center gap-1 app-label--bold">
-    <TodayIcon size={12} />
-    <span className="text-xxs app-label--bold">T</span>
-  </span>
 );
 
 // Status dot colours used across all three calendar views
@@ -777,16 +749,12 @@ export default function Schedule() {
             <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
               {currentView === "day" ? (
                 <>
-                  <div className="calendar-header-cell time-header-cell" aria-hidden="true">
-                    &nbsp;
-                  </div>
+                  <div className="calendar-header-cell time-header-cell" aria-hidden="true"></div>
                   <div className="calendar-header-cell"></div>
                 </>
               ) : currentView === "week" ? (
                 <>
-                  <div className="calendar-header-cell time-header-cell" aria-hidden="true">
-                    &nbsp;
-                  </div>
+                  <div className="calendar-header-cell time-header-cell" aria-hidden="true"></div>
                   {days.map((date, index) => {
                     const isToday = date.toDateString() === new Date().toDateString();
                     return (
@@ -1174,10 +1142,10 @@ export default function Schedule() {
 
         <div className="schedule-footer app-footer-padding border-top">
           <div className="app-footer-toolbar d-flex align-items-center">
-            <Button_Toolbar icon={MonthFooterIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} />
-            <Button_Toolbar icon={WeekFooterIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} />
-            <Button_Toolbar icon={DayFooterIcon} label="Day" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} />
-            <Button_Toolbar icon={TodayFooterIcon} label="Today" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" />
+            <Button_Toolbar icon={MonthViewIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} title="Month view" />
+            <Button_Toolbar icon={WeekViewIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} title="Week view" />
+            <Button_Toolbar icon={DayViewIcon} label="Day" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} title="Day view" />
+            <Button_Toolbar icon={TodayIcon} label="Today" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" title="Go to today" />
             <Button_Toolbar icon={ChevronLeftIcon} label="Prev" onClick={handleNavigatePrevious} className="btn-outline-secondary" title="Previous" />
             <Button_Toolbar icon={ChevronRightIcon} label="Next" onClick={handleNavigateNext} className="btn-outline-secondary" />
             <Button_Toolbar
@@ -1225,15 +1193,14 @@ export default function Schedule() {
           />
         )}
 
-        <Modal_Filter_Schedule
+        <FilterDropup_Schedule
           isOpen={isFilterOpen}
           onClose={() => setIsFilterOpen(false)}
           employees={employees}
           clients={clients}
           services={services}
           filters={filters}
-          approvedLeaves={approvedLeaves}
-          onApply={(nextFilters) => setFilters(nextFilters)}
+          onApply={(nextFilters) => setFilters({ ...filters, ...nextFilters })}
           onClear={() =>
             setFilters({
               employeeIds: [],

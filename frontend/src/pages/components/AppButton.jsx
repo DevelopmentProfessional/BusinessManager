@@ -50,7 +50,8 @@ export default function AppButton({ icon: Icon, label, onClick, variant, classNa
       aria-label={tooltipLabel}
       className={`btn flex-shrink-0 d-flex align-items-center
         ${training ? "rounded-pill ps-0 pe-1 justify-content-start" : "rounded-circle p-0 justify-content-center"}
-        ${variantClass} ${effectiveClass}`.trim()}
+        ${variantClass} ${effectiveClass}
+        ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}
     >
       {Icon && <Icon className={iconClass} />}

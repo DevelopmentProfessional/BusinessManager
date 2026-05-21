@@ -42,6 +42,7 @@ import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, produc
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import Gate_Permission from "./Gate_Permission";
 import Dropdown_Custom from "./Dropdown_Custom";
 
@@ -892,18 +893,19 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
       {/* ─── 7 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <div className="d-flex align-items-center">
-          <div style={{ width: 40 }}>{appointment?.id && onDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" />}</div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-            {appointment?.id && appointment?.client_id && (formData.appointment_type === "one_time" || formData.appointment_type === "series") && onSendReminder && (
-              <Button_Toolbar icon={EnvelopeIcon} label="Remind" onClick={onSendReminder} className="btn-outline-secondary" title="Send reminder" />
-            )}
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn btn-primary" title={appointment ? "Save changes" : "Book appointment"} />
-          </div>
-          <div style={{ width: 40 }} />
-        </div>
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <Footer_Actions
+          start={<Button_Toolbar icon={CheckIcon} label={appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} />}
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+          end={
+            <>
+              {appointment?.id && appointment?.client_id && (formData.appointment_type === "one_time" || formData.appointment_type === "series") && onSendReminder && (
+                <Button_Toolbar icon={EnvelopeIcon} label="Remind" onClick={onSendReminder} className="btn-outline-secondary" title="Send reminder" />
+              )}
+              {appointment?.id && onDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-secondary" title="Delete appointment" />}
+            </>
+          }
+        />
       </div>
     </div>
   );

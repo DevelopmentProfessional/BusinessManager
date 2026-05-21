@@ -49,12 +49,13 @@ import FinancialDashboard from "./components/FinancialDashboard";
 const AVAILABLE_REPORTS = [
   {
     id: "appointments",
-    title: "Appointments Over Time",
-    description: "Track appointment trends and patterns",
+    title: "Events",
+    description: "Track events, meetings, and appointments over time",
     icon: CalendarIcon,
     color: "blue",
     tables: ["schedule", "clients", "services", "user"],
     chartTypes: ["line", "bar", "pie"],
+    supportsEventType: true,
   },
   {
     id: "revenue",
@@ -171,6 +172,83 @@ const GROUP_BY_OPTIONS = [
   { value: "month", label: "1M" },
 ];
 
+// ─── REUSABLE STYLE CONSTANTS ───────────────────────────────────────────────
+const CIRCULAR_SELECT_STYLE = {
+  width: "3rem",
+  height: "3rem",
+  minWidth: "3rem",
+  borderRadius: "50%",
+  paddingLeft: 0,
+  paddingRight: 0,
+  textAlign: "center",
+  appearance: "none",
+  backgroundImage: "none",
+};
+
+const INLINE_SELECT_STYLE = {
+  width: "auto",
+  appearance: "none",
+  backgroundImage: "none",
+};
+
+// ─── DYNAMIC FILTER CONFIGURATION ─────────────────────────────────────────────
+// Defines which filters appear for which report types, eliminating repetitive JSX
+const FILTER_CONFIG = {
+  status: {
+    key: "status",
+    condition: (reportId) => ["appointments", "attendance", "tasks", "orders"].includes(reportId),
+    options: [
+      { value: "all", label: "All Statuses" },
+      { value: "scheduled", label: "Scheduled" },
+      { value: "completed", label: "Completed" },
+      { value: "cancelled", label: "Cancelled" },
+    ],
+  },
+  eventType: {
+    key: "eventType",
+    condition: (reportId) => reportId === "appointments",
+    options: [
+      { value: "all", label: "All Events" },
+      { value: "meeting", label: "Meeting" },
+      { value: "call", label: "Call" },
+      { value: "appointment", label: "Appointment" },
+      { value: "task", label: "Task" },
+      { value: "reminder", label: "Reminder" },
+    ],
+  },
+  service: {
+    key: "serviceId",
+    condition: (reportId) => ["appointments", "revenue", "services"].includes(reportId),
+    dataSource: "services",
+    labelKey: "name",
+    allLabel: "All Services",
+  },
+  employee: {
+    key: "employeeId",
+    condition: (reportId) => ["appointments", "revenue", "attendance", "payroll", "tasks"].includes(reportId),
+    dataSource: "employees",
+    labelKey: (e) => `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
+    allLabel: "All Employees",
+  },
+};
+
+// ─── REPORT API & TRANSFORM MAPPING ─────────────────────────────────────────
+// Eliminates repetitive switch statement cases
+const REPORT_HANDLERS = {
+  appointments: { api: (p) => reportsAPI.getAppointmentsReport(p), transform: "transformAppointmentsData" },
+  revenue: { api: (p) => reportsAPI.getRevenueReport(p), transform: "transformRevenueData" },
+  clients: { api: (p) => reportsAPI.getClientsReport(p), transform: "transformClientsData" },
+  services: { api: (p) => reportsAPI.getServicesReport(p), transform: "transformServicesData" },
+  inventory: { api: () => reportsAPI.getInventoryReport(), transform: "transformInventoryData" },
+  employees: { api: (p) => reportsAPI.getEmployeesReport(p), transform: "transformEmployeesData" },
+  attendance: { api: (p) => reportsAPI.getAttendanceReport(p), transform: "transformAttendanceData" },
+  sales: { api: (p) => reportsAPI.getSalesReport(p), transform: "transformSalesData" },
+  payroll: { api: (p) => reportsAPI.getPayrollReport(p), transform: "transformPayrollData" },
+  expenses: { api: (p) => reportsAPI.getExpensesReport(p), transform: "transformMultiDatasetData" },
+  orders: { api: (p) => reportsAPI.getOrdersReport(p), transform: "transformMultiDatasetData" },
+  tasks: { api: (p) => reportsAPI.getTasksReport(p), transform: "transformMultiDatasetData" },
+};
+
 export default function Reports() {
   // ─── 2 COMPONENT SETUP & PERMISSION GUARD ──────────────────────────────
   const { loading, setLoading, error, setError, clearError, hasPageAccess } = useStore();
@@ -195,7 +273,13 @@ export default function Reports() {
     status: "all",
     employeeId: "all",
     serviceId: "all",
+    eventType: "all",
   });
+  const [savedFilters, setSavedFilters] = useState([]);
+  const [savedFiltersMenuOpen, setSavedFiltersMenuOpen] = useState(false);
+  const [showSaveFilterModal, setShowSaveFilterModal] = useState(false);
+  const [saveFilterName, setSaveFilterName] = useState("");
+  const [currentPeriodOffset, setCurrentPeriodOffset] = useState(0);
 
   // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
   const accessibleReports = AVAILABLE_REPORTS.filter((report) => {
@@ -242,65 +326,33 @@ export default function Reports() {
     try {
       let response;
       const apiParams = {
-        start_date: getStartDate(filters.dateRange),
-        end_date: getEndDate(filters.dateRange),
+        start_date: getStartDate(filters.dateRange, currentPeriodOffset),
+        end_date: getEndDate(filters.dateRange, currentPeriodOffset),
         group_by: filters.groupBy,
         ...(filters.status && filters.status !== "all" ? { status: filters.status } : {}),
         ...(filters.employeeId && filters.employeeId !== "all" ? { employee_id: filters.employeeId } : {}),
         ...(filters.serviceId && filters.serviceId !== "all" ? { service_id: filters.serviceId } : {}),
+        ...(filters.eventType && filters.eventType !== "all" ? { event_type: filters.eventType } : {}),
       };
 
-      switch (reportId) {
-        case "appointments":
-          response = await reportsAPI.getAppointmentsReport(apiParams);
-          setReportData(transformAppointmentsData(response.data, filters.chartType));
-          break;
-        case "revenue":
-          response = await reportsAPI.getRevenueReport(apiParams);
-          setReportData(transformRevenueData(response.data, filters.chartType));
-          break;
-        case "clients":
-          response = await reportsAPI.getClientsReport(apiParams);
-          setReportData(transformClientsData(response.data, filters.chartType));
-          break;
-        case "services":
-          response = await reportsAPI.getServicesReport(apiParams);
-          setReportData(transformServicesData(response.data, filters.chartType));
-          break;
-        case "inventory":
-          response = await reportsAPI.getInventoryReport();
-          setReportData(transformInventoryData(response.data, filters.chartType));
-          break;
-        case "employees":
-          response = await reportsAPI.getEmployeesReport(apiParams);
-          setReportData(transformEmployeesData(response.data, filters.chartType));
-          break;
-        case "attendance":
-          response = await reportsAPI.getAttendanceReport(apiParams);
-          setReportData(transformAttendanceData(response.data, filters.chartType));
-          break;
-        case "sales":
-          response = await reportsAPI.getSalesReport(apiParams);
-          setReportData(transformSalesData(response.data, filters.chartType));
-          break;
-        case "payroll":
-          response = await reportsAPI.getPayrollReport(apiParams);
-          setReportData(transformPayrollData(response.data, filters.chartType));
-          break;
-        case "expenses":
-          response = await reportsAPI.getExpensesReport(apiParams);
-          setReportData(transformMultiDatasetData(response.data, filters.chartType));
-          break;
-        case "orders":
-          response = await reportsAPI.getOrdersReport(apiParams);
-          setReportData(transformMultiDatasetData(response.data, filters.chartType));
-          break;
-        case "tasks":
-          response = await reportsAPI.getTasksReport(apiParams);
-          setReportData(transformMultiDatasetData(response.data, filters.chartType));
-          break;
-        default:
-          setReportData({ labels: [], datasets: [] });
+      const handler = REPORT_HANDLERS[reportId];
+      if (!handler) {
+        setReportData({ labels: [], datasets: [] });
+      } else {
+        response = await handler.api(apiParams);
+        const transformFn = {
+          transformAppointmentsData,
+          transformRevenueData,
+          transformClientsData,
+          transformServicesData,
+          transformInventoryData,
+          transformEmployeesData,
+          transformAttendanceData,
+          transformSalesData,
+          transformPayrollData,
+          transformMultiDatasetData,
+        }[handler.transform];
+        setReportData(transformFn(response.data, filters.chartType));
       }
       clearError();
     } catch (err) {
@@ -312,27 +364,113 @@ export default function Reports() {
     }
   };
 
-  // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
-  const getStartDate = (dateRange) => {
-    const now = new Date();
-    switch (dateRange) {
-      case "last7days":
-        return new Date(now.setDate(now.getDate() - 7)).toISOString().split("T")[0];
-      case "last30days":
-        return new Date(now.setDate(now.getDate() - 30)).toISOString().split("T")[0];
-      case "last3months":
-        return new Date(now.setMonth(now.getMonth() - 3)).toISOString().split("T")[0];
-      case "last6months":
-        return new Date(now.setMonth(now.getMonth() - 6)).toISOString().split("T")[0];
-      case "lastyear":
-        return new Date(now.setFullYear(now.getFullYear() - 1)).toISOString().split("T")[0];
-      default:
-        return new Date(now.setDate(now.getDate() - 30)).toISOString().split("T")[0];
+  // ─── SAVED FILTERS HANDLERS ────────────────────────────────────────────
+  const loadSavedFilters = async () => {
+    try {
+      const response = await reportsAPI.getSavedFilters();
+      setSavedFilters(response.data || []);
+    } catch (err) {
+      console.error("Failed to load saved filters:", err);
     }
   };
 
-  const getEndDate = (dateRange) => {
-    return new Date().toISOString().split("T")[0];
+  const handleSaveFilter = async () => {
+    if (!saveFilterName.trim() || !selectedReport) return;
+    try {
+      await reportsAPI.createSavedFilter({
+        name: saveFilterName.trim(),
+        report_id: selectedReport.id,
+        date_range: reportFilters.dateRange,
+        group_by: reportFilters.groupBy,
+        chart_type: reportFilters.chartType,
+        status_filter: reportFilters.status,
+        employee_id: reportFilters.employeeId,
+        service_id: reportFilters.serviceId,
+        event_type: reportFilters.eventType,
+      });
+      setSaveFilterName("");
+      setShowSaveFilterModal(false);
+      await loadSavedFilters();
+    } catch (err) {
+      setError("Failed to save filter");
+      console.error(err);
+    }
+  };
+
+  const handleLoadFilter = (filter) => {
+    setReportFilters({
+      dateRange: filter.date_range || "last30days",
+      groupBy: filter.group_by || "month",
+      chartType: filter.chart_type || "line",
+      status: filter.status_filter || "all",
+      employeeId: filter.employee_id || "all",
+      serviceId: filter.service_id || "all",
+      eventType: filter.event_type || "all",
+    });
+    setCurrentPeriodOffset(0);
+    setSavedFiltersMenuOpen(false);
+  };
+
+  const handleDeleteFilter = async (filterId) => {
+    try {
+      await reportsAPI.deleteSavedFilter(filterId);
+      await loadSavedFilters();
+    } catch (err) {
+      console.error("Failed to delete filter:", err);
+    }
+  };
+
+  // ─── TIME NAVIGATION ─────────────────────────────────────────────────────
+  const handleNavigatePeriod = (direction) => {
+    setCurrentPeriodOffset((prev) => prev + direction);
+  };
+
+  const handleResetPeriod = () => {
+    setCurrentPeriodOffset(0);
+  };
+
+  // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
+  const getPeriodDuration = (dateRange) => {
+    switch (dateRange) {
+      case "last7days": return { days: 7 };
+      case "last30days": return { days: 30 };
+      case "last3months": return { months: 3 };
+      case "last6months": return { months: 6 };
+      case "lastyear": return { years: 1 };
+      default: return { days: 30 };
+    }
+  };
+
+  const getStartDate = (dateRange, offset = 0) => {
+    const duration = getPeriodDuration(dateRange);
+    const base = new Date();
+    
+    // Apply offset first
+    if (offset !== 0) {
+      if (duration.days) base.setDate(base.getDate() - duration.days * offset);
+      else if (duration.months) base.setMonth(base.getMonth() - duration.months * offset);
+      else if (duration.years) base.setFullYear(base.getFullYear() - duration.years * offset);
+    }
+    
+    // Then go back one period for the start date
+    if (duration.days) base.setDate(base.getDate() - duration.days);
+    else if (duration.months) base.setMonth(base.getMonth() - duration.months);
+    else if (duration.years) base.setFullYear(base.getFullYear() - duration.years);
+    
+    return base.toISOString().split("T")[0];
+  };
+
+  const getEndDate = (dateRange, offset = 0) => {
+    if (offset === 0) return new Date().toISOString().split("T")[0];
+    
+    const duration = getPeriodDuration(dateRange);
+    const base = new Date();
+    
+    if (duration.days) base.setDate(base.getDate() - duration.days * offset);
+    else if (duration.months) base.setMonth(base.getMonth() - duration.months * offset);
+    else if (duration.years) base.setFullYear(base.getFullYear() - duration.years * offset);
+    
+    return base.toISOString().split("T")[0];
   };
 
   // ─── 8 DATA TRANSFORM FUNCTIONS — map API responses to Chart.js datasets ─
@@ -546,9 +684,14 @@ export default function Reports() {
     if (selectedReport) {
       loadReportData(selectedReport.id, reportFilters);
     }
-  }, [selectedReport?.id, reportFilters.dateRange, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId]);
+  }, [selectedReport?.id, reportFilters.dateRange, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId, reportFilters.eventType, currentPeriodOffset]);
+
+  useEffect(() => {
+    loadSavedFilters();
+  }, []);
 
   const canUseStatus = selectedReport?.id === "appointments";
+  const canUseEventType = selectedReport?.id === "appointments";
   const canUseService = ["appointments", "services", "revenue"].includes(selectedReport?.id || "");
   const canUseEmployee = ["appointments", "employees", "attendance"].includes(selectedReport?.id || "");
 
@@ -747,17 +890,7 @@ export default function Reports() {
           <div className="d-flex flex-wrap align-items-center gap-2">
             <select
               className="form-select form-select-sm"
-              style={{
-                width: "3rem",
-                height: "3rem",
-                minWidth: "3rem",
-                borderRadius: "50%",
-                paddingLeft: 0,
-                paddingRight: 0,
-                textAlign: "center",
-                appearance: "none",
-                backgroundImage: "none",
-              }}
+              style={CIRCULAR_SELECT_STYLE}
               value={reportFilters.dateRange}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
             >
@@ -770,17 +903,7 @@ export default function Reports() {
 
             <select
               className="form-select form-select-sm"
-              style={{
-                width: "3rem",
-                height: "3rem",
-                minWidth: "3rem",
-                borderRadius: "50%",
-                paddingLeft: 0,
-                paddingRight: 0,
-                textAlign: "center",
-                appearance: "none",
-                backgroundImage: "none",
-              }}
+              style={CIRCULAR_SELECT_STYLE}
               value={reportFilters.groupBy}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
             >
@@ -793,17 +916,7 @@ export default function Reports() {
 
             <select
               className="form-select form-select-sm"
-              style={{
-                width: "3rem",
-                height: "3rem",
-                minWidth: "3rem",
-                borderRadius: "50%",
-                paddingLeft: 0,
-                paddingRight: 0,
-                textAlign: "center",
-                appearance: "none",
-                backgroundImage: "none",
-              }}
+              style={CIRCULAR_SELECT_STYLE}
               value={reportFilters.chartType}
               onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
             >
@@ -817,36 +930,29 @@ export default function Reports() {
             {canUseStatus && (
               <select
                 className="form-select form-select-sm"
-                style={{
-                  width: "auto",
-                  appearance: "none",
-                  backgroundImage: "none",
-                }}
+                style={INLINE_SELECT_STYLE}
                 value={reportFilters.status}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
               >
-                <option value="all">All Statuses</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                {FILTER_CONFIG.status.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             )}
 
             {canUseService && (
               <select
                 className="form-select form-select-sm"
-                style={{
-                  width: "auto",
-                  appearance: "none",
-                  backgroundImage: "none",
-                }}
+                style={INLINE_SELECT_STYLE}
                 value={reportFilters.serviceId}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
               >
-                <option value="all">All Services</option>
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
+                <option value="all">{FILTER_CONFIG.service.allLabel}</option>
+                {services.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s[FILTER_CONFIG.service.labelKey]}
                   </option>
                 ))}
               </select>
@@ -855,26 +961,71 @@ export default function Reports() {
             {canUseEmployee && (
               <select
                 className="form-select form-select-sm"
-                style={{
-                  width: "auto",
-                  appearance: "none",
-                  backgroundImage: "none",
-                }}
+                style={INLINE_SELECT_STYLE}
                 value={reportFilters.employeeId}
                 onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
               >
-                <option value="all">All Employees</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {`${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username}
+                <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {FILTER_CONFIG.employee.labelKey(e)}
                   </option>
                 ))}
               </select>
             )}
+
+            {canUseEventType && (
+              <select
+                className="form-select form-select-sm"
+                style={INLINE_SELECT_STYLE}
+                value={reportFilters.eventType}
+                onChange={(e) => setReportFilters((prev) => ({ ...prev, eventType: e.target.value }))}
+              >
+                {FILTER_CONFIG.eventType.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Time Navigation */}
+            {currentPeriodOffset !== 0 && (
+              <button
+                type="button"
+                onClick={handleResetPeriod}
+                className="btn btn-sm btn-outline-secondary"
+                title="Reset to current period"
+              >
+                Today
+              </button>
+            )}
           </div>
 
-          {/* Row 2: centered report dropup selector */}
-          <div className="d-flex justify-content-center align-items-center pt-2 position-relative">
+          {/* Row 2: Time Navigation + Report Selector + Saved Filters */}
+          <div className="d-flex justify-content-between align-items-center pt-2 position-relative">
+            {/* Left: Time Navigation */}
+            <div className="d-flex align-items-center gap-1">
+              <button
+                type="button"
+                onClick={() => handleNavigatePeriod(1)}
+                className="btn btn-sm btn-outline-secondary"
+                title="Previous period"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavigatePeriod(-1)}
+                disabled={currentPeriodOffset <= 0}
+                className="btn btn-sm btn-outline-secondary"
+                title="Next period"
+              >
+                →
+              </button>
+            </div>
+
+            {/* Center: Report Selector */}
             <div className="position-relative">
               <Button_Toolbar icon={ChevronUpDownIcon} label={selectedReport?.title || "Report"} onClick={() => setReportMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
@@ -914,6 +1065,65 @@ export default function Reports() {
                 </div>
               )}
             </div>
+
+            {/* Right: Saved Filters Dropup + Save Button */}
+            <div className="d-flex align-items-center gap-1 position-relative">
+              {/* Saved Filters Dropup */}
+              <div className="position-relative">
+                <Button_Toolbar 
+                  icon={ChevronUpDownIcon} 
+                  label={isTrainingMode ? "Filters" : ""} 
+                  onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} 
+                  className="btn-outline-secondary" 
+                />
+                
+                {savedFiltersMenuOpen && (
+                  <div 
+                    className="position-absolute bottom-100 end-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" 
+                    style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}
+                  >
+                    {savedFilters.filter(f => f.report_id === selectedReport?.id).length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">No saved filters</div>
+                    ) : (
+                      savedFilters
+                        .filter(f => f.report_id === selectedReport?.id)
+                        .map((filter) => (
+                          <div
+                            key={filter.id}
+                            className="d-flex align-items-center justify-content-between gap-2 px-2 py-1"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleLoadFilter(filter)}
+                              className="btn btn-sm btn-outline-secondary flex-grow-1 text-start text-truncate"
+                              style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}
+                            >
+                              {filter.name}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteFilter(filter.id)}
+                              className="btn btn-sm btn-outline-danger"
+                              title="Delete"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Save Filter Button */}
+              <Button_Toolbar 
+                icon={ArrowDownTrayIcon} 
+                label={isTrainingMode ? "Save" : ""} 
+                onClick={() => setShowSaveFilterModal(true)} 
+                className="btn-outline-secondary" 
+                title="Save current filter"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -935,6 +1145,46 @@ export default function Reports() {
         <div className="small text-muted">Use these controls to configure reports and exports.</div>
         <div className="small">Choose report, period, chart type, and export options using the toolbar controls.</div>
       </PageControlsModal>
+
+      {/* Save Filter Modal */}
+      <Modal isOpen={showSaveFilterModal} onClose={() => setShowSaveFilterModal(false)} title="Save Filter">
+        <div className="p-3">
+          <label className="form-label">Filter Name</label>
+          <input
+            type="text"
+            className="form-control"
+            value={saveFilterName}
+            onChange={(e) => setSaveFilterName(e.target.value)}
+            placeholder="Enter a name for this filter..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && saveFilterName.trim()) {
+                handleSaveFilter();
+              }
+            }}
+            autoFocus
+          />
+          <div className="d-flex justify-content-end gap-2 mt-3">
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                setShowSaveFilterModal(false);
+                setSaveFilterName("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSaveFilter}
+              disabled={!saveFilterName.trim()}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

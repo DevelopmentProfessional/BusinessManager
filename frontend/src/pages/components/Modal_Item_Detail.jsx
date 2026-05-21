@@ -33,6 +33,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { XMarkIcon, ShoppingCartIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon, CogIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
+import useViewMode from "../../services/useViewMode";
 import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI, inventoryCategoriesAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Modal from "./Modal";
@@ -736,6 +738,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [showNewLocationInput, setShowNewLocationInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
+  const { isTrainingMode } = useViewMode();
 
   const upperType = (itemType || item?.type || "product").toUpperCase();
   const isService = upperType === "SERVICE";
@@ -1254,30 +1257,35 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   {inCart && <div className="small text-muted">{cartQuantity} already in cart</div>}
                 </div>
                 <div className="d-flex align-items-center gap-3">
-                  <button onClick={decrementQuantity} disabled={quantity <= 1} className="btn btn-outline-secondary rounded-circle p-0" >
+                  <button
+                    onClick={decrementQuantity}
+                    disabled={quantity <= 1}
+                    className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`}
+                    style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}
+                  >
                     <MinusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                   <span className="fs-4 fw-semibold" style={{ minWidth: "50px", textAlign: "center" }}>
                     {quantity}
                   </span>
-                  <button onClick={incrementQuantity} className="btn btn-outline-secondary rounded-circle p-0" >
+                  <button
+                    onClick={incrementQuantity}
+                    className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`}
+                    style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}
+                  >
                     <PlusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                 </div>
               </div>
 
-              <div className="d-grid align-items-center gap-2" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
-                <div>
-                  <small className="text-muted">Total</small>
-                  <div className="fs-3 fw-bold text-primary">{salesPriceRange && salesPriceRange.min !== salesPriceRange.max ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}` : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}</div>
+              {/* Total Display */}
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <small className="text-muted">Total</small>
+                <div className="fs-3 fw-bold text-primary">
+                  {salesPriceRange && salesPriceRange.min !== salesPriceRange.max
+                    ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}`
+                    : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}
                 </div>
-                <button onClick={onClose} className="btn btn-outline-secondary">
-                  Close
-                </button>
-                <button onClick={handleAddToCart} className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${inCart ? "btn-secondary" : "btn-primary"}`}>
-                  <ShoppingCartIcon className="h-5 w-5" />
-                  {inCart ? `Update (${cartQuantity} → ${quantity})` : `Add ${quantity} to Cart`}
-                </button>
               </div>
             </div>
           ) : (
@@ -1757,18 +1765,19 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         </div>
 
         {/* Fixed Footer with Action Buttons */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
           {!isSalesMode ? (
-            <div className="d-flex align-items-center">
-              <div>{canDelete && <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete"} onClick={handleDelete} className="btn-outline-danger" disabled={isDeleting} title="Delete item" />}</div>
-              <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-                <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-                <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn btn-primary" title="Save changes" />
-              </div>
-              {/* Right spacer to balance delete */}
-              <div style={{ width: 40 }} />
-            </div>
-          ) : null}
+            <Footer_Actions
+              start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}
+              center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
+              end={canDelete ? <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete"} onClick={handleDelete} className="btn-outline-secondary" disabled={isDeleting} title="Delete item" /> : null}
+            />
+          ) : (
+            <Footer_Actions
+              start={<Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" />}
+              center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+            />
+          )}
         </div>
       </div>
 

@@ -46,6 +46,7 @@ import { PlusIcon, DocumentIcon, TrashIcon, MagnifyingGlassIcon, PencilIcon, Pen
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
+import Footer_Actions from "./components/Footer_Actions";
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_Controls_Modal";
@@ -834,7 +835,7 @@ export default function Documents() {
           {/* Templates toggle */}
           <Button_Toolbar
             icon={DocumentTextIcon}
-            label="Docs"
+            label="Temp"
             title={showTemplates ? "Back to documents" : "Document templates"}
             onClick={() => setShowTemplates((v) => !v)}
             className={`border-0 shadow-lg transition-all ${showTemplates ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
@@ -843,7 +844,7 @@ export default function Documents() {
           {showTemplates ? (
             /* Templates mode controls */
             <>
-              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"  title="New template">
+              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-pill btn-app-primary px-3"  title="New template">
                 <PlusIcon className="h-5 w-5" />
               </button>
               {/* Type filter for templates */}
@@ -1214,7 +1215,7 @@ export default function Documents() {
           </div>
 
           {/* Footer — Add / Edit form */}
-          <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 pt-2 pb-4">
+          <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
             <form onSubmit={handleCreateCategory} className="d-flex flex-column gap-2">
               <div className="small fw-semibold text-muted">New Category</div>
               <div className="row g-2">
@@ -1231,8 +1232,13 @@ export default function Documents() {
                   </div>
                 </div>
               </div>
-              <div className="d-flex align-items-center">
-                <div style={{ width: 40 }}>
+              <Footer_Actions
+                start={
+                  <button type="submit" className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Add category">
+                    <CheckIcon style={{ width: 18, height: 18 }} />
+                  </button>
+                }
+                center={
                   <button
                     type="button"
                     onClick={() => {
@@ -1244,14 +1250,8 @@ export default function Documents() {
                   >
                     <XMarkIcon style={{ width: 14, height: 14 }} />
                   </button>
-                </div>
-                <div className="flex-grow-1 d-flex justify-content-center">
-                  <button type="submit" className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Add Category">
-                    <CheckIcon style={{ width: 18, height: 18 }} />
-                  </button>
-                </div>
-                <div style={{ width: 40 }} />
-              </div>
+                }
+              />
             </form>
           </div>
         </div>

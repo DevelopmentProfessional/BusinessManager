@@ -3,10 +3,21 @@
  * Full-screen sales / payment history with header, scrollable list, and filter footer.
  */
 
-import React, { useState } from "react";
-import Modal, { ModalHeader } from "./Modal";
+import React, { useState, useEffect } from "react";
+import Modal, { ModalHeader, ModalFooter } from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
-import { ClockIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import Footer_Actions from "./Footer_Actions";
+import useViewMode from "../../services/useViewMode";
+import {
+  ClockIcon,
+  ChevronDownIcon,
+  XMarkIcon,
+  CheckIcon,
+  WrenchScrewdriverIcon,
+  CubeIcon,
+  ArrowPathIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { saleTransactionsAPI, clientOrdersAPI } from "../../services/api";
 
 const STATUS_LABELS = {
@@ -32,9 +43,10 @@ const NEXT_PORTAL_STATUSES = {
   delivered: ["refunded"],
 };
 
-const EMPTY_HISTORY_FILTERS = {
+export const EMPTY_HISTORY_FILTERS = {
   showServices: true,
   showProducts: true,
+  showSubscriptions: true,
   minPrice: "",
   maxPrice: "",
   startDate: "",
@@ -55,128 +67,172 @@ function parseOptions(value) {
   }
 }
 
-function SalesHistoryFilterFooter({ historyFilters, setHistoryFilters }) {
+function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, onClose }) {
+  const { footerAlign } = useViewMode();
+  const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
+  const [local, setLocal] = useState({ ...EMPTY_HISTORY_FILTERS, ...historyFilters });
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocal({ ...EMPTY_HISTORY_FILTERS, ...historyFilters });
+    }
+  }, [isOpen, historyFilters]);
+
+  const toggle = (key) => setLocal((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const handleSave = () => {
+    setHistoryFilters({ ...local });
+  };
+
+  const handleClear = () => {
+    setLocal({ ...EMPTY_HISTORY_FILTERS });
+  };
+
+  const typeActive = (on) => (on ? "btn-secondary" : "btn-outline-secondary");
+  const sourceActive = (value) => (local.saleSource === value ? "btn-secondary" : "btn-outline-secondary");
+
   return (
-    <div className="sales-history-footer w-100">
-      <div className="app-footer-padding border-bottom">
-        <div className="row g-2">
-          <div className="col-12 col-md-6">
-            <label className="form-label small text-muted mb-1">Client</label>
-            <input
-              type="text"
-              value={historyFilters.clientQuery || ""}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, clientQuery: e.target.value }))}
-              placeholder="Search client name…"
-              className="form-control form-control-sm"
+    <div className="sales-history-footer w-100 bg-body">
+      <div className="app-footer-inner app-footer-padding">
+        <div className="app-footer-stack">
+          {/* Item type toggles — same pill toolbar pattern as Schedule footer */}
+          <div className={`app-footer-toolbar d-flex align-items-center flex-wrap ${alignClass}`}>
+            <Button_Toolbar
+              icon={WrenchScrewdriverIcon}
+              label="Services"
+              title="Show sales with services"
+              onClick={() => toggle("showServices")}
+              className={typeActive(local.showServices)}
+              data-active={local.showServices}
             />
-          </div>
-          <div className="col-12 col-md-6">
-            <label className="form-label small text-muted mb-1">Employee</label>
-            <input
-              type="text"
-              value={historyFilters.employeeQuery || ""}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, employeeQuery: e.target.value }))}
-              placeholder="Search employee name…"
-              className="form-control form-control-sm"
+            <Button_Toolbar
+              icon={CubeIcon}
+              label="Products"
+              title="Show sales with products"
+              onClick={() => toggle("showProducts")}
+              className={typeActive(local.showProducts)}
+              data-active={local.showProducts}
             />
+            <Button_Toolbar
+              icon={ArrowPathIcon}
+              label="Subs"
+              title="Show sales with subscriptions"
+              onClick={() => toggle("showSubscriptions")}
+              className={typeActive(local.showSubscriptions)}
+              data-active={local.showSubscriptions}
+            />
+            <Button_Toolbar icon={TrashIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
           </div>
-        </div>
-      </div>
 
-      <div className="app-footer-padding border-bottom">
-        <div className="row g-2 align-items-end">
-          <div className="col-12 col-sm-6 col-lg-3">
-            <label className="form-label small text-muted mb-1">Status</label>
-            <select
-              value={historyFilters.status || ""}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, status: e.target.value }))}
-              className="form-select form-select-sm"
-            >
-              <option value="">All statuses</option>
-              <option value="completed">Completed (POS)</option>
-              <option value="payment_pending">Payment Pending</option>
-              <option value="ordered">Ordered</option>
-              <option value="processing">Processing</option>
-              <option value="ready_for_pickup">Ready for Pickup</option>
-              <option value="out_for_delivery">Out for Delivery</option>
-              <option value="delivered">Delivered</option>
-              <option value="picked_up">Picked Up</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="refunded">Refunded</option>
-            </select>
+          {/* Source toggles */}
+          <div className={`app-footer-toolbar d-flex align-items-center flex-wrap ${alignClass}`}>
+            {[
+              ["all", "All"],
+              ["pos", "POS"],
+              ["portal", "Portal"],
+            ].map(([value, label]) => (
+              <Button_Toolbar
+                key={value}
+                label={label}
+                title={`Source: ${label}`}
+                onClick={() => setLocal((prev) => ({ ...prev, saleSource: value }))}
+                className={sourceActive(value)}
+                data-active={local.saleSource === value}
+              />
+            ))}
           </div>
-          <div className="col-6 col-sm-3 col-lg-2">
-            <label className="form-label small text-muted mb-1">Min $</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={historyFilters.minPrice}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
-              placeholder="Min"
-              className="form-control form-control-sm"
-            />
-          </div>
-          <div className="col-6 col-sm-3 col-lg-2">
-            <label className="form-label small text-muted mb-1">Max $</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={historyFilters.maxPrice}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
-              placeholder="Max"
-              className="form-control form-control-sm"
-            />
-          </div>
-          <div className="col-6 col-sm-6 col-lg-2">
-            <label className="form-label small text-muted mb-1">From</label>
-            <input
-              type="date"
-              value={historyFilters.startDate}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-              className="form-control form-control-sm"
-            />
-          </div>
-          <div className="col-6 col-sm-6 col-lg-3">
-            <label className="form-label small text-muted mb-1">To</label>
-            <input
-              type="date"
-              value={historyFilters.endDate}
-              onChange={(e) => setHistoryFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-              className="form-control form-control-sm"
-            />
-          </div>
-        </div>
-      </div>
 
-      <div className="app-footer-toolbar d-flex align-items-center flex-wrap app-footer-padding">
-        {[
-          ["all", "All"],
-          ["pos", "POS"],
-          ["portal", "Portal"],
-        ].map(([value, label]) => (
-          <Button_Toolbar
-            key={value}
-            label={label}
-            onClick={() => setHistoryFilters((prev) => ({ ...prev, saleSource: value }))}
-            className={historyFilters.saleSource === value ? "btn-primary" : "btn-outline-secondary"}
-            data-active={historyFilters.saleSource === value}
+          {/* Client / employee / status / price / dates */}
+          <div className="row g-2">
+            <div className="col-12 col-md-6">
+              <label className="form-label small text-muted mb-1">Client</label>
+              <input
+                type="text"
+                value={local.clientQuery || ""}
+                onChange={(e) => setLocal((prev) => ({ ...prev, clientQuery: e.target.value }))}
+                placeholder="Search client name…"
+                className="app-search-input form-control form-control-sm"
+              />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label small text-muted mb-1">Employee</label>
+              <input
+                type="text"
+                value={local.employeeQuery || ""}
+                onChange={(e) => setLocal((prev) => ({ ...prev, employeeQuery: e.target.value }))}
+                placeholder="Search employee name…"
+                className="app-search-input form-control form-control-sm"
+              />
+            </div>
+            <div className="col-12 col-sm-6 col-lg-3">
+              <label className="form-label small text-muted mb-1">Status</label>
+              <select
+                value={local.status || ""}
+                onChange={(e) => setLocal((prev) => ({ ...prev, status: e.target.value }))}
+                className="form-select form-select-sm"
+              >
+                <option value="">All statuses</option>
+                <option value="completed">Completed (POS)</option>
+                <option value="payment_pending">Payment Pending</option>
+                <option value="ordered">Ordered</option>
+                <option value="processing">Processing</option>
+                <option value="ready_for_pickup">Ready for Pickup</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="picked_up">Picked Up</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="refunded">Refunded</option>
+              </select>
+            </div>
+            <div className="col-6 col-sm-3 col-lg-2">
+              <label className="form-label small text-muted mb-1">Min $</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={local.minPrice}
+                onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))}
+                placeholder="Min"
+                className="form-control form-control-sm"
+              />
+            </div>
+            <div className="col-6 col-sm-3 col-lg-2">
+              <label className="form-label small text-muted mb-1">Max $</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={local.maxPrice}
+                onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))}
+                placeholder="Max"
+                className="form-control form-control-sm"
+              />
+            </div>
+            <div className="col-6 col-sm-6 col-lg-2">
+              <label className="form-label small text-muted mb-1">From</label>
+              <input
+                type="date"
+                value={local.startDate}
+                onChange={(e) => setLocal((prev) => ({ ...prev, startDate: e.target.value }))}
+                className="form-control form-control-sm"
+              />
+            </div>
+            <div className="col-6 col-sm-6 col-lg-3">
+              <label className="form-label small text-muted mb-1">To</label>
+              <input
+                type="date"
+                value={local.endDate}
+                onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))}
+                className="form-control form-control-sm"
+              />
+            </div>
+          </div>
+
+          <Footer_Actions
+            start={<Button_Toolbar icon={CheckIcon} label="Save" title="Apply filters" onClick={handleSave} className="btn-outline-secondary" />}
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-outline-secondary" />}
           />
-        ))}
-        <Button_Toolbar
-          label="Services"
-          onClick={() => setHistoryFilters((prev) => ({ ...prev, showServices: !prev.showServices }))}
-          className={historyFilters.showServices ? "btn-primary" : "btn-outline-secondary"}
-          data-active={historyFilters.showServices}
-        />
-        <Button_Toolbar
-          label="Products"
-          onClick={() => setHistoryFilters((prev) => ({ ...prev, showProducts: !prev.showProducts }))}
-          className={historyFilters.showProducts ? "btn-primary" : "btn-outline-secondary"}
-          data-active={historyFilters.showProducts}
-        />
-        <Button_Toolbar label="Clear" onClick={() => setHistoryFilters({ ...EMPTY_HISTORY_FILTERS })} className="btn-outline-secondary" />
+        </div>
       </div>
     </div>
   );
@@ -253,7 +309,11 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
       onClose={onClose}
       noPadding
       fullScreen
-      footer={<SalesHistoryFilterFooter historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} />}
+      footer={
+        <ModalFooter className="p-0 border-0 bg-body">
+          <SalesHistoryFilterFooter isOpen={isOpen} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onClose={onClose} />
+        </ModalFooter>
+      }
     >
       <div className="d-flex flex-column h-100 min-h-0 bg-body">
         <ModalHeader
@@ -265,6 +325,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
             </span>
           }
           onClose={onClose}
+          showClose={false}
           className="px-3 py-2"
         />
 
@@ -273,7 +334,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
             <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center px-4 py-5">
               <ClockIcon className="text-muted mb-3" style={{ width: "3rem", height: "3rem" }} aria-hidden="true" />
               <h3 className="h5 text-body mb-1">No transactions</h3>
-              <p className="small text-muted mb-0">Try adjusting filters in the footer or complete a sale.</p>
+              <p className="small text-muted mb-0">Adjust filters in the footer, then tap Save.</p>
             </div>
           ) : (
             <div className="list-group list-group-flush">
@@ -374,6 +435,13 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
               })}
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close sales history" />}
+          />
         </div>
       </div>
     </Modal>

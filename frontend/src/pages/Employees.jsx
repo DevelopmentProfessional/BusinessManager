@@ -1037,7 +1037,7 @@ export default function Employees() {
                   icon={ClipboardDocumentListIcon}
                   label="Requests"
                   onClick={handleOpenRequests}
-                  className="btn-outline-warning position-relative"
+                  className="btn-outline-secondary position-relative"
                   title="Review requests"
                   badge={
                     allRequests.filter((r) => r.status === "pending").length > 0 ? (
@@ -1047,8 +1047,8 @@ export default function Employees() {
                     ) : null
                   }
                 />
-                <Button_Toolbar icon={ShieldCheckIcon} label="Ins" onClick={handleOpenInsurance} className="btn-outline-primary" title="Insurance plans" />
-                <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-success" title="Wages & payroll" />
+                <Button_Toolbar icon={ShieldCheckIcon} label="Ins" onClick={handleOpenInsurance} className="btn-outline-secondary" title="Insurance plans" />
+                <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-secondary" title="Wages & payroll" />
               </div>
             ) : null
           }

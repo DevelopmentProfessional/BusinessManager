@@ -34,6 +34,7 @@ import { useNavigate } from "react-router-dom";
 import { XMarkIcon, CheckIcon, TrashIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import { showConfirm } from "../../services/showConfirm";
 import { clientsAPI, servicesAPI, clientCartAPI, clientOrdersAPI } from "../../services/api";
 import Modal_Client_Cart from "./Modal_Client_Cart";
@@ -224,10 +225,8 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex justify-content-center">
-            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" />
-          </div>
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
     </Modal>
@@ -543,10 +542,8 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
           )}
         </div>
 
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex justify-content-center">
-            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" />
-          </div>
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
 
@@ -793,15 +790,12 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
         {/* ─── 9 FIXED FOOTER ──────────────────────────────────────────────── */}
         {/* Fixed footer */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex align-items-center">
-            <div style={{ minWidth: 40 }}>{canDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDelete} className="btn-outline-danger" />}</div>
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-              <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-              <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn btn-primary" title="Save changes" />
-            </div>
-            <div style={{ minWidth: 40 }} />
-          </div>
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions
+            start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />}
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
+            end={canDelete ? <Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDelete} className="btn-outline-secondary" title="Delete client" /> : null}
+          />
         </div>
       </div>
 

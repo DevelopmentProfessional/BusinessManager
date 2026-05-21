@@ -30,6 +30,7 @@ import { suppliersAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import Gate_Permission from "./Gate_Permission";
 import ProcurementUI from "./ProcurementUI";
 
@@ -145,11 +146,6 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               <span className="text-muted small">({suppliers.length})</span>
             </div>
           )}
-          {!showForm && !procurementSupplier && (
-            <Gate_Permission page="suppliers" permission="write">
-              <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreate} className="btn-app-primary" title="Add supplier" />
-            </Gate_Permission>
-          )}
         </div>
 
         {/* ── BODY ── */}
@@ -202,18 +198,25 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
         {/* ── FOOTER ── */}
         <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="app-footer-inner app-footer-padding">
-            <div className={`app-footer-toolbar d-flex align-items-center gap-3 flex-wrap ${showForm ? "justify-content-between" : "justify-content-center"}`}>
-              {showForm ? (
-                <>
-                  <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleCancelForm} className="btn-outline-secondary" />
-                  <Button_Toolbar icon={CheckIcon} label="Save" type="submit" form="supplier-panel-form" className="bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg" />
-                </>
-              ) : procurementSupplier ? (
-                <Button_Toolbar icon={XMarkIcon} label="Back" onClick={() => setProcurementSupplier(null)} className="btn-outline-secondary" />
-              ) : (
-                <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" />
-              )}
-            </div>
+            {showForm ? (
+              <Footer_Actions
+                start={<Button_Toolbar icon={CheckIcon} label="Save" type="submit" form="supplier-panel-form" className="btn-outline-secondary" title="Save supplier" />}
+                center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleCancelForm} className="btn-outline-secondary" title="Cancel" />}
+              />
+            ) : procurementSupplier ? (
+              <Footer_Actions
+                center={<Button_Toolbar icon={XMarkIcon} label="Back" onClick={() => setProcurementSupplier(null)} className="btn-outline-secondary" title="Back to suppliers" />}
+              />
+            ) : (
+              <Footer_Actions
+                start={
+                  <Gate_Permission page="suppliers" permission="write">
+                    <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreate} className="btn-outline-secondary" title="Add supplier" />
+                  </Gate_Permission>
+                }
+                center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+              />
+            )}
           </div>
         </div>
       </div>

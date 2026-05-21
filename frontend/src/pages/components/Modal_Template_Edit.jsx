@@ -3,6 +3,7 @@ import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableC
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "./Utils_Template_Variables";
 import { documentsAPI } from "../../services/api";
 import EditorToolbar from "./editors/EditorToolbar";
+import Footer_Actions from "./Footer_Actions";
 
 const RichTextEditor = lazy(() => import("./editors/RichTextEditor"));
 
@@ -438,30 +439,28 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
         </div>
 
-        {/* Row 3: actions */}
-        <div className="px-3 pt-2 pb-4 border-t border-gray-200 dark:border-gray-700 align-items-center gap-2" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr" }}>
-          <div className="d-flex align-items-center">
-            <button type="button" onClick={handleSave} className="btn btn-primary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Save Template">
-              {saving ? (
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              ) : (
-                <CheckIcon className="h-4 w-4 flex-shrink-0" />
-              )}
-              <span className="d-none d-sm-inline">{saving ? "Saving…" : "Save"}</span>
-            </button>
-          </div>
-
-          <div className="d-flex align-items-center justify-content-center">
-            <button type="button" onClick={onClose} className="btn btn-secondary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Cancel">
-              <XMarkIcon className="h-4 w-4 flex-shrink-0" />
-              <span className="d-none d-sm-inline">Cancel</span>
-            </button>
-          </div>
-
-          <div />
+        <div className="app-footer-padding app-form-footer border-t border-gray-200 dark:border-gray-700">
+          <Footer_Actions
+            start={
+              <button type="button" onClick={handleSave} className="btn btn-primary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Save Template">
+                {saving ? (
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <CheckIcon className="h-4 w-4 flex-shrink-0" />
+                )}
+                <span className="d-none d-sm-inline">{saving ? "Saving…" : "Save"}</span>
+              </button>
+            }
+            center={
+              <button type="button" onClick={onClose} className="btn btn-secondary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Cancel">
+                <XMarkIcon className="h-4 w-4 flex-shrink-0" />
+                <span className="d-none d-sm-inline">Cancel</span>
+              </button>
+            }
+          />
         </div>
       </div>
     </div>
