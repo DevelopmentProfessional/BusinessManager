@@ -164,15 +164,6 @@ body,
   
 }
 
-/* ========================================
-   GLOBAL FOOTER STYLES
-   All footers application-wide
-   ======================================== */
-.modal-footer,
-.app-footer-search,
-.schedule-footer,
-.profile-footer-nav
-
 /* Footer button spacing */
 .modal-footer .btn,
 .app-footer-search .btn,
@@ -214,6 +205,12 @@ input[type="submit"].btn-secondary {
   width: var(--app-btn-nav-width) !important;
   min-width: var(--app-btn-nav-width) !important;
   max-width: var(--app-btn-nav-width) !important;
+}
+
+body.training-mode .btn.btn-app-nav.rounded-pill {
+  width: auto !important;
+  max-width: none !important;
+  min-width: var(--app-btn-nav-width) !important;
 }
 
 /* Tabs, icon-only closes, list rows — not toolbar-sized controls */
