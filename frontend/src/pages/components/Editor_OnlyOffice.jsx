@@ -249,7 +249,7 @@ export default function Editor_OnlyOffice({ documentId }) {
       ) : null}
       {loading && !error ? <div className="p-3 text-sm text-gray-600">Loading editor…</div> : null}
       {/* Document container - always white background, document should not inherit dark mode */}
-      <div id={containerId} className="flex-1 min-h-0 bg-white" style={{ width: "100%", height: "100%" }} />
+      <div id={containerId} className="flex-1 min-h-0 bg-white" />
       {/* Footer: icon-only buttons with tooltips on hover/long-press - can have dark mode */}
       <footer className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-2 flex items-center gap-1 flex-wrap shrink-0" role="toolbar" aria-label="Editor actions">
         {/* Text Formatting */}

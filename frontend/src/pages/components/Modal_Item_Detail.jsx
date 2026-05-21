@@ -1145,10 +1145,10 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
       {hasImages && images.length > 1 && (
         <>
-          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1" style={{ width: "28px", height: "28px", padding: 0 }}>
+          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1">
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1" style={{ width: "28px", height: "28px", padding: 0 }}>
+          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1">
             <ChevronRightIcon className="h-4 w-4" />
           </button>
           <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1" style={{ fontSize: "0.7rem", borderTopLeftRadius: "4px" }}>
@@ -1163,7 +1163,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
         {/* Header for Inventory Mode - Fixed at top */}
         {!isSalesMode && (
@@ -1195,10 +1195,10 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
             {hasImages && images.length > 1 && (
               <>
-                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2" style={{ width: "32px", height: "32px" }}>
+                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2">
                   <ChevronLeftIcon className="h-4 w-4" />
                 </button>
-                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2" style={{ width: "32px", height: "32px" }}>
+                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2">
                   <ChevronRightIcon className="h-4 w-4" />
                 </button>
                 <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
@@ -1245,13 +1245,13 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   {inCart && <div className="small text-muted">{cartQuantity} already in cart</div>}
                 </div>
                 <div className="d-flex align-items-center gap-3">
-                  <button onClick={decrementQuantity} disabled={quantity <= 1} className="btn btn-outline-secondary rounded-circle p-0" style={{ width: "44px", height: "44px" }}>
+                  <button onClick={decrementQuantity} disabled={quantity <= 1} className="btn btn-outline-secondary rounded-circle p-0" >
                     <MinusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                   <span className="fs-4 fw-semibold" style={{ minWidth: "50px", textAlign: "center" }}>
                     {quantity}
                   </span>
-                  <button onClick={incrementQuantity} className="btn btn-outline-secondary rounded-circle p-0" style={{ width: "44px", height: "44px" }}>
+                  <button onClick={incrementQuantity} className="btn btn-outline-secondary rounded-circle p-0" >
                     <PlusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                 </div>
@@ -1404,16 +1404,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
                         <div
                           onClick={() => setCurrentImageIndex(idx)}
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            borderRadius: "4px",
-                            overflow: "hidden",
-                            position: "relative",
-                            cursor: "pointer",
-                            border: editingImageId === img.id ? "2px solid var(--bs-warning)" : idx === currentImageIndex ? "2px solid var(--bs-primary)" : "2px solid #dee2e6",
-                            background: "var(--bs-secondary-bg)",
-                          }}
                         >
                           <img
                             src={getImageSrc(img)}
@@ -1505,7 +1495,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                     {/* Add photo button */}
                     {addImageMode === null && (
-                      <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "40px", height: "40px", borderRadius: "4px" }} title="Add photo">
+                      <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                           <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                           <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -1624,8 +1614,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                           return next;
                         });
                       }}
-                      className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                      style={{ width: "1rem", height: "1rem", fontSize: "1rem", lineHeight: 1 }}
+                      className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ fontSize: "1rem" }}
                     >
                       {showNewLocationInput ? "×" : "+"}
                     </button>
@@ -1699,7 +1688,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         </select>
                         <label htmlFor="detail_category">Category</label>
                       </div>
-                      <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "1rem", height: "1rem", fontSize: "1rem", lineHeight: 1 }}>
+                      <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ fontSize: "1rem" }}>
                         {showCategoryManager ? "×" : "+"}
                       </button>
                     </div>
@@ -1751,7 +1740,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
               <hr className="my-2" />
               <div className="form-floating mb-2 border-0">
-                <textarea id="detail_description" name="description" value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="form-control form-control-sm border-0" placeholder="Description" style={{ height: "120px" }} />
+                <textarea id="detail_description" name="description" value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="form-control form-control-sm border-0" placeholder="Description" />
                 <label htmlFor="detail_description">Description</label>
               </div>
             </>

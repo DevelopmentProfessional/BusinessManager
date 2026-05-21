@@ -381,7 +381,6 @@ export default function Schedule() {
   // Calculate number of columns for dynamic grid layout
   // Use minmax(0, 1fr) so columns share width equally and don't size to content
   const numEnabledDays = currentView === "week" || currentView === "month" ? days.slice(0, 7).length : 7;
-  const footerSquareButtonStyle = { width: "3rem", height: "3rem" };
   const gridColumns = currentView === "week" ? `max-content repeat(${numEnabledDays}, minmax(0, 1fr))` : currentView === "day" ? "max-content minmax(0, 1fr)" : `repeat(${numEnabledDays}, minmax(0, 1fr))`;
 
   // ─── 8 AUTO-SCROLL EFFECT ────────────────────────────────────────────────────
@@ -764,7 +763,7 @@ export default function Schedule() {
                 ? `Week of ${new Date(currentDate.getTime() - currentDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
                 : currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </h4>
-          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center ms-2" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center ms-2"  title="Page Controls" onClick={() => setShowPageControls(true)}>
             <Cog6ToothIcon style={{ width: 18, height: 18 }} />
           </button>
         </div>
@@ -1179,12 +1178,12 @@ export default function Schedule() {
 
         <div className="schedule-footer px-2 py-1 border-top pb-4">
           <div className="d-flex gap-1 flex-nowrap align-items-center overflow-auto no-scrollbar" style={{ minHeight: "3rem" }}>
-            <Button_Toolbar icon={MonthFooterIcon} label="" title="M" aria-label="M" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} compact={true} style={footerSquareButtonStyle} />
-            <Button_Toolbar icon={WeekFooterIcon} label="" title="W" aria-label="W" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} compact={true} style={footerSquareButtonStyle} />
-            <Button_Toolbar icon={DayFooterIcon} label="" title="D" aria-label="D" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} compact={true} style={footerSquareButtonStyle} />
-            <Button_Toolbar icon={TodayFooterIcon} label="" title="T" aria-label="T" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" compact={true} style={footerSquareButtonStyle} />
-            <Button_Toolbar icon={ChevronLeftIcon} label="" title="Previous" aria-label="Previous" onClick={handleNavigatePrevious} className="btn-outline-secondary" compact={true} style={footerSquareButtonStyle} />
-            <Button_Toolbar icon={ChevronRightIcon} label="" title="Next" aria-label="Next" onClick={handleNavigateNext} className="btn-outline-secondary" compact={true} style={footerSquareButtonStyle} />
+            <Button_Toolbar icon={MonthFooterIcon} label="" title="M" aria-label="M" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} compact={true} />
+            <Button_Toolbar icon={WeekFooterIcon} label="" title="W" aria-label="W" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} compact={true} />
+            <Button_Toolbar icon={DayFooterIcon} label="" title="D" aria-label="D" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} compact={true} />
+            <Button_Toolbar icon={TodayFooterIcon} label="" title="T" aria-label="T" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" compact={true} />
+            <Button_Toolbar icon={ChevronLeftIcon} label="" title="Previous" aria-label="Previous" onClick={handleNavigatePrevious} className="btn-outline-secondary" compact={true} />
+            <Button_Toolbar icon={ChevronRightIcon} label="" title="Next" aria-label="Next" onClick={handleNavigateNext} className="btn-outline-secondary" compact={true} />
             <Button_Toolbar
               icon={FunnelIcon}
               label="Filter"
@@ -1192,7 +1191,6 @@ export default function Schedule() {
               className={`${filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || filters.startDate || filters.endDate || filters.showOutOfOffice ? "btn-primary" : "btn-outline-secondary"}`}
               data-active={filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || !!filters.startDate || !!filters.endDate || filters.showOutOfOffice}
               compact={true}
-              style={footerSquareButtonStyle}
             />
           </div>
         </div>
@@ -1257,7 +1255,7 @@ export default function Schedule() {
 
       {/* Overlap bottom modal */}
       <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true}>
-        <div className="d-flex flex-column justify-content-end" style={{ height: "100%" }}>
+        <div className="d-flex flex-column justify-content-end">
           <div className="overlap-event-list flex-shrink-0">
             {[...(overlapEvents || [])]
               .sort((a, b) => {
@@ -1310,7 +1308,7 @@ export default function Schedule() {
 
           {/* Footer with Cancel button */}
           <div className="flex-shrink-0 bg-white dark:bg-gray-900 p-4 ps-3 pt-2 d-flex justify-content-center">
-            <button type="button" className="btn btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem", padding: 0 }} onClick={() => setOverlapEvents(null)}>
+            <button type="button" className="btn btn-outline-secondary d-flex align-items-center justify-content-center"  onClick={() => setOverlapEvents(null)}>
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>

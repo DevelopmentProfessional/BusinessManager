@@ -670,7 +670,7 @@ export default function Documents() {
       <div className="flex-shrink-0 border-bottom p-3 d-flex align-items-center justify-content-between">
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Documents</h1>
         <div className="d-flex align-items-center gap-2">
-          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
             <Cog6ToothIcon style={{ width: 18, height: 18 }} />
           </button>
           <button type="button" onClick={() => setIsCategoriesOpen(true)} className="btn d-flex align-items-center gap-1 p-0 border-0" title="Manage categories" aria-label="Manage categories">
@@ -723,12 +723,11 @@ export default function Documents() {
                   </colgroup>
                   <tbody>
                     {filtered.map((tpl) => (
-                      <tr key={tpl.id} className="align-middle border-bottom" style={{ height: "56px" }}>
+                      <tr key={tpl.id} className="align-middle border-bottom">
                         <td className="text-center px-1">
                           <button
                             onClick={() => handleDeleteTemplate(tpl)}
                             className="btn btn-sm btn-outline-danger border-0 p-1 d-flex align-items-center justify-content-center"
-                            style={{ width: "3rem", height: "3rem" }}
                             title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
                             disabled={tpl.is_standard}
                           >
@@ -743,7 +742,7 @@ export default function Documents() {
                           <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>{tpl.template_type}</span>
                         </td>
                         <td className="text-center px-1">
-                          <button onClick={() => handleEditTemplate(tpl)} className="btn btn-sm btn-outline-primary border-0 p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Edit">
+                          <button onClick={() => handleEditTemplate(tpl)} className="btn btn-sm btn-outline-primary border-0 p-1 d-flex align-items-center justify-content-center" title="Edit">
                             <PencilIcon className="h-4 w-4" />
                           </button>
                         </td>
@@ -800,7 +799,7 @@ export default function Documents() {
                 </colgroup>
                 <tbody>
                   {filteredDocuments.map((doc, index) => (
-                    <tr key={doc.id || index} className="align-middle border-bottom" style={{ height: "56px" }}>
+                    <tr key={doc.id || index} className="align-middle border-bottom">
                       {/* File Name */}
                       <td className="px-3">
                         <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
@@ -846,7 +845,7 @@ export default function Documents() {
           {showTemplates ? (
             /* Templates mode controls */
             <>
-              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary" style={{ width: "3rem", height: "3rem" }} title="New template">
+              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle btn-app-primary"  title="New template">
                 <PlusIcon className="h-5 w-5" />
               </button>
               {/* Type filter for templates */}
@@ -1153,7 +1152,7 @@ export default function Documents() {
         noPadding={true}
         fullScreen={true}
       >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900">
           {/* Header */}
           <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
             <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Categories</h6>
@@ -1243,14 +1242,13 @@ export default function Documents() {
                       cancelEditCategory();
                     }}
                     className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
-                    style={{ width: "2.5rem", height: "2.5rem" }}
                     title="Close"
                   >
                     <XMarkIcon style={{ width: 14, height: 14 }} />
                   </button>
                 </div>
                 <div className="flex-grow-1 d-flex justify-content-center">
-                  <button type="submit" className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Add Category">
+                  <button type="submit" className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Add Category">
                     <CheckIcon style={{ width: 18, height: 18 }} />
                   </button>
                 </div>

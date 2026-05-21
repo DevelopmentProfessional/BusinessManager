@@ -154,7 +154,6 @@ const Panel_Settings = ({
           }
         }}
         className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex justify-content-center align-items-center"
-        style={isTrainingMode ? { height: "1rem" } : { width: "1rem", minWidth: "1rem", height: "1rem" }}
         title={isTrainingMode ? "Switch to compact mode" : "Switch to training mode"}
       >
         {isTrainingMode ? (

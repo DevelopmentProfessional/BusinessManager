@@ -1,6 +1,6 @@
 // FILE: AppButton.jsx
 // unified button replacing Button_Toolbar (icon+label+training mode) and Button_Icon (icon-only+variants)
-// training mode shows icon+label pill; non-training shows icon-only circle
+// Dimensions: edit --app-btn-height / --app-btn-width in frontend/src/index.css (:root)
 import React from "react";
 import useViewMode from "../../services/useViewMode";
 import compactButtonLabel from "../../utils/compactButtonLabel";
@@ -49,7 +49,6 @@ export default function AppButton({ icon: Icon, label, onClick, variant, classNa
       className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
         ${training ? "rounded-pill ps-0 pe-1" : "rounded-circle p-0"}
         ${variantClass} ${effectiveClass}`.trim()}
-      style={training ? { height: "1rem" } : { width: "1rem", height: "1rem", minWidth: "1rem", minHeight: "1rem" }}
       {...rest}
     >
       {Icon && <Icon className={iconClass} />}

@@ -112,7 +112,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null, 
 
   // ─── 4 RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+    <div className="d-flex flex-column bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{client ? "Edit Client" : "Add Client"}</h6>
@@ -203,12 +203,12 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null, 
           {/* Address & Notes - border-top above */}
           <hr className="my-2" />
           <div className="form-floating mb-2">
-            <textarea id="fc_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Address" style={{ height: "60px" }} />
+            <textarea id="fc_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Address" />
             <label htmlFor="fc_address">Address</label>
           </div>
 
           <div className="form-floating mb-2">
-            <textarea id="fc_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" style={{ height: "80px" }} />
+            <textarea id="fc_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
             <label htmlFor="fc_notes">Notes</label>
           </div>
         </form>

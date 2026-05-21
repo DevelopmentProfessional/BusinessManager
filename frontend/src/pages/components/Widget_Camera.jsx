@@ -81,22 +81,8 @@ export default function Widget_Camera({ onCapture, onCancel }) {
           onClick={capture}
           disabled={!ready}
           title="Capture photo"
-          style={{
-            width: "72px",
-            height: "72px",
-            borderRadius: "50%",
-            border: "4px solid #fff",
-            background: "rgba(255,255,255,0.15)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: ready ? "pointer" : "not-allowed",
-            opacity: ready ? 1 : 0.4,
-            padding: 0,
-            flexShrink: 0,
-          }}
         >
-          <div style={{ width: "54px", height: "54px", borderRadius: "50%", background: "#fff" }} />
+          <div />
         </button>
 
         <div style={{ minWidth: "64px" }} />

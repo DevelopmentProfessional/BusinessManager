@@ -132,8 +132,7 @@ export default function PDFViewer({ document, onEdit }) {
           <button
             onClick={goToPrev}
             disabled={pageNumber <= 1}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
-            style={{ width: "1rem", height: "1rem" }}
+            className="btn btn-outline-secondary p-0 d-flex align-items-center justify-content-center disabled:opacity-40 disabled:cursor-not-allowed"
             title="Previous page"
           >
             <ChevronLeftIcon className="h-4 w-4" />
@@ -152,8 +151,7 @@ export default function PDFViewer({ document, onEdit }) {
           <button
             onClick={goToNext}
             disabled={pageNumber >= (numPages || 1)}
-            className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
-            style={{ width: "1rem", height: "1rem" }}
+            className="btn btn-outline-secondary p-0 d-flex align-items-center justify-content-center disabled:opacity-40 disabled:cursor-not-allowed"
             title="Next page"
           >
             <ChevronRightIcon className="h-4 w-4" />
@@ -162,14 +160,14 @@ export default function PDFViewer({ document, onEdit }) {
           <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
 
           {/* Zoom controls */}
-          <button onClick={zoomOut} disabled={scale <= 0.5} className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40" title="Zoom out">
+          <button onClick={zoomOut} disabled={scale <= 0.5} className="btn btn-outline-secondary p-0 disabled:opacity-40" title="Zoom out">
             <MagnifyingGlassMinusIcon className="h-4 w-4" />
           </button>
           <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[50px] text-center">{Math.round(scale * 100)}%</span>
-          <button onClick={zoomIn} disabled={scale >= 3} className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40" title="Zoom in">
+          <button onClick={zoomIn} disabled={scale >= 3} className="btn btn-outline-secondary p-0 disabled:opacity-40" title="Zoom in">
             <MagnifyingGlassPlusIcon className="h-4 w-4" />
           </button>
-          <button onClick={fitWidth} className="p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center justify-center" style={{ width: "1rem", height: "1rem" }} title="Fit width">
+          <button onClick={fitWidth} className="btn btn-outline-secondary p-0 d-flex align-items-center justify-content-center" title="Fit width">
             <ArrowsPointingOutIcon className="h-4 w-4" />
           </button>
         </div>

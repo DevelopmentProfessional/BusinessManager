@@ -184,13 +184,13 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
             <div className="d-flex align-items-center justify-content-between py-2 border-top border-bottom mb-3">
               <span className="fw-medium small">Quantity</span>
               <div className="d-flex align-items-center gap-2">
-                <button type="button" className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1}>
+                <button type="button" className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center"  onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1}>
                   <MinusIcon className="h-4 w-4" />
                 </button>
                 <span className="fw-semibold" style={{ minWidth: 28, textAlign: "center" }}>
                   {quantity}
                 </span>
-                <button type="button" className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))} disabled={maxQty <= 0 || quantity >= maxQty}>
+                <button type="button" className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center"  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))} disabled={maxQty <= 0 || quantity >= maxQty}>
                   <PlusIcon className="h-4 w-4" />
                 </button>
               </div>

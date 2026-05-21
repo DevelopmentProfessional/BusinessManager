@@ -27,7 +27,7 @@ import Button_Toolbar from "./Button_Toolbar";
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
@@ -132,7 +132,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
               <option value="90d">Last 90 Days</option>
             </select>
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Close">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Close">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>

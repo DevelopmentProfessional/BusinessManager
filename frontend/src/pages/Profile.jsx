@@ -64,21 +64,21 @@ import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
 const AlignLeftIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: "1.1rem", height: "1.1rem" }}>
+  <svg viewBox="0 0 20 20" fill="currentColor">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
 const AlignCenterIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: "1.1rem", height: "1.1rem" }}>
+  <svg viewBox="0 0 20 20" fill="currentColor">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
 const AlignRightIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: "1.1rem", height: "1.1rem" }}>
+  <svg viewBox="0 0 20 20" fill="currentColor">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="4" y="14.5" width="14" height="2.5" rx="1.25" />
@@ -1090,7 +1090,7 @@ const Profile = () => {
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="profile-page d-flex flex-column overflow-hidden" style={{ height: "100%" }}>
+    <div className="profile-page d-flex flex-column overflow-hidden">
       <div className="flex-grow-1"></div>
 
       {openAccordion === "profile" && <Panel_Profile user={user} isMobile={isMobile} row1PanelBottom={row1PanelBottom} formatDate={formatDate} getRoleBadgeColor={getRoleBadgeColor} />}
@@ -1248,7 +1248,7 @@ const Profile = () => {
                         <div className="text-muted small mb-1">
                           {vacUsed} / {vacTotal} used
                         </div>
-                        <div className="progress" style={{ height: "4px" }}>
+                        <div className="progress">
                           <div className="progress-bar bg-primary" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
                         </div>
                         <div className="text-muted small mt-1">{vacRemaining} remaining</div>
@@ -1260,7 +1260,7 @@ const Profile = () => {
                         <div className="text-muted small mb-1">
                           {sickUsed} / {sickTotal} used
                         </div>
-                        <div className="progress" style={{ height: "4px" }}>
+                        <div className="progress">
                           <div className="progress-bar bg-warning" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
                         </div>
                         <div className="text-muted small mt-1">{sickRemaining} remaining</div>
@@ -1338,7 +1338,6 @@ const Profile = () => {
                         label={title}
                         onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
                         className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                        style={{ height: "3rem" }}
                         data-active={openAccordion === id}
                       />
                     ))}
@@ -1359,7 +1358,6 @@ const Profile = () => {
                       label={title}
                       onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
                       className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                      style={{ height: "3rem" }}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -1391,7 +1389,6 @@ const Profile = () => {
                       label={title}
                       onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
                       className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                      style={{ height: "3rem" }}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -1419,7 +1416,6 @@ const Profile = () => {
                     label={title}
                     onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
                     className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                    style={{ height: "3rem" }}
                     data-active={openAccordion === id}
                   />
                 ))}

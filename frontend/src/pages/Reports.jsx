@@ -660,7 +660,7 @@ export default function Reports() {
       <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
         <div className="d-flex align-items-center gap-2">
-          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
             <Cog6ToothIcon style={{ width: 18, height: 18 }} />
           </button>
           <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />

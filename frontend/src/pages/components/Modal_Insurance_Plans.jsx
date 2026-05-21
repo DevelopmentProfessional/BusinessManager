@@ -35,7 +35,7 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
       noPadding={true}
       fullScreen={true}
     >
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Insurance Plans</h6>
@@ -59,7 +59,7 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
             <div className="d-flex flex-column gap-2 pb-2">
               {insurancePlans.map((plan) => (
                 <div key={plan.id} className={`d-flex align-items-center justify-content-between p-2 border rounded ${!plan.is_active ? "opacity-60" : ""}`}>
-                  <button type="button" className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center me-2" style={{ width: "1rem", height: "1rem" }} onClick={() => onDelete(plan.id)} title="Delete">
+                  <button type="button" className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center me-2"  onClick={() => onDelete(plan.id)} title="Delete">
                     <TrashIcon style={{ width: 16, height: 16 }} />
                   </button>
                   <div>
@@ -79,7 +79,7 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
                     <button type="button" className={`btn btn-sm ${plan.is_active ? "btn-outline-secondary" : "btn-outline-success"}`} style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }} onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
                       {plan.is_active ? "Deactivate" : "Activate"}
                     </button>
-                    <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} onClick={() => setEditingPlan({ ...plan })} title="Edit">
+                    <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  onClick={() => setEditingPlan({ ...plan })} title="Edit">
                       <PencilSquareIcon style={{ width: 16, height: 16 }} />
                     </button>
                   </div>
@@ -126,18 +126,18 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
             <div className="d-flex align-items-center">
               <div style={{ width: 40 }}>
                 {editingPlan && (
-                  <button type="button" onClick={() => setEditingPlan(null)} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Cancel edit">
+                  <button type="button" onClick={() => setEditingPlan(null)} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Cancel edit">
                     <XMarkIcon style={{ width: 18, height: 18 }} />
                   </button>
                 )}
                 {!editingPlan && (
-                  <button type="button" onClick={() => onClose()} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Close modal">
+                  <button type="button" onClick={() => onClose()} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Close modal">
                     <XMarkIcon style={{ width: 18, height: 18 }} />
                   </button>
                 )}
               </div>
               <div className="flex-grow-1 d-flex justify-content-center">
-                <button type="submit" className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title={editingPlan ? "Save Changes" : "Add Plan"}>
+                <button type="submit" className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"  title={editingPlan ? "Save Changes" : "Add Plan"}>
                   <CheckIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>

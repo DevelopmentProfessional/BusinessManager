@@ -78,7 +78,7 @@ const Panel_Benefits = ({
                   <div className="text-muted small mb-1">
                     {vacUsed} / {vacTotal} used
                   </div>
-                  <div className="progress" style={{ height: "4px" }}>
+                  <div className="progress">
                     <div
                       className="progress-bar bg-primary"
                       style={{
@@ -95,7 +95,7 @@ const Panel_Benefits = ({
                   <div className="text-muted small mb-1">
                     {sickUsed} / {sickTotal} used
                   </div>
-                  <div className="progress" style={{ height: "4px" }}>
+                  <div className="progress">
                     <div
                       className="progress-bar bg-warning"
                       style={{

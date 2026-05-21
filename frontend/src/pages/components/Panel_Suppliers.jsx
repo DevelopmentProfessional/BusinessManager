@@ -129,7 +129,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   // ─── 5 RENDER ──────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ── HEADER ── */}
         <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center justify-content-between gap-2 bg-white dark:bg-gray-900">
           {showForm ? (
@@ -161,11 +161,11 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               <ProcurementUI supplierId={procurementSupplier.id} onPOCreated={loadSuppliers} />
             </div>
           ) : loading ? (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: "200px" }}>
+            <div className="d-flex justify-content-center align-items-center">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
             </div>
           ) : suppliers.length === 0 ? (
-            <div className="d-flex align-items-center justify-content-center text-muted" style={{ height: "200px" }}>
+            <div className="d-flex align-items-center justify-content-center text-muted">
               No suppliers found. Add your first supplier.
             </div>
           ) : (
@@ -173,7 +173,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               {suppliers.map((supplier) => (
                 <div key={supplier.id} className="px-3 py-3 d-flex align-items-center gap-2 border-bottom">
                   <Gate_Permission page="suppliers" permission="delete">
-                    <button type="button" onClick={() => handleDelete(supplier.id)} className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} title="Delete">
+                    <button type="button" onClick={() => handleDelete(supplier.id)} className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" title="Delete">
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </Gate_Permission>
@@ -184,12 +184,12 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                     {supplier.address && <div className="small text-muted text-truncate">{supplier.address}</div>}
                   </div>
                   <Gate_Permission page="suppliers" permission="write">
-                    <button type="button" onClick={() => handleOpenProcurement(supplier)} className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} title="Procurement">
+                    <button type="button" onClick={() => handleOpenProcurement(supplier)} className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" title="Procurement">
                       PO
                     </button>
                   </Gate_Permission>
                   <Gate_Permission page="suppliers" permission="write">
-                    <button type="button" onClick={() => handleEdit(supplier)} className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} title="Edit">
+                    <button type="button" onClick={() => handleEdit(supplier)} className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" title="Edit">
                       <PencilIcon className="h-5 w-5" />
                     </button>
                   </Gate_Permission>

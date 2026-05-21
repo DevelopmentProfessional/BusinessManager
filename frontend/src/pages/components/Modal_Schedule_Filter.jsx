@@ -195,7 +195,7 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
           {employees.map((employee) => (
             <label key={employee.id} className="d-flex align-items-center gap-2 mb-0">
               <input type="checkbox" checked={localFilters.employeeIds.includes(employee.id)} onChange={() => toggleId("employeeIds", employee.id)} />
-              <span className="rounded-circle flex-shrink-0" style={{ width: "10px", height: "10px", backgroundColor: employee.color || "#6b7280", display: "inline-block" }} />
+              <span className="rounded-circle flex-shrink-0" />
               <span style={{ fontSize: "0.875rem" }}>
                 {employee.first_name} {employee.last_name}
               </span>

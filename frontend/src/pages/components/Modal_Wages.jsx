@@ -613,13 +613,13 @@ function CalendarTab({
     <div>
       {/* Month navigator */}
       <div className="d-flex align-items-center gap-2 px-3 py-2 border-bottom border-gray-100 dark:border-gray-700">
-        <button type="button" onClick={prevMonth} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: "50%", padding: 0 }}>
+        <button type="button" onClick={prevMonth} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
           <ChevronLeftIcon style={{ width: 14, height: 14 }} />
         </button>
         <div className="fw-semibold flex-grow-1 text-center" style={{ fontSize: "0.9rem" }}>
           {fmtMonthYear(calYear, calMonth)}
         </div>
-        <button type="button" onClick={nextMonth} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: "50%", padding: 0 }}>
+        <button type="button" onClick={nextMonth} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
           <ChevronRightIcon style={{ width: 14, height: 14 }} />
         </button>
       </div>
@@ -713,7 +713,7 @@ function CalendarTab({
                       cursor: "pointer",
                     }}
                   >
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: color.border, flexShrink: 0 }} />
+                    <div />
                     <div className="flex-grow-1 min-w-0">
                       <div className="fw-medium text-truncate" style={{ fontSize: "0.82rem" }}>{period.label}</div>
                       {period.payday && (
@@ -893,7 +893,7 @@ function ProcessTab({
 
         {/* Period navigator */}
         <div className="d-flex align-items-center gap-2 mb-2">
-          <button type="button" onClick={prevPeriod} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: "50%", padding: 0 }}>
+          <button type="button" onClick={prevPeriod} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
             <ChevronLeftIcon style={{ width: 14, height: 14 }} />
           </button>
           <div className="flex-grow-1 text-center">
@@ -904,7 +904,7 @@ function ProcessTab({
               Work period: {fmtShort(currentProcPeriod.start)} – {fmtShort(currentProcPeriod.end, true)}
             </div>
           </div>
-          <button type="button" onClick={nextPeriod} disabled={!canGoForward} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: "50%", padding: 0 }}>
+          <button type="button" onClick={nextPeriod} disabled={!canGoForward} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
             <ChevronRightIcon style={{ width: 14, height: 14 }} />
           </button>
         </div>

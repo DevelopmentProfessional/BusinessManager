@@ -973,7 +973,7 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
   // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex-shrink-0 px-3 py-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
           <div className="d-flex align-items-center gap-2">
@@ -985,7 +985,7 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
         {/* Main Content: Chart (pinned) + Scrollable Inputs */}
         <div className="flex-grow-1 d-flex flex-column px-3 py-2" style={{ minHeight: 0 }}>
           {/* Chart */}
-          <div className="flex-shrink-0 mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3" style={{ height: "300px" }}>
+          <div className="flex-shrink-0 mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
             <Line ref={chartRef} data={forecastData} options={chartOptions} />
           </div>
 

@@ -27,7 +27,7 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
   // ─── 1 RENDER ──────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900" style={{ height: "100%" }}>
+      <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 2 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
@@ -80,10 +80,10 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
           <div className="d-flex align-items-center">
             <div style={{ width: 40 }} />
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Cancel">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Cancel">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
-              <button type="submit" form="create-user-form" disabled={loading} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Create User">
+              <button type="submit" form="create-user-form" disabled={loading} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Create User">
                 <CheckIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>

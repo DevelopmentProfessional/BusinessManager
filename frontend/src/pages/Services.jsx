@@ -198,7 +198,7 @@ export default function Services() {
       title="Services"
       error={error}
       headerRight={
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Page Controls" onClick={() => setShowPageControls(true)}>
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>
       }
@@ -299,7 +299,7 @@ export default function Services() {
                           type="button"
                           aria-label={`${label} help`}
                           className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
-                          style={{ width: "1.75rem", height: "1.75rem" }}
+                          
                           onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                           onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           onMouseDown={(e) => {
