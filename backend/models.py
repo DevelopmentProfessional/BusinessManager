@@ -336,6 +336,12 @@ class Client(BaseModel, table=True):
     membership_since: Optional[datetime] = Field(default=None)
     membership_expires: Optional[datetime] = Field(default=None)
     membership_points: int = Field(default=0)
+    # Account/Auth fields (optional, for future multi-role support)
+    email_verified: bool = Field(default=False)
+    password_hash: Optional[str] = Field(default=None)  # For future self-service account features
+    reset_token: Optional[str] = Field(default=None)
+    reset_token_expires: Optional[datetime] = Field(default=None)
+    last_login: Optional[datetime] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
