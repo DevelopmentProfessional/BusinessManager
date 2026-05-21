@@ -571,10 +571,19 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
   justify-content: center !important;
 }
 
-/* Bottom-right nav toggle — p-1 inset from corner (matches app footer spacing) */
+/* Bottom-right nav toggle (⋯) — always centered; excluded from training pill left-align */
 .app-nav-bottom-toggle {
   bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)) !important;
   right: calc(0.25rem + env(safe-area-inset-right, 0px)) !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 0 !important;
+}
+
+body.training-mode .btn.rounded-pill.app-nav-bottom-toggle,
+body.training-mode .app-nav-bottom-toggle.btn {
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 .app-nav-bottom-menu-panel {
