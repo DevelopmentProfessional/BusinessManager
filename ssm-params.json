@@ -1,0 +1,19 @@
+{
+  "commands": [
+    "set -e",
+    "export LANG=C",
+    "hostname",
+    "date",
+    "echo NGINX_ACTIVE=$(sudo systemctl is-active nginx || true)",
+    "echo STAFF_ACTIVE=$(sudo systemctl is-active staff-api || true)",
+    "echo CLIENT_ACTIVE=$(sudo systemctl is-active client-api || true)",
+    "echo --- NGINX ---",
+    "sudo systemctl status nginx --no-pager --plain | tail -n 40",
+    "echo --- STAFF ---",
+    "sudo systemctl status staff-api --no-pager --plain | tail -n 40",
+    "echo --- CLIENT ---",
+    "sudo systemctl status client-api --no-pager --plain | tail -n 40",
+    "echo --- LOCAL HEALTH ---",
+    "curl -i --max-time 10 http://127.0.0.1:8000/health || true"
+  ]
+}

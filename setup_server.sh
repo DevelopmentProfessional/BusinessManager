@@ -73,19 +73,11 @@ upstream client_api {
     server 127.0.0.1:8001 max_fails=3 fail_timeout=30s;
 }
 
-# Disable default server
+# API Proxy server
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
-    return 444;
-}
-
-# API Proxy server
-server {
-    listen 80;
-    listen [::]:80;
-    server_name api.vadpivi.com ~^.*\.vadpivi\.com$;
 
     # Staff API routes
     location /api/v1/ {
@@ -98,11 +90,6 @@ server {
             add_header Vary "Origin" always;
             return 204;
         }
-
-        add_header Access-Control-Allow-Origin $http_origin always;
-        add_header Access-Control-Allow-Credentials "true" always;
-        add_header Access-Control-Expose-Headers "*" always;
-        add_header Vary "Origin" always;
 
         proxy_pass http://staff_api;
         proxy_http_version 1.1;
@@ -128,11 +115,6 @@ server {
             add_header Vary "Origin" always;
             return 204;
         }
-
-        add_header Access-Control-Allow-Origin $http_origin always;
-        add_header Access-Control-Allow-Credentials "true" always;
-        add_header Access-Control-Expose-Headers "*" always;
-        add_header Vary "Origin" always;
 
         proxy_pass http://client_api;
         proxy_http_version 1.1;
