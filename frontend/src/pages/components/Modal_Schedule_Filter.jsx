@@ -167,7 +167,7 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
       footer={
         <div className="d-flex align-items-center pb-2">
           <div style={{ width: 40 }}>
-            <Button_Toolbar icon={TrashIcon} label="Clear all filters" onClick={handleClear} className="btn-outline-danger" />
+            <Button_Toolbar icon={TrashIcon} label="Clear" onClick={handleClear} className="btn-outline-danger" title="Clear all filters" />
           </div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />

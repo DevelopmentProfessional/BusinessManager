@@ -121,7 +121,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
       centered={true}
       footer={
         <div className="flex justify-end gap-2">
-          <Button_Icon icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon} label={uploading ? "Importing..." : "Import Data"} onClick={handleUpload} disabled={!Object.values(files).some((file) => file !== null) || uploading} variant="primary" className={uploading ? "animate-spin" : ""} />
+          <Button_Icon icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon} label={uploading ? "Importing..." : "Import"} onClick={handleUpload} disabled={!Object.values(files).some((file) => file !== null) || uploading} variant="primary" className={uploading ? "animate-spin" : ""} title="Import data" />
           <Button_Icon icon={XMarkIcon} label="Cancel" onClick={handleClose} variant="secondary" />
         </div>
       }

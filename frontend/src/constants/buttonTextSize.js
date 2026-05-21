@@ -22,15 +22,41 @@ export function getButtonDimensions(textSize, isTrainingMode) {
   return BUTTON_SIZE_CONFIG[size][mode];
 }
 
+/** Icon and label scale with button height / text size. */
+export function getButtonTypography(textSize, isTrainingMode) {
+  const { height } = getButtonDimensions(textSize, isTrainingMode);
+  const iconSize = Math.round(height * 0.5625 * 1000) / 1000;
+  const labelBySize = { small: 0.7, medium: 0.78, large: 0.9 };
+  const labelFontSize = labelBySize[textSize] ?? labelBySize.medium;
+  return {
+    iconSize,
+    iconSizeActive: Math.round(iconSize * 1.1 * 1000) / 1000,
+    labelFontSize,
+  };
+}
+
 /** Nav toggle uses compact-mode width; same height as other buttons. */
 export function applyButtonDimensions(textSize, isTrainingMode) {
   if (typeof document === "undefined") return;
   const { width, height } = getButtonDimensions(textSize, isTrainingMode);
+  const { iconSize, iconSizeActive, labelFontSize } = getButtonTypography(textSize, isTrainingMode);
   const compact = BUTTON_SIZE_CONFIG[textSize]?.compact ?? BUTTON_SIZE_CONFIG.medium.compact;
   const root = document.documentElement;
   root.style.setProperty("--app-btn-width", `${width}rem`);
   root.style.setProperty("--app-btn-height", `${height}rem`);
   root.style.setProperty("--app-btn-nav-width", `${compact.width}rem`);
+  root.style.setProperty("--app-icon-size", `${iconSize}rem`);
+  root.style.setProperty("--app-icon-size-active", `${iconSizeActive}rem`);
+  /* Legacy aliases */
+  root.style.setProperty("--app-btn-icon-size", `${iconSize}rem`);
+  root.style.setProperty("--app-btn-icon-size-active", `${iconSizeActive}rem`);
+  root.style.setProperty("--app-btn-label-font-size", `${labelFontSize}rem`);
+  const footerGapBySize = { small: 0.25, medium: 0.25, large: 0.375 };
+  root.style.setProperty("--app-footer-btn-gap", `${footerGapBySize[textSize] ?? footerGapBySize.medium}rem`);
+  const footerPaddingBySize = { small: 0.25, medium: 0.5, large: 0.5 };
+  root.style.setProperty("--app-footer-padding-y", `${footerPaddingBySize[textSize] ?? footerPaddingBySize.medium}rem`);
+  root.style.setProperty("--app-input-height", `${height}rem`);
+  root.style.setProperty("--app-input-font-size", `${labelFontSize}rem`);
 }
 
 export const BUTTON_SIZE_TABLE_ROWS = BUTTON_TEXT_SIZES.flatMap((size) => [

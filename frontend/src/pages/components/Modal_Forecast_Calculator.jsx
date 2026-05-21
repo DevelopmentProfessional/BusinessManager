@@ -28,7 +28,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { XMarkIcon, CalculatorIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CalculatorIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, DocumentTextIcon, CodeBracketIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import { Line } from "react-chartjs-2";
@@ -1256,8 +1256,9 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
                             <input type="number" value={newOneTimePeriod} onChange={(e) => setNewOneTimePeriod(e.target.value)} className="form-control form-control-sm" placeholder="Period #" />
                           </div>
                           <div className="col-md-2">
-                            <button onClick={addOneTimePayment} className="btn btn-primary btn-sm w-100">
-                              Add
+                            <button onClick={addOneTimePayment} className="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+                              <PlusIcon className="h-3 w-3" />
+                              <span>Add</span>
                             </button>
                           </div>
                         </div>
@@ -1291,8 +1292,9 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
                             <input type="number" value={newRecurringFreq} onChange={(e) => setNewRecurringFreq(e.target.value)} className="form-control form-control-sm" placeholder="Every N" />
                           </div>
                           <div className="col-md-2">
-                            <button onClick={addRecurringPayment} className="btn btn-primary btn-sm w-100">
-                              Add
+                            <button onClick={addRecurringPayment} className="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+                              <PlusIcon className="h-3 w-3" />
+                              <span>Add</span>
                             </button>
                           </div>
                         </div>
@@ -1564,17 +1566,21 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
                           <input type="text" value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} className="form-control form-control-sm" />
                         </div>
                         <div className="col-md-6 d-flex align-items-end gap-2">
-                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={exportForecastCsv}>
-                            Export CSV
+                          <button type="button" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" onClick={exportForecastCsv}>
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                            <span>CSV</span>
                           </button>
-                          <button type="button" className="btn btn-outline-success btn-sm" onClick={exportScenarioJson}>
-                            Export Scenario JSON
+                          <button type="button" className="btn btn-outline-success btn-sm d-flex align-items-center gap-2" onClick={exportScenarioJson}>
+                            <CodeBracketIcon className="h-4 w-4" />
+                            <span>JSON</span>
                           </button>
-                          <button type="button" className="btn btn-outline-dark btn-sm" onClick={exportPdfReport}>
-                            Export PDF Report
+                          <button type="button" className="btn btn-outline-dark btn-sm d-flex align-items-center gap-2" onClick={exportPdfReport}>
+                            <DocumentTextIcon className="h-4 w-4" />
+                            <span>PDF</span>
                           </button>
-                          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => importInputRef.current?.click()}>
-                            Import Scenario
+                          <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" onClick={() => importInputRef.current?.click()}>
+                            <DocumentArrowUpIcon className="h-4 w-4" />
+                            <span>Import</span>
                           </button>
                           <input ref={importInputRef} type="file" accept="application/json" onChange={importScenarioJson} style={{ display: "none" }} />
                         </div>
@@ -1631,11 +1637,11 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
           <div className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center">
               <div className="btn-group btn-group-sm" role="group">
-                <button type="button" className={`btn ${timeView === "month" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("month")}>
-                  Year
+                <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "month" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("month")}>
+                  <span>Year</span>
                 </button>
-                <button type="button" className={`btn ${timeView === "year" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("year")}>
-                  Decade
+                <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "year" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("year")}>
+                  <span>Decade</span>
                 </button>
               </div>
             </div>

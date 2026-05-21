@@ -236,25 +236,28 @@ function ProductionRelationsPanel({ productId }) {
                     ))}
                 </select>
                 <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-                <button type="button" className={btnPrimaryClass} onClick={handleAddResource}>
-                  Add
+                <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddResource}>
+                  <PlusIcon className="h-4 w-4" />
+                  <span>Add</span>
                 </button>
                 <button
                   type="button"
-                  className={btnOutlineClass}
+                  className={`${btnOutlineClass} d-flex align-items-center gap-2`}
                   onClick={() => {
                     setAddingResource(false);
                     setNewResourceId("");
                     setNewResourceQty(1);
                   }}
                 >
-                  Cancel
+                  <XMarkIcon className="h-4 w-4" />
+                  <span>Cancel</span>
                 </button>
               </div>
             ) : (
-              <button type="button" className={btnOutlineClass}
+              <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`}
               style={{ marginTop: 6 }} onClick={() => setAddingResource(true)}>
-                + Add Resource
+                <PlusIcon className="h-4 w-4" />
+                <span>Add</span>
               </button>
             )}
           </>
@@ -292,12 +295,13 @@ function ProductionRelationsPanel({ productId }) {
                 </select>
                 <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
-                <button type="button" className={btnPrimaryClass} onClick={handleAddAsset}>
-                  Add
+                <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddAsset}>
+                  <PlusIcon className="h-4 w-4" />
+                  <span>Add</span>
                 </button>
                 <button
                   type="button"
-                  className={btnOutlineClass}
+                  className={`${btnOutlineClass} d-flex align-items-center gap-2`}
                   onClick={() => {
                     setAddingAsset(false);
                     setNewAssetId("");
@@ -305,13 +309,15 @@ function ProductionRelationsPanel({ productId }) {
                     setNewAssetDur("");
                   }}
                 >
-                  Cancel
+                  <XMarkIcon className="h-4 w-4" />
+                  <span>Cancel</span>
                 </button>
               </div>
             ) : (
-              <button type="button" className={btnOutlineClass}
+              <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`}
               style={{ marginTop: 6 }} onClick={() => setAddingAsset(true)}>
-                + Add Asset
+                <PlusIcon className="h-4 w-4" />
+                <span>Add</span>
               </button>
             )}
           </>
@@ -1318,7 +1324,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                               <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                               <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
                             </svg>
-                            Open Camera
+                            Cam
                           </button>
                         )}
 
@@ -1511,7 +1517,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   {editingImageId !== null && (
                     <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
                       <div className="d-flex align-items-center gap-2 mb-2">
-                        <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Edit Image URL</span>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Edit</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -1754,10 +1760,10 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           {!isSalesMode ? (
             <div className="d-flex align-items-center">
-              <div>{canDelete && <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete Item"} onClick={handleDelete} className="btn-outline-danger" disabled={isDeleting} />}</div>
+              <div>{canDelete && <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete"} onClick={handleDelete} className="btn-outline-danger" disabled={isDeleting} title="Delete item" />}</div>
               <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
                 <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-                <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleUpdateInventory} className="btn btn-primary" />
+                <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn btn-primary" title="Save changes" />
               </div>
               {/* Right spacer to balance delete */}
               <div style={{ width: 40 }} />

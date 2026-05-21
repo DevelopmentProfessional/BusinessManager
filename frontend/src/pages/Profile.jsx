@@ -63,21 +63,21 @@ import Panel_Payroll from "./components/Panel_Payroll";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
-const AlignLeftIcon = ({ className = "h-5 w-5 flex-shrink-0" }) => (
+const AlignLeftIcon = ({ className = "app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignCenterIcon = ({ className = "h-5 w-5 flex-shrink-0" }) => (
+const AlignCenterIcon = ({ className = "app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignRightIcon = ({ className = "h-5 w-5 flex-shrink-0" }) => (
+const AlignRightIcon = ({ className = "app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />
@@ -1325,11 +1325,11 @@ const Profile = () => {
       {/* Footer Tabs */}
       <div className="flex-shrink-0 bg-body profile-footer-nav ps-3 position-relative" style={{ zIndex: 1050 }}>
         {canAccessSettings && (
-          <div ref={handleRow2Ref} className="pt-2 pb-0">
+          <div ref={handleRow2Ref} className="app-footer-padding-row app-footer-padding pb-0">
             <div className="d-lg-none">
               <div className="row g-0">
                 <div className="col-10">
-                  <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
+                  <div className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
                     {[
                       { id: "database", Icon: CircleStackIcon, title: "Database" },
                       ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
@@ -1339,7 +1339,7 @@ const Profile = () => {
                         icon={Icon}
                         label={title}
                         onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
                         data-active={openAccordion === id}
                       />
                     ))}
@@ -1349,7 +1349,7 @@ const Profile = () => {
             </div>
             <div className="d-none d-lg-block">
               <div className="row g-0">
-                <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
+                <div className={`col-10 app-footer-toolbar d-flex align-items-center ps-3 ${footerJustify}`}>
                   {[
                     { id: "database", Icon: CircleStackIcon, title: "Database" },
                     ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
@@ -1359,7 +1359,7 @@ const Profile = () => {
                       icon={Icon}
                       label={title}
                       onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -1369,11 +1369,11 @@ const Profile = () => {
           </div>
         )}
 
-        <div ref={row1Ref} className="pt-2 pb-4">
+        <div ref={row1Ref} className="app-footer-padding-row app-footer-padding">
           <div className="d-lg-none">
             <div className="row g-0">
               <div className="col-10">
-                <div className={`d-flex align-items-center gap-1 flex-wrap profile-footer-wrap-row ${footerJustify}`}>
+                <div className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
                   {[
                     { id: "profile", Icon: UserIcon, title: "Profile" },
                     { id: "benefits", Icon: HeartIcon, title: "Benefits" },
@@ -1390,7 +1390,7 @@ const Profile = () => {
                       icon={Icon}
                       label={title}
                       onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
                       data-active={openAccordion === id}
                     />
                   ))}
@@ -1400,7 +1400,7 @@ const Profile = () => {
           </div>
           <div className="d-none d-lg-block">
             <div className="row g-0">
-              <div className={`col-10 d-flex align-items-center gap-1 ps-3 flex-wrap ${footerJustify}`}>
+              <div className={`col-10 app-footer-toolbar d-flex align-items-center ps-3 ${footerJustify}`}>
                 {[
                   { id: "profile", Icon: UserIcon, title: "Profile" },
                   { id: "benefits", Icon: HeartIcon, title: "Benefits" },

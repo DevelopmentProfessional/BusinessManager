@@ -6,7 +6,7 @@ import React from "react";
  */
 export default function Footer_Action({ children, className = "" }) {
   return (
-    <footer className={`flex items-center justify-start gap-1 pt-1 mt-1 border-t border-gray-200 dark:border-gray-700 ${className}`} role="group" aria-label="Actions">
+    <footer className={`app-footer-toolbar d-flex align-items-center flex-wrap pt-1 mt-1 border-t border-gray-200 dark:border-gray-700 ${className}`} role="group" aria-label="Actions">
       {children}
     </footer>
   );

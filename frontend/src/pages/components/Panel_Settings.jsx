@@ -2,7 +2,7 @@
 // Renders the personal settings accordion panel: dark mode, calendar color, footer alignment, signature, training mode toggle, and logout.
 
 import React from "react";
-import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, Bars3BottomLeftIcon } from "@heroicons/react/24/outline";
+import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, Bars3BottomLeftIcon, XMarkIcon, CheckCircleIcon, AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
 import { BUTTON_SIZE_TABLE_ROWS } from "../../constants/buttonTextSize";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
@@ -121,17 +121,19 @@ const Panel_Settings = ({
             <div className="d-flex gap-2 justify-content-end">
               <button
                 type="button"
-                className="btn btn-sm btn-outline-secondary"
+                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
                 onClick={() => {
                   setPendingColor(employeeColor);
                   setColorPickerOpen(false);
                 }}
                 disabled={colorUpdating}
               >
-                Cancel
+                <XMarkIcon className="h-4 w-4" />
+                <span>Cancel</span>
               </button>
-              <button type="button" className="btn btn-sm btn-primary" onClick={handleColorSave} disabled={colorUpdating}>
-                Save
+              <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleColorSave} disabled={colorUpdating}>
+                <CheckCircleIcon className="h-4 w-4" />
+                <span>Save</span>
               </button>
             </div>
           </div>
@@ -140,11 +142,11 @@ const Panel_Settings = ({
 
       <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="settings-accordion-btn btn-outline-secondary" title="Cycle footer alignment" />
 
-      <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Signature" onClick={() => setSignatureModalOpen(true)} className="settings-accordion-btn btn-outline-secondary" />
+      <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Sign" onClick={() => setSignatureModalOpen(true)} className="settings-accordion-btn btn-outline-secondary" title="Signature" />
 
       <Button_Toolbar
         icon={isTrainingMode ? Squares2X2Icon : BookOpenIcon}
-        label="Compact"
+        label={isTrainingMode ? "Icons" : "Train"}
         onClick={async () => {
           const nextTrainingMode = !isTrainingMode;
           toggleViewMode();
@@ -162,14 +164,14 @@ const Panel_Settings = ({
       />
 
       <Button_Toolbar
-        icon={Bars3BottomLeftIcon}
-        label="TextSize"
+        icon={AdjustmentsHorizontalIcon}
+        label="Size"
         onClick={cycleButtonTextSize}
         className="settings-accordion-btn btn-outline-secondary"
-        title={`Button text size: ${buttonTextSize} (cycles small → medium → large)`}
+        title={`Text size: ${buttonTextSize}`}
       />
 
-      <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Log out" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" />
+      <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" title="Log out" />
     </div>
 
     {!isTrainingMode && (

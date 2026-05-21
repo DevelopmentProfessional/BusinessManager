@@ -40,10 +40,10 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
       <div className="app-footer-spacer" style={{ "--app-footer-h": `${footerHeight}px` }} aria-hidden="true" />
       <div ref={footerRef} className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         {/* Controls: optional top row + search + buttons */}
-        <div className="p-3 pt-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="app-footer-inner app-footer-padding border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="row g-0">
             <div className="col-10">
-              {beforeSearch && <div className={`search-hide-on-focus d-flex align-items-center gap-1 mb-2 ${alignClass}`}>{beforeSearch}</div>}
+              {beforeSearch && <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center mb-2 ${alignClass}`}>{beforeSearch}</div>}
               {!hideSearch && (
                 <div className="position-relative w-100 mb-2">
                   <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted" style={{ pointerEvents: "none" }}>
@@ -54,7 +54,7 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
                   <input type="text" placeholder={searchPlaceholder} value={searchTerm} onChange={(e) => onSearch(e.target.value)} className="app-search-input form-control ps-5 w-100 rounded-pill" />
                 </div>
               )}
-              <div className={`search-hide-on-focus d-flex align-items-center gap-1 pb-2 flex-wrap ${alignClass}`} style={{ minHeight: "3rem" }}>
+              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`} style={{ minHeight: "var(--app-btn-height)" }}>
                 {children}
               </div>
             </div>

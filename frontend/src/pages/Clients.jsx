@@ -38,10 +38,11 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Form_Client from "./components/Form_Client";
 import Modal_Detail_Client from "./components/Modal_Client_Detail";
 import Gate_Permission from "./components/Gate_Permission";
-import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal_Template_Use from "./components/Modal_Template_Use";
 import Modal_Bulk_Import_Sheet from "./components/Modal_Import_Sheet";
@@ -348,10 +349,8 @@ export default function Clients() {
         </button>
       }
     >
-      <PageTableHeader columns={[{ label: "Client" }, { label: "Subscription", width: 120 }, { label: "Notify", width: 56 }]} />
-
-      {/* Container_Scrollable rows – grow upwards from bottom */}
-      <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+      {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+      <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredClients.length > 0 ? (
           <table className="table table-borderless table-hover mb-0 w-100">
             <colgroup>
@@ -394,20 +393,23 @@ export default function Clients() {
         )}
       </div>
 
+      <PageTableHeader columns={[{ label: "Client" }, { label: "Subscription", width: 120 }, { label: "Notify", width: 56 }]} />
+
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter searchTerm={searchTerm} onSearch={setSearchTerm} searchPlaceholder="Search by name, email, or phone...">
         <Gate_Permission page="clients" permission="write">
-          <Button_Toolbar icon={PlusIcon} label="Add Client" onClick={handleCreateClient} className="btn-app-primary" />
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreateClient} className="btn-app-primary" title="Add client" />
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={() => setShowBulkImport(true)} className="btn-app-secondary" />
         </Gate_Permission>
 
         {/* Clear Filters Button */}
-        {tierFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear Filter" onClick={() => setTierFilter("all")} className="btn-app-danger" />}
+        {tierFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setTierFilter("all")} className="btn-app-danger" title="Clear subscription filter" />}
 
         {/* Tier Filter */}
         <FilterDropdown
           icon={StarIcon}
-          label="Filter Subscription"
+          label="Subs"
+          title="Filter by subscription"
           value={tierFilter}
           onChange={setTierFilter}
           isOpen={isTierFilterOpen}
@@ -426,22 +428,17 @@ export default function Clients() {
         {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={memberships} />}
       </Modal>
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Client Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to manage the Clients page view.</div>
-          <div className="small">Subscription filter and search are available in the footer controls.</div>
-          <div>
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => { setShowPageControls(false); setShowMembershipManager(true); }}>
-              Manage Subscriptions
-            </button>
-          </div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Client Page Controls"
+        footerExtra={
+          <Button_Toolbar icon={TicketIcon} label="Subs" onClick={() => { setShowPageControls(false); setShowMembershipManager(true); }} className="btn-primary" title="Manage subscriptions" />
+        }
+      >
+        <div className="small text-muted">Use these controls to manage the Clients page view.</div>
+        <div className="small">Subscription filter and search are available in the footer controls.</div>
+      </PageControlsModal>
 
       <Modal isOpen={showMembershipManager} onClose={() => { setShowMembershipManager(false); resetMembershipForm(); }} title="Manage Subscriptions" centered={true}>
         <div className="d-flex flex-column gap-3">
@@ -471,8 +468,14 @@ export default function Clients() {
               Active
             </label>
             <div className="d-flex gap-2">
-              <button type="button" className="btn btn-sm btn-primary" onClick={handleSaveMembership}>{editingMembershipId ? "Update" : "Create"}</button>
-              {editingMembershipId && <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetMembershipForm}>Cancel Edit</button>}
+              <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleSaveMembership}>
+                <CheckCircleIcon className="h-4 w-4" />
+                <span>{editingMembershipId ? "Update" : "Create"}</span>
+              </button>
+              {editingMembershipId && <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={resetMembershipForm}>
+                <XCircleIcon className="h-4 w-4" />
+                <span>Cancel</span>
+              </button>}
             </div>
           </div>
 
@@ -485,8 +488,14 @@ export default function Clients() {
                   <div className="text-muted">{`Lock: ${membership.lock_term_count || 0} ${membership.lock_term_unit || "months"}`}</div>
                 </div>
                 <div className="d-flex gap-1">
-                  <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => handleEditMembership(membership)}>Edit</button>
-                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteMembership(membership.id)}>Delete</button>
+                  <button type="button" className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" onClick={() => handleEditMembership(membership)}>
+                    <PencilIcon className="h-4 w-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button type="button" className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2" onClick={() => handleDeleteMembership(membership.id)}>
+                    <TrashIcon className="h-4 w-4" />
+                    <span>Delete</span>
+                  </button>
                 </div>
               </div>
             ))}

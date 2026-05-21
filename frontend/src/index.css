@@ -65,6 +65,15 @@
   --app-btn-height: 2rem;
   --app-btn-width: 4rem;
   --app-btn-nav-width: 2rem;
+  --app-icon-size: 1.125rem;
+  --app-icon-size-active: 1.25rem;
+  --app-btn-icon-size: var(--app-icon-size);
+  --app-btn-icon-size-active: var(--app-icon-size-active);
+  --app-btn-label-font-size: 0.78rem;
+  --app-footer-btn-gap: 0.25rem;
+  --app-footer-padding-y: 0.5rem;
+  --app-input-height: 2rem;
+  --app-input-font-size: 0.78rem;
 }
 
 /* Global shadow reset (requested app-wide) */
@@ -164,13 +173,44 @@ body,
   
 }
 
-/* Footer button spacing */
-.modal-footer .btn,
-.app-footer-search .btn,
-.schedule-footer .btn,
-.profile-footer-nav .btn,
-footer[aria-label="Actions"] .btn {
-  gap: 0.25rem;
+/* Footer toolbar rows — uniform gap, flex-wrap */
+.app-footer-toolbar,
+.app-footer-search .search-hide-on-focus.d-flex,
+.app-footer-search .d-flex.align-items-center.flex-wrap,
+.schedule-footer > .d-flex,
+.schedule-footer > .app-footer-toolbar,
+.profile-footer-wrap-row,
+.profile-footer-nav .d-flex.align-items-center.flex-wrap,
+footer[aria-label="Actions"] {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: var(--app-footer-btn-gap) !important;
+  row-gap: var(--app-footer-btn-gap) !important;
+}
+
+/* Page footers — every toolbar button same width (TextSize sets --app-btn-width) */
+.app-footer-search .btn:not(.btn-close):not(.btn-unstyled),
+.schedule-footer .btn:not(.btn-close),
+.profile-footer-nav .btn:not(.btn-close):not(.btn-unstyled),
+footer[aria-label="Actions"] .btn:not(.btn-close) {
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: var(--app-btn-width) !important;
+  flex: 0 0 var(--app-btn-width) !important;
+  margin: 0 !important;
+  overflow: hidden;
+}
+
+.app-footer-search .btn .text-nowrap,
+.schedule-footer .btn .text-nowrap,
+.profile-footer-nav .btn .text-nowrap,
+footer[aria-label="Actions"] .btn .text-nowrap {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ========================================
@@ -256,17 +296,67 @@ select,
 .form-select,
 button[role="combobox"],
 div[role="combobox"] {
-  height: 3rem !important;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
 }
 
-/* Footer nav/filter buttons — scale up icon when active/selected */
+.app-search-input {
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Footer / nav chrome — vertical padding scales with TextSize (small: p-1, medium/large: p-2) */
+.app-footer-padding,
+.app-footer-search > .app-footer-inner,
+.schedule-footer,
+.profile-footer-nav > .app-footer-padding-row,
+.app-nav-bottom-menu {
+  padding-top: var(--app-footer-padding-y) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
+}
+
+@media (max-width: 1024px) {
+  .app-footer-search > .app-footer-inner,
+  .schedule-footer,
+  .profile-footer-nav > .app-footer-padding-row:last-child {
+    padding-bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* ─── App icons — scale with Profile → Text size (buttonTextSize.js → --app-icon-size) ───
+   Add class "app-icon" to any SVG/Heroicon, or rely on auto rules inside action buttons. */
+.app-icon,
+.app-btn-icon,
+.btn:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.animate-spin):not(.app-icon--fixed):not(.app-icon--lg),
+button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.animate-spin):not(.app-icon--fixed):not(.app-icon--lg),
+[role="button"]:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.animate-spin):not(.app-icon--fixed):not(.app-icon--lg) {
+  width: var(--app-icon-size) !important;
+  height: var(--app-icon-size) !important;
+  flex-shrink: 0;
+  transition: width 0.15s ease, height 0.15s ease;
+}
+
+/* Decorative / hero icons — opt out of button auto-scale */
+.app-icon--lg {
+  width: calc(var(--app-icon-size) * 2.5) !important;
+  height: calc(var(--app-icon-size) * 2.5) !important;
+}
+
+.app-icon--fixed {
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Footer nav/filter buttons — slightly larger icon when active/selected */
 .app-footer-search .btn svg,
 .profile-footer-nav .btn svg,
 .schedule-footer .btn svg,
 .modal-footer .btn svg,
 [class*="footer"] .btn svg {
-  width: 1rem;
-  height: 1rem;
   transition: width 0.15s ease, height 0.15s ease;
 }
 
@@ -280,9 +370,29 @@ div[role="combobox"] {
 .profile-footer-nav .btn.rounded-circle[data-active="true"] svg,
 .schedule-footer .btn.rounded-circle[data-active="true"] svg,
 .modal-footer .btn.rounded-circle[data-active="true"] svg,
-[class*="footer"] .btn.rounded-circle[data-active="true"] svg {
-  width: 1.1rem !important;
-  height: 1.1rem !important;
+[class*="footer"] .btn.rounded-circle[data-active="true"] svg,
+.app-footer-search .btn.rounded-pill[data-active="true"] svg,
+.profile-footer-nav .btn.rounded-pill[data-active="true"] svg,
+.schedule-footer .btn.rounded-pill[data-active="true"] svg,
+.modal-footer .btn.rounded-pill[data-active="true"] svg,
+[class*="footer"] .btn.rounded-pill[data-active="true"] svg,
+.app-footer-search .btn.rounded-circle[data-active="true"] .app-icon,
+.profile-footer-nav .btn.rounded-circle[data-active="true"] .app-icon,
+.schedule-footer .btn.rounded-circle[data-active="true"] .app-icon,
+.modal-footer .btn.rounded-circle[data-active="true"] .app-icon,
+[class*="footer"] .btn.rounded-circle[data-active="true"] .app-icon,
+.app-footer-search .btn.rounded-pill[data-active="true"] .app-icon,
+.profile-footer-nav .btn.rounded-pill[data-active="true"] .app-icon,
+.schedule-footer .btn.rounded-pill[data-active="true"] .app-icon,
+.modal-footer .btn.rounded-pill[data-active="true"] .app-icon,
+[class*="footer"] .btn.rounded-pill[data-active="true"] .app-icon {
+  width: var(--app-icon-size-active) !important;
+  height: var(--app-icon-size-active) !important;
+}
+
+body.training-mode .btn.rounded-pill svg + span,
+body.training-mode .btn.rounded-pill .text-nowrap {
+  font-size: var(--app-btn-label-font-size) !important;
 }
 
 .searchable-select-overlay-root {
@@ -429,30 +539,43 @@ body.training-mode .btn.rounded-pill {
   width: auto !important;
   max-width: none !important;
   min-width: var(--app-btn-width) !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
 }
 
-body.training-mode .app-footer-search .btn,
-body.training-mode .schedule-footer .btn,
-body.training-mode .profile-footer-nav .btn,
-body.training-mode .modal-footer .btn,
-body.training-mode footer[aria-label="Actions"] .btn,
-body.training-mode .flex-shrink-0.border-top .btn,
-body.training-mode .flex-shrink-0.border-t .btn,
-body.training-mode [class*="footer"] .btn {
-  margin: 0.0625rem !important;
+.btn.rounded-circle {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Bottom-right nav menu (Layout) — same alignment rules as toolbar buttons */
+body.training-mode .app-nav-bottom-menu .btn.rounded-pill,
+body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.app-nav-bottom-menu a.btn.rounded-circle,
+.app-nav-bottom-toggle.btn.rounded-circle {
+  justify-content: center !important;
+}
+
+body.training-mode .app-footer-search .btn.rounded-pill,
+body.training-mode .schedule-footer .btn.rounded-pill,
+body.training-mode .profile-footer-nav .btn.rounded-pill,
+body.training-mode footer[aria-label="Actions"] .btn.rounded-pill {
+  width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
+  max-width: var(--app-btn-width) !important;
+  flex: 0 0 var(--app-btn-width) !important;
   padding-left: 0.25rem !important;
-  padding-right: 0.5rem !important;
+  padding-right: 0.25rem !important;
 }
 
 body.training-mode .app-footer-search .btn:not(.rounded-circle),
 body.training-mode .schedule-footer .btn:not(.rounded-circle),
 body.training-mode .profile-footer-nav .btn:not(.rounded-circle),
-body.training-mode .modal-footer .btn:not(.rounded-circle),
-body.training-mode footer[aria-label="Actions"] .btn:not(.rounded-circle),
-body.training-mode .flex-shrink-0.border-top .btn:not(.rounded-circle),
-body.training-mode .flex-shrink-0.border-t .btn:not(.rounded-circle),
-body.training-mode [class*="footer"] .btn:not(.rounded-circle) {
+body.training-mode footer[aria-label="Actions"] .btn:not(.rounded-circle) {
   column-gap: 0 !important;
 }
 
@@ -465,10 +588,6 @@ body.training-mode .flex-shrink-0.border-top .btn svg + span,
 body.training-mode .flex-shrink-0.border-t .btn svg + span,
 body.training-mode [class*="footer"] .btn svg + span {
   margin-left: -0.125rem !important;
-}
-
-body.training-mode .profile-footer-nav .btn.profile-footer-btn {
-  margin: 0 !important;
 }
 
 body.training-mode .btn.settings-accordion-btn {
@@ -505,9 +624,11 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   padding: 0 !important;
 }
 
-/* Profile footer responsive button padding */
-.profile-footer-wrap-row {
-  gap: 0.25rem !important;
+/* Sales History modal — scrollable filter footer on small screens */
+.sales-history-footer {
+  max-height: min(55dvh, 26rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Footer floats above content on mobile using position:fixed so it is independent
@@ -566,14 +687,17 @@ input[type="number"],
 .form-control:not(textarea),
 .form-select {
   border-radius: 9999px !important;
-  height: 3rem !important;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
 }
 
 /* Floating label adjustments for pill-shaped inputs */
 .form-floating > .form-control:not(textarea),
 .form-floating > .form-select {
   padding-left: 1rem;
-  height: 3rem !important;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
 }
 .form-floating > label {
   padding-left: 1rem;
@@ -1153,8 +1277,8 @@ textarea.form-control {
 }
 
 .app-icon--sm {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: calc(var(--app-icon-size) * 0.9) !important;
+  height: calc(var(--app-icon-size) * 0.9) !important;
 }
 
 .app-chevron {

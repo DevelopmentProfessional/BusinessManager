@@ -289,7 +289,8 @@ const Panel_Payroll = ({
         {/* ── Save ───────────────────────────────────────────────── */}
         <Button_Toolbar
           icon={CheckCircleIcon}
-          label={payScheduleSaving ? "Saving…" : "Save Payroll Settings"}
+          label={payScheduleSaving ? "Saving…" : "Save"}
+          title="Save payroll settings"
           onClick={handleSavePaySchedule}
           disabled={payScheduleSaving}
           className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"

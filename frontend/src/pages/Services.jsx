@@ -41,6 +41,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI } from "../services/api";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Form_Service from "./components/Form_Service";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/Modal_Import_Sheet";
@@ -198,9 +199,7 @@ export default function Services() {
       title="Services"
       error={error}
       headerRight={
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-        </button>
+        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
       <PageTableHeader columns={[{ label: "Service" }, { label: "Price", width: 80 }, { label: "Duration", width: 70 }]} />
@@ -250,7 +249,7 @@ export default function Services() {
       {/* Fixed footer – headers + controls */}
       <PageTableFooter searchTerm={searchTerm} onSearch={setSearchTerm} searchPlaceholder="Search services...">
         <Gate_Permission page="services" permission="write">
-          <Button_Toolbar icon={PlusIcon} label="Add Service" onClick={handleCreateService} className="btn-app-primary" />
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreateService} className="btn-app-primary" title="Add service" />
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={() => setShowBulkImport(true)} className="btn-app-secondary" />
         </Gate_Permission>
 
@@ -261,7 +260,8 @@ export default function Services() {
         <div className="position-relative">
           <Button_Toolbar
             icon={FolderOpenIcon}
-            label="Filter Category"
+            label="Category"
+            title="Filter by category"
             onClick={() => {
               const nextOpen = !isCategoryFilterOpen;
               setIsCategoryFilterOpen(nextOpen);
@@ -394,17 +394,10 @@ export default function Services() {
         )}
       </Modal>
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Service Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to manage the Services page view.</div>
-          <div className="small">Search, category filter, and add actions are available in the footer.</div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Service Page Controls">
+        <div className="small text-muted">Use these controls to manage the Services page view.</div>
+        <div className="small">Search, category filter, and add actions are available in the footer.</div>
+      </PageControlsModal>
     </PageLayout>
   );
 }

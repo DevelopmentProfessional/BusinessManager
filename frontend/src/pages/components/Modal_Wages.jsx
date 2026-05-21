@@ -749,7 +749,7 @@ function CalendarTab({
                   style={{ fontSize: "0.72rem" }}
                   onClick={() => onGoToProcess(selectedPeriod)}
                 >
-                  Process Payroll →
+                  Pay →
                 </button>
               </div>
               {activeEmps.length === 0 ? (
@@ -1073,7 +1073,7 @@ function ProcessTab({
                   <div className="d-flex justify-content-end gap-2 mt-2">
                     <button type="button" onClick={() => handleExpandEmp(emp)} className="btn btn-sm btn-outline-secondary">Cancel</button>
                     <button type="button" onClick={() => handlePaySingle(emp)} disabled={isProc} className="btn btn-sm btn-success d-flex align-items-center gap-1">
-                      {isProc ? <><span className="spinner-border" style={{ width: 11, height: 11 }} /> Processing…</> : <><CheckIcon style={{ width: 11, height: 11 }} /> Confirm Pay</>}
+                      {isProc ? <><span className="spinner-border" style={{ width: 11, height: 11 }} /> …</> : <><CheckIcon style={{ width: 11, height: 11 }} /> Pay</>}
                     </button>
                   </div>
                 </div>
@@ -1185,7 +1185,7 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
         className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2">
         {otLoading
           ? <><span className="spinner-border spinner-border-sm" style={{ width: 14, height: 14 }} /> Processing…</>
-          : <><BanknotesIcon style={{ width: 16, height: 16 }} /> Process Payment</>}
+          : <><BanknotesIcon style={{ width: 16, height: 16 }} /> Pay</>}
       </button>
     </div>
   );

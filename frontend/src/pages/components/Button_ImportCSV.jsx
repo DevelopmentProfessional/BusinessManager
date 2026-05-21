@@ -248,7 +248,7 @@ export default function Button_ImportCSV({ onImport, onComplete, entityName = "R
     <>
       <button type="button" onClick={() => setIsModalOpen(true)} className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm ${className}`}>
         <ArrowUpTrayIcon className="h-4 w-4" />
-        Import CSV
+        CSV
       </button>
 
       <Modal isOpen={isModalOpen} onClose={handleClose}>
@@ -481,7 +481,7 @@ export default function Button_ImportCSV({ onImport, onComplete, entityName = "R
                 ) : (
                   <>
                     <ArrowUpTrayIcon className="h-4 w-4" />
-                    Import {parsedData.length} Records
+                    Import ({parsedData.length})
                   </>
                 )}
               </button>

@@ -420,7 +420,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
                         </div>
                         {addImageMode === "camera" && (
                           <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
-                            {pendingPhotoUrl ? "Retake Photo" : "Open Camera"}
+                            {pendingPhotoUrl ? "Retake" : "Cam"}
                           </button>
                         )}
                         {addImageMode === "url" && (
@@ -812,7 +812,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
             {service && canDelete && (
               <Button_Toolbar
                 icon={TrashIcon}
-                label="Delete service"
+                label="Delete"
+                title="Delete service"
                 onClick={async () => {
                   if (await showConfirm("Delete this service?")) onDelete(service.id);
                 }}
@@ -826,7 +827,9 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
 
             {/* Save only shown on Details tab */}
-            {activeTab === "details" && <Button_Toolbar icon={CheckIcon} label={service ? "Update service" : "Create service"} type="submit" form="service-details-form" className="btn btn-primary" />}
+            {activeTab === "details" && (
+              <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn btn-primary" title={service ? "Save service" : "Create service"} />
+            )}
           </div>
 
           {/* Right spacer to balance delete */}

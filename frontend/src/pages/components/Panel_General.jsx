@@ -2,7 +2,7 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import { CogIcon, InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon } from "@heroicons/react/24/outline";
+import { CogIcon, InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 import { documentsAPI } from "../../services/api";
@@ -106,15 +106,16 @@ const Panel_General = ({
                 {/* Admin-only: Check/Start Database Button */}
                 {user?.role === "admin" && (
                   <div className="d-flex align-items-center gap-2 mt-2">
-                    <button type="button" className="btn btn-outline-primary btn-sm" onClick={onCheckStartDatabase} disabled={dbCheckLoading}>
-                      {dbCheckLoading ? "Checking/Starting Database..." : "Check/Start Database"}
+                    <button type="button" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" onClick={onCheckStartDatabase} disabled={dbCheckLoading}>
+                      <CircleStackIcon className="h-4 w-4" />
+                      <span title="Check or start database">{dbCheckLoading ? "…" : "DB"}</span>
                     </button>
                     {dbCheckStatus && <span className={`small ${dbCheckStatus.startsWith("Error") ? "text-danger" : "text-success"}`}>{dbCheckStatus}</span>}
                   </div>
                 )}
                 <button type="button" onClick={handleManualSync} disabled={syncLoading} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" title="Refresh cached app data and reload this device">
                   <ArrowPathIcon className="h-4 w-4" />
-                  <span>{syncLoading ? "Refreshing…" : "Refresh App"}</span>
+                  <span title="Refresh cached app data">{syncLoading ? "…" : "Sync"}</span>
                 </button>
               </div>
             </div>
@@ -168,7 +169,7 @@ const Panel_General = ({
             </div>
             <p className="text-xs text-muted mb-2">e.g. 8.5 for 8.5%</p>
             <div className="mb-2">
-              <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save "} onClick={handleSaveCompanyInfo} className="btn btn-primary" disabled={companyLoading} />
+              <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save"} onClick={handleSaveCompanyInfo} className="btn btn-primary" disabled={companyLoading} title="Save company info" />
             </div>
           </div>
         )}
@@ -201,28 +202,30 @@ const Panel_General = ({
                 <div className="d-flex align-items-center gap-2">
                   <label className={`btn btn-sm btn-outline-primary ${brandingLogoUploading ? "disabled" : ""}`}>
                     <ArrowUpTrayIcon className="h-4 w-4" style={{ width: 16, height: 16, marginRight: 6 }} />
-                    {brandingLogoUploading ? "Uploading..." : "Upload"}
+                    {brandingLogoUploading ? "…" : "Upload"}
                     <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleUploadBrandingLogo(e.target.files?.[0] || null)} disabled={brandingLogoUploading} />
                   </label>
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
                     onClick={async () => {
                       setLogoPickerOpen(true);
                       await loadLogoPickerDocs();
                     }}
                   >
-                    Choose from Documents
+                    <FolderIcon className="h-4 w-4" />
+                    <span>Pick</span>
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-danger"
+                    className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2"
                     onClick={() => {
                       handleBrandingChange("logoDocumentId", null);
                       handleBrandingChange("logoUrl", "");
                     }}
                   >
-                    Clear
+                    <XCircleIcon className="h-4 w-4" />
+                    <span>Clear</span>
                   </button>
                 </div>
               </div>
@@ -259,7 +262,7 @@ const Panel_General = ({
                 </div>
               ))}
             </div>
-            <Button_Toolbar icon={CheckCircleIcon} label="Save Branding" onClick={handleSaveBranding} className="btn btn-primary" />
+            <Button_Toolbar icon={CheckCircleIcon} label="Save" onClick={handleSaveBranding} className="btn btn-primary" title="Save branding" />
 
             <Modal
               isOpen={logoPickerOpen}
@@ -268,8 +271,9 @@ const Panel_General = ({
               centered={true}
               footer={
                 <div className="d-flex justify-content-end gap-2">
-                  <button type="button" className="btn btn-secondary" onClick={() => setLogoPickerOpen(false)}>
-                    Close
+                  <button type="button" className="btn btn-secondary d-flex align-items-center gap-2" onClick={() => setLogoPickerOpen(false)}>
+                    <XMarkIcon className="h-4 w-4" />
+                    <span>Close</span>
                   </button>
                 </div>
               }
@@ -322,7 +326,7 @@ const Panel_General = ({
                 </label>
               </div>
             ))}
-            <Button_Toolbar icon={CheckCircleIcon} label="Save Notifications" onClick={handleSaveNotifications} className="btn btn-primary" />
+            <Button_Toolbar icon={CheckCircleIcon} label="Save" onClick={handleSaveNotifications} className="btn btn-primary" title="Save notifications" />
           </div>
         )}
       </div>
@@ -429,7 +433,7 @@ const Panel_General = ({
                     <label htmlFor="portal_hero_image_url">Hero Image URL</label>
                   </div>
                   <label className={`btn btn-sm btn-outline-primary flex-shrink-0 ${heroImageUploading ? "disabled" : ""}`} style={{ whiteSpace: "nowrap" }}>
-                    {heroImageUploading ? "Uploading..." : "Upload"}
+                    {heroImageUploading ? "…" : "Upload"}
                     <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleUploadHeroImage(e.target.files?.[0] || null)} disabled={heroImageUploading} />
                   </label>
                   {portalBranding.portal_hero_image_url && (
@@ -480,10 +484,8 @@ const Panel_General = ({
             </div>
 
             <div className="d-flex gap-2">
-              <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save Portal Settings"} onClick={handleSavePortalBranding} className="btn btn-primary" disabled={portalBrandingLoading} />
-              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetPortalBrandingDefaults}>
-                Reset to Defaults
-              </button>
+              <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save"} onClick={handleSavePortalBranding} className="btn btn-primary" disabled={portalBrandingLoading} title="Save portal settings" />
+              <Button_Toolbar icon={ArrowPathIcon} label="Reset" onClick={resetPortalBrandingDefaults} className="btn-outline-secondary" title="Reset to defaults" />
             </div>
           </div>
         )}

@@ -130,7 +130,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
             </div>
             <button type="submit" className="btn btn-primary mt-3">
               <i className="bi bi-plus-circle me-2"></i>
-              Add Permission
+              Add
             </button>
           </form>
 

@@ -396,7 +396,7 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
                   {cartItems.length > 0 && (
                     <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3"  title="Create portal order from cart">
                       <CheckCircleIcon style={{ width: 16, height: 16 }} />
-                      {creating ? "Creating…" : "Create Order"}
+                      {creating ? "…" : "Order"}
                     </button>
                   )}
                 </>

@@ -636,7 +636,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                             }
                           }}
                         >
-                          {productionLoading ? "Processing…" : "✓ Complete Production Run"}
+                          {productionLoading ? "…" : "Done"}
                         </button>
                       )}
                       {productionError && (
@@ -896,9 +896,11 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         <div className="d-flex align-items-center">
           <div style={{ width: 40 }}>{appointment?.id && onDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" />}</div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-            {appointment?.id && appointment?.client_id && (formData.appointment_type === "one_time" || formData.appointment_type === "series") && onSendReminder && <Button_Toolbar icon={EnvelopeIcon} label="Send Reminder" onClick={onSendReminder} className="btn-outline-secondary" />}
+            {appointment?.id && appointment?.client_id && (formData.appointment_type === "one_time" || formData.appointment_type === "series") && onSendReminder && (
+              <Button_Toolbar icon={EnvelopeIcon} label="Remind" onClick={onSendReminder} className="btn-outline-secondary" title="Send reminder" />
+            )}
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={appointment ? "Save Changes" : "Book"} type="submit" form="schedule-form" className="btn btn-primary" />
+            <Button_Toolbar icon={CheckIcon} label={appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn btn-primary" title={appointment ? "Save changes" : "Book appointment"} />
           </div>
           <div style={{ width: 40 }} />
         </div>

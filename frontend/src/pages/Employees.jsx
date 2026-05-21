@@ -52,13 +52,14 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import FilterDropdown from "./components/FilterDropdown";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Form_Employee from "./components/Form_Employee";
 import Dropdown_Custom from "./components/Dropdown_Custom";
 import Gate_Permission from "./components/Gate_Permission";
@@ -922,9 +923,7 @@ export default function Employees() {
       {/* Header - sticky on mobile */}
       <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex justify-content-between" style={{ position: "sticky", top: 0, zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-        </button>
+        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       </div>
 
       {/* Error / Success Alerts */}
@@ -935,7 +934,7 @@ export default function Employees() {
       {/* Main upside-down table container */}
       <div className="flex-grow-1 d-flex flex-column overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom */}
-        <div className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+        <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
           {filteredEmployees.length > 0 ? (
             <table className="table table-borderless table-hover mb-0">
               <colgroup>
@@ -1033,23 +1032,29 @@ export default function Employees() {
           searchPlaceholder="Search by name, email, or role..."
           beforeSearch={
             hasPermission("employees", "admin") || hasPermission("employees", "write") ? (
-              <div className="d-flex gap-2">
-                <button type="button" onClick={handleOpenRequests} className="btn btn-sm btn-outline-warning rounded-pill p-0" title="Review requests">
-                  Requests
-                  {allRequests.filter((r) => r.status === "pending").length > 0 && <span className="badge bg-danger ms-1">{allRequests.filter((r) => r.status === "pending").length}</span>}
-                </button>
-                <button type="button" onClick={handleOpenInsurance} className="btn btn-sm btn-outline-primary rounded-pill" title="Manage insurance plans">
-                  Insurance
-                </button>
-                <button type="button" onClick={() => setShowWagesModal(true)} className="btn btn-sm btn-outline-success rounded-pill" title="Wages & payroll">
-                  Wages
-                </button>
+              <div className="app-footer-toolbar d-flex align-items-center">
+                <Button_Toolbar
+                  icon={ClipboardDocumentListIcon}
+                  label="Requests"
+                  onClick={handleOpenRequests}
+                  className="btn-outline-warning position-relative"
+                  title="Review requests"
+                  badge={
+                    allRequests.filter((r) => r.status === "pending").length > 0 ? (
+                      <span className="badge bg-danger rounded-pill position-absolute" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
+                        {allRequests.filter((r) => r.status === "pending").length > 9 ? "9+" : allRequests.filter((r) => r.status === "pending").length}
+                      </span>
+                    ) : null
+                  }
+                />
+                <Button_Toolbar icon={ShieldCheckIcon} label="Ins" onClick={handleOpenInsurance} className="btn-outline-primary" title="Insurance plans" />
+                <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-success" title="Wages & payroll" />
               </div>
             ) : null
           }
         >
           <Gate_Permission page="employees" permission="write">
-            <Button_Toolbar icon={PlusIcon} label="Add Employee" onClick={handleCreate} className="btn-app-primary" />
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreate} className="btn-app-primary" title="Add employee" />
             <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={() => setShowBulkImport(true)} className="btn-app-secondary" />
           </Gate_Permission>
 
@@ -1069,7 +1074,8 @@ export default function Employees() {
           {/* Role Filter */}
           <FilterDropdown
             icon={UserGroupIcon}
-            label="Filter Role"
+            label="Role"
+            title="Filter by role"
             value={roleFilter}
             onChange={setRoleFilter}
             isOpen={isRoleFilterOpen}
@@ -1084,7 +1090,8 @@ export default function Employees() {
           {/* Status Filter */}
           <FilterDropdown
             icon={CheckCircleIcon}
-            label="Filter Status"
+            label="Status"
+            title="Filter by status"
             value={statusFilter}
             onChange={setStatusFilter}
             isOpen={isStatusFilterOpen}
@@ -1296,17 +1303,10 @@ export default function Employees() {
       {/* Wages Modal */}
       {showWagesModal && <Modal_Wages employees={employees} onClose={() => setShowWagesModal(false)} />}
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Employee Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to manage employee views and actions.</div>
-          <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Employee Page Controls">
+        <div className="small text-muted">Use these controls to manage employee views and actions.</div>
+        <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
+      </PageControlsModal>
     </div>
   );
 }

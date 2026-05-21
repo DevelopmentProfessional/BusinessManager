@@ -26,6 +26,7 @@ import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import Widget_Signature from "./Widget_Signature";
 import api from "../../services/api";
+import { PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
@@ -113,12 +114,14 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
         <div className="border-top bg-white dark:bg-gray-800 p-3">
           <div className="d-flex justify-content-end gap-2">
             {!showSignaturePad && savedSignature && (
-              <button type="button" className="btn btn-outline-primary" onClick={() => setShowSignaturePad(true)}>
-                Replace Signature
+              <button type="button" className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={() => setShowSignaturePad(true)}>
+                <PencilIcon className="h-4 w-4" />
+                <span title="Replace signature">Replace</span>
               </button>
             )}
-            <button type="button" onClick={onClose} className="btn btn-secondary">
-              Close
+            <button type="button" onClick={onClose} className="btn btn-secondary d-flex align-items-center gap-2">
+              <XMarkIcon className="h-4 w-4" />
+              <span>Close</span>
             </button>
           </div>
         </div>
