@@ -285,7 +285,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         <div className={`flex-shrink-0 pt-2 pb-4 px-3 border-top ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
           <div className="d-flex align-items-center gap-1">
             <div className="d-flex align-items-center flex-shrink-0">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem", borderRadius: "50%", minWidth: "3rem" }} title="Close">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem", borderRadius: "50%", minWidth: "1rem" }} title="Close">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>
@@ -296,7 +296,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                   title="Share a document"
                   className={`btn btn-sm p-1 d-flex align-items-center justify-content-center ${showDocPicker ? "btn-primary" : dm ? "btn-outline-secondary" : "btn-outline-secondary"}`}
                   onClick={openDocPicker}
-                  style={{ width: "3rem", height: "3rem", borderRadius: "50%", minWidth: "3rem", flexShrink: 0 }}
+                  style={{ width: "1rem", height: "1rem", borderRadius: "50%", minWidth: "1rem", flexShrink: 0 }}
                 >
                   <PaperClipIcon style={{ width: 18, height: 18 }} />
                 </button>
@@ -323,7 +323,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                     }
                   }}
                 />
-                <button type="submit" className="btn btn-sm btn-primary p-1 d-flex align-items-center justify-content-center" disabled={!text.trim() || sending} title="Send" style={{ width: "3rem", height: "3rem", borderRadius: "50%", minWidth: "3rem", flexShrink: 0 }}>
+                <button type="submit" className="btn btn-sm btn-primary p-1 d-flex align-items-center justify-content-center" disabled={!text.trim() || sending} title="Send" style={{ width: "1rem", height: "1rem", borderRadius: "50%", minWidth: "1rem", flexShrink: 0 }}>
                   <PaperAirplaneIcon style={{ width: 18, height: 18 }} />
                 </button>
               </form>

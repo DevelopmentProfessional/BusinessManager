@@ -2,13 +2,22 @@
 // renders the name column cell for an inventory table row (category badge, price, feature tags)
 import React from "react";
 
+const hasMoneyValue = (value) => {
+  if (value === undefined || value === null || value === "") return false;
+  const n = Number(value);
+  return !Number.isNaN(n) && n > 0;
+};
+
 export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [] }) {
-  const isLocation = (item.type || "").toUpperCase() === "LOCATION";
   const isAsset = (item.type || "").toUpperCase() === "ASSET";
   const formatMoney = (value) => {
-    if (value === undefined || value === null || value === "") return null;
+    if (!hasMoneyValue(value)) return null;
     return Number(value).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2 });
   };
+
+  const effectivePriceDisplay = priceDisplay ?? (hasMoneyValue(item.price) ? formatMoney(item.price) : null);
+  const costDisplay = hasMoneyValue(item.cost) ? formatMoney(item.cost) : null;
+
   return (
     <td className="main-page-table-data">
       <div className="fw-medium text-wrap-word">{item.name}</div>
@@ -17,14 +26,12 @@ export default function Inventory_RowDetail({ item, priceDisplay, featureNames =
           {item.category}
         </span>
       )}
-      {!isLocation && !isAsset && priceDisplay && <div className="small text-primary fw-semibold">{priceDisplay}</div>}
-      {isAsset && (
+      {(effectivePriceDisplay || costDisplay) && (
         <div className="d-flex flex-wrap gap-2 mt-1">
-          {item.price != null && item.price !== "" && <span className="small text-primary fw-semibold">Price: {formatMoney(item.price)}</span>}
-          {item.cost != null && item.cost !== "" && <span className="small text-info fw-semibold">Cost: {formatMoney(item.cost)}</span>}
+          {effectivePriceDisplay && <span className="small text-primary fw-semibold">Price: {effectivePriceDisplay}</span>}
+          {costDisplay && <span className="small text-info fw-semibold">Cost: {costDisplay}</span>}
         </div>
       )}
-      {isLocation && item.cost != null && item.cost !== "" && <div className="small text-info fw-semibold">{formatMoney(item.cost)}</div>}
       {isAsset && (item.date_of_purchase || item.date_of_sale) && (
         <div className="d-flex flex-wrap gap-2 mt-1">
           {item.date_of_purchase && <span className="text-xxs text-muted">Purchased: {item.date_of_purchase.slice(0, 10)}</span>}

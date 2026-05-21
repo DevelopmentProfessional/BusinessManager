@@ -1365,28 +1365,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                           <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
                           <label htmlFor="quantity">Current Count</label>
                         </div>
-
-                        <div className="mb-2">
-                          <div className="input-group">
-                            <div className="form-floating">
-                              <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
-                              <label htmlFor="detail_price">Price</label>
-                            </div>
-                          </div>
-                          {featuresPriceRange && (
-                            <div className="mt-1 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
-                          )}
-                        </div>
-
-                        {/* Cost field — ASSET type only */}
-                        {isAsset && (
-                          <div className="mb-2">
-                            <div className="form-floating">
-                              <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
-                              <label htmlFor="detail_cost">Cost (purchase / rental)</label>
-                            </div>
-                          </div>
-                        )}
                       </>
                     ) : (
                       <div className="d-flex flex-column gap-2">
@@ -1397,14 +1375,25 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                             <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
                           </div>
                         </div>
-                        {isLocation && (
-                          <div className="form-floating">
-                            <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
-                            <label htmlFor="detail_cost">Cost</label>
-                          </div>
-                        )}
                       </div>
                     )}
+
+                    <div className="mb-2">
+                      <div className="form-floating">
+                        <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                        <label htmlFor="detail_price">Price</label>
+                      </div>
+                      {featuresPriceRange && (
+                        <div className="mt-1 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
+                      )}
+                    </div>
+
+                    <div className="mb-2">
+                      <div className="form-floating">
+                        <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <label htmlFor="detail_cost">Cost</label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1636,7 +1625,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         });
                       }}
                       className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                      style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}
+                      style={{ width: "1rem", height: "1rem", fontSize: "1rem", lineHeight: 1 }}
                     >
                       {showNewLocationInput ? "×" : "+"}
                     </button>
@@ -1710,7 +1699,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         </select>
                         <label htmlFor="detail_category">Category</label>
                       </div>
-                      <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}>
+                      <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "1rem", height: "1rem", fontSize: "1rem", lineHeight: 1 }}>
                         {showCategoryManager ? "×" : "+"}
                       </button>
                     </div>

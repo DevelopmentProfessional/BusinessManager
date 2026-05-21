@@ -135,7 +135,7 @@ export default function Layout({ children }) {
           <div
             className="position-absolute rounded-3 ps-2"
             style={{
-              minWidth: "3rem",
+              minWidth: "1rem",
               zIndex: 1051,
               bottom: "5rem",
               right: "1rem",
@@ -180,8 +180,8 @@ export default function Layout({ children }) {
         aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
         className={classNames(expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary", "p-0 position-absolute rounded-circle shadow-lg d-flex align-items-center justify-content-center")}
         style={{
-          width: "3rem",
-          height: "3rem",
+          width: "1rem",
+          height: "1rem",
           zIndex: 1100,
           bottom: "1.5rem",
           right: "1rem",

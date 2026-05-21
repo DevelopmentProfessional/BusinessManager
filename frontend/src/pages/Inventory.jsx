@@ -298,7 +298,9 @@ export default function Inventory() {
     if (s?.price_min != null && s?.price_max != null) {
       return s.price_min === s.price_max ? `$${s.price_min.toFixed(2)}` : `$${s.price_min.toFixed(2)}–$${s.price_max.toFixed(2)}`;
     }
-    return item.price != null ? `$${item.price.toFixed(2)}` : null;
+    const price = Number(item.price);
+    if (item.price === undefined || item.price === null || item.price === "" || Number.isNaN(price) || price <= 0) return null;
+    return `$${price.toFixed(2)}`;
   };
 
   const handleDeleteItem = async (inventoryId) => {

@@ -80,10 +80,10 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
           <div className="d-flex align-items-center">
             <div style={{ width: 40 }} />
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Cancel">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Cancel">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
-              <button type="submit" form="create-user-form" disabled={loading} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Create User">
+              <button type="submit" form="create-user-form" disabled={loading} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Create User">
                 <CheckIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>

@@ -386,16 +386,16 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
         <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="d-flex align-items-center">
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Close">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Close">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
               {!orderCreated && (
                 <>
-                  <button type="button" onClick={handleGoToSales} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Go to Sales">
+                  <button type="button" onClick={handleGoToSales} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Go to Sales">
                     <ShoppingCartIcon style={{ width: 18, height: 18 }} />
                   </button>
                   {cartItems.length > 0 && (
-                    <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" style={{ height: "3rem", fontSize: 12 }} title="Create portal order from cart">
+                    <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" style={{ height: "1rem", fontSize: 12 }} title="Create portal order from cart">
                       <CheckCircleIcon style={{ width: 16, height: 16 }} />
                       {creating ? "Creating…" : "Create Order"}
                     </button>
