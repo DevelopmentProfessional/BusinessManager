@@ -187,8 +187,7 @@ export default function Layout({ children }) {
         aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
         className={classNames(
           expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
-          "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center",
-          isTrainingMode ? "rounded-pill px-1 justify-content-start" : "rounded-circle p-0 justify-content-center"
+          "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center justify-content-center rounded-circle p-0"
         )}
         style={{
           zIndex: 1100,
