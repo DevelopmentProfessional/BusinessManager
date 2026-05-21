@@ -198,14 +198,14 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                       </td>
                       <td>
                         <div className="d-flex align-items-center gap-1">
-                          <button onClick={() => onDeletePermission(permission.id)} className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Delete Permission" type="button">
+                          <button onClick={() => onDeletePermission(permission.id)} className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Delete Permission" type="button">
                             <TrashIcon style={{ width: 16, height: 16 }} />
                           </button>
                           <button
                             type="button"
                             onClick={() => onUpdatePermission(permission.id, !permission.granted)}
                             className={`btn btn-sm d-flex align-items-center justify-content-center ms-auto ${permission.granted ? "btn-outline-warning" : "btn-outline-success"}`}
-                            style={{ width: "3rem", height: "3rem" }}
+                            style={{ width: "1rem", height: "1rem" }}
                             title={permission.granted ? "Deny Permission" : "Grant Permission"}
                           >
                             {permission.granted ? <XCircleIcon style={{ width: 16, height: 16 }} /> : <CheckCircleIcon style={{ width: 16, height: 16 }} />}
@@ -226,7 +226,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
           <div className="d-flex align-items-center">
             <div style={{ width: 40 }} />
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Close">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Close">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>

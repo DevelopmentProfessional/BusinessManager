@@ -49,7 +49,7 @@ export default function AppButton({ icon: Icon, label, onClick, variant, classNa
       className={`btn flex-shrink-0 d-flex align-items-center justify-content-center
         ${training ? "rounded-pill ps-0 pe-1" : "rounded-circle p-0"}
         ${variantClass} ${effectiveClass}`.trim()}
-      style={training ? { height: "3rem" } : { width: "3rem", height: "3rem", minWidth: "3rem", minHeight: "3rem" }}
+      style={training ? { height: "1rem" } : { width: "1rem", height: "1rem", minWidth: "1rem", minHeight: "1rem" }}
       {...rest}
     >
       {Icon && <Icon className={iconClass} />}

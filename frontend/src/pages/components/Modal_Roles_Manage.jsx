@@ -167,7 +167,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
           <div className="d-flex align-items-center">
             <div style={{ width: 40 }} />
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Close">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Close">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>

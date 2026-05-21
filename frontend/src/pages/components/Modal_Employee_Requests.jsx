@@ -132,7 +132,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
               <option value="90d">Last 90 Days</option>
             </select>
             <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "3rem", height: "3rem" }} title="Close">
+              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" style={{ width: "1rem", height: "1rem" }} title="Close">
                 <XMarkIcon style={{ width: 18, height: 18 }} />
               </button>
             </div>

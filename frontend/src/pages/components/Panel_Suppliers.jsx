@@ -173,7 +173,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
               {suppliers.map((supplier) => (
                 <div key={supplier.id} className="px-3 py-3 d-flex align-items-center gap-2 border-bottom">
                   <Gate_Permission page="suppliers" permission="delete">
-                    <button type="button" onClick={() => handleDelete(supplier.id)} className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "3rem", height: "3rem" }} title="Delete">
+                    <button type="button" onClick={() => handleDelete(supplier.id)} className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} title="Delete">
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </Gate_Permission>
@@ -184,12 +184,12 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                     {supplier.address && <div className="small text-muted text-truncate">{supplier.address}</div>}
                   </div>
                   <Gate_Permission page="suppliers" permission="write">
-                    <button type="button" onClick={() => handleOpenProcurement(supplier)} className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "3rem", height: "3rem" }} title="Procurement">
+                    <button type="button" onClick={() => handleOpenProcurement(supplier)} className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} title="Procurement">
                       PO
                     </button>
                   </Gate_Permission>
                   <Gate_Permission page="suppliers" permission="write">
-                    <button type="button" onClick={() => handleEdit(supplier)} className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "3rem", height: "3rem" }} title="Edit">
+                    <button type="button" onClick={() => handleEdit(supplier)} className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem" }} title="Edit">
                       <PencilIcon className="h-5 w-5" />
                     </button>
                   </Gate_Permission>

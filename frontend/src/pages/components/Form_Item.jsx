@@ -502,7 +502,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
               {/* Add photo button strip */}
               <div className="mt-1 d-flex align-items-center gap-1">
                 {addImageMode === null && (
-                  <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "3rem", height: "3rem", borderRadius: "4px" }} title="Add photo">
+                  <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "1rem", height: "1rem", borderRadius: "4px" }} title="Add photo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                       <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -761,7 +761,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                   </select>
                   <label htmlFor="category">Category</label>
                 </div>
-                <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}>
+                <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ width: "1rem", height: "1rem", fontSize: "1rem", lineHeight: 1 }}>
                   {showCategoryManager ? "×" : "+"}
                 </button>
               </div>
@@ -809,7 +809,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="SKU" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
                 <label htmlFor="sku">SKU</label>
                 {showScanner && (
-                  <button type="button" onClick={() => setIsScannerOpen(true)} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center" style={{ right: "0.25rem", width: "3rem", height: "3rem" }} title="Scan Barcode">
+                  <button type="button" onClick={() => setIsScannerOpen(true)} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center" style={{ right: "0.25rem", width: "1rem", height: "1rem" }} title="Scan Barcode">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
                       <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
@@ -857,7 +857,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                     });
                   }}
                   className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                  style={{ width: "3rem", height: "3rem", fontSize: "1rem", lineHeight: 1 }}
+                  style={{ width: "1rem", height: "1rem", fontSize: "1rem", lineHeight: 1 }}
                 >
                   {showNewLocationInput ? "×" : "+"}
                 </button>
