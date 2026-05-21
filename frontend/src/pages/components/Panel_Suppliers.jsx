@@ -202,7 +202,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
         {/* ── FOOTER ── */}
         <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="row g-0">
-            <div className={`col-10 d-flex align-items-center gap-3 px-4 flex-wrap ${showForm ? "justify-content-between" : "justify-content-center"}`}>
+            <div className={`col-10 d-flex align-items-center gap-3 flex-wrap ${showForm ? "justify-content-between" : "justify-content-center"}`}>
               {showForm ? (
                 <>
                   <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleCancelForm} className="btn-outline-secondary" />

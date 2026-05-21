@@ -150,7 +150,7 @@ function SalesHistoryFilterFooter({ historyFilters, setHistoryFilters }) {
         </div>
       </div>
 
-      <div className="px-3 py-2 app-footer-toolbar d-flex align-items-center flex-wrap">
+      <div className="app-footer-padding py-2 app-footer-toolbar d-flex align-items-center flex-wrap">
         {[
           ["all", "All"],
           ["pos", "POS"],

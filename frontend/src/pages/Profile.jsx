@@ -1323,7 +1323,7 @@ const Profile = () => {
       )}
 
       {/* Footer Tabs */}
-      <div className="flex-shrink-0 bg-body profile-footer-nav ps-3 position-relative" style={{ zIndex: 1050 }}>
+      <div className="flex-shrink-0 bg-body profile-footer-nav position-relative" style={{ zIndex: 1050 }}>
         {canAccessSettings && (
           <div ref={handleRow2Ref} className="app-footer-padding-row app-footer-padding pb-0">
             <div className="d-lg-none">
@@ -1349,7 +1349,7 @@ const Profile = () => {
             </div>
             <div className="d-none d-lg-block">
               <div className="row g-0">
-                <div className={`col-10 app-footer-toolbar d-flex align-items-center ps-3 ${footerJustify}`}>
+                <div className={`col-10 app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
                   {[
                     { id: "database", Icon: CircleStackIcon, title: "Database" },
                     ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
@@ -1400,7 +1400,7 @@ const Profile = () => {
           </div>
           <div className="d-none d-lg-block">
             <div className="row g-0">
-              <div className={`col-10 app-footer-toolbar d-flex align-items-center ps-3 ${footerJustify}`}>
+              <div className={`col-10 app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
                 {[
                   { id: "profile", Icon: UserIcon, title: "Profile" },
                   { id: "benefits", Icon: HeartIcon, title: "Benefits" },

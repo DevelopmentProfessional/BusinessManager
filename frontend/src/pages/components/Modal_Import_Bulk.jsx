@@ -329,7 +329,7 @@ export default function Modal_BulkImport({
         {/* Footer */}
         <div className="flex-shrink-0 py-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="row g-0">
-            <div className={`col-10 d-flex align-items-center gap-2 px-4 flex-wrap ${alignClass}`}>
+            <div className={`col-10 d-flex align-items-center gap-2 flex-wrap ${alignClass}`}>
               <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={saving}>
                 <XMarkIcon className="h-4 w-4" />
                 <span>Cancel</span>

@@ -138,12 +138,10 @@ export default function Layout({ children }) {
 
           {/* Menu positioned bottom-right */}
           <div
-            className="position-absolute rounded-3 ps-2"
+            className="position-absolute rounded-3 ps-2 app-nav-bottom-menu-panel"
             style={{
               minWidth: "1rem",
               zIndex: 1051,
-              bottom: "5rem",
-              right: "1rem",
             }}
           >
             <div className="d-flex flex-column gap-2 app-nav-bottom-menu app-footer-padding">
@@ -194,8 +192,6 @@ export default function Layout({ children }) {
         )}
         style={{
           zIndex: 1100,
-          bottom: "1.5rem",
-          right: "1rem",
           backgroundColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
           color: expandedMenuOpen ? "var(--bs-white)" : "var(--bs-body-color)",
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
