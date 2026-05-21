@@ -64,7 +64,7 @@
   /* Button dimensions — set at runtime from Profile TextSize + training/compact (see buttonTextSize.js) */
   --app-btn-height: 2rem;
   --app-btn-width: 4rem;
-  --app-btn-nav-width: 2rem;
+  --app-btn-nav-width: 1rem;
   --app-icon-size: 1.125rem;
   --app-icon-size-active: 1.25rem;
   --app-btn-icon-size: var(--app-icon-size);
@@ -244,6 +244,7 @@ input[type="submit"].btn-secondary {
 /* Bottom-right navigation menu toggle (Layout.jsx) */
 .btn.btn-app-nav {
   width: var(--app-btn-nav-width) !important;
+  height: var(--app-btn-nav-width) !important;
   min-width: var(--app-btn-nav-width) !important;
   max-width: var(--app-btn-nav-width) !important;
 }
