@@ -826,7 +826,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
 
             {/* Save only shown on Details tab */}
-            {activeTab === "details" && <Button_Toolbar icon={CheckIcon} label={service ? "Update service" : "Create service"} type="submit" form="service-details-form" className="btn-primary" />}
+            {activeTab === "details" && <Button_Toolbar icon={CheckIcon} label={service ? "Update service" : "Create service"} type="submit" form="service-details-form" className="btn btn-primary" />}
           </div>
 
           {/* Right spacer to balance delete */}

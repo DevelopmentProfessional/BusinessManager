@@ -233,7 +233,7 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
                 {config?.has_max_per_product && config?.max_per_product && ` · max ${config.max_per_product} per type`}
               </div>
             </div>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#6b7280" }}>
+            <button type="button" onClick={onClose} className="btn btn-unstyled text-muted" style={{ fontSize: 20 }}>
               ×
             </button>
           </div>
@@ -268,11 +268,11 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
                     {comp.max_quantity != null ? ` · max ${comp.max_quantity}` : config?.has_max_per_product && config?.max_per_product ? ` · max ${config.max_per_product}` : ""}
                   </div>
                 </div>
-                <button onClick={() => adjust(comp.component_id, -1)} disabled={selected === 0} style={{ ...s.btn("#ec4899"), opacity: selected === 0 ? 0.3 : 1 }}>
+                <button type="button" onClick={() => adjust(comp.component_id, -1)} disabled={selected === 0} className="btn btn-outline-secondary rounded-circle p-0" style={{ opacity: selected === 0 ? 0.3 : 1 }}>
                   −
                 </button>
                 <span style={{ width: 24, textAlign: "center", fontWeight: 700 }}>{selected}</span>
-                <button onClick={() => adjust(comp.component_id, 1)} disabled={!canAdd} style={{ ...s.btn("#ec4899"), opacity: canAdd ? 1 : 0.3 }}>
+                <button type="button" onClick={() => adjust(comp.component_id, 1)} disabled={!canAdd} className="btn btn-outline-secondary rounded-circle p-0" style={{ opacity: canAdd ? 1 : 0.3 }}>
                   +
                 </button>
               </div>
@@ -287,10 +287,10 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
             {mix.price_type === "percentage" && <span style={{ fontSize: "0.72rem", marginLeft: 4 }}>({mix.price_percentage}% of selections)</span>}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onClose} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d1d5db", background: "none", cursor: "pointer", fontSize: "0.85rem" }}>
+            <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
             </button>
-            <button onClick={handleConfirm} disabled={remaining !== 0} style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: remaining === 0 ? "#ec4899" : "#d1d5db", color: "#fff", cursor: remaining === 0 ? "pointer" : "not-allowed", fontWeight: 600, fontSize: "0.85rem" }}>
+            <button type="button" onClick={handleConfirm} disabled={remaining !== 0} className="btn btn-primary" style={{ opacity: remaining === 0 ? 1 : 0.6 }}>
               Add to Cart
             </button>
           </div>
@@ -1400,7 +1400,7 @@ export default function Sales() {
                   icon={ShoppingCartIcon}
                   label="Cart"
                   onClick={() => setShowCartModal(true)}
-                  className="btn-secondary"
+                  className="btn btn-secondary"
                   style={{ position: "relative" }}
                   badge={cartItemCount > 0 ? <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{cartItemCount}</span> : null}
                 />

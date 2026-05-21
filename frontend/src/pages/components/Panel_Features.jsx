@@ -378,7 +378,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
       {/* ── Descriptive options accordion ── */}
       {itemFeatures.length > 0 && (
         <div className="border rounded mb-3 overflow-hidden">
-          <button type="button" className="w-100 d-flex align-items-start justify-content-between gap-2 px-3 py-2 border-0" style={{ background: "#f8f9fa" }} onClick={() => setIsFeatureOptionsOpen((prev) => !prev)}>
+          <button type="button" className="btn-unstyled btn-tab w-100 d-flex align-items-start justify-content-between gap-2 px-3 py-2 border-0" style={{ background: "#f8f9fa" }} onClick={() => setIsFeatureOptionsOpen((prev) => !prev)}>
             <div className="text-start flex-grow-1">
               <div className="fw-semibold" style={{ fontSize: "0.86rem" }}>
                 Descriptive Feature Options
@@ -492,7 +492,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
       {itemFeatures.length > 0 && (
         <div className="mt-2 border rounded overflow-hidden">
-          <button type="button" className="w-100 d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-0" style={{ background: "#f8f9fa" }} onClick={() => setIsCombinationsOpen((prev) => !prev)}>
+          <button type="button" className="btn-unstyled btn-tab w-100 d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-0" style={{ background: "#f8f9fa" }} onClick={() => setIsCombinationsOpen((prev) => !prev)}>
             <span className="fw-semibold" style={{ fontSize: "0.86rem" }}>
               {itemFeatures.length === 1 ? `${itemFeatures[0].feature_name} Stock` : "Feature Combinations"}
             </span>

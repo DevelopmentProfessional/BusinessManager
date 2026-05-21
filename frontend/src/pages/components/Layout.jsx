@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { UserGroupIcon, WrenchScrewdriverIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, EllipsisHorizontalIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
+import { applyButtonDimensions } from "../../constants/buttonTextSize";
 import { chatAPI } from "../../services/api";
 import PendingOrderBadge from "./PendingOrderBadge";
 
@@ -30,7 +31,7 @@ export default function Layout({ children }) {
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
-  const { isTrainingMode, uiScale } = useViewMode();
+  const { isTrainingMode, buttonTextSize, uiScale } = useViewMode();
 
   const employeeUnreadTotal = Object.values(unreadCounts).reduce((total, count) => {
     const numericCount = Number(count) || 0;
@@ -41,6 +42,10 @@ export default function Layout({ children }) {
     if (typeof document === "undefined") return;
     document.body.classList.toggle("training-mode", isTrainingMode);
   }, [isTrainingMode]);
+
+  useEffect(() => {
+    applyButtonDimensions(buttonTextSize, isTrainingMode);
+  }, [buttonTextSize, isTrainingMode]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;

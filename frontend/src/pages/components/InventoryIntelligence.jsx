@@ -168,7 +168,7 @@ const InventoryIntelligence = ({ inventory = [], onClose }) => {
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4" style={{ width: 340 }}>
         <div className="flex items-center justify-between mb-2">
           <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">Inventory Insights</span>
-          <button onClick={onClose}>
+          <button type="button" onClick={onClose} className="btn btn-unstyled p-0">
             <XMarkIcon className="w-4 h-4 text-gray-400" />
           </button>
         </div>
@@ -182,7 +182,7 @@ const InventoryIntelligence = ({ inventory = [], onClose }) => {
       {/* Header */}
       <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4 py-2.5 z-10">
         <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">Inventory Insights</span>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <button type="button" onClick={onClose} className="btn btn-unstyled p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
           <XMarkIcon className="w-4 h-4" />
         </button>
       </div>

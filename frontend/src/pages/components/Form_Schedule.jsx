@@ -898,7 +898,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
             {appointment?.id && appointment?.client_id && (formData.appointment_type === "one_time" || formData.appointment_type === "series") && onSendReminder && <Button_Toolbar icon={EnvelopeIcon} label="Send Reminder" onClick={onSendReminder} className="btn-outline-secondary" />}
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={appointment ? "Save Changes" : "Book"} type="submit" form="schedule-form" className="btn-primary" />
+            <Button_Toolbar icon={CheckIcon} label={appointment ? "Save Changes" : "Book"} type="submit" form="schedule-form" className="btn btn-primary" />
           </div>
           <div style={{ width: 40 }} />
         </div>

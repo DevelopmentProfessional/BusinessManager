@@ -94,19 +94,19 @@ function ImageViewer({ document, onEdit }) {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-2">
-          <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="px-2 py-1 text-sm bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600">
+          <button type="button" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="btn btn-outline-secondary p-0">
             -
           </button>
           <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[60px] text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="px-2 py-1 text-sm bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600">
+          <button type="button" onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="btn btn-outline-secondary p-0">
             +
           </button>
-          <button onClick={resetView} className="px-2 py-1 text-sm bg-white dark:bg-gray-700 border rounded hover:bg-gray-100 dark:hover:bg-gray-600">
+          <button type="button" onClick={resetView} className="btn btn-outline-secondary p-0">
             Reset
           </button>
         </div>
         {onEdit && (
-          <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
+          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
             <PencilIcon className="h-4 w-4" />
             Edit Metadata
           </button>
@@ -224,7 +224,7 @@ function DocxViewer({ document, onEdit }) {
         <span className="text-sm text-gray-600 dark:text-gray-300">Word Document</span>
         <div className="flex items-center gap-2">
           {onEdit && (
-            <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
+            <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
               <PencilIcon className="h-4 w-4" />
               Edit Metadata
             </button>
@@ -263,7 +263,7 @@ function OfficeViewer({ document, documentType, onEdit }) {
       <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <span className="text-sm text-gray-600 dark:text-gray-300">{typeLabels[documentType] || "Office Document"}</span>
         {onEdit && (
-          <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
+          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
             <PencilIcon className="h-4 w-4" />
             Edit Metadata
           </button>
@@ -321,7 +321,7 @@ function TextViewer({ document, onEdit }) {
       <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <span className="text-sm text-gray-600 dark:text-gray-300">Text File</span>
         {onEdit && (
-          <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
+          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
             <PencilIcon className="h-4 w-4" />
             Edit Metadata
           </button>
@@ -351,7 +351,7 @@ function UnknownViewer({ document, onEdit }) {
       <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <span className="text-sm text-gray-600 dark:text-gray-300">File</span>
         {onEdit && (
-          <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
+          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
             <PencilIcon className="h-4 w-4" />
             Edit Metadata
           </button>
@@ -564,21 +564,21 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
               <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium">Signed</span>
             ) : (
               onSign && (
-                <button onClick={() => onSign(document)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+                <button type="button" onClick={() => onSign(document)} className="btn btn-outline-secondary d-flex align-items-center gap-1">
                   Sign
                 </button>
               )
             )}
 
             {onDelete && (
-              <button onClick={() => onDelete(document)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 rounded hover:bg-red-200 dark:hover:bg-red-900/50">
+              <button type="button" onClick={() => onDelete(document)} className="btn btn-outline-danger d-flex align-items-center gap-1">
                 <TrashIcon className="h-4 w-4" />
                 Delete
               </button>
             )}
 
             {onWorkflow && (
-              <button onClick={() => onWorkflow(document)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50">
+              <button type="button" onClick={() => onWorkflow(document)} className="btn btn-outline-primary d-flex align-items-center gap-1">
                 Workflow
               </button>
             )}

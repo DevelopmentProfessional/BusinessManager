@@ -1398,7 +1398,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           </div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            {(activeTab === "details" || activeTab === "benefits") && <Button_Toolbar icon={CheckIcon} label={employee ? "Update Employee" : "Create Employee"} type="submit" form="employee-form" className="btn-primary" />}
+            {(activeTab === "details" || activeTab === "benefits") && <Button_Toolbar icon={CheckIcon} label={employee ? "Update Employee" : "Create Employee"} type="submit" form="employee-form" className="btn btn-primary" />}
           </div>
           <div style={{ width: 40 }} />
         </div>

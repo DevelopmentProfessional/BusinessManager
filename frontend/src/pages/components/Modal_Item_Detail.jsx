@@ -183,9 +183,9 @@ function ProductionRelationsPanel({ productId }) {
 
   const rowStyle = { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #e5e7eb", fontSize: "0.8rem" };
   const inputSm = { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" };
-  const btnDanger = { background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 2px", lineHeight: 1, fontSize: 14 };
-  const btnPrimary = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "#6366f1", color: "#fff", border: "none", cursor: "pointer" };
-  const btnOutline = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "none", color: "#6366f1", border: "1px solid #6366f1", cursor: "pointer" };
+  const btnDangerClass = "btn btn-unstyled text-danger p-0";
+  const btnPrimaryClass = "btn btn-primary btn-sm";
+  const btnOutlineClass = "btn btn-outline-primary btn-sm";
 
   return (
     <div className="mt-3" style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
@@ -196,7 +196,7 @@ function ProductionRelationsPanel({ productId }) {
             { key: "resources", label: "Resources" },
             { key: "assets", label: "Assets" },
           ].map(({ key, label }) => (
-            <button type="button" key={key} style={tabStyle(key)} onClick={() => setActiveTab(key)}>
+            <button type="button" key={key} className="btn-tab btn-unstyled" style={tabStyle(key)} onClick={() => setActiveTab(key)}>
               {label}
             </button>
           ))}
@@ -217,7 +217,7 @@ function ProductionRelationsPanel({ productId }) {
                 <span style={{ flex: 1 }}>{invMap[r.resource_id]?.name || r.resource_id?.slice(0, 8)}</span>
                 <input type="number" min="0.01" step="0.01" defaultValue={r.quantity_per_batch} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity consumed per batch" />
                 <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>/ batch</span>
-                <button type="button" style={btnDanger} onClick={() => handleRemoveResource(r.id)} title="Remove">
+                <button type="button" className={btnDangerClass} onClick={() => handleRemoveResource(r.id)} title="Remove">
                   ×
                 </button>
               </div>
@@ -236,12 +236,12 @@ function ProductionRelationsPanel({ productId }) {
                     ))}
                 </select>
                 <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-                <button type="button" style={btnPrimary} onClick={handleAddResource}>
+                <button type="button" className={btnPrimaryClass} onClick={handleAddResource}>
                   Add
                 </button>
                 <button
                   type="button"
-                  style={btnOutline}
+                  className={btnOutlineClass}
                   onClick={() => {
                     setAddingResource(false);
                     setNewResourceId("");
@@ -252,7 +252,8 @@ function ProductionRelationsPanel({ productId }) {
                 </button>
               </div>
             ) : (
-              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingResource(true)}>
+              <button type="button" className={btnOutlineClass}
+              style={{ marginTop: 6 }} onClick={() => setAddingResource(true)}>
                 + Add Resource
               </button>
             )}
@@ -271,7 +272,7 @@ function ProductionRelationsPanel({ productId }) {
                 <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>units/batch</span>
                 <input type="number" min="0" step="1" defaultValue={a.duration_minutes ?? ""} onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })} style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
                 <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>min</span>
-                <button type="button" style={btnDanger} onClick={() => handleRemoveAsset(a.id)} title="Remove">
+                <button type="button" className={btnDangerClass} onClick={() => handleRemoveAsset(a.id)} title="Remove">
                   ×
                 </button>
               </div>
@@ -291,12 +292,12 @@ function ProductionRelationsPanel({ productId }) {
                 </select>
                 <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
-                <button type="button" style={btnPrimary} onClick={handleAddAsset}>
+                <button type="button" className={btnPrimaryClass} onClick={handleAddAsset}>
                   Add
                 </button>
                 <button
                   type="button"
-                  style={btnOutline}
+                  className={btnOutlineClass}
                   onClick={() => {
                     setAddingAsset(false);
                     setNewAssetId("");
@@ -308,7 +309,8 @@ function ProductionRelationsPanel({ productId }) {
                 </button>
               </div>
             ) : (
-              <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAddingAsset(true)}>
+              <button type="button" className={btnOutlineClass}
+              style={{ marginTop: 6 }} onClick={() => setAddingAsset(true)}>
                 + Add Asset
               </button>
             )}
@@ -427,12 +429,12 @@ function MixSetupPanel({ mixId }) {
     }
   };
 
+  const mixBtnDanger = "btn btn-unstyled text-danger p-0";
+  const mixBtnPrimary = "btn btn-primary btn-sm";
+  const mixBtnOutline = "btn btn-outline-primary btn-sm";
   const s = {
     row: { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #fce7f3", fontSize: "0.8rem" },
     input: { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" },
-    del: { background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 2px", lineHeight: 1, fontSize: 14 },
-    btn: { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "#ec4899", color: "#fff", border: "none", cursor: "pointer" },
-    out: { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "none", color: "#ec4899", border: "1px solid #ec4899", cursor: "pointer" },
     label: { fontSize: "0.75rem", color: "#374151", fontWeight: 600 },
   };
 
@@ -467,7 +469,7 @@ function MixSetupPanel({ mixId }) {
               <input type="number" min="1" value={maxPer} onChange={(e) => setMaxPer(e.target.value)} style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
             </div>
           )}
-          <button type="button" style={s.btn} disabled={configSaving} onClick={handleSaveConfig}>
+          <button type="button" className={mixBtnPrimary} disabled={configSaving} onClick={handleSaveConfig}>
             {configSaving ? "Saving…" : config ? "Update" : "Save Config"}
           </button>
         </div>
@@ -483,7 +485,7 @@ function MixSetupPanel({ mixId }) {
             <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
             <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>max override:</span>
             <input type="number" min="1" defaultValue={c.max_quantity ?? ""} onBlur={(e) => handleUpdateMax(c.id, e.target.value)} style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
-            <button type="button" style={s.del} onClick={() => handleRemoveComponent(c.id)} title="Remove">
+            <button type="button" className={mixBtnDanger} onClick={() => handleRemoveComponent(c.id)} title="Remove">
               ×
             </button>
           </div>
@@ -509,12 +511,12 @@ function MixSetupPanel({ mixId }) {
                 ))}
             </select>
             <input type="number" min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
-            <button type="button" style={s.btn} onClick={handleAddComponent}>
+            <button type="button" className={mixBtnPrimary} onClick={handleAddComponent}>
               Add
             </button>
             <button
               type="button"
-              style={s.out}
+              className={mixBtnOutline}
               onClick={() => {
                 setAdding(false);
                 setNewCompId("");
@@ -525,7 +527,7 @@ function MixSetupPanel({ mixId }) {
             </button>
           </div>
         ) : (
-          <button type="button" style={{ ...s.out, marginTop: 6 }} onClick={() => setAdding(true)}>
+          <button type="button" className={mixBtnOutline} style={{ marginTop: 6 }} onClick={() => setAdding(true)}>
             + Add Product
           </button>
         )}
@@ -611,9 +613,9 @@ function BundleComponentsPanel({ bundleId }) {
 
   const rowStyle = { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #e5e7eb", fontSize: "0.8rem" };
   const inputSm = { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" };
-  const btnDanger = { background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 2px", lineHeight: 1, fontSize: 14 };
-  const btnPrimary = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "#f97316", color: "#fff", border: "none", cursor: "pointer" };
-  const btnOutline = { fontSize: "0.72rem", padding: "3px 8px", borderRadius: 4, background: "none", color: "#f97316", border: "1px solid #f97316", cursor: "pointer" };
+  const btnDangerClass = "btn btn-unstyled text-danger p-0";
+  const btnPrimaryClass = "btn btn-primary btn-sm";
+  const btnOutlineClass = "btn btn-outline-primary btn-sm";
 
   return (
     <div className="mt-3" style={{ border: "1px solid #fed7aa", borderRadius: 8 }}>
@@ -634,7 +636,7 @@ function BundleComponentsPanel({ bundleId }) {
             <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
             <input type="number" min="0.01" step="0.01" defaultValue={c.quantity} onBlur={(e) => handleUpdateQty(c.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity per bundle unit" />
             <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>× each</span>
-            <button type="button" style={btnDanger} onClick={() => handleRemove(c.id)} title="Remove">
+            <button type="button" className={btnDangerClass} onClick={() => handleRemove(c.id)} title="Remove">
               ×
             </button>
           </div>
@@ -660,12 +662,12 @@ function BundleComponentsPanel({ bundleId }) {
                 ))}
             </select>
             <input type="number" min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
-            <button type="button" style={btnPrimary} onClick={handleAdd}>
+            <button type="button" className={btnPrimaryClass} onClick={handleAdd}>
               Add
             </button>
             <button
               type="button"
-              style={btnOutline}
+              className={btnOutlineClass}
               onClick={() => {
                 setAdding(false);
                 setNewComponentId("");
@@ -676,7 +678,8 @@ function BundleComponentsPanel({ bundleId }) {
             </button>
           </div>
         ) : (
-          <button type="button" style={{ ...btnOutline, marginTop: 6 }} onClick={() => setAdding(true)}>
+          <button type="button" className={btnOutlineClass}
+              style={{ marginTop: 6 }} onClick={() => setAdding(true)}>
             + Add Component
           </button>
         )}
@@ -1754,7 +1757,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               <div>{canDelete && <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete Item"} onClick={handleDelete} className="btn-outline-danger" disabled={isDeleting} />}</div>
               <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
                 <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-                <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleUpdateInventory} className="btn-primary" />
+                <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleUpdateInventory} className="btn btn-primary" />
               </div>
               {/* Right spacer to balance delete */}
               <div style={{ width: 40 }} />

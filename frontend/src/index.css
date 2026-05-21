@@ -61,8 +61,8 @@
   --bs-primary: var(--app-active-color);
   --bs-primary-rgb: var(--app-active-color-rgb);
 
-  /* App-wide button dimensions (edit here to change every button) */
-  --app-btn-height: 1.2rem;
+  /* Button dimensions — set at runtime from Profile TextSize + training/compact (see buttonTextSize.js) */
+  --app-btn-height: 2rem;
   --app-btn-width: 4rem;
   --app-btn-nav-width: 2rem;
 }
@@ -184,9 +184,15 @@ footer[aria-label="Actions"] .btn {
 
 /* ========================================
    GLOBAL BUTTON STYLES
-   All .btn elements — dimensions from :root variables above
+   All action buttons — dimensions from :root (TextSize + training/compact)
    ======================================== */
-.btn {
+.btn,
+button.btn-primary,
+button.btn-secondary,
+button.btn-success,
+button.btn-accent,
+input[type="submit"].btn-primary,
+input[type="submit"].btn-secondary {
   height: var(--app-btn-height) !important;
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
@@ -194,8 +200,13 @@ footer[aria-label="Actions"] .btn {
   max-height: var(--app-btn-height) !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
   box-shadow: none !important;
   --bs-btn-focus-box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Bottom-right navigation menu toggle (Layout.jsx) */
@@ -203,6 +214,20 @@ footer[aria-label="Actions"] .btn {
   width: var(--app-btn-nav-width) !important;
   min-width: var(--app-btn-nav-width) !important;
   max-width: var(--app-btn-nav-width) !important;
+}
+
+/* Tabs, icon-only closes, list rows — not toolbar-sized controls */
+.btn-unstyled,
+button.btn-unstyled,
+.btn-close,
+.btn-tab {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: revert !important;
 }
 
 button,
@@ -599,7 +624,7 @@ textarea.form-control {
     background-color: var(--app-active-color);
     border-color: var(--app-active-color);
     color: #fff;
-    @apply font-medium py-2 px-4 rounded-full transition-colors;
+    @apply font-medium rounded-full transition-colors;
   }
 
   .btn-primary:hover,
@@ -612,17 +637,17 @@ textarea.form-control {
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-full transition-colors;
+    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-full transition-colors;
   }
 
   /* Success button using secondary branded color */
   .btn-success {
-    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium py-2 px-4 rounded-full transition-colors;
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-full transition-colors;
   }
 
   /* Accent button using accent branded color */
   .btn-accent {
-    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-full transition-colors;
+    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium rounded-full transition-colors;
   }
 
   /* Branded focus rings */

@@ -169,10 +169,10 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
-        <button type="button" onClick={onCancel} className="btn-secondary" disabled={uploading}>
+        <button type="button" onClick={onCancel} className="btn btn-secondary" disabled={uploading}>
           Cancel
         </button>
-        <button type="submit" className="btn-primary" disabled={uploading || !formData.file}>
+        <button type="submit" className="btn btn-primary" disabled={uploading || !formData.file}>
           {uploading ? "Uploading..." : "Upload"}
         </button>
       </div>
@@ -1085,7 +1085,7 @@ export default function Documents() {
                 <label htmlFor="newVersionNote">Version Note (optional)</label>
               </div>
               <div className="flex justify-end">
-                <button type="submit" className="btn-primary">
+                <button type="submit" className="btn btn-primary">
                   Replace
                 </button>
               </div>
@@ -1113,10 +1113,10 @@ export default function Documents() {
                   </p>
                 </div>
                 <div className="flex justify-end space-x-3 pt-2">
-                  <button type="button" onClick={() => setIsSignOpen(false)} className="btn-secondary" disabled={signLoading}>
+                  <button type="button" onClick={() => setIsSignOpen(false)} className="btn btn-secondary" disabled={signLoading}>
                     Cancel
                   </button>
-                  <button type="button" onClick={handleSubmitSign} className="btn-primary" disabled={signLoading}>
+                  <button type="button" onClick={handleSubmitSign} className="btn btn-primary" disabled={signLoading}>
                     {signLoading ? "Signing..." : "Sign"}
                   </button>
                 </div>
@@ -1132,7 +1132,7 @@ export default function Documents() {
                   <p className="text-sm text-gray-500 dark:text-gray-500">Go to Employees &gt; Edit your profile &gt; Signature tab to create your signature.</p>
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button type="button" onClick={() => setIsSignOpen(false)} className="btn-secondary">
+                  <button type="button" onClick={() => setIsSignOpen(false)} className="btn btn-secondary">
                     Close
                   </button>
                 </div>

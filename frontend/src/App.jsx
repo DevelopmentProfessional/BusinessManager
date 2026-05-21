@@ -7,6 +7,7 @@ import useStore from "./services/useStore";
 import api, { preloadStoreData } from "./services/api";
 import useDarkMode from "./services/useDarkMode";
 import useViewMode from "./services/useViewMode";
+import { applyButtonDimensions } from "./constants/buttonTextSize";
 import useBranding from "./services/useBranding";
 import { initializeActiveColorTheme } from "./services/activeColorTheme";
 import { getMobileEnvironment } from "./services/mobileEnvironment";
@@ -79,7 +80,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 function App() {
   const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
-  const { setTrainingMode } = useViewMode();
+  const { isTrainingMode, buttonTextSize, setTrainingMode } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
 
   // Initialize user data from localStorage/sessionStorage on app startup
@@ -191,6 +192,10 @@ function App() {
   useEffect(() => {
     initializeActiveColorTheme(user?.color);
   }, [user?.color]);
+
+  useEffect(() => {
+    applyButtonDimensions(buttonTextSize, isTrainingMode);
+  }, [buttonTextSize, isTrainingMode]);
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

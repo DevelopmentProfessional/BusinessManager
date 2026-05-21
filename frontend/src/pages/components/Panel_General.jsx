@@ -168,7 +168,7 @@ const Panel_General = ({
             </div>
             <p className="text-xs text-muted mb-2">e.g. 8.5 for 8.5%</p>
             <div className="mb-2">
-              <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save "} onClick={handleSaveCompanyInfo} className="btn-primary" disabled={companyLoading} />
+              <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save "} onClick={handleSaveCompanyInfo} className="btn btn-primary" disabled={companyLoading} />
             </div>
           </div>
         )}
@@ -259,7 +259,7 @@ const Panel_General = ({
                 </div>
               ))}
             </div>
-            <Button_Toolbar icon={CheckCircleIcon} label="Save Branding" onClick={handleSaveBranding} className="btn-primary" />
+            <Button_Toolbar icon={CheckCircleIcon} label="Save Branding" onClick={handleSaveBranding} className="btn btn-primary" />
 
             <Modal
               isOpen={logoPickerOpen}
@@ -268,7 +268,7 @@ const Panel_General = ({
               centered={true}
               footer={
                 <div className="d-flex justify-content-end gap-2">
-                  <button type="button" className="btn-secondary" onClick={() => setLogoPickerOpen(false)}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setLogoPickerOpen(false)}>
                     Close
                   </button>
                 </div>
@@ -322,7 +322,7 @@ const Panel_General = ({
                 </label>
               </div>
             ))}
-            <Button_Toolbar icon={CheckCircleIcon} label="Save Notifications" onClick={handleSaveNotifications} className="btn-primary" />
+            <Button_Toolbar icon={CheckCircleIcon} label="Save Notifications" onClick={handleSaveNotifications} className="btn btn-primary" />
           </div>
         )}
       </div>
@@ -480,7 +480,7 @@ const Panel_General = ({
             </div>
 
             <div className="d-flex gap-2">
-              <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save Portal Settings"} onClick={handleSavePortalBranding} className="btn-primary" disabled={portalBrandingLoading} />
+              <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save Portal Settings"} onClick={handleSavePortalBranding} className="btn btn-primary" disabled={portalBrandingLoading} />
               <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetPortalBrandingDefaults}>
                 Reset to Defaults
               </button>

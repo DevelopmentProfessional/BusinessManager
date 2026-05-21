@@ -2,7 +2,8 @@
 // Renders the personal settings accordion panel: dark mode, calendar color, footer alignment, signature, training mode toggle, and logout.
 
 import React from "react";
-import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, Bars3BottomLeftIcon } from "@heroicons/react/24/outline";
+import { BUTTON_SIZE_TABLE_ROWS } from "../../constants/buttonTextSize";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import api from "../../services/api";
@@ -26,6 +27,8 @@ const Panel_Settings = ({
   setSignatureModalOpen,
   isTrainingMode,
   toggleViewMode,
+  buttonTextSize,
+  cycleButtonTextSize,
   handleLogout,
   currentDbEnvironment,
   dbLoading,
@@ -168,8 +171,50 @@ const Panel_Settings = ({
         )}
       </button>
 
+      <Button_Toolbar
+        icon={Bars3BottomLeftIcon}
+        label="TextSize"
+        onClick={cycleButtonTextSize}
+        className="settings-accordion-btn btn-outline-secondary"
+        title={`Button text size: ${buttonTextSize} (cycles small → medium → large)`}
+      />
+
       <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Log out" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" />
     </div>
+
+    {!isTrainingMode && (
+      <div className="mb-3">
+        <div className="small fw-semibold mb-2">Button size (width × height in rem)</div>
+        <div className="table-responsive">
+          <table className="table table-sm table-bordered mb-0 small">
+            <thead>
+              <tr>
+                <th>Text size</th>
+                <th>View mode</th>
+                <th>Width</th>
+                <th>Height</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BUTTON_SIZE_TABLE_ROWS.map((row) => {
+                const isActive = row.size === buttonTextSize;
+                return (
+                  <tr key={`${row.size}-${row.mode}`} className={isActive ? "table-primary" : undefined}>
+                    <td className="text-capitalize">{row.size}</td>
+                    <td>{row.mode}</td>
+                    <td>{row.width}</td>
+                    <td>{row.height}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="small text-muted mt-1">
+          Active: <span className="text-capitalize fw-medium">{buttonTextSize}</span> · compact mode (icon-only buttons). Training mode uses the wider width in each row.
+        </div>
+      </div>
+    )}
 
     {colorMessage && <div className={`small mb-2 ${colorMessage.includes("Failed") || colorMessage.includes("Error") ? "text-danger" : "text-success"}`}>{colorMessage}</div>}
   </div>

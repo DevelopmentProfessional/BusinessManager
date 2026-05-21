@@ -71,7 +71,7 @@ export default function Widget_Camera({ onCapture, onCancel }) {
 
       {/* Bottom controls */}
       <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.5rem 2rem", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", background: "rgba(0,0,0,0.85)" }}>
-        <button type="button" onClick={onCancel} style={{ color: "#fff", background: "none", border: "none", fontSize: "1rem", cursor: "pointer", padding: "0.5rem", minWidth: "64px" }}>
+        <button type="button" onClick={onCancel} className="btn btn-unstyled text-white">
           Cancel
         </button>
 
