@@ -20,12 +20,14 @@ from uuid import UUID
 
 try:
     from backend.database import get_session
-    from backend.models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, User
+    from backend.models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, DiscountRule, User
     from backend.routers.auth import get_current_user
+    from backend.utils.discount_service import get_applicable_discounts
 except ModuleNotFoundError:
     from database import get_session          # type: ignore
-    from models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, User  # type: ignore
+    from models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, DiscountRule, User  # type: ignore
     from routers.auth import get_current_user  # type: ignore
+    from utils.discount_service import get_applicable_discounts  # type: ignore
 
 router = APIRouter()
 
@@ -34,7 +36,46 @@ router = APIRouter()
 def get_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id, ClientCartItem.company_id == current_user.company_id)
     items = session.exec(stmt).all()
-    return items
+    
+    # Get applicable discounts for items in cart
+    item_ids = [item.item_id for item in items if item.item_id]
+    discounts = get_applicable_discounts(session, item_ids, current_user.company_id) if item_ids else {}
+    
+    # Convert to read models with discounts applied
+    result = []
+    for item in items:
+        item_dict = {
+            'id': item.id,
+            'client_id': item.client_id,
+            'cart_key': item.cart_key,
+            'item_id': item.item_id,
+            'item_type': item.item_type,
+            'item_name': item.item_name,
+            'unit_price': item.unit_price,
+            'quantity': item.quantity,
+            'line_total': item.line_total,
+            'options_json': item.options_json,
+            'created_at': item.created_at,
+        }
+        
+        # Apply discount if applicable
+        discount = discounts.get(item.item_id) if item.item_id else None
+        if discount and discount.is_active:
+            from backend.utils.discount_service import apply_discount_to_cart_item
+            item_dict = apply_discount_to_cart_item(item_dict, discount)
+        else:
+            # Add discount fields without discount
+            item_dict['unit_price_original'] = item.unit_price
+            item_dict['unit_price_discounted'] = item.unit_price
+            item_dict['unit_discount_amount'] = 0.0
+            item_dict['line_total_before_discount'] = item.line_total
+            item_dict['line_discount_amount'] = 0.0
+            item_dict['discount_type'] = None
+            item_dict['discount_value'] = None
+        
+        result.append(ClientCartItemRead(**item_dict))
+    
+    return result
 
 
 @router.put("/client-cart/{client_id}/item", response_model=ClientCartItemRead)
