@@ -54,7 +54,7 @@ function InlineText({ value, onSave, placeholder = "—" }) {
 }
 
 export default function AssetUnitsPanel({ assetId, onCountChange }) {
-           placeholder="Label (optional)"
+  const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [addingUnit, setAddingUnit] = useState(false);
@@ -64,7 +64,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-           placeholder="Notes (optional)"
     setLoading(true);
     setError(null);
     try {
