@@ -1323,44 +1323,107 @@ const Profile = () => {
       )}
 
       {/* Footer Tabs */}
-      <div className="flex-shrink-0 bg-body profile-footer-nav app-footer-padding position-relative" style={{ zIndex: 1050 }}>
-        <div className="app-footer-stack">
+      <div className="flex-shrink-0 bg-body profile-footer-nav position-relative" style={{ zIndex: 1050 }}>
         {canAccessSettings && (
-          <div ref={handleRow2Ref} className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
-            {[
-              { id: "database", Icon: CircleStackIcon, title: "Database" },
-              ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Payroll" }] : []),
-            ].map(({ id, Icon, title }) => (
-              <Button_Toolbar
-                key={id}
-                icon={Icon}
-                label={title}
-                onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                data-active={openAccordion === id}
-              />
-            ))}
+          <div ref={handleRow2Ref} className="app-footer-padding-row app-footer-padding pb-0">
+            <div className="d-lg-none">
+              <div className="row g-0">
+                <div className="col-10">
+                  <div className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
+                    {[
+                      { id: "database", Icon: CircleStackIcon, title: "Data" },
+                      ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Pay" }] : []),
+                    ].map(({ id, Icon, title }) => (
+                      <Button_Toolbar
+                        key={id}
+                        icon={Icon}
+                        label={title}
+                        onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                        data-active={openAccordion === id}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="d-none d-lg-block">
+              <div className="row g-0">
+                <div className={`col-10 app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
+                  {[
+                    { id: "database", Icon: CircleStackIcon, title: "Data" },
+                    ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Pay" }] : []),
+                  ].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      data-active={openAccordion === id}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        <div ref={row1Ref} className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
-          {[
-            { id: "profile", Icon: UserIcon, title: "Profile" },
-            { id: "benefits", Icon: HeartIcon, title: "Benefits" },
-            { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
-            { id: "settings", Icon: CogIcon, title: "Settings" },
-            ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : []),
-          ].map(({ id, Icon, title }) => (
-            <Button_Toolbar
-              key={id}
-              icon={Icon}
-              label={title}
-              onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-              className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-              data-active={openAccordion === id}
-            />
-          ))}
-        </div>
+        <div ref={row1Ref} className="app-footer-padding-row app-footer-padding">
+          <div className="d-lg-none">
+            <div className="row g-0">
+              <div className="col-10">
+                <div className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
+                  {[
+                    { id: "profile", Icon: UserIcon, title: "Profile" },
+                    { id: "benefits", Icon: HeartIcon, title: "Benefits" },
+                    { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
+                    { id: "settings", Icon: CogIcon, title: "Settings" },
+                    ...(canAccessGeneralSettings
+                      ? [
+                          { id: "general", Icon: CogIcon, title: "General" },
+                        ]
+                      : []),
+                  ].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      data-active={openAccordion === id}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="d-none d-lg-block">
+            <div className="row g-0">
+              <div className={`col-10 app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
+                {[
+                  { id: "profile", Icon: UserIcon, title: "Profile" },
+                  { id: "benefits", Icon: HeartIcon, title: "Benefits" },
+                  { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
+                  { id: "settings", Icon: CogIcon, title: "Settings" },
+                  ...(canAccessGeneralSettings
+                    ? [
+                        { id: "general", Icon: CogIcon, title: "General" },
+                      ]
+                    : []),
+                ].map(({ id, Icon, title }) => (
+                  <Button_Toolbar
+                    key={id}
+                    icon={Icon}
+                    label={title}
+                    onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                    className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center justify-content-center ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                    data-active={openAccordion === id}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
