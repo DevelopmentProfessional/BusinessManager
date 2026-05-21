@@ -811,6 +811,14 @@ export const reportsAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/tasks?${queryParams}`);
   },
+  // Saved filters
+  getSavedFilters: (reportId) => {
+    const queryParams = reportId ? `?report_id=${encodeURIComponent(reportId)}` : "";
+    return api.get(`/reports/saved-filters${queryParams}`);
+  },
+  createSavedFilter: (data) => api.post("/reports/saved-filters", data),
+  updateSavedFilter: (id, data) => api.put(`/reports/saved-filters/${id}`, data),
+  deleteSavedFilter: (id) => api.delete(`/reports/saved-filters/${id}`),
 };
 
 /**

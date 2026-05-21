@@ -469,7 +469,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
       {/* ── Header + tabs ── */}
       <div className="flex-shrink-0 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pt-2">
         <div className="d-flex align-items-center gap-2 mb-2">
-          <BanknotesIcon className="text-green-600" style={{ width: 20, height: 20 }} />
+          <BanknotesIcon className="text-muted" style={{ width: 20, height: 20 }} />
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-white flex-grow-1">Wages &amp; Payroll</h6>
           <button type="button" onClick={onClose} className="btn btn-sm btn-outline-secondary p-1">
             <XMarkIcon style={{ width: 16, height: 16 }} />
@@ -486,7 +486,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
               key={key}
               type="button"
               onClick={() => setActiveTab(key)}
-              className={`btn btn-sm px-3 ${activeTab === key ? "btn-primary" : "btn-outline-secondary"}`}
+              className={`btn btn-sm px-3 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`}
               style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}
             >
               {label}
@@ -724,7 +724,7 @@ function CalendarTab({
                     </div>
                     <div className="d-flex gap-1 flex-shrink-0">
                       {paidEmps.length > 0 && (
-                        <span className="badge bg-success" style={{ fontSize: "0.65rem" }}>{paidEmps.length} paid</span>
+                        <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>{paidEmps.length} paid</span>
                       )}
                       {unpaidEmps.length > 0 && (
                         <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>{unpaidEmps.length} unpaid</span>
@@ -745,7 +745,7 @@ function CalendarTab({
                 </div>
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-outline-secondary"
                   style={{ fontSize: "0.72rem" }}
                   onClick={() => onGoToProcess(selectedPeriod)}
                 >
@@ -1019,7 +1019,7 @@ function ProcessTab({
                     <button
                       type="button"
                       onClick={() => handleExpandEmp(emp)}
-                      className={`btn btn-sm ${isExpanded ? "btn-secondary" : "btn-outline-success"}`}
+                      className={`btn btn-sm ${isExpanded ? "btn-secondary" : "btn-outline-secondary"}`}
                       style={{ fontSize: "0.68rem", padding: "1px 9px" }}
                     >
                       {isExpanded ? "Cancel" : "Pay"}
@@ -1072,7 +1072,7 @@ function ProcessTab({
                   </div>
                   <div className="d-flex justify-content-end gap-2 mt-2">
                     <button type="button" onClick={() => handleExpandEmp(emp)} className="btn btn-sm btn-outline-secondary">Cancel</button>
-                    <button type="button" onClick={() => handlePaySingle(emp)} disabled={isProc} className="btn btn-sm btn-success d-flex align-items-center gap-1">
+                    <button type="button" onClick={() => handlePaySingle(emp)} disabled={isProc} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
                       {isProc ? <><span className="spinner-border" style={{ width: 11, height: 11 }} /> …</> : <><CheckIcon style={{ width: 11, height: 11 }} /> Pay</>}
                     </button>
                   </div>
@@ -1099,7 +1099,7 @@ function ProcessTab({
               type="button"
               onClick={handlePaySelected}
               disabled={batchBusy}
-              className="btn btn-success d-flex align-items-center gap-2"
+              className="btn btn-outline-secondary d-flex align-items-center gap-2"
               style={{ fontSize: "0.82rem" }}
             >
               {batchBusy ? (
@@ -1150,7 +1150,7 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
           {ONE_TIME_TYPES.map((t) => (
             <button key={t.value} type="button"
               onClick={() => setOt((p) => ({ ...p, payment_type: t.value }))}
-              className={`btn btn-sm rounded-pill ${ot.payment_type === t.value ? "btn-primary" : "btn-outline-secondary"}`}
+              className={`btn btn-sm rounded-pill ${ot.payment_type === t.value ? "btn-secondary" : "btn-outline-secondary"}`}
               style={{ fontSize: "0.78rem", padding: "3px 14px" }}>
               {t.label}
             </button>
@@ -1182,7 +1182,7 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
 
       <button type="button" onClick={handleOtSubmit}
         disabled={otLoading || !ot.employee_id || !ot.amount || !ot.date}
-        className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2">
+        className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
         {otLoading
           ? <><span className="spinner-border spinner-border-sm" style={{ width: 14, height: 14 }} /> Processing…</>
           : <><BanknotesIcon style={{ width: 16, height: 16 }} /> Pay</>}

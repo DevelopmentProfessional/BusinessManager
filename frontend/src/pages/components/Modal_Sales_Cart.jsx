@@ -24,6 +24,7 @@
 import React, { useState } from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import { getDisplayImageUrl } from "./Utils_Image";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, TrashIcon } from "@heroicons/react/24/outline";
 
@@ -281,20 +282,21 @@ export default function Modal_Cart_Sales({
                 </div>
               </div>
 
-              <div className="d-flex align-items-center gap-1 flex-wrap w-100">
-                {cart.length > 0 && <Button_Toolbar icon={TrashIcon} label="Clear" onClick={() => setCart([])} className="btn-outline-danger" title="Clear all items" />}
-                <div className="flex-grow-1" />
-                <Button_Toolbar
-                  icon={CreditCardIcon}
-                  label="Pay"
-                  title="Checkout"
-                  onClick={() => {
-                    onClose();
-                    handleCheckout();
-                  }}
-                />
-                <Button_Toolbar icon={ShoppingCartIcon} label="Shop" onClick={onClose} className="btn-outline-secondary" title="Continue shopping" />
-              </div>
+              <Footer_Actions
+                start={
+                  <Button_Toolbar
+                    icon={CreditCardIcon}
+                    label="Pay"
+                    title="Checkout"
+                    onClick={() => {
+                      onClose();
+                      handleCheckout();
+                    }}
+                  />
+                }
+                center={<Button_Toolbar icon={ShoppingCartIcon} label="Shop" onClick={onClose} className="btn-outline-secondary" title="Continue shopping" />}
+                end={cart.length > 0 ? <Button_Toolbar icon={TrashIcon} label="Clear" onClick={() => setCart([])} className="btn-outline-danger" title="Clear all items" /> : null}
+              />
             </div>
           </>
         )}

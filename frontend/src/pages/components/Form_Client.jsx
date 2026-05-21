@@ -27,6 +27,7 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, CheckIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import Modal_BulkImport from "./Modal_Import_Bulk";
 
 // ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
@@ -216,15 +217,11 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null, 
 
       {/* ─── 6 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <div className="d-flex align-items-center">
-          <div style={{ width: 40 }} />
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={client ? "Save" : "Add"} type="submit" form="client-form" className="btn btn-primary" title={client ? "Save changes" : "Create client"} />
-          </div>
-          <div style={{ width: 40 }} />
-        </div>
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <Footer_Actions
+          start={<Button_Toolbar icon={CheckIcon} label={client ? "Save" : "Add"} type="submit" form="client-form" className="btn-outline-secondary" title={client ? "Save changes" : "Create client"} />}
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+        />
       </div>
     </div>
   );

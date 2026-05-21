@@ -43,8 +43,11 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
         <div className="app-footer-inner app-footer-padding bg-white dark:bg-gray-800">
           <div className="app-footer-stack">
             {beforeSearch && <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`}>{beforeSearch}</div>}
+            {/* Buttons row - now above search */}
+            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`}>{children}</div>
+            {/* Search input - now at bottom */}
             {!hideSearch && (
-              <div className="position-relative w-100">
+              <div className="app-footer-search-row position-relative w-100">
                 <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted" style={{ pointerEvents: "none" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
@@ -53,7 +56,6 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
                 <input type="text" placeholder={searchPlaceholder} value={searchTerm} onChange={(e) => onSearch(e.target.value)} className="app-search-input form-control ps-5 w-100 rounded-pill" />
               </div>
             )}
-            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`}>{children}</div>
           </div>
         </div>
       </div>

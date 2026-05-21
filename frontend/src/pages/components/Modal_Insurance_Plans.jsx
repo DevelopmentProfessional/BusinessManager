@@ -23,6 +23,7 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, CheckIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans, editingPlan, setEditingPlan, newPlan, setNewPlan, insurancePlansLoading, insuranceError, onSave, onDelete, onToggle }) {
   return (
@@ -59,13 +60,13 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
             <div className="d-flex flex-column gap-2 pb-2">
               {insurancePlans.map((plan) => (
                 <div key={plan.id} className={`d-flex align-items-center justify-content-between p-2 border rounded ${!plan.is_active ? "opacity-60" : ""}`}>
-                  <button type="button" className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center me-2"  onClick={() => onDelete(plan.id)} title="Delete">
+                  <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center me-2"  onClick={() => onDelete(plan.id)} title="Delete">
                     <TrashIcon style={{ width: 16, height: 16 }} />
                   </button>
                   <div>
                     <div className="fw-semibold d-flex align-items-center gap-2" style={{ fontSize: "0.875rem" }}>
                       {plan.name}
-                      <span className={`badge ${plan.is_active ? "bg-success" : "bg-secondary"}`} style={{ fontSize: "0.65rem" }}>
+                      <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>
                         {plan.is_active ? "Active" : "Inactive"}
                       </span>
                     </div>
@@ -76,7 +77,7 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
                     )}
                   </div>
                   <div className="d-flex gap-1">
-                    <button type="button" className={`btn btn-sm ${plan.is_active ? "btn-outline-secondary" : "btn-outline-success"}`} style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }} onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
+                    <button type="button" className="btn btn-sm btn-outline-secondary" style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }} onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
                       {plan.is_active ? "Deactivate" : "Activate"}
                     </button>
                     <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  onClick={() => setEditingPlan({ ...plan })} title="Edit">
@@ -91,7 +92,7 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
 
         {/* ─── 3 FOOTER ADD/EDIT FORM ─────────────────────────────────────────── */}
         {/* Footer – Add / Edit Plan form */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 pt-2 pb-4">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
           <form onSubmit={onSave} className="d-flex flex-column gap-2">
             <div className="small fw-semibold text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
             <div className="row g-2">
@@ -123,26 +124,24 @@ export default function Modal_Insurance_Plans({ isOpen, onClose, insurancePlans,
                 </div>
               </div>
             </div>
-            <div className="d-flex align-items-center">
-              <div style={{ width: 40 }}>
-                {editingPlan && (
+            <Footer_Actions
+              start={
+                <button type="submit" className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title={editingPlan ? "Save plan" : "Add plan"}>
+                  <CheckIcon style={{ width: 18, height: 18 }} />
+                </button>
+              }
+              center={
+                editingPlan ? (
                   <button type="button" onClick={() => setEditingPlan(null)} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Cancel edit">
                     <XMarkIcon style={{ width: 18, height: 18 }} />
                   </button>
-                )}
-                {!editingPlan && (
-                  <button type="button" onClick={() => onClose()} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Close modal">
+                ) : (
+                  <button type="button" onClick={() => onClose()} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Close">
                     <XMarkIcon style={{ width: 18, height: 18 }} />
                   </button>
-                )}
-              </div>
-              <div className="flex-grow-1 d-flex justify-content-center">
-                <button type="submit" className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"  title={editingPlan ? "Save Changes" : "Add Plan"}>
-                  <CheckIcon style={{ width: 18, height: 18 }} />
-                </button>
-              </div>
-              <div style={{ width: 40 }} />
-            </div>
+                )
+              }
+            />
           </form>
         </div>
       </div>

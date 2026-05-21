@@ -355,6 +355,7 @@ export default function Sales() {
   const [historyFilters, setHistoryFilters] = useState({
     showServices: true,
     showProducts: true,
+    showSubscriptions: true,
     minPrice: "",
     maxPrice: "",
     startDate: "",
@@ -1097,13 +1098,16 @@ export default function Sales() {
       return false;
 
     if (!sale.items || sale.items.length === 0) return true;
-    if (!historyFilters.showServices && !historyFilters.showProducts) return false;
-    if (historyFilters.showServices && historyFilters.showProducts) return true;
+    const { showServices, showProducts, showSubscriptions } = historyFilters;
+    if (!showServices && !showProducts && !showSubscriptions) return false;
+    if (showServices && showProducts && showSubscriptions) return true;
 
     const hasService = sale.items?.some((item) => item.itemType === "service" || item.item_type === "service");
     const hasProduct = sale.items?.some((item) => item.itemType === "product" || item.item_type === "product");
-    if (historyFilters.showServices && hasService) return true;
-    if (historyFilters.showProducts && hasProduct) return true;
+    const hasSubscription = sale.items?.some((item) => item.itemType === "subscription" || item.item_type === "subscription");
+    if (showServices && hasService) return true;
+    if (showProducts && hasProduct) return true;
+    if (showSubscriptions && hasSubscription) return true;
     return false;
   });
 
@@ -1368,18 +1372,6 @@ export default function Sales() {
             </div>
           )}
 
-          {/* Search Row */}
-          <div className="relative w-100">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search products and services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="app-search-input w-full pl-10 pr-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-          </div>
-
               {/* Controls Row 1 - History and Cart */}
               <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
                 {/* Sales History Button */}
@@ -1489,6 +1481,18 @@ export default function Sales() {
                   )}
                 </div>
               </div>
+
+          {/* Search Row — last in stack so bottom inset matches +Nav toggle */}
+          <div className="app-footer-search-row relative w-100">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products and services..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="app-search-input w-full pl-10 pr-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
           </div>
         </div>
       </div>

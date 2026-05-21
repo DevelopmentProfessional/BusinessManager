@@ -3,7 +3,7 @@
  * FILE: InventoryIntelligence.jsx
  *
  * PURPOSE:
- *   Drop-up insights panel for the Inventory page.
+ *   Floating insights panel for the Inventory page (centered at top when open).
  *   Receives the already-loaded inventory array as a prop and
  *   computes all metrics locally — no separate API call needed.
  * ============================================================
@@ -165,7 +165,7 @@ const InventoryIntelligence = ({ inventory = [], onClose }) => {
 
   if (!metrics) {
     return (
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4" style={{ width: 340 }}>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 w-100" style={{ maxWidth: 360 }}>
         <div className="flex items-center justify-between mb-2">
           <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">Inventory Insights</span>
           <button type="button" onClick={onClose} className="btn btn-unstyled p-0">
@@ -178,7 +178,7 @@ const InventoryIntelligence = ({ inventory = [], onClose }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-y-auto" style={{ width: 360, maxHeight: "72vh" }}>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-y-auto w-100" style={{ maxWidth: 360, maxHeight: "min(72vh, calc(100% - 2rem))" }}>
       {/* Header */}
       <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4 py-2.5 z-10">
         <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">Inventory Insights</span>

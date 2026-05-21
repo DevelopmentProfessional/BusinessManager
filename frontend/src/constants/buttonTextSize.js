@@ -53,7 +53,8 @@ export function applyButtonDimensions(textSize, isTrainingMode) {
   root.style.setProperty("--app-btn-label-font-size", `${labelFontSize}rem`);
   const footerGapBySize = { small: 0.25, medium: 0.25, large: 0.375 };
   root.style.setProperty("--app-footer-btn-gap", `${footerGapBySize[textSize] ?? footerGapBySize.medium}rem`);
-  const footerPaddingBySize = { small: 0.25, medium: 0.5, large: 0.5 };
+  /* Match bottom-right +Nav inset (Bootstrap p-2 = 0.5rem) on all text sizes */
+  const footerPaddingBySize = { small: 0.5, medium: 0.5, large: 0.5 };
   root.style.setProperty("--app-footer-padding-y", `${footerPaddingBySize[textSize] ?? footerPaddingBySize.medium}rem`);
   const navBtnWidth = isTrainingMode ? width : compact.width;
   root.style.setProperty("--app-footer-nav-reserve", `calc(${navBtnWidth}rem + var(--app-footer-padding-x))`);

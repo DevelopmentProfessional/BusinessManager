@@ -25,7 +25,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, CheckIcon, PhotoIcon, TrashIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import useViewMode from "../../services/useViewMode";
+import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_BulkImport({
   isOpen,
@@ -36,9 +36,6 @@ export default function Modal_BulkImport({
   itemTypes = null, // e.g. [{ value: 'PRODUCT', label: 'Product' }, ...]
   defaultItemType = "",
 }) {
-  const { footerAlign } = useViewMode();
-  const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
-
   const [text, setText] = useState("");
   const [photos, setPhotos] = useState({}); // { [index]: { file: File, url: string } }
   const [types, setTypes] = useState({}); // { [index]: string }
@@ -327,19 +324,21 @@ export default function Modal_BulkImport({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="app-footer-inner app-footer-padding">
-            <div className={`app-footer-toolbar d-flex align-items-center ${alignClass}`}>
-              <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={saving}>
-                <XMarkIcon className="h-4 w-4" />
-                <span>Cancel</span>
-              </button>
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions
+            start={
               <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleSave} disabled={saving || parsedNames.length === 0}>
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 <span>{saving ? "Saving…" : `Save${parsedNames.length > 0 ? ` (${parsedNames.length})` : ""}`}</span>
               </button>
-            </div>
-          </div>
+            }
+            center={
+              <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={saving}>
+                <XMarkIcon className="h-4 w-4" />
+                <span>Cancel</span>
+              </button>
+            }
+          />
         </div>
       </div>
     </div>

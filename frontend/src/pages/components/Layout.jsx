@@ -138,7 +138,7 @@ export default function Layout({ children }) {
 
           {/* Menu positioned bottom-right */}
           <div
-            className="position-absolute rounded-3 ps-2 app-nav-bottom-menu-panel"
+            className="position-absolute rounded-3 ps-2 pe-2 app-nav-bottom-menu-panel"
             style={{
               minWidth: "1rem",
               zIndex: 1051,
@@ -189,7 +189,7 @@ export default function Layout({ children }) {
         className={classNames(
           expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
           "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center rounded-pill position-relative",
-          isTrainingMode ? "ps-0 pe-1 justify-content-start" : "p-0 justify-content-center"
+          isTrainingMode ? "ps-0 pe-2 justify-content-start" : "p-0 justify-content-center"
         )}
         style={{
           zIndex: 1100,
@@ -198,7 +198,7 @@ export default function Layout({ children }) {
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
         }}
       >
-        <EllipsisHorizontalIcon className="app-icon flex-shrink-0" />
+        {!isTrainingMode && <EllipsisHorizontalIcon className="app-icon flex-shrink-0" />}
         {isTrainingMode && (
           <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, marginLeft: "-0.125rem" }}>
             +Nav

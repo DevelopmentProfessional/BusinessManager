@@ -33,6 +33,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from "@heroicons/react/24/outline";
 import { chatAPI, documentsAPI } from "../../services/api";
 import useDarkMode from "../../services/useDarkMode";
+import Footer_Actions from "./Footer_Actions";
+import Button_Toolbar from "./Button_Toolbar";
 
 export default function Chat_Employee({ employee, currentUser, onClose }) {
   // ─── 1 STATE & REFS ────────────────────────────────────────────────────────
@@ -282,14 +284,10 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         )}
 
         {/* ── Input ── */}
-        <div className={`flex-shrink-0 pt-2 pb-4 px-3 border-top ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
-          <div className="d-flex align-items-center gap-1">
-            <div className="d-flex align-items-center flex-shrink-0">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Close">
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
-            </div>
-            <div className="flex-grow-1">
+        <div className={`flex-shrink-0 border-top app-footer-padding app-form-footer ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
+          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
+          <div className="d-flex align-items-center gap-1 mt-2">
+            <div className="flex-grow-1 w-100">
               <form onSubmit={handleSend} className="d-flex align-items-center gap-1 justify-content-center">
                 <button
                   type="button"

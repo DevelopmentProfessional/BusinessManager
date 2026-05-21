@@ -13,6 +13,8 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
+import Footer_Actions from "./Footer_Actions";
+import Button_Toolbar from "./Button_Toolbar";
 import { useNavigate } from "react-router-dom";
 import { clientCartAPI, clientOrdersAPI, inventoryFeaturesAPI } from "../../services/api";
 
@@ -382,27 +384,23 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex align-items-center">
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Close">
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
-              {!orderCreated && (
-                <>
-                  <button type="button" onClick={handleGoToSales} className="btn btn-primary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Go to Sales">
-                    <ShoppingCartIcon style={{ width: 18, height: 18 }} />
-                  </button>
-                  {cartItems.length > 0 && (
-                    <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3"  title="Create portal order from cart">
-                      <CheckCircleIcon style={{ width: 16, height: 16 }} />
-                      {creating ? "…" : "Order"}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions
+            start={
+              !orderCreated && cartItems.length > 0 ? (
+                <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" title="Create portal order from cart">
+                  <CheckCircleIcon style={{ width: 16, height: 16 }} />
+                  {creating ? "…" : "Order"}
+                </button>
+              ) : null
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+            end={
+              !orderCreated ? (
+                <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
+              ) : null
+            }
+          />
         </div>
       </div>
     </Modal>

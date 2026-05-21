@@ -31,6 +31,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { XMarkIcon, CalculatorIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, DocumentTextIcon, CodeBracketIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from "chart.js";
 
@@ -1633,9 +1634,9 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex align-items-center justify-content-between">
-            <div className="d-flex align-items-center">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions
+            start={
               <div className="btn-group btn-group-sm" role="group">
                 <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "month" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("month")}>
                   <span>Year</span>
@@ -1644,14 +1645,9 @@ export default function Modal_Forecast_Calculator({ isOpen, onClose }) {
                   <span>Decade</span>
                 </button>
               </div>
-            </div>
-
-            <div className="flex-grow-1 d-flex justify-content-center">
-              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" />
-            </div>
-
-            <div style={{ width: "6rem" }} />
-          </div>
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+          />
         </div>
       </div>
     </Modal>

@@ -25,6 +25,7 @@
 import React, { useEffect, useState } from "react";
 import { XMarkIcon, CheckIcon, TrashIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import Modal from "./Modal";
 
 // ─── 1 CONSTANTS ─────────────────────────────────────────────────────────
@@ -165,16 +166,11 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
       onClose={onClose}
       title="Filter Schedule"
       footer={
-        <div className="d-flex align-items-center pb-2">
-          <div style={{ width: 40 }}>
-            <Button_Toolbar icon={TrashIcon} label="Clear" onClick={handleClear} className="btn-outline-danger" title="Clear all filters" />
-          </div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn btn-primary" />
-          </div>
-          <div style={{ width: 40 }} />
-        </div>
+        <Footer_Actions
+          start={<Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn-outline-secondary" title="Apply filters" />}
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
+          end={<Button_Toolbar icon={TrashIcon} label="Clear" onClick={handleClear} className="btn-outline-secondary" title="Clear all filters" />}
+        />
       }
     >
       <div className="d-flex flex-column gap-2">

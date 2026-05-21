@@ -40,6 +40,7 @@ import Modal from "./Modal";
 import { XMarkIcon, CheckIcon, SparklesIcon, CubeIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import Scanner_Barcode from "./Scanner_Barcode";
 import Widget_Camera from "./Widget_Camera";
 import Modal_BulkImport from "./Modal_Import_Bulk";
@@ -1107,15 +1108,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
       {/* ─── 9 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <div className="d-flex align-items-center">
-          <div style={{ width: 40 }} />
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={item ? "Save" : "Add"} type="submit" form="item-form" className="btn btn-primary" title={item ? "Save changes" : "Create item"} />
-          </div>
-          <div style={{ width: 40 }} />
-        </div>
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <Footer_Actions
+          start={<Button_Toolbar icon={CheckIcon} label={item ? "Save" : "Add"} type="submit" form="item-form" className="btn-outline-secondary" title={item ? "Save changes" : "Create item"} />}
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+        />
       </div>
 
       {/* ─── 10 RENDER: MODALS ──────────────────────────────────────────────────── */}

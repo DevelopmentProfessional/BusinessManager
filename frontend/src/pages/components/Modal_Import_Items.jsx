@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Modal from "./Modal";
 import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon, PlusIcon, XMarkIcon, CheckCircleIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
-import useViewMode from "../../services/useViewMode";
+import Footer_Actions from "./Footer_Actions";
 
 const FIELD_OPTIONS = [
   { value: "name", label: "Name (required)" },
@@ -113,9 +113,6 @@ function parseNumber(value, fieldLabel) {
 }
 
 export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, existingSkus = [] }) {
-  const { footerAlign } = useViewMode();
-  const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
-
   const [columns, setColumns] = useState(() => makeColumns(DEFAULT_COLUMN_COUNT));
   const [rows, setRows] = useState(() => makeRows(DEFAULT_ROW_COUNT, DEFAULT_COLUMN_COUNT));
   const [mappings, setMappings] = useState(() => createDefaultMappings(DEFAULT_COLUMN_COUNT));
@@ -565,26 +562,36 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                 <ArrowUpIcon style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className={`col d-flex align-items-center gap-2 px-1 flex-wrap ${alignClass}`}>
-              <div className="d-flex align-items-center gap-1">
-                <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-                <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleAddRows} disabled={isSaving}>
-                  <PlusIcon className="h-4 w-4" />
-                  <span>Add</span>
-                </button>
-              </div>
-              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleClearGrid} disabled={isSaving}>
-                <TrashIcon className="h-4 w-4" />
-                <span>Clear</span>
-              </button>
-              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={isSaving}>
-                <XMarkIcon className="h-4 w-4" />
-                <span>Cancel</span>
-              </button>
-              <button type="button" className="btn btn-primary d-flex align-items-center gap-2" onClick={handleImport} disabled={isSaving}>
-                <ArrowDownTrayIcon className="h-4 w-4" />
-                <span title={isSaving ? "Importing" : "Save import"}>{isSaving ? "…" : "Save"}</span>
-              </button>
+            <div className="col px-1 min-w-0">
+              <Footer_Actions
+                start={
+                  <>
+                    <div className="d-flex align-items-center gap-1">
+                      <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+                      <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleAddRows} disabled={isSaving}>
+                        <PlusIcon className="h-4 w-4" />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                    <button type="button" className="btn btn-primary d-flex align-items-center gap-2" onClick={handleImport} disabled={isSaving}>
+                      <ArrowDownTrayIcon className="h-4 w-4" />
+                      <span title={isSaving ? "Importing" : "Save import"}>{isSaving ? "…" : "Save"}</span>
+                    </button>
+                  </>
+                }
+                center={
+                  <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={isSaving}>
+                    <XMarkIcon className="h-4 w-4" />
+                    <span>Cancel</span>
+                  </button>
+                }
+                end={
+                  <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleClearGrid} disabled={isSaving}>
+                    <TrashIcon className="h-4 w-4" />
+                    <span>Clear</span>
+                  </button>
+                }
+              />
             </div>
           </div>
         </div>

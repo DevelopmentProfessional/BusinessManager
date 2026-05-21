@@ -25,6 +25,7 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
   return (
@@ -164,16 +165,8 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
 
         {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
         {/* Footer */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="d-flex align-items-center">
-            <div style={{ width: 40 }} />
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Close">
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
-            </div>
-            <div style={{ width: 40 }} />
-          </div>
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
     </Modal>

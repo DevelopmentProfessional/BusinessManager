@@ -67,7 +67,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.05.13.4"
+CURRENT_SCHEMA_VERSION = "2026.05.21.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -94,12 +94,17 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='inventory' AND column_name='cost_type'"
             )).fetchone()
+            client_email_verified_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='client' AND column_name='email_verified'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
                 and registration_status_column is not None
                 and registration_notes_column is not None
                 and cost_type_column is not None
+                and client_email_verified_column is not None
             )
     except Exception:
         return False
@@ -996,6 +1001,34 @@ def _ensure_company_registration_columns_if_needed():
             print("  + Added column company.registration_notes")
 
 
+def _ensure_client_auth_columns_if_needed():
+    """Add client portal / auth columns expected by Client ORM (email_verified, password_hash, etc.)."""
+    with engine.begin() as conn:
+        has_client = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='client')"
+        )).scalar()
+        if not has_client:
+            return
+
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='client'"
+        )).fetchall()}
+
+        columns = {
+            "password_hash": "VARCHAR",
+            "email_verified": "BOOLEAN DEFAULT FALSE",
+            "last_login": "TIMESTAMP",
+            "reset_token": "VARCHAR",
+            "reset_token_expires": "TIMESTAMP",
+        }
+        for col, definition in columns.items():
+            if col not in existing:
+                conn.execute(text(f"ALTER TABLE client ADD COLUMN {col} {definition}"))
+                print(f"  + Added column client.{col}")
+
+
 def _ensure_client_membership_fk_cascade_if_needed():
     """Ensure client_membership.membership_id FK cascades on membership delete."""
     with engine.begin() as conn:
@@ -1111,6 +1144,7 @@ def create_db_and_tables():
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
     _ensure_company_registration_columns_if_needed()
+    _ensure_client_auth_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()

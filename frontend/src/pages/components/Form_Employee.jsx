@@ -38,6 +38,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TrashIcon, XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
@@ -1308,7 +1309,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
       {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
         {/* Tab Navigation */}
         <ul className="nav nav-tabs mb-2">
           {tabs.map((tab) => (
@@ -1374,36 +1375,34 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         {/* Payments tab footer controls */}
         {activeTab === "payments" && employee && hasPermission("employees", "write") && (
           <div className="d-flex justify-content-center mb-2">
-            <button type="button" className="btn btn-success btn-sm rounded-pill px-4" onClick={() => setShowPayModal(true)}>
+            <button type="button" className="btn btn-outline-secondary btn-sm rounded-pill px-4" onClick={() => setShowPayModal(true)}>
               Pay
             </button>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="d-flex align-items-center">
-          <div style={{ width: 40 }} className="d-flex align-items-center">
-            {employee && canDelete && (
-              <button
-                type="button"
+        <Footer_Actions
+          start={
+            (activeTab === "details" || activeTab === "benefits") ? (
+              <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} />
+            ) : null
+          }
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+          end={
+            employee && canDelete ? (
+              <Button_Toolbar
+                icon={TrashIcon}
+                label="Delete"
+                title="Delete employee"
                 onClick={async () => {
                   if (await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" })) onDelete(employee.id);
                 }}
-                className="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center rounded-circle"
-                title="Delete Employee"
-              >
-                <TrashIcon style={{ width: 14, height: 14 }} />
-              </button>
-            )}
-          </div>
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            {(activeTab === "details" || activeTab === "benefits") && (
-              <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn btn-primary" title={employee ? "Save employee" : "Add employee"} />
-            )}
-          </div>
-          <div style={{ width: 40 }} />
-        </div>
+                className="btn-outline-secondary"
+              />
+            ) : null
+          }
+        />
       </div>
 
       {/* Process Pay Modal */}
@@ -1498,7 +1497,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
               <div className="modal-footer py-2">
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2"
+                  className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
                   onClick={() => {
                     const el = document.getElementById("pay-slip-print-area-emp");
                     if (el) {

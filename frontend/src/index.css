@@ -192,6 +192,20 @@ footer[aria-label="Actions"] {
   row-gap: var(--app-footer-btn-gap) !important;
 }
 
+/* Restore Bootstrap responsive hide/show (display:flex !important above overrides d-none / d-lg-*) */
+@media (min-width: 992px) {
+  .d-lg-none.app-footer-toolbar,
+  .d-lg-none.profile-footer-wrap-row {
+    display: none !important;
+  }
+}
+@media (max-width: 991.98px) {
+  .d-none.d-lg-flex.app-footer-toolbar,
+  .d-none.d-lg-flex.profile-footer-wrap-row {
+    display: none !important;
+  }
+}
+
 /* Page footers — every toolbar button same width (TextSize sets --app-btn-width) */
 .app-footer-search .btn:not(.btn-close):not(.btn-unstyled),
 .schedule-footer .btn:not(.btn-close),
@@ -315,10 +329,11 @@ div[role="combobox"] {
   padding-bottom: 0 !important;
 }
 
-/* Footer chrome — symmetric horizontal inset; right reserve clears +Nav / ⋯ toggle */
+/* Footer chrome — bottom inset matches .app-nav-bottom-toggle (same --app-footer-padding-y) */
 .app-footer-padding,
 .app-footer-inner,
 .app-footer-search > .app-footer-inner,
+.app-form-footer,
 .schedule-footer,
 .profile-footer-nav,
 .app-nav-bottom-menu,
@@ -331,6 +346,11 @@ footer[aria-label="Actions"].app-footer-reserve {
   padding-bottom: var(--app-footer-padding-y) !important;
 }
 
+/* Modals/forms without nav reserve — keep symmetric horizontal inset only */
+.app-form-footer:not(.app-footer-reserve) {
+  padding-right: var(--app-footer-padding-x) !important;
+}
+
 /* Stacked footer rows — uniform vertical gap; toolbars share button height */
 .app-footer-stack {
   display: flex;
@@ -341,6 +361,7 @@ footer[aria-label="Actions"].app-footer-reserve {
 
 .app-footer-stack > .app-footer-toolbar,
 .app-footer-stack > .search-hide-on-focus.app-footer-toolbar,
+.app-footer-stack > .app-footer-search-row,
 .app-footer-stack > .position-relative,
 .profile-footer-nav .app-footer-stack > div {
   margin-bottom: 0 !important;
@@ -348,10 +369,21 @@ footer[aria-label="Actions"].app-footer-reserve {
   align-items: center !important;
 }
 
+/* Search row is the bottom anchor — height follows input only (padding is on .app-footer-inner) */
+.app-footer-stack > .app-footer-search-row {
+  min-height: auto !important;
+}
+
+.app-footer-stack > .app-footer-search-row:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 @media (max-width: 1024px) {
   .app-footer-search > .app-footer-inner,
   .schedule-footer,
-  .profile-footer-nav {
+  .profile-footer-nav,
+  .app-form-footer {
     padding-bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
@@ -677,11 +709,42 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   padding: 0 !important;
 }
 
+/* Inventory page — stats panel centered and pinned to top of the table area */
+.inventory-stats-float {
+  position: absolute;
+  top: var(--app-footer-padding-y, 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.inventory-stats-float > * {
+  pointer-events: auto;
+  max-width: min(360px, calc(100% - 1rem));
+  width: 100%;
+}
+
 /* Sales History modal — scrollable filter footer on small screens */
 .sales-history-footer {
-  max-height: min(55dvh, 26rem);
+  max-height: min(55dvh, 28rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.sales-history-footer .app-footer-inner {
+  padding-right: var(--app-footer-padding-x) !important;
+}
+
+/* Modal/form footer — Save/Add left, Cancel/Close center, optional actions right */
+.app-footer-actions__start,
+.app-footer-actions__end {
+  min-width: var(--app-btn-width, 4rem);
+}
+
+.app-footer-actions__spacer {
+  display: inline-block;
+  min-width: var(--app-btn-width, 4rem);
 }
 
 /* Footer floats above content on mobile using position:fixed so it is independent

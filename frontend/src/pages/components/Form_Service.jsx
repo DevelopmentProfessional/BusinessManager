@@ -37,6 +37,7 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Widget_Camera from "./Widget_Camera";
@@ -777,7 +778,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
       </div>
 
       {/* ── Footer (sticky, always visible) ──────────────────────── */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-form-footer">
         {/* Row 1: Tab navigation — only when editing */}
         {service && (
           <div className="px-2 pt-2 pb-1 d-flex gap-1 overflow-auto flex-nowrap">
@@ -806,34 +807,28 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
         )}
 
         {/* Row 2: Actions */}
-        <div className="px-3 py-2 pb-4 d-flex align-items-center">
-          {/* Left: Delete */}
-          <div style={{ width: 40 }}>
-            {service && canDelete && (
-              <Button_Toolbar
-                icon={TrashIcon}
-                label="Delete"
-                title="Delete service"
-                onClick={async () => {
-                  if (await showConfirm("Delete this service?")) onDelete(service.id);
-                }}
-                className="btn-outline-danger"
-              />
-            )}
-          </div>
-
-          {/* Center: Cancel + Save */}
-          <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-
-            {/* Save only shown on Details tab */}
-            {activeTab === "details" && (
-              <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn btn-primary" title={service ? "Save service" : "Create service"} />
-            )}
-          </div>
-
-          {/* Right spacer to balance delete */}
-          <div style={{ width: 40 }} />
+        <div className="app-footer-padding">
+          <Footer_Actions
+            start={
+              activeTab === "details" ? (
+                <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn-outline-secondary" title={service ? "Save service" : "Create service"} />
+              ) : null
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+            end={
+              service && canDelete ? (
+                <Button_Toolbar
+                  icon={TrashIcon}
+                  label="Delete"
+                  title="Delete service"
+                  onClick={async () => {
+                    if (await showConfirm("Delete this service?")) onDelete(service.id);
+                  }}
+                  className="btn-outline-secondary"
+                />
+              ) : null
+            }
+          />
         </div>
       </div>
     </div>

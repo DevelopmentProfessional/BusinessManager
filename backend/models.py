@@ -2811,3 +2811,57 @@ class ScheduleSettingsRead(SQLModel):
     company_id: Optional[str]
     
     model_config = {"from_attributes": True}
+
+
+# ── Saved Report Filters ──────────────────────────────────────────────────────
+# Allows users to save and quickly recall report filter configurations
+
+class SavedReportFilter(BaseModel, table=True):
+    __tablename__ = "saved_report_filter"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+    name: str = Field(index=True)  # User-defined name for this filter set
+    report_id: str = Field(index=True)  # e.g., "appointments", "revenue", etc.
+    # Filter configuration stored as JSON
+    date_range: Optional[str] = Field(default=None)  # e.g., "last30days"
+    group_by: Optional[str] = Field(default=None)  # e.g., "month", "week"
+    chart_type: Optional[str] = Field(default=None)  # e.g., "line", "bar"
+    status_filter: Optional[str] = Field(default=None)  # e.g., "all", "completed"
+    employee_id: Optional[str] = Field(default=None)  # "all" or specific UUID
+    service_id: Optional[str] = Field(default=None)  # "all" or specific UUID
+    event_type: Optional[str] = Field(default=None)  # For events report: "meeting", "call", etc.
+    # Future extensibility: additional filters as JSON string
+    additional_filters_json: Optional[str] = Field(default=None)
+
+
+class SavedReportFilterRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    company_id: Optional[str] = None
+    name: str
+    report_id: str
+    date_range: Optional[str] = None
+    group_by: Optional[str] = None
+    chart_type: Optional[str] = None
+    status_filter: Optional[str] = None
+    employee_id: Optional[str] = None
+    service_id: Optional[str] = None
+    event_type: Optional[str] = None
+    additional_filters_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+
+class SavedReportFilterCreate(SQLModel):
+    name: str
+    report_id: str
+    date_range: Optional[str] = None
+    group_by: Optional[str] = None
+    chart_type: Optional[str] = None
+    status_filter: Optional[str] = None
+    employee_id: Optional[str] = None
+    service_id: Optional[str] = None
+    event_type: Optional[str] = None
+    additional_filters_json: Optional[str] = None

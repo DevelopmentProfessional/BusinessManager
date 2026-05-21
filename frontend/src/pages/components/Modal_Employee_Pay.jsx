@@ -283,7 +283,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
               <button type="button" className="btn btn-sm btn-secondary" onClick={onClose}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-sm btn-success" disabled={payLoading}>
+              <button type="submit" className="btn btn-sm btn-outline-secondary" disabled={payLoading}>
                 {payLoading ? "…" : "Pay"}
               </button>
             </div>

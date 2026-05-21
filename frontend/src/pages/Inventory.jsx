@@ -380,6 +380,13 @@ export default function Inventory() {
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
+      <div className="position-relative flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
+      {showIntelligence && (
+        <div className="inventory-stats-float d-flex justify-content-center px-2">
+          <InventoryIntelligence inventory={inventory} onClose={() => setShowIntelligence(false)} />
+        </div>
+      )}
+
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
       <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredInventory.length > 0 ? (
@@ -423,15 +430,7 @@ export default function Inventory() {
           <div className="app-footer-toolbar d-flex align-items-center">
             <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
             <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
-            {/* Inventory Intelligence drop-up */}
-            <div className="position-relative">
-              <Button_Toolbar icon={PresentationChartBarIcon} label="Stats" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} title="Inventory insights" />
-              {showIntelligence && (
-                <div className="position-absolute bottom-100 start-0 mb-2 z-50">
-                  <InventoryIntelligence inventory={inventory} onClose={() => setShowIntelligence(false)} />
-                </div>
-              )}
-            </div>
+            <Button_Toolbar icon={PresentationChartBarIcon} label="Stats" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} title="Inventory insights" />
           </div>
         }
       >
@@ -596,6 +595,7 @@ export default function Inventory() {
           />
         )}
       </PageTableFooter>
+      </div>
 
       <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding>
         <Form_Item item={null} showInitialQuantity showScanner existingSkus={inventory.map((i) => i.sku).filter(Boolean)} onCancel={() => setShowAddItemModal(false)} onSubmit={handleCreateInventory} />

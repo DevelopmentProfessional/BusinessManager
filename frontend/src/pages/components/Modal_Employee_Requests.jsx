@@ -23,6 +23,7 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
@@ -59,7 +60,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                 if (grouped.length === 0) return null;
                 return (
                   <div key={statusGroup}>
-                    <h6 className={`text-capitalize mb-2 ${statusGroup === "pending" ? "text-warning" : statusGroup === "approved" ? "text-success" : "text-danger"}`}>
+                    <h6 className="text-capitalize mb-2 text-muted">
                       {statusGroup} ({grouped.length})
                     </h6>
                     {grouped.map((req) => {
@@ -78,15 +79,15 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                               </div>
                               {req.status === "pending" && (
                                 <div className="d-flex gap-1">
-                                  <button className="btn btn-sm btn-success" onClick={() => onRequestAction(req, "approved")}>
+                                  <button className="btn btn-sm btn-outline-secondary" onClick={() => onRequestAction(req, "approved")}>
                                     Approve
                                   </button>
-                                  <button className="btn btn-sm btn-danger" onClick={() => onRequestAction(req, "denied")}>
+                                  <button className="btn btn-sm btn-outline-secondary" onClick={() => onRequestAction(req, "denied")}>
                                     Deny
                                   </button>
                                 </div>
                               )}
-                              {req.status !== "pending" && <span className={`badge ${req.status === "approved" ? "bg-success" : "bg-danger"}`}>{req.status}</span>}
+                              {req.status !== "pending" && <span className="badge bg-secondary">{req.status}</span>}
                             </div>
                           </div>
                         </div>
@@ -101,7 +102,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
 
         {/* ─── 3 FOOTER ───────────────────────────────────────────────────────── */}
         {/* Footer */}
-        <div className="flex-shrink-0 pt-2 pb-4 px-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
           {/* Row 1: Type filter pills */}
           <div className="d-flex flex-wrap gap-1 mb-2">
             {[
@@ -113,7 +114,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
             ].map(({ key, label }) => (
               <button
                 key={key}
-                className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? "btn-warning" : "btn-outline-secondary"}`}
+                className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? "btn-secondary" : "btn-outline-secondary"}`}
                 onClick={() => {
                   setRequestTypeFilter(key);
                   loadRequests(key);
@@ -124,19 +125,16 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
             ))}
           </div>
           {/* Row 2: Time filter + Close */}
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
             <select value={requestTimeFilter} onChange={(e) => setRequestTimeFilter(e.target.value)} className="form-select form-select-sm rounded-pill" style={{ width: "fit-content" }}>
               <option value="all">All Time</option>
               <option value="7d">Last 7 Days</option>
               <option value="30d">Last 30 Days</option>
               <option value="90d">Last 90 Days</option>
             </select>
-            <div className="flex-grow-1 d-flex gap-3 justify-content-center">
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"  title="Close">
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
+            <div className="flex-grow-1 min-w-0">
+              <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
             </div>
-            <div style={{ width: 40 }} />
           </div>
         </div>
       </div>

@@ -733,3 +733,93 @@ def get_tasks_report(
         ],
     }
 
+
+# ─── 14 SAVED REPORT FILTERS ─────────────────────────────────────────────────
+
+from backend.models import SavedReportFilter, SavedReportFilterRead, SavedReportFilterCreate
+from typing import List
+from uuid import UUID
+
+
+@router.get("/reports/saved-filters", response_model=List[SavedReportFilterRead])
+def get_saved_filters(
+    report_id: Optional[str] = Query(None, description="Filter by report type"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Get all saved report filters for the current user."""
+    stmt = select(SavedReportFilter).where(
+        SavedReportFilter.user_id == current_user.id,
+        SavedReportFilter.company_id == current_user.company_id
+    )
+    if report_id:
+        stmt = stmt.where(SavedReportFilter.report_id == report_id)
+    stmt = stmt.order_by(SavedReportFilter.name)
+    filters = session.exec(stmt).all()
+    return filters
+
+
+@router.post("/reports/saved-filters", response_model=SavedReportFilterRead)
+def create_saved_filter(
+    filter_data: SavedReportFilterCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Save a new report filter configuration."""
+    new_filter = SavedReportFilter(
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        **filter_data.model_dump()
+    )
+    session.add(new_filter)
+    session.commit()
+    session.refresh(new_filter)
+    return new_filter
+
+
+@router.put("/reports/saved-filters/{filter_id}", response_model=SavedReportFilterRead)
+def update_saved_filter(
+    filter_id: UUID,
+    filter_data: SavedReportFilterCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Update an existing saved filter."""
+    stmt = select(SavedReportFilter).where(
+        SavedReportFilter.id == filter_id,
+        SavedReportFilter.user_id == current_user.id,
+        SavedReportFilter.company_id == current_user.company_id
+    )
+    existing = session.exec(stmt).first()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Saved filter not found")
+    
+    for field, value in filter_data.model_dump().items():
+        setattr(existing, field, value)
+    
+    session.add(existing)
+    session.commit()
+    session.refresh(existing)
+    return existing
+
+
+@router.delete("/reports/saved-filters/{filter_id}")
+def delete_saved_filter(
+    filter_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a saved filter."""
+    stmt = select(SavedReportFilter).where(
+        SavedReportFilter.id == filter_id,
+        SavedReportFilter.user_id == current_user.id,
+        SavedReportFilter.company_id == current_user.company_id
+    )
+    existing = session.exec(stmt).first()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Saved filter not found")
+    
+    session.delete(existing)
+    session.commit()
+    return {"message": "Filter deleted successfully"}
+
