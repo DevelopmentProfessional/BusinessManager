@@ -225,7 +225,36 @@ def get_portal_order_items(
     order = session.get(ClientOrder, order_id)
     if not order or order.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="Order not found.")
-    return session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order_id)).all()
+    
+    items = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order_id)).all()
+    
+    # Convert to read models with discount fields included
+    result = []
+    for item in items:
+        item_dict = {
+            'id': item.id,
+            'order_id': item.order_id,
+            'item_id': item.item_id,
+            'item_type': item.item_type,
+            'item_name': item.item_name,
+            'unit_price': item.unit_price,
+            'quantity': item.quantity,
+            'line_total': item.line_total,
+            'booking_id': getattr(item, 'booking_id', None),
+            'options_json': item.options_json,
+            'created_at': item.created_at,
+            # Include discount fields if they exist
+            'unit_price_original': getattr(item, 'unit_price_original', None),
+            'unit_price_discounted': getattr(item, 'unit_price_discounted', None),
+            'unit_discount_amount': getattr(item, 'unit_discount_amount', None),
+            'line_total_before_discount': getattr(item, 'line_total_before_discount', None),
+            'line_discount_amount': getattr(item, 'line_discount_amount', None),
+            'discount_type': getattr(item, 'discount_type', None),
+            'discount_value': getattr(item, 'discount_value', None),
+        }
+        result.append(ClientOrderItemRead(**item_dict))
+    
+    return result
 
 
 @router.post("/portal-orders/from-client-cart/{client_id}", response_model=PortalOrderRead)
@@ -246,9 +275,28 @@ def create_order_from_client_cart(
 
     settings = session.exec(select(AppSettings).where(AppSettings.company_id == current_user.company_id)).first()
     tax_rate = ((settings.tax_rate or 0.0) / 100.0) if settings else 0.0
-    subtotal = sum((item.line_total or (item.unit_price * item.quantity)) for item in cart_items)
-    tax_amount = round(subtotal * tax_rate, 2)
-    total = round(subtotal + tax_amount, 2)
+    
+    # Get applicable discounts for items in cart
+    item_ids = [item.item_id for item in cart_items if item.item_id]
+    discounts = get_applicable_discounts(session, item_ids, current_user.company_id) if item_ids else {}
+    
+    # Calculate totals with discounts applied
+    subtotal = 0.0
+    total_discount = 0.0
+    for item in cart_items:
+        line_subtotal = item.line_total or (item.unit_price * item.quantity)
+        subtotal += line_subtotal
+        
+        # Apply discount if applicable
+        discount = discounts.get(item.item_id) if item.item_id else None
+        if discount and discount.is_active:
+            from backend.utils.discount_service import apply_discount_to_price
+            _, discount_per_unit = apply_discount_to_price(item.unit_price, discount.discount_type, float(discount.discount_value))
+            total_discount += discount_per_unit * item.quantity
+    
+    subtotal_after_discount = subtotal - total_discount
+    tax_amount = round(subtotal_after_discount * tax_rate, 2)
+    total = round(subtotal_after_discount + tax_amount, 2)
 
     order = ClientOrder(
         client_id=client_id,
@@ -265,6 +313,26 @@ def create_order_from_client_cart(
     session.refresh(order)
 
     for cart_item in cart_items:
+        # Get discount for this specific item
+        discount = discounts.get(cart_item.item_id) if cart_item.item_id else None
+        
+        # Calculate discount details
+        discount_data = {}
+        if discount and discount.is_active:
+            from backend.utils.discount_service import apply_discount_to_price
+            discounted_unit_price, unit_discount = apply_discount_to_price(
+                cart_item.unit_price, discount.discount_type, float(discount.discount_value)
+            )
+            discount_data = {
+                'unit_price_original': cart_item.unit_price,
+                'unit_price_discounted': discounted_unit_price,
+                'unit_discount_amount': unit_discount,
+                'line_total_before_discount': cart_item.line_total or (cart_item.unit_price * cart_item.quantity),
+                'line_discount_amount': unit_discount * cart_item.quantity,
+                'discount_type': discount.discount_type,
+                'discount_value': discount.discount_value,
+            }
+        
         session.add(ClientOrderItem(
             order_id=order.id,
             item_id=cart_item.item_id,
@@ -275,6 +343,7 @@ def create_order_from_client_cart(
             line_total=cart_item.line_total,
             options_json=cart_item.options_json,
             company_id=current_user.company_id,
+            **discount_data,  # Add discount fields if applicable
         ))
         session.delete(cart_item)
 
