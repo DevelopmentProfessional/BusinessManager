@@ -142,8 +142,9 @@ const Panel_Settings = ({
 
       <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Signature" onClick={() => setSignatureModalOpen(true)} className="settings-accordion-btn btn-outline-secondary" />
 
-      <button
-        type="button"
+      <Button_Toolbar
+        icon={isTrainingMode ? Squares2X2Icon : BookOpenIcon}
+        label="Compact"
         onClick={async () => {
           const nextTrainingMode = !isTrainingMode;
           toggleViewMode();
@@ -156,20 +157,9 @@ const Panel_Settings = ({
             } catch (_) {}
           }
         }}
-        className="btn btn-sm btn-outline-secondary rounded-pill px-2 d-flex justify-content-center align-items-center"
+        className="settings-accordion-btn btn-outline-secondary"
         title={isTrainingMode ? "Switch to compact mode" : "Switch to training mode"}
-      >
-        {isTrainingMode ? (
-          <>
-            <Squares2X2Icon className="h-5 w-5" />
-            <span className="ms-1" style={{ fontSize: "0.78rem" }}>
-              Compact
-            </span>
-          </>
-        ) : (
-          <BookOpenIcon className="h-5 w-5" />
-        )}
-      </button>
+      />
 
       <Button_Toolbar
         icon={Bars3BottomLeftIcon}

@@ -63,22 +63,22 @@ import Panel_Payroll from "./components/Panel_Payroll";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
-const AlignLeftIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor">
+const AlignLeftIcon = ({ className = "h-5 w-5 flex-shrink-0" }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignCenterIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor">
+const AlignCenterIcon = ({ className = "h-5 w-5 flex-shrink-0" }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignRightIcon = () => (
-  <svg viewBox="0 0 20 20" fill="currentColor">
+const AlignRightIcon = ({ className = "h-5 w-5 flex-shrink-0" }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="4" y="14.5" width="14" height="2.5" rx="1.25" />
@@ -1090,8 +1090,8 @@ const Profile = () => {
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="profile-page d-flex flex-column overflow-hidden">
-      <div className="flex-grow-1"></div>
+    <div className="profile-page d-flex flex-column flex-grow-1 min-h-0 h-100 overflow-hidden">
+      <div className="flex-grow-1 min-h-0" aria-hidden="true" />
 
       {openAccordion === "profile" && <Panel_Profile user={user} isMobile={isMobile} row1PanelBottom={row1PanelBottom} formatDate={formatDate} getRoleBadgeColor={getRoleBadgeColor} />}
 
@@ -1323,7 +1323,7 @@ const Profile = () => {
       )}
 
       {/* Footer Tabs */}
-      <div className="flex-shrink-0 bg-body profile-footer-nav ps-3" style={{ zIndex: 10 }}>
+      <div className="flex-shrink-0 bg-body profile-footer-nav ps-3 position-relative" style={{ zIndex: 1050 }}>
         {canAccessSettings && (
           <div ref={handleRow2Ref} className="pt-2 pb-0">
             <div className="d-lg-none">
