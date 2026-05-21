@@ -90,11 +90,16 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='company' AND column_name='registration_notes'"
             )).fetchone()
+            cost_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory' AND column_name='cost_type'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
                 and registration_status_column is not None
                 and registration_notes_column is not None
+                and cost_type_column is not None
             )
     except Exception:
         return False
