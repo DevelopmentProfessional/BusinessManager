@@ -23,7 +23,7 @@
 
 import React from "react";
 import Modal from "./Modal";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
@@ -149,8 +149,9 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                             </option>
                           ))}
                         </select>
-                        <button type="button" onClick={() => onAddRolePermission(role.id)} className="btn btn-sm btn-outline-primary" disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}>
-                          Add
+                        <button type="button" onClick={() => onAddRolePermission(role.id)} className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}>
+                          <PlusIcon className="h-4 w-4" />
+                          <span>Add</span>
                         </button>
                       </div>
                     </div>

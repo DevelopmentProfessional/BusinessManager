@@ -147,7 +147,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
           )}
           {!showForm && !procurementSupplier && (
             <Gate_Permission page="suppliers" permission="write">
-              <Button_Toolbar icon={PlusIcon} label="Add Supplier" onClick={handleCreate} className="btn-app-primary" />
+              <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreate} className="btn-app-primary" title="Add supplier" />
             </Gate_Permission>
           )}
         </div>

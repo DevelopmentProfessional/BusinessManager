@@ -23,6 +23,7 @@ import React from "react";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 import { eachDayOfInterval, startOfMonth, endOfMonth, format } from "date-fns";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -94,8 +95,9 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
           <Line data={chartData} options={chartOptions} />
         </div>
         <div style={styles.buttonContainer}>
-          <button type="button" onClick={onClose} className="btn btn-secondary">
-            Close
+          <button type="button" onClick={onClose} className="btn btn-secondary d-flex align-items-center gap-2">
+            <XMarkIcon className="h-4 w-4" />
+            <span>Close</span>
           </button>
         </div>
       </div>

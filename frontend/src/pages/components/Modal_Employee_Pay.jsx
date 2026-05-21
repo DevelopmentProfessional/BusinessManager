@@ -284,7 +284,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                 Cancel
               </button>
               <button type="submit" className="btn btn-sm btn-success" disabled={payLoading}>
-                {payLoading ? "Processing…" : "Process Payment"}
+                {payLoading ? "…" : "Pay"}
               </button>
             </div>
           </form>

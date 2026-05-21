@@ -85,7 +85,7 @@ export default function Dropdown_Custom({ value, onChange, options = [], placeho
             disabled={disabled}
           />
           <button type="button" onClick={() => !disabled && setIsOpen(!isOpen)} className="absolute right-2 top-1/2 transform -translate-y-1/2">
-            <ChevronDownIcon className={`h-4 w-4 text-gray-400 dark:text-gray-500 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
+            <ChevronDownIcon className={`app-icon app-icon--sm text-gray-400 dark:text-gray-500 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
           </button>
         </div>
       ) : (
@@ -107,7 +107,7 @@ export default function Dropdown_Custom({ value, onChange, options = [], placeho
           disabled={disabled}
         >
           <span className={(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}>{displayValue}</span>
-          <ChevronDownIcon className={`h-4 w-4 text-gray-500 dark:text-gray-400 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
+          <ChevronDownIcon className={`app-icon app-icon--sm text-gray-500 dark:text-gray-400 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
         </button>
       )}
 

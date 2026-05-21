@@ -43,6 +43,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import useViewMode from "../services/useViewMode";
 import Modal_Forecast_Calculator from "./components/Modal_Forecast_Calculator";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import FinancialDashboard from "./components/FinancialDashboard";
 
 const AVAILABLE_REPORTS = [
@@ -175,7 +176,7 @@ export default function Reports() {
   const { loading, setLoading, error, setError, clearError, hasPageAccess } = useStore();
 
   const { branding } = useBranding();
-  const { isTrainingMode } = useViewMode();
+  const { isTrainingMode, buttonTextSize } = useViewMode();
 
   // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
   // NOTE: permission guard is evaluated AFTER all hooks to comply with React's Rules of Hooks
@@ -657,14 +658,12 @@ export default function Reports() {
   return (
     <div className="h-full flex flex-col reports-page" style={{ minHeight: 0 }}>
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
-      <div className="px-3 pt-3 pb-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports & Analytics</h1>
+      <div className="p-1 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports</h1>
         <div className="d-flex align-items-center gap-2">
-          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
-            <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-          </button>
           <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
           <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
+          <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
         </div>
       </div>
 
@@ -699,7 +698,12 @@ export default function Reports() {
             {/* ── DATA TABLE TOGGLE + TABLE ── */}
             {reportData?.labels?.length > 0 && (
               <div className="mt-3">
-                <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setShowDataTable((v) => !v)}
+                  className="btn btn-outline-secondary d-flex align-items-center gap-1"
+                  style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}
+                >
                   <ChevronUpDownIcon className="h-4 w-4" />
                   {showDataTable ? "Hide" : "Show"}
                 </button>
@@ -738,7 +742,7 @@ export default function Reports() {
       </div>
 
       {selectedReport && (
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 pb-4">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1">
           {/* Row 1: report filters */}
           <div className="d-flex flex-wrap align-items-center gap-2">
             <select
@@ -883,7 +887,8 @@ export default function Reports() {
                       setShowFinancialDashboard(true);
                       setReportMenuOpen(false);
                     }}
-                    className="btn btn-sm w-100 d-flex align-items-center gap-2 text-start btn-outline-secondary mb-1 border-bottom pb-1"
+                    className="btn w-100 d-flex align-items-center gap-2 text-start btn-outline-secondary mb-1 border-bottom pb-1"
+                    style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}
                   >
                     <CurrencyDollarIcon className="h-4 w-4 flex-shrink-0 text-green-600" />
                     <span className="text-truncate font-semibold">Financial</span>
@@ -898,7 +903,8 @@ export default function Reports() {
                           handleReportSelect(report.id);
                           setReportMenuOpen(false);
                         }}
-                        className={`btn btn-sm w-100 d-flex align-items-center gap-2 text-start ${isActive ? "btn-primary" : "btn-outline-secondary"} mb-1`}
+                        className={`btn w-100 d-flex align-items-center gap-2 text-start ${isActive ? "btn-primary" : "btn-outline-secondary"} mb-1`}
+                        style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}
                       >
                         <report.icon className="h-4 w-4 flex-shrink-0" />
                         <span className="text-truncate">{report.title}</span>
@@ -925,17 +931,10 @@ export default function Reports() {
         </div>
       </Modal>
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Report Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to configure reports and exports.</div>
-          <div className="small">Choose report, period, chart type, and export options using the toolbar controls.</div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Report Page Controls">
+        <div className="small text-muted">Use these controls to configure reports and exports.</div>
+        <div className="small">Choose report, period, chart type, and export options using the toolbar controls.</div>
+      </PageControlsModal>
     </div>
   );
 }

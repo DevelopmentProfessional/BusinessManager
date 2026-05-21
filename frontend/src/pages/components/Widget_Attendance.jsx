@@ -153,7 +153,7 @@ export default function Widget_Attendance({ compact = false }) {
         {clockActionLoading ? (
           <>
             <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-            Processing...
+            …
           </>
         ) : isClockedIn ? (
           <>

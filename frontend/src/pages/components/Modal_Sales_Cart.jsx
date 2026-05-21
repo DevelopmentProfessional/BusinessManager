@@ -23,8 +23,9 @@
  */
 import React, { useState } from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "./Button_Toolbar";
 import { getDisplayImageUrl } from "./Utils_Image";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 // ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
@@ -37,7 +38,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const mixSummary = isMix && item.mixSelections?.length > 0 ? item.mixSelections.map((s) => `${s.quantity}× ${s.product_name}`).join(", ") : null;
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div className="flex items-center gap-2 p-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
       {/* Mini Image/Icon */}
       <div className={`w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden ${isService ? "bg-primary-100 dark:bg-primary-900" : isBundle ? "bg-orange-100 dark:bg-orange-900" : isMix ? "bg-pink-100 dark:bg-pink-900" : "bg-secondary-100 dark:bg-secondary-900"}`}>
         {imageUrl ? (
@@ -125,16 +126,16 @@ export default function Modal_Cart_Sales({
       <div className="flex flex-col max-h-[90vh]">
         {/* ─── 3 CART HEADER ─────────────────────────────────────────────── */}
         {/* Cart Header */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <div className="flex-shrink-0 p-1 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-1">
             <ShoppingCartIcon className="h-5 w-5" />
             Cart ({cartItemCount})
           </h3>
         </div>
 
         {cart.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
+          <div className="flex-1 flex flex-col items-center justify-center p-1 text-center">
+            <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2">
               <ShoppingCartIcon className="h-10 w-10 text-gray-400" />
             </div>
             <h4 className="font-medium text-gray-900 dark:text-white mb-1">Cart is empty</h4>
@@ -144,13 +145,13 @@ export default function Modal_Cart_Sales({
           <>
             {/* ─── 4 CLIENT SELECTION ─────────────────────────────────────── */}
             {/* Client Selection */}
-            <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="flex-shrink-0 p-1 border-b border-gray-200 dark:border-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 <UserIcon className="h-4 w-4 inline mr-1" />
                 Customer (optional)
               </label>
               {selectedClient ? (
-                <div className="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
+                <div className="flex items-center justify-between p-1 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedClient.name}</p>
                     {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>}
@@ -161,7 +162,7 @@ export default function Modal_Cart_Sales({
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <input
                       type="text"
                       placeholder="Search customers..."
@@ -174,7 +175,7 @@ export default function Modal_Cart_Sales({
                         loadClients();
                         setShowClientDropdown(true);
                       }}
-                      className="app-search-input flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="app-search-input flex-1 px-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <button
                       type="button"
@@ -202,7 +203,7 @@ export default function Modal_Cart_Sales({
                             setClientSearch("");
                             setShowClientDropdown(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                          className="w-full text-left px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
                         >
                           <p className="font-medium">{c.name}</p>
                           {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
@@ -218,10 +219,10 @@ export default function Modal_Cart_Sales({
                               setShowClientDropdown(false);
                             })
                           }
-                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
+                          className="w-full text-left px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-1"
                         >
                           <PlusIcon className="h-4 w-4" />
-                          Create new customer
+                          New
                         </button>
                       )}
                     </div>
@@ -232,7 +233,7 @@ export default function Modal_Cart_Sales({
 
             {/* ─── 5 CART ITEMS LIST ──────────────────────────────────────── */}
             {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[35vh]">
+            <div className="flex-1 overflow-y-auto p-1 space-y-1 max-h-[35vh]">
               {cart.map((item) => (
                 <CartItem key={item.cartKey} item={item} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} />
               ))}
@@ -240,8 +241,8 @@ export default function Modal_Cart_Sales({
 
             {/* ─── 6 CART SUMMARY & ACTIONS ───────────────────────────────── */}
             {/* Cart Summary & Checkout */}
-            <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div className="space-y-2 mb-3">
+            <div className="flex-shrink-0 p-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="space-y-1 mb-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartItemCount} items)</span>
                   <span className="text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
@@ -274,37 +275,26 @@ export default function Modal_Cart_Sales({
                     />
                   </div>
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
+                <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-1">
                   <span className="text-gray-900 dark:text-white">Total</span>
                   <span className="text-secondary-600 dark:text-secondary-400">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* Row 1: Checkout + Continue */}
-              <div className="flex gap-2 mb-2">
-                <button
+              <div className="d-flex align-items-center gap-1 flex-wrap w-100">
+                {cart.length > 0 && <Button_Toolbar icon={TrashIcon} label="Clear" onClick={() => setCart([])} className="btn-outline-danger" title="Clear all items" />}
+                <div className="flex-grow-1" />
+                <Button_Toolbar
+                  icon={CreditCardIcon}
+                  label="Pay"
+                  title="Checkout"
                   onClick={() => {
                     onClose();
                     handleCheckout();
                   }}
-                  className="flex-1 btn-app-primary font-semibold flex items-center justify-center gap-2"
-                >
-                  <CreditCardIcon className="h-5 w-5" />
-                  Checkout
-                </button>
-                <button onClick={onClose} className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  Continue Shopping
-                </button>
+                />
+                <Button_Toolbar icon={ShoppingCartIcon} label="Shop" onClick={onClose} className="btn-outline-secondary" title="Continue shopping" />
               </div>
-
-              {/* Row 2: Clear All */}
-              {cart.length > 0 && (
-                <div className="flex">
-                  <button onClick={() => setCart([])} className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400">
-                    Clear all
-                  </button>
-                </div>
-              )}
             </div>
           </>
         )}

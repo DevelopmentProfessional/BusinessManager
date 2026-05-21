@@ -277,7 +277,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
                 </label>
                 {form.applies_to === "selected" && (
                   <button type="button" onClick={() => setForm((p) => ({ ...p, item_ids: inventory.map((i) => i.id) }))} className="btn btn-outline-primary btn-sm ms-auto">
-                    Select All
+                    All
                   </button>
                 )}
                 {form.applies_to === "selected" && form.item_ids.length > 0 && (

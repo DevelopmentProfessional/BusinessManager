@@ -144,7 +144,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
         {/* Header */}
         <div className="flex items-center justify-between p-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
           <div className="flex items-center gap-1">
-            <div className="p-2 bg-white/20 rounded-lg">
+            <div className="p-1 bg-white/20 rounded-lg">
               <ShoppingCartIcon className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -152,31 +152,21 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               <p className="text-emerald-100 text-sm">{itemCount} items</p>
             </div>
           </div>
-          <button onClick={handleClose} disabled={isProcessing} className="p-2 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50">
+          <button onClick={handleClose} disabled={isProcessing} className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50">
             <XMarkIcon className="h-5 w-5 text-white" />
           </button>
         </div>
 
         {/* ─── 5 PAYMENT SUCCESS SCREEN ────────────────────────────────────── */}
         {paymentSuccess ? (
-          <div className="p-4 text-center">
+          <div className="p-1 text-center">
             <div className="w-24 h-24 mx-auto mb-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center animate-in zoom-in duration-300">
               <CheckCircleSolid className="h-14 w-14 text-emerald-500" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-2">Transaction completed successfully</p>
-            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-4">${total.toFixed(2)}</p>
-            <div className="flex justify-center gap-2 mb-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setTemplateFilterType("invoice");
-                  setShowTemplateUse(true);
-                }}
-                className="flex items-center gap-1.5 text-sm btn-app-secondary"
-              >
-                <PrinterIcon className="h-4 w-4" /> Print Invoice
-              </button>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Payment Successful!</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-1">Transaction completed successfully</p>
+            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${total.toFixed(2)}</p>
+            <div className="flex justify-center gap-1 mb-1">
               <button
                 type="button"
                 onClick={() => {
@@ -184,8 +174,9 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   setShowTemplateUse(true);
                 }}
                 className="flex items-center gap-1.5 text-sm btn-app-secondary"
+                title="Print receipt for this sale"
               >
-                <PrinterIcon className="h-4 w-4" /> Print Receipt
+                <PrinterIcon className="h-4 w-4" /> Receipt
               </button>
             </div>
             <button type="button" onClick={handleDone} className="px-6 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
@@ -233,7 +224,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
 
               <div className="space-y-1 max-h-48 overflow-y-auto mb-1 pr-1">
                 {cart.map((item) => (
-                  <div key={item.cartKey} className="flex justify-between text-sm p-2 bg-white dark:bg-gray-800 rounded-lg">
+                  <div key={item.cartKey} className="flex justify-between text-sm p-1 bg-white dark:bg-gray-800 rounded-lg">
                     <div className="flex-1 min-w-0">
                       <p className="text-gray-900 dark:text-white font-medium truncate">{item.name}</p>
                       {item.selectedOptions?.length > 0 && <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">{item.selectedOptions.map((o) => `${o.featureName}: ${o.optionName}`).join(" · ")}</p>}
@@ -257,7 +248,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                     <span className="text-gray-900 dark:text-white">${tax.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-xl font-bold pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between text-xl font-bold pt-1 border-t border-gray-200 dark:border-gray-700">
                   <span className="text-gray-900 dark:text-white">Total</span>
                   <span className="text-emerald-600 dark:text-emerald-400">${total.toFixed(2)}</span>
                 </div>
@@ -267,14 +258,14 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
             {/* ─── 7 PAYMENT FORM ──────────────────────────────────────────── */}
             {/* Payment Form */}
             <div className="md:w-3/5 p-1 overflow-y-auto">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Payment Method</h3>
 
               {/* ─── 8 PAYMENT METHOD TABS ───────────────────────────────── */}
               {/* Payment Method Tabs */}
               <div className="flex gap-1 mb-1">
                 <button
                   onClick={() => setPaymentMethod("card")}
-                  className={`flex-1 py-2 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
                     paymentMethod === "card" ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
@@ -283,7 +274,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                 </button>
                 <button
                   onClick={() => setPaymentMethod("cash")}
-                  className={`flex-1 py-2 px-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
                     paymentMethod === "cash" ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
@@ -293,7 +284,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               </div>
 
               {paymentMethod === "card" ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {/* Card Number */}
                   <div className="input-group">
                     <span className="input-group-text">
@@ -326,12 +317,12 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   <button
                     onClick={handleSubmit}
                     disabled={!isCardValid() || isProcessing}
-                    className={`w-full py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 mt-2 ${isCardValid() && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
+                    className={`w-full py-2 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${isCardValid() && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
                   >
                     {isProcessing ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Processing...
+                        …
                       </>
                     ) : (
                       <>
@@ -342,22 +333,22 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   </button>
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                    <BanknotesIcon className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+                <div className="text-center py-2">
+                  <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                    <BanknotesIcon className="app-icon app-icon--lg text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">Amount to collect</p>
-                  <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-6">${total.toFixed(2)}</p>
-                  <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-4 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+                  <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${total.toFixed(2)}</p>
+                  <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-2 rounded-pill font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-1">
                     {isProcessing ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Processing...
+                        …
                       </>
                     ) : (
                       <>
                         <CheckCircleIcon className="h-5 w-5" />
-                        Confirm Cash Payment
+                        Confirm
                       </>
                     )}
                   </button>

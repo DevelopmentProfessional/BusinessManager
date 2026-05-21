@@ -146,7 +146,7 @@ export default function Layout({ children }) {
               right: "1rem",
             }}
           >
-            <div className="d-flex flex-column gap-2">
+            <div className="d-flex flex-column gap-2 app-nav-bottom-menu app-footer-padding">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 const showEmployeeBadge = item.name === "Employees" && employeeUnreadTotal > 0;
@@ -155,7 +155,11 @@ export default function Layout({ children }) {
                     key={item.name}
                     to={item.href}
                     onClick={() => setExpandedMenuOpen(false)}
-                    className={classNames(isActive ? "btn btn-primary" : "btn btn-outline-secondary", "d-flex align-items-center text-decoration-none", "position-relative", isTrainingMode ? "btn-sm rounded-pill gap-2" : "rounded-circle justify-content-center p-0")}
+                    className={classNames(
+                      isActive ? "btn btn-primary" : "btn btn-outline-secondary",
+                      "d-flex align-items-center text-decoration-none position-relative",
+                      isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
+                    )}
                     style={{
                       backgroundColor: isActive ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
                       color: isActive ? "var(--bs-white)" : "var(--bs-body-color)",
@@ -163,7 +167,7 @@ export default function Layout({ children }) {
                     }}
                     title={item.name}
                   >
-                    <item.icon className={classNames("flex-shrink-0", isTrainingMode ? "h-4 w-4" : "h-5 w-5")} />
+                    <item.icon className="app-icon flex-shrink-0" />
                     {isTrainingMode && <span>{item.name}</span>}
                     {showEmployeeBadge && (
                       <span className="badge bg-danger rounded-pill position-absolute" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
@@ -185,8 +189,8 @@ export default function Layout({ children }) {
         aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
         className={classNames(
           expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
-          "btn-app-nav position-absolute shadow-lg d-flex align-items-center justify-content-center",
-          isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"
+          "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center",
+          isTrainingMode ? "rounded-pill px-1 justify-content-start" : "rounded-circle p-0 justify-content-center"
         )}
         style={{
           zIndex: 1100,
@@ -197,7 +201,7 @@ export default function Layout({ children }) {
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
         }}
       >
-        <EllipsisHorizontalIcon className="h-5 w-5" />
+        <EllipsisHorizontalIcon className="app-icon flex-shrink-0" />
         <PendingOrderBadge clientId={user?.client_id} />
       </button>
     </div>

@@ -53,6 +53,7 @@ import Gate_Permission from "./components/Gate_Permission";
 import Suppliers_Panel from "./components/Panel_Suppliers";
 import Modal_Bulk_Import_Items from "./components/Modal_Import_Items";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
 import InventoryIntelligence from "./components/InventoryIntelligence";
@@ -376,15 +377,11 @@ export default function Inventory() {
       title="Inventory"
       error={error}
       headerRight={
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-        </button>
+        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
-      <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
-
-      {/* Container_Scrollable rows – grow upwards from bottom */}
-      <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+      {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+      <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredInventory.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
@@ -415,18 +412,20 @@ export default function Inventory() {
         )}
       </div>
 
+      <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
+
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter
         searchTerm={searchTerm}
         onSearch={setSearchTerm}
         searchPlaceholder="Search by name or SKU..."
         beforeSearch={
-          <div style={{ display: "flex", gap: 6 }}>
-            <Button_Toolbar icon={TruckIcon} label="Suppliers" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" />
-            <Button_Toolbar icon={TagIcon} label="Discounts" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" />
+          <div className="app-footer-toolbar d-flex align-items-center">
+            <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
+            <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
             {/* Inventory Intelligence drop-up */}
             <div className="position-relative">
-              <Button_Toolbar icon={PresentationChartBarIcon} label="Insights" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} />
+              <Button_Toolbar icon={PresentationChartBarIcon} label="Stats" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} title="Inventory insights" />
               {showIntelligence && (
                 <div className="position-absolute bottom-100 start-0 mb-2 z-50">
                   <InventoryIntelligence inventory={inventory} onClose={() => setShowIntelligence(false)} />
@@ -622,17 +621,10 @@ export default function Inventory() {
 
       <Modal_Discount_Rules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to manage inventory views and actions.</div>
-          <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls">
+        <div className="small text-muted">Use these controls to manage inventory views and actions.</div>
+        <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
+      </PageControlsModal>
     </PageLayout>
   );
 }

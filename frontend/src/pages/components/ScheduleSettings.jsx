@@ -294,7 +294,7 @@ const ScheduleSettings = ({ userId, HelpIcon }) => {
           Reset
         </button>
         <button onClick={handleSaveSettings} disabled={saving} className="ml-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

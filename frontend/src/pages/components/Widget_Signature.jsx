@@ -155,7 +155,7 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
             </button>
           )}
           <button type="button" onClick={handleSave} disabled={!hasDrawn} className="px-4 py-1.5 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
-            Save Signature
+            Save
           </button>
         </div>
       </div>

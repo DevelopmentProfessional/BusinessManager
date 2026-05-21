@@ -32,17 +32,20 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
  * when they need a custom header with a close button.
  *
  * Props:
- *   title: string
+ *   title: string | ReactNode
  *   onClose: () => void
+ *   showClose?: boolean — header X button (default true)
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalHeader({ title, onClose, className = "" }) {
+export function ModalHeader({ title, onClose, showClose = true, className = "" }) {
   return (
-    <div className={`flex justify-between items-center border-b border-gray-200 dark:border-gray-700 px-3 py-2 flex-shrink-0 bg-white dark:bg-gray-800 ${className}`}>
-      <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">{title}</h3>
-      <button type="button" onClick={onClose} title="Close" aria-label="Close" className="btn btn-outline-secondary text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 d-flex align-items-center justify-content-center flex-shrink-0 p-0">
-        <XMarkIcon className="h-6 w-6" />
-      </button>
+    <div className={`d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`}>
+      <h3 className="h5 mb-0 text-body d-flex align-items-center">{title}</h3>
+      {showClose && onClose ? (
+        <button type="button" onClick={onClose} title="Close" aria-label="Close" className="btn btn-outline-secondary text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 d-flex align-items-center justify-content-center flex-shrink-0 p-0">
+          <XMarkIcon className="h-6 w-6" />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -58,12 +61,12 @@ export function ModalHeader({ title, onClose, className = "" }) {
  *   className?: string  — extra classes for the wrapper div
  */
 export function ModalFooter({ children, className = "" }) {
-  return <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 flex-shrink-0 ${className}`}>{children}</div>;
+  return <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1 flex-shrink-0 ${className}`}>{children}</div>;
 }
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true }) {
   if (!isOpen) return null;
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
@@ -75,8 +78,8 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="fixed inset-0 z-50">
         {Overlay}
         <div className="fixed inset-0 flex flex-col bg-white dark:bg-gray-900">
-          {title && <ModalHeader title={title} onClose={onClose} className="bg-white dark:bg-gray-900" />}
-          <div className={`${noPadding ? "" : "p-2"} flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{children}</div>
+          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
+          <div className={`${noPadding ? "" : "p-1"} flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{children}</div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>
       </div>
@@ -89,11 +92,11 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="fixed inset-0 z-50">
         {Overlay}
         <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
-          {title && <ModalHeader title={title} onClose={onClose} className="px-4 py-3" />}
-          <div className={`flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "px-4 py-4"}`}>
+          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
+          <div className={`flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
             <div className="text-gray-900 dark:text-gray-100">{children}</div>
           </div>
-          {footer && <ModalFooter className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">{footer}</ModalFooter>}
+          {footer && <ModalFooter className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">{footer}</ModalFooter>}
         </div>
       </div>
     );
@@ -105,8 +108,8 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="flex items-end justify-center min-h-screen">
         {Overlay}
         <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-screen flex flex-col">
-          {title && <ModalHeader title={title} onClose={onClose} className="px-3 pt-4 pb-3" />}
-          <div className={`flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "px-3 py-3"}`}>
+          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
+          <div className={`flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
             <div className="text-gray-900 dark:text-gray-100">{children}</div>
           </div>
           {footer && <ModalFooter>{footer}</ModalFooter>}

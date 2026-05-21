@@ -486,7 +486,7 @@ export default function Modal_Template_Use({ page, entity, currentUser, settings
             </button>
             <button type="button" onClick={handleDownloadPdf} disabled={!selected || isDownloadingPdf} className="btn btn-outline-primary d-flex align-items-center gap-1">
               <ArrowDownTrayIcon className="h-4 w-4" />
-              {isDownloadingPdf ? "Downloading..." : "Download"}
+              {isDownloadingPdf ? "…" : "PDF"}
             </button>
             <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="btn btn-outline-secondary d-flex align-items-center gap-1">
               <EnvelopeIcon className="h-4 w-4" />
@@ -527,7 +527,7 @@ export default function Modal_Template_Use({ page, entity, currentUser, settings
               <div className="position-relative d-flex align-items-center" style={{ minHeight: "2.5rem" }}>
                 <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="btn btn-primary d-flex align-items-center gap-1">
                   <EnvelopeIcon className="h-4 w-4" />
-                  Open Email Draft
+                  Email
                 </button>
 
                 <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }}>

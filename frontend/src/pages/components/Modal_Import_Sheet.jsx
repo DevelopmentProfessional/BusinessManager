@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon, PlusIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
 import useViewMode from "../../services/useViewMode";
 
@@ -488,18 +488,22 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
             <div className={`col d-flex align-items-center gap-2 px-1 flex-wrap ${alignClass}`}>
               <div className="d-flex align-items-center gap-1">
                 <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-                <button type="button" className="btn btn-outline-secondary" onClick={handleAddRows} disabled={isSaving}>
-                  Add
+                <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleAddRows} disabled={isSaving}>
+                  <PlusIcon className="h-4 w-4" />
+                  <span>Add</span>
                 </button>
               </div>
-              <button type="button" className="btn btn-outline-secondary" onClick={handleClearGrid} disabled={isSaving}>
-                Clear
+              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleClearGrid} disabled={isSaving}>
+                <TrashIcon className="h-4 w-4" />
+                <span>Clear</span>
               </button>
-              <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={isSaving}>
-                Cancel
+              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={isSaving}>
+                <XMarkIcon className="h-4 w-4" />
+                <span>Cancel</span>
               </button>
-              <button type="button" className="btn btn-primary" onClick={handleImport} disabled={isSaving}>
-                {isSaving ? "Importing..." : "Save"}
+              <button type="button" className="btn btn-primary d-flex align-items-center gap-2" onClick={handleImport} disabled={isSaving}>
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                <span title={isSaving ? "Importing" : "Save import"}>{isSaving ? "…" : "Save"}</span>
               </button>
             </div>
           </div>

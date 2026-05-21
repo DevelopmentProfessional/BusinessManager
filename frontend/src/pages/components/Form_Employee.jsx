@@ -36,7 +36,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { TrashIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
 import api from "../../services/api";
@@ -756,7 +756,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               style={{ fontSize: "0.82rem" }}
                             />
                             <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="btn btn-sm btn-outline-primary align-self-start px-3" style={{ fontSize: "0.8rem" }}>
-                              {deptCreating ? "Creating…" : "Create & Select"}
+                              {deptCreating ? "…" : "Add"}
                             </button>
                           </div>
                         </div>
@@ -1324,10 +1324,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         {activeTab === "signature" && employee && !showSignaturePad && !signatureLoading && (
           <div className="d-flex gap-2 mb-2 justify-content-center">
             <button type="button" onClick={() => signatureFileRef.current?.click()} className="btn btn-outline-secondary btn-sm rounded-pill px-3">
-              Upload Photo
+              Upload
             </button>
-            <button type="button" onClick={() => setShowSignaturePad(true)} className="btn btn-primary btn-sm rounded-pill px-3">
-              {savedSignature ? "Replace Signature" : "Create Signature"}
+            <button type="button" onClick={() => setShowSignaturePad(true)} className="btn btn-primary btn-sm rounded-pill px-3" title={savedSignature ? "Replace signature" : "Create signature"}>
+              {savedSignature ? "Replace" : "Sign"}
             </button>
           </div>
         )}
@@ -1375,7 +1375,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         {activeTab === "payments" && employee && hasPermission("employees", "write") && (
           <div className="d-flex justify-content-center mb-2">
             <button type="button" className="btn btn-success btn-sm rounded-pill px-4" onClick={() => setShowPayModal(true)}>
-              Process Pay
+              Pay
             </button>
           </div>
         )}
@@ -1398,7 +1398,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           </div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            {(activeTab === "details" || activeTab === "benefits") && <Button_Toolbar icon={CheckIcon} label={employee ? "Update Employee" : "Create Employee"} type="submit" form="employee-form" className="btn btn-primary" />}
+            {(activeTab === "details" || activeTab === "benefits") && (
+              <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn btn-primary" title={employee ? "Save employee" : "Add employee"} />
+            )}
           </div>
           <div style={{ width: 40 }} />
         </div>
@@ -1496,7 +1498,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
               <div className="modal-footer py-2">
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2"
                   onClick={() => {
                     const el = document.getElementById("pay-slip-print-area-emp");
                     if (el) {
@@ -1510,10 +1512,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     }
                   }}
                 >
-                  Print
+                  <PrinterIcon className="h-4 w-4" />
+                  <span>Print</span>
                 </button>
-                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>
-                  Close
+                <button type="button" className="btn btn-sm btn-secondary d-flex align-items-center gap-2" onClick={() => setSelectedSlip(null)}>
+                  <CheckCircleIcon className="h-4 w-4" />
+                  <span>Close</span>
                 </button>
               </div>
             </div>

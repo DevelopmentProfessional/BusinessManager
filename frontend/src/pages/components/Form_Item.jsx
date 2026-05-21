@@ -543,7 +543,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                         <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                         <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
                       </svg>
-                      {pendingPhotoUrl ? "Retake Photo" : "Open Camera"}
+                      {pendingPhotoUrl ? "Retake" : "Cam"}
                     </button>
                   )}
                   {addImageMode === "upload" && (
@@ -1085,7 +1085,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                 <input type="number" min="1" className="form-control form-control-sm" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
                 <button
                   type="button"
-                  className="btn btn-sm flex-shrink-0"
+                  className="btn btn-sm flex-shrink-0 d-flex align-items-center gap-2"
                   style={{ background: "#ec4899", color: "#fff", border: "none" }}
                   onClick={() => {
                     const prod = allProducts.find((p) => p.id === mixNewProductId);
@@ -1096,7 +1096,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
                     setProductSearch("");
                   }}
                 >
-                  Add
+                  <PlusIcon className="h-4 w-4" />
+                  <span>Add</span>
                 </button>
               </div>
             </div>
@@ -1111,7 +1112,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
           <div style={{ width: 40 }} />
           <div className="flex-grow-1 d-flex gap-3 justify-content-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={item ? "Save Changes" : "Create Item"} type="submit" form="item-form" className="btn btn-primary" />
+            <Button_Toolbar icon={CheckIcon} label={item ? "Save" : "Add"} type="submit" form="item-form" className="btn btn-primary" title={item ? "Save changes" : "Create item"} />
           </div>
           <div style={{ width: 40 }} />
         </div>

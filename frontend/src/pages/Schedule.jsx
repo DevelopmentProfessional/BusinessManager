@@ -61,6 +61,7 @@ import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAP
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Form_Schedule from "./components/Form_Schedule";
 import Gate_Permission from "./components/Gate_Permission";
 import Widget_Attendance from "./components/Widget_Attendance";
@@ -756,16 +757,7 @@ export default function Schedule() {
             <span className="clock-time">{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</span>
             <span className="clock-date">{currentTime.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
           </div>
-          <h4 className="text-center mb-0 ms-auto">
-            {currentView === "day"
-              ? currentDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-              : currentView === "week"
-                ? `Week of ${new Date(currentDate.getTime() - currentDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
-                : currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-          </h4>
-          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center ms-2"  title="Page Controls" onClick={() => setShowPageControls(true)}>
-            <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-          </button>
+          <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary ms-auto" title="Page settings" />
         </div>
 
         <div className="schedule-body">
@@ -785,12 +777,16 @@ export default function Schedule() {
             <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
               {currentView === "day" ? (
                 <>
-                  <div className="calendar-header-cell"></div>
+                  <div className="calendar-header-cell time-header-cell" aria-hidden="true">
+                    &nbsp;
+                  </div>
                   <div className="calendar-header-cell"></div>
                 </>
               ) : currentView === "week" ? (
                 <>
-                  <div className="calendar-header-cell"></div>
+                  <div className="calendar-header-cell time-header-cell" aria-hidden="true">
+                    &nbsp;
+                  </div>
                   {days.map((date, index) => {
                     const isToday = date.toDateString() === new Date().toDateString();
                     return (
@@ -1176,21 +1172,20 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className="schedule-footer px-2 py-1 border-top pb-4">
-          <div className="d-flex gap-1 flex-nowrap align-items-center overflow-auto no-scrollbar" style={{ minHeight: "3rem" }}>
-            <Button_Toolbar icon={MonthFooterIcon} label="" title="M" aria-label="M" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} compact={true} />
-            <Button_Toolbar icon={WeekFooterIcon} label="" title="W" aria-label="W" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} compact={true} />
-            <Button_Toolbar icon={DayFooterIcon} label="" title="D" aria-label="D" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} compact={true} />
-            <Button_Toolbar icon={TodayFooterIcon} label="" title="T" aria-label="T" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" compact={true} />
-            <Button_Toolbar icon={ChevronLeftIcon} label="" title="Previous" aria-label="Previous" onClick={handleNavigatePrevious} className="btn-outline-secondary" compact={true} />
-            <Button_Toolbar icon={ChevronRightIcon} label="" title="Next" aria-label="Next" onClick={handleNavigateNext} className="btn-outline-secondary" compact={true} />
+        <div className="schedule-footer app-footer-padding border-top">
+          <div className="app-footer-toolbar d-flex align-items-center" style={{ minHeight: "var(--app-btn-height)" }}>
+            <Button_Toolbar icon={MonthFooterIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} />
+            <Button_Toolbar icon={WeekFooterIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} />
+            <Button_Toolbar icon={DayFooterIcon} label="Day" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} />
+            <Button_Toolbar icon={TodayFooterIcon} label="Today" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" />
+            <Button_Toolbar icon={ChevronLeftIcon} label="Prev" onClick={handleNavigatePrevious} className="btn-outline-secondary" title="Previous" />
+            <Button_Toolbar icon={ChevronRightIcon} label="Next" onClick={handleNavigateNext} className="btn-outline-secondary" />
             <Button_Toolbar
               icon={FunnelIcon}
               label="Filter"
               onClick={() => setIsFilterOpen(true)}
               className={`${filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || filters.startDate || filters.endDate || filters.showOutOfOffice ? "btn-primary" : "btn-outline-secondary"}`}
               data-active={filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || !!filters.startDate || !!filters.endDate || filters.showOutOfOffice}
-              compact={true}
             />
           </div>
         </div>
@@ -1315,12 +1310,10 @@ export default function Schedule() {
         </div>
       </Modal>
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Schedule Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-3">
-          <div className="small text-muted">Schedule settings are now managed directly from this page.</div>
-          {user?.id ? <ScheduleSettings userId={user.id} /> : <div className="text-muted small">Sign in to manage schedule settings.</div>}
-        </div>
-      </Modal>
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Schedule Page Controls">
+        <div className="small text-muted">Schedule settings are now managed directly from this page.</div>
+        {user?.id ? <ScheduleSettings userId={user.id} /> : <div className="text-muted small">Sign in to manage schedule settings.</div>}
+      </PageControlsModal>
 
       <style>{`
         /* Schedule Clock */
@@ -1441,6 +1434,12 @@ export default function Schedule() {
         .calendar-header-cell .day-date {
           font-size: 14px;
           font-weight: 600;
+        }
+
+        .calendar-header-cell.time-header-cell {
+          min-width: 3.25rem;
+          min-height: 2.5rem;
+          line-height: 1.25;
         }
         
         .calendar-grid {

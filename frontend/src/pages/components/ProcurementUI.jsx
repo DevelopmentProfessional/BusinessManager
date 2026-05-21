@@ -136,7 +136,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
         <h3 className="text-lg font-semibold text-gray-900">📋 Procurement Orders</h3>
         <button type="button" onClick={() => setShowModal(true)} className="btn btn-primary d-flex align-items-center gap-2">
           <PlusIcon className="w-4 h-4" />
-          Create PO
+          Order
         </button>
       </div>
 
@@ -287,7 +287,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
                   Cancel
                 </button>
                 <button type="button" onClick={handleCreatePO} disabled={loading || formData.line_items.some((i) => !i.inventory_id)} className="btn btn-primary">
-                  {loading ? "Creating..." : "Create PO"}
+                  {loading ? "…" : "Order"}
                 </button>
               </div>
             </div>

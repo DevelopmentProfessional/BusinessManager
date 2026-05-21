@@ -38,6 +38,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI } from "../services/api";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Modal_Detail_Item from "./components/Modal_Item_Detail";
 import Modal_Checkout_Sales from "./components/Modal_Sales_Checkout";
 import Modal_Cart_Sales from "./components/Modal_Sales_Cart";
@@ -291,7 +292,7 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
               Cancel
             </button>
             <button type="button" onClick={handleConfirm} disabled={remaining !== 0} className="btn btn-primary" style={{ opacity: remaining === 0 ? 1 : 0.6 }}>
-              Add to Cart
+              Add
             </button>
           </div>
         </div>
@@ -305,7 +306,7 @@ export default function Sales() {
   const { services, setServices, loading, setLoading, error, setError, clearError, hasPermission, openAddClientModal, user } = useStore();
   const location = useLocation();
   const { footerAlign } = useViewMode();
-  const footerJustify = footerAlign === "center" ? "justify-center" : footerAlign === "right" ? "justify-end" : "justify-start";
+  const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
 
   usePagePermission("services");
 
@@ -1270,7 +1271,7 @@ export default function Sales() {
 
       {/* Fixed Footer - Search, Toggles, Cart */}
       <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-        <div className="p-3 pt-2">
+        <div className="app-footer-inner app-footer-padding">
           {/* Client Selection Panel - shown when account icon is active */}
           {showClientPanel && (
             <div className="mb-2 relative">
@@ -1302,7 +1303,7 @@ export default function Sales() {
                         loadClients();
                         setShowClientPanelDropdown(true);
                       }}
-                      className="app-search-input w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="app-search-input w-full px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       autoFocus
                     />
                     {showClientPanelDropdown && clientPanelSearch && (
@@ -1339,7 +1340,7 @@ export default function Sales() {
                             className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
                           >
                             <PlusIcon className="h-4 w-4" />
-                            Create new client
+                            New
                           </button>
                         )}
                       </div>
@@ -1375,7 +1376,7 @@ export default function Sales() {
                 placeholder="Search products and services..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="app-search-input w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="app-search-input w-full pl-10 pr-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -1383,11 +1384,12 @@ export default function Sales() {
           <div className="grid grid-cols-12">
             <div className="col-span-10">
               {/* Controls Row 1 - History and Cart */}
-              <div className={`search-hide-on-focus flex items-center gap-1 pb-2 ${footerJustify}`} style={{ minHeight: "3rem" }}>
+              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`} style={{ minHeight: "var(--app-btn-height)" }}>
                 {/* Sales History Button */}
                 <Button_Toolbar
                   icon={ArrowTrendingUpIcon}
-                  label="History"
+                  label="Past"
+                  title="Sales history"
                   onClick={() => {
                     setShowHistoryModal(true);
                     loadTransactionHistory();
@@ -1410,7 +1412,7 @@ export default function Sales() {
               </div>
 
               {/* Controls Row 2 - Client, Clear, Filters */}
-              <div className={`search-hide-on-focus flex items-center gap-1 pb-2 ${footerJustify}`} style={{ minHeight: "3rem" }}>
+              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`} style={{ minHeight: "var(--app-btn-height)" }}>
                 {/* Unified Sales Filter Button */}
                 <div className="position-relative">
                   <Button_Toolbar
@@ -1615,17 +1617,10 @@ export default function Sales() {
         />
       )}
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Sales Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to manage the sales experience on this page.</div>
-          <div className="small">Search, filters, client selection, cart, and history tools are available in the footer controls.</div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Sales Page Controls">
+        <div className="small text-muted">Use these controls to manage the sales experience on this page.</div>
+        <div className="small">Search, filters, client selection, cart, and history tools are available in the footer controls.</div>
+      </PageControlsModal>
     </div>
   );
 }

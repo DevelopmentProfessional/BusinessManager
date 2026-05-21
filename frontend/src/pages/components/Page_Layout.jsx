@@ -2,8 +2,8 @@ import React from "react";
 
 export default function PageLayout({ title, error, children, headerRight = null }) {
   return (
-    <div className="d-flex flex-column overflow-hidden bg-body">
-      <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex align-items-center justify-content-between" style={{ zIndex: 5 }}>
+    <div className="d-flex flex-column flex-grow-1 min-h-0 h-100 overflow-hidden bg-body">
+      <div className="flex-shrink-0 border-bottom p-1 bg-body d-flex align-items-center justify-content-between" style={{ zIndex: 5 }}>
         <h1 className="h4 mb-0 fw-bold text-body-emphasis">{title}</h1>
         {headerRight ? <div className="d-flex align-items-center gap-2">{headerRight}</div> : null}
       </div>

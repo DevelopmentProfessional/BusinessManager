@@ -221,7 +221,7 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null, 
           <div style={{ width: 40 }} />
           <div className="flex-grow-1 d-flex gap-3 justify-content-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={client ? "Save Changes" : "Create Client"} type="submit" form="client-form" className="btn btn-primary" />
+            <Button_Toolbar icon={CheckIcon} label={client ? "Save" : "Add"} type="submit" form="client-form" className="btn btn-primary" title={client ? "Save changes" : "Create client"} />
           </div>
           <div style={{ width: 40 }} />
         </div>

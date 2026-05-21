@@ -210,12 +210,13 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
                   ${(resolvedPrice * quantity).toFixed(2)}
                 </div>
               </div>
-              <button type="button" className="btn btn-outline-secondary btn-sm px-3" onClick={onClose}>
-                Close
+              <button type="button" className="btn btn-outline-secondary btn-sm px-3 d-flex align-items-center gap-2" onClick={onClose}>
+                <XMarkIcon className="h-4 w-4" />
+                <span>Close</span>
               </button>
               <button type="button" className="btn btn-primary d-flex align-items-center justify-content-center gap-2" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0}>
                 <ShoppingCartIcon className="h-5 w-5" />
-                Add to Cart
+                Add
               </button>
             </div>
 

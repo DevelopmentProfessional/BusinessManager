@@ -24,7 +24,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { XMarkIcon, CheckIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PhotoIcon, TrashIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import useViewMode from "../../services/useViewMode";
 
 export default function Modal_BulkImport({
@@ -294,12 +294,14 @@ export default function Modal_BulkImport({
                     {/* Photo upload / remove */}
                     {allowPhotoUpload &&
                       (photos[i] ? (
-                        <button type="button" className="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0" style={{ fontSize: "0.7rem" }} onClick={() => handleRemovePhoto(i)} disabled={saving}>
-                          ✕
+                        <button type="button" className="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0 d-flex align-items-center gap-1" style={{ fontSize: "0.7rem" }} onClick={() => handleRemovePhoto(i)} disabled={saving}>
+                          <TrashIcon style={{ width: 12, height: 12 }} />
+                          <span>✕</span>
                         </button>
                       ) : (
-                        <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0" style={{ fontSize: "0.7rem" }} onClick={() => fileInputRefs.current[i]?.click()} disabled={saving}>
-                          Photo
+                        <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0 d-flex align-items-center gap-1" style={{ fontSize: "0.7rem" }} onClick={() => fileInputRefs.current[i]?.click()} disabled={saving}>
+                          <CameraIcon style={{ width: 12, height: 12 }} />
+                          <span>Photo</span>
                         </button>
                       ))}
 
@@ -328,12 +330,13 @@ export default function Modal_BulkImport({
         <div className="flex-shrink-0 py-3 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="row g-0">
             <div className={`col-10 d-flex align-items-center gap-2 px-4 flex-wrap ${alignClass}`}>
-              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose} disabled={saving}>
-                Cancel
+              <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={saving}>
+                <XMarkIcon className="h-4 w-4" />
+                <span>Cancel</span>
               </button>
-              <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={handleSave} disabled={saving || parsedNames.length === 0}>
-                <CheckIcon style={{ width: 14, height: 14 }} />
-                {saving ? "Saving…" : `Save${parsedNames.length > 0 ? ` (${parsedNames.length})` : ""}`}
+              <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleSave} disabled={saving || parsedNames.length === 0}>
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                <span>{saving ? "Saving…" : `Save${parsedNames.length > 0 ? ` (${parsedNames.length})` : ""}`}</span>
               </button>
             </div>
           </div>

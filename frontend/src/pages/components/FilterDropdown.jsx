@@ -3,6 +3,7 @@
 // Replaces repeated inline filter + help-popover pattern in Clients, Employees, Documents.
 import React, { useState } from "react";
 import Button_Toolbar from "./Button_Toolbar";
+import compactButtonLabel from "../../utils/compactButtonLabel";
 import { TagIcon } from "@heroicons/react/24/outline";
 
 export default function FilterDropdown({
@@ -37,7 +38,8 @@ export default function FilterDropdown({
     <div className="position-relative">
       <Button_Toolbar
         icon={Icon}
-        label={label}
+        label={compactButtonLabel(label)}
+        title={label}
         onClick={handleToggle}
         className={`border-0 shadow-lg transition-all ${isActive ? activeClass : inactiveClass}`}
         data-active={isActive}

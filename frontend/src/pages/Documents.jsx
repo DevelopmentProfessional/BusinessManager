@@ -48,6 +48,7 @@ import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/Modal";
+import PageControlsModal from "./components/Page_Controls_Modal";
 import Table_Mobile from "./components/Table_Mobile";
 import Button_Add_Mobile from "./components/Button_Add_Mobile";
 import Gate_Permission from "./components/Gate_Permission";
@@ -169,11 +170,13 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
-        <button type="button" onClick={onCancel} className="btn btn-secondary" disabled={uploading}>
-          Cancel
+        <button type="button" onClick={onCancel} className="btn btn-secondary d-flex align-items-center gap-2" disabled={uploading}>
+          <XMarkIcon className="h-4 w-4" />
+          <span>Cancel</span>
         </button>
-        <button type="submit" className="btn btn-primary" disabled={uploading || !formData.file}>
-          {uploading ? "Uploading..." : "Upload"}
+        <button type="submit" className="btn btn-primary d-flex align-items-center gap-2" disabled={uploading || !formData.file}>
+          <ArrowDownTrayIcon className="h-4 w-4" />
+          <span title="Upload document">{uploading ? "…" : "Upload"}</span>
         </button>
       </div>
     </form>
@@ -665,18 +668,13 @@ export default function Documents() {
   }
 
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+    <div className="d-flex flex-column vh-100 min-h-0 overflow-hidden bg-body">
       {/* Header */}
       <div className="flex-shrink-0 border-bottom p-3 d-flex align-items-center justify-content-between">
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Documents</h1>
-        <div className="d-flex align-items-center gap-2">
-          <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
-            <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-          </button>
-          <button type="button" onClick={() => setIsCategoriesOpen(true)} className="btn d-flex align-items-center gap-1 p-0 border-0" title="Manage categories" aria-label="Manage categories">
-            <span style={{ fontSize: "1.5rem" }}>🗄️</span>
-          </button>
-        </div>
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+        </button>
       </div>
 
       {/* Error Alert */}
@@ -697,11 +695,9 @@ export default function Documents() {
       )}
 
       {/* Main table container */}
-      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
-        <PageTableHeader columns={[{ label: showTemplates ? "Template" : "Document" }, { label: showTemplates ? "Actions" : "View", width: showTemplates ? 80 : 60, className: "text-center" }]} />
-
-        {/* Container_Scrollable rows – grow upwards from bottom */}
-        <div className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+      <div className="flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
+        {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+        <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
           {showTemplates ? (
             /* ── Templates list ── */
             (() => {
@@ -831,15 +827,17 @@ export default function Documents() {
           )}
         </div>
 
+        <PageTableHeader columns={[{ label: showTemplates ? "Template" : "Document" }, { label: showTemplates ? "Actions" : "View", width: showTemplates ? 80 : 60, className: "text-center" }]} />
+
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter searchTerm={searchTerm} onSearch={setSearchTerm} searchPlaceholder="Search by name, type, description, or tag…" hideSearch={showTemplates}>
           {/* Templates toggle */}
           <Button_Toolbar
             icon={DocumentTextIcon}
-            label="Templates"
+            label="Docs"
+            title={showTemplates ? "Back to documents" : "Document templates"}
             onClick={() => setShowTemplates((v) => !v)}
             className={`border-0 shadow-lg transition-all ${showTemplates ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
-            title={showTemplates ? "Back to Documents" : "Templates"}
           />
 
           {showTemplates ? (
@@ -1259,17 +1257,26 @@ export default function Documents() {
         </div>
       </Modal>
 
-      <Modal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Document Page Controls" centered={true}>
-        <div className="d-flex flex-column gap-2">
-          <div className="small text-muted">Use these controls to manage document and template views.</div>
-          <div className="small">Search, filters, upload, templates, and category tools are available in the footer and header actions.</div>
-          <div className="d-flex justify-content-end">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowPageControls(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Document Page Controls"
+        footerExtra={
+          <Button_Toolbar
+            icon={TagIcon}
+            label="Cats"
+            title="Manage document categories"
+            onClick={() => {
+              setShowPageControls(false);
+              setIsCategoriesOpen(true);
+            }}
+            className="btn-outline-secondary"
+          />
+        }
+      >
+        <div className="small text-muted">Use these controls to manage document and template views.</div>
+        <div className="small">Search, filters, upload, and templates are in the page footer. Open Categories to add or edit category labels.</div>
+      </PageControlsModal>
     </div>
   );
 }

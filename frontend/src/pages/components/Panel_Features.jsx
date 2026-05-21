@@ -622,7 +622,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           />
           <div className="position-relative" style={{ minWidth: 190 }}>
             <button type="button" className="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center" style={{ fontSize: "0.78rem" }} onClick={() => setIsAddExistingOpen((prev) => !prev)}>
-              <span>+ Add existing…</span>
+              <span>+ Add…</span>
               <span className="text-muted">▾</span>
             </button>
             {isAddExistingOpen && (

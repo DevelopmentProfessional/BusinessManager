@@ -798,7 +798,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <div style={{ minWidth: 40 }}>{canDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDelete} className="btn-outline-danger" />}</div>
             <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
               <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-              <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleSubmit} className="btn btn-primary" />
+              <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn btn-primary" title="Save changes" />
             </div>
             <div style={{ minWidth: 40 }} />
           </div>
