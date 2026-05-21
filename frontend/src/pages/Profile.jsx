@@ -141,7 +141,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission, refetchPermissions, refreshUserPermissions } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
+  const { isTrainingMode, toggleViewMode, buttonTextSize, cycleButtonTextSize, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
   const FooterAlignIcon = footerAlign === "center" ? AlignCenterIcon : footerAlign === "right" ? AlignRightIcon : AlignLeftIcon;
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
@@ -1136,6 +1136,8 @@ const Profile = () => {
           setSignatureModalOpen={setSignatureModalOpen}
           isTrainingMode={isTrainingMode}
           toggleViewMode={toggleViewMode}
+          buttonTextSize={buttonTextSize}
+          cycleButtonTextSize={cycleButtonTextSize}
           handleLogout={handleLogout}
           currentDbEnvironment={currentDbEnvironment}
           dbLoading={dbLoading}

@@ -286,10 +286,10 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
       centered={true}
       footer={
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="btn-secondary">
+          <button type="button" onClick={onClose} className="btn btn-secondary">
             Cancel
           </button>
-          <button type="submit" form="doc-edit-form" className="btn-primary" disabled={saving}>
+          <button type="submit" form="doc-edit-form" className="btn btn-primary" disabled={saving}>
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -506,7 +506,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                 placeholder="Select employee"
                 className="flex-1"
               />
-              <button type="button" onClick={handleAddAssignment} className="btn-secondary">
+              <button type="button" onClick={handleAddAssignment} className="btn btn-secondary">
                 Add
               </button>
             </div>

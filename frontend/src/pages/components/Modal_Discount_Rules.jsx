@@ -208,7 +208,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
           <TagIcon style={{ width: 20, height: 20, color: "#6366f1" }} />
           <span style={{ fontWeight: 700, fontSize: "1rem" }}>Discount Rules</span>
           <span style={{ fontSize: "0.78rem", color: "#9ca3af", marginLeft: 4 }}>Schedule price reductions on inventory items</span>
-          <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
+          <button type="button" onClick={onClose} className="btn btn-unstyled ms-auto text-muted">
             <XMarkIcon style={{ width: 20, height: 20 }} />
           </button>
         </div>
@@ -219,7 +219,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
           <div style={{ width: 220, borderRight: "1px solid var(--bs-border-color)", overflowY: "auto", padding: "10px 0" }}>
             <div style={{ padding: "0 12px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Rules</span>
-              <button onClick={resetForm} title="New rule" style={{ background: "#6366f1", border: "none", borderRadius: 4, color: "#fff", cursor: "pointer", padding: "2px 6px", fontSize: "0.75rem" }}>
+              <button type="button" onClick={resetForm} title="New rule" className="btn btn-primary btn-sm">
                 + New
               </button>
             </div>
@@ -249,11 +249,12 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(rule.id);
                   }}
-                  style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, flexShrink: 0 }}
+                  className="btn btn-unstyled text-danger flex-shrink-0 p-0"
                 >
                   <TrashIcon style={{ width: 13, height: 13 }} />
                 </button>
@@ -275,12 +276,12 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
                   Selected only
                 </label>
                 {form.applies_to === "selected" && (
-                  <button onClick={() => setForm((p) => ({ ...p, item_ids: inventory.map((i) => i.id) }))} style={{ marginLeft: "auto", fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "none", border: "1px solid #6366f1", color: "#6366f1", cursor: "pointer" }}>
+                  <button type="button" onClick={() => setForm((p) => ({ ...p, item_ids: inventory.map((i) => i.id) }))} className="btn btn-outline-primary btn-sm ms-auto">
                     Select All
                   </button>
                 )}
                 {form.applies_to === "selected" && form.item_ids.length > 0 && (
-                  <button onClick={() => setForm((p) => ({ ...p, item_ids: [] }))} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "none", border: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }}>
+                  <button type="button" onClick={() => setForm((p) => ({ ...p, item_ids: [] }))} className="btn btn-outline-secondary btn-sm">
                     Clear
                   </button>
                 )}
@@ -400,10 +401,10 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
 
           {/* Action buttons */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <button onClick={resetForm} style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid var(--bs-border-color)", background: "none", cursor: "pointer", fontSize: "0.85rem", color: "var(--bs-body-color)" }}>
+            <button type="button" onClick={resetForm} className="btn btn-secondary">
               {editingId ? "New" : "Clear"}
             </button>
-            <button onClick={handleSave} disabled={saving} style={{ padding: "6px 18px", borderRadius: 6, border: "none", background: "#6366f1", color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 6 }}>
+            <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary d-flex align-items-center gap-1">
               {saving ? (
                 "Saving…"
               ) : editingId ? (

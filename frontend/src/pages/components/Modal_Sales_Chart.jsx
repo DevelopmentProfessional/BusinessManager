@@ -94,7 +94,7 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
           <Line data={chartData} options={chartOptions} />
         </div>
         <div style={styles.buttonContainer}>
-          <button onClick={onClose} style={styles.button}>
+          <button type="button" onClick={onClose} className="btn btn-secondary">
             Close
           </button>
         </div>

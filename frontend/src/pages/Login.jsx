@@ -336,7 +336,7 @@ const Login = () => {
               <div className="form-floating mb-2 position-relative">
                 <input id="password" name="password" type={showPassword ? "text" : "password"} required className={`form-control ${validationErrors.password ? "is-invalid" : ""}`} placeholder="Password" value={formData.password} onChange={handleInputChange} style={{ paddingRight: "3rem" }} />
                 <label htmlFor="password">Password</label>
-                <button type="button" onClick={togglePasswordVisibility} className="position-absolute text-gray-400 hover:text-gray-300 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5, background: "none", border: "none" }}>
+                <button type="button" onClick={togglePasswordVisibility} className="btn btn-unstyled position-absolute text-gray-400 hover:text-gray-300 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
                   {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
                 {validationErrors.password && <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>}

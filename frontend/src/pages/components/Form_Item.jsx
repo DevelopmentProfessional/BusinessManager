@@ -1111,7 +1111,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
           <div style={{ width: 40 }} />
           <div className="flex-grow-1 d-flex gap-3 justify-content-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label={item ? "Save Changes" : "Create Item"} type="submit" form="item-form" className="btn-primary" />
+            <Button_Toolbar icon={CheckIcon} label={item ? "Save Changes" : "Create Item"} type="submit" form="item-form" className="btn btn-primary" />
           </div>
           <div style={{ width: 40 }} />
         </div>

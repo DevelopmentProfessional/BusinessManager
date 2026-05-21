@@ -165,7 +165,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
 
     if (isUpcoming) {
       return (
-        <button type="button" key={schedule.id} className="w-100 text-start d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700 bg-transparent border-0" style={{ cursor: "pointer" }} onClick={() => onEditSchedule?.(schedule)}>
+        <button type="button" key={schedule.id} className="btn-unstyled btn-tab w-100 text-start d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700 bg-transparent border-0" onClick={() => onEditSchedule?.(schedule)}>
           {inner}
         </button>
       );
@@ -798,7 +798,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <div style={{ minWidth: 40 }}>{canDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDelete} className="btn-outline-danger" />}</div>
             <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
               <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-              <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleSubmit} className="btn-primary" />
+              <Button_Toolbar icon={CheckIcon} label="Save Changes" onClick={handleSubmit} className="btn btn-primary" />
             </div>
             <div style={{ minWidth: 40 }} />
           </div>

@@ -171,7 +171,7 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
           </div>
           <div className="flex-grow-1 d-flex gap-3 justify-content-center align-items-center">
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" />
-            <Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn-primary" />
+            <Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn btn-primary" />
           </div>
           <div style={{ width: 40 }} />
         </div>

@@ -1,6 +1,6 @@
 // FILE: AppButton.jsx
 // unified button replacing Button_Toolbar (icon+label+training mode) and Button_Icon (icon-only+variants)
-// Dimensions: edit --app-btn-height / --app-btn-width in frontend/src/index.css (:root)
+// Dimensions: Profile → TextSize + training/compact (frontend/src/constants/buttonTextSize.js)
 import React from "react";
 import useViewMode from "../../services/useViewMode";
 import compactButtonLabel from "../../utils/compactButtonLabel";

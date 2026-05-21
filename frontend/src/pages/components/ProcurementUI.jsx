@@ -134,7 +134,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
     <div className="space-y-4 bg-white rounded-lg shadow p-4 border-l-4 border-blue-600">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">📋 Procurement Orders</h3>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <button type="button" onClick={() => setShowModal(true)} className="btn btn-primary d-flex align-items-center gap-2">
           <PlusIcon className="w-4 h-4" />
           Create PO
         </button>
@@ -170,7 +170,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
                   </td>
                   <td className="px-4 py-2 text-right">
                     {po.status === "draft" && (
-                      <button onClick={() => handleSendPO(po.id)} className="flex items-center gap-1 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded" title="Send to supplier">
+                      <button type="button" onClick={() => handleSendPO(po.id)} className="btn btn-outline-primary d-flex align-items-center gap-1" title="Send to supplier">
                         <PaperAirplaneIcon className="w-4 h-4" />
                         Send
                       </button>
@@ -195,7 +195,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">Create Purchase Order</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setShowModal(false)} className="btn btn-unstyled text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
@@ -211,7 +211,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-900">Line Items</label>
-                  <button onClick={handleAddLineItem} className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                  <button type="button" onClick={handleAddLineItem} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
                     <PlusIcon className="w-4 h-4" />
                     Add Item
                   </button>
@@ -250,7 +250,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
 
                         {formData.line_items.length > 1 && (
                           <div className="col-span-1">
-                            <button onClick={() => handleRemoveLineItem(idx)} className="text-red-600 hover:text-red-700">
+                            <button type="button" onClick={() => handleRemoveLineItem(idx)} className="btn btn-unstyled text-danger p-0">
                               <XMarkIcon className="w-4 h-4" />
                             </button>
                           </div>
@@ -283,10 +283,10 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
 
               {/* Action Buttons */}
               <div className="flex gap-3 justify-end pt-6 border-t">
-                <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
                   Cancel
                 </button>
-                <button onClick={handleCreatePO} disabled={loading || formData.line_items.some((i) => !i.inventory_id)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                <button type="button" onClick={handleCreatePO} disabled={loading || formData.line_items.some((i) => !i.inventory_id)} className="btn btn-primary">
                   {loading ? "Creating..." : "Create PO"}
                 </button>
               </div>
