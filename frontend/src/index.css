@@ -71,6 +71,7 @@
   --app-btn-icon-size-active: var(--app-icon-size-active);
   --app-btn-label-font-size: 0.78rem;
   --app-footer-btn-gap: 0.25rem;
+  --app-footer-padding-x: 0.25rem;
   --app-footer-padding-y: 0.5rem;
   --app-input-height: 2rem;
   --app-input-font-size: 0.78rem;
@@ -309,14 +310,24 @@ div[role="combobox"] {
   padding-bottom: 0 !important;
 }
 
-/* Footer / nav chrome — vertical padding scales with TextSize (small: p-1, medium/large: p-2) */
+/* Footer / nav chrome — p-1 left inset; vertical padding scales with TextSize */
 .app-footer-padding,
 .app-footer-search > .app-footer-inner,
 .schedule-footer,
+.profile-footer-nav,
 .profile-footer-nav > .app-footer-padding-row,
-.app-nav-bottom-menu {
+.app-nav-bottom-menu,
+.sales-history-footer .app-footer-toolbar {
+  padding-left: var(--app-footer-padding-x) !important;
   padding-top: var(--app-footer-padding-y) !important;
   padding-bottom: var(--app-footer-padding-y) !important;
+}
+
+.app-footer-search .col-10,
+.profile-footer-nav .col-10,
+.modal-footer .col-10,
+footer[aria-label="Actions"] .col-10 {
+  padding-left: var(--app-footer-padding-x) !important;
 }
 
 @media (max-width: 1024px) {
@@ -558,6 +569,17 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
 .app-nav-bottom-menu a.btn.rounded-circle,
 .app-nav-bottom-toggle.btn.rounded-circle {
   justify-content: center !important;
+}
+
+/* Bottom-right nav toggle — p-1 inset from corner (matches app footer spacing) */
+.app-nav-bottom-toggle {
+  bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)) !important;
+  right: calc(0.25rem + env(safe-area-inset-right, 0px)) !important;
+}
+
+.app-nav-bottom-menu-panel {
+  right: calc(0.25rem + env(safe-area-inset-right, 0px));
+  bottom: calc(0.5rem + var(--app-btn-height) + env(safe-area-inset-bottom, 0px));
 }
 
 body.training-mode .app-footer-search .btn.rounded-pill,
