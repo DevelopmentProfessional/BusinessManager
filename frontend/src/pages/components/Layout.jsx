@@ -180,14 +180,16 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Navigation toggle button - Bottom-right circle */}
+      {/* Navigation toggle — pill: training shows +Nav, compact shows ⋯ only */}
       <button
+        type="button"
         onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
         title={expandedMenuOpen ? "Close menu" : "Open menu"}
         aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
         className={classNames(
           expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
-          "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center justify-content-center rounded-circle p-0"
+          "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center rounded-pill position-relative",
+          isTrainingMode ? "ps-0 pe-1 justify-content-start" : "p-0 justify-content-center"
         )}
         style={{
           zIndex: 1100,
@@ -197,6 +199,11 @@ export default function Layout({ children }) {
         }}
       >
         <EllipsisHorizontalIcon className="app-icon flex-shrink-0" />
+        {isTrainingMode && (
+          <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, marginLeft: "-0.125rem" }}>
+            +Nav
+          </span>
+        )}
         <PendingOrderBadge clientId={user?.client_id} />
       </button>
     </div>

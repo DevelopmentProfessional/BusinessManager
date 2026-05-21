@@ -1173,7 +1173,7 @@ export default function Schedule() {
         </div>
 
         <div className="schedule-footer app-footer-padding border-top">
-          <div className="app-footer-toolbar d-flex align-items-center" style={{ minHeight: "var(--app-btn-height)" }}>
+          <div className="app-footer-toolbar d-flex align-items-center">
             <Button_Toolbar icon={MonthFooterIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} />
             <Button_Toolbar icon={WeekFooterIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} />
             <Button_Toolbar icon={DayFooterIcon} label="Day" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} />

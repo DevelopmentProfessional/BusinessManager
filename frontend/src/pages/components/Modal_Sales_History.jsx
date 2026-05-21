@@ -58,7 +58,7 @@ function parseOptions(value) {
 function SalesHistoryFilterFooter({ historyFilters, setHistoryFilters }) {
   return (
     <div className="sales-history-footer w-100">
-      <div className="px-3 py-2 border-bottom">
+      <div className="app-footer-padding border-bottom">
         <div className="row g-2">
           <div className="col-12 col-md-6">
             <label className="form-label small text-muted mb-1">Client</label>
@@ -83,7 +83,7 @@ function SalesHistoryFilterFooter({ historyFilters, setHistoryFilters }) {
         </div>
       </div>
 
-      <div className="px-3 py-2 border-bottom">
+      <div className="app-footer-padding border-bottom">
         <div className="row g-2 align-items-end">
           <div className="col-12 col-sm-6 col-lg-3">
             <label className="form-label small text-muted mb-1">Status</label>
@@ -150,7 +150,7 @@ function SalesHistoryFilterFooter({ historyFilters, setHistoryFilters }) {
         </div>
       </div>
 
-      <div className="app-footer-padding py-2 app-footer-toolbar d-flex align-items-center flex-wrap">
+      <div className="app-footer-toolbar d-flex align-items-center flex-wrap app-footer-padding">
         {[
           ["all", "All"],
           ["pos", "POS"],
