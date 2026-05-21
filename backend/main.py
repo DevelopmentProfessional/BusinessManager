@@ -187,6 +187,7 @@ app.add_middleware(AggressiveCORSMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,  # Use explicit origins to avoid '*' with credentials
+    allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)?vadpivi\.com$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

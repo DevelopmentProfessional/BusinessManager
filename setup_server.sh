@@ -89,6 +89,21 @@ server {
 
     # Staff API routes
     location /api/v1/ {
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $http_origin always;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            add_header Access-Control-Max-Age 86400 always;
+            add_header Vary "Origin" always;
+            return 204;
+        }
+
+        add_header Access-Control-Allow-Origin $http_origin always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Expose-Headers "*" always;
+        add_header Vary "Origin" always;
+
         proxy_pass http://staff_api;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -104,6 +119,21 @@ server {
 
     # Client API routes
     location /api/client/ {
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $http_origin always;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            add_header Access-Control-Max-Age 86400 always;
+            add_header Vary "Origin" always;
+            return 204;
+        }
+
+        add_header Access-Control-Allow-Origin $http_origin always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Expose-Headers "*" always;
+        add_header Vary "Origin" always;
+
         proxy_pass http://client_api;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

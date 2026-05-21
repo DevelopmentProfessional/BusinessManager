@@ -79,11 +79,6 @@ const normalizeAxiosError = (error, fallback = "Request failed") => {
 
 // API Configuration - Determine backend URL based on environment
 export const getApiBaseUrl = () => {
-  // Check for explicit environment variable first
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-
   const hostname = window.location.hostname;
 
   // Check if we're in development (localhost, 127.0.0.1, or private network IPs)
@@ -96,6 +91,11 @@ export const getApiBaseUrl = () => {
   // API through the same origin path so we do not depend on a separate public
   // API hostname for authentication.
   const isVadpiviWebHost = ["vadpivi.com", "www.vadpivi.com", "app.vadpivi.com", "clients.vadpivi.com", "register.vadpivi.com"].includes(hostname);
+
+  // Check for explicit environment variable first.
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
 
   if (isLocalhost || isPrivateIP || isVadpiviWebHost) {
     // Local development uses Vite proxy
