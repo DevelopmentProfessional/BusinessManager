@@ -355,7 +355,7 @@ export default function Clients() {
           <table className="table table-borderless table-hover mb-0 w-100">
             <colgroup>
               <col />
-              <col style={{ width: "80px" }} />
+              <col style={{ width: "120px" }} />
               <col style={{ width: "56px" }} />
             </colgroup>
             <tbody>

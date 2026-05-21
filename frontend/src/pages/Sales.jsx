@@ -1272,9 +1272,10 @@ export default function Sales() {
       {/* Fixed Footer - Search, Toggles, Cart */}
       <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         <div className="app-footer-inner app-footer-padding">
+          <div className="app-footer-stack">
           {/* Client Selection Panel - shown when account icon is active */}
           {showClientPanel && (
-            <div className="mb-2 relative">
+            <div className="relative">
               {selectedClient ? (
                 <div className="flex items-center justify-between px-3 py-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl">
                   <div className="flex items-center gap-1 min-w-0">
@@ -1368,8 +1369,7 @@ export default function Sales() {
           )}
 
           {/* Search Row */}
-          <div className="mb-2">
-            <div className="relative">
+          <div className="relative w-100">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
@@ -1378,13 +1378,10 @@ export default function Sales() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="app-search-input w-full pl-10 pr-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
-            </div>
           </div>
 
-          <div className="grid grid-cols-12">
-            <div className="col-span-10">
               {/* Controls Row 1 - History and Cart */}
-              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`} style={{ minHeight: "var(--app-btn-height)" }}>
+              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
                 {/* Sales History Button */}
                 <Button_Toolbar
                   icon={ArrowTrendingUpIcon}
@@ -1412,7 +1409,7 @@ export default function Sales() {
               </div>
 
               {/* Controls Row 2 - Client, Clear, Filters */}
-              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`} style={{ minHeight: "var(--app-btn-height)" }}>
+              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
                 {/* Unified Sales Filter Button */}
                 <div className="position-relative">
                   <Button_Toolbar
@@ -1492,10 +1489,7 @@ export default function Sales() {
                   )}
                 </div>
               </div>
-            </div>
-            {/* col-span-10 */}
           </div>
-          {/* grid grid-cols-12 */}
         </div>
       </div>
 

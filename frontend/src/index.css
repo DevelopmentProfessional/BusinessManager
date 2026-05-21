@@ -73,6 +73,8 @@
   --app-footer-btn-gap: 0.25rem;
   --app-footer-padding-x: 0.25rem;
   --app-footer-padding-y: 0.5rem;
+  /* Width + gap reserved for bottom-right nav (matches left inset) */
+  --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
   --app-input-height: 2rem;
   --app-input-font-size: 0.78rem;
 }
@@ -241,12 +243,14 @@ input[type="submit"].btn-secondary {
   justify-content: center !important;
 }
 
-/* Bottom-right navigation menu toggle (Layout.jsx) */
+/* Bottom-right navigation menu toggle (Layout.jsx) — same height as footer buttons */
 .btn.btn-app-nav {
   width: var(--app-btn-nav-width) !important;
-  height: var(--app-btn-nav-width) !important;
   min-width: var(--app-btn-nav-width) !important;
   max-width: var(--app-btn-nav-width) !important;
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
 }
 
 body.training-mode .btn.btn-app-nav.rounded-pill {
@@ -311,30 +315,43 @@ div[role="combobox"] {
   padding-bottom: 0 !important;
 }
 
-/* Footer / nav chrome — p-1 left inset; vertical padding scales with TextSize */
+/* Footer chrome — symmetric horizontal inset; right reserve clears +Nav / ⋯ toggle */
 .app-footer-padding,
+.app-footer-inner,
 .app-footer-search > .app-footer-inner,
 .schedule-footer,
 .profile-footer-nav,
-.profile-footer-nav > .app-footer-padding-row,
 .app-nav-bottom-menu,
-.sales-history-footer .app-footer-toolbar {
+.sales-history-footer .app-footer-toolbar,
+.modal-footer.app-footer-reserve,
+footer[aria-label="Actions"].app-footer-reserve {
   padding-left: var(--app-footer-padding-x) !important;
+  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
   padding-top: var(--app-footer-padding-y) !important;
   padding-bottom: var(--app-footer-padding-y) !important;
 }
 
-.app-footer-search .col-10,
-.profile-footer-nav .col-10,
-.modal-footer .col-10,
-footer[aria-label="Actions"] .col-10 {
-  padding-left: var(--app-footer-padding-x) !important;
+/* Stacked footer rows — uniform vertical gap; toolbars share button height */
+.app-footer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-footer-btn-gap);
+  width: 100%;
+}
+
+.app-footer-stack > .app-footer-toolbar,
+.app-footer-stack > .search-hide-on-focus.app-footer-toolbar,
+.app-footer-stack > .position-relative,
+.profile-footer-nav .app-footer-stack > div {
+  margin-bottom: 0 !important;
+  min-height: var(--app-btn-height);
+  align-items: center !important;
 }
 
 @media (max-width: 1024px) {
   .app-footer-search > .app-footer-inner,
   .schedule-footer,
-  .profile-footer-nav > .app-footer-padding-row:last-child {
+  .profile-footer-nav {
     padding-bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
@@ -567,29 +584,33 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
   text-align: left !important;
 }
 
-.app-nav-bottom-menu a.btn.rounded-circle,
-.app-nav-bottom-toggle.btn.rounded-circle {
+.app-nav-bottom-menu a.btn.rounded-circle {
   justify-content: center !important;
 }
 
-/* Bottom-right nav toggle (⋯) — always centered; excluded from training pill left-align */
+/* Bottom-right nav toggle — same bottom/right inset as page footers */
 .app-nav-bottom-toggle {
-  bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)) !important;
-  right: calc(0.25rem + env(safe-area-inset-right, 0px)) !important;
+  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
+  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px)) !important;
+}
+
+body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
   justify-content: center !important;
   text-align: center !important;
+  width: var(--app-btn-nav-width) !important;
+  min-width: var(--app-btn-nav-width) !important;
+  max-width: var(--app-btn-nav-width) !important;
   padding: 0 !important;
 }
 
-body.training-mode .btn.rounded-pill.app-nav-bottom-toggle,
-body.training-mode .app-nav-bottom-toggle.btn {
-  justify-content: center !important;
-  text-align: center !important;
+body.training-mode .app-nav-bottom-toggle.rounded-pill {
+  justify-content: flex-start !important;
+  text-align: left !important;
 }
 
 .app-nav-bottom-menu-panel {
-  right: calc(0.25rem + env(safe-area-inset-right, 0px));
-  bottom: calc(0.5rem + var(--app-btn-height) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--app-footer-padding-y) + var(--app-btn-height) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0px));
 }
 
 body.training-mode .app-footer-search .btn.rounded-pill,
