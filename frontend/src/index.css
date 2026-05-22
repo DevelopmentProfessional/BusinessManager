@@ -52,8 +52,8 @@
   --keyboard-offset: 0px;
 
   /* App-wide active color (synced from Profile calendar color) */
-  --app-active-color: #3B82F6;
-  --app-active-color-hover: #2563EB;
+  --app-active-color: #3b82f6;
+  --app-active-color-hover: #2563eb;
   --app-active-color-rgb: 59, 130, 246;
   --app-ui-scale: 1;
 
@@ -72,7 +72,7 @@
   --app-btn-label-font-size: 0.78rem;
   --app-footer-btn-gap: 0.25rem;
   --app-footer-padding-x: 0.25rem;
-  --app-footer-padding-y: 0.5rem;
+  --app-footer-padding-y: 0.25rem;
   /* Width + gap reserved for bottom-right nav (matches left inset) */
   --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
   --app-input-height: 2rem;
@@ -90,7 +90,6 @@
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
-
 
 html,
 body,
@@ -113,12 +112,12 @@ body,
 
 /* Hide scrollbar while preserving scroll behaviour */
 .no-scrollbar {
-  scrollbar-width: none;       /* Firefox */
-  -ms-overflow-style: none;    /* IE / Edge legacy */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge legacy */
   overscroll-behavior: contain;
 }
 .no-scrollbar::-webkit-scrollbar {
-  display: none;               /* Chrome / Safari / Opera */
+  display: none; /* Chrome / Safari / Opera */
 }
 
 /* Bulk import grid: keep horizontal scrollbar visible, hide vertical scrollbar */
@@ -163,7 +162,7 @@ body,
 }
 
 /* Main-page data table cell — use on <td> inside main page tables */
-.main-page-table-data { 
+.main-page-table-data {
   vertical-align: middle;
 }
 
@@ -173,7 +172,6 @@ body,
 .profile-footer-nav {
   border-top: none !important;
   border: none !important;
-  
 }
 
 /* Footer toolbar rows — uniform gap, flex-wrap */
@@ -331,12 +329,8 @@ div[role="combobox"] {
 
 /* Footer chrome — bottom inset matches .app-nav-bottom-toggle (same --app-footer-padding-y) */
 .app-footer-padding,
-.app-footer-inner,
-.app-footer-search > .app-footer-inner,
 .app-form-footer,
 .schedule-footer,
-.profile-footer-nav,
-.app-nav-bottom-menu,
 .sales-history-footer .app-footer-toolbar,
 .modal-footer.app-footer-reserve,
 footer[aria-label="Actions"].app-footer-reserve {
@@ -344,6 +338,13 @@ footer[aria-label="Actions"].app-footer-reserve {
   padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
   padding-top: var(--app-footer-padding-y) !important;
   padding-bottom: var(--app-footer-padding-y) !important;
+}
+
+/* Profile page footer — use 0px bottom padding regardless of text size */
+.profile-footer-nav,
+.profile-footer-nav .app-footer-padding-row,
+.profile-footer-nav .app-footer-padding {
+  padding-bottom: var(--app-footer-padding-y-profile, 0px) !important;
 }
 
 /* Modals/forms without nav reserve — keep symmetric horizontal inset only */
@@ -369,7 +370,7 @@ footer[aria-label="Actions"].app-footer-reserve {
   align-items: center !important;
 }
 
-/* Search row is the bottom anchor — height follows input only (padding is on .app-footer-inner) */
+/* Search row is the bottom anchor — height follows input only (padding is on .app-footer-padding) */
 .app-footer-stack > .app-footer-search-row {
   min-height: auto !important;
 }
@@ -380,7 +381,7 @@ footer[aria-label="Actions"].app-footer-reserve {
 }
 
 @media (max-width: 1024px) {
-  .app-footer-search > .app-footer-inner,
+  .app-footer-search > .app-footer-padding,
   .schedule-footer,
   .profile-footer-nav,
   .app-form-footer {
@@ -398,7 +399,9 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
   width: var(--app-icon-size) !important;
   height: var(--app-icon-size) !important;
   flex-shrink: 0;
-  transition: width 0.15s ease, height 0.15s ease;
+  transition:
+    width 0.15s ease,
+    height 0.15s ease;
 }
 
 /* Decorative / hero icons — opt out of button auto-scale */
@@ -418,7 +421,9 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
 .schedule-footer .btn svg,
 .modal-footer .btn svg,
 [class*="footer"] .btn svg {
-  transition: width 0.15s ease, height 0.15s ease;
+  transition:
+    width 0.15s ease,
+    height 0.15s ease;
 }
 
 .app-footer-search .btn.rounded-circle[data-active="true"],
@@ -540,7 +545,9 @@ body.training-mode .btn.rounded-pill .text-nowrap {
   background: transparent;
   color: inherit;
   text-align: left;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .searchable-select-option:hover,
@@ -645,6 +652,17 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
   bottom: calc(var(--app-footer-padding-y) + var(--app-btn-height) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0px));
 }
 
+.app-nav-bottom-menu {
+  align-items: stretch;
+  padding: var(--app-footer-padding-y) 0;
+}
+
+.app-nav-bottom-menu .btn,
+.app-nav-bottom-menu a.btn {
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+}
+
 body.training-mode .app-footer-search .btn.rounded-pill,
 body.training-mode .schedule-footer .btn.rounded-pill,
 body.training-mode .profile-footer-nav .btn.rounded-pill,
@@ -732,7 +750,7 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   -webkit-overflow-scrolling: touch;
 }
 
-.sales-history-footer .app-footer-inner {
+.sales-history-footer .app-footer-padding {
   padding-right: var(--app-footer-padding-x) !important;
 }
 
@@ -812,11 +830,22 @@ input[type="number"],
 .form-floating > .form-control:not(textarea),
 .form-floating > .form-select {
   padding-left: 1rem;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.25rem !important;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
 }
 .form-floating > label {
   padding-left: 1rem;
+  padding-top: 0.35rem;
+  font-size: var(--app-input-font-size) !important;
+  transform-origin: 0 0;
+}
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+  transform: scale(0.75) translateY(-0.75rem) !important;
+  opacity: 0.8;
 }
 
 textarea,
@@ -1004,7 +1033,7 @@ textarea.form-control {
     .square-image-container {
       border-radius: 6px;
     }
-    
+
     .square-image:hover {
       transform: scale(1.02); /* Less aggressive zoom on mobile */
     }
@@ -1027,19 +1056,19 @@ textarea.form-control {
     .square-image {
       transition: none;
     }
-    
+
     .square-image:hover {
       transform: none;
     }
   }
 
-.text-muted {
-  @apply text-gray-600 dark:text-gray-400;
-}
+  .text-muted {
+    @apply text-gray-600 dark:text-gray-400;
+  }
 
   /* Theme-aware table styles (for Tailwind tables) */
   [data-bs-theme="dark"] .divide-gray-200 > * + * {
-    border-color: theme('colors.gray.700');
+    border-color: theme("colors.gray.700");
   }
 
   /*
@@ -1069,14 +1098,14 @@ textarea.form-control {
 
   @media (prefers-color-scheme: dark) {
     .docx-preview-container {
-      background-color: #1F2937;
+      background-color: #1f2937;
     }
   }
 
   /* Root docx wrapper */
   .docx-preview-container .docx {
     @apply text-gray-900;
-    font-family: 'Calibri', 'Arial', sans-serif;
+    font-family: "Calibri", "Arial", sans-serif;
     width: 100% !important;
     height: auto !important;
     min-height: 100% !important;
@@ -1414,5 +1443,3 @@ textarea.form-control {
   user-select: none;
   -webkit-user-select: none;
 }
-
-
