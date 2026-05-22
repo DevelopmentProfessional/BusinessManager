@@ -1817,6 +1817,7 @@ class InsurancePlan(BaseModel, table=True):
     description: Optional[str] = Field(default=None)
     is_active: bool = Field(default=True)
     monthly_deduction: Optional[float] = Field(default=None)
+    document_id: Optional[UUID] = Field(default=None, foreign_key="document.id")
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1826,6 +1827,7 @@ class InsurancePlanRead(SQLModel):
     description: Optional[str] = None
     is_active: bool = True
     monthly_deduction: Optional[float] = None
+    document_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
@@ -2696,7 +2698,9 @@ class ProcurementOrder(BaseModel, table=True):
     expected_delivery_date: Optional[datetime] = None
     actual_delivery_date: Optional[datetime] = None
     
-    total_amount: float
+    total_amount: float = Field(default=0.0)
+    import_tax: Optional[float] = Field(default=0.0)
+    shipping_cost: Optional[float] = Field(default=0.0)
     status: str = Field(default="draft")  # "draft", "sent", "confirmed", "received", "invoiced", "closed"
     
     created_by: Optional[UUID] = Field(foreign_key="user.id")
@@ -2818,6 +2822,8 @@ class ProcurementOrderRead(SQLModel):
     order_date: datetime
     expected_delivery_date: Optional[datetime]
     total_amount: float
+    import_tax: Optional[float] = 0.0
+    shipping_cost: Optional[float] = 0.0
     status: str
     notes: Optional[str]
     created_at: Optional[datetime]

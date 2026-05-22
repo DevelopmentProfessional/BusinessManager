@@ -1,11 +1,11 @@
 // FILE: Panel_Settings.jsx
-// Renders the personal settings accordion panel: dark mode, calendar color, footer alignment, signature, training mode toggle, and logout.
+// Renders the personal settings accordion panel: dark mode, theme color, footer alignment, signature, training mode toggle, and logout.
 
 import React from "react";
-import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, Bars3BottomLeftIcon, XMarkIcon, CheckCircleIcon, AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
-import { BUTTON_SIZE_TABLE_ROWS } from "../../constants/buttonTextSize";
+import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
+import Modal_Color_Picker from "./Modal_Color_Picker";
 import api from "../../services/api";
 
 const Panel_Settings = ({
@@ -119,46 +119,32 @@ const Panel_Settings = ({
       <div className="d-flex align-items-center justify-content-start gap-1 mb-3 flex-wrap" style={{ minHeight: "3rem" }}>
         <Button_Toolbar icon={isDarkMode ? MoonIcon : SunIcon} label={isDarkMode ? "Light" : "Dark"} onClick={toggleDarkMode} className={`settings-accordion-btn ${isDarkMode ? "text-white" : ""}`} style={{ backgroundColor: isDarkMode ? "#3B82F6" : "#F59E0B", border: "none" }} />
 
-        <div className="position-relative">
-          <Button_Toolbar
-            icon={CalendarDaysIcon}
-            label="Color"
-            onClick={() => {
-              setPendingColor(employeeColor);
-              setColorPickerOpen((prev) => !prev);
-            }}
-            className="settings-accordion-btn"
-            style={{ backgroundColor: employeeColor, border: "0px solid var(--bs-border-color, #dee2e6)", color: "white" }}
-            disabled={colorUpdating}
-            aria-expanded={colorPickerOpen}
-          />
-          {colorPickerOpen && (
-            <div className="position-absolute bottom-100 mb-5 start-0  border bg-white dark:bg-gray-800 shadow-lg d-flex justify-content-start gap-4" style={{ zIndex: 10, borderBottomRightRadius: "3rem", borderTopRightRadius: "3rem" }}>
-              <div className="d-flex align-items-center gap-1 ">
-                <input type="color" value={pendingColor} onChange={(e) => setPendingColor(e.target.value)} className="" style={{ width: "3rem", height: "3rem", padding: "0px", cursor: colorUpdating ? "not-allowed" : "pointer", opacity: colorUpdating ? 0.6 : 1 }} disabled={colorUpdating} />
-                <span className="small text-muted">{pendingColor.toUpperCase()}</span>
-              </div>
-              <div className="d-flex gap-2 justify-content-end">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
-                  onClick={() => {
-                    setPendingColor(employeeColor);
-                    setColorPickerOpen(false);
-                  }}
-                  disabled={colorUpdating}
-                >
-                  <XMarkIcon className="h-4 w-4" />
-                  <span>Cancel</span>
-                </button>
-                <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleColorSave} disabled={colorUpdating}>
-                  <CheckCircleIcon className="h-4 w-4" />
-                  <span>Save</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <Button_Toolbar
+          icon={CalendarDaysIcon}
+          label="Color"
+          onClick={() => {
+            setPendingColor(employeeColor);
+            setColorPickerOpen(true);
+          }}
+          className="settings-accordion-btn"
+          style={{ backgroundColor: employeeColor, border: "0px solid var(--bs-border-color, #dee2e6)", color: "white" }}
+          disabled={colorUpdating}
+          aria-haspopup="dialog"
+          aria-expanded={colorPickerOpen}
+        />
+
+        <Modal_Color_Picker
+          isOpen={colorPickerOpen}
+          onClose={() => {
+            setPendingColor(employeeColor);
+            setColorPickerOpen(false);
+          }}
+          pendingColor={pendingColor}
+          onPendingColorChange={setPendingColor}
+          onSave={handleColorSave}
+          saving={colorUpdating}
+          message={colorMessage}
+        />
 
         <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="settings-accordion-btn btn-outline-secondary" title="Cycle footer alignment" />
 
@@ -187,42 +173,6 @@ const Panel_Settings = ({
 
         <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" title="Log out" />
       </div>
-
-      {!isTrainingMode && (
-        <div className="mb-3">
-          <div className="small fw-semibold mb-2">Button size (width × height in rem)</div>
-          <div className="table-responsive">
-            <table className="table table-sm table-bordered mb-0 small">
-              <thead>
-                <tr>
-                  <th>Text size</th>
-                  <th>View mode</th>
-                  <th>Width</th>
-                  <th>Height</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BUTTON_SIZE_TABLE_ROWS.map((row) => {
-                  const isActive = row.size === buttonTextSize;
-                  return (
-                    <tr key={`${row.size}-${row.mode}`} className={isActive ? "table-primary" : undefined}>
-                      <td className="text-capitalize">{row.size}</td>
-                      <td>{row.mode}</td>
-                      <td>{row.width}</td>
-                      <td>{row.height}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="small text-muted mt-1">
-            Active: <span className="text-capitalize fw-medium">{buttonTextSize}</span> · compact mode (icon-only buttons). Training mode uses the wider width in each row.
-          </div>
-        </div>
-      )}
-
-      {colorMessage && <div className={`small mb-2 ${colorMessage.includes("Failed") || colorMessage.includes("Error") ? "text-danger" : "text-success"}`}>{colorMessage}</div>}
     </div>
   );
 };

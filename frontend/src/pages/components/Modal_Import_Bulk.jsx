@@ -26,6 +26,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, CheckIcon, PhotoIcon, TrashIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Footer_Actions from "./Footer_Actions";
+import Button_Toolbar from "./Button_Toolbar";
 
 export default function Modal_BulkImport({
   isOpen,
@@ -42,11 +43,7 @@ export default function Modal_BulkImport({
   const [categories, setCategories] = useState({}); // { [index]: string }
   const [saving, setSaving] = useState(false);
   const [resultMsg, setResultMsg] = useState(null);
-  const [openTypeDropdown, setOpenTypeDropdown] = useState(null); // index or null
-  const [openCategoryDropdown, setOpenCategoryDropdown] = useState(null); // index or null
   const fileInputRefs = useRef({});
-  const typeInputRefs = useRef({});
-  const categoryInputRefs = useRef({});
 
   // Reset state whenever modal opens
   useEffect(() => {
@@ -57,11 +54,7 @@ export default function Modal_BulkImport({
       setCategories({});
       setResultMsg(null);
       setSaving(false);
-      setOpenTypeDropdown(null);
-      setOpenCategoryDropdown(null);
       fileInputRefs.current = {};
-      typeInputRefs.current = {};
-      categoryInputRefs.current = {};
     }
   }, [isOpen]);
 
@@ -97,12 +90,6 @@ export default function Modal_BulkImport({
 
   const handleTypeChange = (index, value) => {
     setTypes((prev) => ({ ...prev, [index]: value }));
-    setOpenTypeDropdown(null);
-  };
-
-  const handleCategoryChange = (index, value) => {
-    setCategories((prev) => ({ ...prev, [index]: value }));
-    setOpenCategoryDropdown(null);
   };
 
   const handleSave = async () => {
@@ -186,119 +173,28 @@ export default function Modal_BulkImport({
                       {name}
                     </span>
 
-                    {/* Type combobox */}
                     {itemTypes && (
-                      <div style={{ position: "relative", flex: "0 0 auto" }}>
-                        <input
-                          ref={(el) => {
-                            typeInputRefs.current[i] = el;
-                          }}
-                          type="text"
-                          className="form-control form-control-sm"
-                          style={{ width: "100px", fontSize: "0.72rem" }}
-                          placeholder="Type"
-                          value={types[i] || ""}
-                          onChange={(e) => {
-                            setTypes((prev) => ({ ...prev, [i]: e.target.value }));
-                            setOpenTypeDropdown(i);
-                          }}
-                          onFocus={() => setOpenTypeDropdown(i)}
-                          onBlur={() => setTimeout(() => setOpenTypeDropdown(null), 100)}
-                          disabled={saving}
-                        />
-                        {openTypeDropdown === i && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: "100%",
-                              left: 0,
-                              right: 0,
-                              background: "white",
-                              border: "1px solid #dee2e6",
-                              borderRadius: "4px",
-                              maxHeight: "120px",
-                              overflowY: "auto",
-                              zIndex: 1000,
-                              marginTop: "2px",
-                            }}
-                          >
-                            {itemTypes
-                              .filter((t) => !types[i] || t.label.toLowerCase().includes(types[i].toLowerCase()) || t.value.toLowerCase().includes(types[i].toLowerCase()))
-                              .map((t) => (
-                                <div
-                                  key={t.value}
-                                  style={{
-                                    padding: "4px 8px",
-                                    fontSize: "0.72rem",
-                                    cursor: "pointer",
-                                    background: types[i] === t.value ? "#e7f1ff" : "white",
-                                    borderBottom: "1px solid #f0f0f0",
-                                  }}
-                                  onMouseDown={() => handleTypeChange(i, t.value)}
-                                >
-                                  {t.label}
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
+                      <select className="form-select form-select-sm" style={{ width: "7.5rem", fontSize: "0.72rem" }} value={types[i] || defaultItemType || ""} onChange={(e) => handleTypeChange(i, e.target.value)} disabled={saving}>
+                        <option value="">Type…</option>
+                        {itemTypes.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
                     )}
 
-                    {/* Category combobox */}
-                    <div style={{ position: "relative", flex: "0 0 auto" }}>
-                      <input
-                        ref={(el) => {
-                          categoryInputRefs.current[i] = el;
-                        }}
-                        type="text"
-                        className="form-control form-control-sm"
-                        style={{ width: "100px", fontSize: "0.72rem" }}
-                        placeholder="Category"
-                        value={categories[i] || ""}
-                        onChange={(e) => {
-                          setCategories((prev) => ({ ...prev, [i]: e.target.value }));
-                          setOpenCategoryDropdown(i);
-                        }}
-                        onFocus={() => setOpenCategoryDropdown(i)}
-                        onBlur={() => setTimeout(() => setOpenCategoryDropdown(null), 100)}
-                        disabled={saving}
-                      />
-                      {/* Dropdown hint for category */}
-                      {openCategoryDropdown === i && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: "100%",
-                            left: 0,
-                            right: 0,
-                            background: "white",
-                            border: "1px solid #dee2e6",
-                            borderRadius: "4px",
-                            maxHeight: "120px",
-                            overflowY: "auto",
-                            zIndex: 1000,
-                            marginTop: "2px",
-                            padding: "4px 8px",
-                            fontSize: "0.7rem",
-                            color: "#999",
-                          }}
-                        >
-                          Paste custom category or select from existing
-                        </div>
-                      )}
-                    </div>
+                    <input type="text" className="form-control form-control-sm" style={{ width: "6.5rem", fontSize: "0.72rem" }} placeholder="Category" value={categories[i] || ""} onChange={(e) => setCategories((prev) => ({ ...prev, [i]: e.target.value }))} disabled={saving} />
 
                     {/* Photo upload / remove */}
                     {allowPhotoUpload &&
                       (photos[i] ? (
-                        <button type="button" className="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0 d-flex align-items-center gap-1" style={{ fontSize: "0.7rem" }} onClick={() => handleRemovePhoto(i)} disabled={saving}>
-                          <TrashIcon style={{ width: 12, height: 12 }} />
-                          <span>✕</span>
+                        <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={() => handleRemovePhoto(i)} disabled={saving} title="Remove photo">
+                          <TrashIcon style={{ width: 14, height: 14 }} />
                         </button>
                       ) : (
-                        <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0 d-flex align-items-center gap-1" style={{ fontSize: "0.7rem" }} onClick={() => fileInputRefs.current[i]?.click()} disabled={saving}>
-                          <CameraIcon style={{ width: 12, height: 12 }} />
-                          <span>Photo</span>
+                        <button type="button" className="btn btn-outline-secondary btn-bulk-circle flex-shrink-0" onClick={() => fileInputRefs.current[i]?.click()} disabled={saving} title="Add photo">
+                          <CameraIcon style={{ width: 14, height: 14 }} />
                         </button>
                       ))}
 
@@ -327,17 +223,16 @@ export default function Modal_BulkImport({
         <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
           <Footer_Actions
             start={
-              <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleSave} disabled={saving || parsedNames.length === 0}>
-                <ArrowDownTrayIcon className="h-4 w-4" />
-                <span>{saving ? "Saving…" : `Save${parsedNames.length > 0 ? ` (${parsedNames.length})` : ""}`}</span>
-              </button>
+              <Button_Toolbar
+                icon={ArrowDownTrayIcon}
+                label={saving ? "Saving…" : parsedNames.length > 0 ? `Save (${parsedNames.length})` : "Save"}
+                onClick={handleSave}
+                className="btn-primary"
+                disabled={saving || parsedNames.length === 0}
+                title="Import rows"
+              />
             }
-            center={
-              <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={saving}>
-                <XMarkIcon className="h-4 w-4" />
-                <span>Cancel</span>
-              </button>
-            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" disabled={saving} title="Close" />}
           />
         </div>
       </div>

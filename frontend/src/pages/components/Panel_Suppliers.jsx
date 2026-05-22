@@ -153,9 +153,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
           {showForm ? (
             <SupplierForm supplier={editingSupplier} onSubmit={handleSubmit} onCancel={handleCancelForm} className="flex-grow-1" />
           ) : procurementSupplier ? (
-            <div className="p-3">
-              <ProcurementUI supplierId={procurementSupplier.id} onPOCreated={loadSuppliers} />
-            </div>
+            <ProcurementUI supplierId={procurementSupplier.id} onPOCreated={loadSuppliers} />
           ) : loading ? (
             <div className="d-flex justify-content-center align-items-center">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>

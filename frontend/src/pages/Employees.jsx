@@ -104,7 +104,7 @@ export default function Employees() {
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [insurancePlansLoading, setInsurancePlansLoading] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
-  const [newPlan, setNewPlan] = useState({ name: "", description: "", is_active: true });
+  const [newPlan, setNewPlan] = useState({ name: "", description: "", is_active: true, document_id: null });
   const [insuranceError, setInsuranceError] = useState("");
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestTypeFilter, setRequestTypeFilter] = useState("all");
@@ -793,7 +793,7 @@ export default function Employees() {
       } else {
         const res = await insurancePlansAPI.create(newPlan);
         setInsurancePlans((prev) => [...prev, res?.data ?? res]);
-        setNewPlan({ name: "", description: "", is_active: true });
+        setNewPlan({ name: "", description: "", is_active: true, document_id: null });
       }
     } catch (err) {
       setInsuranceError(err.response?.data?.detail || "Failed to save plan");

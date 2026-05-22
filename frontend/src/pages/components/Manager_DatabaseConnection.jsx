@@ -134,7 +134,7 @@ export default function Manager_DatabaseConnection() {
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Database Connections</h3>
         <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm d-flex align-items-center gap-1">
           <PlusIcon className="h-4 w-4" />
-          Add Connection
+          Add
         </button>
       </div>
 

@@ -40,6 +40,7 @@ import { TrashIcon, XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
+import Button_Insurance_Document from "./Button_Insurance_Document";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Widget_Signature from "./Widget_Signature";
@@ -893,16 +894,21 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   <hr className="mt-1 mb-2" />
                 </div>
                 <div className="col-md-6">
-                  <div className="form-floating">
-                    <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select form-select-sm">
-                      <option value="">No Plan Selected</option>
-                      {insurancePlans.map((plan) => (
-                        <option key={plan.id} value={plan.name}>
-                          {plan.name}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="insurance_plan">Insurance Plan</label>
+                  <div className="d-flex align-items-stretch gap-2">
+                    <div className="form-floating flex-grow-1">
+                      <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select form-select-sm">
+                        <option value="">No Plan Selected</option>
+                        {insurancePlans.map((plan) => (
+                          <option key={plan.id} value={plan.name}>
+                            {plan.name}
+                          </option>
+                        ))}
+                      </select>
+                      <label htmlFor="insurance_plan">Insurance Plan</label>
+                    </div>
+                    <div className="d-flex align-items-center flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
+                      <Button_Insurance_Document planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
+                    </div>
                   </div>
                 </div>
 

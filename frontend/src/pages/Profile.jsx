@@ -48,7 +48,8 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
-import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI } from "../services/api";
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI } from "../services/api";
+import Button_Insurance_Document from "./components/Button_Insurance_Document";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
 import useBranding from "../services/useBranding";
@@ -133,6 +134,49 @@ const statusColor = (status) => {
   return "secondary";
 };
 
+const sortLeaveRequestsDesc = (requests) =>
+  [...requests].sort((a, b) => {
+    const ta = Date.parse(a.start_date || "") || 0;
+    const tb = Date.parse(b.start_date || "") || 0;
+    return tb - ta;
+  });
+
+function LeaveRequestsTable({ requests, emptyMessage }) {
+  if (!requests.length) {
+    return <p className="text-muted small mb-0">{emptyMessage}</p>;
+  }
+  return (
+    <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
+        <thead className="table-light">
+          <tr>
+            <th>Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {requests.map((req) => (
+            <tr key={req.id}>
+              <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
+              <td>{req.start_date}</td>
+              <td>{req.end_date}</td>
+              <td>{req.days_requested ?? "—"}</td>
+              <td>
+                <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
+                  {req.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission, refetchPermissions, refreshUserPermissions } = useStore();
@@ -198,6 +242,7 @@ const Profile = () => {
   const [leaveForm, setLeaveForm] = useState({ start_date: "", end_date: "", notes: "" });
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveError, setLeaveError] = useState("");
+  const [insurancePlans, setInsurancePlans] = useState([]);
 
   const [paySlips, setPaySlips] = useState([]);
   const [paySlipsLoading, setPaySlipsLoading] = useState(false);
@@ -309,6 +354,17 @@ const Profile = () => {
   useEffect(() => {
     setLocalBranding(branding);
   }, [branding]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    insurancePlansAPI
+      .getAll()
+      .then((res) => {
+        const data = res?.data ?? res ?? [];
+        setInsurancePlans(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setInsurancePlans([]));
+  }, [user?.id]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(getMobileEnvironment().isMobileViewport);
@@ -908,7 +964,7 @@ const Profile = () => {
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       sessionStorage.setItem("user", JSON.stringify(updatedUser));
-      setColorMessage("Calendar color updated!");
+      setColorMessage("Theme color updated!");
       setTimeout(() => setColorMessage(""), 2000);
       return true;
     } catch (error) {
@@ -1063,6 +1119,29 @@ const Profile = () => {
     paddingBottom: "0.25rem",
     display: "flex",
     flexDirection: "column",
+  };
+
+  /** General settings — opens upward from the profile footer (same pattern as me-section accordions). */
+  const generalPanelStyle = {
+    position: "fixed",
+    bottom: `${row1PanelBottom}px`,
+    left: 0,
+    right: 0,
+    maxHeight: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
+    overflowY: "auto",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    backgroundColor: "var(--bs-body-bg)",
+    zIndex: 1000,
+    paddingLeft: "0.75rem",
+    paddingRight: "0.75rem",
+    paddingTop: "0.75rem",
+    paddingBottom: "0.5rem",
+    display: "flex",
+    flexDirection: "column",
+    borderTopLeftRadius: "0.75rem",
+    borderTopRightRadius: "0.75rem",
+    boxShadow: "0 -4px 24px rgba(0, 0, 0, 0.12)",
   };
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
@@ -1228,7 +1307,10 @@ const Profile = () => {
                         </div>
                         <div className="col-sm-6">
                           <div className="text-muted small">Insurance Plan</div>
-                          <div className="fw-medium">{user.insurance_plan || "Not set"}</div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-medium">{user.insurance_plan || "Not set"}</span>
+                            {user.insurance_plan && <Button_Insurance_Document planId={insurancePlans.find((p) => p.name === user.insurance_plan)?.id} planName={user.insurance_plan} insurancePlans={insurancePlans} title="View your insurance plan document" />}
+                          </div>
                         </div>
                       </div>
 
@@ -1270,45 +1352,17 @@ const Profile = () => {
 
                             <div className="mb-3">
                               <h6 className="small fw-semibold mb-2">Pending Requests</h6>
-                              {vacationRequests.filter((r) => r.status === "pending").length === 0 && sickRequests.filter((r) => r.status === "pending").length === 0 ? (
-                                <p className="text-muted small mb-0">No pending requests</p>
-                              ) : (
-                                <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                                  <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
-                                    <thead className="table-light">
-                                      <tr>
-                                        <th>Type</th>
-                                        <th>From</th>
-                                        <th>To</th>
-                                        <th>Days</th>
-                                        <th>Status</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {[...vacationRequests, ...sickRequests]
-                                        .filter((r) => r.status === "pending")
-                                        .map((req) => (
-                                          <tr key={req.id}>
-                                            <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
-                                            <td>{req.start_date}</td>
-                                            <td>{req.end_date}</td>
-                                            <td>{req.days_requested ?? "—"}</td>
-                                            <td>
-                                              <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
-                                                {req.status}
-                                              </span>
-                                            </td>
-                                          </tr>
-                                        ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
+                              <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status === "pending"))} emptyMessage="No pending requests" />
+                            </div>
+
+                            <div className="mb-3">
+                              <h6 className="small fw-semibold mb-2">History</h6>
+                              <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
                             </div>
 
                             <button type="button" className="btn btn-primary btn-sm w-100" onClick={() => openLeaveModal()}>
                               <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
-                              Request Leave
+                              New
                             </button>
                           </>
                         )}
@@ -1406,8 +1460,7 @@ const Profile = () => {
 
       {openAccordion === "general" && canAccessGeneralSettings && (
         <Panel_General
-          isMobile={isMobile}
-          settingsPanelStyle={settingsPanelStyle}
+          panelStyle={generalPanelStyle}
           openAccordions={openAccordions}
           toggleAccordion={toggleAccordion}
           uiScale={uiScale}
@@ -1513,40 +1566,11 @@ const Profile = () => {
                   </div>
                   <div className="mb-3">
                     <h6 className="small fw-semibold mb-2">Pending Requests</h6>
-                    {vacationRequests.filter((r) => r.status === "pending").length === 0 && sickRequests.filter((r) => r.status === "pending").length === 0 ? (
-                      <p className="text-muted small mb-0">No pending requests</p>
-                    ) : (
-                      <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                        <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
-                          <thead className="table-light">
-                            <tr>
-                              <th>Type</th>
-                              <th>From</th>
-                              <th>To</th>
-                              <th>Days</th>
-                              <th>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[...vacationRequests, ...sickRequests]
-                              .filter((r) => r.status === "pending")
-                              .map((req) => (
-                                <tr key={req.id}>
-                                  <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
-                                  <td>{req.start_date}</td>
-                                  <td>{req.end_date}</td>
-                                  <td>{req.days_requested ?? "—"}</td>
-                                  <td>
-                                    <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
-                                      {req.status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                    <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status === "pending"))} emptyMessage="No pending requests" />
+                  </div>
+                  <div className="mb-3">
+                    <h6 className="small fw-semibold mb-2">History</h6>
+                    <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
                   </div>
                   <div className="d-flex gap-2">
                     <button type="button" className="btn btn-primary btn-sm flex-grow-1" onClick={() => openLeaveModal()}>
@@ -1587,14 +1611,16 @@ const Profile = () => {
             <div className="app-footer-padding bg-white dark:bg-gray-800">
               <div className="app-footer-stack">
                 <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
-                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data" }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : [])].map(({ id, Icon, title }) => (
+                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data", iconOnly: false }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General", iconOnly: true }] : [])].map(({ id, Icon, title, iconOnly }) => (
                     <Button_Toolbar
                       key={id}
                       icon={Icon}
                       label={title}
+                      compact={iconOnly}
                       onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      className={`btn btn-sm ${isTrainingMode && !iconOnly ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
                       data-active={openAccordion === id}
+                      title={title}
                     />
                   ))}
                 </div>
@@ -1623,7 +1649,7 @@ const Profile = () => {
           <div className="modal-dialog modal-sm modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">New Request</h6>
+                <h6 className="modal-title mb-0">New Leave Request</h6>
                 <button
                   type="button"
                   className="btn-close"
@@ -1647,8 +1673,8 @@ const Profile = () => {
                         setLeaveError("");
                       }}
                     >
-                      <option value="vacation">Vacation Leave</option>
-                      <option value="sick">Sick Leave</option>
+                      <option value="vacation">Vacation</option>
+                      <option value="sick">Sick</option>
                       <option value="onboarding">Onboarding</option>
                       <option value="offboarding">Offboarding</option>
                     </select>

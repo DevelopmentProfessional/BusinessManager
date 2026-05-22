@@ -727,22 +727,6 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   padding: 0 !important;
 }
 
-/* Inventory page — stats panel centered and pinned to top of the table area */
-.inventory-stats-float {
-  position: absolute;
-  top: var(--app-footer-padding-y, 0.5rem);
-  left: 0;
-  right: 0;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.inventory-stats-float > * {
-  pointer-events: auto;
-  max-width: min(360px, calc(100% - 1rem));
-  width: 100%;
-}
-
 /* Sales History modal — scrollable filter footer on small screens */
 .sales-history-footer {
   max-height: min(55dvh, 28rem);
@@ -752,6 +736,51 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
 
 .sales-history-footer .app-footer-padding {
   padding-right: var(--app-footer-padding-x) !important;
+}
+
+/* App filter checkbox groups (Sales catalog, history, etc.) */
+.app-filter-checkgroup,
+.sales-filter-checkgroup {
+  align-items: center;
+}
+
+.app-filter-check,
+.sales-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-filter-check .form-check-input,
+.sales-filter-check .form-check-input {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.sales-history-filter-panel {
+  width: 100%;
+}
+
+.sales-history-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+@media (min-width: 576px) {
+  .sales-history-filter-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .sales-history-filter-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
 }
 
 /* Modal/form footer — Save/Add left, Cancel/Close center, optional actions right */
@@ -1442,4 +1471,58 @@ textarea.form-control {
 .no-select {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Reports — full-screen chart mode (footer controls only) */
+.reports-page--full .reports-page__chart-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reports-page--full #report-export-section {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.reports-selector-dropup,
+.reports-selector-dropup * {
+  text-align: left !important;
+}
+
+/* Bulk import / procurement — always circular icon buttons (ignore training/compact) */
+.btn.btn-bulk-circle {
+  width: var(--app-btn-height, 2.5rem) !important;
+  height: var(--app-btn-height, 2.5rem) !important;
+  min-width: var(--app-btn-height, 2.5rem) !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bulk-import-add-row-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 10rem;
+}
+
+.bulk-import-add-row-wrap .form-control {
+  width: 4.5rem;
+  padding-right: 0.25rem;
+}
+
+.bulk-import-add-row-wrap .bulk-import-add-overlay {
+  position: absolute;
+  left: 20%;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  font-size: 0.8125rem;
 }

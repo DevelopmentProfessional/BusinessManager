@@ -2,16 +2,38 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import { CogIcon, InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 import { documentsAPI } from "../../services/api";
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
+const SECTION_BODY_MAX_HEIGHT = "min(52vh, calc(var(--vvp-height, 100dvh) - 14rem))";
+
+/** Profile-style accordion: content expands upward above the section header row. */
+function SettingsSection({ open, onToggle, icon: Icon, iconClassName = "", title, titleExtra = null, children }) {
+  return (
+    <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+      {open && (
+        <div className="px-3 py-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}>
+          {children}
+        </div>
+      )}
+      <button type="button" className="w-100 d-flex align-items-center justify-content-between px-3 py-2 bg-transparent border-0 text-start" onClick={onToggle} aria-expanded={open}>
+        <div className="d-flex align-items-center gap-2 min-w-0 flex-wrap">
+          {Icon && <Icon className={`h-5 w-5 flex-shrink-0 ${iconClassName}`} />}
+          <span className="fw-semibold">{title}</span>
+          {titleExtra}
+        </div>
+        <ChevronDownIcon className="h-4 w-4 flex-shrink-0 text-muted" style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }} />
+      </button>
+    </div>
+  );
+}
+
 const Panel_General = ({
-  isMobile,
-  settingsPanelStyle,
+  panelStyle,
   openAccordions,
   toggleAccordion,
   uiScale,
@@ -52,24 +74,16 @@ const Panel_General = ({
   dbCheckLoading,
   dbCheckStatus,
 }) => (
-  <div className="accordion-popup" style={settingsPanelStyle}>
-    <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-    <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-        <CogIcon className="h-5 w-5" /> General Settings
-      </h2>
+  <div className="accordion-popup d-flex flex-column min-h-0" style={panelStyle}>
+    <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column gap-2" style={{ paddingBottom: "0.5rem" }}>
+      {settingsSuccess && (
+        <div className="p-2 rounded border border-success-subtle bg-success-subtle text-success d-flex align-items-center gap-2 small">
+          <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />
+          {settingsSuccess}
+        </div>
+      )}
 
-      {/* Application */}
-      <div className="mb-2">
-        <button onClick={() => toggleAccordion("application")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <InformationCircleIcon className="h-5 w-5 text-blue-500" />
-            <span className="fw-medium">Application</span>
-          </div>
-          <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.application ? "rotate(180deg)" : "none" }} />
-        </button>
-        {openAccordions.application && (
-          <div className="accordion-popup py-3">
+      <SettingsSection open={openAccordions.application} onToggle={() => toggleAccordion("application")} icon={InformationCircleIcon} iconClassName="text-primary" title="Application">
             <div className="row g-2">
               <div className="col-6">
                 <div className="d-flex align-items-center justify-content-between p-2 bg-light rounded">
@@ -119,21 +133,9 @@ const Panel_General = ({
                 </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+      </SettingsSection>
 
-      {/* Company Info */}
-      <div className="mb-2">
-        <button onClick={() => toggleAccordion("companyInfo")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <BriefcaseIcon className="h-5 w-5 text-blue-600" />
-            <span className="fw-medium">Company Info</span>
-          </div>
-          <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.companyInfo ? "rotate(180deg)" : "none" }} />
-        </button>
-        {openAccordions.companyInfo && (
-          <div className="accordion-popup py-3">
+      <SettingsSection open={openAccordions.companyInfo} onToggle={() => toggleAccordion("companyInfo")} icon={BriefcaseIcon} iconClassName="text-primary" title="Company Info">
             {user?.company_id && (
               <div className="d-flex align-items-center gap-2 mb-3 px-1">
                 <span className="text-xs text-muted" style={{ whiteSpace: "nowrap" }}>
@@ -171,21 +173,9 @@ const Panel_General = ({
             <div className="mb-2">
               <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save"} onClick={handleSaveCompanyInfo} className="btn btn-primary" disabled={companyLoading} title="Save company info" />
             </div>
-          </div>
-        )}
-      </div>
+      </SettingsSection>
 
-      {/* Branding */}
-      <div className="mb-2">
-        <button onClick={() => toggleAccordion("branding")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <SwatchIcon className="h-5 w-5 text-purple-500" />
-            <span className="fw-medium">Branding</span>
-          </div>
-          <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.branding ? "rotate(180deg)" : "none" }} />
-        </button>
-        {openAccordions.branding && (
-          <div className="accordion-popup py-3 space-y-4">
+      <SettingsSection open={openAccordions.branding} onToggle={() => toggleAccordion("branding")} icon={SwatchIcon} title="Branding" iconClassName="text-purple-500">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="form-floating">
                 <input type="text" id="companyName" value={localBranding.companyName} onChange={(e) => handleBrandingChange("companyName", e.target.value)} className="form-control form-control-sm" placeholder="Company Name" />
@@ -295,21 +285,9 @@ const Panel_General = ({
                 )}
               </div>
             </Modal>
-          </div>
-        )}
-      </div>
+      </SettingsSection>
 
-      {/* Notifications */}
-      <div className="mb-2">
-        <button onClick={() => toggleAccordion("notifications")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <BellIcon className="h-5 w-5 text-amber-500" />
-            <span className="fw-medium">Notifications</span>
-          </div>
-          <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.notifications ? "rotate(180deg)" : "none" }} />
-        </button>
-        {openAccordions.notifications && (
-          <div className="accordion-popup py-3 space-y-3">
+      <SettingsSection open={openAccordions.notifications} onToggle={() => toggleAccordion("notifications")} icon={BellIcon} iconClassName="text-warning" title="Notifications">
             {[
               { key: "emailEnabled", label: "Email Notifications", helpId: "email-notif", helpText: "Receive updates via email" },
               { key: "appointmentReminders", label: "Appointment Reminders", helpId: "appt-reminders", helpText: "Get reminded before appointments" },
@@ -327,24 +305,20 @@ const Panel_General = ({
               </div>
             ))}
             <Button_Toolbar icon={CheckCircleIcon} label="Save" onClick={handleSaveNotifications} className="btn btn-primary" title="Save notifications" />
-          </div>
-        )}
-      </div>
+      </SettingsSection>
 
-      {/* Client Portal Branding */}
-      <div className="mb-2">
-        <button onClick={() => toggleAccordion("clientPortal")} className="w-full d-flex align-items-center justify-content-between py-3 bg-transparent text-start" style={{ border: "none", borderBottom: "1px solid var(--bs-border-color)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <Squares2X2Icon className="h-5 w-5 text-indigo-500" />
-            <span className="fw-medium">Client Portal Page</span>
-            <span className="badge bg-primary-subtle text-primary ms-1" style={{ fontSize: "0.65rem" }}>
-              Branding
-            </span>
-          </div>
-          <ChevronDownIcon className="h-4 w-4 text-gray-500" style={{ transition: "transform 0.2s", transform: openAccordions.clientPortal ? "rotate(180deg)" : "none" }} />
-        </button>
-        {openAccordions.clientPortal && (
-          <div className="accordion-popup py-3">
+      <SettingsSection
+        open={openAccordions.clientPortal}
+        onToggle={() => toggleAccordion("clientPortal")}
+        icon={Squares2X2Icon}
+        iconClassName="text-indigo-500"
+        title="Client Portal Page"
+        titleExtra={
+          <span className="badge bg-primary-subtle text-primary" style={{ fontSize: "0.65rem" }}>
+            Branding
+          </span>
+        }
+      >
             <div className="mb-4 rounded-xl overflow-hidden border" style={{ border: "1px solid var(--bs-border-color)" }}>
               <div style={{ fontSize: "0.68rem", padding: "4px 10px", background: "var(--bs-secondary-bg)", color: "var(--bs-secondary-color)", borderBottom: "1px solid var(--bs-border-color)" }}>Live Preview</div>
               {portalBranding.portal_show_hero && (
@@ -487,16 +461,7 @@ const Panel_General = ({
               <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save"} onClick={handleSavePortalBranding} className="btn btn-primary" disabled={portalBrandingLoading} title="Save portal settings" />
               <Button_Toolbar icon={ArrowPathIcon} label="Reset" onClick={resetPortalBrandingDefaults} className="btn-outline-secondary" title="Reset to defaults" />
             </div>
-          </div>
-        )}
-      </div>
-
-      {settingsSuccess && (
-        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
-          <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />
-          {settingsSuccess}
-        </div>
-      )}
+      </SettingsSection>
     </div>
   </div>
 );

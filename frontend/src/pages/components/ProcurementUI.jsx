@@ -1,106 +1,184 @@
 /**
- * ============================================================
- * FILE: ProcurementUI.jsx
- *
- * PURPOSE:
- *   Procurement order management component for suppliers.
- *   Create, view, and manage purchase orders with suppliers.
- * ============================================================
+ * Procurement order management for a supplier (Inventory → Suppliers → Procurement).
  */
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import api, { inventoryAPI, documentsAPI } from "../../services/api";
+import { formatCurrency } from "../../utils/formatters";
+import Modal from "./Modal";
+import Footer_Actions from "./Footer_Actions";
+import Button_Toolbar from "./Button_Toolbar";
+import Modal_Document_Upload from "./Modal_Document_Upload";
 
-import React, { useState, useEffect } from "react";
-import { PlusIcon, XMarkIcon, CheckIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
-import api, { inventoryAPI } from "../../services/api";
+const EMPTY_LINE = { inventory_id: "", quantity_ordered: 1, unit_price: 0 };
+
+const num = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
 
 const ProcurementUI = ({ supplierId, onPOCreated }) => {
-  const [showModal, setShowModal] = useState(false);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [detailPoId, setDetailPoId] = useState(null);
+  const [detailPo, setDetailPo] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [linkedDocs, setLinkedDocs] = useState([]);
+  const [showDocUpload, setShowDocUpload] = useState(false);
   const [formData, setFormData] = useState({
-    supplier_id: supplierId,
-    line_items: [{ inventory_id: "", quantity_ordered: 1, unit_price: 0 }],
+    line_items: [{ ...EMPTY_LINE }],
     expected_delivery_date: "",
     notes: "",
+    import_tax: "",
+    shipping_cost: "",
   });
 
-  useEffect(() => {
-    loadPurchaseOrders();
-    loadInventoryItems();
-  }, [supplierId]);
-
-  const loadPurchaseOrders = async () => {
+  const loadPurchaseOrders = useCallback(async () => {
     try {
       const response = await api.get(`/purchase-orders?supplier_id=${supplierId}`);
-      setPurchaseOrders(response?.data ?? []);
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      setPurchaseOrders(
+        rows.map((po) => ({
+          ...po,
+          total_amount: num(po.total_amount),
+        }))
+      );
     } catch (error) {
       console.error("Failed to load POs:", error);
     }
-  };
+  }, [supplierId]);
 
-  const loadInventoryItems = async () => {
+  const loadInventoryItems = useCallback(async () => {
     try {
       const response = await inventoryAPI.getAll();
       setInventoryItems(response?.data ?? response ?? []);
     } catch (error) {
       console.error("Failed to load inventory:", error);
     }
+  }, []);
+
+  useEffect(() => {
+    loadPurchaseOrders();
+    loadInventoryItems();
+  }, [loadPurchaseOrders, loadInventoryItems]);
+
+  const loadDetail = async (poId) => {
+    setDetailLoading(true);
+    try {
+      const poRes = await api.get(`/purchase-orders/${poId}`);
+      setDetailPo(poRes?.data ?? null);
+      let docs = [];
+      try {
+        const docsRes = await documentsAPI.getByEntity("purchase_order", poId);
+        const raw = docsRes?.data;
+        docs = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
+      } catch {
+        /* fallback below */
+      }
+      if (docs.length === 0) {
+        try {
+          const allRes = await documentsAPI.getAll();
+          const all = Array.isArray(allRes?.data) ? allRes.data : [];
+          docs = all.filter((d) => d.entity_type === "purchase_order" && String(d.entity_id) === String(poId));
+        } catch {
+          docs = [];
+        }
+      }
+      setLinkedDocs(docs);
+    } catch (err) {
+      console.error("Failed to load PO detail:", err);
+      setDetailPo(null);
+      setLinkedDocs([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (detailPoId) loadDetail(detailPoId);
+  }, [detailPoId]);
+
+  const lineSubtotal = useMemo(
+    () => formData.line_items.reduce((sum, item) => sum + num(item.quantity_ordered) * num(item.unit_price), 0),
+    [formData.line_items]
+  );
+
+  const orderTotal = useMemo(() => lineSubtotal + num(formData.import_tax) + num(formData.shipping_cost), [lineSubtotal, formData.import_tax, formData.shipping_cost]);
+
+  const inventoryName = (id) => inventoryItems.find((i) => String(i.id) === String(id))?.name || "—";
+
+  const resetCreateForm = () => {
+    setFormData({
+      line_items: [{ ...EMPTY_LINE }],
+      expected_delivery_date: "",
+      notes: "",
+      import_tax: "",
+      shipping_cost: "",
+    });
   };
 
   const handleAddLineItem = () => {
-    setFormData({
-      ...formData,
-      line_items: [...formData.line_items, { inventory_id: "", quantity_ordered: 1, unit_price: 0 }],
-    });
+    setFormData((prev) => ({
+      ...prev,
+      line_items: [...prev.line_items, { ...EMPTY_LINE }],
+    }));
   };
 
   const handleRemoveLineItem = (index) => {
-    setFormData({
-      ...formData,
-      line_items: formData.line_items.filter((_, i) => i !== index),
-    });
+    setFormData((prev) => ({
+      ...prev,
+      line_items: prev.line_items.length > 1 ? prev.line_items.filter((_, i) => i !== index) : prev.line_items,
+    }));
   };
 
   const handleLineItemChange = (index, field, value) => {
-    const updated = [...formData.line_items];
-    updated[index] = {
-      ...updated[index],
-      [field]: field === "quantity_ordered" || field === "unit_price" ? parseFloat(value) : value,
-    };
-    setFormData({ ...formData, line_items: updated });
-  };
-
-  const calculateLineTotal = (item) => {
-    return (item.quantity_ordered || 0) * (item.unit_price || 0);
-  };
-
-  const calculatePOTotal = () => {
-    return formData.line_items.reduce((sum, item) => sum + calculateLineTotal(item), 0);
+    setFormData((prev) => {
+      const updated = [...prev.line_items];
+      const next = { ...updated[index] };
+      if (field === "inventory_id") {
+        next.inventory_id = value;
+        const inv = inventoryItems.find((i) => String(i.id) === String(value));
+        if (inv && (next.unit_price === 0 || next.unit_price === "")) {
+          next.unit_price = num(inv.cost ?? inv.price ?? 0);
+        }
+      } else if (field === "quantity_ordered" || field === "unit_price") {
+        next[field] = value === "" ? "" : num(value);
+      } else {
+        next[field] = value;
+      }
+      updated[index] = next;
+      return { ...prev, line_items: updated };
+    });
   };
 
   const handleCreatePO = async () => {
+    const validLines = formData.line_items.filter((i) => i.inventory_id);
+    if (validLines.length === 0) return;
     try {
       setLoading(true);
       const payload = {
-        supplier_id: formData.supplier_id,
-        expected_delivery_date: formData.expected_delivery_date,
-        items: formData.line_items.map((item) => ({
+        supplier_id: supplierId,
+        expected_delivery_date: formData.expected_delivery_date || null,
+        notes: formData.notes || null,
+        import_tax: num(formData.import_tax),
+        shipping_cost: num(formData.shipping_cost),
+        items: validLines.map((item) => ({
           inventory_id: item.inventory_id,
-          quantity: item.quantity_ordered,
-          unit_price: item.unit_price,
+          quantity: Math.max(1, Math.round(num(item.quantity_ordered))),
+          unit_price: num(item.unit_price),
         })),
       };
-
       const response = await api.post("/purchase-orders", payload);
       const newPO = response?.data;
-      setPurchaseOrders([newPO, ...purchaseOrders]);
-      setShowModal(false);
-      setFormData({
-        supplier_id: supplierId,
-        line_items: [{ inventory_id: "", quantity_ordered: 1, unit_price: 0 }],
-        expected_delivery_date: "",
-        notes: "",
-      });
+      if (newPO?.id) {
+        setPurchaseOrders((prev) => [{ ...newPO, total_amount: num(newPO.total_amount) }, ...prev]);
+      } else {
+        await loadPurchaseOrders();
+      }
+      setShowCreate(false);
+      resetCreateForm();
       onPOCreated?.();
     } catch (error) {
       console.error("Failed to create PO:", error);
@@ -109,78 +187,50 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
     }
   };
 
-  const handleSendPO = async (poId) => {
-    try {
-      await api.put(`/purchase-orders/${poId}/send`);
-      loadPurchaseOrders();
-    } catch (error) {
-      console.error("Failed to send PO:", error);
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      draft: "bg-gray-100 text-gray-800",
-      sent: "bg-blue-100 text-blue-800",
-      confirmed: "bg-green-100 text-green-800",
-      received: "bg-purple-100 text-purple-800",
-      invoiced: "bg-orange-100 text-orange-800",
-      closed: "bg-gray-100 text-gray-800",
-    };
-    return statusConfig[status] || "bg-gray-100 text-gray-800";
+  const openDetail = (po) => {
+    setDetailPoId(po.id);
+    setShowCreate(false);
   };
 
   return (
-    <div className="space-y-4 bg-white rounded-lg shadow p-4 border-l-4 border-blue-600">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">📋 Procurement Orders</h3>
-        <button type="button" onClick={() => setShowModal(true)} className="btn btn-primary d-flex align-items-center gap-2">
-          <PlusIcon className="w-4 h-4" />
-          Order
+    <div className="d-flex flex-column min-h-0 h-100 pe-0">
+      <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-shrink-0">
+        <h6 className="mb-0 fw-semibold">Procurement</h6>
+        <button type="button" onClick={() => { resetCreateForm(); setShowCreate(true); setDetailPoId(null); }} className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+          <PlusIcon style={{ width: 16, height: 16 }} />
+          <span>New</span>
         </button>
       </div>
 
-      {/* Purchase Orders Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+      <div className="flex-grow-1 overflow-auto min-h-0" style={{ maxHeight: "min(50vh, 20rem)" }}>
+        <table className="table table-sm table-hover mb-0 align-middle">
+          <thead className="table-light sticky-top">
             <tr>
-              <th className="px-4 py-2 text-left font-medium text-gray-900">PO Number</th>
-              <th className="px-4 py-2 text-left font-medium text-gray-900">Order Date</th>
-              <th className="px-4 py-2 text-right font-medium text-gray-900">Total</th>
-              <th className="px-4 py-2 text-center font-medium text-gray-900">Status</th>
-              <th className="px-4 py-2 text-right font-medium text-gray-900">Actions</th>
+              <th className="ps-2 pe-1">PO Number</th>
+              <th className="px-1">Order date</th>
+              <th className="text-end px-1">Total</th>
+              <th className="text-end pe-2" style={{ width: 48 }}>
+                <span className="visually-hidden">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {purchaseOrders.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
-                  No purchase orders yet. Create one to get started.
+                <td colSpan={4} className="text-center text-muted small py-4 ps-2">
+                  No purchase orders yet.
                 </td>
               </tr>
             ) : (
               purchaseOrders.map((po) => (
-                <tr key={po.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-gray-900">{po.po_number}</td>
-                  <td className="px-4 py-2 text-gray-600">{new Date(po.order_date).toLocaleDateString()}</td>
-                  <td className="px-4 py-2 text-right font-medium text-gray-900">${po.total_amount.toFixed(2)}</td>
-                  <td className="px-4 py-2 text-center">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(po.status)}`}>{po.status}</span>
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    {po.status === "draft" && (
-                      <button type="button" onClick={() => handleSendPO(po.id)} className="btn btn-outline-primary d-flex align-items-center gap-1" title="Send to supplier">
-                        <PaperAirplaneIcon className="w-4 h-4" />
-                        Send
-                      </button>
-                    )}
-                    {po.status === "confirmed" && (
-                      <span className="text-green-600 flex items-center gap-1">
-                        <CheckIcon className="w-4 h-4" />
-                        Confirmed
-                      </span>
-                    )}
+                <tr key={po.id}>
+                  <td className="ps-2 pe-1 font-monospace small">{po.po_number}</td>
+                  <td className="px-1 small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
+                  <td className="text-end px-1 small fw-medium">{formatCurrency(po.total_amount)}</td>
+                  <td className="text-end pe-2">
+                    <button type="button" className="btn btn-sm btn-outline-secondary btn-bulk-circle p-0" title="View purchase order" onClick={() => openDetail(po)}>
+                      <EyeIcon style={{ width: 16, height: 16 }} />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -189,111 +239,231 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
         </table>
       </div>
 
-      {/* Create PO Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
-              <h2 className="text-xl font-bold text-gray-900">Create Purchase Order</h2>
-              <button type="button" onClick={() => setShowModal(false)} className="btn btn-unstyled text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="w-6 h-6" />
+      {/* Create PO — matches supplier panel modal pattern */}
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} fullScreen noPadding>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0" style={{ minHeight: "100%" }}>
+          <div className="flex-shrink-0 p-2 border-bottom">
+            <h6 className="mb-0 fw-semibold">Create purchase order</h6>
+          </div>
+          <div className="flex-grow-1 overflow-auto p-3 min-h-0">
+            <div className="form-floating mb-3">
+              <input
+                type="date"
+                id="po_expected_delivery"
+                className="form-control form-control-sm"
+                value={formData.expected_delivery_date}
+                onChange={(e) => setFormData((p) => ({ ...p, expected_delivery_date: e.target.value }))}
+              />
+              <label htmlFor="po_expected_delivery">Expected delivery date</label>
+            </div>
+
+            <div className="table-responsive border rounded mb-3">
+              <table className="table table-sm mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Item</th>
+                    <th style={{ width: 88 }}>Qty</th>
+                    <th style={{ width: 110 }}>Unit price</th>
+                    <th className="text-end" style={{ width: 96 }}>
+                      Line total
+                    </th>
+                    <th style={{ width: 40 }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.line_items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <select className="form-select form-select-sm" value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}>
+                          <option value="">Select item…</option>
+                          {inventoryItems.map((inv) => (
+                            <option key={inv.id} value={inv.id}>
+                              {inv.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" min="1" className="form-control form-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
+                      </td>
+                      <td>
+                        <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
+                      </td>
+                      <td className="text-end small fw-medium">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
+                      <td>
+                        {formData.line_items.length > 1 && (
+                          <button type="button" className="btn btn-sm btn-outline-danger btn-bulk-circle p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
+                            <TrashIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3} className="text-end small text-muted">
+                      Subtotal
+                    </td>
+                    <td className="text-end small fw-medium">{formatCurrency(lineSubtotal)}</td>
+                    <td />
+                  </tr>
+                  <tr>
+                    <td colSpan={2} className="text-end small">
+                      Import tax (optional)
+                    </td>
+                    <td>
+                      <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
+                    </td>
+                    <td />
+                    <td />
+                  </tr>
+                  <tr>
+                    <td colSpan={2} className="text-end small">
+                      Shipping (optional)
+                    </td>
+                    <td>
+                      <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
+                    </td>
+                    <td />
+                    <td />
+                  </tr>
+                  <tr className="table-light">
+                    <td colSpan={3} className="text-end fw-semibold">
+                      Total
+                    </td>
+                    <td className="text-end fw-bold">{formatCurrency(orderTotal)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div className="d-flex justify-content-start mb-3">
+              <button type="button" onClick={handleAddLineItem} className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                <PlusIcon style={{ width: 16, height: 16 }} />
+                <span>Add</span>
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              {/* Delivery Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Expected Delivery Date</label>
-                <input type="date" value={formData.expected_delivery_date} onChange={(e) => setFormData({ ...formData, expected_delivery_date: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-
-              {/* Line Items */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-900">Line Items</label>
-                  <button type="button" onClick={handleAddLineItem} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
-                    <PlusIcon className="w-4 h-4" />
-                    Add Item
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {formData.line_items.map((item, idx) => (
-                    <div key={idx} className="border rounded-lg p-3 bg-gray-50">
-                      <div className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-5">
-                          <label className="text-xs font-medium text-gray-700 block mb-1">Item</label>
-                          <select value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">
-                            <option value="">Select item...</option>
-                            {inventoryItems.map((inv) => (
-                              <option key={inv.id} value={inv.id}>
-                                {inv.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="col-span-2">
-                          <label className="text-xs font-medium text-gray-700 block mb-1">Qty</label>
-                          <input type="number" min="1" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" />
-                        </div>
-
-                        <div className="col-span-3">
-                          <label className="text-xs font-medium text-gray-700 block mb-1">Unit Price</label>
-                          <input type="number" min="0" step="0.01" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" />
-                        </div>
-
-                        <div className="col-span-2 text-right">
-                          <p className="text-xs font-medium text-gray-700 mb-1">Total</p>
-                          <p className="font-bold text-gray-900">${calculateLineTotal(item).toFixed(2)}</p>
-                        </div>
-
-                        {formData.line_items.length > 1 && (
-                          <div className="col-span-1">
-                            <button type="button" onClick={() => handleRemoveLineItem(idx)} className="btn btn-unstyled text-danger p-0">
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* PO Total */}
-              <div className="border-t pt-4 bg-blue-50 p-4 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-gray-900">Purchase Order Total:</span>
-                  <span className="text-2xl font-bold text-blue-600">${calculatePOTotal().toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Special instructions, payment terms, etc."
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 justify-end pt-6 border-t">
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="button" onClick={handleCreatePO} disabled={loading || formData.line_items.some((i) => !i.inventory_id)} className="btn btn-primary">
-                  {loading ? "…" : "Order"}
-                </button>
-              </div>
+            <div className="form-floating">
+              <textarea className="form-control form-control-sm" style={{ minHeight: 72 }} id="po_notes" value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
+              <label htmlFor="po_notes">Notes</label>
             </div>
           </div>
+          <div className="flex-shrink-0 border-top app-footer-padding">
+            <Footer_Actions
+              start={<Button_Toolbar icon={CheckIcon} label={loading ? "Saving…" : "Save"} onClick={handleCreatePO} className="btn-primary" disabled={loading || formData.line_items.every((i) => !i.inventory_id)} title="Save purchase order" />}
+              center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setShowCreate(false)} className="btn-outline-secondary" disabled={loading} title="Close" />}
+            />
+          </div>
         </div>
-      )}
+      </Modal>
+
+      {/* PO detail */}
+      <Modal isOpen={!!detailPoId} onClose={() => { setDetailPoId(null); setDetailPo(null); }} fullScreen noPadding>
+        <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0" style={{ minHeight: "100%" }}>
+          <div className="flex-shrink-0 p-2 border-bottom">
+            <h6 className="mb-0 fw-semibold">{detailPo?.po_number || "Purchase order"}</h6>
+          </div>
+          <div className="flex-grow-1 overflow-auto p-3 min-h-0">
+            {detailLoading ? (
+              <div className="text-center py-4 text-muted small">Loading…</div>
+            ) : detailPo ? (
+              <>
+                <div className="row g-2 mb-3 small">
+                  <div className="col-6">
+                    <span className="text-muted">Order date</span>
+                    <div>{detailPo.order_date ? new Date(detailPo.order_date).toLocaleDateString() : "—"}</div>
+                  </div>
+                  <div className="col-6">
+                    <span className="text-muted">Expected delivery</span>
+                    <div>{detailPo.expected_delivery_date ? new Date(detailPo.expected_delivery_date).toLocaleDateString() : "—"}</div>
+                  </div>
+                  <div className="col-12">
+                    <span className="text-muted">Total</span>
+                    <div className="fw-bold">{formatCurrency(detailPo.total_amount)}</div>
+                  </div>
+                </div>
+                {detailPo.line_items?.length > 0 && (
+                  <div className="table-responsive border rounded mb-3">
+                    <table className="table table-sm mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Item</th>
+                          <th className="text-end">Qty</th>
+                          <th className="text-end">Unit</th>
+                          <th className="text-end">Line</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detailPo.line_items.map((ln) => (
+                          <tr key={ln.id}>
+                            <td>{inventoryName(ln.inventory_id)}</td>
+                            <td className="text-end">{ln.quantity_ordered}</td>
+                            <td className="text-end">{formatCurrency(ln.unit_price)}</td>
+                            <td className="text-end">{formatCurrency(ln.line_total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <div className="border-top pt-3">
+                  <div className="d-flex align-items-center justify-content-between mb-2">
+                    <span className="fw-semibold small">Documents</span>
+                    <button type="button" className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onClick={() => setShowDocUpload(true)}>
+                      <DocumentPlusIcon style={{ width: 16, height: 16 }} />
+                      <span>Attach</span>
+                    </button>
+                  </div>
+                  {linkedDocs.length === 0 ? (
+                    <p className="text-muted small mb-0">No documents linked. Attach invoices or supporting files.</p>
+                  ) : (
+                    <ul className="list-group list-group-flush small">
+                      {linkedDocs.map((doc) => (
+                        <li key={doc.id} className="list-group-item px-0 d-flex justify-content-between align-items-center">
+                          <span className="text-truncate me-2">{doc.original_filename || doc.filename}</span>
+                          <a href={documentsAPI.fileUrl(doc.id)} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-link flex-shrink-0">
+                            Open
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-muted small">Could not load purchase order.</p>
+            )}
+          </div>
+          <div className="flex-shrink-0 border-top app-footer-padding">
+            <Footer_Actions
+              center={
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Close"
+                  onClick={() => {
+                    setDetailPoId(null);
+                    setDetailPo(null);
+                  }}
+                  className="btn-outline-secondary"
+                  title="Close"
+                />
+              }
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal_Document_Upload
+        isOpen={showDocUpload}
+        onClose={() => setShowDocUpload(false)}
+        entityType="purchase_order"
+        entityId={detailPoId}
+        title="Attach document to purchase order"
+        onUploaded={() => detailPoId && loadDetail(detailPoId)}
+      />
     </div>
   );
 };
