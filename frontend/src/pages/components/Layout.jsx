@@ -138,7 +138,7 @@ export default function Layout({ children }) {
 
           {/* Menu positioned bottom-right */}
           <div
-            className="position-absolute rounded-3 ps-2 pe-2 app-nav-bottom-menu-panel"
+            className="position-absolute rounded-3 ps-2 app-nav-bottom-menu-panel"
             style={{
               minWidth: "1rem",
               zIndex: 1051,
