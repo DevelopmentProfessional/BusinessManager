@@ -931,6 +931,17 @@ export default function Reports() {
               }
             >
               <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
+                <div className="position-absolute top-0 end-0 m-2" style={{ zIndex: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => setFullScreenMode((v) => !v)}
+                    className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`}
+                    style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
+                    title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
+                  >
+                    Full
+                  </button>
+                </div>
                 <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
               </div>
             </div>
@@ -1136,17 +1147,8 @@ export default function Reports() {
               onOpenFinancial={() => setShowFinancialDashboard(true)}
             />
 
-            {/* Right: Full + Saved Filters + Save */}
+            {/* Right: Saved Filters + Save */}
             <div className="d-flex align-items-center gap-1 position-relative">
-              <button
-                type="button"
-                onClick={() => setFullScreenMode((v) => !v)}
-                className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`}
-                style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
-                title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
-              >
-                Full
-              </button>
               {/* Saved Filters Dropup */}
               <div className="position-relative">
                 <Button_Toolbar 
