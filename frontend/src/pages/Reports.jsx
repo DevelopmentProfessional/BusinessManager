@@ -33,7 +33,24 @@
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, ChevronLeftIcon, ChevronRightIcon, CalculatorIcon, ShoppingCartIcon, ClipboardDocumentCheckIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import {
+  ChartBarIcon,
+  CalendarIcon,
+  UsersIcon,
+  BanknotesIcon,
+  CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
+  ArchiveBoxIcon,
+  ClockIcon,
+  ArrowDownTrayIcon,
+  ChevronUpDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CalculatorIcon,
+  ShoppingCartIcon,
+  ClipboardDocumentCheckIcon,
+  Cog6ToothIcon,
+} from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
 import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
