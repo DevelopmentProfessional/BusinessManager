@@ -1611,14 +1611,13 @@ const Profile = () => {
             <div className="app-footer-padding bg-white dark:bg-gray-800">
               <div className="app-footer-stack">
                 <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
-                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data", iconOnly: false }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General", iconOnly: true }] : [])].map(({ id, Icon, title, iconOnly }) => (
+                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data" }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : [])].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
                       icon={Icon}
                       label={title}
-                      compact={iconOnly}
                       onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                      className={`btn btn-sm ${isTrainingMode && !iconOnly ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
                       data-active={openAccordion === id}
                       title={title}
                     />
