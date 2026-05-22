@@ -93,7 +93,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
 
   return (
     <div className="sales-history-footer w-100 bg-body">
-      <div className="app-footer-inner app-footer-padding">
+      <div className="app-footer-padding">
         <div className="app-footer-stack">
           {/* Item type toggles — same pill toolbar pattern as Schedule footer */}
           <div className={`app-footer-toolbar d-flex align-items-center flex-wrap ${alignClass}`}>

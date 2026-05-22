@@ -112,7 +112,7 @@ export default function Table_Mobile({
 
       {/* Table footer controls - fixed at bottom, does not scroll */}
       <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="app-footer-inner app-footer-padding">
+        <div className="app-footer-padding">
           <div className="app-footer-stack">
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
           {columns.map((column) => (

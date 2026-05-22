@@ -1135,7 +1135,7 @@ export default function Sales() {
             )}
           </div>
           <div className="d-flex align-items-center gap-2">
-            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
+            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
               <Cog6ToothIcon style={{ width: 18, height: 18 }} />
             </button>
             {cartItemCount > 0 && (
@@ -1275,118 +1275,204 @@ export default function Sales() {
 
       {/* Fixed Footer - Search, Toggles, Cart */}
       <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-        <div className="app-footer-inner app-footer-padding">
+        <div className="app-footer-padding">
           <div className="app-footer-stack">
-          {/* Client Selection Panel - shown when account icon is active */}
-          {showClientPanel && (
-            <div className="relative">
-              {selectedClient ? (
-                <div className="flex items-center justify-between px-3 py-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <UserCircleIcon className="h-5 w-5 text-primary-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{selectedClient.name}</p>
-                      {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedClient.email}</p>}
-                    </div>
-                  </div>
-                  <button onClick={() => setSelectedClient(null)} className="flex-shrink-0 p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors ml-2" title="Remove client">
-                    <XMarkIcon className="h-4 w-4 text-gray-500" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-1">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      placeholder="Search clients..."
-                      value={clientPanelSearch}
-                      onChange={(e) => {
-                        setClientPanelSearch(e.target.value);
-                        setShowClientPanelDropdown(true);
-                      }}
-                      onFocus={() => {
-                        loadClients();
-                        setShowClientPanelDropdown(true);
-                      }}
-                      className="app-search-input w-full px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      autoFocus
-                    />
-                    {showClientPanelDropdown && clientPanelSearch && (
-                      <div className="absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-50">
-                        {clients
-                          .filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase()))
-                          .slice(0, 6)
-                          .map((c) => (
-                            <button
-                              key={c.id}
-                              onClick={() => {
-                                handleSelectClient(c);
-                                setClientPanelSearch("");
-                                setShowClientPanelDropdown(false);
-                                setShowClientPanel(false);
-                              }}
-                              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                            >
-                              <p className="font-medium">{c.name}</p>
-                              {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
-                            </button>
-                          ))}
-                        {clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
-                          <button
-                            onClick={() =>
-                              openAddClientModal((newClient) => {
-                                handleSelectClient(newClient);
-                                setClientsLocal((prev) => [...prev, newClient]);
-                                setClientPanelSearch("");
-                                setShowClientPanelDropdown(false);
-                                setShowClientPanel(false);
-                              })
-                            }
-                            className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
-                          >
-                            <PlusIcon className="h-4 w-4" />
-                            New
-                          </button>
-                        )}
+            {/* Client Selection Panel - shown when account icon is active */}
+            {showClientPanel && (
+              <div className="relative">
+                {selectedClient ? (
+                  <div className="flex items-center justify-between px-3 py-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <UserCircleIcon className="h-5 w-5 text-primary-600 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{selectedClient.name}</p>
+                        {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedClient.email}</p>}
                       </div>
-                    )}
+                    </div>
+                    <button onClick={() => setSelectedClient(null)} className="flex-shrink-0 p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors ml-2" title="Remove client">
+                      <XMarkIcon className="h-4 w-4 text-gray-500" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openAddClientModal((newClient) => {
-                        handleSelectClient(newClient);
-                        setClientsLocal((prev) => [...prev, newClient]);
-                        setClientPanelSearch("");
-                        setShowClientPanelDropdown(false);
-                        setShowClientPanel(false);
-                      })
-                    }
-                    className="flex-shrink-0 flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors"
-                    title="Add new client"
-                  >
-                    <PlusIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="flex gap-1">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        placeholder="Search clients..."
+                        value={clientPanelSearch}
+                        onChange={(e) => {
+                          setClientPanelSearch(e.target.value);
+                          setShowClientPanelDropdown(true);
+                        }}
+                        onFocus={() => {
+                          loadClients();
+                          setShowClientPanelDropdown(true);
+                        }}
+                        className="app-search-input w-full px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        autoFocus
+                      />
+                      {showClientPanelDropdown && clientPanelSearch && (
+                        <div className="absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-50">
+                          {clients
+                            .filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase()))
+                            .slice(0, 6)
+                            .map((c) => (
+                              <button
+                                key={c.id}
+                                onClick={() => {
+                                  handleSelectClient(c);
+                                  setClientPanelSearch("");
+                                  setShowClientPanelDropdown(false);
+                                  setShowClientPanel(false);
+                                }}
+                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                              >
+                                <p className="font-medium">{c.name}</p>
+                                {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
+                              </button>
+                            ))}
+                          {clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
+                            <button
+                              onClick={() =>
+                                openAddClientModal((newClient) => {
+                                  handleSelectClient(newClient);
+                                  setClientsLocal((prev) => [...prev, newClient]);
+                                  setClientPanelSearch("");
+                                  setShowClientPanelDropdown(false);
+                                  setShowClientPanel(false);
+                                })
+                              }
+                              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
+                            >
+                              <PlusIcon className="h-4 w-4" />
+                              New
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openAddClientModal((newClient) => {
+                          handleSelectClient(newClient);
+                          setClientsLocal((prev) => [...prev, newClient]);
+                          setClientPanelSearch("");
+                          setShowClientPanelDropdown(false);
+                          setShowClientPanel(false);
+                        })
+                      }
+                      className="flex-shrink-0 flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                      title="Add new client"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
-              {/* Controls Row 1 - History and Cart */}
-              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
-                {/* Sales History Button */}
+            {/* Controls Row 1 - Past + Filter (+ Invoice when relevant) */}
+            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
+              {/* Sales History Button */}
+              <Button_Toolbar
+                icon={ArrowTrendingUpIcon}
+                label="Past"
+                title="Sales history"
+                onClick={() => {
+                  setShowHistoryModal(true);
+                  loadTransactionHistory();
+                }}
+                className="btn-outline-secondary"
+              />
+
+              {/* Unified Sales Filter Button */}
+              <div className="position-relative">
                 <Button_Toolbar
-                  icon={ArrowTrendingUpIcon}
-                  label="Past"
-                  title="Sales history"
+                  icon={FunnelIcon}
+                  label="Filter"
                   onClick={() => {
-                    setShowHistoryModal(true);
-                    loadTransactionHistory();
+                    setShowSalesFilterDropdown((prev) => !prev);
+                    loadClients();
                   }}
-                  className="btn-outline-secondary"
+                  className={salesFilterActive ? "btn-primary" : "btn-outline-secondary"}
+                  data-active={salesFilterActive}
                 />
 
-                {/* Cart Button */}
+                {showSalesFilterDropdown && (
+                  <div className="position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="small fw-semibold text-muted">Sales Filter</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowServices(true);
+                          setShowProducts(true);
+                          setShowSubscriptions(true);
+                          setSelectedClient(null);
+                          setFilterClientSearch("");
+                        }}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
+                        Clear
+                      </button>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="small text-muted d-block mb-1">Client</label>
+                      <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
+                      {filterClientSearch && (
+                        <div className="app-card mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
+                          {filteredFilterClients.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => {
+                                handleSelectClient(c);
+                                setFilterClientSearch("");
+                              }}
+                              className="w-100 text-start px-2 py-1 border-0 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                              <div className="small fw-semibold">{c.name}</div>
+                              {c.email && <div className="small text-muted">{c.email}</div>}
+                            </button>
+                          ))}
+                          {filteredFilterClients.length === 0 && <div className="small text-muted px-2 py-1">No matching clients</div>}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="small text-muted d-block mb-1">Show</label>
+                      <div className="d-flex gap-1 flex-wrap">
+                        <button type="button" onClick={() => setShowServices((prev) => !prev)} className={`btn btn-sm ${showServices ? "btn-primary" : "btn-outline-secondary"}`}>
+                          Services
+                        </button>
+                        <button type="button" onClick={() => setShowProducts((prev) => !prev)} className={`btn btn-sm ${showProducts ? "btn-secondary" : "btn-outline-secondary"}`}>
+                          Products
+                        </button>
+                        <button type="button" onClick={() => setShowSubscriptions((prev) => !prev)} className={`btn btn-sm ${showSubscriptions ? "btn-success" : "btn-outline-secondary"}`}>
+                          Subscriptions
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="small text-muted d-block mb-1">Subscription start date</label>
+                      <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control form-control-sm" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
+              {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => setShowInvoiceModal(true)} className="btn-outline-secondary" title="Generate invoice for current cart" />}
+            </div>
+
+            {/* Search Row — Cart button + search input */}
+            <div className="app-footer-search-row d-flex align-items-center gap-1 w-100">
+              {/* Cart Button */}
+              <div className="pe-1">
                 <Button_Toolbar
                   icon={ShoppingCartIcon}
                   label="Cart"
@@ -1395,104 +1481,9 @@ export default function Sales() {
                   style={{ position: "relative" }}
                   badge={cartItemCount > 0 ? <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{cartItemCount}</span> : null}
                 />
-
-                {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
-                {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => setShowInvoiceModal(true)} className="btn-outline-secondary" title="Generate invoice for current cart" />}
               </div>
-
-              {/* Controls Row 2 - Client, Clear, Filters */}
-              <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
-                {/* Unified Sales Filter Button */}
-                <div className="position-relative">
-                  <Button_Toolbar
-                    icon={FunnelIcon}
-                    label="Filter"
-                    onClick={() => {
-                      setShowSalesFilterDropdown((prev) => !prev);
-                      loadClients();
-                    }}
-                    className={salesFilterActive ? "btn-primary" : "btn-outline-secondary"}
-                    data-active={salesFilterActive}
-                  />
-
-                  {showSalesFilterDropdown && (
-                    <div className="position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <div className="small fw-semibold text-muted">Sales Filter</div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowServices(true);
-                            setShowProducts(true);
-                            setShowSubscriptions(true);
-                            setSelectedClient(null);
-                            setFilterClientSearch("");
-                          }}
-                          className="btn btn-sm btn-outline-secondary"
-                        >
-                          Clear
-                        </button>
-                      </div>
-
-                      <div className="mb-2">
-                        <label className="small text-muted d-block mb-1">Client</label>
-                        <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
-                        {filterClientSearch && (
-                          <div className="app-card mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
-                            {filteredFilterClients.map((c) => (
-                              <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => {
-                                  handleSelectClient(c);
-                                  setFilterClientSearch("");
-                                }}
-                                className="w-100 text-start px-2 py-1 border-0 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
-                              >
-                                <div className="small fw-semibold">{c.name}</div>
-                                {c.email && <div className="small text-muted">{c.email}</div>}
-                              </button>
-                            ))}
-                            {filteredFilterClients.length === 0 && <div className="small text-muted px-2 py-1">No matching clients</div>}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mb-2">
-                        <label className="small text-muted d-block mb-1">Show</label>
-                        <div className="d-flex gap-1 flex-wrap">
-                          <button type="button" onClick={() => setShowServices((prev) => !prev)} className={`btn btn-sm ${showServices ? "btn-primary" : "btn-outline-secondary"}`}>
-                            Services
-                          </button>
-                          <button type="button" onClick={() => setShowProducts((prev) => !prev)} className={`btn btn-sm ${showProducts ? "btn-secondary" : "btn-outline-secondary"}`}>
-                            Products
-                          </button>
-                          <button type="button" onClick={() => setShowSubscriptions((prev) => !prev)} className={`btn btn-sm ${showSubscriptions ? "btn-success" : "btn-outline-secondary"}`}>
-                            Subscriptions
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="small text-muted d-block mb-1">Subscription start date</label>
-                        <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control form-control-sm" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-          {/* Search Row — last in stack so bottom inset matches +Nav toggle */}
-          <div className="app-footer-search-row relative w-100">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products and services..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="app-search-input w-full pl-10 pr-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-          </div>
+              <input type="text" placeholder="Search products and services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="app-search-input form-control w-100 rounded-pill" />
+            </div>
           </div>
         </div>
       </div>

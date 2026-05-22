@@ -247,9 +247,17 @@ export default function Services() {
       </div>
 
       {/* Fixed footer – headers + controls */}
-      <PageTableFooter searchTerm={searchTerm} onSearch={setSearchTerm} searchPlaceholder="Search services...">
+      <PageTableFooter
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        searchPlaceholder="Search services..."
+        addButton={
+          <Gate_Permission page="services" permission="write">
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreateService} className="btn-app-primary" title="Add service" />
+          </Gate_Permission>
+        }
+      >
         <Gate_Permission page="services" permission="write">
-          <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreateService} className="btn-app-primary" title="Add service" />
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={() => setShowBulkImport(true)} className="btn-app-secondary" />
         </Gate_Permission>
 

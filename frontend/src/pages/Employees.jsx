@@ -1052,9 +1052,13 @@ export default function Employees() {
               </div>
             ) : null
           }
+          addButton={
+            <Gate_Permission page="employees" permission="write">
+              <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreate} className="btn-app-primary" title="Add employee" />
+            </Gate_Permission>
+          }
         >
           <Gate_Permission page="employees" permission="write">
-            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreate} className="btn-app-primary" title="Add employee" />
             <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={() => setShowBulkImport(true)} className="btn-app-secondary" />
           </Gate_Permission>
 

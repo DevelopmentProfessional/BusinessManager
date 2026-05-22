@@ -396,9 +396,17 @@ export default function Clients() {
       <PageTableHeader columns={[{ label: "Client" }, { label: "Subscription", width: 120 }, { label: "Notify", width: 56 }]} />
 
       {/* Fixed bottom – headers + controls */}
-      <PageTableFooter searchTerm={searchTerm} onSearch={setSearchTerm} searchPlaceholder="Search by name, email, or phone...">
+      <PageTableFooter
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        searchPlaceholder="Search by name, email, or phone..."
+        addButton={
+          <Gate_Permission page="clients" permission="write">
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreateClient} className="btn-app-primary" title="Add client" />
+          </Gate_Permission>
+        }
+      >
         <Gate_Permission page="clients" permission="write">
-          <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleCreateClient} className="btn-app-primary" title="Add client" />
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={() => setShowBulkImport(true)} className="btn-app-secondary" />
         </Gate_Permission>
 

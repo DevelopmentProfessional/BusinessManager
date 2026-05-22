@@ -144,7 +144,7 @@ export default function Layout({ children }) {
               zIndex: 1051,
             }}
           >
-            <div className="d-flex flex-column gap-2 app-nav-bottom-menu app-footer-padding">
+            <div className="d-flex flex-column gap-2 app-nav-bottom-menu">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 const showEmployeeBadge = item.name === "Employees" && employeeUnreadTotal > 0;

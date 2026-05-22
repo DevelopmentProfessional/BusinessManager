@@ -197,7 +197,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
 
         {/* ── FOOTER ── */}
         <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="app-footer-inner app-footer-padding">
+          <div className="app-footer-padding">
             {showForm ? (
               <Footer_Actions
                 start={<Button_Toolbar icon={CheckIcon} label="Save" type="submit" form="supplier-panel-form" className="btn-outline-secondary" title="Save supplier" />}

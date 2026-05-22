@@ -433,10 +433,13 @@ export default function Inventory() {
             <Button_Toolbar icon={PresentationChartBarIcon} label="Stats" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} title="Inventory insights" />
           </div>
         }
+        addButton={
+          <Gate_Permission page="inventory" permission="write">
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
+          </Gate_Permission>
+        }
       >
         <Gate_Permission page="inventory" permission="write">
-          <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
-
           <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
         </Gate_Permission>
 

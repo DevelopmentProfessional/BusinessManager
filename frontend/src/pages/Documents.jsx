@@ -831,7 +831,19 @@ export default function Documents() {
         <PageTableHeader columns={[{ label: showTemplates ? "Template" : "Document" }, { label: showTemplates ? "Actions" : "View", width: showTemplates ? 80 : 60, className: "text-center" }]} />
 
         {/* Fixed bottom – headers + controls */}
-        <PageTableFooter searchTerm={searchTerm} onSearch={setSearchTerm} searchPlaceholder="Search by name, type, description, or tag…" hideSearch={showTemplates}>
+        <PageTableFooter
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name, type, description, or tag…"
+          hideSearch={showTemplates}
+          addButton={
+            !showTemplates ? (
+              <Gate_Permission page="documents" permission="write">
+                <Button_Toolbar icon={PlusIcon} label="Upload" onClick={handleUploadDocument} className="btn-app-primary" />
+              </Gate_Permission>
+            ) : null
+          }
+        >
           {/* Templates toggle */}
           <Button_Toolbar
             icon={DocumentTextIcon}
@@ -890,9 +902,6 @@ export default function Documents() {
           ) : (
             /* Documents mode controls */
             <>
-              <Gate_Permission page="documents" permission="write">
-                <Button_Toolbar icon={PlusIcon} label="Upload" onClick={handleUploadDocument} className="btn-app-primary" />
-              </Gate_Permission>
 
               {/* View Toggle: List <-> Grid */}
               <Button_Toolbar

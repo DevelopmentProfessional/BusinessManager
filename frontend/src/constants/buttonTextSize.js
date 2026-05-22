@@ -56,8 +56,9 @@ export function applyButtonDimensions(textSize, isTrainingMode) {
   /* Match bottom-right +Nav inset (Bootstrap p-2 = 0.5rem) on all text sizes */
   const footerPaddingBySize = { small: 0.5, medium: 0.5, large: 0.5 };
   root.style.setProperty("--app-footer-padding-y", `${footerPaddingBySize[textSize] ?? footerPaddingBySize.medium}rem`);
-  const navBtnWidth = isTrainingMode ? width : compact.width;
-  root.style.setProperty("--app-footer-nav-reserve", `calc(${navBtnWidth}rem + var(--app-footer-padding-x))`);
+  /* Override Profile page footer padding to 0px regardless of text size */
+  root.style.setProperty("--app-footer-padding-y-profile", "0px");
+  root.style.setProperty("--app-footer-nav-reserve", `${compact.width + 0.625}rem`);
   root.style.setProperty("--app-input-height", `${height}rem`);
   root.style.setProperty("--app-input-font-size", `${labelFontSize}rem`);
 }
