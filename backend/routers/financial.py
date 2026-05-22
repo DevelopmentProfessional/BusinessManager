@@ -2,7 +2,7 @@
 Router: /api/v1/financial
 Financial modules: AR, AP, GL, procurement.
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select, func
 from typing import List, Optional
 from uuid import UUID
@@ -248,6 +248,41 @@ def get_trial_balance(
 
 # ─── PROCUREMENT ──────────────────────────────────────────────────────────────
 
+def _po_line_subtotal(items: list) -> float:
+    total = 0.0
+    for item in items or []:
+        qty = _normalize_po_quantity(item.get("quantity"))
+        price = float(item.get("unit_price") or 0)
+        total += qty * price
+    return total
+
+
+def _normalize_po_quantity(quantity) -> int:
+    try:
+        return int(float(quantity or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _serialize_po(po: ProcurementOrder, lines: Optional[list] = None) -> dict:
+    data = {
+        "id": po.id,
+        "po_number": po.po_number,
+        "supplier_id": po.supplier_id,
+        "order_date": po.order_date,
+        "expected_delivery_date": po.expected_delivery_date,
+        "total_amount": float(po.total_amount or 0),
+        "import_tax": float(getattr(po, "import_tax", None) or 0),
+        "shipping_cost": float(getattr(po, "shipping_cost", None) or 0),
+        "status": po.status,
+        "notes": po.notes,
+        "created_at": getattr(po, "created_at", None),
+    }
+    if lines is not None:
+        data["line_items"] = lines
+    return data
+
+
 @router.post("/purchase-orders")
 def create_purchase_order(
     payload: dict,
@@ -255,36 +290,75 @@ def create_purchase_order(
     current_user: User = Depends(get_current_user),
 ):
     """Create a purchase order"""
-    
-    po = ProcurementOrder(
-        po_number=payload.get('po_number', f"PO-{datetime.utcnow().timestamp()}"),
-        supplier_id=payload['supplier_id'],
-        order_date=datetime.utcnow(),
-        expected_delivery_date=payload.get('expected_delivery_date'),
-        total_amount=sum([item['quantity'] * item['unit_price'] for item in payload.get('items', [])]),
-        status='draft',
-        created_by=current_user.id,
-        company_id=current_user.company_id
-    )
-    
-    session.add(po)
-    session.commit()
-    session.refresh(po)
-    
-    # Add line items
-    for item in payload.get('items', []):
-        line = ProcurementOrderLine(
-            po_id=po.id,
-            inventory_id=item['inventory_id'],
-            quantity_ordered=item['quantity'],
-            unit_price=item['unit_price'],
-            line_total=item['quantity'] * item['unit_price']
+    items = payload.get("items") or []
+    subtotal = _po_line_subtotal(items)
+    import_tax = float(payload.get("import_tax") or 0)
+    shipping_cost = float(payload.get("shipping_cost") or 0)
+    expected = payload.get("expected_delivery_date")
+    expected_dt = None
+    if expected:
+        try:
+            expected_dt = datetime.fromisoformat(str(expected).replace("Z", "+00:00"))
+        except ValueError:
+            expected_dt = datetime.strptime(str(expected)[:10], "%Y-%m-%d")
+
+    supplier = session.get(Supplier, payload["supplier_id"])
+    if not supplier:
+        raise HTTPException(status_code=400, detail="Supplier not found")
+    if supplier.company_id != current_user.company_id:
+        raise HTTPException(status_code=403, detail="Supplier does not belong to your company")
+
+    line_models = []
+    with session.begin():
+        po = ProcurementOrder(
+            po_number=payload.get("po_number", f"PO-{int(datetime.utcnow().timestamp())}"),
+            supplier_id=payload["supplier_id"],
+            order_date=datetime.utcnow(),
+            expected_delivery_date=expected_dt,
+            total_amount=subtotal + import_tax + shipping_cost,
+            import_tax=import_tax,
+            shipping_cost=shipping_cost,
+            status="draft",
+            created_by=current_user.id,
+            notes=payload.get("notes"),
+            company_id=current_user.company_id,
         )
-        session.add(line)
-    
-    session.commit()
-    
-    return po
+        session.add(po)
+        session.flush()
+
+        for item in items:
+            inventory = session.get(Inventory, item["inventory_id"])
+            if not inventory:
+                raise HTTPException(status_code=400, detail="Inventory item not found")
+            if inventory.company_id != current_user.company_id:
+                raise HTTPException(status_code=403, detail="Inventory item does not belong to your company")
+
+            qty = _normalize_po_quantity(item.get("quantity"))
+            unit_price = float(item.get("unit_price") or 0)
+            line = ProcurementOrderLine(
+                po_id=po.id,
+                inventory_id=item["inventory_id"],
+                quantity_ordered=qty,
+                unit_price=unit_price,
+                line_total=qty * unit_price,
+            )
+            session.add(line)
+            line_models.append(line)
+
+        session.flush()
+
+    session.refresh(po)
+    line_rows = [
+        {
+            "id": line.id,
+            "inventory_id": line.inventory_id,
+            "quantity_ordered": line.quantity_ordered,
+            "unit_price": line.unit_price,
+            "line_total": line.line_total,
+        }
+        for line in line_models
+    ]
+    return _serialize_po(po, line_rows)
 
 
 @router.get("/purchase-orders")
@@ -295,20 +369,49 @@ def list_purchase_orders(
     current_user: User = Depends(get_current_user),
 ):
     """List purchase orders"""
-    
+
     stmt = select(ProcurementOrder).where(
         ProcurementOrder.company_id == current_user.company_id
     )
-    
+
     if status:
         stmt = stmt.where(ProcurementOrder.status == status)
-    
+
     if supplier_id:
         stmt = stmt.where(ProcurementOrder.supplier_id == supplier_id)
-    
+
     stmt = stmt.order_by(ProcurementOrder.order_date.desc())
-    
-    return session.exec(stmt).all()
+
+    orders = session.exec(stmt).all()
+    return [_serialize_po(po) for po in orders]
+
+
+@router.get("/purchase-orders/{po_id}")
+def get_purchase_order(
+    po_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Get a purchase order with line items"""
+    po = session.get(ProcurementOrder, po_id)
+    if not po or po.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+
+    lines = session.exec(
+        select(ProcurementOrderLine).where(ProcurementOrderLine.po_id == po_id)
+    ).all()
+    line_rows = [
+        {
+            "id": ln.id,
+            "inventory_id": ln.inventory_id,
+            "quantity_ordered": ln.quantity_ordered,
+            "unit_price": ln.unit_price,
+            "line_total": ln.line_total,
+            "notes": ln.notes,
+        }
+        for ln in lines
+    ]
+    return _serialize_po(po, line_rows)
 
 
 @router.put("/purchase-orders/{po_id}/send")
@@ -321,13 +424,14 @@ def send_purchase_order(
     
     po = session.get(ProcurementOrder, po_id)
     if not po or po.company_id != current_user.company_id:
-        raise Exception("Not found")
+        raise HTTPException(status_code=404, detail="Purchase order not found")
     
-    po.status = 'sent'
+    po.status = "sent"
     session.add(po)
     session.commit()
-    
-    return po
+    session.refresh(po)
+
+    return _serialize_po(po)
 
 
 # ─── INVENTORY COSTING ────────────────────────────────────────────────────────

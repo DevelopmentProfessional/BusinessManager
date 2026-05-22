@@ -43,7 +43,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_Table_Footer";
 import PageTableHeader from "./components/Page_Table_Header";
 import PageTableRow from "./components/Page_Table_Row";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, PresentationChartBarIcon, ChatBubbleLeftIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import Modal_Discount_Rules from "./components/Modal_Discount_Rules";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -56,8 +56,6 @@ import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_Controls_Modal";
 import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
-import InventoryIntelligence from "./components/InventoryIntelligence";
-
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
   const navigate = useNavigate();
@@ -84,7 +82,6 @@ export default function Inventory() {
   const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
-  const [showIntelligence, setShowIntelligence] = useState(false);
   const scrollRef = useRef(null);
   const deleteInFlightRef = useRef(new Set());
 
@@ -380,13 +377,7 @@ export default function Inventory() {
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
-      <div className="position-relative flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
-      {showIntelligence && (
-        <div className="inventory-stats-float d-flex justify-content-center px-2">
-          <InventoryIntelligence inventory={inventory} onClose={() => setShowIntelligence(false)} />
-        </div>
-      )}
-
+      <div className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
       <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredInventory.length > 0 ? (
@@ -430,7 +421,6 @@ export default function Inventory() {
           <div className="app-footer-toolbar d-flex align-items-center">
             <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
             <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
-            <Button_Toolbar icon={PresentationChartBarIcon} label="Stats" onClick={() => setShowIntelligence((v) => !v)} className={showIntelligence ? "bg-blue-600 text-white" : "btn-app-secondary"} title="Inventory insights" />
           </div>
         }
         addButton={

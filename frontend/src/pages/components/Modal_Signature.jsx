@@ -26,7 +26,9 @@ import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import Widget_Signature from "./Widget_Signature";
 import api from "../../services/api";
-import { PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import Button_Toolbar from "./Button_Toolbar";
+import Footer_Actions from "./Footer_Actions";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
@@ -110,20 +112,17 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
           )}
         </div>
 
-        {/* Fixed Footer */}
         <div className="border-top bg-white dark:bg-gray-800 p-3">
-          <div className="d-flex justify-content-end gap-2">
-            {!showSignaturePad && savedSignature && (
-              <button type="button" className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={() => setShowSignaturePad(true)}>
-                <PencilIcon className="h-4 w-4" />
-                <span title="Replace signature">Replace</span>
-              </button>
-            )}
-            <button type="button" onClick={onClose} className="btn btn-secondary d-flex align-items-center gap-2">
-              <XMarkIcon className="h-4 w-4" />
-              <span>Close</span>
-            </button>
-          </div>
+          <Footer_Actions
+            start={
+              !showSignaturePad && savedSignature ? (
+                <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />
+              ) : (
+                <span className="app-footer-actions__spacer" aria-hidden="true" />
+              )
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-app-cancel" title="Close" />}
+          />
         </div>
       </div>
     </Modal>

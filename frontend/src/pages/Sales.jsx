@@ -35,6 +35,7 @@ import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
+import Filter_Catalog_Checkboxes from "./components/Filter_Catalog_Checkboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI } from "../services/api";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
@@ -1238,7 +1239,7 @@ export default function Sales() {
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #16a34a10, #22c55e10)", color: "#15803d", border: "1px solid #16a34a30" }}>
                   <UserIcon className="h-3.5 w-3.5" />
-                  Subscriptions
+                  Subs
                 </div>
                 <span className="text-xs text-gray-400">{filteredSubscriptions.length} available</span>
               </div>
@@ -1442,20 +1443,15 @@ export default function Sales() {
                       )}
                     </div>
 
-                    <div className="mb-2">
-                      <label className="small text-muted d-block mb-1">Show</label>
-                      <div className="d-flex gap-1 flex-wrap">
-                        <button type="button" onClick={() => setShowServices((prev) => !prev)} className={`btn btn-sm ${showServices ? "btn-primary" : "btn-outline-secondary"}`}>
-                          Services
-                        </button>
-                        <button type="button" onClick={() => setShowProducts((prev) => !prev)} className={`btn btn-sm ${showProducts ? "btn-secondary" : "btn-outline-secondary"}`}>
-                          Products
-                        </button>
-                        <button type="button" onClick={() => setShowSubscriptions((prev) => !prev)} className={`btn btn-sm ${showSubscriptions ? "btn-success" : "btn-outline-secondary"}`}>
-                          Subscriptions
-                        </button>
-                      </div>
-                    </div>
+                    <Filter_Catalog_Checkboxes
+                      className="mb-2"
+                      value={{ showServices, showProducts, showSubscriptions }}
+                      onChange={(key, checked) => {
+                        if (key === "showServices") setShowServices(checked);
+                        else if (key === "showProducts") setShowProducts(checked);
+                        else setShowSubscriptions(checked);
+                      }}
+                    />
 
                     <div>
                       <label className="small text-muted d-block mb-1">Subscription start date</label>
@@ -1471,17 +1467,14 @@ export default function Sales() {
 
             {/* Search Row — Cart button + search input */}
             <div className="app-footer-search-row d-flex align-items-center gap-1 w-100">
-              {/* Cart Button */}
-              <div className="pe-1">
-                <Button_Toolbar
-                  icon={ShoppingCartIcon}
-                  label="Cart"
-                  onClick={() => setShowCartModal(true)}
-                  className="btn btn-secondary"
-                  style={{ position: "relative" }}
-                  badge={cartItemCount > 0 ? <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{cartItemCount}</span> : null}
-                />
-              </div>
+              <Button_Toolbar
+                icon={ShoppingCartIcon}
+                label="Cart"
+                onClick={() => setShowCartModal(true)}
+                className="btn btn-secondary flex-shrink-0"
+                style={{ position: "relative" }}
+                badge={cartItemCount > 0 ? <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{cartItemCount}</span> : null}
+              />
               <input type="text" placeholder="Search products and services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="app-search-input form-control w-100 rounded-pill" />
             </div>
           </div>

@@ -941,6 +941,25 @@ def _ensure_user_db_environment_if_needed():
             print("  + Added column user.db_environment")
 
 
+def _ensure_procurement_order_tax_shipping_if_needed():
+    """Add import_tax and shipping_cost to procurement_order."""
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='procurement_order')"
+        )).scalar()
+        if not tbl_exists:
+            return
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='procurement_order'"
+        )).fetchall()}
+        for col, pg_type in (("import_tax", "DOUBLE PRECISION"), ("shipping_cost", "DOUBLE PRECISION")):
+            if col not in existing:
+                conn.execute(text(f'ALTER TABLE procurement_order ADD COLUMN {col} {pg_type} DEFAULT 0'))
+                print(f"  + Added column procurement_order.{col}")
+
+
 def _ensure_employee_lunch_and_procurement_if_needed():
     """Add lunch_start / lunch_duration_minutes to user;
     procurement_lead_days to inventory."""
@@ -1112,6 +1131,7 @@ def create_db_and_tables():
     _ensure_leave_request_supervisor_id_if_needed()
     _ensure_user_payroll_columns_if_needed()
     _ensure_insurance_plan_monthly_deduction_if_needed()
+    _ensure_insurance_plan_document_id_if_needed()
     _ensure_schedule_recurrence_columns_if_needed()
     _ensure_chat_message_table_if_needed()
     _ensure_app_settings_company_columns_if_needed()
@@ -1143,6 +1163,7 @@ def create_db_and_tables():
     _ensure_document_tag_tables_if_needed()
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_procurement_order_tax_shipping_if_needed()
     _ensure_company_registration_columns_if_needed()
     _ensure_client_auth_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()
@@ -1706,6 +1727,19 @@ def _ensure_insurance_plan_monthly_deduction_if_needed():
         if "monthly_deduction" not in col_names:
             conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
             print("  + Added column insurance_plan.monthly_deduction")
+
+
+def _ensure_insurance_plan_document_id_if_needed():
+    """Ensure insurance_plan table has document_id FK to shared plan documents."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='insurance_plan'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "document_id" not in col_names:
+            conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN document_id UUID REFERENCES document(id)"))
+            print("  + Added column insurance_plan.document_id")
 
 
 # ─── 10b MIGRATION: SCHEDULE RECURRENCE COLUMNS ────────────────────────────────

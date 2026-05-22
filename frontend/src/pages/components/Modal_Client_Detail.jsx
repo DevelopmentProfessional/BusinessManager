@@ -670,8 +670,13 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center gap-2 bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Client Details</h6>
+          {canDelete && (
+            <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
+              <TrashIcon style={{ width: 18, height: 18 }} />
+            </button>
+          )}
         </div>
 
         {/* Scrollable content */}
@@ -794,7 +799,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           <Footer_Actions
             start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />}
             center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-            end={canDelete ? <Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDelete} className="btn-outline-secondary" title="Delete client" /> : null}
           />
         </div>
       </div>

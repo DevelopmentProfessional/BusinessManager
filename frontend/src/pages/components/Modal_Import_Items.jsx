@@ -3,6 +3,7 @@ import Modal from "./Modal";
 import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon, PlusIcon, XMarkIcon, CheckCircleIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
 import Footer_Actions from "./Footer_Actions";
+import Button_Toolbar from "./Button_Toolbar";
 
 const FIELD_OPTIONS = [
   { value: "name", label: "Name (required)" },
@@ -484,7 +485,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
             <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 3 }}>
               <tr>
                 <th style={{ width: 56 }}>
-                  <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Reset column mappings to defaults" onClick={handleResetMappings}>
+                  <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Reset column mappings to defaults" onClick={handleResetMappings}>
                     <ArrowPathIcon style={{ width: 14, height: 14 }} />
                   </button>
                 </th>
@@ -500,7 +501,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                     onDrop={() => handleColDrop(colIndex)}
                   >
                     <div className="d-flex align-items-center gap-1">
-                      <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
+                      <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
                         <TrashIcon style={{ width: 12, height: 12 }} />
                       </button>
 
@@ -525,7 +526,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                 <tr key={`r_${rowIndex}`}>
                   <td className="text-muted small text-center align-middle">
                     <div className="d-flex align-items-center justify-content-center gap-1">
-                      <button type="button" className="btn btn-sm btn-link text-danger p-0" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
+                      <button type="button" className="btn btn-outline-danger btn-bulk-circle" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
                         <TrashIcon style={{ width: 12, height: 12 }} />
                       </button>
                       <span>{rowIndex + 1}</span>
@@ -558,7 +559,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
 
           <div className="row g-0 align-items-center">
             <div className="col-auto px-3">
-              <button type="button" className="btn btn-outline-secondary btn-sm" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
+              <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
                 <ArrowUpIcon style={{ width: 16, height: 16 }} />
               </button>
             </div>
@@ -566,31 +567,17 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
               <Footer_Actions
                 start={
                   <>
-                    <div className="d-flex align-items-center gap-1">
-                      <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-                      <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleAddRows} disabled={isSaving}>
-                        <PlusIcon className="h-4 w-4" />
+                    <div className="bulk-import-add-row-wrap">
+                      <input type="number" className="form-control form-control-sm" min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+                      <button type="button" className="btn btn-outline-secondary bulk-import-add-overlay d-inline-flex align-items-center justify-content-center gap-1" onClick={handleAddRows} disabled={isSaving}>
+                        <PlusIcon style={{ width: 14, height: 14 }} />
                         <span>Add</span>
                       </button>
                     </div>
-                    <button type="button" className="btn btn-primary d-flex align-items-center gap-2" onClick={handleImport} disabled={isSaving}>
-                      <ArrowDownTrayIcon className="h-4 w-4" />
-                      <span title={isSaving ? "Importing" : "Save import"}>{isSaving ? "…" : "Save"}</span>
-                    </button>
+                    <Button_Toolbar icon={ArrowDownTrayIcon} label={isSaving ? "Saving…" : "Save"} onClick={handleImport} className="btn-primary" disabled={isSaving} title="Import items" />
                   </>
                 }
-                center={
-                  <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={isSaving}>
-                    <XMarkIcon className="h-4 w-4" />
-                    <span>Cancel</span>
-                  </button>
-                }
-                end={
-                  <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleClearGrid} disabled={isSaving}>
-                    <TrashIcon className="h-4 w-4" />
-                    <span>Clear</span>
-                  </button>
-                }
+                center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" disabled={isSaving} title="Close" />}
               />
             </div>
           </div>
