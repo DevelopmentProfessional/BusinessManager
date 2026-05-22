@@ -45,6 +45,7 @@ import useViewMode from "../services/useViewMode";
 import Modal_Forecast_Calculator from "./components/Modal_Forecast_Calculator";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_Controls_Modal";
+import PageTableFooter from "./components/Page_Table_Footer";
 import FinancialDashboard from "./components/FinancialDashboard";
 
 const AVAILABLE_REPORTS = [
@@ -981,9 +982,12 @@ export default function Reports() {
       </div>
 
       {selectedReport && (
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1">
-          {/* Row 1: report filters */}
-          <div className="d-flex flex-wrap align-items-center gap-2">
+        <PageTableFooter
+          hideSearch
+          searchTerm=""
+          onSearch={() => {}}
+          beforeSearch={
+            <div className="d-flex flex-wrap align-items-center gap-2 w-100">
             <select
               className="form-select form-select-sm"
               style={CIRCULAR_SELECT_STYLE}
@@ -1096,10 +1100,10 @@ export default function Reports() {
                 Today
               </button>
             )}
-          </div>
-
-          {/* Row 2: Time Navigation + Report Selector + Saved Filters */}
-          <div className="d-flex justify-content-between align-items-center pt-2 position-relative">
+            </div>
+          }
+        >
+          <div className="d-flex justify-content-between align-items-center w-100 position-relative">
             {/* Left: Time Navigation */}
             <div className="d-flex align-items-center gap-1">
               <button
@@ -1200,7 +1204,7 @@ export default function Reports() {
               />
             </div>
           </div>
-        </div>
+        </PageTableFooter>
       )}
 
       {/* Forecast Calculator Modal */}

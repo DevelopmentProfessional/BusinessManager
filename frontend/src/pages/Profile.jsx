@@ -1611,7 +1611,7 @@ const Profile = () => {
             <div className="app-footer-padding bg-white dark:bg-gray-800">
               <div className="app-footer-stack">
                 <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
-                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data" }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : [])].map(({ id, Icon, title }) => (
+                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data" }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "" }] : [])].map(({ id, Icon, title }) => (
                     <Button_Toolbar
                       key={id}
                       icon={Icon}
