@@ -340,11 +340,11 @@ footer[aria-label="Actions"].app-footer-reserve {
   padding-bottom: var(--app-footer-padding-y) !important;
 }
 
-/* Profile page footer — use 0px bottom padding regardless of text size */
+/* Profile page footer — use standard footer padding for smooth page transitions */
 .profile-footer-nav,
 .profile-footer-nav .app-footer-padding-row,
 .profile-footer-nav .app-footer-padding {
-  padding-bottom: var(--app-footer-padding-y-profile, 0px) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
 }
 
 /* Modals/forms without nav reserve — keep symmetric horizontal inset only */
@@ -679,7 +679,7 @@ body.training-mode .app-footer-search .btn:not(.rounded-circle),
 body.training-mode .schedule-footer .btn:not(.rounded-circle),
 body.training-mode .profile-footer-nav .btn:not(.rounded-circle),
 body.training-mode footer[aria-label="Actions"] .btn:not(.rounded-circle) {
-  column-gap: 0 !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
 }
 
 body.training-mode .app-footer-search .btn svg + span,
@@ -690,7 +690,7 @@ body.training-mode footer[aria-label="Actions"] .btn svg + span,
 body.training-mode .flex-shrink-0.border-top .btn svg + span,
 body.training-mode .flex-shrink-0.border-t .btn svg + span,
 body.training-mode [class*="footer"] .btn svg + span {
-  margin-left: -0.125rem !important;
+  margin-left: 0 !important;
 }
 
 body.training-mode .btn.settings-accordion-btn {

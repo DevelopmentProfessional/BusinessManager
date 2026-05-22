@@ -37,7 +37,7 @@ export default function AppButton({ icon: Icon, label, onClick, variant, classNa
   const displayLabel = typeof label === "string" ? buttonDisplayLabel(normalizedLabel) : normalizedLabel;
   const showText = training && displayLabel.length > 0;
   const tooltipLabel = titleProp ?? (normalizedLabel || label);
-  const iconClass = `app-icon flex-shrink-0 ${showText ? "me-0" : ""}`;
+  const iconClass = "app-icon flex-shrink-0";
   const variantClass = variant ? VARIANT_CLASS[variant] || variant : "";
   const effectiveClass = training ? adjustTrainingMargins(className) : className;
 
@@ -49,14 +49,14 @@ export default function AppButton({ icon: Icon, label, onClick, variant, classNa
       title={tooltipLabel}
       aria-label={tooltipLabel}
       className={`btn flex-shrink-0 d-flex align-items-center
-        ${training ? "rounded-pill ps-0 pe-1 justify-content-start" : "rounded-circle p-0 justify-content-center"}
+        ${training ? "rounded-pill ps-0 pe-1 gap-1 justify-content-start" : "rounded-circle p-0 justify-content-center"}
         ${variantClass} ${effectiveClass}
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}
     >
       {Icon && <Icon className={iconClass} />}
       {showText && (
-        <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, marginLeft: "-0.125rem" }}>
+        <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1 }}>
           {displayLabel}
         </span>
       )}

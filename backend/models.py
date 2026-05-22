@@ -1946,6 +1946,59 @@ class PayScheduleRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class EmployeePaySchedule(BaseModel, table=True):
+    __tablename__ = "employee_pay_schedule"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    company_id: str = Field(index=True)
+    employee_id: UUID = Field(index=True)
+
+    frequency: str = Field(default="monthly")
+    work_days: Optional[str] = Field(default=None)
+    payday_weekday: Optional[str] = Field(default=None)
+
+    monthly_payday_type: Optional[str] = Field(default=None)
+    monthly_payday_date: Optional[int] = Field(default=None)
+    monthly_payday_week: Optional[int] = Field(default=None)
+    monthly_payday_weekday: Optional[str] = Field(default=None)
+
+    pay_timing: str = Field(default="arrears")
+    cycle_anchor_date: Optional[str] = Field(default=None)
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class EmployeePayScheduleCreate(SQLModel):
+    frequency: str = "monthly"
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str = "arrears"
+    cycle_anchor_date: Optional[str] = None
+
+
+class EmployeePayScheduleRead(SQLModel):
+    id: UUID
+    company_id: str
+    employee_id: UUID
+    frequency: str
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str
+    cycle_anchor_date: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 # Sale transaction models
 class SaleTransaction(BaseModel, table=True):
     __tablename__ = "sale_transaction"

@@ -58,7 +58,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
-import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_Controls_Modal";
@@ -351,10 +351,25 @@ export default function Schedule() {
   const days = getCalendarDays();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // Calculate number of columns for dynamic grid layout
-  // Use minmax(0, 1fr) so columns share width equally and don't size to content
-  const numEnabledDays = currentView === "week" || currentView === "month" ? days.slice(0, 7).length : 7;
-  const gridColumns = currentView === "week" ? `max-content repeat(${numEnabledDays}, minmax(0, 1fr))` : currentView === "day" ? "max-content minmax(0, 1fr)" : `repeat(${numEnabledDays}, minmax(0, 1fr))`;
+  const enabledWeekdays = [
+    { idx: 0, key: "sunday_enabled" },
+    { idx: 1, key: "monday_enabled" },
+    { idx: 2, key: "tuesday_enabled" },
+    { idx: 3, key: "wednesday_enabled" },
+    { idx: 4, key: "thursday_enabled" },
+    { idx: 5, key: "friday_enabled" },
+    { idx: 6, key: "saturday_enabled" },
+  ].filter((d) => scheduleSettings?.[d.key]);
+
+  const monthColCount = Math.max(enabledWeekdays.length, 1);
+  const monthWeeks = useMemo(() => {
+    if (currentView !== "month") return [];
+    const weeks = [];
+    for (let i = 0; i < days.length; i += monthColCount) {
+      weeks.push(days.slice(i, i + monthColCount));
+    }
+    return weeks;
+  }, [currentView, days, monthColCount]);
 
   // ─── 8 AUTO-SCROLL EFFECT ────────────────────────────────────────────────────
   // Auto-scroll to current time when switching to day or week view
@@ -364,16 +379,15 @@ export default function Schedule() {
       const startHour = parseInt(scheduleSettings.start_of_day.split(":")[0], 10) || 6;
       const endHour = parseInt(scheduleSettings.end_of_day.split(":")[0], 10) || 21;
 
-      // Only scroll if current hour is within the displayed range
-      if (currentHour >= startHour && currentHour <= endHour) {
-        // Small delay to ensure the grid is rendered
-        setTimeout(() => {
-          const timeSlotElement = calendarGridRef.current?.querySelector(`[data-hour="${currentHour}"]`);
-          if (timeSlotElement) {
-            timeSlotElement.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 100);
-      }
+      const scrollHour = currentHour < startHour ? startHour : currentHour > endHour ? endHour : currentHour;
+
+      // Small delay to ensure the grid is rendered
+      setTimeout(() => {
+        const timeSlotElement = calendarGridRef.current?.querySelector(`[data-hour="${scrollHour}"]`);
+        if (timeSlotElement) {
+          timeSlotElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
     }
   }, [currentView, scheduleSettings.start_of_day, scheduleSettings.end_of_day]);
 
@@ -426,13 +440,13 @@ export default function Schedule() {
         console.warn("Insufficient permission to create an appointment. Modal will not open.");
         return;
       }
-      
+
       // Check if the selected date is in the past
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const selectedDate = new Date(date);
       selectedDate.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate < today) {
         setPastDateError("Cannot book appointments in the past");
         if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
@@ -443,13 +457,40 @@ export default function Schedule() {
         setPastDateErrorTimer(timer);
         return;
       }
-      
+
+      if (!isDayEnabled(date)) {
+        setPastDateError("This day is disabled in Schedule Settings");
+        if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+        const timer = setTimeout(() => {
+          setPastDateError("");
+          setPastDateErrorTimer(null);
+        }, 2000);
+        setPastDateErrorTimer(timer);
+        return;
+      }
+
+      if (currentView === "day" || currentView === "week") {
+        const startHour = parseInt(scheduleSettings.start_of_day.split(":")[0], 10) || 6;
+        const endHour = parseInt(scheduleSettings.end_of_day.split(":")[0], 10) || 21;
+        const hour = new Date(date).getHours();
+        if (hour < startHour || hour > endHour) {
+          setPastDateError("This time is outside your business hours");
+          if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+          const timer = setTimeout(() => {
+            setPastDateError("");
+            setPastDateErrorTimer(null);
+          }, 2000);
+          setPastDateErrorTimer(timer);
+          return;
+        }
+      }
+
       setEditingAppointment({
         appointment_date: date,
       });
       setIsModalOpen(true);
     },
-    [canCreateSchedule, pastDateErrorTimer]
+    [canCreateSchedule, currentView, isDayEnabled, pastDateErrorTimer, scheduleSettings.end_of_day, scheduleSettings.start_of_day]
   );
 
   // ─── 11 DATA REFRESH ─────────────────────────────────────────────────────────
@@ -622,6 +663,36 @@ export default function Schedule() {
 
       if (!draggedAppointment) return;
 
+      if (!isDayEnabled(targetDate)) {
+        setPastDateError("This day is disabled in Schedule Settings");
+        if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+        const timer = setTimeout(() => {
+          setPastDateError("");
+          setPastDateErrorTimer(null);
+        }, 2000);
+        setPastDateErrorTimer(timer);
+        setDraggedAppointment(null);
+        setDragOverCell(null);
+        return;
+      }
+
+      if ((currentView === "day" || currentView === "week") && targetHour !== null) {
+        const startHour = parseInt(scheduleSettings.start_of_day.split(":")[0], 10) || 6;
+        const endHour = parseInt(scheduleSettings.end_of_day.split(":")[0], 10) || 21;
+        if (targetHour < startHour || targetHour > endHour) {
+          setPastDateError("This time is outside your business hours");
+          if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+          const timer = setTimeout(() => {
+            setPastDateError("");
+            setPastDateErrorTimer(null);
+          }, 2000);
+          setPastDateErrorTimer(timer);
+          setDraggedAppointment(null);
+          setDragOverCell(null);
+          return;
+        }
+      }
+
       const newDate = new Date(targetDate);
       if (targetHour !== null) {
         newDate.setUTCHours(targetHour, 0, 0, 0);
@@ -648,7 +719,7 @@ export default function Schedule() {
       setDraggedAppointment(null);
       setDragOverCell(null);
     },
-    [draggedAppointment, setAppointments]
+    [currentView, draggedAppointment, isDayEnabled, pastDateErrorTimer, refreshSchedules, scheduleSettings.end_of_day, scheduleSettings.start_of_day]
   );
 
   const closeModal = useCallback(() => {
@@ -676,16 +747,8 @@ export default function Schedule() {
       const service = services.find((s) => s.id === appointment.service_id);
       const clientName = client?.name || "Unknown Client";
       const serviceName = service?.name || "Unknown Service";
-      const primaryLabel =
-        appointment.appointment_type === "meeting"
-          ? appointment.notes || "Meeting"
-          : appointment.appointment_type === "task"
-            ? appointment.notes || "Task"
-            : serviceName;
-      const secondaryLabel =
-        appointment.appointment_type === "meeting" || appointment.appointment_type === "task"
-          ? [client?.name, service?.name].filter(Boolean).join(" - ")
-          : clientName;
+      const primaryLabel = appointment.appointment_type === "meeting" ? appointment.notes || "Meeting" : appointment.appointment_type === "task" ? appointment.notes || "Task" : serviceName;
+      const secondaryLabel = appointment.appointment_type === "meeting" || appointment.appointment_type === "task" ? [client?.name, service?.name].filter(Boolean).join(" - ") : clientName;
 
       return {
         clientName,
@@ -709,13 +772,17 @@ export default function Schedule() {
         {pastDateError && (
           <div className="alert alert-warning alert-dismissible fade show mx-2 mt-2 mb-0" role="alert" style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}>
             {pastDateError}
-            <button type="button" className="btn-close" onClick={() => {
-              setPastDateError("");
-              if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
-            }} />
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => {
+                setPastDateError("");
+                if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+              }}
+            />
           </div>
         )}
-        
+
         {/* Attendance Widget - Clock In/Out (conditionally rendered based on settings) */}
         {scheduleSettings.attendance_check_in_required && (
           <div className="mb-3 px-2">
@@ -737,7 +804,6 @@ export default function Schedule() {
             ref={calendarContainerRef}
             className="calendar-container"
             style={{
-              "--schedule-grid-cols": gridColumns,
               transform: `translateX(${swipeOffset}px)`,
               transition: swipeOffset === 0 ? "transform 0.3s ease-out, opacity 0.3s ease-out" : "none",
             }}
@@ -745,48 +811,36 @@ export default function Schedule() {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Week day headers - same column template as grid so widths match */}
-            <div className="calendar-header schedule-header" style={{ gridTemplateColumns: gridColumns }}>
-              {currentView === "day" ? (
-                <>
-                  <div className="calendar-header-cell time-header-cell" aria-hidden="true"></div>
-                  <div className="calendar-header-cell"></div>
-                </>
-              ) : currentView === "week" ? (
-                <>
-                  <div className="calendar-header-cell time-header-cell" aria-hidden="true"></div>
-                  {days.map((date, index) => {
-                    const isToday = date.toDateString() === new Date().toDateString();
-                    return (
-                      <div key={index} className={`calendar-header-cell ${isToday ? "today-header" : ""}`}>
-                        <div className="day-name">{weekDays[date.getDay()]}</div>
-                        <div className={`day-date ${isToday ? "today-badge" : ""}`}>{date.getDate()}</div>
-                      </div>
-                    );
-                  })}
-                </>
-              ) : (
-                // Month view headers - only show enabled days
-                days.slice(0, 7).map((date, index) => {
-                  const dayName = weekDays[date.getDay()];
-                  return (
-                    <div key={index} className="calendar-header-cell">
-                      {dayName}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Calendar grid */}
-            <div ref={calendarGridRef} className={`calendar-grid ${currentView === "week" ? "week-view" : currentView === "day" ? "day-view" : ""}`} style={{ gridTemplateColumns: gridColumns }}>
-              {currentView === "week"
-                ? // Week view with time slots
-                  getTimeSlots().map((hour) => (
-                    <React.Fragment key={hour}>
-                      <div className="calendar-cell time-slot time-label-cell" data-hour={hour}>
+            {currentView === "week" ? (
+              <table className="schedule-table schedule-table--week">
+                <colgroup>
+                  <col style={{ width: "35px" }} />
+                  {days.map((_, idx) => (
+                    <col key={`col-${idx}`} />
+                  ))}
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="calendar-header-cell time-header-cell" aria-hidden="true">
+                      <ClockIcon className="app-icon" />
+                    </th>
+                    {days.map((date, index) => {
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      return (
+                        <th key={index} className={`calendar-header-cell ${isToday ? "today-header" : ""}`}>
+                          <div className="day-name">{weekDays[date.getDay()]}</div>
+                          <div className={`day-date ${isToday ? "today-badge" : ""}`}>{date.getDate()}</div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody ref={calendarGridRef}>
+                  {getTimeSlots().map((hour) => (
+                    <tr key={hour} className="schedule-time-row">
+                      <th className="calendar-cell time-slot time-label-cell" data-hour={hour}>
                         {hour.toString().padStart(2, "0")}:00
-                      </div>
+                      </th>
                       {days.map((date, dayIndex) => {
                         const appointmentsForTimeSlot = getAppointmentsForDate(date).filter((appointment) => {
                           const appointmentTime = new Date(appointment.appointment_date);
@@ -797,7 +851,7 @@ export default function Schedule() {
                         const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
 
                         return (
-                          <div
+                          <td
                             key={`${hour}-${dayIndex}`}
                             className={`calendar-cell time-slot ${isToday ? "today-column" : ""} ${dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour ? "drag-over" : ""}`}
                             style={{ position: "relative" }}
@@ -811,8 +865,7 @@ export default function Schedule() {
                             onDrop={(e) => handleDrop(e, date, hour)}
                           >
                             {appointmentsForTimeSlot.length > 1
-                              ? // Overlap: render grey aggregated bar
-                                (() => {
+                              ? (() => {
                                   const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
                                     return new Date(event.appointment_date) < new Date(earliest.appointment_date) ? event : earliest;
                                   });
@@ -898,86 +951,193 @@ export default function Schedule() {
                                     </div>
                                   );
                                 })}
-                            {/* Current time indicator line */}
                             {isCurrentHour && (
                               <div className="current-time-indicator" style={{ top: `${currentMinutePercent}%` }}>
                                 <div className="current-time-dot"></div>
                                 <div className="current-time-line"></div>
                               </div>
                             )}
-                          </div>
+                          </td>
                         );
                       })}
-                    </React.Fragment>
-                  ))
-                : currentView === "day"
-                  ? // Day view with time slots
-                    getTimeSlots().map((hour) => {
-                      const appointmentsForTimeSlot = getAppointmentsForDate(days[0]).filter((appointment) => {
-                        const appointmentTime = new Date(appointment.appointment_date);
-                        return appointmentTime.getHours() === hour;
-                      });
-                      const isCurrentHour = currentTime.getHours() === hour && days[0].toDateString() === new Date().toDateString();
-                      const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : currentView === "day" ? (
+              <table className="schedule-table schedule-table--day">
+                <colgroup>
+                  <col style={{ width: "35px" }} />
+                  <col />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="calendar-header-cell time-header-cell" aria-hidden="true">
+                      <ClockIcon className="app-icon" />
+                    </th>
+                    <th className="calendar-header-cell"></th>
+                  </tr>
+                </thead>
+                <tbody ref={calendarGridRef}>
+                  {getTimeSlots().map((hour) => {
+                    const appointmentsForTimeSlot = getAppointmentsForDate(days[0]).filter((appointment) => {
+                      const appointmentTime = new Date(appointment.appointment_date);
+                      return appointmentTime.getHours() === hour;
+                    });
+                    const isCurrentHour = currentTime.getHours() === hour && days[0].toDateString() === new Date().toDateString();
+                    const currentMinutePercent = (currentTime.getMinutes() / 60) * 100;
 
-                      return (
-                        <React.Fragment key={hour}>
-                          <div className="calendar-cell time-slot time-label-cell" data-hour={hour}>
-                            {hour.toString().padStart(2, "0")}:00
-                          </div>
-                          <div
-                            className={`calendar-cell time-slot ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? "drag-over" : ""}`}
-                            style={{ position: "relative" }}
-                            onClick={() => {
-                              const slotDate = new Date(days[0]);
-                              slotDate.setHours(hour, 0, 0, 0);
-                              handleDateClick(slotDate);
-                            }}
-                            onDragOver={(e) => handleDragOver(e, days[0], hour)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, days[0], hour)}
-                          >
-                            {appointmentsForTimeSlot.length > 1
-                              ? // Overlap: render grey aggregated bar
-                                (() => {
-                                  const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
-                                    return new Date(event.appointment_date) < new Date(earliest.appointment_date) ? event : earliest;
-                                  });
-                                  const longestDuration = Math.max(...appointmentsForTimeSlot.map((e) => e.duration_minutes || 60));
-                                  const earliestTime = new Date(earliestEvent.appointment_date);
-                                  const minutesPastHour = earliestTime.getMinutes();
-                                  const topOffset = (minutesPastHour / 60) * 100;
-                                  const heightPercent = (longestDuration / 60) * 100;
+                    return (
+                      <tr key={hour} className="schedule-time-row">
+                        <th className="calendar-cell time-slot time-label-cell" data-hour={hour}>
+                          {hour.toString().padStart(2, "0")}:00
+                        </th>
+                        <td
+                          className={`calendar-cell time-slot ${dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour ? "drag-over" : ""}`}
+                          style={{ position: "relative" }}
+                          onClick={() => {
+                            const slotDate = new Date(days[0]);
+                            slotDate.setHours(hour, 0, 0, 0);
+                            handleDateClick(slotDate);
+                          }}
+                          onDragOver={(e) => handleDragOver(e, days[0], hour)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, days[0], hour)}
+                        >
+                          {appointmentsForTimeSlot.length > 1
+                            ? (() => {
+                                const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
+                                  return new Date(event.appointment_date) < new Date(earliest.appointment_date) ? event : earliest;
+                                });
+                                const longestDuration = Math.max(...appointmentsForTimeSlot.map((e) => e.duration_minutes || 60));
+                                const earliestTime = new Date(earliestEvent.appointment_date);
+                                const minutesPastHour = earliestTime.getMinutes();
+                                const topOffset = (minutesPastHour / 60) * 100;
+                                const heightPercent = (longestDuration / 60) * 100;
 
-                                  return (
-                                    <div
-                                      key={`overlap-${hour}`}
-                                      className="overlap-grey-bar"
-                                      title={`${appointmentsForTimeSlot.length} overlapping events`}
-                                      style={{
-                                        position: "absolute",
-                                        top: `${topOffset}%`,
-                                        height: `${heightPercent}%`,
-                                        width: "95%",
-                                        zIndex: 11441,
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setOverlapEvents([...appointmentsForTimeSlot]);
-                                      }}
-                                    >
-                                      <span className="overlap-count">{appointmentsForTimeSlot.length}</span>
-                                      <div className="overlap-dots">
-                                        {appointmentsForTimeSlot.map((appt) => (
-                                          <span key={appt.id} className="dot" style={{ color: employeeColorMap.get(appt.employee_id) || "#2563eb" }}>
-                                            &bull;
-                                          </span>
-                                        ))}
-                                      </div>
+                                return (
+                                  <div
+                                    key={`overlap-${hour}`}
+                                    className="overlap-grey-bar"
+                                    title={`${appointmentsForTimeSlot.length} overlapping events`}
+                                    style={{
+                                      position: "absolute",
+                                      top: `${topOffset}%`,
+                                      height: `${heightPercent}%`,
+                                      width: "95%",
+                                      zIndex: 11441,
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOverlapEvents([...appointmentsForTimeSlot]);
+                                    }}
+                                  >
+                                    <span className="overlap-count">{appointmentsForTimeSlot.length}</span>
+                                    <div className="overlap-dots">
+                                      {appointmentsForTimeSlot.map((appt) => (
+                                        <span key={appt.id} className="dot" style={{ color: employeeColorMap.get(appt.employee_id) || "#2563eb" }}>
+                                          &bull;
+                                        </span>
+                                      ))}
                                     </div>
-                                  );
-                                })()
-                              : appointmentsForTimeSlot.map((appointment) => {
+                                  </div>
+                                );
+                              })()
+                            : appointmentsForTimeSlot.map((appointment) => {
+                                const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
+                                const appointmentTime = new Date(appointment.appointment_date);
+                                const timeString = appointmentTime.toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                                });
+
+                                const employeeColor = employeeColorMap.get(appointment.employee_id) || "#2563eb";
+                                const minutesPastHour = appointmentTime.getMinutes();
+                                const topOffset = (minutesPastHour / 60) * 100;
+                                const duration = appointment.duration_minutes || 60;
+                                const heightPercent = (duration / 60) * 100;
+                                const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
+
+                                const isMeeting = appointment.appointment_type === "meeting";
+                                const isCancelled = appointment.status === "cancelled";
+                                return (
+                                  <div
+                                    key={appointment.id}
+                                    className="appointment-event"
+                                    title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
+                                    style={{
+                                      backgroundColor: employeeColor,
+                                      position: "absolute",
+                                      top: `${topOffset}%`,
+                                      height: `${heightPercent}%`,
+                                      width: "95%",
+                                      zIndex: 10000 + minutesFromMidnight,
+                                      opacity: isCancelled ? 0.65 : 1,
+                                    }}
+                                    draggable={true}
+                                    onDragStart={(e) => handleDragStart(e, appointment)}
+                                    onDragEnd={handleDragEnd}
+                                    onClick={(e) => handleAppointmentClick(e, appointment)}
+                                  >
+                                    <div className="appointment-time">{timeString}</div>
+                                    <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
+                                      {primaryLabel}
+                                    </div>
+                                    {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
+                                    <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
+                                      {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>$</span>}
+                                      {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          {isCurrentHour && (
+                            <div className="current-time-indicator" style={{ top: `${currentMinutePercent}%` }}>
+                              <div className="current-time-dot"></div>
+                              <div className="current-time-line"></div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <table className="schedule-table schedule-table--month">
+                <thead>
+                  <tr>
+                    {enabledWeekdays.map((d) => (
+                      <th key={d.key} className="calendar-header-cell">
+                        {weekDays[d.idx]}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody ref={calendarGridRef}>
+                  {monthWeeks.map((week, rowIndex) => (
+                    <tr key={`week-${rowIndex}`}>
+                      {Array.from({ length: monthColCount }).map((_, colIndex) => {
+                        const date = week[colIndex];
+                        if (!date) {
+                          return <td key={`empty-${rowIndex}-${colIndex}`} className="calendar-cell other-month" />;
+                        }
+                        const appointmentsForDate = getAppointmentsForDate(date);
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        return (
+                          <td
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`calendar-cell ${!isCurrentMonth(date) ? "other-month" : ""} ${isToday ? "today" : ""} ${dragOverCell?.date?.toDateString() === date.toDateString() ? "drag-over" : ""}`}
+                            onClick={() => handleDateClick(date)}
+                            onDragOver={(e) => handleDragOver(e, date)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, date)}
+                          >
+                            <div className="date-number">{date.getDate()}</div>
+                            {!filters.showOutOfOffice && appointmentsForDate.length > 0 && (
+                              <div className="appointments">
+                                {appointmentsForDate.map((appointment) => {
                                   const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
                                   const appointmentTime = new Date(appointment.appointment_date);
                                   const timeString = appointmentTime.toLocaleTimeString("en-US", {
@@ -987,156 +1147,79 @@ export default function Schedule() {
                                   });
 
                                   const employeeColor = employeeColorMap.get(appointment.employee_id) || "#2563eb";
-                                  const minutesPastHour = appointmentTime.getMinutes();
-                                  const topOffset = (minutesPastHour / 60) * 100;
-                                  const duration = appointment.duration_minutes || 60;
-                                  const heightPercent = (duration / 60) * 100;
-                                  const minutesFromMidnight = appointmentTime.getHours() * 60 + minutesPastHour;
-
                                   const isMeeting = appointment.appointment_type === "meeting";
                                   const isCancelled = appointment.status === "cancelled";
                                   return (
                                     <div
                                       key={appointment.id}
-                                      className="appointment-event"
+                                      className="appointment-dot"
                                       title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                                       style={{
                                         backgroundColor: employeeColor,
-                                        position: "absolute",
-                                        top: `${topOffset}%`,
-                                        height: `${heightPercent}%`,
-                                        width: "95%",
-                                        zIndex: 10000 + minutesFromMidnight,
                                         opacity: isCancelled ? 0.65 : 1,
+                                        borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
                                       }}
                                       draggable={true}
                                       onDragStart={(e) => handleDragStart(e, appointment)}
                                       onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
-                                      <div className="appointment-time">{timeString}</div>
-                                      <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                        {primaryLabel}
+                                      <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
+                                        <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                                          {primaryLabel}
+                                        </span>
+                                        {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1, flexShrink: 0 }}>$</span>}
                                       </div>
-                                      {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
-                                      <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
-                                        {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>$</span>}
-                                        {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
-                                      </div>
+                                      {secondaryLabel && (
+                                        <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {secondaryLabel}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
-                            {/* Current time indicator line */}
-                            {isCurrentHour && (
-                              <div className="current-time-indicator" style={{ top: `${currentMinutePercent}%` }}>
-                                <div className="current-time-dot"></div>
-                                <div className="current-time-line"></div>
                               </div>
                             )}
-                          </div>
-                        </React.Fragment>
-                      );
-                    })
-                  : // Month view
-                    days.map((date, index) => {
-                      const appointmentsForDate = getAppointmentsForDate(date);
-                      const isToday = date.toDateString() === new Date().toDateString();
-
-                      return (
-                        <div
-                          key={index}
-                          className={`calendar-cell ${!isCurrentMonth(date) ? "other-month" : ""} ${isToday ? "today" : ""} ${dragOverCell?.date?.toDateString() === date.toDateString() ? "drag-over" : ""}`}
-                          onClick={() => handleDateClick(date)}
-                          onDragOver={(e) => handleDragOver(e, date)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, date)}
-                        >
-                          <div className="date-number">{date.getDate()}</div>
-                          {!filters.showOutOfOffice && appointmentsForDate.length > 0 && (
-                            <div className="appointments">
-                              {appointmentsForDate.map((appointment) => {
-                                const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
-
-                                // Get time
-                                const appointmentTime = new Date(appointment.appointment_date);
-                                const timeString = appointmentTime.toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: false,
-                                });
-
-                                const employeeColor = employeeColorMap.get(appointment.employee_id) || "#2563eb";
-
-                                const isMeeting = appointment.appointment_type === "meeting";
-                                const isCancelled = appointment.status === "cancelled";
+                            {(() => {
+                              let oooForDate = getOutOfOfficeForDate(date);
+                              if (filters.showOutOfOffice) {
+                                if (filters.oooEmployeeIds.length > 0) {
+                                  oooForDate = oooForDate.filter((l) => filters.oooEmployeeIds.includes(l.user_id));
+                                }
+                                if (oooForDate.length === 0) return null;
                                 return (
-                                  <div
-                                    key={appointment.id}
-                                    className="appointment-dot"
-                                    title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
-                                    style={{
-                                      backgroundColor: employeeColor,
-                                      opacity: isCancelled ? 0.65 : 1,
-                                      borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
-                                    }}
-                                    draggable={true}
-                                    onDragStart={(e) => handleDragStart(e, appointment)}
-                                    onDragEnd={handleDragEnd}
-                                    onClick={(e) => handleAppointmentClick(e, appointment)}
-                                  >
-                                    <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
-                                      <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                                        {primaryLabel}
-                                      </span>
-                                      {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1, flexShrink: 0 }}>$</span>}
-                                    </div>
-                                    {secondaryLabel && (
-                                      <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                        {secondaryLabel}
-                                      </div>
-                                    )}
+                                  <div className="ooo-events">
+                                    {oooForDate.map((leave) => {
+                                      const emp = employees.find((e) => e.id === leave.user_id);
+                                      const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Employee";
+                                      const empColor = emp?.color || "#6b7280";
+                                      return (
+                                        <div key={leave.id} className="appointment-dot ooo-event" style={{ backgroundColor: empColor }} title={`${empName} - Out of Office`} onClick={(e) => e.stopPropagation()}>
+                                          <div className="appointment-service">{empName}</div>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 );
-                              })}
-                            </div>
-                          )}
-                          {/* Out of Office: show events when filter ON, thin line when OFF */}
-                          {(() => {
-                            let oooForDate = getOutOfOfficeForDate(date);
-                            if (filters.showOutOfOffice) {
-                              if (filters.oooEmployeeIds.length > 0) {
-                                oooForDate = oooForDate.filter((l) => filters.oooEmployeeIds.includes(l.user_id));
+                              } else {
+                                if (oooForDate.length === 0) return null;
+                                const oooNames = oooForDate
+                                  .map((l) => {
+                                    const emp = employees.find((e) => e.id === l.user_id);
+                                    return emp ? `${emp.first_name} ${emp.last_name}` : "Employee";
+                                  })
+                                  .join(", ");
+                                return <div className="ooo-indicator-line" title={`Out of office: ${oooNames}`} onClick={(e) => e.stopPropagation()} />;
                               }
-                              if (oooForDate.length === 0) return null;
-                              return (
-                                <div className="ooo-events">
-                                  {oooForDate.map((leave) => {
-                                    const emp = employees.find((e) => e.id === leave.user_id);
-                                    const empName = emp ? `${emp.first_name} ${emp.last_name}` : "Employee";
-                                    const empColor = emp?.color || "#6b7280";
-                                    return (
-                                      <div key={leave.id} className="appointment-dot ooo-event" style={{ backgroundColor: empColor }} title={`${empName} - Out of Office`} onClick={(e) => e.stopPropagation()}>
-                                        <div className="appointment-service">{empName}</div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            } else {
-                              if (oooForDate.length === 0) return null;
-                              const oooNames = oooForDate
-                                .map((l) => {
-                                  const emp = employees.find((e) => e.id === l.user_id);
-                                  return emp ? `${emp.first_name} ${emp.last_name}` : "Employee";
-                                })
-                                .join(", ");
-                              return <div className="ooo-indicator-line" title={`Out of office: ${oooNames}`} onClick={(e) => e.stopPropagation()} />;
-                            }
-                          })()}
-                        </div>
-                      );
-                    })}
-            </div>
+                            })()}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -1270,7 +1353,7 @@ export default function Schedule() {
 
           {/* Footer with Cancel button */}
           <div className="flex-shrink-0 bg-white dark:bg-gray-900 p-4 ps-3 pt-2 d-flex justify-content-center">
-            <button type="button" className="btn btn-outline-secondary d-flex align-items-center justify-content-center"  onClick={() => setOverlapEvents(null)}>
+            <button type="button" className="btn btn-outline-secondary d-flex align-items-center justify-content-center" onClick={() => setOverlapEvents(null)}>
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
@@ -1279,7 +1362,28 @@ export default function Schedule() {
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Schedule Page Controls">
         <div className="small text-muted">Schedule settings are now managed directly from this page.</div>
-        {user?.id ? <ScheduleSettings userId={user.id} /> : <div className="text-muted small">Sign in to manage schedule settings.</div>}
+        {user?.id ? (
+          <ScheduleSettings
+            userId={user.id}
+            onSaved={(updated) => {
+              if (!updated) return;
+              setScheduleSettings({
+                start_of_day: updated.start_of_day || "06:00",
+                end_of_day: updated.end_of_day || "21:00",
+                attendance_check_in_required: updated.attendance_check_in_required ?? false,
+                monday_enabled: updated.monday_enabled ?? true,
+                tuesday_enabled: updated.tuesday_enabled ?? true,
+                wednesday_enabled: updated.wednesday_enabled ?? true,
+                thursday_enabled: updated.thursday_enabled ?? true,
+                friday_enabled: updated.friday_enabled ?? true,
+                saturday_enabled: updated.saturday_enabled ?? true,
+                sunday_enabled: updated.sunday_enabled ?? true,
+              });
+            }}
+          />
+        ) : (
+          <div className="text-muted small">Sign in to manage schedule settings.</div>
+        )}
       </PageControlsModal>
 
       <style>{`
@@ -1382,11 +1486,37 @@ export default function Schedule() {
           text-align: center;
           font-weight: 600;
           color: ${isDarkMode ? "#e2e8f0" : "#495057"};
-          padding: 8px 4px;
+          padding: 8px 0;
           border: 1px solid ${isDarkMode ? "#6b7280" : "#dee2e6"};
           border-right: none;
           min-width: 0;
           overflow: hidden;
+        }
+
+        .schedule-table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          table-layout: fixed;
+        }
+
+        .schedule-table thead th {
+          position: sticky;
+          top: 0;
+          z-index: 20000;
+          background: ${isDarkMode ? "#4a5568" : "#f8f9fa"};
+        }
+
+        .schedule-table thead th.time-header-cell {
+          position: sticky;
+          top: 0;
+          left: 0;
+          z-index: 20002;
+          background: ${isDarkMode ? "#4a5568" : "#f8f9fa"};
+        }
+
+        .schedule-time-row {
+          height: 48px;
         }
         
         .calendar-header-cell:last-child {
@@ -1404,9 +1534,25 @@ export default function Schedule() {
         }
 
         .calendar-header-cell.time-header-cell {
-          min-width: 3.25rem;
-          min-height: 2.5rem;
-          line-height: 1.25;
+          background: ${isDarkMode ? "#4a5568" : "#f8f9fa"};
+          color: ${isDarkMode ? "#e2e8f0" : "#495057"};
+          font-size: 12px;
+          font-weight: 600;
+          text-align: center;
+          vertical-align: middle;
+          padding: 4px 0;
+          white-space: nowrap;
+          box-sizing: border-box;
+          width: 35px;
+          min-width: 35px;
+          max-width: 35px;
+          border: none !important;
+          height: 100%;
+        }
+
+        .calendar-header-cell.time-header-cell .app-icon {
+          display: inline-block;
+          vertical-align: middle;
         }
         
         .calendar-grid {
@@ -1467,13 +1613,17 @@ export default function Schedule() {
           font-size: 12px;
           font-weight: 600;
           text-align: center;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 4px;
+          vertical-align: middle;
+          padding: 4px 0;
           white-space: nowrap;
           box-sizing: border-box;
-          min-width: 0;
+          width: 35px;
+          min-width: 35px;
+          max-width: 35px;
+          border: none !important;
+          position: sticky;
+          left: 0;
+          z-index: 1000;
           height: 100%;
         }
 
@@ -1490,8 +1640,11 @@ export default function Schedule() {
           overflow: auto;
           scrollbar-width: none;
           -ms-overflow-style: none;
-          border: 1px solid ${isDarkMode ? "#6b7280" : "#dee2e6"};
           height: 100%;
+        }
+
+        .calendar-cell:not(.time-label-cell) {
+          border: 1px solid ${isDarkMode ? "#6b7280" : "#dee2e6"};
         }
 
         .calendar-cell::-webkit-scrollbar {
@@ -1814,7 +1967,7 @@ export default function Schedule() {
         /* Responsive Styles */
         @media (max-width: 768px) {
           .calendar-header-cell {
-            padding: 6px 2px;
+            padding: 6px 0;
             font-size: 11px;
           }
           .calendar-header-cell .day-name {
@@ -1852,7 +2005,7 @@ export default function Schedule() {
 
         @media (max-width: 480px) {
           .calendar-header-cell {
-            padding: 4px 1px;
+            padding: 4px 0;
             font-size: 10px;
           }
           .calendar-header-cell .day-name {
