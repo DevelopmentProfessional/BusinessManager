@@ -78,6 +78,36 @@ const PAGE_OPTION_GROUPS = [
 ];
 const PERMISSION_TYPES = ["read", "write", "admin"];
 
+const PAY_SCHEDULE_DAYS = [
+  { key: "mon", label: "Mon", full: "Monday" },
+  { key: "tue", label: "Tue", full: "Tuesday" },
+  { key: "wed", label: "Wed", full: "Wednesday" },
+  { key: "thu", label: "Thu", full: "Thursday" },
+  { key: "fri", label: "Fri", full: "Friday" },
+  { key: "sat", label: "Sat", full: "Saturday" },
+  { key: "sun", label: "Sun", full: "Sunday" },
+];
+
+const PAY_SCHEDULE_WEEK_OPTS = [
+  { value: 1, label: "1st" },
+  { value: 2, label: "2nd" },
+  { value: 3, label: "3rd" },
+  { value: 4, label: "4th" },
+  { value: -1, label: "Last" },
+];
+
+function parsePayScheduleWorkDays(str) {
+  if (!str) return ["mon", "tue", "wed", "thu", "fri"];
+  return str
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function serializePayScheduleWorkDays(arr) {
+  return arr.join(",");
+}
+
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, onManagePermissions, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
   const [activeTab, setActiveTab] = useState("details");
@@ -141,6 +171,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const [paySlipsLoading, setPaySlipsLoading] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState(null);
   const [showPayModal, setShowPayModal] = useState(false);
+
+  const [employeePaySchedule, setEmployeePaySchedule] = useState(null);
+  const [employeePayScheduleLoading, setEmployeePayScheduleLoading] = useState(false);
+  const [employeePayScheduleSaving, setEmployeePayScheduleSaving] = useState(false);
+  const [employeePayScheduleError, setEmployeePayScheduleError] = useState("");
+  const [employeePayScheduleSuccess, setEmployeePayScheduleSuccess] = useState("");
 
   const { hasPermission } = useStore();
 
@@ -307,6 +343,36 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     }
   }, [activeTab, employee?.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!employee?.id) {
+      setEmployeePaySchedule(null);
+      setEmployeePayScheduleError("");
+      setEmployeePayScheduleSuccess("");
+      return;
+    }
+
+    setEmployeePayScheduleLoading(true);
+    setEmployeePayScheduleError("");
+    payrollAPI
+      .getEmployeeSchedule(employee.id)
+      .then((res) => {
+        if (cancelled) return;
+        const d = res?.data ?? res;
+        setEmployeePaySchedule(d && typeof d === "object" ? d : null);
+      })
+      .catch(() => {
+        if (!cancelled) setEmployeePaySchedule(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEmployeePayScheduleLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [employee?.id]);
+
   // ─── 6 HANDLERS: SIGNATURE ───────────────────────────────────────────────────
   const handleSignatureUpload = (e) => {
     const file = e.target.files?.[0];
@@ -408,7 +474,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.username.trim()) {
@@ -446,7 +512,34 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     submitData.sick_days = submitData.sick_days !== "" ? parseInt(submitData.sick_days) : null;
     submitData.sick_days_used = submitData.sick_days_used !== "" ? parseInt(submitData.sick_days_used) : null;
 
-    onSubmit(submitData);
+    const payFreq = String(submitData.pay_frequency || "").toLowerCase();
+    if (activeTab === "pay_settings" && employee?.id && employeePaySchedule && ["weekly", "biweekly", "monthly"].includes(payFreq)) {
+      setEmployeePayScheduleSaving(true);
+      setEmployeePayScheduleError("");
+      setEmployeePayScheduleSuccess("");
+      try {
+        const payload = {
+          frequency: payFreq,
+          work_days: employeePaySchedule.work_days ?? "mon,tue,wed,thu,fri",
+          payday_weekday: employeePaySchedule.payday_weekday ?? "fri",
+          monthly_payday_type: employeePaySchedule.monthly_payday_type ?? "date",
+          monthly_payday_date: employeePaySchedule.monthly_payday_date ?? 28,
+          monthly_payday_week: employeePaySchedule.monthly_payday_week ?? null,
+          monthly_payday_weekday: employeePaySchedule.monthly_payday_weekday ?? null,
+          pay_timing: employeePaySchedule.pay_timing ?? "arrears",
+          cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
+        };
+        await payrollAPI.updateEmployeeSchedule(employee.id, payload);
+        setEmployeePayScheduleSuccess("Pay settings saved");
+        setTimeout(() => setEmployeePayScheduleSuccess(""), 3000);
+      } catch (err) {
+        setEmployeePayScheduleError(err?.response?.data?.detail || "Failed to save pay settings");
+      } finally {
+        setEmployeePayScheduleSaving(false);
+      }
+    }
+
+    await onSubmit(submitData);
   };
 
   // ─── 7 HANDLERS: PERMISSIONS ─────────────────────────────────────────────────
@@ -502,6 +595,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     { key: "signature", label: "Signature", disabled: !employee },
     { key: "permissions", label: "Permissions", disabled: !employee },
     { key: "performance", label: "Performance", disabled: !employee },
+    { key: "pay_settings", label: "Pay settings", disabled: !employee },
     { key: "payments", label: "Payments", disabled: !employee },
   ];
 
@@ -793,208 +887,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {activeTab === "benefits" && (
             <div className="tab-pane">
               <div className="row g-3">
-                {/* Compensation */}
-                <div className="col-12">
-                  <h6 className="text-muted text-uppercase small mb-0">Compensation</h6>
-                  <hr className="mt-1 mb-2" />
-                </div>
-                <div className="col-md-6">
-                  <div className="position-relative">
-                    <label htmlFor="employment_type" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                      Employment Type
-                    </label>
-                    <div className="position-relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextOpen = !isEmploymentTypeDropdownOpen;
-                          setIsEmploymentTypeDropdownOpen(nextOpen);
-                          if (!nextOpen) setEmploymentTypeHelpKey(null);
-                        }}
-                        className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
-                        style={{ cursor: "pointer" }}
-                      >
-                        <span>{employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type"}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                          <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                        </svg>
-                      </button>
-                      {isEmploymentTypeDropdownOpen && (
-                        <div className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                          {employmentTypeOptions.map((option) => {
-                            const isHelpOpen = employmentTypeHelpKey === option.value;
-                            return (
-                              <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleInputChange({ target: { name: "employment_type", value: option.value } });
-                                    setIsEmploymentTypeDropdownOpen(false);
-                                    setEmploymentTypeHelpKey(null);
-                                  }}
-                                  className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
-                                  style={{ fontSize: "0.875rem" }}
-                                >
-                                  {option.label}
-                                </button>
-                                <div className="flex-shrink-0">
-                                  <button
-                                    type="button"
-                                    className="btn btn-link btn-sm p-0 text-primary border-0"
-                                    aria-label={`${option.label} help`}
-                                    onMouseEnter={(e) => {
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setEmploymentTypeHelpKey(option.value);
-                                    }}
-                                    onMouseLeave={() => setEmploymentTypeHelpKey((prev) => (prev === option.value ? null : prev))}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setEmploymentTypeHelpKey((prev) => (prev === option.value ? null : option.value));
-                                    }}
-                                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                                  >
-                                    ?
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {/* Fixed-position tooltip */}
-                      {employmentTypeHelpKey &&
-                        (() => {
-                          const opt = employmentTypeOptions.find((o) => o.value === employmentTypeHelpKey);
-                          if (!opt) return null;
-                          return (
-                            <div
-                              style={{ position: "fixed", top: employmentTypeHelpPos.top, left: employmentTypeHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                              className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                            >
-                              <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                                {opt.label}
-                              </div>
-                              <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
-                            </div>
-                          );
-                        })()}
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="position-relative">
-                    <label htmlFor="pay_frequency" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                      Pay Frequency
-                    </label>
-                    <div className="position-relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextOpen = !isPayFrequencyDropdownOpen;
-                          setIsPayFrequencyDropdownOpen(nextOpen);
-                          if (!nextOpen) setPayFrequencyHelpKey(null);
-                        }}
-                        className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
-                        style={{ cursor: "pointer" }}
-                      >
-                        <span>{payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency"}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                          <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                        </svg>
-                      </button>
-                      {isPayFrequencyDropdownOpen && (
-                        <div className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                          {payFrequencyOptions.map((option) => {
-                            const isHelpOpen = payFrequencyHelpKey === option.value;
-                            return (
-                              <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleInputChange({ target: { name: "pay_frequency", value: option.value } });
-                                    setIsPayFrequencyDropdownOpen(false);
-                                    setPayFrequencyHelpKey(null);
-                                  }}
-                                  className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
-                                  style={{ fontSize: "0.875rem" }}
-                                >
-                                  {option.label}
-                                </button>
-                                <div className="flex-shrink-0">
-                                  <button
-                                    type="button"
-                                    className="btn btn-link btn-sm p-0 text-primary border-0"
-                                    aria-label={`${option.label} help`}
-                                    onMouseEnter={(e) => {
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setPayFrequencyHelpKey(option.value);
-                                    }}
-                                    onMouseLeave={() => setPayFrequencyHelpKey((prev) => (prev === option.value ? null : prev))}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setPayFrequencyHelpKey((prev) => (prev === option.value ? null : option.value));
-                                    }}
-                                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                                  >
-                                    ?
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {/* Fixed-position tooltip */}
-                      {payFrequencyHelpKey &&
-                        (() => {
-                          const opt = payFrequencyOptions.find((o) => o.value === payFrequencyHelpKey);
-                          if (!opt) return null;
-                          return (
-                            <div
-                              style={{ position: "fixed", top: payFrequencyHelpPos.top, left: payFrequencyHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                              className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                            >
-                              <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                                {opt.label}
-                              </div>
-                              <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
-                            </div>
-                          );
-                        })()}
-                    </div>
-                  </div>
-                </div>
-                {formData.employment_type !== "hourly" && (
-                  <div className="col-md-6">
-                    <div className="input-group">
-                      <span className="input-group-text">$</span>
-                      <div className="form-floating">
-                        <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
-                        <label htmlFor="salary">Annual Salary</label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {formData.employment_type === "hourly" && (
-                  <div className="col-md-6">
-                    <div className="input-group">
-                      <span className="input-group-text">$</span>
-                      <div className="form-floating">
-                        <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
-                        <label htmlFor="hourly_rate">Hourly Rate</label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Insurance */}
                 <div className="col-12 mt-3">
                   <h6 className="text-muted text-uppercase small mb-0">Insurance</h6>
@@ -1253,6 +1145,429 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             </div>
           )}
 
+          {activeTab === "pay_settings" && (
+            <div className="tab-pane">
+              {employee ? (
+                <div className="row g-3">
+                  <div className="col-12">
+                    <h6 className="text-muted text-uppercase small mb-0">Compensation</h6>
+                    <hr className="mt-1 mb-2" />
+                  </div>
+
+                  <div className="col-md-6">
+                    <div className="position-relative">
+                      <label htmlFor="employment_type" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+                        Employment Type
+                      </label>
+                      <div className="position-relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextOpen = !isEmploymentTypeDropdownOpen;
+                            setIsEmploymentTypeDropdownOpen(nextOpen);
+                            if (!nextOpen) setEmploymentTypeHelpKey(null);
+                          }}
+                          className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                          style={{ cursor: "pointer" }}
+                        >
+                          <span>{employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type"}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
+                            <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+                          </svg>
+                        </button>
+                        {isEmploymentTypeDropdownOpen && (
+                          <div className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                            {employmentTypeOptions.map((option) => (
+                              <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleInputChange({ target: { name: "employment_type", value: option.value } });
+                                    setIsEmploymentTypeDropdownOpen(false);
+                                    setEmploymentTypeHelpKey(null);
+                                  }}
+                                  className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                  style={{ fontSize: "0.875rem" }}
+                                >
+                                  {option.label}
+                                </button>
+                                <div className="flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    className="btn btn-link btn-sm p-0 text-primary border-0"
+                                    aria-label={`${option.label} help`}
+                                    onMouseEnter={(e) => {
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
+                                      setEmploymentTypeHelpKey(option.value);
+                                    }}
+                                    onMouseLeave={() => setEmploymentTypeHelpKey((prev) => (prev === option.value ? null : prev))}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
+                                      setEmploymentTypeHelpKey((prev) => (prev === option.value ? null : option.value));
+                                    }}
+                                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
+                                  >
+                                    ?
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {employmentTypeHelpKey &&
+                          (() => {
+                            const opt = employmentTypeOptions.find((o) => o.value === employmentTypeHelpKey);
+                            if (!opt) return null;
+                            return (
+                              <div
+                                style={{ position: "fixed", top: employmentTypeHelpPos.top, left: employmentTypeHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
+                                className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                              >
+                                <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
+                                  {opt.label}
+                                </div>
+                                <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                              </div>
+                            );
+                          })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-md-6">
+                    <div className="position-relative">
+                      <label htmlFor="pay_frequency" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+                        Pay Frequency
+                      </label>
+                      <div className="position-relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextOpen = !isPayFrequencyDropdownOpen;
+                            setIsPayFrequencyDropdownOpen(nextOpen);
+                            if (!nextOpen) setPayFrequencyHelpKey(null);
+                          }}
+                          className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                          style={{ cursor: "pointer" }}
+                        >
+                          <span>{payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency"}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
+                            <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+                          </svg>
+                        </button>
+                        {isPayFrequencyDropdownOpen && (
+                          <div className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                            {payFrequencyOptions.map((option) => (
+                              <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleInputChange({ target: { name: "pay_frequency", value: option.value } });
+                                    setIsPayFrequencyDropdownOpen(false);
+                                    setPayFrequencyHelpKey(null);
+                                    if (["weekly", "biweekly", "monthly"].includes(option.value) && employeePaySchedule) {
+                                      setEmployeePaySchedule((p) => ({ ...p, frequency: option.value }));
+                                    }
+                                  }}
+                                  className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                  style={{ fontSize: "0.875rem" }}
+                                >
+                                  {option.label}
+                                </button>
+                                <div className="flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    className="btn btn-link btn-sm p-0 text-primary border-0"
+                                    aria-label={`${option.label} help`}
+                                    onMouseEnter={(e) => {
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
+                                      setPayFrequencyHelpKey(option.value);
+                                    }}
+                                    onMouseLeave={() => setPayFrequencyHelpKey((prev) => (prev === option.value ? null : prev))}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
+                                      setPayFrequencyHelpKey((prev) => (prev === option.value ? null : option.value));
+                                    }}
+                                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
+                                  >
+                                    ?
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {payFrequencyHelpKey &&
+                          (() => {
+                            const opt = payFrequencyOptions.find((o) => o.value === payFrequencyHelpKey);
+                            if (!opt) return null;
+                            return (
+                              <div
+                                style={{ position: "fixed", top: payFrequencyHelpPos.top, left: payFrequencyHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
+                                className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                              >
+                                <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
+                                  {opt.label}
+                                </div>
+                                <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                              </div>
+                            );
+                          })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {formData.employment_type !== "hourly" && (
+                    <div className="col-md-6">
+                      <div className="input-group">
+                        <span className="input-group-text">$</span>
+                        <div className="form-floating">
+                          <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                          <label htmlFor="salary">Annual Salary</label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {formData.employment_type === "hourly" && (
+                    <div className="col-md-6">
+                      <div className="input-group">
+                        <span className="input-group-text">$</span>
+                        <div className="form-floating">
+                          <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                          <label htmlFor="hourly_rate">Hourly Rate</label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="col-12 mt-3">
+                    <h6 className="text-muted text-uppercase small mb-0">Pay Schedule</h6>
+                    <hr className="mt-1 mb-2" />
+                  </div>
+
+                  {!employeePayScheduleLoading && employeePayScheduleError && (
+                    <div className="col-12">
+                      <div className="alert alert-danger py-2 px-3 small mb-0">{employeePayScheduleError}</div>
+                    </div>
+                  )}
+                  {!employeePayScheduleLoading && employeePayScheduleSuccess && (
+                    <div className="col-12">
+                      <div className="alert alert-success py-2 px-3 small mb-0">{employeePayScheduleSuccess}</div>
+                    </div>
+                  )}
+
+                  {employeePayScheduleLoading ? (
+                    <div className="col-12">
+                      <div className="text-center py-3">
+                        <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                      </div>
+                    </div>
+                  ) : !employeePaySchedule ? (
+                    <div className="col-12">
+                      <div className="text-muted small">Unable to load pay schedule.</div>
+                    </div>
+                  ) : !["weekly", "biweekly", "monthly"].includes(String(formData.pay_frequency || "").toLowerCase()) ? (
+                    <div className="col-12">
+                      <div className="text-muted small">Select Weekly, Bi-weekly, or Monthly pay frequency to configure payday and pay timing.</div>
+                    </div>
+                  ) : (
+                    <>
+                      {(String(formData.pay_frequency || "").toLowerCase() === "weekly" || String(formData.pay_frequency || "").toLowerCase() === "biweekly") && (
+                        <>
+                          <div className="col-12">
+                            <div className="fw-semibold small mb-2">Work Days</div>
+                            <div className="d-flex flex-wrap gap-2">
+                              {PAY_SCHEDULE_DAYS.map((d) => {
+                                const workDays = parsePayScheduleWorkDays(employeePaySchedule.work_days);
+                                const active = workDays.includes(d.key);
+                                return (
+                                  <button
+                                    key={d.key}
+                                    type="button"
+                                    onClick={() => {
+                                      const current = parsePayScheduleWorkDays(employeePaySchedule.work_days);
+                                      const next = current.includes(d.key) ? current.filter((x) => x !== d.key) : [...current, d.key];
+                                      setEmployeePaySchedule((p) => ({ ...p, work_days: serializePayScheduleWorkDays(next) }));
+                                    }}
+                                    className={`btn btn-sm ${active ? "btn-primary" : "btn-outline-secondary"}`}
+                                    style={{ minWidth: 48, fontSize: "0.8rem" }}
+                                  >
+                                    {d.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="col-12">
+                            <div className="fw-semibold small mb-2">Payday</div>
+                            <div className="d-flex flex-wrap gap-2">
+                              {PAY_SCHEDULE_DAYS.map((d) => (
+                                <button
+                                  key={d.key}
+                                  type="button"
+                                  onClick={() => setEmployeePaySchedule((p) => ({ ...p, payday_weekday: d.key }))}
+                                  className={`btn btn-sm ${employeePaySchedule.payday_weekday === d.key ? "btn-success" : "btn-outline-secondary"}`}
+                                  style={{ minWidth: 48, fontSize: "0.8rem" }}
+                                >
+                                  {d.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <div className="fw-semibold small mb-2">Cycle Start Date</div>
+                            <input type="date" className="form-control form-control-sm" style={{ maxWidth: 220 }} value={employeePaySchedule.cycle_anchor_date || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, cycle_anchor_date: e.target.value || null }))} />
+                          </div>
+                        </>
+                      )}
+
+                      {String(formData.pay_frequency || "").toLowerCase() === "monthly" && (
+                        <>
+                          <div className="col-12">
+                            <div className="fw-semibold small mb-2">Payday</div>
+                            <div className="d-flex gap-2 mb-3 flex-wrap">
+                              {[
+                                { value: "date", label: "Specific date" },
+                                { value: "weekday", label: "Weekday of month" },
+                              ].map((t) => (
+                                <button
+                                  key={t.value}
+                                  type="button"
+                                  onClick={() => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_type: t.value }))}
+                                  className={`btn btn-sm ${employeePaySchedule.monthly_payday_type === t.value ? "btn-primary" : "btn-outline-secondary"}`}
+                                  style={{ fontSize: "0.8rem" }}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {employeePaySchedule.monthly_payday_type === "date" && (
+                            <div className="col-12">
+                              <div className="d-flex align-items-center gap-2 flex-wrap">
+                                <label className="form-label small fw-semibold mb-0">Day of month</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={31}
+                                  className="form-control form-control-sm"
+                                  style={{ width: 80 }}
+                                  value={employeePaySchedule.monthly_payday_date || ""}
+                                  onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_date: parseInt(e.target.value) || null }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {employeePaySchedule.monthly_payday_type === "weekday" && (
+                            <div className="col-12">
+                              <div className="d-flex flex-wrap align-items-center gap-2">
+                                <label className="form-label small fw-semibold mb-0">The</label>
+                                <select className="form-select form-select-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_week ?? ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_week: parseInt(e.target.value) || null }))}>
+                                  <option value="">—</option>
+                                  {PAY_SCHEDULE_WEEK_OPTS.map((w) => (
+                                    <option key={w.value} value={w.value}>
+                                      {w.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <select className="form-select form-select-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_weekday || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_weekday: e.target.value || null }))}>
+                                  <option value="">— day —</option>
+                                  {PAY_SCHEDULE_DAYS.map((d) => (
+                                    <option key={d.key} value={d.key}>
+                                      {d.full}
+                                    </option>
+                                  ))}
+                                </select>
+                                <span className="text-muted small">of the month</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div className="col-12">
+                        <div className="fw-semibold small mb-2">Pay Timing</div>
+                        <div className="d-flex flex-column gap-2">
+                          {[
+                            { value: "arrears", label: "Arrears — pay after work is done" },
+                            { value: "advance", label: "Advance — pay before work begins" },
+                          ].map((opt) => (
+                            <div
+                              key={opt.value}
+                              onClick={() => setEmployeePaySchedule((p) => ({ ...p, pay_timing: opt.value }))}
+                              className={`p-3 rounded border ${employeePaySchedule.pay_timing === opt.value ? "border-primary bg-primary bg-opacity-10" : "border-secondary-subtle"}`}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <div className="d-flex align-items-center gap-2 mb-1">
+                                <input type="radio" readOnly checked={employeePaySchedule.pay_timing === opt.value} className="form-check-input mt-0" />
+                                <span className="fw-medium small">{opt.label}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="col-12">
+                        <button
+                          type="button"
+                          className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                          onClick={async () => {
+                            if (!employee?.id) return;
+                            const payFreq = String(formData.pay_frequency || "").toLowerCase();
+                            if (!["weekly", "biweekly", "monthly"].includes(payFreq)) return;
+                            setEmployeePayScheduleSaving(true);
+                            setEmployeePayScheduleError("");
+                            setEmployeePayScheduleSuccess("");
+                            try {
+                              const payload = {
+                                frequency: payFreq,
+                                work_days: employeePaySchedule.work_days ?? "mon,tue,wed,thu,fri",
+                                payday_weekday: employeePaySchedule.payday_weekday ?? "fri",
+                                monthly_payday_type: employeePaySchedule.monthly_payday_type ?? "date",
+                                monthly_payday_date: employeePaySchedule.monthly_payday_date ?? 28,
+                                monthly_payday_week: employeePaySchedule.monthly_payday_week ?? null,
+                                monthly_payday_weekday: employeePaySchedule.monthly_payday_weekday ?? null,
+                                pay_timing: employeePaySchedule.pay_timing ?? "arrears",
+                                cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
+                              };
+                              await payrollAPI.updateEmployeeSchedule(employee.id, payload);
+                              setEmployeePayScheduleSuccess("Pay settings saved");
+                              setTimeout(() => setEmployeePayScheduleSuccess(""), 3000);
+                            } catch (err) {
+                              setEmployeePayScheduleError(err?.response?.data?.detail || "Failed to save pay settings");
+                            } finally {
+                              setEmployeePayScheduleSaving(false);
+                            }
+                          }}
+                          disabled={employeePayScheduleSaving}
+                        >
+                          <CheckCircleIcon className="h-4 w-4" />
+                          <span>{employeePayScheduleSaving ? "Saving…" : "Save Pay settings"}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center p-4">
+                  <p className="text-muted">Create the employee first to configure pay settings.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ===== PAYMENTS TAB ===== */}
           {activeTab === "payments" && (
             <div className="tab-pane">
@@ -1384,9 +1699,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         {/* Action Buttons */}
         <Footer_Actions
           start={
-            (activeTab === "details" || activeTab === "benefits") ? (
-              <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} />
-            ) : null
+            activeTab === "details" || activeTab === "benefits" || activeTab === "pay_settings" ? <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} /> : null
           }
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
           end={

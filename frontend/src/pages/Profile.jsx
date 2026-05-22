@@ -47,19 +47,15 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import { UserIcon, CogIcon, HeartIcon, CalendarDaysIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, CurrencyDollarIcon, BanknotesIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI } from "../services/api";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
 import useBranding from "../services/useBranding";
 import { applyActiveColorTheme } from "../services/activeColorTheme";
-import Panel_Profile from "./components/Panel_Profile";
-import Panel_Benefits from "./components/Panel_Benefits";
-import Panel_Wages from "./components/Panel_Wages";
 import Panel_Settings from "./components/Panel_Settings";
 import Panel_General from "./components/Panel_General";
 import Panel_Database from "./components/Panel_Database";
-import Panel_Payroll from "./components/Panel_Payroll";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
@@ -190,7 +186,8 @@ const Profile = () => {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorUpdating, setColorUpdating] = useState(false);
   const [colorMessage, setColorMessage] = useState("");
-  const [openAccordion, setOpenAccordion] = useState("settings");
+  const [openAccordion, setOpenAccordion] = useState("");
+  const [meSectionOpen, setMeSectionOpen] = useState("profile");
   const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
 
   const [vacationRequests, setVacationRequests] = useState([]);
@@ -205,11 +202,10 @@ const Profile = () => {
   const [paySlips, setPaySlips] = useState([]);
   const [paySlipsLoading, setPaySlipsLoading] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState(null);
+  const [wageHistoryOpen, setWageHistoryOpen] = useState(false);
 
   const row1Ref = useRef(null);
   const [row1Height, setRow1Height] = useState(80);
-  const [row2Height, setRow2Height] = useState(0);
-  const row2ObsRef = useRef(null);
 
   const [settingsError, setSettingsError] = useState("");
   const [settingsSuccess, setSettingsSuccess] = useState("");
@@ -239,19 +235,6 @@ const Profile = () => {
     sunday_enabled: true,
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
-
-  const [paySchedule, setPaySchedule] = useState({
-    frequency: "monthly",
-    work_days: "mon,tue,wed,thu,fri",
-    payday_weekday: "fri",
-    monthly_payday_type: "date",
-    monthly_payday_date: 28,
-    monthly_payday_week: null,
-    monthly_payday_weekday: null,
-    pay_timing: "arrears",
-    cycle_anchor_date: null,
-  });
-  const [payScheduleSaving, setPayScheduleSaving] = useState(false);
 
   const [companyInfo, setCompanyInfo] = useState({
     company_name: "",
@@ -320,22 +303,6 @@ const Profile = () => {
     const obs = new ResizeObserver(update);
     obs.observe(row1Ref.current);
     return () => obs.disconnect();
-  }, []);
-
-  const handleRow2Ref = useCallback((el) => {
-    if (row2ObsRef.current) {
-      row2ObsRef.current.disconnect();
-      row2ObsRef.current = null;
-    }
-    if (!el) {
-      setRow2Height(0);
-      return;
-    }
-    const update = () => setRow2Height(el.offsetHeight);
-    update();
-    const obs = new ResizeObserver(update);
-    obs.observe(el);
-    row2ObsRef.current = obs;
   }, []);
 
   // ─── 6 SETTINGS LOAD EFFECTS ─────────────────────────────────────────────
@@ -413,17 +380,6 @@ const Profile = () => {
       }
     };
     loadSchedule();
-
-    const loadPaySchedule = async () => {
-      try {
-        const res = await payrollAPI.getSchedule();
-        const d = res?.data ?? res;
-        if (d?.frequency) setPaySchedule((p) => ({ ...p, ...d }));
-      } catch {
-        /* silently degrade */
-      }
-    };
-    loadPaySchedule();
   }, []);
 
   // ─── 7 DATABASE / IMPORT EFFECTS ─────────────────────────────────────────
@@ -583,21 +539,6 @@ const Profile = () => {
       setSettingsError(err.response?.data?.detail || "Failed to save schedule settings");
     } finally {
       setScheduleLoading(false);
-    }
-  };
-
-  const handleSavePaySchedule = async () => {
-    setPayScheduleSaving(true);
-    setSettingsError("");
-    setSettingsSuccess("");
-    try {
-      await payrollAPI.updateSchedule(paySchedule);
-      setSettingsSuccess("Payroll settings saved!");
-      setTimeout(() => setSettingsSuccess(""), 3000);
-    } catch (err) {
-      setSettingsError(err?.response?.data?.detail || "Failed to save payroll settings");
-    } finally {
-      setPayScheduleSaving(false);
     }
   };
 
@@ -832,7 +773,7 @@ const Profile = () => {
 
   // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
   useEffect(() => {
-    if (openAccordion !== "wages" || !user?.id) return;
+    if (!wageHistoryOpen || !user?.id) return;
     let cancelled = false;
     const load = async () => {
       setPaySlipsLoading(true);
@@ -849,11 +790,11 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [openAccordion, user?.id]);
+  }, [wageHistoryOpen, user?.id]);
 
   // ─── 12 LEAVE REQUEST EFFECTS & HANDLERS ─────────────────────────────────
   useEffect(() => {
-    if ((openAccordion !== "benefits" && !leaveManagementOpen) || !user?.id) return;
+    if ((meSectionOpen !== "benefits" && !leaveManagementOpen) || !user?.id) return;
     let cancelled = false;
     const load = async () => {
       setLeaveRequestsLoading(true);
@@ -873,7 +814,7 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [openAccordion, leaveManagementOpen, user?.id]);
+  }, [meSectionOpen, leaveManagementOpen, user?.id]);
 
   const refreshLeaveRequests = async () => {
     if (!user?.id) return;
@@ -1064,8 +1005,44 @@ const Profile = () => {
   const canAccessSettings = hasPermission("settings", "read");
   const canAccessGeneralSettings = ["manager", "admin"].includes((user?.role || "").toLowerCase());
 
-  const totalFooterHeight = Math.max(row1Height + row2Height, 80);
+  const totalFooterHeight = Math.max(row1Height, 80);
   const row1PanelBottom = totalFooterHeight;
+
+  const [meSectionHeaderHeight, setMeSectionHeaderHeight] = useState(44);
+  const meSectionBodyMaxHeight = `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px - ${meSectionHeaderHeight}px - 24px)`;
+
+  const meSectionHeaderRefs = useRef({});
+
+  const scrollHeaderToBottom = useCallback((el) => {
+    if (!el) return;
+    setTimeout(() => {
+      try {
+        el.scrollIntoView({ block: "end" });
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+  }, []);
+
+  const toggleMeSection = useCallback(
+    (id) => {
+      setMeSectionOpen((prev) => {
+        const next = prev === id ? "" : id;
+        scrollHeaderToBottom(meSectionHeaderRefs.current?.[id]);
+        return next;
+      });
+    },
+    [scrollHeaderToBottom]
+  );
+
+  useEffect(() => {
+    const id = meSectionOpen;
+    if (!id) return;
+    const el = meSectionHeaderRefs.current?.[id];
+    if (!el) return;
+    const h = el.offsetHeight;
+    if (h && Number.isFinite(h)) setMeSectionHeaderHeight(h);
+  }, [meSectionOpen, row1PanelBottom]);
 
   const settingsPanelStyle = {
     position: "fixed",
@@ -1090,77 +1067,342 @@ const Profile = () => {
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="profile-page d-flex flex-column flex-grow-1 min-h-0 h-100 overflow-hidden">
-      <div className="flex-grow-1 min-h-0" aria-hidden="true" />
+    <div className="profile-page d-flex flex-column flex-grow-1 min-h-0 h-100 overflow-hidden" style={{ height: "var(--vvp-height, 100dvh)" }}>
+      <div
+        className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column"
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          backgroundColor: "var(--bs-body-bg)",
+          paddingTop: "0.5rem",
+          paddingLeft: "0.5rem",
+          paddingRight: "0.5rem",
+          paddingBottom: "0.5rem",
+        }}
+      >
+        {openAccordion === "" && (
+          <>
+            <div style={{ flexGrow: 1, minHeight: 0 }} aria-hidden="true" />
 
-      {openAccordion === "profile" && <Panel_Profile user={user} isMobile={isMobile} row1PanelBottom={row1PanelBottom} formatDate={formatDate} getRoleBadgeColor={getRoleBadgeColor} />}
+            <div style={{ flexShrink: 0, minHeight: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
+                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  {meSectionOpen === "profile" && (
+                    <div className="p-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                      <div className="row">
+                        <div className="col-sm-6">
+                          <div className="flex wrap mb-1">
+                            <UserIcon className="w-4" />{" "}
+                            <div className="fw-medium p-1">
+                              {user.first_name} {user.last_name}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="flex wrap mb-1">
+                            <span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>{user.role || "Employee"}</span>
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="flex wrap mb-1">
+                            <div className="fw-medium p-1">{user.email || "Not set"}</div>
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="flex wrap mb-1">
+                            <div className="fw-medium p-1">{user.phone || "Not set"}</div>
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="flex wrap mb-1">
+                            <div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="flex wrap mb-1">
+                            <div className="fw-medium p-1">{formatDate(user.last_login)}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <hr className="my-2" />
+                      <h6 className="fw-semibold mb-2">Details</h6>
+                      <div className="row g-2">
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Username</div>
+                          <div className="fw-medium">{user.username || "Not set"}</div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Employee ID</div>
+                          <div className="fw-medium">{user.id || "N/A"}</div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Location</div>
+                          <div className="fw-medium">{user.location || "Not set"}</div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">IOD Number</div>
+                          <div className="fw-medium">{user.iod_number || "Not set"}</div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Reports To</div>
+                          <div className="fw-medium">{user.reports_to_name || user.reports_to || "Not set"}</div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Active</div>
+                          <div className="fw-medium">{user.is_active === false ? "No" : "Yes"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.profile = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleMeSection("profile")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("profile");
+                      }
+                    }}
+                  >
+                    <div className="d-flex align-items-center gap-1">
+                      <UserIcon className="h-4 w-4" />
+                      <span className="fw-semibold">Profile</span>
+                    </div>
+                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "profile" ? "rotate(180deg)" : "none" }} />
+                  </div>
+                </div>
 
-      {openAccordion === "benefits" && (
-        <Panel_Benefits
-          user={user}
-          isMobile={isMobile}
-          row1PanelBottom={row1PanelBottom}
-          leaveRequestsLoading={leaveRequestsLoading}
-          vacationRequests={vacationRequests}
-          sickRequests={sickRequests}
-          vacTotal={vacTotal}
-          vacUsed={vacUsed}
-          vacRemaining={vacRemaining}
-          sickTotal={sickTotal}
-          sickUsed={sickUsed}
-          sickRemaining={sickRemaining}
-          statusColor={statusColor}
-          openLeaveModal={openLeaveModal}
-        />
-      )}
+                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  {meSectionOpen === "wage" && (
+                    <div className="p-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                      <div className="d-grid gap-2">
+                        <button type="button" className="btn btn-outline-primary" onClick={() => setWageHistoryOpen(true)}>
+                          Open Wage History
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.wage = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleMeSection("wage")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("wage");
+                      }
+                    }}
+                  >
+                    <div className="d-flex align-items-center gap-1">
+                      <CurrencyDollarIcon className="h-4 w-4" />
+                      <span className="fw-semibold">Wage</span>
+                    </div>
+                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "wage" ? "rotate(180deg)" : "none" }} />
+                  </div>
+                </div>
 
-      {openAccordion === "wages" && <Panel_Wages isMobile={isMobile} row1PanelBottom={row1PanelBottom} paySlipsLoading={paySlipsLoading} paySlips={paySlips} setSelectedSlip={setSelectedSlip} />}
+                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  {meSectionOpen === "benefits" && (
+                    <div className="p-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                      <div className="row g-2 mb-3">
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Salary</div>
+                          <div className="fw-medium">{user.salary != null ? `$${Number(user.salary).toLocaleString()}` : "Not set"}</div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Pay Frequency</div>
+                          <div className="fw-medium" style={{ textTransform: "capitalize" }}>
+                            {user.pay_frequency || "Not set"}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="text-muted small">Insurance Plan</div>
+                          <div className="fw-medium">{user.insurance_plan || "Not set"}</div>
+                        </div>
+                      </div>
 
-      {openAccordion === "settings" && (
-        <Panel_Settings
-          isMobile={isMobile}
-          row1PanelBottom={row1PanelBottom}
-          isDarkMode={isDarkMode}
-          toggleDarkMode={toggleDarkMode}
-          employeeColor={employeeColor}
-          pendingColor={pendingColor}
-          setPendingColor={setPendingColor}
-          colorPickerOpen={colorPickerOpen}
-          setColorPickerOpen={setColorPickerOpen}
-          colorUpdating={colorUpdating}
-          colorMessage={colorMessage}
-          handleColorSave={handleColorSave}
-          FooterAlignIcon={FooterAlignIcon}
-          cycleFooterAlign={cycleFooterAlign}
-          user={user}
-          setSignatureModalOpen={setSignatureModalOpen}
-          isTrainingMode={isTrainingMode}
-          toggleViewMode={toggleViewMode}
-          buttonTextSize={buttonTextSize}
-          cycleButtonTextSize={cycleButtonTextSize}
-          handleLogout={handleLogout}
-          currentDbEnvironment={currentDbEnvironment}
-          dbLoading={dbLoading}
-          dbMessage={dbMessage}
-          dbError={dbError}
-          handleSwitchEnvironment={handleSwitchEnvironment}
-          DB_ENVIRONMENTS={DB_ENVIRONMENTS}
-        />
-      )}
+                      <div className="border-top pt-3">
+                        <h6 className="fw-semibold mb-3">Leave Management</h6>
 
-      {openAccordion === "payroll" && canAccessGeneralSettings && (
-        <Panel_Payroll
-          isMobile={isMobile}
-          settingsPanelStyle={settingsPanelStyle}
-          paySchedule={paySchedule}
-          setPaySchedule={setPaySchedule}
-          handleSavePaySchedule={handleSavePaySchedule}
-          payScheduleSaving={payScheduleSaving}
-          settingsError={settingsError}
-          settingsSuccess={settingsSuccess}
-          HelpIcon={HelpIcon}
-        />
-      )}
+                        {leaveRequestsLoading ? (
+                          <div className="text-center py-4">
+                            <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="row g-2 mb-3">
+                              <div className="col-6">
+                                <div className="bg-light rounded p-2 small">
+                                  <div className="fw-semibold text-primary">Vacation Days</div>
+                                  <div className="text-muted small mb-1">
+                                    {vacUsed} / {vacTotal} used
+                                  </div>
+                                  <div className="progress">
+                                    <div className="progress-bar bg-primary" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
+                                  </div>
+                                  <div className="text-muted small mt-1">{vacRemaining} remaining</div>
+                                </div>
+                              </div>
+                              <div className="col-6">
+                                <div className="bg-light rounded p-2 small">
+                                  <div className="fw-semibold text-warning">Sick Days</div>
+                                  <div className="text-muted small mb-1">
+                                    {sickUsed} / {sickTotal} used
+                                  </div>
+                                  <div className="progress">
+                                    <div className="progress-bar bg-warning" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
+                                  </div>
+                                  <div className="text-muted small mt-1">{sickRemaining} remaining</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mb-3">
+                              <h6 className="small fw-semibold mb-2">Pending Requests</h6>
+                              {vacationRequests.filter((r) => r.status === "pending").length === 0 && sickRequests.filter((r) => r.status === "pending").length === 0 ? (
+                                <p className="text-muted small mb-0">No pending requests</p>
+                              ) : (
+                                <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                                  <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
+                                    <thead className="table-light">
+                                      <tr>
+                                        <th>Type</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Days</th>
+                                        <th>Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {[...vacationRequests, ...sickRequests]
+                                        .filter((r) => r.status === "pending")
+                                        .map((req) => (
+                                          <tr key={req.id}>
+                                            <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
+                                            <td>{req.start_date}</td>
+                                            <td>{req.end_date}</td>
+                                            <td>{req.days_requested ?? "—"}</td>
+                                            <td>
+                                              <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
+                                                {req.status}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+
+                            <button type="button" className="btn btn-primary btn-sm w-100" onClick={() => openLeaveModal()}>
+                              <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
+                              Request Leave
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.benefits = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleMeSection("benefits")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("benefits");
+                      }
+                    }}
+                  >
+                    <div className="d-flex align-items-center gap-1">
+                      <HeartIcon className="h-4 w-4" />
+                      <span className="fw-semibold">Benefits</span>
+                    </div>
+                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "benefits" ? "rotate(180deg)" : "none" }} />
+                  </div>
+                </div>
+
+                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  {meSectionOpen === "settings" && (
+                    <div className="p-2" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                      <Panel_Settings
+                        embedded={true}
+                        isMobile={isMobile}
+                        row1PanelBottom={row1PanelBottom}
+                        isDarkMode={isDarkMode}
+                        toggleDarkMode={toggleDarkMode}
+                        employeeColor={employeeColor}
+                        pendingColor={pendingColor}
+                        setPendingColor={setPendingColor}
+                        colorPickerOpen={colorPickerOpen}
+                        setColorPickerOpen={setColorPickerOpen}
+                        colorUpdating={colorUpdating}
+                        colorMessage={colorMessage}
+                        handleColorSave={handleColorSave}
+                        FooterAlignIcon={FooterAlignIcon}
+                        cycleFooterAlign={cycleFooterAlign}
+                        user={user}
+                        setSignatureModalOpen={setSignatureModalOpen}
+                        isTrainingMode={isTrainingMode}
+                        toggleViewMode={toggleViewMode}
+                        buttonTextSize={buttonTextSize}
+                        cycleButtonTextSize={cycleButtonTextSize}
+                        handleLogout={handleLogout}
+                        currentDbEnvironment={currentDbEnvironment}
+                        dbLoading={dbLoading}
+                        dbMessage={dbMessage}
+                        dbError={dbError}
+                        handleSwitchEnvironment={handleSwitchEnvironment}
+                        DB_ENVIRONMENTS={DB_ENVIRONMENTS}
+                        HelpIcon={HelpIcon}
+                      />
+                    </div>
+                  )}
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.settings = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleMeSection("settings")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("settings");
+                      }
+                    }}
+                  >
+                    <div className="d-flex align-items-center gap-1">
+                      <CogIcon className="h-4 w-4" />
+                      <span className="fw-semibold">Settings</span>
+                    </div>
+                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       {openAccordion === "general" && canAccessGeneralSettings && (
         <Panel_General
@@ -1322,53 +1564,45 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Footer Tabs */}
-      <div className="flex-shrink-0 bg-body profile-footer-nav position-relative" style={{ zIndex: 1050 }}>
-        {canAccessSettings && (
-          <div ref={handleRow2Ref} className="app-footer-padding-row app-footer-padding pb-0">
-            <div className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
-              {[
-                { id: "database", Icon: CircleStackIcon, title: "Data" },
-                ...(canAccessGeneralSettings ? [{ id: "payroll", Icon: BanknotesIcon, title: "Pay" }] : []),
-              ].map(({ id, Icon, title }) => (
-                <Button_Toolbar
-                  key={id}
-                  icon={Icon}
-                  label={title}
-                  onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                  className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                  data-active={openAccordion === id}
-                />
-              ))}
+      {(canAccessSettings || canAccessGeneralSettings) && (
+        <>
+          {isMobile && <div className="app-footer-spacer" style={{ "--app-footer-h": `${row1Height}px` }} aria-hidden="true" />}
+
+          {/* Footer Tabs */}
+          <div
+            ref={row1Ref}
+            className="app-footer-search profile-footer-nav flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm"
+            style={{
+              zIndex: 1050,
+              ...(isMobile
+                ? {
+                    position: "fixed",
+                    bottom: "var(--keyboard-offset, 0px)",
+                    left: 0,
+                    right: 0,
+                  }
+                : null),
+            }}
+          >
+            <div className="app-footer-padding bg-white dark:bg-gray-800">
+              <div className="app-footer-stack">
+                <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
+                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data" }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "General" }] : [])].map(({ id, Icon, title }) => (
+                    <Button_Toolbar
+                      key={id}
+                      icon={Icon}
+                      label={title}
+                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
+                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
+                      data-active={openAccordion === id}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        )}
-
-        <div ref={row1Ref} className="app-footer-padding-row app-footer-padding">
-          <div className={`app-footer-toolbar d-flex align-items-center profile-footer-wrap-row ${footerJustify}`}>
-            {[
-              { id: "profile", Icon: UserIcon, title: "Profile" },
-              { id: "benefits", Icon: HeartIcon, title: "Benefits" },
-              { id: "wages", Icon: CurrencyDollarIcon, title: "Wages" },
-              { id: "settings", Icon: CogIcon, title: "Settings" },
-              ...(canAccessGeneralSettings
-                ? [
-                    { id: "general", Icon: CogIcon, title: "General" },
-                  ]
-                : []),
-            ].map(({ id, Icon, title }) => (
-              <Button_Toolbar
-                key={id}
-                icon={Icon}
-                label={title}
-                onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                data-active={openAccordion === id}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Signature Modal */}
       <Modal_Signature isOpen={signatureModalOpen} onClose={() => setSignatureModalOpen(false)} userId={user?.id} />
@@ -1457,6 +1691,69 @@ const Profile = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {wageHistoryOpen && (
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 1990 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setWageHistoryOpen(false);
+          }}
+        >
+          <div className="modal-dialog modal-fullscreen">
+            <div className="modal-content">
+              <div className="modal-header py-2">
+                <h6 className="modal-title mb-0">Wage History</h6>
+                <button type="button" className="btn-close" onClick={() => setWageHistoryOpen(false)} />
+              </div>
+              <div className="modal-body" style={{ fontSize: "0.85rem" }}>
+                {paySlipsLoading ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                  </div>
+                ) : paySlips.length === 0 ? (
+                  <p className="text-muted small">No pay slips on record.</p>
+                ) : (
+                  <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                    <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
+                      <thead className="table-light">
+                        <tr>
+                          <th>Period</th>
+                          <th className="text-end">Gross</th>
+                          <th className="text-end">Deductions</th>
+                          <th className="text-end">Net</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paySlips.map((slip) => (
+                          <tr key={slip.id}>
+                            <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
+                            <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td>
+                              <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2" style={{ fontSize: "0.75rem" }} onClick={() => setSelectedSlip(slip)}>
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer justify-content-center">
+                <button type="button" className="btn btn-secondary" onClick={() => setWageHistoryOpen(false)}>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

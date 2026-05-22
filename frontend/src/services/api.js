@@ -686,6 +686,8 @@ export const payrollAPI = {
   checkEligibility: (employeeId, periodStart) => api.get(`/payroll/check/${employeeId}?period_start=${encodeURIComponent(periodStart)}`),
   getSchedule: () => api.get("/payroll/schedule"),
   updateSchedule: (data) => api.put("/payroll/schedule", data),
+  getEmployeeSchedule: (employeeId) => api.get(`/payroll/employee-schedule/${employeeId}`),
+  updateEmployeeSchedule: (employeeId, data) => api.put(`/payroll/employee-schedule/${employeeId}`, data),
 };
 
 export const chatAPI = {

@@ -132,15 +132,7 @@ export default function useCalendarView({ scheduleSettings }) {
     (date, settings) => {
       const effectiveSettings = settings ?? scheduleSettings;
       const dayOfWeek = date.getDay();
-      const dayMap = [
-        "sunday_enabled",
-        "monday_enabled",
-        "tuesday_enabled",
-        "wednesday_enabled",
-        "thursday_enabled",
-        "friday_enabled",
-        "saturday_enabled",
-      ];
+      const dayMap = ["sunday_enabled", "monday_enabled", "tuesday_enabled", "wednesday_enabled", "thursday_enabled", "friday_enabled", "saturday_enabled"];
       return effectiveSettings[dayMap[dayOfWeek]];
     },
     [scheduleSettings]

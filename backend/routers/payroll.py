@@ -25,11 +25,35 @@ from datetime import datetime
 
 try:
     from backend.database import get_session
-    from backend.models import PaySlip, PaySlipCreate, PaySlipRead, User, InsurancePlan, PaySchedule, PayScheduleCreate, PayScheduleRead
+    from backend.models import (
+        PaySlip,
+        PaySlipCreate,
+        PaySlipRead,
+        User,
+        InsurancePlan,
+        PaySchedule,
+        PayScheduleCreate,
+        PayScheduleRead,
+        EmployeePaySchedule,
+        EmployeePayScheduleCreate,
+        EmployeePayScheduleRead,
+    )
     from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
     from database import get_session
-    from models import PaySlip, PaySlipCreate, PaySlipRead, User, InsurancePlan, PaySchedule, PayScheduleCreate, PayScheduleRead
+    from models import (
+        PaySlip,
+        PaySlipCreate,
+        PaySlipRead,
+        User,
+        InsurancePlan,
+        PaySchedule,
+        PayScheduleCreate,
+        PayScheduleRead,
+        EmployeePaySchedule,
+        EmployeePayScheduleCreate,
+        EmployeePayScheduleRead,
+    )
     from routers.auth import get_current_user
 
 router = APIRouter()
@@ -208,6 +232,92 @@ def upsert_pay_schedule(
         schedule.updated_at = datetime.utcnow()
     else:
         schedule = PaySchedule(company_id=company_id, **data.model_dump())
+    session.add(schedule)
+    session.commit()
+    session.refresh(schedule)
+    return schedule
+
+
+@router.get("/payroll/employee-schedule/{employee_id}", response_model=EmployeePayScheduleRead, tags=["payroll"])
+def get_employee_pay_schedule(
+    employee_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    employee = session.get(User, employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    if current_user.company_id and employee.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    company_id = current_user.company_id or ""
+    schedule = session.exec(
+        select(EmployeePaySchedule).where(
+            EmployeePaySchedule.company_id == company_id,
+            EmployeePaySchedule.employee_id == employee_id,
+        )
+    ).first()
+    if schedule:
+        return schedule
+
+    company_schedule = session.exec(select(PaySchedule).where(PaySchedule.company_id == company_id)).first()
+    if not company_schedule:
+        return EmployeePayScheduleRead(
+            id="00000000-0000-0000-0000-000000000000",
+            company_id=company_id,
+            employee_id=employee_id,
+            frequency="monthly",
+            work_days="mon,tue,wed,thu,fri",
+            payday_weekday="fri",
+            monthly_payday_type="date",
+            monthly_payday_date=28,
+            pay_timing="arrears",
+        )
+
+    return EmployeePayScheduleRead(
+        id="00000000-0000-0000-0000-000000000000",
+        company_id=company_id,
+        employee_id=employee_id,
+        frequency=company_schedule.frequency,
+        work_days=company_schedule.work_days,
+        payday_weekday=company_schedule.payday_weekday,
+        monthly_payday_type=company_schedule.monthly_payday_type,
+        monthly_payday_date=company_schedule.monthly_payday_date,
+        monthly_payday_week=company_schedule.monthly_payday_week,
+        monthly_payday_weekday=company_schedule.monthly_payday_weekday,
+        pay_timing=company_schedule.pay_timing,
+        cycle_anchor_date=company_schedule.cycle_anchor_date,
+    )
+
+
+@router.put("/payroll/employee-schedule/{employee_id}", response_model=EmployeePayScheduleRead, tags=["payroll"])
+def upsert_employee_pay_schedule(
+    employee_id: UUID,
+    data: EmployeePayScheduleCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    employee = session.get(User, employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    if current_user.company_id and employee.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    company_id = current_user.company_id or ""
+    schedule = session.exec(
+        select(EmployeePaySchedule).where(
+            EmployeePaySchedule.company_id == company_id,
+            EmployeePaySchedule.employee_id == employee_id,
+        )
+    ).first()
+
+    if schedule:
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(schedule, field, value)
+        schedule.updated_at = datetime.utcnow()
+    else:
+        schedule = EmployeePaySchedule(company_id=company_id, employee_id=employee_id, **data.model_dump())
+
     session.add(schedule)
     session.commit()
     session.refresh(schedule)

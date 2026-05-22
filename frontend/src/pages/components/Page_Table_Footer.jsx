@@ -49,7 +49,7 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
             {/* Search row - Add button + search input */}
             {!hideSearch && (
               <div className="app-footer-search-row d-flex align-items-center gap-1 w-100">
-                {addButton && <div className="pe-1">{addButton}</div>}
+                {addButton && <div>{addButton}</div>}
                 <input type="text" placeholder={searchPlaceholder} value={searchTerm} onChange={(e) => onSearch(e.target.value)} className="app-search-input form-control w-100 rounded-pill" />
               </div>
             )}
