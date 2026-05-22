@@ -33,7 +33,7 @@
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, CalculatorIcon, ShoppingCartIcon, ClipboardDocumentCheckIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { ChartBarIcon, CalendarIcon, UsersIcon, BanknotesIcon, CurrencyDollarIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, ClockIcon, ArrowDownTrayIcon, ChevronUpDownIcon, ChevronLeftIcon, ChevronRightIcon, CalculatorIcon, ShoppingCartIcon, ClipboardDocumentCheckIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
 import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
@@ -930,6 +930,16 @@ export default function Reports() {
               className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3"}
             >
               <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
+                <div className="position-absolute top-50 start-0 translate-middle-y ms-2" style={{ zIndex: 12 }}>
+                  <button type="button" onClick={() => handleNavigatePeriod(1)} className="btn btn-outline-secondary btn-bulk-circle" title="Previous period" aria-label="Previous period">
+                    <ChevronLeftIcon className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="position-absolute top-50 end-0 translate-middle-y me-2" style={{ zIndex: 12 }}>
+                  <button type="button" onClick={() => handleNavigatePeriod(-1)} disabled={currentPeriodOffset <= 0} className="btn btn-outline-secondary btn-bulk-circle" title="Next period" aria-label="Next period">
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </button>
+                </div>
                 <div className="position-absolute top-0 end-0 m-2" style={{ zIndex: 12 }}>
                   <button
                     type="button"
@@ -1069,27 +1079,15 @@ export default function Reports() {
           }
         >
           <div className="d-flex justify-content-between align-items-center w-100 position-relative">
-            {/* Left: Time Navigation */}
+            {/* Left: Save + Filter */}
             <div className="d-flex align-items-center gap-1">
-              <button type="button" onClick={() => handleNavigatePeriod(1)} className="btn btn-sm btn-outline-secondary" title="Previous period">
-                ←
-              </button>
-              <button type="button" onClick={() => handleNavigatePeriod(-1)} disabled={currentPeriodOffset <= 0} className="btn btn-sm btn-outline-secondary" title="Next period">
-                →
-              </button>
-            </div>
-
-            {/* Center: Report Selector */}
-            <Report_Selector_Dropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
-
-            {/* Right: Saved Filters + Save */}
-            <div className="d-flex align-items-center gap-1 position-relative">
+              <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
               {/* Saved Filters Dropup */}
               <div className="position-relative">
                 <Button_Toolbar icon={ChevronUpDownIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
                 {savedFiltersMenuOpen && (
-                  <div className="position-absolute bottom-100 end-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
+                  <div className="position-absolute bottom-100 start-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
                     {savedFilters.filter((f) => f.report_id === selectedReport?.id).length === 0 ? (
                       <div className="px-3 py-2 text-sm text-gray-500">No saved filters</div>
                     ) : (
@@ -1109,10 +1107,13 @@ export default function Reports() {
                   </div>
                 )}
               </div>
-
-              {/* Save Filter Button */}
-              <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
             </div>
+
+            {/* Center: Report Selector */}
+            <Report_Selector_Dropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
+
+            {/* Right: Spacer for balanced layout */}
+            <div className="d-flex align-items-center" style={{ minWidth: "6rem" }} />
           </div>
         </PageTableFooter>
       )}
