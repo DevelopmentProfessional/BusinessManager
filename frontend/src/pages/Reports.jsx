@@ -508,44 +508,50 @@ export default function Reports() {
   // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
   const getPeriodDuration = (dateRange) => {
     switch (dateRange) {
-      case "last7days": return { days: 7 };
-      case "last30days": return { days: 30 };
-      case "last3months": return { months: 3 };
-      case "last6months": return { months: 6 };
-      case "lastyear": return { years: 1 };
-      default: return { days: 30 };
+      case "last7days":
+        return { days: 7 };
+      case "last30days":
+        return { days: 30 };
+      case "last3months":
+        return { months: 3 };
+      case "last6months":
+        return { months: 6 };
+      case "lastyear":
+        return { years: 1 };
+      default:
+        return { days: 30 };
     }
   };
 
   const getStartDate = (dateRange, offset = 0) => {
     const duration = getPeriodDuration(dateRange);
     const base = new Date();
-    
+
     // Apply offset first
     if (offset !== 0) {
       if (duration.days) base.setDate(base.getDate() - duration.days * offset);
       else if (duration.months) base.setMonth(base.getMonth() - duration.months * offset);
       else if (duration.years) base.setFullYear(base.getFullYear() - duration.years * offset);
     }
-    
+
     // Then go back one period for the start date
     if (duration.days) base.setDate(base.getDate() - duration.days);
     else if (duration.months) base.setMonth(base.getMonth() - duration.months);
     else if (duration.years) base.setFullYear(base.getFullYear() - duration.years);
-    
+
     return base.toISOString().split("T")[0];
   };
 
   const getEndDate = (dateRange, offset = 0) => {
     if (offset === 0) return new Date().toISOString().split("T")[0];
-    
+
     const duration = getPeriodDuration(dateRange);
     const base = new Date();
-    
+
     if (duration.days) base.setDate(base.getDate() - duration.days * offset);
     else if (duration.months) base.setMonth(base.getMonth() - duration.months * offset);
     else if (duration.years) base.setFullYear(base.getFullYear() - duration.years * offset);
-    
+
     return base.toISOString().split("T")[0];
   };
 
@@ -885,20 +891,17 @@ export default function Reports() {
     <div className={`h-full flex flex-col reports-page${fullScreenMode ? " reports-page--full" : ""}`} style={{ minHeight: 0 }}>
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
       {!fullScreenMode && (
-      <div className="p-1 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports</h1>
-        <div className="d-flex align-items-center gap-2">
-          <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
-          <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
-          <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+        <div className="p-1 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports</h1>
+          <div className="d-flex align-items-center gap-2">
+            <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
+            <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
+            <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+          </div>
         </div>
-      </div>
       )}
 
-      <div
-        className={`flex-grow-1 reports-page__chart-area ${fullScreenMode ? "overflow-hidden p-1 d-flex flex-column" : "overflow-auto p-3"}`}
-        style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
+      <div className={`flex-grow-1 reports-page__chart-area ${fullScreenMode ? "overflow-hidden p-1 d-flex flex-column" : "overflow-auto p-3"}`} style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {error && <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">{error}</div>}
 
         {!selectedReport ? (
@@ -924,11 +927,7 @@ export default function Reports() {
 
             <div
               id="report-export-section"
-              className={
-                fullScreenMode
-                  ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 d-flex flex-column"
-                  : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
-              }
+              className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3"}
             >
               <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
                 <div className="position-absolute top-0 end-0 m-2" style={{ zIndex: 12 }}>
@@ -949,12 +948,7 @@ export default function Reports() {
             {/* ── DATA TABLE TOGGLE + TABLE ── */}
             {!fullScreenMode && reportData?.labels?.length > 0 && (
               <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDataTable((v) => !v)}
-                  className="btn btn-outline-secondary d-flex align-items-center gap-1"
-                  style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}
-                >
+                <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-outline-secondary d-flex align-items-center gap-1" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
                   <ChevronUpDownIcon className="h-4 w-4" />
                   {showDataTable ? "Hide" : "Show"}
                 </button>
@@ -999,194 +993,114 @@ export default function Reports() {
           onSearch={() => {}}
           beforeSearch={
             <div className="d-flex flex-wrap align-items-center gap-2 w-100">
-            <select
-              className="form-select form-select-sm"
-              style={CIRCULAR_SELECT_STYLE}
-              value={reportFilters.dateRange}
-              onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
-            >
-              {DATE_RANGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="form-select form-select-sm"
-              style={CIRCULAR_SELECT_STYLE}
-              value={reportFilters.groupBy}
-              onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
-            >
-              {GROUP_BY_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="form-select form-select-sm"
-              style={CIRCULAR_SELECT_STYLE}
-              value={reportFilters.chartType}
-              onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
-            >
-              {selectedReport.chartTypes.map((chartType) => (
-                <option key={chartType} value={chartType}>
-                  {chartType === "doughnut" ? "Ring" : chartType}
-                </option>
-              ))}
-            </select>
-
-            {canUseStatus && (
-              <select
-                className="form-select form-select-sm"
-                style={INLINE_SELECT_STYLE}
-                value={reportFilters.status}
-                onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
-              >
-                {FILTER_CONFIG.status.options.map((o) => (
+              <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
+                {DATE_RANGE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
               </select>
-            )}
 
-            {canUseService && (
-              <select
-                className="form-select form-select-sm"
-                style={INLINE_SELECT_STYLE}
-                value={reportFilters.serviceId}
-                onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
-              >
-                <option value="all">{FILTER_CONFIG.service.allLabel}</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s[FILTER_CONFIG.service.labelKey]}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {canUseEmployee && (
-              <select
-                className="form-select form-select-sm"
-                style={INLINE_SELECT_STYLE}
-                value={reportFilters.employeeId}
-                onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
-              >
-                <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {FILTER_CONFIG.employee.labelKey(e)}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {canUseEventType && (
-              <select
-                className="form-select form-select-sm"
-                style={INLINE_SELECT_STYLE}
-                value={reportFilters.eventType}
-                onChange={(e) => setReportFilters((prev) => ({ ...prev, eventType: e.target.value }))}
-              >
-                {FILTER_CONFIG.eventType.options.map((o) => (
+              <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.groupBy} onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}>
+                {GROUP_BY_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
               </select>
-            )}
 
-            {/* Time Navigation */}
-            {currentPeriodOffset !== 0 && (
-              <button
-                type="button"
-                onClick={handleResetPeriod}
-                className="btn btn-sm btn-outline-secondary"
-                title="Reset to current period"
-              >
-                Today
-              </button>
-            )}
+              <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.chartType} onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}>
+                {selectedReport.chartTypes.map((chartType) => (
+                  <option key={chartType} value={chartType}>
+                    {chartType === "doughnut" ? "Ring" : chartType}
+                  </option>
+                ))}
+              </select>
+
+              {canUseStatus && (
+                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.status} onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}>
+                  {FILTER_CONFIG.status.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {canUseService && (
+                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.serviceId} onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}>
+                  <option value="all">{FILTER_CONFIG.service.allLabel}</option>
+                  {services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s[FILTER_CONFIG.service.labelKey]}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {canUseEmployee && (
+                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.employeeId} onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}>
+                  <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {FILTER_CONFIG.employee.labelKey(e)}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {canUseEventType && (
+                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.eventType} onChange={(e) => setReportFilters((prev) => ({ ...prev, eventType: e.target.value }))}>
+                  {FILTER_CONFIG.eventType.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Time Navigation */}
+              {currentPeriodOffset !== 0 && (
+                <button type="button" onClick={handleResetPeriod} className="btn btn-sm btn-outline-secondary" title="Reset to current period">
+                  Today
+                </button>
+              )}
             </div>
           }
         >
           <div className="d-flex justify-content-between align-items-center w-100 position-relative">
             {/* Left: Time Navigation */}
             <div className="d-flex align-items-center gap-1">
-              <button
-                type="button"
-                onClick={() => handleNavigatePeriod(1)}
-                className="btn btn-sm btn-outline-secondary"
-                title="Previous period"
-              >
+              <button type="button" onClick={() => handleNavigatePeriod(1)} className="btn btn-sm btn-outline-secondary" title="Previous period">
                 ←
               </button>
-              <button
-                type="button"
-                onClick={() => handleNavigatePeriod(-1)}
-                disabled={currentPeriodOffset <= 0}
-                className="btn btn-sm btn-outline-secondary"
-                title="Next period"
-              >
+              <button type="button" onClick={() => handleNavigatePeriod(-1)} disabled={currentPeriodOffset <= 0} className="btn btn-sm btn-outline-secondary" title="Next period">
                 →
               </button>
             </div>
 
             {/* Center: Report Selector */}
-            <Report_Selector_Dropup
-              open={reportMenuOpen}
-              onToggle={setReportMenuOpen}
-              selectedTitle={selectedReport?.title}
-              reports={accessibleReports}
-              selectedReportId={selectedReportId}
-              onSelectReport={handleReportSelect}
-              onOpenFinancial={() => setShowFinancialDashboard(true)}
-            />
+            <Report_Selector_Dropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
 
             {/* Right: Saved Filters + Save */}
             <div className="d-flex align-items-center gap-1 position-relative">
               {/* Saved Filters Dropup */}
               <div className="position-relative">
-                <Button_Toolbar 
-                  icon={ChevronUpDownIcon} 
-                  label={isTrainingMode ? "Filters" : ""} 
-                  onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} 
-                  className="btn-outline-secondary" 
-                />
-                
+                <Button_Toolbar icon={ChevronUpDownIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
+
                 {savedFiltersMenuOpen && (
-                  <div 
-                    className="position-absolute bottom-100 end-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" 
-                    style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}
-                  >
-                    {savedFilters.filter(f => f.report_id === selectedReport?.id).length === 0 ? (
+                  <div className="position-absolute bottom-100 end-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
+                    {savedFilters.filter((f) => f.report_id === selectedReport?.id).length === 0 ? (
                       <div className="px-3 py-2 text-sm text-gray-500">No saved filters</div>
                     ) : (
                       savedFilters
-                        .filter(f => f.report_id === selectedReport?.id)
+                        .filter((f) => f.report_id === selectedReport?.id)
                         .map((filter) => (
-                          <div
-                            key={filter.id}
-                            className="d-flex align-items-center justify-content-between gap-2 px-2 py-1"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleLoadFilter(filter)}
-                              className="btn btn-sm btn-outline-secondary flex-grow-1 text-start text-truncate"
-                              style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}
-                            >
+                          <div key={filter.id} className="d-flex align-items-center justify-content-between gap-2 px-2 py-1">
+                            <button type="button" onClick={() => handleLoadFilter(filter)} className="btn btn-sm btn-outline-secondary flex-grow-1 text-start text-truncate" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
                               {filter.name}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteFilter(filter.id)}
-                              className="btn btn-sm btn-outline-danger"
-                              title="Delete"
-                            >
+                            <button type="button" onClick={() => handleDeleteFilter(filter.id)} className="btn btn-sm btn-outline-danger" title="Delete">
                               ×
                             </button>
                           </div>
@@ -1197,13 +1111,7 @@ export default function Reports() {
               </div>
 
               {/* Save Filter Button */}
-              <Button_Toolbar 
-                icon={ArrowDownTrayIcon} 
-                label={isTrainingMode ? "Save" : ""} 
-                onClick={() => setShowSaveFilterModal(true)} 
-                className="btn-outline-secondary" 
-                title="Save current filter"
-              />
+              <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
             </div>
           </div>
         </PageTableFooter>
@@ -1255,12 +1163,7 @@ export default function Reports() {
             >
               Cancel
             </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleSaveFilter}
-              disabled={!saveFilterName.trim()}
-            >
+            <button type="button" className="btn btn-primary" onClick={handleSaveFilter} disabled={!saveFilterName.trim()}>
               Save
             </button>
           </div>
