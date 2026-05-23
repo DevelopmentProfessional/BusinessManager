@@ -49,7 +49,7 @@ export default function AppButton({ icon: Icon, label, onClick, variant, classNa
       title={tooltipLabel}
       aria-label={tooltipLabel}
       className={`btn flex-shrink-0 d-flex align-items-center
-        ${training ? "rounded-pill ps-0 pe-1 gap-1 justify-content-start" : "rounded-circle p-0 justify-content-center"}
+        ${training ? (showText ? "rounded-pill ps-0 pe-1 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
         ${variantClass} ${effectiveClass}
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}

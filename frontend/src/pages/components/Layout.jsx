@@ -25,6 +25,9 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
+/** Bottom-right +Nav toggle and expanded menu share this layer (above page footers at 1050). */
+const APP_NAV_Z_INDEX = 1100;
+
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
@@ -132,18 +135,12 @@ export default function Layout({ children }) {
 
       {/* Navigation menu overlay */}
       {expandedMenuOpen && (
-        <div className="position-absolute top-0 start-0 w-100 h-100" style={{ zIndex: 1050 }}>
+        <div className="position-absolute top-0 start-0 w-100 h-100" style={{ zIndex: APP_NAV_Z_INDEX }}>
           {/* Backdrop */}
           <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25" onClick={() => setExpandedMenuOpen(false)} />
 
           {/* Menu positioned bottom-right */}
-          <div
-            className="position-absolute rounded-3 ps-2 app-nav-bottom-menu-panel"
-            style={{
-              minWidth: "1rem",
-              zIndex: 1051,
-            }}
-          >
+          <div className="position-absolute rounded-3 ps-2 app-nav-bottom-menu-panel" style={{ minWidth: "1rem" }}>
             <div className="d-flex flex-column gap-2 app-nav-bottom-menu">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
@@ -192,7 +189,7 @@ export default function Layout({ children }) {
           isTrainingMode ? "ps-0 pe-2 justify-content-start" : "p-0 justify-content-center"
         )}
         style={{
-          zIndex: 1100,
+          zIndex: APP_NAV_Z_INDEX,
           backgroundColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
           color: expandedMenuOpen ? "var(--bs-white)" : "var(--bs-body-color)",
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",

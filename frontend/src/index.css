@@ -456,6 +456,11 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
   height: var(--app-icon-size-active) !important;
 }
 
+/* Profile → Wage accordion: history scrolls; filters pinned to bottom of panel */
+.profile-wage-history__filters {
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
 body.training-mode .btn.rounded-pill svg + span,
 body.training-mode .btn.rounded-pill .text-nowrap {
   font-size: var(--app-btn-label-font-size) !important;
@@ -725,6 +730,17 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   height: var(--app-btn-height) !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Profile footer General gear — icon-only; center gear in pill/circle (after training pill rules) */
+body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-pill,
+.profile-footer-nav .btn.profile-footer-general-btn.rounded-pill,
+.profile-footer-nav .btn.profile-footer-general-btn.rounded-circle {
+  justify-content: center !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  gap: 0 !important;
 }
 
 /* Sales History modal — scrollable filter footer on small screens */

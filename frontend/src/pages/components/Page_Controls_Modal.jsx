@@ -1,10 +1,16 @@
 import React from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
-import Button_Toolbar from "./Button_Toolbar";
+import Settings_Footer from "./Settings_Footer";
 
-/** Gear-icon page settings modal: title only in header, single Close on the bottom-left of the footer. */
-export default function PageControlsModal({ isOpen, onClose, title, children, footerExtra = null }) {
+/** Gear-icon page settings modal: title in header, Save (left) and Close (center) in footer. */
+export default function PageControlsModal({ isOpen, onClose, title, children, onSave, saveLabel = "Save", saving = false, saveDisabled = false }) {
+  const handleSave = async () => {
+    if (onSave) {
+      await onSave();
+    }
+    onClose();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -12,12 +18,7 @@ export default function PageControlsModal({ isOpen, onClose, title, children, fo
       title={title}
       centered
       showHeaderClose={false}
-      footer={
-        <div className="d-flex align-items-center gap-2 flex-wrap">
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" />
-          {footerExtra}
-        </div>
-      }
+      footer={<Settings_Footer onSave={handleSave} onClose={onClose} saveLabel={saveLabel} saving={saving} saveDisabled={saveDisabled} />}
     >
       <div className="d-flex flex-column gap-2">{children}</div>
     </Modal>

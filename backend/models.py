@@ -2612,7 +2612,7 @@ class PendingOrder(BaseModel, table=True):
     client_id: Optional[UUID] = Field(foreign_key="client.id", index=True)
     user_id: Optional[UUID] = Field(foreign_key="user.id")  # Employee who needs to review
     
-    status: str = Field(default="pending")  # "pending", "reviewed", "approved", "rejected"
+    status: str = Field(default="pending", index=True)  # "pending", "reviewed", "approved", "rejected"
     notes: Optional[str] = None
     
     company_id: Optional[str] = Field(default=None, index=True)

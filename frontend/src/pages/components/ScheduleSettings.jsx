@@ -9,12 +9,12 @@
  * ============================================================
  */
 
-import React, { useState, useEffect } from "react";
-import { CheckIcon, ExclamationTriangleIcon, ClockIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { CheckIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { settingsAPI } from "../../services/api";
 import useDarkMode from "../../services/useDarkMode";
 
-const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
+const ScheduleSettings = forwardRef(function ScheduleSettings({ userId, HelpIcon, onSaved, onSavingChange, hideFooter = false }, ref) {
   const { isDarkMode } = useDarkMode();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -119,13 +119,24 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
         onSaved(updated);
       }
       setTimeout(() => setMessage(null), 3000);
+      return true;
     } catch (error) {
       console.error("Failed to save settings:", error);
       setMessage({ type: "error", text: "Error saving settings" });
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    onSavingChange?.(saving);
+  }, [saving, onSavingChange]);
+
+  useImperativeHandle(ref, () => ({
+    save: handleSaveSettings,
+    saving,
+  }));
 
   if (loading) {
     return <div className="text-gray-600">Loading schedule settings...</div>;
@@ -133,13 +144,6 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
 
   return (
     <div className={`rounded-lg shadow-lg p-6 border-t-4 border-blue-600 space-y-6 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
-      <div>
-        <h3 className={`text-xl font-bold mb-1 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-          <ClockIcon className="h-6 w-6" /> Schedule Settings
-        </h3>
-        <p className={isDarkMode ? "text-gray-400" : "text-gray-600"}>Configure your business hours, availability, and booking preferences</p>
-      </div>
-
       {/* Message Display */}
       {message && (
         <div className={`p-4 rounded-lg flex items-center gap-3 ${message.type === "success" ? (isDarkMode ? "bg-green-900 border border-green-700" : "bg-green-50 border border-green-200") : isDarkMode ? "bg-red-900 border border-red-700" : "bg-red-50 border border-red-200"}`}>
@@ -149,7 +153,7 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
       )}
 
       {/* Business Hours */}
-      <div className={`border rounded-lg p-4 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Business Hours {HelpIcon && <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />}</h4>
         <div className="grid grid-cols-2 gap-3">
           <div className="form-floating">
@@ -168,7 +172,7 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
       </div>
 
       {/* Days of Operation */}
-      <div className={`border rounded-lg p-4 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Days of Operation {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}</h4>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
@@ -192,7 +196,7 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
       </div>
 
       {/* Attendance Check-in */}
-      <div className={`border rounded-lg p-4 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Attendance {HelpIcon && <HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" />}</h4>
         <div className={`flex items-center justify-between p-3 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
           <div className="flex items-center gap-2">
@@ -209,11 +213,10 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
       </div>
 
       {/* Auto-Accept Toggle */}
-      <div className={`border rounded-lg p-4 ${isDarkMode ? "bg-gradient-to-r from-blue-900 to-gray-700 border-blue-700" : "bg-gradient-to-r from-blue-50 to-transparent border-blue-200"}`}>
+      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gradient-to-r from-blue-900 to-gray-700 border-blue-700" : "bg-gradient-to-r from-blue-50 to-transparent border-blue-200"}`}>
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h4 className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Auto-Accept Client Bookings</h4>
-            <p className={`text-sm mt-1 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>When enabled, bookings from your client portal will be automatically accepted if they fit within available time slots. You'll still receive notifications.</p>
           </div>
           <label className="ml-4 flex items-center">
             <input type="checkbox" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="w-6 h-6 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
@@ -245,38 +248,30 @@ const ScheduleSettings = ({ userId, HelpIcon, onSaved }) => {
         )}
       </div>
 
-      {/* Info Card */}
-      <div className={`border rounded-lg p-4 ${isDarkMode ? "bg-blue-900 border-blue-700" : "bg-blue-50 border-blue-200"}`}>
-        <h5 className={`font-semibold mb-2 ${isDarkMode ? "text-blue-100" : "text-blue-900"}`}>💡 How This Works</h5>
-        <ul className={`text-sm space-y-1 list-disc list-inside ${isDarkMode ? "text-blue-100" : "text-blue-800"}`}>
-          <li>Auto-acceptance applies only to bookings within your scheduled availability</li>
-          <li>Conflicting bookings are automatically rejected</li>
-          <li>You'll receive email notifications for all auto-accepted bookings</li>
-          <li>Can be changed anytime; existing bookings are not affected</li>
-          <li>Works across client portal and internal booking systems</li>
-        </ul>
-      </div>
-
       {/* Current Status */}
       {settings && (
-        <div className={`rounded-lg p-3 border text-xs ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
+        <div className={`rounded-lg p-2 border text-xs ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
           <p>
-            <strong>Last Updated:</strong> {new Date(settings.updated_at).toLocaleString()}
+            <strong>Last Updated:</strong>{" "}
+            {settings.updated_at && !isNaN(new Date(settings.updated_at).getTime())
+              ? new Date(settings.updated_at).toLocaleString()
+              : "N/A"}
           </p>
         </div>
       )}
 
-      {/* Save Button */}
-      <div className={`flex gap-3 pt-4 border-t ${isDarkMode ? "border-gray-600" : ""}`}>
-        <button onClick={loadScheduleSettings} className={`px-4 py-2 border rounded-lg font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-          Reset
-        </button>
-        <button onClick={handleSaveSettings} disabled={saving} className="ml-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
-          {saving ? "Saving..." : "Save"}
-        </button>
-      </div>
+      {!hideFooter && (
+        <div className={`flex gap-3 pt-4 border-t ${isDarkMode ? "border-gray-600" : ""}`}>
+          <button type="button" onClick={loadScheduleSettings} className={`px-4 py-2 border rounded-lg font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
+            Reset
+          </button>
+          <button type="button" onClick={handleSaveSettings} disabled={saving} className="ml-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      )}
     </div>
   );
-};
+});
 
 export default ScheduleSettings;

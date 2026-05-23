@@ -31,7 +31,7 @@
  */
 
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import {
   ChartBarIcon,
@@ -266,21 +266,27 @@ function buildPdfMetaHtml({ filters, reportId, startDate, endDate, employees, se
 
 // ─── REUSABLE STYLE CONSTANTS ───────────────────────────────────────────────
 const CIRCULAR_SELECT_STYLE = {
-  width: "3rem",
-  height: "3rem",
-  minWidth: "3rem",
-  borderRadius: "50%",
-  paddingLeft: 0,
-  paddingRight: 0,
-  textAlign: "center",
   appearance: "none",
   backgroundImage: "none",
+  borderRadius: "50rem",
+  paddingLeft: "0.5rem",
+  paddingRight: "0.5rem",
+  paddingTop: "0.25rem",
+  paddingBottom: "0.25rem",
+  width: "auto",
+  height: "auto",
 };
 
 const INLINE_SELECT_STYLE = {
-  width: "auto",
   appearance: "none",
   backgroundImage: "none",
+  borderRadius: "50rem",
+  paddingLeft: "0.5rem",
+  paddingRight: "0.5rem",
+  paddingTop: "0.25rem",
+  paddingBottom: "0.25rem",
+  width: "auto",
+  height: "auto",
 };
 
 // ─── DYNAMIC FILTER CONFIGURATION ─────────────────────────────────────────────
@@ -300,7 +306,7 @@ const FILTER_CONFIG = {
     key: "eventType",
     condition: (reportId) => reportId === "appointments",
     options: [
-      { value: "all", label: "All Events" },
+      { value: "all", label: "All" },
       { value: "meeting", label: "Meeting" },
       { value: "call", label: "Call" },
       { value: "appointment", label: "Appointment" },
@@ -373,6 +379,9 @@ export default function Reports() {
   const [saveFilterName, setSaveFilterName] = useState("");
   const [currentPeriodOffset, setCurrentPeriodOffset] = useState(0);
   const [fullScreenMode, setFullScreenMode] = useState(false);
+  const [kpiVisibility, setKpiVisibility] = useState({ Total: true, "Avg / Period": true, Peak: true, Periods: true });
+  const [eventTypeMenuOpen, setEventTypeMenuOpen] = useState(false);
+  const eventTypeRef = useRef(null);
 
   // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
   const accessibleReports = AVAILABLE_REPORTS.filter((report) => {
@@ -789,10 +798,37 @@ export default function Reports() {
     loadSavedFilters();
   }, []);
 
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (eventTypeRef.current && !eventTypeRef.current.contains(e.target)) setEventTypeMenuOpen(false);
+    };
+    if (eventTypeMenuOpen) document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [eventTypeMenuOpen]);
+
   const canUseStatus = selectedReport?.id === "appointments";
   const canUseEventType = selectedReport?.id === "appointments";
   const canUseService = ["appointments", "services", "revenue"].includes(selectedReport?.id || "");
   const canUseEmployee = ["appointments", "employees", "attendance"].includes(selectedReport?.id || "");
+
+  const handleEventTypeKeyDown = (e) => {
+    if (!eventTypeMenuOpen) {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setEventTypeMenuOpen(true);
+      }
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setEventTypeMenuOpen(false);
+      eventTypeRef.current?.querySelector("button")?.focus();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const first = eventTypeRef.current?.querySelector("[role='option']");
+      first?.focus();
+    }
+  };
 
   const [showDataTable, setShowDataTable] = useState(false);
 
@@ -905,8 +941,51 @@ export default function Reports() {
   }
 
   return (
-    <div className={`h-full flex flex-col reports-page${fullScreenMode ? " reports-page--full" : ""}`} style={{ minHeight: 0 }}>
+    <div className={`h-full flex flex-col position-relative reports-page${fullScreenMode ? " reports-page--full" : ""}`} style={{ minHeight: 0 }}>
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
+      {/* Time Navigation - Page Edges */}
+      {selectedReport && (
+        <>
+          <button
+            type="button"
+            onClick={() => handleNavigatePeriod(1)}
+            className="position-absolute btn border-0 p-1"
+            style={{
+              left: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 30,
+              backgroundColor: branding.primaryColor || "var(--color-primary)",
+              color: "#fff",
+              borderRadius: "0 6px 6px 0",
+            }}
+            title="Previous period"
+            aria-label="Previous period"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleNavigatePeriod(-1)}
+            disabled={currentPeriodOffset <= 0}
+            className="position-absolute btn border-0 p-1"
+            style={{
+              right: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 30,
+              backgroundColor: branding.primaryColor || "var(--color-primary)",
+              color: "#fff",
+              borderRadius: "6px 0 0 6px",
+              opacity: currentPeriodOffset <= 0 ? 0.5 : 1,
+            }}
+            title="Next period"
+            aria-label="Next period"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+        </>
+      )}
       {!fullScreenMode && (
         <div className="p-1 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports</h1>
@@ -918,7 +997,7 @@ export default function Reports() {
         </div>
       )}
 
-      <div className={`flex-grow-1 reports-page__chart-area ${fullScreenMode ? "overflow-hidden p-1 d-flex flex-column" : "overflow-auto p-3"}`} style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <div className={`flex-grow-1 reports-page__chart-area ${fullScreenMode ? "overflow-hidden p-1 d-flex flex-column" : "overflow-auto p-1"}`} style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {error && <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">{error}</div>}
 
         {!selectedReport ? (
@@ -930,9 +1009,9 @@ export default function Reports() {
         ) : (
           <>
             {/* ── KPI SUMMARY CARDS ── */}
-            {!fullScreenMode && kpis && (
+            {!fullScreenMode && kpis && kpis.some((kpi) => kpiVisibility[kpi.label] !== false) && (
               <div className="d-flex flex-wrap gap-2 mb-3">
-                {kpis.map((kpi) => (
+                {kpis.filter((kpi) => kpiVisibility[kpi.label] !== false).map((kpi) => (
                   <div key={kpi.label} className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center" style={{ minWidth: "6rem" }}>
                     <div className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{kpi.value}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">{kpi.label}</div>
@@ -947,17 +1026,7 @@ export default function Reports() {
               className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3"}
             >
               <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
-                <div className="position-absolute top-50 start-0 translate-middle-y ms-2" style={{ zIndex: 12 }}>
-                  <button type="button" onClick={() => handleNavigatePeriod(1)} className="btn btn-outline-secondary btn-bulk-circle" title="Previous period" aria-label="Previous period">
-                    <ChevronLeftIcon className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="position-absolute top-50 end-0 translate-middle-y me-2" style={{ zIndex: 12 }}>
-                  <button type="button" onClick={() => handleNavigatePeriod(-1)} disabled={currentPeriodOffset <= 0} className="btn btn-outline-secondary btn-bulk-circle" title="Next period" aria-label="Next period">
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="position-absolute top-0 end-0 m-2" style={{ zIndex: 12 }}>
+                <div className="position-absolute top-0 end-0" style={{ zIndex: 12 }}>
                   <button
                     type="button"
                     onClick={() => setFullScreenMode((v) => !v)}
@@ -1077,13 +1146,58 @@ export default function Reports() {
               )}
 
               {canUseEventType && (
-                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.eventType} onChange={(e) => setReportFilters((prev) => ({ ...prev, eventType: e.target.value }))}>
-                  {FILTER_CONFIG.eventType.options.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="position-relative" ref={eventTypeRef}>
+                  <button
+                    type="button"
+                    onClick={() => setEventTypeMenuOpen((v) => !v)}
+                    onKeyDown={handleEventTypeKeyDown}
+                    aria-haspopup="listbox"
+                    aria-expanded={eventTypeMenuOpen}
+                    className="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center"
+                    style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
+                  >
+                    <CalendarIcon className="h-4 w-4 flex-shrink-0 me-1" />
+                    {FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}
+                  </button>
+                  {eventTypeMenuOpen && (
+                    <div
+                      className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto"
+                      style={{ zIndex: 25, width: "18rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}
+                      role="listbox"
+                    >
+                      {FILTER_CONFIG.eventType.options.map((o) => (
+                        <div
+                          key={o.value}
+                          onClick={() => { setReportFilters((prev) => ({ ...prev, eventType: o.value })); setEventTypeMenuOpen(false); }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                              setEventTypeMenuOpen(false);
+                            } else if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              e.currentTarget.nextElementSibling?.focus();
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              e.currentTarget.previousElementSibling?.focus();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setEventTypeMenuOpen(false);
+                              eventTypeRef.current?.querySelector("button")?.focus();
+                            }
+                          }}
+                          tabIndex={0}
+                          className={`px-3 py-2${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                          style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
+                          role="option"
+                          aria-selected={reportFilters.eventType === o.value}
+                        >
+                          {o.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Time Navigation */}
@@ -1149,8 +1263,20 @@ export default function Reports() {
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Report Page Controls">
-        <div className="small text-muted">Use these controls to configure reports and exports.</div>
-        <div className="small">Choose report, period, chart type, and export options using the toolbar controls.</div>
+        <div className="small text-muted mb-2">Configure report display and export options.</div>
+        <div className="fw-semibold small mb-1">Summary Cards</div>
+        {Object.keys(kpiVisibility).map((label) => (
+          <div key={label} className="form-check mb-1">
+            <input
+              type="checkbox"
+              id={`kpi-vis-${label}`}
+              className="form-check-input"
+              checked={kpiVisibility[label]}
+              onChange={(e) => setKpiVisibility((prev) => ({ ...prev, [label]: e.target.checked }))}
+            />
+            <label className="form-check-label small" htmlFor={`kpi-vis-${label}`}>{label}</label>
+          </div>
+        ))}
       </PageControlsModal>
 
       {/* Save Filter Modal */}

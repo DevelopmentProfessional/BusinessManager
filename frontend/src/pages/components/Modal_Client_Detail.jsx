@@ -29,9 +29,9 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, TrashIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, TrashIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -233,6 +233,111 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
   );
 }
 
+function buildPurchasePeriods(transactions, portalOrders) {
+  const byKey = new Map();
+  const addDate = (dateStr) => {
+    if (!dateStr) return;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return;
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const key = `${year}-${month}`;
+    if (!byKey.has(key)) {
+      byKey.set(key, {
+        year,
+        month,
+        label: d.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      });
+    }
+  };
+  transactions.forEach((tx) => addDate(tx.created_at));
+  portalOrders.forEach((order) => addDate(order.created_at));
+  return Array.from(byKey.values()).sort((a, b) => b.year - a.year || b.month - a.month);
+}
+
+function matchesPurchasePeriod(createdAt, periodFilter) {
+  if (!periodFilter) return true;
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getFullYear() === periodFilter.year && d.getMonth() === periodFilter.month;
+}
+
+/** Month/year filter dropup — bottom-left of purchase history footer. */
+function PurchasePeriodFilterDropup({ periods, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const activeLabel = value ? periods.find((p) => p.year === value.year && p.month === value.month)?.label : "All";
+
+  return (
+    <div ref={rootRef} className="position-relative purchase-period-filter-dropup">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        title="Filter by month"
+      >
+        <FunnelIcon className="h-4 w-4 flex-shrink-0" />
+        <span className="text-nowrap">{activeLabel}</span>
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          className="position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto"
+          style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}
+        >
+          <div
+            role="option"
+            tabIndex={0}
+            aria-selected={!value}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+            className={`py-2 px-3${!value ? " bg-primary text-white" : " text-body"}`}
+            style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem" }}
+          >
+            All periods
+          </div>
+          {periods.length === 0 ? (
+            <div className="py-2 px-3 text-muted small">No dated transactions</div>
+          ) : (
+            periods.map((period) => {
+              const isActive = value?.year === period.year && value?.month === period.month;
+              return (
+                <div
+                  key={`${period.year}-${period.month}`}
+                  role="option"
+                  tabIndex={0}
+                  aria-selected={isActive}
+                  onClick={() => {
+                    onChange({ year: period.year, month: period.month });
+                    setOpen(false);
+                  }}
+                  className={`py-2 px-3${isActive ? " bg-primary text-white" : " text-body"}`}
+                  style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem" }}
+                >
+                  {period.label}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── 3 PURCHASE HISTORY SUB-MODAL ──────────────────────────────────────────
 
 function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSettings }) {
@@ -242,11 +347,20 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [invoiceTx, setInvoiceTx] = useState(null);
-  const [tab, setTab] = useState("sales");
+  const [tab, setTab] = useState("pos");
   const [portalOrders, setPortalOrders] = useState([]);
   const [portalItems, setPortalItems] = useState({});
+  const [periodFilter, setPeriodFilter] = useState(null);
   const [statusUpdateError, setStatusUpdateError] = useState("");
   const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPeriodFilter(null);
+      setTab("pos");
+      setExpandedId(null);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !client) return;
@@ -276,6 +390,16 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
     };
     load();
   }, [isOpen, client?.id]);
+
+  const availablePeriods = useMemo(() => buildPurchasePeriods(transactions, portalOrders), [transactions, portalOrders]);
+
+  const filteredTransactions = useMemo(() => transactions.filter((tx) => matchesPurchasePeriod(tx.created_at, periodFilter)), [transactions, periodFilter]);
+
+  const filteredPortalOrders = useMemo(() => portalOrders.filter((order) => matchesPurchasePeriod(order.created_at, periodFilter)), [portalOrders, periodFilter]);
+
+  useEffect(() => {
+    setExpandedId(null);
+  }, [periodFilter, tab]);
 
   const loadItems = async (txId) => {
     if (items[txId]) {
@@ -350,30 +474,8 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
+        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
-          <div className="d-flex gap-2 me-2">
-            <button
-              type="button"
-              onClick={() => {
-                setTab("sales");
-                setExpandedId(null);
-              }}
-              className={`btn btn-sm ${tab === "sales" ? "btn-primary" : "btn-outline-secondary"}`}
-            >
-              Sales ({transactions.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTab("portal");
-                setExpandedId(null);
-              }}
-              className={`btn btn-sm ${tab === "portal" ? "btn-primary" : "btn-outline-secondary"}`}
-            >
-              Portal ({portalOrders.length})
-            </button>
-          </div>
         </div>
 
         <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
@@ -385,23 +487,23 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
           {error && <div className="alert alert-danger py-2 mx-3 small">{error}</div>}
 
-          {!loading && !error && tab === "sales" && transactions.length === 0 && (
+          {!loading && !error && tab === "pos" && filteredTransactions.length === 0 && (
             <div className="text-center text-muted py-4">
               <ShoppingBagIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
-              <div>No purchases yet</div>
+              <div>{transactions.length === 0 ? "No purchases yet" : "No POS purchases for this period"}</div>
             </div>
           )}
 
-          {!loading && !error && tab === "portal" && portalOrders.length === 0 && (
+          {!loading && !error && tab === "portal" && filteredPortalOrders.length === 0 && (
             <div className="text-center text-muted py-4">
               <ShoppingBagIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
-              <div>No portal orders yet</div>
+              <div>{portalOrders.length === 0 ? "No portal orders yet" : "No portal orders for this period"}</div>
             </div>
           )}
 
-          {!loading && tab === "sales" && transactions.length > 0 && (
+          {!loading && tab === "pos" && filteredTransactions.length > 0 && (
             <div>
-              {transactions.map((tx) => (
+              {filteredTransactions.map((tx) => (
                 <div key={tx.id} className="border-bottom border-gray-100 dark:border-gray-700">
                   <div className="d-flex align-items-center">
                     <button type="button" onClick={() => toggleExpand(tx.id)} className="flex-grow-1 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0" style={{ cursor: "pointer" }}>
@@ -460,9 +562,9 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
             </div>
           )}
 
-          {!loading && tab === "portal" && portalOrders.length > 0 && (
+          {!loading && tab === "portal" && filteredPortalOrders.length > 0 && (
             <div>
-              {portalOrders.map((order) => (
+              {filteredPortalOrders.map((order) => (
                 <div key={order.id} className="border-bottom border-gray-100 dark:border-gray-700">
                   <div className="d-flex align-items-center">
                     <button type="button" onClick={() => togglePortalExpand(order.id)} className="flex-grow-1 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0" style={{ cursor: "pointer" }}>
@@ -543,7 +645,34 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
         </div>
 
         <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
+          <Footer_Actions
+            start={
+              <div className="d-flex align-items-center gap-1 flex-wrap">
+                <PurchasePeriodFilterDropup periods={availablePeriods} value={periodFilter} onChange={setPeriodFilter} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("pos");
+                    setExpandedId(null);
+                  }}
+                  className={`btn btn-sm ${tab === "pos" ? "btn-primary" : "btn-outline-secondary"}`}
+                >
+                  POS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("portal");
+                    setExpandedId(null);
+                  }}
+                  className={`btn btn-sm ${tab === "portal" ? "btn-primary" : "btn-outline-secondary"}`}
+                >
+                  Portal
+                </button>
+              </div>
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+          />
         </div>
       </div>
 
@@ -573,7 +702,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
     membership_ids: [],
   });
   const [fieldErrors, setFieldErrors] = useState({});
-  const [showServiceHistory, setShowServiceHistory] = useState(false);
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cartItems, setCartItems] = useState([]);
@@ -699,14 +827,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           <div className="flex items-center gap-3 mb-3">
             <button
               type="button"
-              onClick={() => setShowServiceHistory(true)}
-              className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-              title="Service History"
-            >
-              <SparklesIcon style={{ width: 24, height: 24 }} />
-            </button>
-            <button
-              type="button"
               onClick={() => setShowPurchaseHistory(true)}
               className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
               title="Purchase History"
@@ -736,7 +856,9 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <label htmlFor="dc_phone">Phone</label>
           </div>
 
-          {/* Membership section */}
+          {/* Membership section — only shown when the client already has a subscription */}
+          {formData.membership_ids.length > 0 && (
+          <>
           <hr className="my-2" />
           <div className="small fw-semibold text-muted mb-2">Subscriptions</div>
           <div className="row g-2 mb-2">
@@ -779,6 +901,8 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
               </div>
             </div>
           </div>
+          </>
+          )}
 
           {/* Address & Notes */}
           <hr className="my-2" />
@@ -804,9 +928,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
       </div>
 
       {/* ─── 10 SUB-MODAL MOUNTS ──────────────────────────────────────────── */}
-      {/* Service History Sub-modal */}
-      <ServiceHistoryModal isOpen={showServiceHistory} onClose={() => setShowServiceHistory(false)} client={client} onEditSchedule={handleEditScheduleFromHistory} />
-
       {/* Purchase History Sub-modal */}
       <PurchaseHistoryModal isOpen={showPurchaseHistory} onClose={() => setShowPurchaseHistory(false)} client={client} currentUser={currentUser} appSettings={appSettings} />
 

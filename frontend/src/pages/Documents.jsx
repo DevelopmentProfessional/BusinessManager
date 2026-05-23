@@ -72,6 +72,17 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!formData.file || !formData.file.type.startsWith("image/")) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(formData.file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.file]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -123,62 +134,66 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-1">
-      <div className="mb-1">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Upload Document</h3>
-      </div>
+    <form onSubmit={handleSubmit} className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 h-100">
+      <div className="flex-grow-1 overflow-auto p-3 min-h-0">
+        <div className="small fw-semibold text-muted mb-2">Upload Document</div>
 
-      {/* Drag and Drop Zone */}
-      <div
-        className={`border-2 border-dashed rounded-lg p-1 text-center transition-colors ${dragActive ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20" : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"}`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        {formData.file ? (
-          <div className="space-y-2">
-            {formData.file.type.startsWith("image/") ? <img src={URL.createObjectURL(formData.file)} alt="preview" className="mx-auto max-h-32 rounded shadow" /> : <DocumentIcon className="h-12 w-12 text-primary-500 mx-auto" />}
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formData.file.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(formData.file.size)}</p>
-            <button type="button" onClick={() => setFormData((prev) => ({ ...prev, file: null }))} className="text-sm text-red-600 hover:text-red-700">
-              Remove
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <PlusIcon className="h-12 w-12 text-gray-400 mx-auto" />
-            <p className="text-sm text-gray-600 dark:text-gray-400">Drag and drop a file here, or click to select</p>
-            <input type="file" id="file" name="file" onChange={handleFileChange} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" />
-            <label htmlFor="file" className="inline-block px-4 py-2 bg-primary-600 text-white rounded cursor-pointer hover:bg-primary-700">
-              Select File
-            </label>
-          </div>
-        )}
-      </div>
-
-      <p className="text-xs text-gray-500 dark:text-gray-400">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
-
-      {error && (
-        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        <div
+          className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          {formData.file ? (
+            <>
+              {formData.file.type.startsWith("image/") ? (
+                <img src={previewUrl} alt="preview" className="mx-auto mb-2 rounded" style={{ maxHeight: "8rem" }} />
+              ) : (
+                <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />
+              )}
+              <p className="small fw-medium mb-1">{formData.file.name}</p>
+              <p className="text-muted small mb-2">{formatFileSize(formData.file.size)}</p>
+              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setFormData((prev) => ({ ...prev, file: null })); }}>
+                Remove
+              </button>
+            </>
+          ) : (
+            <>
+              <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />
+              <p className="small text-muted mb-2">Drag and drop or choose a file</p>
+              <input type="file" id="documents-page-upload-file" name="file" onChange={handleFileChange} className="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" />
+              <label htmlFor="documents-page-upload-file" className="btn btn-sm btn-outline-primary mb-0">
+                Select file
+              </label>
+            </>
+          )}
         </div>
-      )}
 
-      <div className="form-floating mb-2">
-        <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm min-h-[80px]" placeholder="Description" disabled={uploading} />
-        <label htmlFor="description">Description (optional)</label>
+        <p className="small text-muted mt-2 mb-0">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
+
+        <div className="form-floating mt-3">
+          <textarea id="documents-upload-description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm" style={{ minHeight: 72 }} placeholder="Description" disabled={uploading} />
+          <label htmlFor="documents-upload-description">Description (optional)</label>
+        </div>
+
+        {error && <div className="alert alert-danger py-2 small mt-2 mb-0">{error}</div>}
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button type="button" onClick={onCancel} className="btn btn-secondary d-flex align-items-center gap-2" disabled={uploading}>
-          <XMarkIcon className="h-4 w-4" />
-          <span>Cancel</span>
-        </button>
-        <button type="submit" className="btn btn-primary d-flex align-items-center gap-2" disabled={uploading || !formData.file}>
-          <ArrowDownTrayIcon className="h-4 w-4" />
-          <span title="Upload document">{uploading ? "…" : "Upload"}</span>
-        </button>
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <Footer_Actions
+          start={
+            <Button_Toolbar
+              type="submit"
+              icon={ArrowDownTrayIcon}
+              label={uploading ? "Uploading…" : "Upload"}
+              className="btn-outline-secondary"
+              disabled={uploading || !formData.file}
+              title="Upload document"
+            />
+          }
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" disabled={uploading} title="Cancel" />}
+        />
       </div>
     </form>
   );
@@ -1266,25 +1281,19 @@ export default function Documents() {
         </div>
       </Modal>
 
-      <PageControlsModal
-        isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
-        title="Document Page Controls"
-        footerExtra={
-          <Button_Toolbar
-            icon={TagIcon}
-            label="Cats"
-            title="Manage document categories"
-            onClick={() => {
-              setShowPageControls(false);
-              setIsCategoriesOpen(true);
-            }}
-            className="btn-outline-secondary"
-          />
-        }
-      >
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Document Page Controls">
         <div className="small text-muted">Use these controls to manage document and template views.</div>
         <div className="small">Search, filters, upload, and templates are in the page footer. Open Categories to add or edit category labels.</div>
+        <Button_Toolbar
+          icon={TagIcon}
+          label="Cats"
+          title="Manage document categories"
+          onClick={() => {
+            setShowPageControls(false);
+            setIsCategoriesOpen(true);
+          }}
+          className="btn-outline-secondary"
+        />
       </PageControlsModal>
     </div>
   );

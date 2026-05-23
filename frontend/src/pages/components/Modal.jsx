@@ -66,7 +66,7 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-/** Above profile/page footers (1050) and bottom nav (1051); below dedicated overlays (1990+). */
+/** Same layer as bottom +Nav menu (1100); above page footers (1050); below dedicated overlays (1990+). */
 const MODAL_Z_INDEX = 1100;
 
 export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true }) {

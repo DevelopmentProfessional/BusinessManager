@@ -88,8 +88,8 @@ export default function Modal_Document_Upload({ isOpen, onClose, entityType, ent
               <>
                 <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />
                 <p className="small text-muted mb-2">Drag and drop or choose a file</p>
-                <input type="file" id="po-doc-upload" className="d-none" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-                <label htmlFor="po-doc-upload" className="btn btn-sm btn-outline-primary mb-0">
+                <input type="file" id="modal-doc-upload-file" className="d-none" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                <label htmlFor="modal-doc-upload-file" className="btn btn-sm btn-outline-primary mb-0">
                   Select file
                 </label>
               </>
@@ -101,10 +101,19 @@ export default function Modal_Document_Upload({ isOpen, onClose, entityType, ent
           </div>
           {error && <div className="alert alert-danger py-2 small mt-2 mb-0">{error}</div>}
         </div>
-        <div className="flex-shrink-0 border-top app-footer-padding">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
           <Footer_Actions
-            start={<Button_Toolbar type="submit" icon={ArrowDownTrayIcon} label={uploading ? "Uploading…" : "Upload"} className="btn-primary" disabled={uploading || !file} title="Upload file" />}
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} className="btn-outline-secondary" disabled={uploading} title="Close" />}
+            start={
+              <Button_Toolbar
+                type="submit"
+                icon={ArrowDownTrayIcon}
+                label={uploading ? "Uploading…" : "Upload"}
+                className="btn-outline-secondary"
+                disabled={uploading || !file}
+                title="Upload file"
+              />
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} className="btn-outline-secondary" disabled={uploading} title="Cancel" />}
           />
         </div>
       </form>

@@ -436,16 +436,19 @@ export default function Clients() {
         {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={memberships} />}
       </Modal>
 
-      <PageControlsModal
-        isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
-        title="Client Page Controls"
-        footerExtra={
-          <Button_Toolbar icon={TicketIcon} label="Subs" onClick={() => { setShowPageControls(false); setShowMembershipManager(true); }} className="btn-primary" title="Manage subscriptions" />
-        }
-      >
+      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Client Page Controls">
         <div className="small text-muted">Use these controls to manage the Clients page view.</div>
         <div className="small">Subscription filter and search are available in the footer controls.</div>
+        <Button_Toolbar
+          icon={TicketIcon}
+          label="Subs"
+          onClick={() => {
+            setShowPageControls(false);
+            setShowMembershipManager(true);
+          }}
+          className="btn-primary"
+          title="Manage subscriptions"
+        />
       </PageControlsModal>
 
       <Modal isOpen={showMembershipManager} onClose={() => { setShowMembershipManager(false); resetMembershipForm(); }} title="Manage Subscriptions" centered={true}>

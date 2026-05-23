@@ -11,6 +11,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import Manager_DatabaseConnection from "./Manager_DatabaseConnection";
+import Settings_Footer from "./Settings_Footer";
 
 const Panel_Database = ({
   isMobile,
@@ -31,10 +32,10 @@ const Panel_Database = ({
   csvFileInputRef,
   settingsError,
   HelpIcon,
+  onClose,
 }) => (
-  <div className="accordion-popup" style={settingsPanelStyle}>
-    <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-    <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
+  <div className="accordion-popup d-flex flex-column min-h-0" style={settingsPanelStyle}>
+    <div className="flex-grow-1 min-h-0 overflow-auto" style={{ flexShrink: 0, width: "100%" }}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
         <CircleStackIcon className="h-5 w-5" /> Database Settings
       </h2>
@@ -169,6 +170,7 @@ const Panel_Database = ({
         )}
       </div>
     </div>
+    {onClose && <Settings_Footer onSave={onClose} onClose={onClose} />}
   </div>
 );
 

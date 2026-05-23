@@ -36,7 +36,8 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_Table_Footer";
 import PageTableHeader from "./components/Page_Table_Header";
 import PageTableRow from "./components/Page_Table_Row";
-import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI } from "../services/api";
@@ -105,17 +106,20 @@ export default function Services() {
     openModal("service-form");
   };
 
-  const handleDeleteService = async (serviceId) => {
+  const handleDeleteService = async (serviceId, e) => {
+    e?.stopPropagation?.();
     if (!hasPermission("services", "delete")) {
       setError("You do not have permission to delete services");
       return;
     }
-    // Confirmation is shown by the Form_Service delete button — don't double-confirm here
+    if (!(await showConfirm("Delete this service?"))) return;
     try {
       await servicesAPI.delete(serviceId);
       removeService(serviceId);
-      setEditingService(null);
-      closeModal();
+      if (editingService?.id === serviceId) {
+        setEditingService(null);
+        closeModal();
+      }
       clearError();
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || "Failed to delete service";
@@ -202,13 +206,14 @@ export default function Services() {
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
-      <PageTableHeader columns={[{ label: "Service" }, { label: "Price", width: 80 }, { label: "Duration", width: 70 }]} />
+      <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Service" }, { label: "Price", width: 80 }, { label: "Duration", width: 70 }]} />
 
       {/* Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredServices.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
+              <col style={{ width: "44px" }} />
               <col />
               <col style={{ width: "80px" }} />
               <col style={{ width: "70px" }} />
@@ -216,6 +221,18 @@ export default function Services() {
             <tbody>
               {filteredServices.map((service, index) => (
                 <PageTableRow key={service.id || index} onClick={() => handleEditService(service)}>
+                  <td className="main-page-table-data text-center" onClick={(e) => e.stopPropagation()}>
+                    <Gate_Permission page="services" permission="delete">
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                        title="Delete service"
+                        onClick={(e) => handleDeleteService(service.id, e)}
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </Gate_Permission>
+                  </td>
                   {/* Name + Category stacked */}
                   <td className="main-page-table-data">
                     <div className="fw-medium text-wrap-word">
@@ -391,14 +408,7 @@ export default function Services() {
       {/* Service Form Modal */}
       <Modal isOpen={isModalOpen && modalContent === "service-form"} onClose={closeModal} noPadding={true} fullScreen={true}>
         {isModalOpen && modalContent === "service-form" && (
-          <Form_Service
-            service={editingService}
-            onSubmit={handleSubmitService}
-            onCancel={closeModal}
-            onDelete={editingService && hasPermission("services", "delete") ? handleDeleteService : null}
-            canDelete={editingService && hasPermission("services", "delete")}
-            onBulkImport={!editingService ? handleBulkImportServices : null}
-          />
+          <Form_Service service={editingService} onSubmit={handleSubmitService} onCancel={closeModal} onBulkImport={!editingService ? handleBulkImportServices : null} />
         )}
       </Modal>
 
