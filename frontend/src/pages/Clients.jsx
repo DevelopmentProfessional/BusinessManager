@@ -71,17 +71,15 @@ export default function Clients() {
   const scrollRef = useRef(null);
 
   const tierFilterOptions = useMemo(() => {
-    const dynamic = memberships.filter((m) => m.is_active !== false).map((membership) => ({
-      value: String(membership.id),
-      label: membership.name,
-      description: `Shows clients subscribed to ${membership.name}.`,
-    }));
+    const dynamic = memberships
+      .filter((m) => m.is_active !== false)
+      .map((membership) => ({
+        value: String(membership.id),
+        label: membership.name,
+        description: `Shows clients subscribed to ${membership.name}.`,
+      }));
 
-    return [
-      { value: "all", label: "All Subscriptions", description: "Shows all clients regardless of subscription." },
-      { value: "none", label: "No Subscription", description: "Shows clients with no active subscriptions." },
-      ...dynamic,
-    ];
+    return [{ value: "all", label: "All Subscriptions", description: "Shows all clients regardless of subscription." }, { value: "none", label: "No Subscription", description: "Shows clients with no active subscriptions." }, ...dynamic];
   }, [memberships]);
 
   // Template modal state
@@ -346,7 +344,7 @@ export default function Clients() {
       title="Clients"
       error={error}
       headerRight={
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center"  title="Page Controls" onClick={() => setShowPageControls(true)}>
+        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>
       }
@@ -376,13 +374,7 @@ export default function Clients() {
                     </div>
                   </td>
                   <td className="main-page-table-data p-0 text-center">
-                    <button
-                      type="button"
-                      onClick={handleOpenTemplate(client)}
-                      className="btn btn-sm border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded d-flex align-items-center justify-content-center"
-                      
-                      title="Use template"
-                    >
+                    <button type="button" onClick={handleOpenTemplate(client)} className="btn btn-sm border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded d-flex align-items-center justify-content-center" title="Use template">
                       <EnvelopeIcon className="h-6 w-6" />
                     </button>
                   </td>
@@ -416,18 +408,7 @@ export default function Clients() {
         {tierFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setTierFilter("all")} className="btn-app-danger" title="Clear subscription filter" />}
 
         {/* Tier Filter */}
-        <FilterDropdown
-          icon={StarIcon}
-          label="Subs"
-          title="Filter by subscription"
-          value={tierFilter}
-          onChange={setTierFilter}
-          isOpen={isTierFilterOpen}
-          setIsOpen={setIsTierFilterOpen}
-          activeClass={getTierFilterButtonClass()}
-          showHelp={isTrainingMode}
-          options={tierFilterOptions}
-        />
+        <FilterDropdown icon={StarIcon} label="Subs" title="Filter by subscription" value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
       </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}
@@ -453,7 +434,15 @@ export default function Clients() {
         />
       </PageControlsModal>
 
-      <Modal isOpen={showMembershipManager} onClose={() => { setShowMembershipManager(false); resetMembershipForm(); }} title="Manage Subscriptions" centered={true}>
+      <Modal
+        isOpen={showMembershipManager}
+        onClose={() => {
+          setShowMembershipManager(false);
+          resetMembershipForm();
+        }}
+        title="Manage Subscriptions"
+        centered={true}
+      >
         <div className="d-flex flex-column gap-3">
           <div className="border rounded p-2 d-flex flex-column gap-2">
             <input type="text" className="form-control form-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
@@ -485,10 +474,12 @@ export default function Clients() {
                 <CheckCircleIcon className="h-4 w-4" />
                 <span>{editingMembershipId ? "Update" : "Create"}</span>
               </button>
-              {editingMembershipId && <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={resetMembershipForm}>
-                <XCircleIcon className="h-4 w-4" />
-                <span>Cancel</span>
-              </button>}
+              {editingMembershipId && (
+                <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={resetMembershipForm}>
+                  <XCircleIcon className="h-4 w-4" />
+                  <span>Cancel</span>
+                </button>
+              )}
             </div>
           </div>
 

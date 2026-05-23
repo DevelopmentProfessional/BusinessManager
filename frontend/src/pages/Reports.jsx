@@ -969,13 +969,15 @@ export default function Reports() {
             {/* ── KPI SUMMARY CARDS ── */}
             {!fullScreenMode && kpis && kpis.some((kpi) => kpiVisibility[kpi.label] !== false) && (
               <div className="d-flex flex-wrap gap-2 mb-3">
-                {kpis.filter((kpi) => kpiVisibility[kpi.label] !== false).map((kpi) => (
-                  <div key={kpi.label} className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center" style={{ minWidth: "6rem" }}>
-                    <div className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{kpi.value}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{kpi.label}</div>
-                    {kpi.sub && <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{kpi.sub}</div>}
-                  </div>
-                ))}
+                {kpis
+                  .filter((kpi) => kpiVisibility[kpi.label] !== false)
+                  .map((kpi) => (
+                    <div key={kpi.label} className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center" style={{ minWidth: "6rem" }}>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{kpi.value}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{kpi.label}</div>
+                      {kpi.sub && <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{kpi.sub}</div>}
+                    </div>
+                  ))}
               </div>
             )}
 
@@ -1152,15 +1154,14 @@ export default function Reports() {
                     {FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}
                   </button>
                   {eventTypeMenuOpen && (
-                    <div
-                      className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto"
-                      style={{ zIndex: 25, width: "18rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}
-                      role="listbox"
-                    >
+                    <div className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "18rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }} role="listbox">
                       {FILTER_CONFIG.eventType.options.map((o) => (
                         <div
                           key={o.value}
-                          onClick={() => { setReportFilters((prev) => ({ ...prev, eventType: o.value })); setEventTypeMenuOpen(false); }}
+                          onClick={() => {
+                            setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                            setEventTypeMenuOpen(false);
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
@@ -1259,14 +1260,10 @@ export default function Reports() {
         <div className="fw-semibold small mb-1">Summary Cards</div>
         {Object.keys(kpiVisibility).map((label) => (
           <div key={label} className="form-check mb-1">
-            <input
-              type="checkbox"
-              id={`kpi-vis-${label}`}
-              className="form-check-input"
-              checked={kpiVisibility[label]}
-              onChange={(e) => setKpiVisibility((prev) => ({ ...prev, [label]: e.target.checked }))}
-            />
-            <label className="form-check-label small" htmlFor={`kpi-vis-${label}`}>{label}</label>
+            <input type="checkbox" id={`kpi-vis-${label}`} className="form-check-input" checked={kpiVisibility[label]} onChange={(e) => setKpiVisibility((prev) => ({ ...prev, [label]: e.target.checked }))} />
+            <label className="form-check-label small" htmlFor={`kpi-vis-${label}`}>
+              {label}
+            </label>
           </div>
         ))}
       </PageControlsModal>
