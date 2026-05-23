@@ -93,7 +93,9 @@ export default function Clients() {
 
   // ─── [3] LIFECYCLE HOOKS ────────────────────────────────────────────────────
   useFetchOnce(() => {
-    loadClients();
+    // Skip the network round-trip if preloadStoreData (App.jsx) already populated
+    // the store — avoids two concurrent GET /isud/clients requests on every page visit.
+    if (clients.length === 0) loadClients();
     loadMemberships();
     settingsAPI
       .getSettings()
