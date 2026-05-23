@@ -943,49 +943,7 @@ export default function Reports() {
   return (
     <div className={`h-full flex flex-col position-relative reports-page${fullScreenMode ? " reports-page--full" : ""}`} style={{ minHeight: 0 }}>
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
-      {/* Time Navigation - Page Edges */}
-      {selectedReport && (
-        <>
-          <button
-            type="button"
-            onClick={() => handleNavigatePeriod(1)}
-            className="position-absolute btn border-0 p-1"
-            style={{
-              left: 0,
-              top: "50%",
-              transform: "translateY(-50%)",
-              zIndex: 30,
-              backgroundColor: branding.primaryColor || "var(--color-primary)",
-              color: "#fff",
-              borderRadius: "0 6px 6px 0",
-            }}
-            title="Previous period"
-            aria-label="Previous period"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => handleNavigatePeriod(-1)}
-            disabled={currentPeriodOffset <= 0}
-            className="position-absolute btn border-0 p-1"
-            style={{
-              right: 0,
-              top: "50%",
-              transform: "translateY(-50%)",
-              zIndex: 30,
-              backgroundColor: branding.primaryColor || "var(--color-primary)",
-              color: "#fff",
-              borderRadius: "6px 0 0 6px",
-              opacity: currentPeriodOffset <= 0 ? 0.5 : 1,
-            }}
-            title="Next period"
-            aria-label="Next period"
-          >
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
-        </>
-      )}
+
       {!fullScreenMode && (
         <div className="p-1 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports</h1>
@@ -1041,41 +999,75 @@ export default function Reports() {
               </div>
             </div>
 
-            {/* ── DATA TABLE TOGGLE + TABLE ── */}
-            {!fullScreenMode && reportData?.labels?.length > 0 && (
-              <div className="mt-3">
-                <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-outline-secondary d-flex align-items-center gap-1" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
-                  <ChevronUpDownIcon className="h-4 w-4" />
-                  {showDataTable ? "Hide" : "Show"}
+            {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
+            {!fullScreenMode && (
+              <div className="mt-3 d-flex align-items-center justify-content-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleNavigatePeriod(1)}
+                  className="btn btn-sm border-0 p-1"
+                  style={{
+                    backgroundColor: branding.primaryColor || "var(--color-primary)",
+                    color: "#fff",
+                    borderRadius: "6px",
+                  }}
+                  title="Previous period"
+                  aria-label="Previous period"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
                 </button>
-                {showDataTable && (
-                  <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: "16rem" }}>
-                    <table className="table table-sm mb-0">
-                      <thead className="sticky-top bg-white dark:bg-gray-900">
-                        <tr>
-                          <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold">Period</th>
-                          {(reportData.datasets || []).map((dataset, idx) => (
-                            <th key={`col-${idx}`} className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">
-                              {dataset?.label || `Value ${idx + 1}`}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {reportData.labels.map((label, i) => (
-                          <tr key={i}>
-                            <td className="text-sm text-gray-700 dark:text-gray-300">{label}</td>
-                            {(reportData.datasets || []).map((dataset, idx) => (
-                              <td key={`row-${i}-col-${idx}`} className="text-sm text-gray-900 dark:text-white text-end font-medium">
-                                {dataset?.data?.[i] ?? "—"}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+
+                {reportData?.labels?.length > 0 && (
+                  <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-outline-secondary d-flex align-items-center gap-1" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
+                    <ChevronUpDownIcon className="h-4 w-4" />
+                    {showDataTable ? "Hide" : "Show"}
+                  </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => handleNavigatePeriod(-1)}
+                  disabled={currentPeriodOffset <= 0}
+                  className="btn btn-sm border-0 p-1"
+                  style={{
+                    backgroundColor: branding.primaryColor || "var(--color-primary)",
+                    color: "#fff",
+                    borderRadius: "6px",
+                    opacity: currentPeriodOffset <= 0 ? 0.5 : 1,
+                  }}
+                  title="Next period"
+                  aria-label="Next period"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            {!fullScreenMode && showDataTable && reportData?.labels?.length > 0 && (
+              <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: "16rem" }}>
+                <table className="table table-sm mb-0">
+                  <thead className="sticky-top bg-white dark:bg-gray-900">
+                    <tr>
+                      <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold">Period</th>
+                      {(reportData.datasets || []).map((dataset, idx) => (
+                        <th key={`col-${idx}`} className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">
+                          {dataset?.label || `Value ${idx + 1}`}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.labels.map((label, i) => (
+                      <tr key={i}>
+                        <td className="text-sm text-gray-700 dark:text-gray-300">{label}</td>
+                        {(reportData.datasets || []).map((dataset, idx) => (
+                          <td key={`row-${i}-col-${idx}`} className="text-sm text-gray-900 dark:text-white text-end font-medium">
+                            {dataset?.data?.[i] ?? "—"}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </>
