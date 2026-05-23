@@ -304,7 +304,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
           </div>
 
           <button type="button" className="btn btn-primary btn-sm" onClick={startNew}>
-            New rule
+            New
           </button>
         </div>
 
@@ -334,7 +334,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
                   {rules.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center text-muted small py-4">
-                        No rules yet. Click New rule or a row to edit.
+                        No rules yet. Click New or a row to edit.
                       </td>
                     </tr>
                   ) : (

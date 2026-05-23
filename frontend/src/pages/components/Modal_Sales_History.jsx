@@ -3,7 +3,7 @@
  * Full-screen sales / payment history with header, scrollable list, and filter footer.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Modal, { ModalHeader, ModalFooter } from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -15,8 +15,10 @@ import {
   XMarkIcon,
   CheckIcon,
   TrashIcon,
+  UserIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
-import { saleTransactionsAPI, clientOrdersAPI } from "../../services/api";
+import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../services/api";
 
 const STATUS_LABELS = {
   payment_pending: "Payment Pending",
@@ -67,12 +69,31 @@ function parseOptions(value) {
 
 function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, onClose }) {
   const [local, setLocal] = useState({ ...EMPTY_HISTORY_FILTERS, ...historyFilters });
+  const [clients, setClients] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [clientSearch, setClientSearch] = useState("");
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [clientDropupOpen, setClientDropupOpen] = useState(false);
+  const [employeeDropupOpen, setEmployeeDropupOpen] = useState(false);
+  const clientRef = useRef(null);
+  const employeeRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       setLocal({ ...EMPTY_HISTORY_FILTERS, ...historyFilters });
+      clientsAPI.getAll().then((res) => setClients(Array.isArray(res?.data) ? res.data : [])).catch(() => {});
+      employeesAPI.getAll().then((res) => setEmployees(Array.isArray(res?.data) ? res.data : [])).catch(() => {});
     }
   }, [isOpen, historyFilters]);
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (clientRef.current && !clientRef.current.contains(e.target)) setClientDropupOpen(false);
+      if (employeeRef.current && !employeeRef.current.contains(e.target)) setEmployeeDropupOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
 
   const handleApply = () => {
     setHistoryFilters({ ...local });
@@ -91,27 +112,101 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
             <Filter_Source_Toggle value={local.saleSource} onChange={(saleSource) => setLocal((prev) => ({ ...prev, saleSource }))} />
           </div>
 
-          <div className="sales-history-filter-grid">
-            <input
-              type="text"
-              value={local.clientQuery || ""}
-              onChange={(e) => setLocal((prev) => ({ ...prev, clientQuery: e.target.value }))}
-              placeholder="Client"
-              className="app-search-input form-control form-control-sm"
-              aria-label="Filter by client"
-            />
-            <input
-              type="text"
-              value={local.employeeQuery || ""}
-              onChange={(e) => setLocal((prev) => ({ ...prev, employeeQuery: e.target.value }))}
-              placeholder="Employee"
-              className="app-search-input form-control form-control-sm"
-              aria-label="Filter by employee"
-            />
+          <div className="sales-history-filter-grid gap-1">
+            {/* Client dropup search */}
+            <div className="position-relative" ref={clientRef}>
+              <div className="input-group input-group-sm">
+                <span className="input-group-text"><UserIcon style={{ width: 14, height: 14 }} /></span>
+                <input
+                  type="text"
+                  value={clientSearch || local.clientQuery || ""}
+                  onChange={(e) => { setClientSearch(e.target.value); setClientDropupOpen(true); }}
+                  onFocus={() => setClientDropupOpen(true)}
+                  placeholder={local.clientQuery ? `\u2713 ${local.clientQuery}` : "Client"}
+                  className="form-control form-control-sm"
+                  aria-label="Filter by client"
+                />
+                {local.clientQuery && (
+                  <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => { setLocal((p) => ({ ...p, clientQuery: "" })); setClientSearch(""); }}>
+                    <XMarkIcon style={{ width: 12, height: 12 }} />
+                  </button>
+                )}
+              </div>
+              {clientDropupOpen && (
+                <div className="position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
+                  {clients
+                    .filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()))
+                    .slice(0, 8)
+                    .map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="w-100 text-start px-2 py-1 border-0 bg-transparent small"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => { setLocal((p) => ({ ...p, clientQuery: c.name })); setClientSearch(""); setClientDropupOpen(false); }}
+                      >
+                        <div className="fw-semibold">{c.name}</div>
+                        {c.email && <div className="text-muted" style={{ fontSize: "0.7rem" }}>{c.email}</div>}
+                      </button>
+                    ))}
+                  {clients.filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
+                    <div className="small text-muted px-2 py-1">No matches</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Employee dropup search */}
+            <div className="position-relative" ref={employeeRef}>
+              <div className="input-group input-group-sm">
+                <span className="input-group-text"><UserCircleIcon style={{ width: 14, height: 14 }} /></span>
+                <input
+                  type="text"
+                  value={employeeSearch || local.employeeQuery || ""}
+                  onChange={(e) => { setEmployeeSearch(e.target.value); setEmployeeDropupOpen(true); }}
+                  onFocus={() => setEmployeeDropupOpen(true)}
+                  placeholder={local.employeeQuery ? `\u2713 ${local.employeeQuery}` : "Employee"}
+                  className="form-control form-control-sm"
+                  aria-label="Filter by employee"
+                />
+                {local.employeeQuery && (
+                  <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => { setLocal((p) => ({ ...p, employeeQuery: "" })); setEmployeeSearch(""); }}>
+                    <XMarkIcon style={{ width: 12, height: 12 }} />
+                  </button>
+                )}
+              </div>
+              {employeeDropupOpen && (
+                <div className="position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
+                  {employees
+                    .filter((e) => {
+                      if (!employeeSearch) return true;
+                      const name = `${e.first_name || ""} ${e.last_name || ""}`.trim();
+                      return name.toLowerCase().includes(employeeSearch.toLowerCase()) || e.email?.toLowerCase().includes(employeeSearch.toLowerCase());
+                    })
+                    .slice(0, 8)
+                    .map((e) => {
+                      const name = `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.email || `#${e.id}`;
+                      return (
+                        <button
+                          key={e.id}
+                          type="button"
+                          className="w-100 text-start px-2 py-1 border-0 bg-transparent small"
+                          style={{ cursor: "pointer" }}
+                          onClick={() => { setLocal((p) => ({ ...p, employeeQuery: name })); setEmployeeSearch(""); setEmployeeDropupOpen(false); }}
+                        >
+                          <div className="fw-semibold">{name}</div>
+                          {e.email && <div className="text-muted" style={{ fontSize: "0.7rem" }}>{e.email}</div>}
+                        </button>
+                      );
+                    })}
+                  {employees.length === 0 && <div className="small text-muted px-2 py-1">No employees loaded</div>}
+                </div>
+              )}
+            </div>
             <select
               value={local.status || ""}
               onChange={(e) => setLocal((prev) => ({ ...prev, status: e.target.value }))}
-              className="form-select form-select-sm"
+              className="form-select form-select-sm rounded-pill"
               aria-label="Status"
             >
               <option value="">All statuses</option>
@@ -128,7 +223,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
               value={local.minPrice}
               onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))}
               placeholder="Min $"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm rounded-pill"
               aria-label="Minimum total"
             />
             <input
@@ -138,21 +233,21 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
               value={local.maxPrice}
               onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))}
               placeholder="Max $"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm rounded-pill"
               aria-label="Maximum total"
             />
             <input
               type="date"
               value={local.startDate}
               onChange={(e) => setLocal((prev) => ({ ...prev, startDate: e.target.value }))}
-              className="form-control form-control-sm"
+              className="form-control form-control-sm rounded-pill"
               aria-label="From date"
             />
             <input
               type="date"
               value={local.endDate}
               onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))}
-              className="form-control form-control-sm"
+              className="form-control form-control-sm rounded-pill"
               aria-label="To date"
             />
           </div>

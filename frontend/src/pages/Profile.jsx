@@ -56,6 +56,7 @@ import useBranding from "../services/useBranding";
 import { applyActiveColorTheme } from "../services/activeColorTheme";
 import Panel_Settings from "./components/Panel_Settings";
 import Panel_General from "./components/Panel_General";
+import Panel_Wage_History from "./components/Panel_Wage_History";
 import Panel_Database from "./components/Panel_Database";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
@@ -247,7 +248,6 @@ const Profile = () => {
   const [paySlips, setPaySlips] = useState([]);
   const [paySlipsLoading, setPaySlipsLoading] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState(null);
-  const [wageHistoryOpen, setWageHistoryOpen] = useState(false);
 
   const row1Ref = useRef(null);
   const [row1Height, setRow1Height] = useState(80);
@@ -632,6 +632,15 @@ const Profile = () => {
     }
   };
 
+  const handleSaveGeneralPanel = async () => {
+    const tasks = [];
+    if (openAccordions.companyInfo) tasks.push(handleSaveCompanyInfo());
+    if (openAccordions.branding) tasks.push(handleSaveBranding());
+    if (openAccordions.notifications) tasks.push(handleSaveNotifications());
+    if (openAccordions.clientPortal) tasks.push(handleSavePortalBranding());
+    if (tasks.length > 0) await Promise.all(tasks);
+  };
+
   const handleUploadHeroImage = async (file) => {
     if (!file) return;
     setHeroImageUploading(true);
@@ -829,7 +838,7 @@ const Profile = () => {
 
   // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
   useEffect(() => {
-    if (!wageHistoryOpen || !user?.id) return;
+    if (meSectionOpen !== "wage" || !user?.id) return;
     let cancelled = false;
     const load = async () => {
       setPaySlipsLoading(true);
@@ -846,7 +855,7 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [wageHistoryOpen, user?.id]);
+  }, [meSectionOpen, user?.id]);
 
   // ─── 12 LEAVE REQUEST EFFECTS & HANDLERS ─────────────────────────────────
   useEffect(() => {
@@ -1259,13 +1268,7 @@ const Profile = () => {
 
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "wage" && (
-                    <div className="p-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
-                      <div className="d-grid gap-2">
-                        <button type="button" className="btn btn-outline-primary" onClick={() => setWageHistoryOpen(true)}>
-                          Open Wage History
-                        </button>
-                      </div>
-                    </div>
+                    <Panel_Wage_History paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />
                   )}
                   <div
                     ref={(el) => {
@@ -1426,6 +1429,8 @@ const Profile = () => {
                         handleSwitchEnvironment={handleSwitchEnvironment}
                         DB_ENVIRONMENTS={DB_ENVIRONMENTS}
                         HelpIcon={HelpIcon}
+                        onClose={() => setMeSectionOpen("")}
+                        onSave={() => setMeSectionOpen("")}
                       />
                     </div>
                   )}
@@ -1500,6 +1505,9 @@ const Profile = () => {
           onCheckStartDatabase={handleCheckStartDatabase}
           dbCheckLoading={dbCheckLoading}
           dbCheckStatus={dbCheckStatus}
+          onSave={handleSaveGeneralPanel}
+          onClose={() => setOpenAccordion("")}
+          saving={companyLoading || portalBrandingLoading || brandingLogoUploading}
         />
       )}
 
@@ -1507,6 +1515,7 @@ const Profile = () => {
         <Panel_Database
           isMobile={isMobile}
           settingsPanelStyle={settingsPanelStyle}
+          onClose={() => setOpenAccordion("")}
           availableTables={availableTables}
           selectedTable={selectedTable}
           setSelectedTable={setSelectedTable}
@@ -1610,18 +1619,33 @@ const Profile = () => {
           >
             <div className="app-footer-padding bg-white dark:bg-gray-800">
               <div className="app-footer-stack">
-                <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
-                  {[...(canAccessSettings ? [{ id: "database", Icon: CircleStackIcon, title: "Data" }] : []), ...(canAccessGeneralSettings ? [{ id: "general", Icon: CogIcon, title: "" }] : [])].map(({ id, Icon, title }) => (
-                    <Button_Toolbar
-                      key={id}
-                      icon={Icon}
-                      label={title}
-                      onClick={() => setOpenAccordion(openAccordion === id ? "" : id)}
-                      className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === id ? "btn-primary" : "btn-outline-secondary"}`}
-                      data-active={openAccordion === id}
-                      title={title}
-                    />
-                  ))}
+                <div className="search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100">
+                  <div className={`d-flex align-items-center gap-1 flex-grow-1 min-w-0 ${footerJustify}`}>
+                    {canAccessSettings && (
+                      <Button_Toolbar
+                        icon={CircleStackIcon}
+                        label="Data"
+                        onClick={() => setOpenAccordion(openAccordion === "database" ? "" : "database")}
+                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === "database" ? "btn-primary" : "btn-outline-secondary"}`}
+                        data-active={openAccordion === "database"}
+                        title="Data"
+                      />
+                    )}
+                    {canAccessGeneralSettings && (
+                      <>
+                        {/* don't add text to this button */}
+                        <Button_Toolbar
+                          icon={CogIcon}
+                          label=""
+                          onClick={() => setOpenAccordion(openAccordion === "general" ? "" : "general")}
+                          className={`btn btn-sm p-0 flex-shrink-0 d-flex align-items-center profile-footer-btn profile-footer-general-btn ${openAccordion === "general" ? "btn-primary" : "btn-outline-secondary"}`}
+                          data-active={openAccordion === "general"}
+                          title="General"
+                        />
+                      </>
+                    )}
+                  </div>
+                  <div className="flex-grow-1 min-w-0" aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -1716,69 +1740,6 @@ const Profile = () => {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {wageHistoryOpen && (
-        <div
-          className="modal d-block"
-          tabIndex={-1}
-          style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 1990 }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setWageHistoryOpen(false);
-          }}
-        >
-          <div className="modal-dialog modal-fullscreen">
-            <div className="modal-content">
-              <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">Wage History</h6>
-                <button type="button" className="btn-close" onClick={() => setWageHistoryOpen(false)} />
-              </div>
-              <div className="modal-body" style={{ fontSize: "0.85rem" }}>
-                {paySlipsLoading ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                  </div>
-                ) : paySlips.length === 0 ? (
-                  <p className="text-muted small">No pay slips on record.</p>
-                ) : (
-                  <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                    <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
-                      <thead className="table-light">
-                        <tr>
-                          <th>Period</th>
-                          <th className="text-end">Gross</th>
-                          <th className="text-end">Deductions</th>
-                          <th className="text-end">Net</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paySlips.map((slip) => (
-                          <tr key={slip.id}>
-                            <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
-                            <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td>
-                              <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2" style={{ fontSize: "0.75rem" }} onClick={() => setSelectedSlip(slip)}>
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer justify-content-center">
-                <button type="button" className="btn btn-secondary" onClick={() => setWageHistoryOpen(false)}>
-                  Close
-                </button>
-              </div>
             </div>
           </div>
         </div>

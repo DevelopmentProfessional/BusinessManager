@@ -156,6 +156,8 @@ export default function Schedule() {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderAppointment, setReminderAppointment] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
+  const [scheduleSettingsSaving, setScheduleSettingsSaving] = useState(false);
+  const scheduleSettingsRef = useRef(null);
   const calendarGridRef = useRef(null);
   const calendarContainerRef = useRef(null);
 
@@ -1360,11 +1362,22 @@ export default function Schedule() {
         </div>
       </Modal>
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Schedule Page Controls">
-        <div className="small text-muted">Schedule settings are now managed directly from this page.</div>
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Schedule Page Controls"
+        saving={scheduleSettingsSaving}
+        onSave={async () => {
+          const ok = await scheduleSettingsRef.current?.save?.();
+          if (ok) setShowPageControls(false);
+        }}
+      >
         {user?.id ? (
           <ScheduleSettings
+            ref={scheduleSettingsRef}
+            hideFooter
             userId={user.id}
+            onSavingChange={setScheduleSettingsSaving}
             onSaved={(updated) => {
               if (!updated) return;
               setScheduleSettings({

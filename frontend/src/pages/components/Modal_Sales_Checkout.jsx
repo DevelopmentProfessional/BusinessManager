@@ -26,14 +26,15 @@
  *   2026-03-01 | Claude  | P6-B — taxRate prop now accepts a percentage value (e.g. 8.5); hides tax line when 0
  * ============================================================
  */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import Modal_Template_Use from "./Modal_Template_Use";
-import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon, UserIcon, ReceiptPercentIcon, PrinterIcon } from "@heroicons/react/24/outline";
+import { clientsAPI } from "../../services/api";
+import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon, UserIcon, ReceiptPercentIcon, PrinterIcon, CameraIcon, VideoCameraIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null }) {
+export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -44,6 +45,17 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
   const [showTemplateUse, setShowTemplateUse] = useState(false);
   const [templateFilterType, setTemplateFilterType] = useState(null);
   const completedSaleRef = useRef(null);
+
+  // Camera scan state
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  // Client email prompt (for email receipt action)
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [promptEmail, setPromptEmail] = useState("");
+  const [emailSaveError, setEmailSaveError] = useState("");
 
   const subtotal = cartTotal;
   const tax = subtotal * (taxRate / 100);
@@ -102,6 +114,73 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
     setShowTemplateUse(false);
     setTemplateFilterType(null);
     completedSaleRef.current = null;
+    stopCamera();
+    setShowCamera(false);
+    setCameraError("");
+  };
+
+  // ─── CAMERA HELPERS ────────────────────────────────────────────────────────
+  const startCamera = async () => {
+    setCameraError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err) {
+      setCameraError("Camera access denied or unavailable.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (showCamera) startCamera();
+    else stopCamera();
+    return () => stopCamera();
+  }, [showCamera]);
+
+  const captureAndParseCard = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext("2d").drawImage(videoRef.current, 0, 0);
+    // OCR not available without a library — close camera and let user type
+    stopCamera();
+    setShowCamera(false);
+    setCameraError("");
+  };
+
+  // ─── RECEIPT ACTION HELPER ─────────────────────────────────────────────────
+  const triggerReceiptAction = () => {
+    if (!receiptSettings?.templateId) {
+      // No template — show template selector
+      setTemplateFilterType("receipt");
+      setShowTemplateUse(true);
+      return;
+    }
+    const action = receiptSettings.action || "select";
+    if (action === "email") {
+      const email = selectedClient?.email || "";
+      if (!email) {
+        setPromptEmail("");
+        setShowEmailPrompt(true);
+      } else {
+        setTemplateFilterType("receipt");
+        setShowTemplateUse(true);
+      }
+    } else {
+      setTemplateFilterType("receipt");
+      setShowTemplateUse(true);
+    }
   };
 
   const handleSubmit = async () => {
@@ -165,23 +244,59 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
             </div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Payment Successful!</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-1">Transaction completed successfully</p>
-            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${total.toFixed(2)}</p>
-            <div className="flex justify-center gap-1 mb-1">
+            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-3">${total.toFixed(2)}</p>
+
+            {/* Receipt / Done row */}
+            <div className="flex items-center justify-between gap-2 mb-1">
               <button
                 type="button"
-                onClick={() => {
-                  setTemplateFilterType("receipt");
-                  setShowTemplateUse(true);
-                }}
-                className="flex items-center gap-1.5 text-sm btn-app-secondary"
-                title="Print receipt for this sale"
+                onClick={triggerReceiptAction}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                title={receiptSettings?.templateId ? "Send / print receipt" : "Select receipt template"}
               >
                 <PrinterIcon className="h-4 w-4" /> Receipt
               </button>
+              <button type="button" onClick={handleDone} className="flex-1 mx-2 py-2 rounded-xl text-sm font-semibold bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors">
+                Done
+              </button>
             </div>
-            <button type="button" onClick={handleDone} className="px-6 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors">
-              Done
-            </button>
+
+            {/* Email prompt when client has no email */}
+            {showEmailPrompt && (
+              <div className="mt-2 p-2 border rounded-xl bg-gray-50 dark:bg-gray-800 text-left">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Client has no email on file. Enter email to send receipt:</p>
+                <div className="flex gap-1">
+                  <input
+                    type="email"
+                    value={promptEmail}
+                    onChange={(e) => setPromptEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className="form-control form-control-sm flex-1"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-emerald"
+                    onClick={() => {
+                      if (!selectedClient || !promptEmail) return;
+                      setEmailSaveError("");
+                      clientsAPI.update(selectedClient.id, { email: promptEmail })
+                        .then(() => {
+                          setShowEmailPrompt(false);
+                          setTemplateFilterType("receipt");
+                          setShowTemplateUse(true);
+                        })
+                        .catch(() => setEmailSaveError("Failed to save email. Please try again."));
+                    }}
+                    disabled={!promptEmail}
+                    style={{ background: "#059669", color: "#fff", border: "none" }}
+                  >
+                    Send
+                  </button>
+                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setShowEmailPrompt(false); setEmailSaveError(""); }}>Cancel</button>
+                </div>
+                {emailSaveError && <p className="text-danger small mt-1 mb-0">{emailSaveError}</p>}
+              </div>
+            )}
             {showTemplateUse && completedSaleRef.current && (
               <Modal_Template_Use
                 page="sales"
@@ -290,11 +405,56 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                     <span className="input-group-text">
                       <CreditCardIcon className="h-5 w-5 text-gray-400" />
                     </span>
-                    <div className="form-floating">
+                    <div className="form-floating flex-1">
                       <input type="text" id="cardNumber" value={cardNumber} onChange={handleCardNumberChange} placeholder="Card Number" className="form-control form-control-sm" />
                       <label htmlFor="cardNumber">Card Number</label>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCamera(true)}
+                      className="btn btn-sm btn-outline-secondary"
+                      title="Scan card with camera"
+                    >
+                      <CameraIcon className="h-5 w-5" />
+                    </button>
                   </div>
+
+                  {/* Camera modal */}
+                  {showCamera && (
+                    <div className="border rounded-xl overflow-hidden bg-black relative">
+                      <div className="flex items-center justify-between px-2 py-1 bg-gray-900">
+                        <span className="text-white text-xs flex items-center gap-1"><VideoCameraIcon className="h-4 w-4" /> Point camera at card</span>
+                        <button type="button" onClick={() => setShowCamera(false)} className="text-white hover:text-gray-300">
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {cameraError ? (
+                        <div className="p-3 text-center text-red-400 text-sm">{cameraError}</div>
+                      ) : (
+                        <>
+                          <video ref={videoRef} className="w-full" playsInline muted style={{ maxHeight: "200px", objectFit: "cover" }} />
+                          {/* Card outline guide */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: "2rem" }}>
+                            <div className="border-2 border-white/70 rounded-xl" style={{ width: "85%", height: "55%" }} />
+                          </div>
+                          <div className="flex gap-1 p-1 bg-gray-900">
+                            <button
+                              type="button"
+                              onClick={captureAndParseCard}
+                              className="flex-1 btn btn-sm text-white"
+                              style={{ background: "#059669", border: "none" }}
+                            >
+                              <CameraIcon className="h-4 w-4 inline me-1" /> Capture
+                            </button>
+                            <button type="button" onClick={() => setShowCamera(false)} className="btn btn-sm btn-outline-secondary text-white border-gray-600">
+                              Cancel
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-400 text-center pb-1">After capture, verify and adjust the fields manually.</p>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   {/* Cardholder Name */}
                   <div className="form-floating">

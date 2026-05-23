@@ -1,8 +1,6 @@
 import React from "react";
-import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
-import Footer_Actions from "./Footer_Actions";
-import Button_Toolbar from "./Button_Toolbar";
+import Settings_Footer from "./Settings_Footer";
 
 /**
  * Per-user theme / active color picker — uses shared Modal + footer actions.
@@ -23,31 +21,7 @@ export default function Modal_Color_Picker({ isOpen, onClose, pendingColor, onPe
       onClose={handleClose}
       title="Theme color"
       centered
-      footer={
-        <Footer_Actions
-          className="app-form-footer p-1"
-          start={
-            <Button_Toolbar
-              icon={CheckCircleIcon}
-              label="Save"
-              onClick={handleSave}
-              className="btn-primary"
-              disabled={saving}
-              title="Save theme color"
-            />
-          }
-          center={
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Cancel"
-              onClick={handleClose}
-              className="btn-app-cancel"
-              disabled={saving}
-              title="Cancel"
-            />
-          }
-        />
-      }
+      footer={<Settings_Footer onSave={handleSave} onClose={handleClose} saving={saving} />}
     >
       <div className="p-2 d-flex flex-column gap-3">
         <p className="small text-muted mb-0">Choose your personal theme color. It applies to buttons, highlights, and your calendar events.</p>

@@ -6,6 +6,7 @@ import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIc
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal_Color_Picker from "./Modal_Color_Picker";
+import Settings_Footer from "./Settings_Footer";
 import api from "../../services/api";
 
 const Panel_Settings = ({
@@ -38,6 +39,8 @@ const Panel_Settings = ({
   handleSwitchEnvironment,
   DB_ENVIRONMENTS,
   HelpIcon,
+  onClose,
+  onSave,
 }) => {
   const containerStyle = embedded
     ? {
@@ -173,6 +176,8 @@ const Panel_Settings = ({
 
         <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" title="Log out" />
       </div>
+
+      {onClose && <Settings_Footer onSave={onSave || onClose} onClose={onClose} />}
     </div>
   );
 };

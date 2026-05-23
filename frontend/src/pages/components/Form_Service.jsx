@@ -24,8 +24,7 @@
  *   [8] Render: Details Tab — image preview/capture panel, core fields form
  *   [9] Render: Relation Tabs — Resources, Assets, Employees, Locations tabs
  *                              (each with scrollable list + sticky add row)
- *  [10] Render: Footer     — tab navigation bar (edit mode only), Delete,
- *                            Cancel, and Save action buttons
+ *  [10] Render: Footer     — tab navigation bar (edit mode only), Cancel, and Save action buttons
  *
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
@@ -39,7 +38,6 @@ import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon, ArrowUpTrayIco
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from "../../services/api";
-import { showConfirm } from "../../services/showConfirm";
 import Widget_Camera from "./Widget_Camera";
 import Modal_BulkImport from "./Modal_Import_Bulk";
 
@@ -47,7 +45,7 @@ import Modal_BulkImport from "./Modal_Import_Bulk";
 const TABS = ["details", "resources", "assets", "employees", "locations"];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Service({ service, onSubmit, onCancel, onDelete, canDelete, onBulkImport = null }) {
+export default function Form_Service({ service, onSubmit, onCancel, onBulkImport = null }) {
   const [activeTab, setActiveTab] = useState("details");
 
   // ── Basic form fields ────────────────────────────────────────────
@@ -815,19 +813,6 @@ export default function Form_Service({ service, onSubmit, onCancel, onDelete, ca
               ) : null
             }
             center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
-            end={
-              service && canDelete ? (
-                <Button_Toolbar
-                  icon={TrashIcon}
-                  label="Delete"
-                  title="Delete service"
-                  onClick={async () => {
-                    if (await showConfirm("Delete this service?")) onDelete(service.id);
-                  }}
-                  className="btn-outline-secondary"
-                />
-              ) : null
-            }
           />
         </div>
       </div>

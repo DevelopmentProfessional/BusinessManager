@@ -5,6 +5,7 @@ import React from "react";
 import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
+import Settings_Footer from "./Settings_Footer";
 import { documentsAPI } from "../../services/api";
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
@@ -73,6 +74,9 @@ const Panel_General = ({
   onCheckStartDatabase,
   dbCheckLoading,
   dbCheckStatus,
+  onSave,
+  onClose,
+  saving = false,
 }) => (
   <div className="accordion-popup d-flex flex-column min-h-0" style={panelStyle}>
     <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column gap-2" style={{ paddingBottom: "0.5rem" }}>
@@ -170,9 +174,6 @@ const Panel_General = ({
               </div>
             </div>
             <p className="text-xs text-muted mb-2">e.g. 8.5 for 8.5%</p>
-            <div className="mb-2">
-              <Button_Toolbar icon={CheckCircleIcon} label={companyLoading ? "Saving..." : "Save"} onClick={handleSaveCompanyInfo} className="btn btn-primary" disabled={companyLoading} title="Save company info" />
-            </div>
       </SettingsSection>
 
       <SettingsSection open={openAccordions.branding} onToggle={() => toggleAccordion("branding")} icon={SwatchIcon} title="Branding" iconClassName="text-purple-500">
@@ -252,8 +253,6 @@ const Panel_General = ({
                 </div>
               ))}
             </div>
-            <Button_Toolbar icon={CheckCircleIcon} label="Save" onClick={handleSaveBranding} className="btn btn-primary" title="Save branding" />
-
             <Modal
               isOpen={logoPickerOpen}
               onClose={() => setLogoPickerOpen(false)}
@@ -304,7 +303,6 @@ const Panel_General = ({
                 </label>
               </div>
             ))}
-            <Button_Toolbar icon={CheckCircleIcon} label="Save" onClick={handleSaveNotifications} className="btn btn-primary" title="Save notifications" />
       </SettingsSection>
 
       <SettingsSection
@@ -457,12 +455,10 @@ const Panel_General = ({
               </div>
             </div>
 
-            <div className="d-flex gap-2">
-              <Button_Toolbar icon={CheckCircleIcon} label={portalBrandingLoading ? "Saving..." : "Save"} onClick={handleSavePortalBranding} className="btn btn-primary" disabled={portalBrandingLoading} title="Save portal settings" />
-              <Button_Toolbar icon={ArrowPathIcon} label="Reset" onClick={resetPortalBrandingDefaults} className="btn-outline-secondary" title="Reset to defaults" />
-            </div>
+            <Button_Toolbar icon={ArrowPathIcon} label="Reset" onClick={resetPortalBrandingDefaults} className="btn-outline-secondary" title="Reset to defaults" />
       </SettingsSection>
     </div>
+    <Settings_Footer onSave={onSave} onClose={onClose} saving={saving || companyLoading || portalBrandingLoading} />
   </div>
 );
 

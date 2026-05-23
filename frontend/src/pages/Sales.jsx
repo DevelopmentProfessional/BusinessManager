@@ -40,6 +40,7 @@ import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_Controls_Modal";
+import { templatesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/Modal_Item_Detail";
 import Modal_Checkout_Sales from "./components/Modal_Sales_Checkout";
 import Modal_Cart_Sales from "./components/Modal_Sales_Cart";
@@ -103,14 +104,14 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
       {/* Item Name - Top Left */}
-      <div className="absolute top-2 left-2">
-        <div className={`inline-block px-2 py-1 rounded-lg backdrop-blur-sm ${isService ? "bg-primary-600/90" : "bg-secondary-600/90"}`}>
-          <h3 className="font-semibold text-white text-sm line-clamp-1">{item.name}</h3>
+      <div className="absolute top-1 left-1" style={{ maxWidth: "70%" }}>
+        <div className={`inline-block px-1 rounded-lg backdrop-blur-sm ${isService ? "bg-primary-600/90" : "bg-secondary-600/90"}`}>
+          <h3 className="font-semibold text-white text-sm line-clamp-2 m-0">{item.name}</h3>
         </div>
       </div>
 
       {/* Content Footer - Overlays bottom of image with badge-style backgrounds */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
+      <div className="absolute bottom-0 left-0 right-0 p-1 text-left">
         <div className="flex items-center justify-between gap-2">
           {/* Price Badge */}
           <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${isService ? "bg-primary-700/90" : "bg-secondary-700/90"}`}>
@@ -353,6 +354,15 @@ export default function Sales() {
   const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   // Invoice template modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  // Receipt settings — persisted in localStorage
+  const [receiptSettings, setReceiptSettings] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("sales_receipt_settings") || "null") || { templateId: null, templateName: "", action: "select" };
+    } catch {
+      return { templateId: null, templateName: "", action: "select" };
+    }
+  });
+  const [rcptTemplates, setRcptTemplates] = useState([]);
   const [historyFilters, setHistoryFilters] = useState({
     showServices: true,
     showProducts: true,
@@ -447,6 +457,10 @@ export default function Sales() {
       }
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (showCartModal) loadClients();
+  }, [showCartModal]);
 
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
   useEffect(() => {
@@ -1061,7 +1075,18 @@ export default function Sales() {
 
   const filteredSubscriptions = memberships.filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const filteredClients = clients.filter((c) => c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()));
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    const list = !q
+      ? clients
+      : clients.filter((c) => {
+          const name = String(c.name || "").toLowerCase();
+          const email = String(c.email || "").toLowerCase();
+          const phone = String(c.phone || "").toLowerCase();
+          return name.includes(q) || email.includes(q) || phone.includes(q);
+        });
+    return list.slice(0, 12);
+  }, [clients, clientSearch]);
 
   // Check if item is in cart
   const isInCart = (itemId, itemType) => {
@@ -1538,6 +1563,7 @@ export default function Sales() {
         taxRate={appSettings?.tax_rate ?? 0}
         currentUser={user}
         appSettings={appSettings}
+        receiptSettings={receiptSettings}
       />
 
       {/* Feature Selection Modal — opens when a product with features is added to cart */}
@@ -1599,9 +1625,64 @@ export default function Sales() {
         />
       )}
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Sales Page Controls">
-        <div className="small text-muted">Use these controls to manage the sales experience on this page.</div>
-        <div className="small">Search, filters, client selection, cart, and history tools are available in the footer controls.</div>
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Sales Page Controls"
+        onOpen={() => {
+          templatesAPI.getAll("receipt")
+            .then((res) => {
+              const all = Array.isArray(res?.data) ? res.data : [];
+              setRcptTemplates(all.filter((t) => t.template_type === "receipt" || t.type === "receipt"));
+            })
+            .catch(() => {});
+        }}
+      >
+        <div className="small text-muted mb-2">Use these controls to manage the sales experience on this page.</div>
+
+        {/* Receipt Settings */}
+        <hr className="my-2" />
+        <div className="small fw-semibold mb-2">Receipt Settings</div>
+
+        <div className="mb-2">
+          <label className="small text-muted d-block mb-1">Receipt Template</label>
+          <select
+            className="form-select form-select-sm"
+            value={receiptSettings.templateId ?? ""}
+            onChange={(e) => {
+              const id = e.target.value;
+              const tpl = rcptTemplates.find((t) => String(t.id) === id);
+              const next = { ...receiptSettings, templateId: id || null, templateName: tpl?.name || "" };
+              setReceiptSettings(next);
+              localStorage.setItem("sales_receipt_settings", JSON.stringify(next));
+            }}
+          >
+            <option value="">— No template selected —</option>
+            {rcptTemplates.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          {rcptTemplates.length === 0 && <div className="small text-muted mt-1">No receipt templates found. Create one in Documents → Templates.</div>}
+        </div>
+
+        <div className="mb-2">
+          <label className="small text-muted d-block mb-1">After Receipt Selected</label>
+          <select
+            className="form-select form-select-sm"
+            value={receiptSettings.action}
+            onChange={(e) => {
+              const next = { ...receiptSettings, action: e.target.value };
+              setReceiptSettings(next);
+              localStorage.setItem("sales_receipt_settings", JSON.stringify(next));
+            }}
+          >
+            <option value="select">Ask (show template list)</option>
+            <option value="print">Print</option>
+            <option value="email">Email to Client</option>
+            <option value="pdf-print">Print to PDF</option>
+            <option value="pdf-download">Download PDF</option>
+          </select>
+        </div>
       </PageControlsModal>
     </div>
   );

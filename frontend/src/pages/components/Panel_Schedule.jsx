@@ -3,18 +3,14 @@
 
 import React from "react";
 import ScheduleSettingsCard from "./ScheduleSettings";
+import Settings_Footer from "./Settings_Footer";
 
-const Panel_Schedule = ({
-  isMobile,
-  settingsPanelStyle,
-  userId,
-  HelpIcon,
-}) => (
-  <div className="accordion-popup" style={settingsPanelStyle}>
-    <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-    <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
-      <ScheduleSettingsCard userId={userId} HelpIcon={HelpIcon} />
+const Panel_Schedule = ({ isMobile, settingsPanelStyle, userId, HelpIcon, onClose, scheduleSettingsRef, onSave, saving = false }) => (
+  <div className="accordion-popup d-flex flex-column min-h-0" style={settingsPanelStyle}>
+    <div className="flex-grow-1 min-h-0 overflow-auto" style={{ flexShrink: 0, width: "100%" }}>
+      <ScheduleSettingsCard ref={scheduleSettingsRef} hideFooter userId={userId} HelpIcon={HelpIcon} />
     </div>
+    {onClose && <Settings_Footer onSave={onSave} onClose={onClose} saving={saving} />}
   </div>
 );
 

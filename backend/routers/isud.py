@@ -202,6 +202,67 @@ READ_SCHEMA_MAP = {
 }
 
 # ─── [4] SERIALIZATION HELPERS ────────────────────────────────────────────────
+def _client_membership_payload(record, client_memberships, membership_lookup):
+    """Build membership_ids/names for one client from preloaded link rows."""
+    selected_ids = []
+    selected_names = []
+    for link in client_memberships:
+        selected_ids.append(link.membership_id)
+        membership = membership_lookup.get(link.membership_id)
+        if membership:
+            selected_names.append(membership.name)
+    return selected_ids, selected_names
+
+
+def _serialize_clients_batch(records, session):
+    """
+    Serialize many clients with batched membership lookups.
+    Avoids N+1 queries (per-client membership reload was timing out list GET /isud/clients).
+    """
+    if not records:
+        return []
+
+    read_schema = READ_SCHEMA_MAP.get("clients")
+    if not read_schema:
+        return [_serialize_record(record, "clients", session) for record in records]
+
+    client_ids = [record.id for record in records]
+    company_id = getattr(records[0], "company_id", None)
+
+    cm_stmt = sql_select(ClientMembership).where(ClientMembership.client_id.in_(client_ids))
+    memberships_stmt = sql_select(Membership)
+    if company_id:
+        cm_stmt = cm_stmt.where(ClientMembership.company_id == company_id)
+        memberships_stmt = memberships_stmt.where(Membership.company_id == company_id)
+
+    all_links = session.exec(cm_stmt).all()
+    membership_rows = session.exec(memberships_stmt).all()
+    membership_lookup = {m.id: m for m in membership_rows}
+
+    links_by_client: Dict[UUID, list] = {}
+    for link in all_links:
+        links_by_client.setdefault(link.client_id, []).append(link)
+
+    results = []
+    for record in records:
+        try:
+            record_dict = record.model_dump() if hasattr(record, "model_dump") else record.__dict__.copy()
+            selected_ids, selected_names = _client_membership_payload(
+                record, links_by_client.get(record.id, []), membership_lookup
+            )
+            record_dict["membership_ids"] = selected_ids
+            record_dict["membership_names"] = selected_names
+            validated = read_schema.model_validate(record_dict)
+            if hasattr(validated, "model_dump"):
+                results.append(validated.model_dump(mode="json"))
+            else:
+                results.append(validated)
+        except Exception as e:
+            print(f"Warning: Failed to serialize client {getattr(record, 'id', 'unknown')}: {e}")
+            results.append(_serialize_record(record, "clients", session))
+    return results
+
+
 def _serialize_record(record, table_name: str, session=None):
     """Serialize a record using the appropriate Read schema if available."""
     if record is None:
@@ -213,24 +274,18 @@ def _serialize_record(record, table_name: str, session=None):
             try:
                 record_dict = record.model_dump() if hasattr(record, 'model_dump') else record.__dict__.copy()
                 cm_stmt = sql_select(ClientMembership).where(ClientMembership.client_id == record.id)
-                memberships_stmt = sql_select(Membership)
-
                 if getattr(record, 'company_id', None):
                     cm_stmt = cm_stmt.where(ClientMembership.company_id == record.company_id)
-                    memberships_stmt = memberships_stmt.where(Membership.company_id == record.company_id)
-
                 client_memberships = session.exec(cm_stmt).all()
-                membership_rows = session.exec(memberships_stmt).all()
-                membership_lookup = {m.id: m for m in membership_rows}
 
-                selected_ids = []
-                selected_names = []
-                for link in client_memberships:
-                    selected_ids.append(link.membership_id)
-                    membership = membership_lookup.get(link.membership_id)
-                    if membership:
-                        selected_names.append(membership.name)
+                memberships_stmt = sql_select(Membership)
+                if getattr(record, 'company_id', None):
+                    memberships_stmt = memberships_stmt.where(Membership.company_id == record.company_id)
+                membership_lookup = {m.id: m for m in session.exec(memberships_stmt).all()}
 
+                selected_ids, selected_names = _client_membership_payload(
+                    record, client_memberships, membership_lookup
+                )
                 record_dict['membership_ids'] = selected_ids
                 record_dict['membership_names'] = selected_names
 
@@ -302,7 +357,10 @@ def _serialize_records(records, table_name: str, session=None):
     """Serialize multiple records using the appropriate Read schema."""
     if not records:
         return []
-        
+
+    if table_name.lower() in ("client", "clients") and session:
+        return _serialize_clients_batch(records, session)
+
     # Special handling for inventory to include images
     if table_name.lower() in ['inventory'] and session:
         return [_serialize_record(record, table_name, session) for record in records]
@@ -840,10 +898,6 @@ async def select(
     records = session.exec(stmt).all()
     return _serialize_records(records, table_name, session)
 
-
-def _serialize_records(records, table_name: str, session=None):
-    """Serialize a list of records."""
-    return [_serialize_record(record, table_name, session) for record in records]
 
 @router.get("/{table_name}/{record_id}")
 async def select_by_id(

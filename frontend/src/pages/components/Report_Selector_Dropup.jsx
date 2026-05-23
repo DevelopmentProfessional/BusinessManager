@@ -9,11 +9,30 @@ const ITEM_STYLE = {
   lineHeight: 1.35,
   padding: "0.5rem 0.75rem",
   textAlign: "left",
+  display: "block",
+  width: "100%",
+  cursor: "pointer",
 };
 
 export default function Report_Selector_Dropup({ open, onToggle, selectedTitle, reports, selectedReportId, onSelectReport, onOpenFinancial }) {
   const [search, setSearch] = useState("");
   const rootRef = useRef(null);
+
+  const handleOptionKeyDown = (e, onSelect) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.currentTarget.nextElementSibling?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.currentTarget.previousElementSibling?.focus();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onToggle(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) setSearch("");
@@ -42,7 +61,7 @@ export default function Report_Selector_Dropup({ open, onToggle, selectedTitle, 
 
   return (
     <div ref={rootRef} className="position-relative reports-selector-dropup" style={{ textAlign: "left" }}>
-      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2" style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox">
+      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center" style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox">
         <ChevronUpDownIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
         <span>{selectedTitle || "Report"}</span>
       </button>
@@ -50,7 +69,7 @@ export default function Report_Selector_Dropup({ open, onToggle, selectedTitle, 
       {open && (
         <div
           role="listbox"
-          className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-lg bg-white dark:bg-gray-900 d-flex flex-column"
+          className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-lg bg-white dark:bg-gray-900"
           style={{
             zIndex: 1050,
             width: "max-content",
@@ -59,19 +78,26 @@ export default function Report_Selector_Dropup({ open, onToggle, selectedTitle, 
           }}
         >
           <div className="reports-selector-dropup__list overflow-y-auto flex-grow-1" style={{ maxHeight: "min(50vh, 22rem)" }}>
-            <button
-              type="button"
+            <div
               role="option"
+              tabIndex={0}
+              aria-selected={false}
               onClick={() => {
                 onOpenFinancial();
                 onToggle(false);
               }}
-              className="btn w-100 border-0 rounded-0 d-flex align-items-center gap-2 text-start bg-transparent text-body border-bottom"
+              onKeyDown={(e) =>
+                handleOptionKeyDown(e, () => {
+                  onOpenFinancial();
+                  onToggle(false);
+                })
+              }
+              className="reports-selector-dropup__item text-body border-bottom"
               style={ITEM_STYLE}
             >
-              <CurrencyDollarIcon className="flex-shrink-0 text-green-600" style={{ width: "1.125rem", height: "1.125rem" }} />
-              <span className="d-block w-100">Financial</span>
-            </button>
+              <CurrencyDollarIcon className="text-green-600 me-2" style={{ width: "1.125rem", height: "1.125rem" }} />
+              <span>Financial</span>
+            </div>
             {filteredReports.length === 0 ? (
               <div className="px-3 py-2 text-muted" style={{ fontSize: "0.875rem" }}>
                 No reports match your search
@@ -81,18 +107,19 @@ export default function Report_Selector_Dropup({ open, onToggle, selectedTitle, 
                 const Icon = report.icon;
                 const isActive = selectedReportId === report.id;
                 return (
-                  <button
+                  <div
                     key={report.id}
-                    type="button"
                     role="option"
+                    tabIndex={0}
                     aria-selected={isActive}
                     onClick={() => onSelectReport(report.id)}
-                    className={`btn w-100 border-0 rounded-0 d-flex align-items-center gap-2 text-start ${isActive ? "bg-primary text-white" : "bg-transparent text-body"}`}
+                    onKeyDown={(e) => handleOptionKeyDown(e, () => onSelectReport(report.id))}
+                    className={`reports-selector-dropup__item ${isActive ? "bg-primary text-white" : "text-body"}`}
                     style={ITEM_STYLE}
                   >
-                    {Icon && <Icon className="flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />}
-                    <span className="d-block w-100">{report.title}</span>
-                  </button>
+                    {Icon && <Icon className="me-2" style={{ width: "1.125rem", height: "1.125rem" }} />}
+                    <span>{report.title}</span>
+                  </div>
                 );
               })
             )}

@@ -210,7 +210,7 @@ export default function Modal_Insurance_Plans({
                   title={editingPlan?.id ? "Upload and link a new document" : "Save the plan first, then edit to upload"}
                 >
                   <LinkIcon style={{ width: 14, height: 14 }} />
-                  Upload new
+                  Link
                 </button>
               </div>
               {!editingPlan?.id && <p className="small text-muted mb-0 mt-1">Save a new plan before uploading a document.</p>}

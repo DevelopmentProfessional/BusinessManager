@@ -4,6 +4,7 @@
 import React from "react";
 import { BanknotesIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Settings_Footer from "./Settings_Footer";
 
 const DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
@@ -42,6 +43,7 @@ const Panel_Payroll = ({
   settingsError,
   settingsSuccess,
   HelpIcon,
+  onClose,
 }) => {
   const freq = paySchedule.frequency || "monthly";
   const workDays = parseWorkDays(paySchedule.work_days);
@@ -53,9 +55,8 @@ const Panel_Payroll = ({
   };
 
   return (
-    <div className="accordion-popup" style={settingsPanelStyle}>
-      <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }} />
-      <div style={{ flexShrink: 0, width: "100%", overflowY: "auto", minHeight: 0 }}>
+    <div className="accordion-popup d-flex flex-column min-h-0" style={settingsPanelStyle}>
+      <div className="flex-grow-1 min-h-0 overflow-auto" style={{ flexShrink: 0, width: "100%" }}>
 
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <BanknotesIcon className="h-5 w-5" /> Payroll Schedule Settings
@@ -286,16 +287,8 @@ const Panel_Payroll = ({
           </div>
         </div>
 
-        {/* ── Save ───────────────────────────────────────────────── */}
-        <Button_Toolbar
-          icon={CheckCircleIcon}
-          label={payScheduleSaving ? "Saving…" : "Save"}
-          title="Save payroll settings"
-          onClick={handleSavePaySchedule}
-          disabled={payScheduleSaving}
-          className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
-        />
       </div>
+      {onClose && <Settings_Footer onSave={handleSavePaySchedule} onClose={onClose} saving={payScheduleSaving} />}
     </div>
   );
 };

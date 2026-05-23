@@ -1,5 +1,5 @@
 /**
- * Procurement order management for a supplier (Inventory → Suppliers → Procurement).
+ * Procurement order management — embedded in supplier accordion (Inventory → Suppliers).
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -17,7 +17,7 @@ const num = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const ProcurementUI = ({ supplierId, onPOCreated }) => {
+const ProcurementUI = ({ supplierId, embedded = true, onPOCreated }) => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -192,44 +192,173 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
     setShowCreate(false);
   };
 
-  return (
-    <div className="d-flex flex-column min-h-0 h-100 pe-0">
+  const renderCreateForm = () => (
+    <div className="d-flex flex-column min-h-0 flex-grow-1">
       <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-shrink-0">
-        <h6 className="mb-0 fw-semibold">Procurement</h6>
-        <button type="button" onClick={() => { resetCreateForm(); setShowCreate(true); setDetailPoId(null); }} className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
-          <PlusIcon style={{ width: 16, height: 16 }} />
+        <span className="small fw-semibold text-muted">Create purchase order</span>
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }}>
+          Cancel
+        </button>
+      </div>
+      <div className="flex-grow-1 overflow-auto min-h-0 pe-1">
+        <div className="form-floating mb-2">
+          <input
+            type="date"
+            id={`po_expected_delivery_${supplierId}`}
+            className="form-control form-control-sm"
+            value={formData.expected_delivery_date}
+            onChange={(e) => setFormData((p) => ({ ...p, expected_delivery_date: e.target.value }))}
+          />
+          <label htmlFor={`po_expected_delivery_${supplierId}`}>Expected delivery date</label>
+        </div>
+
+        <div className="table-responsive border rounded mb-2">
+          <table className="table table-sm mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Item</th>
+                <th style={{ width: 72 }}>Qty</th>
+                <th style={{ width: 96 }}>Unit</th>
+                <th className="text-end" style={{ width: 80 }}>
+                  Line
+                </th>
+                <th style={{ width: 36 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {formData.line_items.map((item, idx) => (
+                <tr key={idx}>
+                  <td>
+                    <select className="form-select form-select-sm" value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}>
+                      <option value="">Select…</option>
+                      {inventoryItems.map((inv) => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" min="1" className="form-control form-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
+                  </td>
+                  <td>
+                    <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
+                  </td>
+                  <td className="text-end small fw-medium">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
+                  <td>
+                    {formData.line_items.length > 1 && (
+                      <button type="button" className="btn btn-sm btn-outline-danger btn-bulk-circle p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
+                        <TrashIcon style={{ width: 14, height: 14 }} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={3} className="text-end small text-muted">
+                  Subtotal
+                </td>
+                <td className="text-end small fw-medium">{formatCurrency(lineSubtotal)}</td>
+                <td />
+              </tr>
+              <tr>
+                <td colSpan={2} className="text-end small">
+                  Import tax
+                </td>
+                <td>
+                  <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
+                </td>
+                <td colSpan={2} />
+              </tr>
+              <tr>
+                <td colSpan={2} className="text-end small">
+                  Shipping
+                </td>
+                <td>
+                  <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
+                </td>
+                <td colSpan={2} />
+              </tr>
+              <tr className="table-light">
+                <td colSpan={3} className="text-end fw-semibold small">
+                  Sum
+                </td>
+                <td className="text-end fw-bold small">{formatCurrency(orderTotal)}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <button type="button" onClick={handleAddLineItem} className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 mb-2">
+          <PlusIcon style={{ width: 14, height: 14 }} />
+          <span>Add line</span>
+        </button>
+
+        <div className="form-floating mb-2">
+          <textarea className="form-control form-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
+          <label htmlFor={`po_notes_${supplierId}`}>Notes</label>
+        </div>
+      </div>
+      <div className="flex-shrink-0 pt-2 border-top d-flex gap-2 justify-content-end">
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }} disabled={loading}>
+          Cancel
+        </button>
+        <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={handleCreatePO} disabled={loading || formData.line_items.every((i) => !i.inventory_id)}>
+          <CheckIcon style={{ width: 14, height: 14 }} />
+          <span>{loading ? "Saving…" : "Save"}</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderPoList = () => (
+    <>
+      <div className="d-flex align-items-center justify-content-end gap-2 mb-2 flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            resetCreateForm();
+            setShowCreate(true);
+            setDetailPoId(null);
+          }}
+          className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+        >
+          <PlusIcon style={{ width: 14, height: 14 }} />
           <span>New</span>
         </button>
       </div>
 
-      <div className="flex-grow-1 overflow-auto min-h-0" style={{ maxHeight: "min(50vh, 20rem)" }}>
+      <div className="flex-grow-1 overflow-auto min-h-0">
         <table className="table table-sm table-hover mb-0 align-middle">
           <thead className="table-light sticky-top">
             <tr>
-              <th className="ps-2 pe-1">PO Number</th>
-              <th className="px-1">Order date</th>
-              <th className="text-end px-1">Total</th>
-              <th className="text-end pe-2" style={{ width: 48 }}>
-                <span className="visually-hidden">Actions</span>
+              <th className="ps-1 pe-1">PO#</th>
+              <th className="px-1">Date</th>
+              <th className="text-end px-1">Sum</th>
+              <th className="text-end pe-1" style={{ width: 44 }}>
+                <span className="visually-hidden">View</span>
               </th>
             </tr>
           </thead>
           <tbody>
             {purchaseOrders.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center text-muted small py-4 ps-2">
+                <td colSpan={4} className="text-center text-muted small py-3 ps-1">
                   No purchase orders yet.
                 </td>
               </tr>
             ) : (
               purchaseOrders.map((po) => (
                 <tr key={po.id}>
-                  <td className="ps-2 pe-1 font-monospace small">{po.po_number}</td>
+                  <td className="ps-1 pe-1 font-monospace small">{po.po_number}</td>
                   <td className="px-1 small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
                   <td className="text-end px-1 small fw-medium">{formatCurrency(po.total_amount)}</td>
-                  <td className="text-end pe-2">
+                  <td className="text-end pe-1">
                     <button type="button" className="btn btn-sm btn-outline-secondary btn-bulk-circle p-0" title="View purchase order" onClick={() => openDetail(po)}>
-                      <EyeIcon style={{ width: 16, height: 16 }} />
+                      <EyeIcon style={{ width: 14, height: 14 }} />
                     </button>
                   </td>
                 </tr>
@@ -238,129 +367,13 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
           </tbody>
         </table>
       </div>
+    </>
+  );
 
-      {/* Create PO — matches supplier panel modal pattern */}
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} fullScreen noPadding>
-        <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0" style={{ minHeight: "100%" }}>
-          <div className="flex-shrink-0 p-2 border-bottom">
-            <h6 className="mb-0 fw-semibold">Create purchase order</h6>
-          </div>
-          <div className="flex-grow-1 overflow-auto p-3 min-h-0">
-            <div className="form-floating mb-3">
-              <input
-                type="date"
-                id="po_expected_delivery"
-                className="form-control form-control-sm"
-                value={formData.expected_delivery_date}
-                onChange={(e) => setFormData((p) => ({ ...p, expected_delivery_date: e.target.value }))}
-              />
-              <label htmlFor="po_expected_delivery">Expected delivery date</label>
-            </div>
+  return (
+    <div className={`d-flex flex-column min-h-0 h-100 ${embedded ? "procurement-ui--embedded" : ""}`}>
+      {showCreate ? renderCreateForm() : renderPoList()}
 
-            <div className="table-responsive border rounded mb-3">
-              <table className="table table-sm mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Item</th>
-                    <th style={{ width: 88 }}>Qty</th>
-                    <th style={{ width: 110 }}>Unit price</th>
-                    <th className="text-end" style={{ width: 96 }}>
-                      Line total
-                    </th>
-                    <th style={{ width: 40 }} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {formData.line_items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td>
-                        <select className="form-select form-select-sm" value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}>
-                          <option value="">Select item…</option>
-                          {inventoryItems.map((inv) => (
-                            <option key={inv.id} value={inv.id}>
-                              {inv.name}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input type="number" min="1" className="form-control form-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
-                      </td>
-                      <td>
-                        <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
-                      </td>
-                      <td className="text-end small fw-medium">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
-                      <td>
-                        {formData.line_items.length > 1 && (
-                          <button type="button" className="btn btn-sm btn-outline-danger btn-bulk-circle p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
-                            <TrashIcon style={{ width: 14, height: 14 }} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={3} className="text-end small text-muted">
-                      Subtotal
-                    </td>
-                    <td className="text-end small fw-medium">{formatCurrency(lineSubtotal)}</td>
-                    <td />
-                  </tr>
-                  <tr>
-                    <td colSpan={2} className="text-end small">
-                      Import tax (optional)
-                    </td>
-                    <td>
-                      <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
-                    </td>
-                    <td />
-                    <td />
-                  </tr>
-                  <tr>
-                    <td colSpan={2} className="text-end small">
-                      Shipping (optional)
-                    </td>
-                    <td>
-                      <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
-                    </td>
-                    <td />
-                    <td />
-                  </tr>
-                  <tr className="table-light">
-                    <td colSpan={3} className="text-end fw-semibold">
-                      Total
-                    </td>
-                    <td className="text-end fw-bold">{formatCurrency(orderTotal)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            <div className="d-flex justify-content-start mb-3">
-              <button type="button" onClick={handleAddLineItem} className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
-                <PlusIcon style={{ width: 16, height: 16 }} />
-                <span>Add</span>
-              </button>
-            </div>
-
-            <div className="form-floating">
-              <textarea className="form-control form-control-sm" style={{ minHeight: 72 }} id="po_notes" value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
-              <label htmlFor="po_notes">Notes</label>
-            </div>
-          </div>
-          <div className="flex-shrink-0 border-top app-footer-padding">
-            <Footer_Actions
-              start={<Button_Toolbar icon={CheckIcon} label={loading ? "Saving…" : "Save"} onClick={handleCreatePO} className="btn-primary" disabled={loading || formData.line_items.every((i) => !i.inventory_id)} title="Save purchase order" />}
-              center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setShowCreate(false)} className="btn-outline-secondary" disabled={loading} title="Close" />}
-            />
-          </div>
-        </div>
-      </Modal>
-
-      {/* PO detail */}
       <Modal isOpen={!!detailPoId} onClose={() => { setDetailPoId(null); setDetailPo(null); }} fullScreen noPadding>
         <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0" style={{ minHeight: "100%" }}>
           <div className="flex-shrink-0 p-2 border-bottom">
@@ -373,7 +386,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
               <>
                 <div className="row g-2 mb-3 small">
                   <div className="col-6">
-                    <span className="text-muted">Order date</span>
+                    <span className="text-muted">Date</span>
                     <div>{detailPo.order_date ? new Date(detailPo.order_date).toLocaleDateString() : "—"}</div>
                   </div>
                   <div className="col-6">
@@ -381,7 +394,7 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
                     <div>{detailPo.expected_delivery_date ? new Date(detailPo.expected_delivery_date).toLocaleDateString() : "—"}</div>
                   </div>
                   <div className="col-12">
-                    <span className="text-muted">Total</span>
+                    <span className="text-muted">Sum</span>
                     <div className="fw-bold">{formatCurrency(detailPo.total_amount)}</div>
                   </div>
                 </div>
@@ -413,12 +426,12 @@ const ProcurementUI = ({ supplierId, onPOCreated }) => {
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <span className="fw-semibold small">Documents</span>
                     <button type="button" className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onClick={() => setShowDocUpload(true)}>
-                      <DocumentPlusIcon style={{ width: 16, height: 16 }} />
+                      <DocumentPlusIcon style={{ width: 14, height: 14 }} />
                       <span>Attach</span>
                     </button>
                   </div>
                   {linkedDocs.length === 0 ? (
-                    <p className="text-muted small mb-0">No documents linked. Attach invoices or supporting files.</p>
+                    <p className="text-muted small mb-0">No documents linked.</p>
                   ) : (
                     <ul className="list-group list-group-flush small">
                       {linkedDocs.map((doc) => (
