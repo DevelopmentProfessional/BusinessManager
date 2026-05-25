@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Services.jsx
  *
@@ -33,19 +33,19 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
 import PageLayout from "./components/Page_Layout";
-import PageTableFooter from "./components/Page_Table_Footer";
-import PageTableHeader from "./components/Page_Table_Header";
-import PageTableRow from "./components/Page_Table_Row";
+import PageTableFooter from "./components/Page_TableFooter";
+import PageTableHeader from "./components/Page_TableHeader";
+import PageTableRow from "./components/Page_TableRow";
 import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI } from "../services/api";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Service from "./components/Form_Service";
 import Gate_Permission from "./components/Gate_Permission";
-import Modal_Bulk_Import_Sheet from "./components/Modal_Import_Sheet";
+import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {

@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy } from "react";
+﻿import React, { useEffect, Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Layout from "./pages/components/Layout";
 import Login from "./pages/Login";
@@ -15,7 +15,7 @@ import Modal_Client from "./pages/components/Modal_Client";
 import Manager_MobileAddressBar from "./pages/components/Manager_MobileAddressBar";
 import Prompt_InstallApp from "./pages/components/Prompt_InstallApp";
 import PageErrorBoundary from "./pages/components/ErrorBoundary";
-import SearchableSelectOverlay from "./pages/components/SearchableSelectOverlay";
+import Dropup_SearchOverlay from "./pages/components/Dropup_SearchOverlay";
 
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import("./pages/Clients"));
@@ -25,7 +25,7 @@ const Sales = lazy(() => import("./pages/Sales"));
 const Employees = lazy(() => import("./pages/Employees"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const Documents = lazy(() => import("./pages/Documents"));
-const DocumentEditor = lazy(() => import("./pages/DocumentEditor"));
+const Editor_Document = lazy(() => import("./pages/Editor_Document"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Reports = lazy(() => import("./pages/Reports"));
 
@@ -202,7 +202,7 @@ function App() {
       <ClearErrorOnNavigate />
       <Manager_MobileAddressBar />
       <Prompt_InstallApp />
-      <SearchableSelectOverlay />
+      <Dropup_SearchOverlay />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -308,7 +308,7 @@ function App() {
               <ProtectedRoute requiredPermission="documents:write">
                 <Suspense fallback={<PageLoader />}>
                   <PageErrorBoundary>
-                    <DocumentEditor />
+                    <Editor_Document />
                   </PageErrorBoundary>
                 </Suspense>
               </ProtectedRoute>

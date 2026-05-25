@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserGroupIcon, WrenchScrewdriverIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, EllipsisHorizontalIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";
 import { chatAPI } from "../../services/api";
-import PendingOrderBadge from "./PendingOrderBadge";
+import Badge_PendingOrder from "./Badge_PendingOrder";
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
@@ -201,7 +201,7 @@ export default function Layout({ children }) {
             +Nav
           </span>
         )}
-        <PendingOrderBadge clientId={user?.client_id} />
+        <Badge_PendingOrder clientId={user?.client_id} />
       </button>
     </div>
   );

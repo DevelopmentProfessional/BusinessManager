@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Suppliers_Panel.jsx
  *
@@ -17,7 +17,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Gate_Permission from "./Gate_Permission";
-import ProcurementUI from "./ProcurementUI";
+import Modal_Procurement from "./Modal_Procurement";
 
 export default function Suppliers_Panel({ isOpen, onClose }) {
   const { setError, clearError } = useStore();
@@ -148,7 +148,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                   <div key={supplier.id} className="border-bottom" style={{ background: "var(--bs-body-bg)" }}>
                     {isExpanded && (
                       <div className="px-2 pt-2 pb-1 border-bottom supplier-procurement-accordion" style={{ maxHeight: "min(55vh, 24rem)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                        <ProcurementUI supplierId={supplier.id} embedded onPOCreated={loadSuppliers} />
+                        <Modal_Procurement supplierId={supplier.id} embedded onPOCreated={loadSuppliers} />
                       </div>
                     )}
                     <div className="px-3 py-3 d-flex align-items-center gap-2">
@@ -191,7 +191,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
           )}
         </div>
 
-        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 app-standard-footer">
           <div className="app-footer-padding">
             {showForm ? (
               <Footer_Actions

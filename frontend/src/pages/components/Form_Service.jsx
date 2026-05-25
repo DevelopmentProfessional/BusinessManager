@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Form_Service.jsx
  *
@@ -39,7 +39,7 @@ import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from "../../services/api";
 import Widget_Camera from "./Widget_Camera";
-import Modal_BulkImport from "./Modal_Import_Bulk";
+import Modal_BulkImport from "./Modal_ImportBulk";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const TABS = ["details", "resources", "assets", "employees", "locations"];
@@ -776,7 +776,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
       </div>
 
       {/* ── Footer (sticky, always visible) ──────────────────────── */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-form-footer">
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-form-footer app-standard-footer">
         {/* Row 1: Tab navigation — only when editing */}
         {service && (
           <div className="px-2 pt-2 pb-1 d-flex gap-1 overflow-auto flex-nowrap">
@@ -805,7 +805,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
         )}
 
         {/* Row 2: Actions */}
-        <div className="app-footer-padding">
+        <div className="app-footer-padding app-standard-footer">
           <Footer_Actions
             start={
               activeTab === "details" ? (

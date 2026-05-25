@@ -1,4 +1,4 @@
-// FILE: Panel_Database.jsx
+﻿// FILE: Panel_Database.jsx
 // Renders the database settings panel: connection manager and CSV data import tool.
 
 import React from "react";
@@ -11,7 +11,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import Manager_DatabaseConnection from "./Manager_DatabaseConnection";
-import Settings_Footer from "./Settings_Footer";
+import Footer_Settings from "./Footer_Settings";
 
 const Panel_Database = ({
   isMobile,
@@ -170,7 +170,7 @@ const Panel_Database = ({
         )}
       </div>
     </div>
-    {onClose && <Settings_Footer onSave={onClose} onClose={onClose} />}
+    {onClose && <Footer_Settings onSave={onClose} onClose={onClose} />}
   </div>
 );
 

@@ -1175,7 +1175,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
+      <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 h-100">
         {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
         {/* Header for Inventory Mode - Fixed at top */}
         {!isSalesMode && (
@@ -1228,7 +1228,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         )}
 
         {/* Container_Scrollable Content Area */}
-        <div className="overflow-auto px-3 pt-3 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" style={{ flexGrow: 1 }}>
+        <div className="flex-grow-1 min-h-0 overflow-auto px-3 pt-3 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
           {isSalesMode ? (
             /* Sales Mode - Display only */
             <div>

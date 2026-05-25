@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Documents.jsx
  *
@@ -49,18 +49,18 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import Footer_Actions from "./components/Footer_Actions";
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import Table_Mobile from "./components/Table_Mobile";
-import Button_Add_Mobile from "./components/Button_Add_Mobile";
+import Button_AddMobile from "./components/Button_AddMobile";
 import Gate_Permission from "./components/Gate_Permission";
-import Modal_Viewer_Document from "./components/Modal_Document_View";
-import Modal_Edit_Document from "./components/Modal_Document_Edit";
-import Modal_Template_Editor from "./components/Modal_Template_Edit";
-import PageTableFooter from "./components/Page_Table_Footer";
-import PageTableHeader from "./components/Page_Table_Header";
+import Modal_Viewer_Document from "./components/Modal_DocumentView";
+import Modal_Edit_Document from "./components/Modal_DocumentEdit";
+import Modal_Template_Editor from "./components/Modal_TemplateEdit";
+import PageTableFooter from "./components/Page_TableFooter";
+import PageTableHeader from "./components/Page_TableHeader";
 import Modal_Generic from "./components/Modal";
-import { WorkflowModal, WorkflowStatusTracker } from "./components/WorkflowApproval";
-import FilterDropdown from "./components/FilterDropdown";
+import { WorkflowModal, WorkflowStatusTracker } from "./components/Panel_Workflow";
+import Dropdown_Filter from "./components/Dropdown_Filter";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -942,7 +942,7 @@ export default function Documents() {
               )}
 
               {/* Categories Filter */}
-              <FilterDropdown
+              <Dropdown_Filter
                 icon={Squares2X2Icon}
                 label="Category"
                 value={categoryFilter}
@@ -954,7 +954,7 @@ export default function Documents() {
               />
 
               {/* Status Filter */}
-              <FilterDropdown
+              <Dropdown_Filter
                 icon={CheckCircleIcon}
                 label="Status"
                 value={statusFilter}
@@ -971,7 +971,7 @@ export default function Documents() {
               />
 
               {/* Type Filter */}
-              <FilterDropdown
+              <Dropdown_Filter
                 icon={TagIcon}
                 label="Type"
                 value={typeFilter}

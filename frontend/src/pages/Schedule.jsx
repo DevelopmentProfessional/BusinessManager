@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Schedule.jsx
  *
@@ -61,14 +61,14 @@ import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, servicesAPI, employeesAP
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Schedule from "./components/Form_Schedule";
 import Gate_Permission from "./components/Gate_Permission";
 import Widget_Attendance from "./components/Widget_Attendance";
 import useDarkMode from "../services/useDarkMode";
-import FilterDropup_Schedule from "./components/FilterDropup_Schedule";
-import Modal_Template_Use from "./components/Modal_Template_Use";
-import ScheduleSettings from "./components/ScheduleSettings";
+import Dropup_ScheduleFilter from "./components/Dropup_ScheduleFilter";
+import Modal_TemplateUse from "./components/Modal_TemplateUse";
+import Modal_SettingsSchedule from "./components/Modal_SettingsSchedule";
 
 // SVG icon wrappers for schedule view buttons
 const MonthViewIcon = ({ className, size = 16 }) => (
@@ -1225,7 +1225,7 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className="schedule-footer app-footer-padding border-top">
+        <div className="schedule-footer app-footer-padding app-standard-footer border-top">
           <div className="app-footer-toolbar d-flex align-items-center">
             <Button_Toolbar icon={MonthViewIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} title="Month view" />
             <Button_Toolbar icon={WeekViewIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} title="Week view" />
@@ -1262,7 +1262,7 @@ export default function Schedule() {
         </Modal>
 
         {showReminderModal && reminderAppointment && (
-          <Modal_Template_Use
+          <Modal_TemplateUse
             page="schedule"
             filterType="email"
             entity={reminderAppointment}
@@ -1278,7 +1278,7 @@ export default function Schedule() {
           />
         )}
 
-        <FilterDropup_Schedule
+        <Dropup_ScheduleFilter
           isOpen={isFilterOpen}
           onClose={() => setIsFilterOpen(false)}
           employees={employees}
@@ -1373,7 +1373,7 @@ export default function Schedule() {
         }}
       >
         {user?.id ? (
-          <ScheduleSettings
+          <Modal_SettingsSchedule
             ref={scheduleSettingsRef}
             hideFooter
             userId={user.id}

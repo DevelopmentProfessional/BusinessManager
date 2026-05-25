@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Form_Client.jsx
  *
@@ -28,7 +28,7 @@ import React, { useState, useEffect } from "react";
 import { XMarkIcon, CheckIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
-import Modal_BulkImport from "./Modal_Import_Bulk";
+import Modal_BulkImport from "./Modal_ImportBulk";
 
 // ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
 export default function Form_Client({ client, onSubmit, onCancel, error = null, onBulkImport = null, memberships = [] }) {

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Reports.jsx
  *
@@ -57,13 +57,13 @@ import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
 import useBranding from "../services/useBranding";
 import Chart_Report from "./components/Chart_Report";
 import Button_Toolbar from "./components/Button_Toolbar";
-import Report_Selector_Dropup from "./components/Report_Selector_Dropup";
+import Report_SelectorDropup from "./components/Report_SelectorDropup";
 import useViewMode from "../services/useViewMode";
-import Modal_Forecast_Calculator from "./components/Modal_Forecast_Calculator";
+import Modal_ForecastCalculator from "./components/Modal_ForecastCalculator";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
-import PageTableFooter from "./components/Page_Table_Footer";
-import FinancialDashboard from "./components/FinancialDashboard";
+import PageControlsModal from "./components/Page_ControlsModal";
+import PageTableFooter from "./components/Page_TableFooter";
+import Dashboard_Financial from "./components/Dashboard_Financial";
 
 const AVAILABLE_REPORTS = [
   {
@@ -1237,7 +1237,7 @@ export default function Reports() {
             </div>
 
             {/* Center: Report Selector */}
-            <Report_Selector_Dropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
+            <Report_SelectorDropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
 
             {/* Right: Spacer for balanced layout */}
             <div className="d-flex align-items-center" style={{ minWidth: "6rem" }} />
@@ -1246,7 +1246,7 @@ export default function Reports() {
       )}
 
       {/* Forecast Calculator Modal */}
-      <Modal_Forecast_Calculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
+      <Modal_ForecastCalculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
 
       <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen={true} noPadding={true} contentGravity="bottom">
         <div className="p-4 bg-gray-50 h-full overflow-auto">
@@ -1254,7 +1254,7 @@ export default function Reports() {
             <h2 className="text-xl font-bold text-gray-900 mb-0">Financial Controls</h2>
             <Button_Toolbar icon={ChartBarIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" />
           </div>
-          <FinancialDashboard />
+          <Dashboard_Financial />
         </div>
       </Modal>
 

@@ -73,7 +73,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   if (!isOpen) return null;
 
   const modalLayerStyle = { zIndex: MODAL_Z_INDEX };
-  const gravityClass = contentGravity === "bottom" ? "overflow-scroll-content overflow-scroll-content--bottom" : "overflow-scroll-content";
+  const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
   const Overlay = <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 dark:bg-opacity-75 bg-opacity-75 transition-opacity" onClick={onClose} />;
@@ -86,7 +86,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         <div className="fixed inset-0 flex flex-col bg-white dark:bg-gray-900">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
           <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>
-            <div className={gravityClass}>{children}</div>
+            {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>
@@ -102,7 +102,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div>
+            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="text-gray-900 dark:text-gray-100">{children}</div>}
           </div>
           {footer && <ModalFooter className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">{footer}</ModalFooter>}
         </div>
@@ -118,7 +118,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-screen flex flex-col">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div>
+            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="text-gray-900 dark:text-gray-100">{children}</div>}
           </div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>

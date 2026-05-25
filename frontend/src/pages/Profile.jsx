@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Profile.jsx
  *
@@ -49,14 +49,14 @@ import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI } from "../services/api";
-import Button_Insurance_Document from "./components/Button_Insurance_Document";
+import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
 import useBranding from "../services/useBranding";
 import { applyActiveColorTheme } from "../services/activeColorTheme";
-import Panel_Settings from "./components/Panel_Settings";
+import Modal_Settings from "./components/Modal_Settings";
 import Panel_General from "./components/Panel_General";
-import Panel_Wage_History from "./components/Panel_Wage_History";
+import Panel_WageHistory from "./components/Panel_WageHistory";
 import Panel_Database from "./components/Panel_Database";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
@@ -1268,7 +1268,7 @@ const Profile = () => {
 
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "wage" && (
-                    <Panel_Wage_History paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />
+                    <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />
                   )}
                   <div
                     ref={(el) => {
@@ -1312,7 +1312,7 @@ const Profile = () => {
                           <div className="text-muted small">Insurance Plan</div>
                           <div className="d-flex align-items-center gap-2">
                             <span className="fw-medium">{user.insurance_plan || "Not set"}</span>
-                            {user.insurance_plan && <Button_Insurance_Document planId={insurancePlans.find((p) => p.name === user.insurance_plan)?.id} planName={user.insurance_plan} insurancePlans={insurancePlans} title="View your insurance plan document" />}
+                            {user.insurance_plan && <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === user.insurance_plan)?.id} planName={user.insurance_plan} insurancePlans={insurancePlans} title="View your insurance plan document" />}
                           </div>
                         </div>
                       </div>
@@ -1399,7 +1399,7 @@ const Profile = () => {
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "settings" && (
                     <div className="p-2" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
-                      <Panel_Settings
+                      <Modal_Settings
                         embedded={true}
                         isMobile={isMobile}
                         row1PanelBottom={row1PanelBottom}

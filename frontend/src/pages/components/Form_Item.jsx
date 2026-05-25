@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Form_Item.jsx
  *
@@ -43,7 +43,7 @@ import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Scanner_Barcode from "./Scanner_Barcode";
 import Widget_Camera from "./Widget_Camera";
-import Modal_BulkImport from "./Modal_Import_Bulk";
+import Modal_BulkImport from "./Modal_ImportBulk";
 import cacheService from "../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../services/api";
 

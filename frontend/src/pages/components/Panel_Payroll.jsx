@@ -1,10 +1,10 @@
-// FILE: Panel_Payroll.jsx
+﻿// FILE: Panel_Payroll.jsx
 // Admin-only payroll schedule settings panel — rendered from Profile.jsx when openAccordion === "payroll"
 
 import React from "react";
 import { BanknotesIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
-import Settings_Footer from "./Settings_Footer";
+import Footer_Settings from "./Footer_Settings";
 
 const DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
@@ -288,7 +288,7 @@ const Panel_Payroll = ({
         </div>
 
       </div>
-      {onClose && <Settings_Footer onSave={handleSavePaySchedule} onClose={onClose} saving={payScheduleSaving} />}
+      {onClose && <Footer_Settings onSave={handleSavePaySchedule} onClose={onClose} saving={payScheduleSaving} />}
     </div>
   );
 };
