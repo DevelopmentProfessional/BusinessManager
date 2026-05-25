@@ -388,7 +388,7 @@ export default function Clients() {
         )}
       </div>
 
-      <PageTableHeader columns={[{ label: "Client" }, { label: "Subscription", width: 120 }, { label: "Notify", width: 56 }]} />
+      <PageTableHeader columns={[{ label: "Client" }, { label: "Subs", width: 120 }, { label: "Notify", width: 56 }]} />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter

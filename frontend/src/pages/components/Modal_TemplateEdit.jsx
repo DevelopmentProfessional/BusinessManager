@@ -1,9 +1,9 @@
 ﻿import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
-import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "./Utils_TemplateVariables";
 import { documentsAPI } from "../../services/api";
 import Editor_Toolbar from "./editors/Editor_Toolbar";
-import Footer_Actions from "./Footer_Actions";
+import Modal from "./Modal";
 
 const Editor_RichText = lazy(() => import("./editors/Editor_RichText"));
 
@@ -223,14 +223,20 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900" style={{ fontFamily: "inherit" }}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">{isNew ? "New Template" : "Edit Template"}</h2>
-      </div>
+    <Modal isOpen onClose={onClose} noPadding fullScreen>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">
+            <DocumentTextIcon className="app-icon text-muted me-1" aria-hidden="true" />
+            {isNew ? "New Template" : "Edit Template"}
+          </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
 
-      {/* ── Body ───────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Body ───────────────────────────────────────────────────────────── */}
+        <div className="component-body">
+          <div className="component-body-inner">
         {/* Error banner */}
         <div className="flex-shrink-0 px-4 pt-3 pb-2">{error && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">{error}</div>}</div>
 
@@ -312,16 +318,16 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               </Suspense>
             </div>
           </div>
-        </div>
-      </div>
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        {/* Row 1: contextual editor controls */}
-        <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} />
-
-        {/* Row 2: template metadata + dropups */}
-        <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 d-flex align-items-center gap-2 flex-wrap">
+        {/* ── Footer ─────────────────────────────────────────────────────────── */}
+        <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
+          {/* Row 1: editor controls */}
+          <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} />
+          {/* Row 2: template metadata + dropups */}
+          <div className="px-3 py-2 border-top d-flex align-items-center gap-2 flex-wrap">
           <div className="d-flex align-items-center gap-1" style={{ minWidth: "240px", flex: "1 1 240px" }}>
             <div className="d-flex align-items-center gap-1">
               <input
@@ -439,9 +445,9 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
         </div>
 
-        <div className="app-footer-padding app-form-footer border-t border-gray-200 dark:border-gray-700">
-          <Footer_Actions
-            start={
+          {/* Row 3: save/cancel */}
+          <div className="d-flex align-items-center gap-1 p-2 border-top">
+            <div className="component-footer-left">
               <button type="button" onClick={handleSave} className="btn btn-primary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Save Template">
                 {saving ? (
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -453,16 +459,16 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 )}
                 <span className="d-none d-sm-inline">{saving ? "Saving…" : "Save"}</span>
               </button>
-            }
-            center={
-              <button type="button" onClick={onClose} className="btn btn-secondary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Cancel">
-                <XMarkIcon className="h-4 w-4 flex-shrink-0" />
-                <span className="d-none d-sm-inline">Cancel</span>
+            </div>
+            <div className="component-footer-center">
+              <button type="button" className="btn btn-circle btn-outline-secondary" onClick={onClose} disabled={saving} title="Cancel">
+                <XMarkIcon />
               </button>
-            }
-          />
-        </div>
-      </div>
-    </div>
+            </div>
+            <div className="component-footer-right"></div>
+          </div>
+        </div>{/* /component-footer */}
+      </div>{/* /component */}
+    </Modal>
   );
 }

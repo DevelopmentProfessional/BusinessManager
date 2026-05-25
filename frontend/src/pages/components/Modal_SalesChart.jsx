@@ -24,6 +24,7 @@ import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 import { eachDayOfInterval, startOfMonth, endOfMonth, format } from "date-fns";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import Modal from "./Modal";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -82,70 +83,33 @@ const chartOptions = {
 
 // ─── 3 MODAL COMPONENT ─────────────────────────────────────────────────────
 const Modal_Chart_Sales = ({ isOpen, onClose }) => {
-  if (!isOpen) {
-    return null;
-  }
-
   const chartData = generateMockData();
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column bg-white no-scrollbar" style={styles.chartContainer}>
-          <Line data={chartData} options={chartOptions} />
+    <Modal isOpen={isOpen} onClose={onClose} noPadding>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Sales Chart</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
-        <div style={styles.buttonContainer}>
-          <button type="button" onClick={onClose} className="btn btn-secondary d-flex align-items-center gap-2">
-            <XMarkIcon className="h-4 w-4" />
-            <span>Close</span>
-          </button>
+        <div className="component-body">
+          <div className="component-body-inner component-body-inner--flush">
+            <Line data={chartData} options={chartOptions} />
+          </div>
+        </div>
+        <div className="component-footer">
+          <div className="component-footer-left"></div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
-};
-
-// ─── 4 INLINE STYLES ───────────────────────────────────────────────────────
-const styles = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  modal: {
-    backgroundColor: "var(--bs-body-bg)",
-    padding: "20px",
-    width: "100%",
-    maxHeight: "90vh",
-    display: "flex",
-    flexDirection: "column",
-    position: "relative",
-    borderRadius: "12px 12px 0 0",
-  },
-  chartContainer: {
-    flex: 1,
-    overflow: "auto",
-  },
-  buttonContainer: {
-    position: "absolute",
-    bottom: "20px",
-    right: "20px",
-  },
-  button: {
-    padding: "10px 20px",
-    backgroundColor: "#007bff",
-    color: "white",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
 };
 
 export default Modal_Chart_Sales;

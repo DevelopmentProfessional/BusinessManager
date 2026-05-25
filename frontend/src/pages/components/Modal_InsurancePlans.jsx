@@ -4,7 +4,6 @@
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
 import { XMarkIcon, CheckIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon, LinkIcon } from "@heroicons/react/24/outline";
-import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
 import { documentsAPI } from "../../services/api";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
@@ -78,15 +77,18 @@ export default function Modal_InsurancePlans({
         onClose();
         setEditingPlan(null);
       }}
-      noPadding={true}
-      fullScreen={true}
+      noPadding
+      fullScreen
     >
-      <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0" style={{ minHeight: "100%" }}>
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Insurance Plans</h6>
+      <form onSubmit={onSave} className="component">
+        <div className="component-header">
+          <div className="component-header-left">Insurance Plans</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 min-h-0">
+        <div className="component-body">
+          <div className="component-body-inner">
           {insuranceError && (
             <div className="alert alert-danger alert-sm py-2 px-3 mb-2" style={{ fontSize: "0.8rem" }}>
               {insuranceError}
@@ -138,10 +140,9 @@ export default function Modal_InsurancePlans({
               ))}
             </div>
           )}
-        </div>
 
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <form onSubmit={onSave} className="d-flex flex-column gap-2">
+          {/* ─── Create / Edit Form ───────────────────────────────────────── */}
+          <div className="border-top pt-3 mt-2 d-flex flex-column gap-2">
             <div className="small fw-semibold text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
             <div className="row g-2">
               <div className="col-6">
@@ -216,19 +217,27 @@ export default function Modal_InsurancePlans({
               {!editingPlan?.id && <p className="small text-muted mb-0 mt-1">Save a new plan before uploading a document.</p>}
             </div>
 
-            <Footer_Actions
-              start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-outline-secondary" title={editingPlan ? "Save plan" : "Add plan"} />}
-              center={
-                editingPlan ? (
-                  <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={() => setEditingPlan(null)} className="btn-outline-secondary" title="Cancel edit" />
-                ) : (
-                  <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
-                )
-              }
-            />
-          </form>
+          </div>{/* /create-edit form */}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-outline-secondary" title={editingPlan ? "Save plan" : "Add plan"} />
+          </div>
+          <div className="component-footer-center">
+            <button
+              type="button"
+              onClick={editingPlan ? () => setEditingPlan(null) : onClose}
+              className="btn btn-circle btn-outline-secondary"
+              title={editingPlan ? "Cancel edit" : "Close"}
+            >
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
-      </div>
+      </form>
 
       <Modal_DocumentUpload
         isOpen={showDocUpload}

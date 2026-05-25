@@ -43,7 +43,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -384,6 +384,7 @@ export default function Inventory() {
         {filteredInventory.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
+              <col style={{ width: "44px" }} />
               <col />
               <col style={{ width: "80px" }} />
               <col style={{ width: "60px" }} />
@@ -391,6 +392,11 @@ export default function Inventory() {
             <tbody>
               {filteredInventory.map((inv, index) => (
                 <PageTableRow key={inv.id || index} onClick={() => handleUpdateInventory(inv)}>
+                  <td style={{ width: "44px" }} onClick={(e) => { e.stopPropagation(); handleDeleteItem(inv.id); }}>
+                    <button className="btn btn-circle btn-outline-danger" title="Delete item">
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </td>
                   <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
 
                   {/* Type */}
@@ -411,7 +417,7 @@ export default function Inventory() {
         )}
       </div>
 
-      <PageTableHeader columns={[{ label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
+      <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter

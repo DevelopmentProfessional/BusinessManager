@@ -31,7 +31,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { documentsAPI, documentCategoriesAPI, employeesAPI, documentTagsAPI } from "../../services/api";
 import Dropdown_Custom from "./Dropdown_Custom";
 import Modal from "./Modal";
-import { XMarkIcon, TagIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TagIcon, MagnifyingGlassIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 // ─── 1 HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -282,20 +282,20 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     <Modal
       isOpen={isOpen && !!document}
       onClose={onClose}
-      title="Edit Document Metadata"
-      centered={true}
-      footer={
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="btn btn-secondary">
-            Cancel
-          </button>
-          <button type="submit" form="doc-edit-form" className="btn btn-primary" disabled={saving}>
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
-      }
+      centered
+      noPadding
     >
-      <form id="doc-edit-form" onSubmit={handleSubmit}>
+      <form className="component" id="doc-edit-form" onSubmit={handleSubmit}>
+        <div className="component-header">
+          <div className="component-header-left">
+            <DocumentTextIcon className="app-icon text-muted me-1" aria-hidden="true" />
+            Edit Document
+          </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
+        <div className="component-body">
+          <div className="component-body-inner">
         <div className="space-y-4">
           {error && <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm">{error}</div>}
 
@@ -511,6 +511,22 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
               </button>
             </div>
           </div>
+        </div>
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <button type="submit" className="btn btn-primary d-inline-flex align-items-center gap-1" disabled={saving}>
+              <CheckIcon className="app-icon" aria-hidden="true" />
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+          <div className="component-footer-center">
+            <button type="button" className="btn btn-circle btn-outline-secondary" onClick={onClose} title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </form>
     </Modal>

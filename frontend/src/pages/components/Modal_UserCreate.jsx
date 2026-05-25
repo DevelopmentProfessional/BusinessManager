@@ -22,74 +22,67 @@
 import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
-import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser, onSubmit, loading, roles }) {
-  // ─── 1 RENDER ──────────────────────────────────────────────────────────────
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
-        {/* ─── 2 HEADER ─────────────────────────────────────────────────── */}
-        {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Create User</h6>
-          <button type="button" onClick={onClose} className="btn btn-link p-0 text-muted">
-            <XMarkIcon style={{ width: 20, height: 20 }} />
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Create User</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        {/* ─── 3 SCROLLABLE FORM BODY ───────────────────────────────────── */}
-        {/* Scrollable Body */}
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3">
-          <form id="create-user-form" onSubmit={onSubmit}>
-            <div className="form-floating mb-3">
-              <input type="text" id="createUserUsername" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} className="form-control" placeholder="Username" required />
-              <label htmlFor="createUserUsername">Username</label>
-            </div>
-            <div className="form-floating mb-3">
-              <input type="email" id="createUserEmail" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="form-control" placeholder="Email" required />
-              <label htmlFor="createUserEmail">Email</label>
-            </div>
-            <div className="form-floating mb-3">
-              <input type="password" id="createUserPassword" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="form-control" placeholder="Password" required />
-              <label htmlFor="createUserPassword">Password</label>
-            </div>
-            <div className="form-floating mb-3">
-              <input type="text" id="createUserFirstName" value={newUser.first_name} onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })} className="form-control" placeholder="First Name" required />
-              <label htmlFor="createUserFirstName">First Name</label>
-            </div>
-            <div className="form-floating mb-3">
-              <input type="text" id="createUserLastName" value={newUser.last_name} onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })} className="form-control" placeholder="Last Name" required />
-              <label htmlFor="createUserLastName">Last Name</label>
-            </div>
-            <div className="form-floating mb-3">
-              <select id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select form-select-sm">
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-              <label htmlFor="createUserRole">Role</label>
-            </div>
-          </form>
+        <div className="component-body">
+          <div className="component-body-inner">
+            <form id="create-user-form" onSubmit={onSubmit}>
+              <div className="form-floating mb-3">
+                <input type="text" id="createUserUsername" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} className="form-control" placeholder="Username" required />
+                <label htmlFor="createUserUsername">Username</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input type="email" id="createUserEmail" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="form-control" placeholder="Email" required />
+                <label htmlFor="createUserEmail">Email</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input type="password" id="createUserPassword" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="form-control" placeholder="Password" required />
+                <label htmlFor="createUserPassword">Password</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input type="text" id="createUserFirstName" value={newUser.first_name} onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })} className="form-control" placeholder="First Name" required />
+                <label htmlFor="createUserFirstName">First Name</label>
+              </div>
+              <div className="form-floating mb-3">
+                <input type="text" id="createUserLastName" value={newUser.last_name} onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })} className="form-control" placeholder="Last Name" required />
+                <label htmlFor="createUserLastName">Last Name</label>
+              </div>
+              <div className="form-floating mb-3">
+                <select id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select form-select-sm">
+                  {roles.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="createUserRole">Role</label>
+              </div>
+            </form>
+          </div>
         </div>
 
-        {/* ─── 4 FOOTER ─────────────────────────────────────────────────── */}
-        {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions
-            start={
-              <button type="submit" form="create-user-form" disabled={loading} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Create user">
-                <CheckIcon style={{ width: 18, height: 18 }} />
-              </button>
-            }
-            center={
-              <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Cancel">
-                <XMarkIcon style={{ width: 18, height: 18 }} />
-              </button>
-            }
-          />
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <button type="submit" form="create-user-form" disabled={loading} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" title="Create user">
+              <CheckIcon style={{ width: 16, height: 16 }} />
+              Create
+            </button>
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>

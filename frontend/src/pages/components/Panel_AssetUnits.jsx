@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { assetUnitsAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
+import { TrashIcon } from "@heroicons/react/24/outline";
 
 const STATE_LABELS = {
   available: "Available",
@@ -60,7 +61,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [addingUnit, setAddingUnit] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newState, setNewState] = useState("available");
-  const [newNotes, setNewNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -88,11 +88,10 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
       await assetUnitsAPI.add(assetId, {
         label: newLabel.trim() || null,
         state: newState,
-        notes: newNotes.trim() || null,
+        notes: null,
       });
       setNewLabel("");
       setNewState("available");
-      setNewNotes("");
       setAddingUnit(false);
       await load();
     } catch {
@@ -166,29 +165,26 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
       {/* Units table */}
       {units.length > 0 && (
         <div className="table-responsive mb-2">
-          <table className="table table-sm table-bordered align-middle mb-0">
+          <table className="table table-sm align-middle mb-0" style={{ borderCollapse: "collapse" }}>
             <thead className="">
               <tr>                
-                <th style={{ width: "2rem" }}></th>
-                <th></th>
-                <th>Label</th>
-                <th>State</th>
-                <th>Notes</th>
+                <th style={{ width: "2rem", borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}></th>
+                <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Label</th>
+                <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>State</th>
               </tr>
             </thead>
             <tbody>
-              {units.map((unit, idx) => (
-                <tr key={unit.id}>
-                   <td>
-                    <button className="btn btn-sm btn-outline-danger py-0 px-1 lh-1" onClick={() => handleRemove(unit.id)} title="Remove unit">
-                      &times;
+              {units.map((unit) => (
+                <tr key={unit.id} style={{ borderBottom: "1px solid var(--bs-border-color)" }}>
+                  <td style={{ border: "none" }}>
+                    <button className="btn btn-circle btn-outline-danger" onClick={() => handleRemove(unit.id)} title="Remove unit">
+                      <TrashIcon className="h-4 w-4" />
                     </button>
                   </td>
-                  <td className="text-muted small">{idx + 1}</td>
-                  <td>
+                  <td style={{ border: "none" }}>
                     <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
                   </td>
-                  <td>
+                  <td style={{ border: "none" }}>
                     <select className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`} value={unit.state} onChange={(e) => handleStateChange(unit.id, e.target.value)}>
                       {Object.entries(STATE_LABELS).map(([s, l]) => (
                         <option key={s} value={s}>
@@ -197,10 +193,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
                       ))}
                     </select>
                   </td>
-                  <td>
-                    <InlineText value={unit.notes || ""} onSave={(val) => handleNotesSave(unit.id, val)} placeholder="click to add notes" />
-                  </td>
-                 
                 </tr>
               ))}
             </tbody>
@@ -229,7 +221,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
               </option>
             ))}
           </select>
-          <input type="text" className="form-control form-control-sm" placeholder="Notes (optional)" value={newNotes} style={{ maxWidth: "180px" }} onChange={(e) => setNewNotes(e.target.value)} />
           <button className="btn btn-sm btn-success" onClick={handleAddUnit} disabled={saving}>
             {saving ? "…" : "Add"}
           </button>
@@ -239,7 +230,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
               setAddingUnit(false);
               setNewLabel("");
               setNewState("available");
-              setNewNotes("");
             }}
           >
             Cancel

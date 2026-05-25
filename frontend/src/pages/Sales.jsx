@@ -104,7 +104,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
       {/* Item Name - Top Left */}
-      <div className="absolute top-1 left-1" style={{ maxWidth: "70%" }}>
+      <div className="absolute top-1 left-1" style={{ maxWidth: "85%" }}>
         <div className={`inline-block px-1 rounded-lg backdrop-blur-sm ${isService ? "bg-primary-600/90" : "bg-secondary-600/90"}`}>
           <h3 className="font-semibold text-white text-sm line-clamp-2 m-0">{item.name}</h3>
         </div>
@@ -1177,7 +1177,7 @@ export default function Sales() {
                 }}
               >
                 <ShoppingCartIcon className="h-4 w-4" />
-                {cartItemCount} · ${cartTotal.toFixed(2)}
+                {cartItemCount}
               </button>
             )}
           </div>
@@ -1206,7 +1206,7 @@ export default function Sales() {
                 <span className="text-xs text-gray-400">{filteredServices.length} available</span>
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {filteredServices.map((service) => (
                 <ItemCard
                   key={`service-${service.id}`}
@@ -1236,7 +1236,7 @@ export default function Sales() {
                 <span className="text-xs text-gray-400">{filteredProducts.length} available</span>
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {filteredProducts.map((product) => {
                 const pType = (product.type || "product").toLowerCase();
                 return (
@@ -1269,7 +1269,7 @@ export default function Sales() {
                 <span className="text-xs text-gray-400">{filteredSubscriptions.length} available</span>
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {filteredSubscriptions.map((subscription) => (
                 <ItemCard
                   key={`subscription-${subscription.id}`}

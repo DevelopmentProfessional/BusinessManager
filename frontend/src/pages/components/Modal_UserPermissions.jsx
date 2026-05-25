@@ -25,8 +25,6 @@ import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Modal from "./Modal";
 import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
-import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 
 function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   const [open, setOpen] = useState(false);
@@ -92,19 +90,16 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
 
 export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleViewAllToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
-        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
-        {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Permissions</h6>
-          <button type="button" onClick={onClose} className="btn btn-link p-0 text-muted">
-            <XMarkIcon style={{ width: 20, height: 20 }} />
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Manage Permissions</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        {/* Scrollable Body */}
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3">
+        <div className="component-body">
+          <div className="component-body-inner">
           {/* ─── 2 ADD NEW PERMISSION FORM ──────────────────────────────────────── */}
           {/* Add New Permission Form */}
           <form onSubmit={onCreatePermission} className="mb-4 p-3 border rounded">
@@ -217,13 +212,19 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
+          </div>{/* /permissions table */}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
         {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
-        {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
+        <div className="component-footer">
+          <div className="component-footer-left"></div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>

@@ -13,7 +13,6 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
-import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
 import { useNavigate } from "react-router-dom";
 import { clientCartAPI, clientOrdersAPI, inventoryFeaturesAPI } from "../../services/api";
@@ -214,18 +213,19 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
   if (!client) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
-        {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <ShoppingCartIcon style={{ width: 18, height: 18 }} />
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{client.name}'s Cart</h6>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">
+            <ShoppingCartIcon style={{ width: 18, height: 18 }} className="me-1" />
+            {client.name}'s Cart
           </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        {/* Content */}
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar">
+        <div className="component-body">
+          <div className="component-body-inner">
           {loading ? (
             <div className="d-flex justify-content-center py-5">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -381,26 +381,29 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
               </div>
             </>
           )}
-        </div>
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
-        {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions
-            start={
-              !orderCreated ? (
-                <div className="d-flex align-items-center gap-1">
-                  <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
-                  {cartItems.length > 0 ? (
-                    <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" title="Create portal order from cart">
-                      <CheckCircleIcon style={{ width: 16, height: 16 }} />
-                      {creating ? "…" : "Order"}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null
-            }
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
-          />
+        <div className="component-footer">
+          <div className="component-footer-left">
+            {!orderCreated && (
+              <div className="d-flex align-items-center gap-1">
+                <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
+                {cartItems.length > 0 && (
+                  <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" title="Create portal order from cart">
+                    <CheckCircleIcon style={{ width: 16, height: 16 }} />
+                    {creating ? "…" : "Order"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>

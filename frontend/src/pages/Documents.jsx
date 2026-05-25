@@ -854,7 +854,7 @@ export default function Documents() {
           addButton={
             !showTemplates ? (
               <Gate_Permission page="documents" permission="write">
-                <Button_Toolbar icon={PlusIcon} label="Upload" onClick={handleUploadDocument} className="btn-app-primary" />
+                <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleUploadDocument} className="btn-app-primary" />
               </Gate_Permission>
             ) : null
           }

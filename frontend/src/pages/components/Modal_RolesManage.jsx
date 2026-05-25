@@ -25,24 +25,19 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
-        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
-        {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Roles</h6>
-          <button type="button" onClick={onClose} className="btn btn-link p-0 text-muted">
-            <XMarkIcon style={{ width: 20, height: 20 }} />
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Manage Roles</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        {/* ─── 2 STATUS MESSAGES ──────────────────────────────────────────────── */}
-        {/* Scrollable Body */}
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3">
+        <div className="component-body">
+          <div className="component-body-inner">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
               <div className="text-sm text-red-700">{error}</div>
@@ -160,13 +155,19 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </div>{/* /roles list */}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
         {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
-        {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
+        <div className="component-footer">
+          <div className="component-footer-left"></div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>

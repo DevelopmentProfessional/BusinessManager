@@ -18,8 +18,6 @@ import Modal from "./Modal";
 
 import Button_Toolbar from "./Button_Toolbar";
 
-import Footer_Actions from "./Footer_Actions";
-
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const EMPTY_FORM = {
@@ -292,23 +290,23 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   const showEditor = editPanelOpen;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen contentGravity={showEditor ? "top" : "bottom"}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 position-relative" style={{ minHeight: "100%" }}>
-        <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center gap-2">
-          <TagIcon className="app-icon text-primary" />
-
-          <div className="min-w-0 flex-grow-1">
-            <h6 className="mb-0 fw-semibold">Discount rules</h6>
-
-            <span className="text-muted small">Schedule price reductions on inventory items</span>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">
+            <TagIcon className="app-icon text-primary me-1" />
+            Discount Rules
           </div>
-
-          <button type="button" className="btn btn-primary btn-sm" onClick={startNew}>
-            New
-          </button>
+          <div className="component-header-center"></div>
+          <div className="component-header-right">
+            <button type="button" className="btn btn-primary btn-sm" onClick={startNew}>
+              New
+            </button>
+          </div>
         </div>
 
-        <div className="flex-grow-1 overflow-auto min-h-0 p-2">
+        <div className="component-body">
+          <div className="component-body-inner">
           {error && !showEditor && <div className="small text-danger mb-2">{error}</div>}
 
           {loading ? (
@@ -377,10 +375,17 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               </table>
             </div>
           )}
-        </div>
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
-        <div className="flex-shrink-0 border-t app-footer-padding">
-          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
+        <div className="component-footer">
+          <div className="component-footer-left"></div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
 
         {showEditor && (
@@ -497,11 +502,11 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               )}
             </div>
 
-            <div className="flex-shrink-0 border-top app-footer-padding">
-              <Footer_Actions
-                start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save rule" />}
-                center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={resetForm} className="btn-outline-secondary" disabled={saving} title="Cancel editing" />}
-              />
+            <div className="flex-shrink-0 border-top p-2 d-flex align-items-center gap-2">
+              <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save rule" />
+              <button type="button" onClick={resetForm} className="btn btn-circle btn-outline-secondary" title="Cancel" disabled={saving}>
+                <XMarkIcon />
+              </button>
             </div>
           </div>
         )}

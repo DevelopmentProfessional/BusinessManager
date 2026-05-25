@@ -4,9 +4,8 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import Modal, { ModalHeader, ModalFooter } from "./Modal";
+import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 import Filter_CatalogCheckboxes from "./Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "./Filter_SourceToggle";
 import {
@@ -252,11 +251,11 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
             />
           </div>
 
-          <Footer_Actions
-            start={<Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />}
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-outline-secondary" />}
-            end={<Button_Toolbar icon={TrashIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />}
-          />
+          <div className="d-flex gap-1 align-items-center pt-1">
+            <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close sales history"><XMarkIcon /></button>
+            <Button_Toolbar icon={TrashIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
+          </div>
         </div>
       </div>
     </div>
@@ -334,27 +333,20 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
       onClose={onClose}
       noPadding
       fullScreen
-      footer={
-        <ModalFooter className="p-0 border-0 bg-body">
-          <SalesHistoryFilterFooter isOpen={isOpen} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onClose={onClose} />
-        </ModalFooter>
-      }
     >
-      <div className="d-flex flex-column h-100 min-h-0 bg-body">
-        <ModalHeader
-          title={
-            <span className="d-inline-flex align-items-center gap-2 flex-wrap">
-              <ClockIcon className="app-icon text-muted" aria-hidden="true" />
-              <span>Sales History</span>
-              <span className="badge rounded-pill bg-secondary-subtle text-secondary-emphasis fw-normal">{filteredHistory.length}</span>
-            </span>
-          }
-          onClose={onClose}
-          showClose={false}
-          className="px-3 py-2"
-        />
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">
+            <ClockIcon className="app-icon text-muted me-1" aria-hidden="true" />
+            Sales History
+            <span className="badge rounded-pill bg-secondary-subtle text-secondary-emphasis fw-normal ms-1">{filteredHistory.length}</span>
+          </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
 
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar">
+        <div className="component-body">
+          <div className="component-body-inner">
           {filteredHistory.length === 0 ? (
             <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center px-4 py-5">
               <ClockIcon className="text-muted mb-3" style={{ width: "3rem", height: "3rem" }} aria-hidden="true" />
@@ -460,6 +452,15 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
               })}
             </div>
           )}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <SalesHistoryFilterFooter isOpen={isOpen} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onClose={onClose} />
+          </div>
+          <div className="component-footer-center"></div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>
