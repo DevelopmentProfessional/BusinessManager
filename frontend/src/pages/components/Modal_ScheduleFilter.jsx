@@ -25,7 +25,6 @@
 import React, { useEffect, useState } from "react";
 import { XMarkIcon, CheckIcon, TrashIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 import Modal from "./Modal";
 
 // ─── 1 CONSTANTS ─────────────────────────────────────────────────────────
@@ -161,38 +160,36 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
 
   // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Filter Schedule"
-      footer={
-        <Footer_Actions
-          start={<Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn-outline-secondary" title="Apply filters" />}
-          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-          end={<Button_Toolbar icon={TrashIcon} label="Clear" onClick={handleClear} className="btn-outline-secondary" title="Clear all filters" />}
-        />
-      }
-    >
-      <div className="d-flex flex-column gap-2">
-        {/* Employees accordion */}
-        <AccordionSection
-          label="Employees"
-          count={localFilters.employeeIds.length}
-          isOpen={openSections.employees}
-          onToggle={() => toggleSection("employees")}
-          onClear={() => clearSection("employeeIds")}
-          helpText="Show only appointments for selected employees. Use this to focus on specific team members' schedules."
-          helpKey="employees"
-          showHelp={showHelp}
-          setShowHelp={setShowHelp}
-          helpPos={helpPos}
-          setHelpPos={setHelpPos}
-        >
-          {employees.map((employee) => (
-            <label key={employee.id} className="d-flex align-items-center gap-2 mb-0">
-              <input type="checkbox" checked={localFilters.employeeIds.includes(employee.id)} onChange={() => toggleId("employeeIds", employee.id)} />
-              <span className="rounded-circle flex-shrink-0" />
-              <span style={{ fontSize: "0.875rem" }}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Filter Schedule</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
+
+        <div className="component-body">
+          <div className="component-body-inner">
+            <div className="d-flex flex-column gap-2">
+              {/* Employees accordion */}
+              <AccordionSection
+                label="Employees"
+                count={localFilters.employeeIds.length}
+                isOpen={openSections.employees}
+                onToggle={() => toggleSection("employees")}
+                onClear={() => clearSection("employeeIds")}
+                helpText="Show only appointments for selected employees. Use this to focus on specific team members' schedules."
+                helpKey="employees"
+                showHelp={showHelp}
+                setShowHelp={setShowHelp}
+                helpPos={helpPos}
+                setHelpPos={setHelpPos}
+              >
+                {employees.map((employee) => (
+                  <label key={employee.id} className="d-flex align-items-center gap-2 mb-0">
+                    <input type="checkbox" checked={localFilters.employeeIds.includes(employee.id)} onChange={() => toggleId("employeeIds", employee.id)} />
+                    <span className="rounded-circle flex-shrink-0" />
+                    <span style={{ fontSize: "0.875rem" }}>
                 {employee.first_name} {employee.last_name}
               </span>
             </label>
@@ -278,27 +275,44 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
             />
           </div>
         </div>
-      </div>
-      {/* Fixed-position help tooltip — escapes any overflow container */}
-      {showHelp && (
-        <div
-          style={{ position: "fixed", top: helpPos.top, left: helpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-          className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-        >
-          <div className="fw-semibold mb-1" style={{ fontSize: "0.8rem" }}>
-            {showHelp}
-          </div>
-          <div className="small text-gray-600 dark:text-gray-300">
-            {
+            </div>{/* /d-flex flex-column gap-2 */}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        {/* Fixed-position help tooltip — escapes any overflow container */}
+        {showHelp && (
+          <div
+            style={{ position: "fixed", top: helpPos.top, left: helpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
+            className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="fw-semibold mb-1" style={{ fontSize: "0.8rem" }}>
+              {showHelp}
+            </div>
+            <div className="small text-gray-600 dark:text-gray-300">
               {
-                employees: "Show only appointments for selected employees. Use this to focus on specific team members' schedules.",
-                clients: "Show only appointments for selected clients. Useful for tracking specific client interactions and bookings.",
-                services: "Show only appointments for selected services. Filter by service type to analyze booking patterns or capacity.",
-              }[showHelp]
-            }
+                {
+                  employees: "Show only appointments for selected employees. Use this to focus on specific team members' schedules.",
+                  clients: "Show only appointments for selected clients. Useful for tracking specific client interactions and bookings.",
+                  services: "Show only appointments for selected services. Filter by service type to analyze booking patterns or capacity.",
+                }[showHelp]
+              }
+            </div>
           </div>
+        )}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn-outline-secondary" title="Apply filters" />
+            <Button_Toolbar icon={TrashIcon} label="Clear" onClick={handleClear} className="btn-outline-secondary" title="Clear all filters" />
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
-      )}
+      </div>{/* /component */}
     </Modal>
   );
 }

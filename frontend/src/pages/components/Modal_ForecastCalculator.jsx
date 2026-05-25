@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Modal_ForecastCalculator.jsx
  *
@@ -992,10 +992,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
           {/* Summary Cards (Accordion) */}
           <div className="flex-shrink-0 mb-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <button type="button" onClick={() => setShowSummarySection((prev) => !prev)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+            <div role="button" tabIndex={0} onClick={() => setShowSummarySection((prev) => !prev)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSummarySection((prev) => !prev); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
               <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Forecast Summary</span>
               {showSummarySection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-            </button>
+            </div>
             {showSummarySection && (
               <div className="p-2 border-top border-gray-200 dark:border-gray-700 d-flex gap-2 flex-wrap">
                 <div className="flex-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
@@ -1074,10 +1074,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Revenue Components Section */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowRevenueSection(!showRevenueSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowRevenueSection(!showRevenueSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowRevenueSection(!showRevenueSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Revenue Components</span>
                     {showRevenueSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showRevenueSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1107,10 +1107,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Cost of Goods / Shipping Section */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowCostSection(!showCostSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowCostSection(!showCostSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCostSection(!showCostSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Cost of Goods & Shipping</span>
                     {showCostSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showCostSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1139,10 +1139,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Marketing Section */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowMarketingSection(!showMarketingSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowMarketingSection(!showMarketingSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMarketingSection(!showMarketingSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Marketing & Advertising</span>
                     {showMarketingSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showMarketingSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1171,10 +1171,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Customer Behavior Section */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowCustomerSection(!showCustomerSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowCustomerSection(!showCustomerSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCustomerSection(!showCustomerSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Customer Behavior</span>
                     {showCustomerSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showCustomerSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1207,10 +1207,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Economic Factors Section */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowEconomicSection(!showEconomicSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowEconomicSection(!showEconomicSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowEconomicSection(!showEconomicSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Economic Factors</span>
                     {showEconomicSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showEconomicSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1231,10 +1231,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Operational Costs Section */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowOperationalSection(!showOperationalSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowOperationalSection(!showOperationalSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowOperationalSection(!showOperationalSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Operational Costs</span>
                     {showOperationalSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showOperationalSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       {/* Fixed Monthly Costs */}
@@ -1322,10 +1322,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Advanced Factors Section (Phase 2) */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowAdvancedSection(!showAdvancedSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowAdvancedSection(!showAdvancedSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAdvancedSection(!showAdvancedSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Advanced Factors</span>
                     {showAdvancedSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showAdvancedSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1460,10 +1460,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Risk & Scenario Modeling Section (Phase 3) */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowRiskSection(!showRiskSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowRiskSection(!showRiskSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowRiskSection(!showRiskSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Risk & Scenario Modeling</span>
                     {showRiskSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showRiskSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">
@@ -1555,10 +1555,10 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
               {/* Reporting & Export Section (Phase 4) */}
               <div className="col-12">
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <button onClick={() => setShowExportSection(!showExportSection)} className="w-100 btn btn-link text-start d-flex align-items-center justify-content-between p-2 text-decoration-none">
+                  <div role="button" tabIndex={0} onClick={() => setShowExportSection(!showExportSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowExportSection(!showExportSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
                     <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Reporting & Export</span>
                     {showExportSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-                  </button>
+                  </div>
                   {showExportSection && (
                     <div className="p-3 border-top border-gray-200 dark:border-gray-700">
                       <div className="row g-2">

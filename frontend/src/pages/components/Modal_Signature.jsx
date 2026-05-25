@@ -28,7 +28,6 @@ import Widget_Signature from "./Widget_Signature";
 import api from "../../services/api";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
@@ -86,43 +85,51 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Signature" noPadding={true} contentGravity="top">
-      <div className="d-flex flex-column h-100">
-        {/* Container_Scrollable Content */}
-        <div className="flex-1 min-h-0 overflow-auto p-4" style={{ maxHeight: "calc(80vh - 140px)" }}>
-          {signatureMessage && <div className={`alert py-2 small mb-3 ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>}
-
-          {signatureLoading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary mb-2" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <div className="text-muted">Loading signature...</div>
-            </div>
-          ) : showSignaturePad ? (
-            <Widget_Signature onSave={handleSaveSignature} onCancel={handleCancel} initialSignature={savedSignature} width={500} height={200} />
-          ) : savedSignature ? (
-            <div className="d-flex flex-column gap-3">
-              <img src={savedSignature} alt="Saved signature" className="border rounded" style={{ maxWidth: "100%", height: "auto" }} />
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-muted mb-0">No signature saved yet.</p>
-            </div>
-          )}
+    <Modal isOpen={isOpen} onClose={onClose} noPadding>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Signature</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        <div className="border-top bg-white dark:bg-gray-800 p-3">
-          <Footer_Actions
-            start={
-              !showSignaturePad && savedSignature ? (
-                <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />
-              ) : (
-                <span className="app-footer-actions__spacer" aria-hidden="true" />
-              )
-            }
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-app-cancel" title="Close" />}
-          />
+        <div className="component-body">
+          <div className="component-body-inner">
+            {signatureMessage && <div className={`alert py-2 small mb-3 ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>}
+
+            {signatureLoading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border text-primary mb-2" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <div className="text-muted">Loading signature...</div>
+              </div>
+            ) : showSignaturePad ? (
+              <Widget_Signature onSave={handleSaveSignature} onCancel={handleCancel} initialSignature={savedSignature} width={500} height={200} />
+            ) : savedSignature ? (
+              <div className="d-flex flex-column gap-3">
+                <img src={savedSignature} alt="Saved signature" className="border rounded" style={{ maxWidth: "100%", height: "auto" }} />
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted mb-0">No signature saved yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            {!showSignaturePad && savedSignature && (
+              <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />
+            )}
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>

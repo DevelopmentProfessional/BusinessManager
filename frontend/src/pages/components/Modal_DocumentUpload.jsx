@@ -1,7 +1,6 @@
 ﻿import React, { useState } from "react";
 import { DocumentIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
-import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
 import { documentsAPI } from "../../services/api";
 
@@ -55,9 +54,16 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={title} noPadding contentGravity="top">
-      <form onSubmit={handleSubmit} className="d-flex flex-column" style={{ minHeight: "min(70vh, 28rem)" }}>
-        <div className="flex-grow-1 min-h-0 overflow-auto p-3">
+    <Modal isOpen={isOpen} onClose={handleClose} noPadding>
+      <form onSubmit={handleSubmit} className="component">
+        <div className="component-header">
+          <div className="component-header-left">{title}</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
+
+        <div className="component-body">
+          <div className="component-body-inner">
           <div
             className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`}
             onDragEnter={(e) => {
@@ -100,21 +106,26 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
             <label htmlFor="po_doc_desc">Description (optional)</label>
           </div>
           {error && <div className="alert alert-danger py-2 small mt-2 mb-0">{error}</div>}
-        </div>
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions
-            start={
-              <Button_Toolbar
-                type="submit"
-                icon={ArrowDownTrayIcon}
-                label={uploading ? "Uploading…" : "Upload"}
-                className="btn-outline-secondary"
-                disabled={uploading || !file}
-                title="Upload file"
-              />
-            }
-            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} className="btn-outline-secondary" disabled={uploading} title="Cancel" />}
-          />
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar
+              type="submit"
+              icon={ArrowDownTrayIcon}
+              label={uploading ? "Uploading…" : "Upload"}
+              className="btn-outline-secondary"
+              disabled={uploading || !file}
+              title="Upload file"
+            />
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={handleClose} disabled={uploading} className="btn btn-circle btn-outline-secondary" title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </form>
     </Modal>

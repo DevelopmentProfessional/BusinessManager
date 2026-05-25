@@ -32,12 +32,6 @@ export default function Inventory_RowDetail({ item, priceDisplay, featureNames =
           {costDisplay && <span className="small text-info fw-semibold">Cost: {costDisplay}</span>}
         </div>
       )}
-      {isAsset && (item.date_of_purchase || item.date_of_sale) && (
-        <div className="d-flex flex-wrap gap-2 mt-1">
-          {item.date_of_purchase && <span className="text-xxs text-muted">Purchased: {item.date_of_purchase.slice(0, 10)}</span>}
-          {item.date_of_sale && <span className="text-xxs text-muted">Sold: {item.date_of_sale.slice(0, 10)}</span>}
-        </div>
-      )}
       {featureNames.length > 0 && (
         <div className="d-flex flex-wrap gap-1 mt-1">
           {featureNames.map((name) => (

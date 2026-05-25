@@ -24,8 +24,7 @@
 import React, { useState } from "react";
 import { DocumentArrowUpIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { adminAPI } from "../../services/api";
-import Button_Icon from "./Button_Icon";
-import Footer_Action from "./Footer_Action";
+import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
@@ -114,21 +113,19 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
 
   // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Import Data from CSV Files"
-      centered={true}
-      footer={
-        <div className="flex justify-end gap-2">
-          <Button_Icon icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon} label={uploading ? "Importing..." : "Import"} onClick={handleUpload} disabled={!Object.values(files).some((file) => file !== null) || uploading} variant="primary" className={uploading ? "animate-spin" : ""} title="Import data" />
-          <Button_Icon icon={XMarkIcon} label="Cancel" onClick={handleClose} variant="secondary" />
+    <Modal isOpen={isOpen} onClose={handleClose} noPadding centered>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Import Data from CSV Files</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
-      }
-    >
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Upload CSV files to import clients, services, and appointments. You can upload one, two, or all three files at once.</p>
 
-      <div className="space-y-4">
+        <div className="component-body">
+          <div className="component-body-inner">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Upload CSV files to import clients, services, and appointments. You can upload one, two, or all three files at once.</p>
+
+            <div className="space-y-4">
         {/* Clients Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Clients CSV</label>
@@ -220,12 +217,33 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
           </div>
         )}
 
-        {/* Success message */}
         {success && (
-          <div className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <span className="text-sm text-green-800 dark:text-green-300">{success}</span>
+            <div className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <span className="text-sm text-green-800 dark:text-green-300">{success}</span>
+            </div>
+          )}
+          </div>{/* /space-y-4 */}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar
+              icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
+              label={uploading ? "Importing..." : "Import"}
+              onClick={handleUpload}
+              disabled={!Object.values(files).some((file) => file !== null) || uploading}
+              className="btn-outline-secondary"
+              title="Import data"
+            />
           </div>
-        )}
+          <div className="component-footer-center">
+            <button type="button" onClick={handleClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
+        </div>
       </div>
     </Modal>
   );

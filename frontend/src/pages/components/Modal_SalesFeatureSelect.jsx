@@ -133,23 +133,22 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} centered={true} contentGravity="bottom">
-      <div style={{ minWidth: 300 }}>
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-start mb-3">
-          <div>
-            <h6 className="fw-bold mb-0">{item.name}</h6>
-            {!loading && features.length === 0 && <div className="small text-muted">No variants available</div>}
-          </div>
-          <button type="button" className="btn btn-link p-0 ms-2 text-muted" onClick={onClose}>
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">{item.name}</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-3 text-muted small">Loading options…</div>
-        ) : (
-          <>
+        <div className="component-body">
+          <div className="component-body-inner">
+            {!loading && features.length === 0 && <div className="small text-muted mb-2">No variants available</div>}
+
+            {loading ? (
+              <div className="text-center py-3 text-muted small">Loading options…</div>
+            ) : (
+              <>
             {/* Feature option pickers */}
             {features.map((f) => (
               <div key={f.feature_id} className="mb-3">
@@ -202,27 +201,32 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
               </div>
             )}
 
-            {/* Footer actions */}
-            <div className="d-grid align-items-center gap-2" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
-              <div className="justify-self-start">
-                <div className="small text-muted">Total</div>
-                <div className="fw-bold text-primary" style={{ fontSize: "1.25rem" }}>
-                  ${(resolvedPrice * quantity).toFixed(2)}
-                </div>
-              </div>
-              <button type="button" className="btn btn-outline-secondary btn-sm px-3 d-flex align-items-center gap-2" onClick={onClose}>
-                <XMarkIcon className="h-4 w-4" />
-                <span>Close</span>
-              </button>
-              <button type="button" className="btn btn-primary d-flex align-items-center justify-content-center gap-2" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0}>
-                <ShoppingCartIcon className="h-5 w-5" />
-                Add
-              </button>
-            </div>
-
             {features.length > 0 && !allSelected && <div className="text-muted small text-center mt-2">Select an option for each feature to continue</div>}
           </>
         )}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <div className="me-2">
+              <div className="small text-muted">Total</div>
+              <div className="fw-bold text-primary" style={{ fontSize: "1.25rem" }}>
+                ${(resolvedPrice * quantity).toFixed(2)}
+              </div>
+            </div>
+            <button type="button" className="btn btn-primary d-flex align-items-center justify-content-center gap-2" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0}>
+              <ShoppingCartIcon className="h-5 w-5" />
+              Add
+            </button>
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
+        </div>
       </div>
     </Modal>
   );

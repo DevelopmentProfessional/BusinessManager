@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
 import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon, PlusIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import { showConfirm } from "../../services/showConfirm";
-import Footer_Actions from "./Footer_Actions";
 
 const DEFAULT_ROW_COUNT = 100;
 const DEFAULT_ADD_ROW_COUNT = 100;
@@ -375,14 +373,24 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding contentGravity="top">
-      <div className="d-flex flex-column h-100" onPaste={handleGlobalPaste}>
-        <div className="border-bottom border-gray-200 dark:border-gray-700 px-3 py-2">
-          <div className="fw-semibold">{title}</div>
-          {hint && <div className="small text-muted mt-1">{hint}</div>}
+    <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding>
+      <div className="component" onPaste={handleGlobalPaste}>
+        <div className="component-header">
+          <div className="component-header-left">
+            {title}
+            {hint && <span className="small text-muted ms-2">{hint}</span>}
+          </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right">
+            <button type="button" className="btn btn-sm btn-outline-secondary" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
+              <ArrowUpIcon style={{ width: 16, height: 16 }} />
+            </button>
+          </div>
         </div>
 
-        <div ref={scrollContainerRef} className="flex-grow-1 min-h-0 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
+        <div className="component-body">
+          <div className="component-body-inner component-body-inner--flush">
+          <div ref={scrollContainerRef} className="h-100 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
           <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
             <colgroup>
               <col style={{ width: 56 }} />
@@ -471,47 +479,36 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
               ))}
             </tbody>
           </table>
-        </div>
+          </div>{/* /scroll container */}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
-        <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          {status.message && <div className={`px-4 pt-2 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
-
-          <div className="row g-0 align-items-center">
-            <div className="col-auto px-3">
-              <button type="button" className="btn btn-outline-secondary btn-sm" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
-                <ArrowUpIcon style={{ width: 16, height: 16 }} />
+        <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
+          {status.message && <div className={`px-3 pt-2 pb-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
+          <div className="d-flex align-items-center gap-1 p-2">
+            <div className="component-footer-left d-flex align-items-center gap-1 flex-wrap">
+              <div className="d-flex align-items-center gap-1">
+                <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+                <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-1" onClick={handleAddRows} disabled={isSaving}>
+                  <PlusIcon className="h-4 w-4" />
+                  <span>Add</span>
+                </button>
+              </div>
+              <button type="button" className="btn btn-primary d-flex align-items-center gap-1" onClick={handleImport} disabled={isSaving}>
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                <span>{isSaving ? "…" : "Save"}</span>
               </button>
             </div>
-            <div className="col px-1 min-w-0">
-              <Footer_Actions
-                start={
-                  <>
-                    <div className="d-flex align-items-center gap-1">
-                      <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-                      <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleAddRows} disabled={isSaving}>
-                        <PlusIcon className="h-4 w-4" />
-                        <span>Add</span>
-                      </button>
-                    </div>
-                    <button type="button" className="btn btn-primary d-flex align-items-center gap-2" onClick={handleImport} disabled={isSaving}>
-                      <ArrowDownTrayIcon className="h-4 w-4" />
-                      <span title={isSaving ? "Importing" : "Save import"}>{isSaving ? "…" : "Save"}</span>
-                    </button>
-                  </>
-                }
-                center={
-                  <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={onClose} disabled={isSaving}>
-                    <XMarkIcon className="h-4 w-4" />
-                    <span>Cancel</span>
-                  </button>
-                }
-                end={
-                  <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handleClearGrid} disabled={isSaving}>
-                    <TrashIcon className="h-4 w-4" />
-                    <span>Clear</span>
-                  </button>
-                }
-              />
+            <div className="component-footer-center">
+              <button type="button" className="btn btn-circle btn-outline-secondary" onClick={onClose} disabled={isSaving} title="Cancel">
+                <XMarkIcon />
+              </button>
+            </div>
+            <div className="component-footer-right">
+              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-1" onClick={handleClearGrid} disabled={isSaving}>
+                <TrashIcon className="h-4 w-4" />
+                <span>Clear</span>
+              </button>
             </div>
           </div>
         </div>

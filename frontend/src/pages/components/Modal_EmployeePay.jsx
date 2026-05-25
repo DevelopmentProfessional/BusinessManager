@@ -24,6 +24,9 @@
 
 import React, { useState, useEffect } from "react";
 import { payrollAPI } from "../../services/api";
+import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import Modal from "./Modal";
+import Button_Toolbar from "./Button_Toolbar";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -229,27 +232,16 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
 
   // ─── [4] RENDER ─────────────────────────────────────────────────────────────
   return (
-    <div
-      className="modal d-block"
-      tabIndex="-1"
-      style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div className="modal-dialog modal-sm modal-dialog-centered">
-        <div className="modal-content">
-          <div className="modal-header py-2">
-            <h6 className="modal-title mb-0">
-              Pay {employee.first_name} {employee.last_name}
-            </h6>
-            <button type="button" className="btn-close" onClick={onClose} />
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
+      <form onSubmit={handleSubmit} className="component">
+        <div className="component-header">
+          <div className="component-header-left">Pay {employee.first_name} {employee.last_name}</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body py-3">
+        <div className="component-body">
+          <div className="component-body-inner">
               {payError && <div className="alert alert-danger py-1 px-2 small mb-2">{payError}</div>}
               {paySuccess && <div className="alert alert-success py-1 px-2 small mb-2">{paySuccess}</div>}
 
@@ -341,19 +333,21 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                 <label className="form-label small mb-1">Notes (optional)</label>
                 <textarea className="form-control form-control-sm" rows="2" value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
-            </div>
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
-            <div className="modal-footer py-2">
-              <button type="button" className="btn btn-sm btn-secondary" onClick={onClose}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-sm btn-outline-secondary" disabled={payLoading}>
-                {payLoading ? "…" : "Pay"}
-              </button>
-            </div>
-          </form>
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar type="submit" icon={CheckIcon} label={payLoading ? "…" : "Pay"} className="btn-outline-secondary" title="Process payment" disabled={payLoading} />
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

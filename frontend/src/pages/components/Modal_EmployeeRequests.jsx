@@ -23,20 +23,19 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
-        {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
-        {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Requests</h6>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Requests</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
-        {/* ─── 2 SCROLLABLE REQUEST LIST the iunven──────────────────────────────────────── */}
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2">
+        <div className="component-body">
+          <div className="component-body-inner">
           {requestsLoading ? (
             <div className="text-center py-4">
               <div className="spinner-border text-primary" role="status" />
@@ -98,44 +97,47 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
               })}
             </div>
           )}
+          </div>
         </div>
 
         {/* ─── 3 FOOTER ───────────────────────────────────────────────────────── */}
-        {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          {/* Row 1: Type filter pills */}
-          <div className="d-flex flex-wrap gap-1 mb-2">
-            {[
-              { key: "all", label: "All" },
-              { key: "leave_vacation", label: "Vacation" },
-              { key: "leave_sick", label: "Sick" },
-              { key: "onboarding", label: "Onboarding" },
-              { key: "offboarding", label: "Offboarding" },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? "btn-secondary" : "btn-outline-secondary"}`}
-                onClick={() => {
-                  setRequestTypeFilter(key);
-                  loadRequests(key);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* Row 2: Time filter + Close */}
-          <div className="d-flex align-items-center gap-2 flex-wrap">
+        <div className="component-footer" style={{ flexWrap: "wrap", gap: "0.4rem" }}>
+          <div className="component-footer-left" style={{ flexWrap: "wrap", gap: "0.3rem" }}>
+            {/* Row 1: Type filter pills */}
+            <div className="d-flex flex-wrap gap-1">
+              {[
+                { key: "all", label: "All" },
+                { key: "leave_vacation", label: "Vacation" },
+                { key: "leave_sick", label: "Sick" },
+                { key: "onboarding", label: "Onboarding" },
+                { key: "offboarding", label: "Offboarding" },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? "btn-secondary" : "btn-outline-secondary"}`}
+                  onClick={() => {
+                    setRequestTypeFilter(key);
+                    loadRequests(key);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Row 2: Time filter */}
             <select value={requestTimeFilter} onChange={(e) => setRequestTimeFilter(e.target.value)} className="form-select form-select-sm rounded-pill" style={{ width: "fit-content" }}>
               <option value="all">All Time</option>
               <option value="7d">Last 7 Days</option>
               <option value="30d">Last 30 Days</option>
               <option value="90d">Last 90 Days</option>
             </select>
-            <div className="flex-grow-1 min-w-0">
-              <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
-            </div>
           </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
     </Modal>

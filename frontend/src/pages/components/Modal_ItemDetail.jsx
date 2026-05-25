@@ -1770,7 +1770,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
             <Footer_Actions
               start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}
               center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-              end={canDelete ? <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete"} onClick={handleDelete} className="btn-outline-secondary" disabled={isDeleting} title="Delete item" /> : null}
             />
           ) : (
             <Footer_Actions

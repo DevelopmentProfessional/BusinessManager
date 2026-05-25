@@ -50,6 +50,12 @@ import {
   ShoppingCartIcon,
   ClipboardDocumentCheckIcon,
   Cog6ToothIcon,
+  FunnelIcon,
+  XMarkIcon,
+  TagIcon,
+  PhoneIcon,
+  BellIcon,
+  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
@@ -306,12 +312,12 @@ const FILTER_CONFIG = {
     key: "eventType",
     condition: (reportId) => reportId === "appointments",
     options: [
-      { value: "all", label: "All" },
-      { value: "meeting", label: "Meeting" },
-      { value: "call", label: "Call" },
-      { value: "appointment", label: "Appointment" },
-      { value: "task", label: "Task" },
-      { value: "reminder", label: "Reminder" },
+      { value: "all", label: "All", icon: ListBulletIcon },
+      { value: "meeting", label: "Meeting", icon: UsersIcon },
+      { value: "call", label: "Call", icon: PhoneIcon },
+      { value: "appointment", label: "Appointment", icon: CalendarIcon },
+      { value: "task", label: "Task", icon: ClipboardDocumentCheckIcon },
+      { value: "reminder", label: "Reminder", icon: BellIcon },
     ],
   },
   service: {
@@ -1151,14 +1157,16 @@ export default function Reports() {
                     rounded-pill d-inline-flex align-items-center"
                     style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
                   >
-                    <CalendarIcon className="h-4 w-4 flex-shrink-0 me-1" />
+                    <ListBulletIcon className="h-4 w-4 flex-shrink-0 me-1" />
                     {FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}
                   </button>
                   {eventTypeMenuOpen && (
                     <div className="position-absolute bottom-100 start-0 
                     bg-white dark:bg-gray-900 border border-gray-200 
-                    dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "18rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }} role="listbox">
-                      {FILTER_CONFIG.eventType.options.map((o) => (
+                    dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "100%", minWidth: "10rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }} role="listbox">
+                      {FILTER_CONFIG.eventType.options.map((o) => {
+                        const OptionIcon = o.icon;
+                        return (
                         <div
                           key={o.value}
                           onClick={() => {
@@ -1183,14 +1191,15 @@ export default function Reports() {
                             }
                           }}
                           tabIndex={0}
-                          className={`px-1 py-1${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                          className={`px-1 py-1 d-flex align-items-center${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
                           style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
                           role="option"
                           aria-selected={reportFilters.eventType === o.value}
                         >
-                          {o.label}
+                          {OptionIcon && <OptionIcon className="h-4 w-4 me-2 flex-shrink-0" />}{o.label}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1211,7 +1220,7 @@ export default function Reports() {
               <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
               {/* Saved Filters Dropup */}
               <div className="position-relative">
-                <Button_Toolbar icon={ChevronUpDownIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
+                <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
                 {savedFiltersMenuOpen && (
                   <div className="position-absolute bottom-100 start-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
@@ -1248,13 +1257,32 @@ export default function Reports() {
       {/* Forecast Calculator Modal */}
       <Modal_ForecastCalculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
 
-      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen={true} noPadding={true} contentGravity="bottom">
-        <div className="p-4 bg-gray-50 h-full overflow-auto">
-          <div className="d-flex align-items-center justify-content-between mb-3">
-            <h2 className="text-xl font-bold text-gray-900 mb-0">Financial Controls</h2>
-            <Button_Toolbar icon={ChartBarIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" />
+      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen noPadding>
+        <div className="component">
+          <div className="component-header">
+            <div className="component-header-left">
+              <CurrencyDollarIcon className="h-5 w-5 me-2 flex-shrink-0" />
+              Financial Controls
+            </div>
+            <div className="component-header-center" />
+            <div className="component-header-right" />
           </div>
-          <Dashboard_Financial />
+          <div className="component-body">
+            <div className="component-body-inner">
+              <Dashboard_Financial />
+            </div>
+          </div>
+          <div className="component-footer">
+            <div className="component-footer-left">
+              <Button_Toolbar icon={CalculatorIcon} label="Forecast" onClick={() => { setShowFinancialDashboard(false); setShowForecastCalculator(true); }} className="btn-outline-secondary" title="Open forecast calculator" />
+            </div>
+            <div className="component-footer-center">
+              <button className="btn btn-circle btn-outline-secondary" onClick={() => setShowFinancialDashboard(false)} title="Close">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="component-footer-right" />
+          </div>
         </div>
       </Modal>
 

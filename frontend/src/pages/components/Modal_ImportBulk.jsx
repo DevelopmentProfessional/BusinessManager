@@ -25,8 +25,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, CheckIcon, PhotoIcon, TrashIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
+import Modal from "./Modal";
 
 export default function Modal_BulkImport({
   isOpen,
@@ -64,8 +64,6 @@ export default function Modal_BulkImport({
       Object.values(photos).forEach((p) => URL.revokeObjectURL(p.url));
     };
   }, [photos]);
-
-  if (!isOpen) return null;
 
   // Parsed lines (live)
   const parsedNames = text
@@ -117,34 +115,18 @@ export default function Modal_BulkImport({
   const showRowDetails = allowPhotoUpload || itemTypes || true; // always show for category
 
   return (
-    /* Backdrop */
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1060,
-        background: "rgba(0,0,0,0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "1rem",
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      {/* Dialog */}
-      <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded shadow-lg d-flex flex-column" style={{ width: "100%", maxWidth: "520px", maxHeight: "85vh" }} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex-shrink-0 d-flex justify-content-between align-items-center p-3 border-bottom border-gray-200 dark:border-gray-700">
-          <h6 className="mb-0 fw-semibold">Bulk Import {entityLabel}</h6>
-          <button type="button" className="btn btn-sm p-0 text-gray-500 dark:text-gray-400" onClick={onClose} >
-            <XMarkIcon style={{ width: 20, height: 20 }} />
-          </button>
+    /* Modal wraps backdrop + dialog */
+    <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">Bulk Import {entityLabel}</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
         </div>
 
         {/* Body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar p-3 d-flex flex-column gap-3" style={{ minHeight: 0 }}>
+        <div className="component-body">
+          <div className="component-body-inner">
           {/* Textarea */}
           <div className="d-flex flex-column gap-1">
             <p className="small text-muted mb-0">Paste one name per line. Each line will be saved as a new {entityLabel.replace(/s$/i, "").toLowerCase()}.</p>
@@ -217,25 +199,29 @@ export default function Modal_BulkImport({
           )}
 
           {resultMsg && <div className={`alert alert-${resultMsg.type === "error" ? "danger" : "success"} py-1 mb-0 small`}>{resultMsg.text}</div>}
-        </div>
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
-          <Footer_Actions
-            start={
-              <Button_Toolbar
-                icon={ArrowDownTrayIcon}
-                label={saving ? "Saving…" : parsedNames.length > 0 ? `Save (${parsedNames.length})` : "Save"}
-                onClick={handleSave}
-                className="btn-primary"
-                disabled={saving || parsedNames.length === 0}
-                title="Import rows"
-              />
-            }
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" disabled={saving} title="Close" />}
-          />
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar
+              icon={ArrowDownTrayIcon}
+              label={saving ? "Saving…" : parsedNames.length > 0 ? `Save (${parsedNames.length})` : "Save"}
+              onClick={handleSave}
+              className="btn-primary"
+              disabled={saving || parsedNames.length === 0}
+              title="Import rows"
+            />
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" disabled={saving} title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

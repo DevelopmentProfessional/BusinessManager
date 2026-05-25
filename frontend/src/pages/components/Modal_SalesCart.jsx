@@ -25,7 +25,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
-import Footer_Actions from "./Footer_Actions";
 import { getDisplayImageUrl } from "./Utils_Image";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, TrashIcon } from "@heroicons/react/24/outline";
 
@@ -233,25 +232,28 @@ export default function Modal_Cart_Sales({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} contentGravity="bottom">
-      <div className="flex flex-col max-h-[90vh]">
-        {/* ─── 3 CART HEADER ─────────────────────────────────────────────── */}
-        {/* Cart Header */}
-        <div className="flex-shrink-0 p-1 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-            <ShoppingCartIcon className="h-5 w-5" />
+      <div className="component">
+        <div className="component-header">
+          <div className="component-header-left">
+            <ShoppingCartIcon className="app-icon me-1" />
             Cart ({cartItemCount})
-          </h3>
-          {cart.length > 0 && (
-            <button
-              onClick={() => setCart([])}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-              title="Clear cart"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          )}
+          </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right">
+            {cart.length > 0 && (
+              <button
+                onClick={() => setCart([])}
+                className="btn btn-sm btn-outline-danger btn-circle"
+                title="Clear cart"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
+        <div className="component-body">
+          <div className="component-body-inner">
         {cart.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-1 text-center">
             <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2">
@@ -372,24 +374,31 @@ export default function Modal_Cart_Sales({
                   <span className="text-secondary-600 dark:text-secondary-400">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
-
-              <Footer_Actions
-                start={
-                  <Button_Toolbar
-                    icon={CreditCardIcon}
-                    label="Pay"
-                    title="Checkout"
-                    onClick={() => {
-                      onClose();
-                      handleCheckout();
-                    }}
-                  />
-                }
-                center={<Button_Toolbar icon={ShoppingCartIcon} label="Shop" onClick={onClose} className="btn-outline-secondary" title="Continue shopping" />}
-              />
             </div>
           </>
         )}
+          </div>{/* /component-body-inner */}
+        </div>{/* /component-body */}
+
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Button_Toolbar
+              icon={CreditCardIcon}
+              label="Pay"
+              title="Checkout"
+              onClick={() => {
+                onClose();
+                handleCheckout();
+              }}
+            />
+          </div>
+          <div className="component-footer-center">
+            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Continue shopping">
+              <XMarkIcon />
+            </button>
+          </div>
+          <div className="component-footer-right"></div>
+        </div>
       </div>
     </Modal>
   );
