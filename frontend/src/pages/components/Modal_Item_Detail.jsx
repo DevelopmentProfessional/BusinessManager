@@ -1174,7 +1174,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
         {/* Header for Inventory Mode - Fixed at top */}
@@ -1781,7 +1781,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         </div>
       </div>
 
-      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true} contentGravity="top">
         <Scanner_Barcode onDetected={handleBarcodeDetected} onCancel={() => setIsScannerOpen(false)} />
       </Modal>
 

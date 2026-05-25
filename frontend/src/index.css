@@ -1130,6 +1130,22 @@ textarea.form-control {
     @apply min-h-0 flex-1 overflow-y-auto overflow-x-auto;
   }
 
+  /*
+   * Scroll content gravity helpers:
+   * - top: for forms/input-heavy content
+   * - bottom: for data lists that should sit near footer controls
+   */
+  .overflow-scroll-content {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .overflow-scroll-content--bottom {
+    justify-content: flex-end;
+  }
+
   /* DOCX Preview container styles - FULLY RESPONSIVE */
   .docx-preview-container {
     width: 100%;

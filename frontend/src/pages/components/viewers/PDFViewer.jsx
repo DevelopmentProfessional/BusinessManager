@@ -183,7 +183,7 @@ export default function PDFViewer({ document, onEdit }) {
       </div>
 
       {/* PDF Content */}
-      <div ref={measuredRef} className="flex-1 overflow-auto bg-white flex justify-center p-4">
+      <div ref={measuredRef} className="flex-1 min-h-0 overflow-auto bg-white flex justify-center p-4">
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}

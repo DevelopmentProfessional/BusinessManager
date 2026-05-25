@@ -118,7 +118,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity={showForm ? "top" : "bottom"}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 h-100">
         <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center justify-content-between gap-2 bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">

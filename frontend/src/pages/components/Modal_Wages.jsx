@@ -496,7 +496,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar">
+      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar">
 
         {/* ═══ CALENDAR TAB ═══ */}
         {activeTab === "calendar" && (

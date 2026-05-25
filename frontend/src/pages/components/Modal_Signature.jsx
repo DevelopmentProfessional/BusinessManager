@@ -86,10 +86,10 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Signature" noPadding={true}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Signature" noPadding={true} contentGravity="top">
       <div className="d-flex flex-column h-100">
         {/* Container_Scrollable Content */}
-        <div className="flex-1 overflow-auto p-4" style={{ maxHeight: "calc(80vh - 140px)" }}>
+        <div className="flex-1 min-h-0 overflow-auto p-4" style={{ maxHeight: "calc(80vh - 140px)" }}>
           {signatureMessage && <div className={`alert py-2 small mb-3 ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>}
 
           {signatureLoading ? (

@@ -232,7 +232,7 @@ export default function Modal_Cart_Sales({
     });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} contentGravity="bottom">
       <div className="flex flex-col max-h-[90vh]">
         {/* ─── 3 CART HEADER ─────────────────────────────────────────────── */}
         {/* Cart Header */}

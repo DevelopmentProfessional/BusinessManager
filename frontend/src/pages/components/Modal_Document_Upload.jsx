@@ -55,9 +55,9 @@ export default function Modal_Document_Upload({ isOpen, onClose, entityType, ent
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={title} noPadding>
+    <Modal isOpen={isOpen} onClose={handleClose} title={title} noPadding contentGravity="top">
       <form onSubmit={handleSubmit} className="d-flex flex-column" style={{ minHeight: "min(70vh, 28rem)" }}>
-        <div className="flex-grow-1 overflow-auto p-3">
+        <div className="flex-grow-1 min-h-0 overflow-auto p-3">
           <div
             className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`}
             onDragEnter={(e) => {

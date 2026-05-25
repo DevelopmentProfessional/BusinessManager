@@ -214,7 +214,7 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
   if (!client) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
@@ -225,7 +225,7 @@ export default function Modal_Client_Cart({ isOpen, onClose, client }) {
         </div>
 
         {/* Content */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar">
           {loading ? (
             <div className="d-flex justify-content-center py-5">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />

@@ -31,7 +31,7 @@ export default function Modal_Detail_Product({ isOpen, onClose, item, itemType =
   const decrementQuantity = () => setQuantity((q) => Math.max(1, q - 1));
 
   return (
-    <Modal isOpen={isOpen && !!item} onClose={onClose} noPadding={true} centered={true}>
+    <Modal isOpen={isOpen && !!item} onClose={onClose} noPadding={true} centered={true} contentGravity="bottom">
       <div className="bg-white dark:bg-gray-900 w-full overflow-hidden">
         {/* Image Header */}
         <div className={`relative h-56 w-full overflow-hidden ${hasImage ? "" : "bg-gradient-to-br"} ${isService ? "from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800" : "from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800"}`}>

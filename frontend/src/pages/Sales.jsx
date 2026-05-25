@@ -1193,7 +1193,7 @@ export default function Sales() {
       </div>
 
       {/* Main Body - Items Grid */}
-      <div className="flex-1 overflow-y-auto pb-4">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-4">
         {/* Services Section */}
         {showServices && filteredServices.length > 0 && (
           <div className="mb-6">

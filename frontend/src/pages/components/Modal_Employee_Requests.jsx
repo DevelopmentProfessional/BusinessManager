@@ -27,7 +27,7 @@ import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
@@ -36,7 +36,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
         </div>
 
         {/* ─── 2 SCROLLABLE REQUEST LIST the iunven──────────────────────────────────────── */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2">
           {requestsLoading ? (
             <div className="text-center py-4">
               <div className="spinner-border text-primary" role="status" />

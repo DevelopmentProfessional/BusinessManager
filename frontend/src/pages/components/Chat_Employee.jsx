@@ -208,7 +208,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         </div>
 
         {/* ── Messages ── */}
-        <div className={`flex-grow-1 overflow-auto px-3 py-2 ${dm ? "bg-dark" : "bg-light"}`} style={{ minHeight: 0, margin: 0, padding: "12px" }}>
+        <div className={`flex-grow-1 min-h-0 overflow-auto px-3 py-2 ${dm ? "bg-dark" : "bg-light"}`} style={{ minHeight: 0, margin: 0, padding: "12px" }}>
           {loading ? (
             <div className="text-center text-muted small py-5">Loading messages…</div>
           ) : messages.length === 0 ? (

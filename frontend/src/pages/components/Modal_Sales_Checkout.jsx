@@ -217,7 +217,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true}>
+    <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true} contentGravity="top">
       <div className="bg-white dark:bg-gray-900 w-full h-full  max-w-2xl overflow-hidden">
         {/* ─── 4 MODAL HEADER ──────────────────────────────────────────────── */}
         {/* Header */}

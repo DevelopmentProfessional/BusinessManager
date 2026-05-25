@@ -1147,14 +1147,17 @@ export default function Reports() {
                     onKeyDown={handleEventTypeKeyDown}
                     aria-haspopup="listbox"
                     aria-expanded={eventTypeMenuOpen}
-                    className="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center"
+                    className="btn btn-outline-secondary btn-sm 
+                    rounded-pill d-inline-flex align-items-center"
                     style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
                   >
                     <CalendarIcon className="h-4 w-4 flex-shrink-0 me-1" />
                     {FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}
                   </button>
                   {eventTypeMenuOpen && (
-                    <div className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "18rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }} role="listbox">
+                    <div className="position-absolute bottom-100 start-0 
+                    bg-white dark:bg-gray-900 border border-gray-200 
+                    dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "18rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }} role="listbox">
                       {FILTER_CONFIG.eventType.options.map((o) => (
                         <div
                           key={o.value}
@@ -1180,7 +1183,7 @@ export default function Reports() {
                             }
                           }}
                           tabIndex={0}
-                          className={`px-3 py-2${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                          className={`px-1 py-1${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
                           style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
                           role="option"
                           aria-selected={reportFilters.eventType === o.value}
@@ -1245,7 +1248,7 @@ export default function Reports() {
       {/* Forecast Calculator Modal */}
       <Modal_Forecast_Calculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
 
-      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen={true} noPadding={true}>
+      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen={true} noPadding={true} contentGravity="bottom">
         <div className="p-4 bg-gray-50 h-full overflow-auto">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <h2 className="text-xl font-bold text-gray-900 mb-0">Financial Controls</h2>
@@ -1269,7 +1272,7 @@ export default function Reports() {
       </PageControlsModal>
 
       {/* Save Filter Modal */}
-      <Modal isOpen={showSaveFilterModal} onClose={() => setShowSaveFilterModal(false)} title="Save Filter">
+      <Modal isOpen={showSaveFilterModal} onClose={() => setShowSaveFilterModal(false)} title="Save Filter" contentGravity="top">
         <div className="p-3">
           <label className="form-label">Filter Name</label>
           <input

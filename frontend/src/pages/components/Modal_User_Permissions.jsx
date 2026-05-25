@@ -92,7 +92,7 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
 
 export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleViewAllToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
@@ -104,7 +104,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3">
           {/* ─── 2 ADD NEW PERMISSION FORM ──────────────────────────────────────── */}
           {/* Add New Permission Form */}
           <form onSubmit={onCreatePermission} className="mb-4 p-3 border rounded">

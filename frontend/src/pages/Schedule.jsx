@@ -1243,7 +1243,7 @@ export default function Schedule() {
           </div>
         </div>
 
-        <Modal isOpen={isModalOpen} onClose={closeModal} noPadding={true} fullScreen={true}>
+        <Modal isOpen={isModalOpen} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
           <Form_Schedule
             appointment={editingAppointment}
             onSubmit={handleSubmitAppointment}
@@ -1301,7 +1301,7 @@ export default function Schedule() {
       </Gate_Permission>
 
       {/* Overlap bottom modal */}
-      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true}>
+      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true} contentGravity="bottom">
         <div className="d-flex flex-column justify-content-end">
           <div className="overlap-event-list flex-shrink-0">
             {[...(overlapEvents || [])]

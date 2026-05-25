@@ -292,7 +292,7 @@ export default function Modal_Discount_Rules({ isOpen, onClose }) {
   const showEditor = editPanelOpen;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen contentGravity={showEditor ? "top" : "bottom"}>
       <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 position-relative" style={{ minHeight: "100%" }}>
         <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center gap-2">
           <TagIcon className="app-icon text-primary" />

@@ -202,6 +202,7 @@ export default function Services() {
     <PageLayout
       title="Services"
       error={error}
+      contentGravity="bottom"
       headerRight={
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
@@ -209,7 +210,7 @@ export default function Services() {
       <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Service" }, { label: "Price", width: 80 }, { label: "Duration", width: 70 }]} />
 
       {/* Scrollable rows – grow upwards from bottom */}
-      <div ref={scrollRef} className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+      <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {filteredServices.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
@@ -406,7 +407,7 @@ export default function Services() {
       />
 
       {/* Service Form Modal */}
-      <Modal isOpen={isModalOpen && modalContent === "service-form"} onClose={closeModal} noPadding={true} fullScreen={true}>
+      <Modal isOpen={isModalOpen && modalContent === "service-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
         {isModalOpen && modalContent === "service-form" && (
           <Form_Service service={editingService} onSubmit={handleSubmitService} onCancel={closeModal} onBulkImport={!editingService ? handleBulkImportServices : null} />
         )}

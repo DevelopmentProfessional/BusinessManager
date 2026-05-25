@@ -919,7 +919,7 @@ export default function Employees() {
 
   // ─── [22] RENDER / JSX ──────────────────────────────────────────────────────
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden bg-body">
+    <div className="d-flex flex-column vh-100 min-h-0 overflow-hidden bg-body">
       {/* Header - sticky on mobile */}
       <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex justify-content-between" style={{ position: "sticky", top: 0, zIndex: 5 }}>
         <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
@@ -932,7 +932,7 @@ export default function Employees() {
       {success && <div className="flex-shrink-0 alert alert-success border-0 rounded-0 m-0">{success}</div>}
 
       {/* Main upside-down table container */}
-      <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+      <div className="flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
           {filteredEmployees.length > 0 ? (
@@ -1158,7 +1158,7 @@ export default function Employees() {
       />
 
       {/* Employee Form Modal */}
-      <Modal isOpen={isModalOpen && modalContent === "employee-form"} onClose={closeModal} noPadding={true} fullScreen={true}>
+      <Modal isOpen={isModalOpen && modalContent === "employee-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
         {isModalOpen && modalContent === "employee-form" && (
           <Form_Employee
             employee={editingEmployee}
