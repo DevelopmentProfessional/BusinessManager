@@ -343,6 +343,7 @@ export default function Clients() {
     <PageLayout
       title="Clients"
       error={error}
+      contentGravity="bottom"
       headerRight={
         <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
@@ -415,7 +416,7 @@ export default function Clients() {
       <Modal_Detail_Client isOpen={isModalOpen && modalContent === "client-detail"} onClose={closeModal} client={editingClient} onUpdate={handleUpdateClient} onDelete={handleDeleteClient} canDelete={hasPermission("clients", "delete")} memberships={memberships} />
 
       {/* Create Client Modal (bottom-sheet form) */}
-      <Modal isOpen={isModalOpen && modalContent === "client-form"} onClose={closeModal} noPadding={true} fullScreen={true}>
+      <Modal isOpen={isModalOpen && modalContent === "client-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
         {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={memberships} />}
       </Modal>
 
@@ -442,6 +443,7 @@ export default function Clients() {
         }}
         title="Manage Subscriptions"
         centered={true}
+        contentGravity="top"
       >
         <div className="d-flex flex-column gap-3">
           <div className="border rounded p-2 d-flex flex-column gap-2">

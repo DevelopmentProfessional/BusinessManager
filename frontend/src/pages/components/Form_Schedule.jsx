@@ -465,7 +465,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
       {/* ─── 6 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable body — content floats to bottom */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
+      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
         <div className="flex-grow-1" />
         <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 pt-3 pb-2">
           {/* Notes — shown at top for appointment/series types */}

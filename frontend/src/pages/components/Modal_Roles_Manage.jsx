@@ -29,7 +29,7 @@ import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 1 HEADER ──────────────────────────────────────────────────────── */}
         {/* Header */}
@@ -42,7 +42,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
 
         {/* ─── 2 STATUS MESSAGES ──────────────────────────────────────────────── */}
         {/* Scrollable Body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
               <div className="text-sm text-red-700">{error}</div>

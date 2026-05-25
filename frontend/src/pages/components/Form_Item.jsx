@@ -463,7 +463,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
       {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
       {/* Container_Scrollable Content Area */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>
@@ -1119,7 +1119,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
       {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onCancel={() => setIsCameraOpen(false)} />}
 
       {/* Barcode Scanner Modal */}
-      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true} contentGravity="top">
         <Scanner_Barcode onDetected={handleBarcodeDetected} onCancel={() => setIsScannerOpen(false)} />
       </Modal>
     </div>

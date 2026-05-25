@@ -63,7 +63,7 @@ export default function Modal_Client() {
 
   // ─── 4 RENDER ─────────────────────────────────────────────────────────────
   return (
-    <Modal isOpen={isAddClientModalOpen} onClose={handleCancel}>
+    <Modal isOpen={isAddClientModalOpen} onClose={handleCancel} contentGravity="top">
       {isAddClientModalOpen && <Form_Client client={null} onSubmit={handleSubmit} onCancel={handleCancel} error={formError} />}
     </Modal>
   );

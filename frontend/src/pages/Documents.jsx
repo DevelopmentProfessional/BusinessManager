@@ -1001,7 +1001,7 @@ export default function Documents() {
       )}
 
       {/* Document Upload Modal */}
-      <Modal isOpen={isModalOpen && modalContent === "document-form"} onClose={closeModal} noPadding={true} fullScreen={true}>
+      <Modal isOpen={isModalOpen && modalContent === "document-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
         {isModalOpen && modalContent === "document-form" && <DocumentUploadForm onSubmit={handleSubmitDocument} onCancel={closeModal} />}
       </Modal>
 
@@ -1057,7 +1057,7 @@ export default function Documents() {
       <Modal_Edit_Document isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} document={editDoc} onSave={handleSaveEdit} />
 
       {/* History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} noPadding={true} fullScreen={true}>
+      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} noPadding={true} fullScreen={true} contentGravity="bottom">
         {isHistoryOpen && historyDoc && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">History: {historyDoc.original_filename}</h3>
@@ -1118,7 +1118,7 @@ export default function Documents() {
       </Modal>
 
       {/* Sign Document Modal */}
-      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} noPadding={true} fullScreen={true}>
+      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} noPadding={true} fullScreen={true} contentGravity="top">
         {isSignOpen && signDoc && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Sign Document</h3>
@@ -1182,7 +1182,7 @@ export default function Documents() {
           </div>
 
           {/* Scrollable list */}
-          <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2">
+          <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2">
             {categories.length === 0 ? (
               <p className="text-muted small text-center py-4">No categories yet. Add one below.</p>
             ) : (

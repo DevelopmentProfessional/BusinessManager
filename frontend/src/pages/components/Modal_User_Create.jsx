@@ -27,7 +27,7 @@ import Footer_Actions from "./Footer_Actions";
 export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser, onSubmit, loading, roles }) {
   // ─── 1 RENDER ──────────────────────────────────────────────────────────────
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 2 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
@@ -40,7 +40,7 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
 
         {/* ─── 3 SCROLLABLE FORM BODY ───────────────────────────────────── */}
         {/* Scrollable Body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3">
           <form id="create-user-form" onSubmit={onSubmit}>
             <div className="form-floating mb-3">
               <input type="text" id="createUserUsername" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} className="form-control" placeholder="Username" required />

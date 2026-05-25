@@ -1,6 +1,8 @@
 import React from "react";
 
-export default function PageLayout({ title, error, children, headerRight = null }) {
+export default function PageLayout({ title, error, children, headerRight = null, contentGravity = "top" }) {
+  const gravityClass = contentGravity === "bottom" ? "justify-content-end" : "justify-content-start";
+
   return (
     <div className="d-flex flex-column flex-grow-1 min-h-0 h-100 overflow-hidden bg-body">
       <div className="flex-shrink-0 border-bottom p-1 bg-body d-flex align-items-center justify-content-between" style={{ zIndex: 5 }}>
@@ -8,7 +10,7 @@ export default function PageLayout({ title, error, children, headerRight = null 
         {headerRight ? <div className="d-flex align-items-center gap-2">{headerRight}</div> : null}
       </div>
       {error && <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0 py-2">{error}</div>}
-      <div className="flex-grow-1 d-flex flex-column overflow-hidden">{children}</div>
+      <div className={`flex-grow-1 min-h-0 d-flex flex-column overflow-hidden ${gravityClass}`}>{children}</div>
     </div>
   );
 }

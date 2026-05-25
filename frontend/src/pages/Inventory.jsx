@@ -373,6 +373,7 @@ export default function Inventory() {
     <PageLayout
       title="Inventory"
       error={error}
+      contentGravity="bottom"
       headerRight={
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
@@ -590,7 +591,7 @@ export default function Inventory() {
       </PageTableFooter>
       </div>
 
-      <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding>
+      <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding contentGravity="top">
         <Form_Item item={null} showInitialQuantity showScanner existingSkus={inventory.map((i) => i.sku).filter(Boolean)} onCancel={() => setShowAddItemModal(false)} onSubmit={handleCreateInventory} />
       </Modal>
 

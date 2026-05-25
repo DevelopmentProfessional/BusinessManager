@@ -364,7 +364,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
 
         {/* ── Details ── */}
         {activeTab === "details" && (
-          <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <div className="px-3 d-flex flex-column" style={{ minHeight: "100%", justifyContent: "flex-end" }}>
               <form id="service-details-form" onSubmit={handleSubmit}>
                 {/* Top Section: Image (left) + Core fields (right) */}
@@ -558,8 +558,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
         {/* ── Resources ── */}
         {activeTab === "resources" && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            {/* Scrollable list - grows upward from bottom */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
+            {/* Scrollable list - top-aligned for form-style editing */}
+            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
               {relLoading ? (
                 <div className="text-center py-3">
                   <div className="spinner-border spinner-border-sm" />
@@ -625,8 +625,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
         {/* ── Assets ── */}
         {activeTab === "assets" && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            {/* Scrollable list - grows upward from bottom */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
+            {/* Scrollable list - top-aligned for form-style editing */}
+            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
               {relLoading ? (
                 <div className="text-center py-3">
                   <div className="spinner-border spinner-border-sm" />
@@ -686,8 +686,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
         {/* ── Employees ── */}
         {activeTab === "employees" && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            {/* Scrollable list - grows upward from bottom */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
+            {/* Scrollable list - top-aligned for form-style editing */}
+            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
               {relLoading ? (
                 <div className="text-center py-3">
                   <div className="spinner-border spinner-border-sm" />
@@ -732,8 +732,8 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
         {/* ── Locations ── */}
         {activeTab === "locations" && service && (
           <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            {/* Scrollable list - grows upward from bottom */}
-            <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column-reverse">
+            {/* Scrollable list - top-aligned for form-style editing */}
+            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
               {relLoading ? (
                 <div className="text-center py-3">
                   <div className="spinner-border spinner-border-sm" />

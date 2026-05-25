@@ -609,7 +609,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
       {/* ─── 9 RENDER: TAB PANES ────────────────────────────────────────────────── */}
       {/* Scrollable Body */}
-      <div className="flex-grow-1 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <form id="employee-form" onSubmit={handleSubmit}>
           {/* ===== DETAILS TAB ===== */}
           {activeTab === "details" && (

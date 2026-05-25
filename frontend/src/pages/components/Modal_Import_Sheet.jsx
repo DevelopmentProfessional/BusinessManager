@@ -375,14 +375,14 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding>
+    <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding contentGravity="top">
       <div className="d-flex flex-column h-100" onPaste={handleGlobalPaste}>
         <div className="border-bottom border-gray-200 dark:border-gray-700 px-3 py-2">
           <div className="fw-semibold">{title}</div>
           {hint && <div className="small text-muted mt-1">{hint}</div>}
         </div>
 
-        <div ref={scrollContainerRef} className="flex-grow-1 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
+        <div ref={scrollContainerRef} className="flex-grow-1 min-h-0 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
           <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
             <colgroup>
               <col style={{ width: 56 }} />

@@ -133,7 +133,7 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} centered={true}>
+    <Modal isOpen={isOpen} onClose={onClose} centered={true} contentGravity="bottom">
       <div style={{ minWidth: 300 }}>
         {/* Header */}
         <div className="d-flex justify-content-between align-items-start mb-3">

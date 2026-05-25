@@ -251,7 +251,7 @@ export default function Button_ImportCSV({ onImport, onComplete, entityName = "R
         CSV
       </button>
 
-      <Modal isOpen={isModalOpen} onClose={handleClose}>
+      <Modal isOpen={isModalOpen} onClose={handleClose} contentGravity="top">
         <div className="p-1">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Import {entityName} from CSV</h3>

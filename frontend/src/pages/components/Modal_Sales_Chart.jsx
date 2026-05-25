@@ -91,7 +91,7 @@ const Modal_Chart_Sales = ({ isOpen, onClose }) => {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        <div className="flex-grow-1 overflow-auto d-flex flex-column-reverse bg-white no-scrollbar" style={styles.chartContainer}>
+        <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column bg-white no-scrollbar" style={styles.chartContainer}>
           <Line data={chartData} options={chartOptions} />
         </div>
         <div style={styles.buttonContainer}>

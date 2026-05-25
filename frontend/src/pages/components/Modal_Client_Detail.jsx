@@ -180,7 +180,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
@@ -188,7 +188,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
           {loading && (
             <div className="d-flex justify-content-center py-4">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -472,13 +472,13 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
         </div>
 
-        <div className="flex-grow-1 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
+        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
           {loading && (
             <div className="d-flex justify-content-center py-4">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -794,7 +794,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
   if (!client) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
       <div className="d-flex flex-column bg-white dark:bg-gray-900">
         {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
@@ -808,7 +808,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-grow-1 overflow-auto px-3 pt-3 pe-2 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="flex-grow-1 min-h-0 overflow-auto px-3 pt-3 pe-2 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
           {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
           {/* Avatar + name + tier */}
           <div className="d-flex align-items-center gap-3 mb-3">
