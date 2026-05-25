@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Sales.jsx
  *
@@ -35,18 +35,18 @@ import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
-import Filter_Catalog_Checkboxes from "./components/Filter_Catalog_Checkboxes";
+import Filter_CatalogCheckboxes from "./components/Filter_CatalogCheckboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI } from "../services/api";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import { templatesAPI } from "../services/api";
-import Modal_Detail_Item from "./components/Modal_Item_Detail";
-import Modal_Checkout_Sales from "./components/Modal_Sales_Checkout";
-import Modal_Cart_Sales from "./components/Modal_Sales_Cart";
-import Modal_History_Sales from "./components/Modal_Sales_History";
-import Modal_Feature_Select_Sales from "./components/Modal_Sales_FeatureSelect";
-import Modal_Template_Use from "./components/Modal_Template_Use";
+import Modal_Detail_Item from "./components/Modal_ItemDetail";
+import Modal_Checkout_Sales from "./components/Modal_SalesCheckout";
+import Modal_Cart_Sales from "./components/Modal_SalesCart";
+import Modal_History_Sales from "./components/Modal_SalesHistory";
+import Modal_Feature_Select_Sales from "./components/Modal_SalesFeatureSelect";
+import Modal_TemplateUse from "./components/Modal_TemplateUse";
 import { getDisplayImageUrl } from "./components/Utils_Image";
 import useViewMode from "../services/useViewMode";
 
@@ -1301,7 +1301,7 @@ export default function Sales() {
 
       {/* Fixed Footer - Search, Toggles, Cart */}
       <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
-        <div className="app-footer-padding">
+        <div className="app-footer-padding app-standard-footer">
           <div className="app-footer-stack">
             {/* Client Selection Panel - shown when account icon is active */}
             {showClientPanel && (
@@ -1468,7 +1468,7 @@ export default function Sales() {
                       )}
                     </div>
 
-                    <Filter_Catalog_Checkboxes
+                    <Filter_CatalogCheckboxes
                       className="mb-2"
                       value={{ showServices, showProducts, showSubscriptions }}
                       onChange={(key, checked) => {
@@ -1587,7 +1587,7 @@ export default function Sales() {
       {/* Pre-checkout Invoice Generator */}
       {showInvoiceModal && (
         <div className="fixed inset-0 z-50">
-          <Modal_Template_Use
+          <Modal_TemplateUse
             page="sales"
             entity={{
               id: `DRAFT-${Date.now()}`,

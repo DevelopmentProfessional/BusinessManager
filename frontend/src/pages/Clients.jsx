@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Clients.jsx
  *
@@ -32,24 +32,24 @@ import useStore from "../services/useStore";
 import { tierVariant } from "../utils/colorMapping";
 import { S } from "../utils/strings";
 import Badge from "./components/Badge";
-import FilterDropdown from "./components/FilterDropdown";
+import Dropdown_Filter from "./components/Dropdown_Filter";
 import { clientsAPI, membershipsAPI, settingsAPI } from "../services/api";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Client from "./components/Form_Client";
-import Modal_Detail_Client from "./components/Modal_Client_Detail";
+import Modal_Detail_Client from "./components/Modal_ClientDetail";
 import Gate_Permission from "./components/Gate_Permission";
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
-import Modal_Template_Use from "./components/Modal_Template_Use";
-import Modal_Bulk_Import_Sheet from "./components/Modal_Import_Sheet";
+import Modal_TemplateUse from "./components/Modal_TemplateUse";
+import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import PageLayout from "./components/Page_Layout";
-import PageTableFooter from "./components/Page_Table_Footer";
-import PageTableHeader from "./components/Page_Table_Header";
-import PageTableRow from "./components/Page_Table_Row";
+import PageTableFooter from "./components/Page_TableFooter";
+import PageTableHeader from "./components/Page_TableHeader";
+import PageTableRow from "./components/Page_TableRow";
 
 export default function Clients() {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
@@ -409,7 +409,7 @@ export default function Clients() {
         {tierFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setTierFilter("all")} className="btn-app-danger" title="Clear subscription filter" />}
 
         {/* Tier Filter */}
-        <FilterDropdown icon={StarIcon} label="Subs" title="Filter by subscription" value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
+        <Dropdown_Filter icon={StarIcon} label="Subs" title="Filter by subscription" value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
       </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}
@@ -548,7 +548,7 @@ export default function Clients() {
       />
 
       {/* Template Use Modal */}
-      {isTemplateOpen && templateClient && <Modal_Template_Use page="clients" entity={templateClient} currentUser={user} settings={appSettings} onClose={handleCloseTemplate} />}
+      {isTemplateOpen && templateClient && <Modal_TemplateUse page="clients" entity={templateClient} currentUser={user} settings={appSettings} onClose={handleCloseTemplate} />}
     </PageLayout>
   );
 }

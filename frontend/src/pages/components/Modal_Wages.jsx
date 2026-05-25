@@ -1083,9 +1083,9 @@ function ProcessTab({
         })
       )}
 
-      {/* Sticky footer: Pay selected */}
+      {/* Footer: Pay selected */}
       {selectedUnpaid.length > 0 && (
-        <div className="border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2" style={{ position: "sticky", bottom: 0 }}>
+        <div className="border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 app-standard-footer">
           <div className="d-flex align-items-center justify-content-between">
             <div>
               <div className="fw-medium" style={{ fontSize: "0.84rem" }}>

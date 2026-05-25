@@ -1,11 +1,11 @@
-// FILE: Panel_General.jsx
+﻿// FILE: Panel_General.jsx
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
 import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
-import Settings_Footer from "./Settings_Footer";
+import Footer_Settings from "./Footer_Settings";
 import { documentsAPI } from "../../services/api";
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
@@ -458,7 +458,7 @@ const Panel_General = ({
             <Button_Toolbar icon={ArrowPathIcon} label="Reset" onClick={resetPortalBrandingDefaults} className="btn-outline-secondary" title="Reset to defaults" />
       </SettingsSection>
     </div>
-    <Settings_Footer onSave={onSave} onClose={onClose} saving={saving || companyLoading || portalBrandingLoading} />
+    <Footer_Settings onSave={onSave} onClose={onClose} saving={saving || companyLoading || portalBrandingLoading} />
   </div>
 );
 

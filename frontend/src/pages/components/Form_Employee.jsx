@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Form_Employee.jsx
  *
@@ -40,11 +40,11 @@ import { TrashIcon, XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
-import Button_Insurance_Document from "./Button_Insurance_Document";
+import Button_InsuranceDocument from "./Button_InsuranceDocument";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Widget_Signature from "./Widget_Signature";
-import Modal_Pay_Employee from "./Modal_Employee_Pay";
+import Modal_Pay_Employee from "./Modal_EmployeePay";
 import useStore from "../../services/useStore";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
@@ -907,7 +907,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       <label htmlFor="insurance_plan">Insurance Plan</label>
                     </div>
                     <div className="d-flex align-items-center flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
-                      <Button_Insurance_Document planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
+                      <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
                     </div>
                   </div>
                 </div>

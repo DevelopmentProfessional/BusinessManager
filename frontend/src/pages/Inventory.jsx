@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Inventory.jsx
  *
@@ -40,20 +40,20 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
 import PageLayout from "./components/Page_Layout";
-import PageTableFooter from "./components/Page_Table_Footer";
-import PageTableHeader from "./components/Page_Table_Header";
-import PageTableRow from "./components/Page_Table_Row";
+import PageTableFooter from "./components/Page_TableFooter";
+import PageTableHeader from "./components/Page_TableHeader";
+import PageTableRow from "./components/Page_TableRow";
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
-import Modal_Discount_Rules from "./components/Modal_Discount_Rules";
+import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { inventoryAPI, featuresAPI, assetUnitsAPI } from "../services/api";
-import Modal_Detail_Item from "./components/Modal_Item_Detail";
+import Modal_Detail_Item from "./components/Modal_ItemDetail";
 import Gate_Permission from "./components/Gate_Permission";
 import Suppliers_Panel from "./components/Panel_Suppliers";
-import Modal_Bulk_Import_Items from "./components/Modal_Import_Items";
+import Modal_Bulk_Import_Items from "./components/Modal_ImportItems";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
 export default function Inventory() {
@@ -613,7 +613,7 @@ export default function Inventory() {
 
       <Suppliers_Panel isOpen={showSuppliersPanel} onClose={() => setShowSuppliersPanel(false)} />
 
-      <Modal_Discount_Rules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
+      <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls">
         <div className="small text-muted">Use these controls to manage inventory views and actions.</div>

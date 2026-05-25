@@ -330,6 +330,7 @@ div[role="combobox"] {
 /* Footer chrome — bottom inset matches .app-nav-bottom-toggle (same --app-footer-padding-y) */
 .app-footer-padding,
 .app-form-footer,
+.app-standard-footer,
 .schedule-footer,
 .sales-history-footer .app-footer-toolbar,
 .modal-footer.app-footer-reserve,
@@ -350,6 +351,15 @@ footer[aria-label="Actions"].app-footer-reserve {
 /* Modals/forms without nav reserve — keep symmetric horizontal inset only */
 .app-form-footer:not(.app-footer-reserve) {
   padding-right: var(--app-footer-padding-x) !important;
+}
+
+/* Standard component footer contract: keep footers in normal flow and non-sticky */
+.app-standard-footer {
+  position: static !important;
+  bottom: auto !important;
+  inset: auto !important;
+  width: 100%;
+  flex: 0 0 auto;
 }
 
 /* Stacked footer rows — uniform vertical gap; toolbars share button height */
@@ -384,7 +394,8 @@ footer[aria-label="Actions"].app-footer-reserve {
   .app-footer-search > .app-footer-padding,
   .schedule-footer,
   .profile-footer-nav,
-  .app-form-footer {
+  .app-form-footer,
+  .app-standard-footer {
     padding-bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
   }
 }

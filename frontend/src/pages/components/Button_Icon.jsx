@@ -1,7 +1,7 @@
-// FILE: Button_Icon.jsx
-// re-exports AppButton configured as icon-only; use AppButton for new code
+﻿// FILE: Button_Icon.jsx
+// re-exports Button_App configured as icon-only; use Button_App for new code
 import React from "react";
-import AppButton from "./AppButton";
+import Button_App from "./Button_App";
 
 const ICON_VARIANT_CLASS = {
   primary: "bg-primary-600 hover:bg-primary-700 text-white focus:ring-2 focus:ring-primary-500",
@@ -14,7 +14,7 @@ const ICON_VARIANT_CLASS = {
 export default function Button_Icon({ icon, label, onClick, type = "button", className = "", disabled = false, variant = "secondary", ...rest }) {
   const variantClass = ICON_VARIANT_CLASS[variant] || ICON_VARIANT_CLASS.secondary;
   return (
-    <AppButton
+    <Button_App
       icon={icon}
       label={label}
       onClick={onClick}

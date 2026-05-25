@@ -1,3 +1,3 @@
-// FILE: Button_Toolbar.jsx
-// re-exports AppButton for backward compatibility; use AppButton for new code
-export { default } from "./AppButton";
+﻿// FILE: Button_Toolbar.jsx
+// re-exports Button_App for backward compatibility; use Button_App for new code
+export { default } from "./Button_App";

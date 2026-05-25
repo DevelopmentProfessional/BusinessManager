@@ -41,7 +41,7 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
       <div className="app-footer-spacer" style={{ "--app-footer-h": `${footerHeight}px` }} aria-hidden="true" />
       <div ref={footerRef} className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         {/* Controls: optional top row + search + buttons */}
-        <div className="app-footer-padding bg-white dark:bg-gray-800">
+        <div className="app-footer-padding app-standard-footer bg-white dark:bg-gray-800">
           <div className="app-footer-stack">
             {beforeSearch && <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`}>{beforeSearch}</div>}
             {/* Buttons row - now above search */}

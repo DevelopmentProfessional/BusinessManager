@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  * FILE: Employees.jsx
  *
@@ -54,28 +54,28 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
-import FilterDropdown from "./components/FilterDropdown";
+import Dropdown_Filter from "./components/Dropdown_Filter";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
 import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_Controls_Modal";
+import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Employee from "./components/Form_Employee";
 import Dropdown_Custom from "./components/Dropdown_Custom";
 import Gate_Permission from "./components/Gate_Permission";
-import PageTableFooter from "./components/Page_Table_Footer";
-import PageTableHeader from "./components/Page_Table_Header";
-import PageTableRow from "./components/Page_Table_Row";
+import PageTableFooter from "./components/Page_TableFooter";
+import PageTableHeader from "./components/Page_TableHeader";
+import PageTableRow from "./components/Page_TableRow";
 import useDarkMode from "../services/useDarkMode";
-import Modal_Create_User from "./components/Modal_User_Create";
-import Modal_Permissions_User from "./components/Modal_User_Permissions";
-import Modal_Manage_Roles from "./components/Modal_Roles_Manage";
-import Modal_Requests_Employee from "./components/Modal_Employee_Requests";
-import Modal_Insurance_Plans from "./components/Modal_Insurance_Plans";
+import Modal_Create_User from "./components/Modal_UserCreate";
+import Modal_Permissions_User from "./components/Modal_UserPermissions";
+import Modal_Manage_Roles from "./components/Modal_RolesManage";
+import Modal_Requests_Employee from "./components/Modal_EmployeeRequests";
+import Modal_InsurancePlans from "./components/Modal_InsurancePlans";
 import Chat_Employee from "./components/Chat_Employee";
 import Modal_Wages from "./components/Modal_Wages";
-import Modal_Pay_Employee from "./components/Modal_Employee_Pay";
-import Modal_Bulk_Import_Sheet from "./components/Modal_Import_Sheet";
+import Modal_Pay_Employee from "./components/Modal_EmployeePay";
+import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 
 export default function Employees() {
   // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
@@ -1076,7 +1076,7 @@ export default function Employees() {
           )}
 
           {/* Role Filter */}
-          <FilterDropdown
+          <Dropdown_Filter
             icon={UserGroupIcon}
             label="Role"
             title="Filter by role"
@@ -1092,7 +1092,7 @@ export default function Employees() {
           />
 
           {/* Status Filter */}
-          <FilterDropdown
+          <Dropdown_Filter
             icon={CheckCircleIcon}
             label="Status"
             title="Filter by status"
@@ -1289,7 +1289,7 @@ export default function Employees() {
       )}
 
       {/* Insurance Plans Modal */}
-      <Modal_Insurance_Plans
+      <Modal_InsurancePlans
         isOpen={showInsuranceModal}
         onClose={() => setShowInsuranceModal(false)}
         insurancePlans={insurancePlans}

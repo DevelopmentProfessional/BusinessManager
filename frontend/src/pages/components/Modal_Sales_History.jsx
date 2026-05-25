@@ -105,7 +105,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
 
   return (
     <div className="sales-history-footer w-100 bg-body">
-      <div className="app-footer-padding">
+      <div className="app-footer-padding app-standard-footer">
         <div className="sales-history-filter-panel d-flex flex-column gap-2">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
             <Filter_Catalog_Checkboxes legend="" value={local} onChange={(key, checked) => setLocal((prev) => ({ ...prev, [key]: checked }))} />
