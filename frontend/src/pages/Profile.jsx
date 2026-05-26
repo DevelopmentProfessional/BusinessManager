@@ -1267,9 +1267,7 @@ const Profile = () => {
                 </div>
 
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
-                  {meSectionOpen === "wage" && (
-                    <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />
-                  )}
+                  {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
                   <div
                     ref={(el) => {
                       meSectionHeaderRefs.current.wage = el;
@@ -1602,9 +1600,9 @@ const Profile = () => {
           {isMobile && <div className="app-footer-spacer" style={{ "--app-footer-h": `${row1Height}px` }} aria-hidden="true" />}
 
           {/* Footer Tabs */}
-          <div
+          <footer
             ref={row1Ref}
-            className="app-footer-search profile-footer-nav flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm"
+            className="app-footer-shell app-footer-search profile-footer-nav flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm"
             style={{
               zIndex: 1050,
               ...(isMobile
@@ -1649,7 +1647,7 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </footer>
         </>
       )}
 

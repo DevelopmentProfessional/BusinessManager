@@ -111,43 +111,43 @@ export default function Table_Mobile({
       </div>
 
       {/* Table footer controls - fixed at bottom, does not scroll */}
-      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+      <footer className="app-footer-shell app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="app-footer-padding app-standard-footer">
           <div className="app-footer-stack">
-        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
-          {columns.map((column) => (
-            <div key={column.key} className="min-w-0">
-              {/* Column title with search toggle */}
-              <button onClick={() => toggleSearch(column.key)} className="w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors mb-1">
-                {column.title}
-              </button>
+            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
+              {columns.map((column) => (
+                <div key={column.key} className="min-w-0">
+                  {/* Column title with search toggle */}
+                  <button onClick={() => toggleSearch(column.key)} className="w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors mb-1">
+                    {column.title}
+                  </button>
 
-              {/* Search input (when active) */}
-              {activeSearch === column.key && (
-                <div className="relative mb-2">
-                  <input
-                    type="text"
-                    placeholder={`Search ${column.title.toLowerCase()}...`}
-                    value={searchTerms[column.key] || ""}
-                    onChange={(e) => handleSearch(column.key, e.target.value)}
-                    className="app-search-input w-full pl-8 pr-3 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    autoFocus
-                  />
-                  <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-4 w-4 text-gray-400" />
+                  {/* Search input (when active) */}
+                  {activeSearch === column.key && (
+                    <div className="relative mb-2">
+                      <input
+                        type="text"
+                        placeholder={`Search ${column.title.toLowerCase()}...`}
+                        value={searchTerms[column.key] || ""}
+                        onChange={(e) => handleSearch(column.key, e.target.value)}
+                        className="app-search-input w-full pl-8 pr-3 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        autoFocus
+                      />
+                      <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-4 w-4 text-gray-400" />
+                    </div>
+                  )}
+
+                  {/* Sort toggle */}
+                  <button onClick={() => handleSort(column.key)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                    Sort
+                    {sortConfig.key === column.key ? sortConfig.direction === "asc" ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" /> : <div className="h-3 w-3" />}
+                  </button>
                 </div>
-              )}
-
-              {/* Sort toggle */}
-              <button onClick={() => handleSort(column.key)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors">
-                Sort
-                {sortConfig.key === column.key ? sortConfig.direction === "asc" ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" /> : <div className="h-3 w-3" />}
-              </button>
+              ))}
             </div>
-          ))}
-        </div>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

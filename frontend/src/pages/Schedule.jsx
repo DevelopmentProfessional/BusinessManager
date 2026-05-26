@@ -1225,7 +1225,7 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className="schedule-footer app-footer-padding app-standard-footer border-top">
+        <footer className="app-footer-shell schedule-footer app-footer-padding app-standard-footer border-top">
           <div className="app-footer-toolbar d-flex align-items-center">
             <Button_Toolbar icon={MonthViewIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} title="Month view" />
             <Button_Toolbar icon={WeekViewIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} title="Week view" />
@@ -1241,7 +1241,7 @@ export default function Schedule() {
               data-active={filters.employeeIds.length > 0 || filters.clientIds.length > 0 || filters.serviceIds.length > 0 || !!filters.startDate || !!filters.endDate || filters.showOutOfOffice}
             />
           </div>
-        </div>
+        </footer>
 
         <Modal isOpen={isModalOpen} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
           <Form_Schedule

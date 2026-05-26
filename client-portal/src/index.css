@@ -107,6 +107,22 @@ body {
 .rbc-event    { background-color: #4F46E5 !important; border-radius: 4px; font-size: 12px; }
 .rbc-today    { background: #EEF2FF !important; }
 
+.portal-footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #9ca3af;
+  padding: 16px;
+}
+
+.portal-footer--landing {
+  padding: 20px;
+  color: #c4c9d4;
+}
+
+.portal-footer--compact {
+  margin-top: 8px;
+}
+
 /* ── Dark mode ──────────────────────────────────────────────── */
 .dark body                { background: #111827; color: #f9fafb; }
 .dark .card               { background: #1f2937; border-color: #374151; }

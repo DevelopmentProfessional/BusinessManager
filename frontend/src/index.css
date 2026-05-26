@@ -328,6 +328,11 @@ div[role="combobox"] {
 }
 
 /* Footer chrome — bottom inset matches .app-nav-bottom-toggle (same --app-footer-padding-y) */
+.app-footer-shell {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
 .app-footer-padding,
 .app-form-footer,
 .app-standard-footer,
@@ -354,6 +359,7 @@ footer[aria-label="Actions"].app-footer-reserve {
 }
 
 /* Standard component footer contract: keep footers in normal flow and non-sticky */
+.app-footer-shell,
 .app-standard-footer {
   position: static !important;
   bottom: auto !important;
