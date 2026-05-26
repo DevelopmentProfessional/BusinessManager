@@ -17,6 +17,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-26 | GitHub Copilot | Applied shared sticky footer classes for modal footer consistency
  * ============================================================
  */
 import React from "react";
@@ -61,7 +62,7 @@ export function ModalHeader({ title, onClose, showClose = true, className = "" }
  *   className?: string  — extra classes for the wrapper div
  */
 export function ModalFooter({ children, className = "" }) {
-  return <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1 flex-shrink-0 ${className}`}>{children}</div>;
+  return <div className={`app-modal-footer app-form-footer app-standard-footer border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 ${className}`}>{children}</div>;
 }
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
