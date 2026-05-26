@@ -233,7 +233,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
   // ─── [4] RENDER ─────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
-      <form onSubmit={handleSubmit} className="component">
+      <form onSubmit={handleSubmit} className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Pay {employee.first_name} {employee.last_name}</div>
           <div className="component-header-center"></div>

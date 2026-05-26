@@ -80,7 +80,7 @@ export default function Modal_InsurancePlans({
       noPadding
       fullScreen
     >
-      <form onSubmit={onSave} className="component">
+      <form onSubmit={onSave} className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Insurance Plans</div>
           <div className="component-header-center"></div>

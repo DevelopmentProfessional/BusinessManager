@@ -114,7 +114,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
   // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding centered>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Import Data from CSV Files</div>
           <div className="component-header-center"></div>

@@ -232,7 +232,7 @@ export default function Modal_Cart_Sales({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} contentGravity="bottom">
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">
             <ShoppingCartIcon className="app-icon me-1" />

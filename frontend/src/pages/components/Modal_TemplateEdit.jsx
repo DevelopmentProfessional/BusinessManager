@@ -224,7 +224,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
   return (
     <Modal isOpen onClose={onClose} noPadding fullScreen>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">
             <DocumentTextIcon className="app-icon text-muted me-1" aria-hidden="true" />

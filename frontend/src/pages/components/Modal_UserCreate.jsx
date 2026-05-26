@@ -26,7 +26,7 @@ import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser, onSubmit, loading, roles }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Create User</div>
           <div className="component-header-center"></div>

@@ -17,7 +17,7 @@ export default function Modal_ColorPicker({ isOpen, onClose, pendingColor, onPen
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} centered noPadding>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Theme color</div>
           <div className="component-header-center"></div>

@@ -334,7 +334,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
       noPadding
       fullScreen
     >
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">
             <ClockIcon className="app-icon text-muted me-1" aria-hidden="true" />

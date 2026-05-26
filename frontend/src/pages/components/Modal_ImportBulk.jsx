@@ -117,7 +117,7 @@ export default function Modal_BulkImport({
   return (
     /* Modal wraps backdrop + dialog */
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Bulk Import {entityLabel}</div>
           <div className="component-header-center"></div>

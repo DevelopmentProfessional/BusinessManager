@@ -457,7 +457,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const formTitle = appointment ? (formData.appointment_type === "meeting" ? "Edit Meeting" : formData.appointment_type === "task" ? "Edit Task" : "Edit Appointment") : formData.appointment_type === "meeting" ? "New Meeting" : formData.appointment_type === "task" ? "New Task" : "New Appointment";
 
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900">
+    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{formTitle}</h6>
