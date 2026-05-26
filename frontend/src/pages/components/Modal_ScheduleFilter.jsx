@@ -161,7 +161,7 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
   // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Filter Schedule</div>
           <div className="component-header-center"></div>

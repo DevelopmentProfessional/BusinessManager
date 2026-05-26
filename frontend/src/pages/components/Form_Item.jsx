@@ -427,7 +427,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900">
+    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? "Edit" : "Add Item"}</h6>

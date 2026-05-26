@@ -473,7 +473,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
+      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
         </div>
@@ -795,7 +795,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
+      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
         {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center gap-2 bg-white dark:bg-gray-900">

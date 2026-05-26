@@ -375,7 +375,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
       {showCreate ? renderCreateForm() : renderPoList()}
 
       <Modal isOpen={!!detailPoId} onClose={() => { setDetailPoId(null); setDetailPo(null); }} fullScreen noPadding>
-        <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0" style={{ minHeight: "100%" }}>
+        <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
           <div className="flex-shrink-0 p-2 border-bottom">
             <h6 className="mb-0 fw-semibold">{detailPo?.po_number || "Purchase order"}</h6>
           </div>

@@ -374,7 +374,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding>
-      <div className="component" onPaste={handleGlobalPaste}>
+      <div className="component h-100 min-h-0" onPaste={handleGlobalPaste}>
         <div className="component-header">
           <div className="component-header-left">
             {title}

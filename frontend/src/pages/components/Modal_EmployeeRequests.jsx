@@ -27,7 +27,7 @@ import Button_Toolbar from "./Button_Toolbar";
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Requests</div>
           <div className="component-header-center"></div>

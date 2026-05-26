@@ -86,7 +86,7 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Signature</div>
           <div className="component-header-center"></div>

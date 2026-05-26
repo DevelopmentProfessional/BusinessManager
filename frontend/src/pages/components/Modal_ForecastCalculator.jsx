@@ -974,7 +974,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
   // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
+      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex-shrink-0 px-3 py-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
           <div className="d-flex align-items-center gap-2">

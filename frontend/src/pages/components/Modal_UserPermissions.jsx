@@ -91,7 +91,7 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
 export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleViewAllToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Manage Permissions</div>
           <div className="component-header-center"></div>

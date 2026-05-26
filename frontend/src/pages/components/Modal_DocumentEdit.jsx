@@ -285,7 +285,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
       centered
       noPadding
     >
-      <form className="component" id="doc-edit-form" onSubmit={handleSubmit}>
+      <form className="component h-100 min-h-0" id="doc-edit-form" onSubmit={handleSubmit}>
         <div className="component-header">
           <div className="component-header-left">
             <DocumentTextIcon className="app-icon text-muted me-1" aria-hidden="true" />

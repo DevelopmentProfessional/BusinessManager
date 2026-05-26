@@ -214,7 +214,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">
             <ShoppingCartIcon style={{ width: 18, height: 18 }} className="me-1" />

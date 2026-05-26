@@ -467,7 +467,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding contentGravity="top">
-      <div className="d-flex flex-column h-100" onPaste={handleGlobalPaste}>
+      <div className="d-flex flex-column h-100 min-h-0" onPaste={handleGlobalPaste}>
         <div className="border-bottom border-gray-200 dark:border-gray-700 px-3 py-2 d-flex justify-content-between align-items-center">
           <div>
             <div className="fw-semibold">Bulk Add Items</div>

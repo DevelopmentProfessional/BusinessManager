@@ -55,7 +55,7 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding>
-      <form onSubmit={handleSubmit} className="component">
+      <form onSubmit={handleSubmit} className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">{title}</div>
           <div className="component-header-center"></div>

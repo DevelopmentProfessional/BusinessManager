@@ -134,7 +134,7 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
-      <div className="component">
+      <div className="component h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">{item.name}</div>
           <div className="component-header-center"></div>
