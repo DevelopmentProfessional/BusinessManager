@@ -457,7 +457,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 ) : (
                   <CheckIcon className="h-4 w-4 flex-shrink-0" />
                 )}
-                <span className="d-none d-sm-inline">{saving ? "Saving…" : "Save"}</span>
+                <span className="d-none d-sm-inline">{saving ? "Saving…" : isNew ? "Add" : "Save"}</span>
               </button>
             </div>
             <div className="component-footer-center">

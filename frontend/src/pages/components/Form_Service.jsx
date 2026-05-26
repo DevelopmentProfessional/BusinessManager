@@ -331,7 +331,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
 
   // ── Layout: flex column filling the modal body ───────────────────
   return (
-    <div className="d-flex flex-column bg-white dark:bg-gray-900">
+    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
         <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{service ? "Edit Service" : "Add Service"}</h6>
@@ -787,6 +787,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
                   key={tab}
                   type="button"
                   className={`btn btn-sm flex-shrink-0 ${activeTab === tab ? "btn-primary" : "btn-outline-secondary"}`}
+                  style={{ fontSize: "0.72rem", lineHeight: 1.1 }}
                   onClick={() => {
                     setActiveTab(tab);
                     setTabError("");

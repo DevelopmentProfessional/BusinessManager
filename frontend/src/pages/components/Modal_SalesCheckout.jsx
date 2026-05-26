@@ -30,12 +30,12 @@ import React, { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import Modal_TemplateUse from "./Modal_TemplateUse";
 import { clientsAPI } from "../../services/api";
-import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon, UserIcon, ReceiptPercentIcon, PrinterIcon, CameraIcon, VideoCameraIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon, UserIcon, ReceiptPercentIcon, PrinterIcon, CameraIcon, VideoCameraIcon, DevicePhoneMobileIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("card_scan");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCVC, setCardCVC] = useState("");
@@ -61,6 +61,9 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
   const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const isCardScan = paymentMethod === "card_scan";
+  const isTapPay = paymentMethod === "tap_pay";
+  const nfcSupported = typeof window !== "undefined" && "NDEFReader" in window;
 
   // ─── 2 INPUT FORMATTERS ────────────────────────────────────────────────────
   // Format card number with spaces
@@ -379,13 +382,22 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               {/* Payment Method Tabs */}
               <div className="flex gap-1 mb-1">
                 <button
-                  onClick={() => setPaymentMethod("card")}
+                  onClick={() => setPaymentMethod("card_scan")}
                   className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
-                    paymentMethod === "card" ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                    isCardScan ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
                   <CreditCardIcon className="h-5 w-5" />
-                  <span className="font-medium">Card</span>
+                  <span className="font-medium">Card Scan</span>
+                </button>
+                <button
+                  onClick={() => setPaymentMethod("tap_pay")}
+                  className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
+                    isTapPay ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
+                  }`}
+                >
+                  <DevicePhoneMobileIcon className="h-5 w-5" />
+                  <span className="font-medium">Tap Pay</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("cash")}
@@ -398,7 +410,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                 </button>
               </div>
 
-              {paymentMethod === "card" ? (
+                  {isCardScan ? (
                 <div className="space-y-1">
                   {/* Card Number */}
                   <div className="input-group">
@@ -488,6 +500,28 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                       <>
                         <CheckCircleIcon className="h-5 w-5" />
                         Pay ${total.toFixed(2)}
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : isTapPay ? (
+                <div className="text-center py-2">
+                  <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                    <DevicePhoneMobileIcon className="app-icon app-icon--lg text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-1">Tap customer card or device to continue</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{nfcSupported ? "NFC-ready device detected." : "NFC hardware may be unavailable in this browser/device. You can still complete payment manually."}</p>
+                  <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${total.toFixed(2)}</p>
+                  <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-2 rounded-pill font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-1">
+                    {isProcessing ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        …
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="h-5 w-5" />
+                        Charge ${total.toFixed(2)}
                       </>
                     )}
                   </button>

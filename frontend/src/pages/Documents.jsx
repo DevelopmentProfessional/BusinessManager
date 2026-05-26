@@ -680,7 +680,7 @@ export default function Documents() {
     <div className="d-flex flex-column vh-100 min-h-0 overflow-hidden bg-body">
       {/* Header */}
       <div className="flex-shrink-0 border-bottom p-3 d-flex align-items-center justify-content-between">
-        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Documents</h1>
+        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">{showTemplates ? "Templates" : "Documents"}</h1>
         <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>

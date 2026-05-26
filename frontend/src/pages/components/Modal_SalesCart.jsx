@@ -390,6 +390,8 @@ export default function Modal_Cart_Sales({
                 onClose();
                 handleCheckout();
               }}
+              className="btn-success text-white"
+              style={{ borderColor: "#059669", backgroundColor: "#059669" }}
             />
           </div>
           <div className="component-footer-center">

@@ -1164,22 +1164,6 @@ export default function Sales() {
             <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
               <Cog6ToothIcon style={{ width: 18, height: 18 }} />
             </button>
-            {cartItemCount > 0 && (
-              <button
-                onClick={() => setShowCartModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
-                style={{
-                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
-                }}
-              >
-                <ShoppingCartIcon className="h-4 w-4" />
-                {cartItemCount}
-              </button>
-            )}
           </div>
         </div>
         {error && (
