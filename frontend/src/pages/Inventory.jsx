@@ -79,6 +79,7 @@ export default function Inventory() {
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
+  const [assetUnitCounts, setAssetUnitCounts] = useState({});
   const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
@@ -161,9 +162,28 @@ export default function Inventory() {
 
       if (Array.isArray(inventoryData)) {
         setInventory(inventoryData);
+
+        const assets = inventoryData.filter((item) => (item?.type || "").toUpperCase() === "ASSET" && item?.id);
+        if (assets.length > 0) {
+          try {
+            const counts = await Promise.all(
+              assets.map(async (asset) => {
+                const res = await assetUnitsAPI.list(asset.id);
+                const list = res?.data ?? res ?? [];
+                return [asset.id, Array.isArray(list) ? list.length : 0];
+              })
+            );
+            setAssetUnitCounts(Object.fromEntries(counts));
+          } catch {
+            setAssetUnitCounts({});
+          }
+        } else {
+          setAssetUnitCounts({});
+        }
       } else {
         console.error("Invalid inventory data format:", inventoryData);
         setInventory([]);
+        setAssetUnitCounts({});
       }
 
       setFeatureSummary(typeof summaryData === "object" ? summaryData : {});
@@ -301,6 +321,15 @@ export default function Inventory() {
     return `$${price.toFixed(2)}`;
   };
 
+  const getCountDisplay = (item) => {
+    const isAsset = (item?.type || "").toUpperCase() === "ASSET";
+    if (isAsset) {
+      const assetCount = assetUnitCounts[item.id];
+      if (typeof assetCount === "number") return assetCount;
+    }
+    return item.quantity ?? 0;
+  };
+
   const handleDeleteItem = async (inventoryId) => {
     if (deleteInFlightRef.current.has(inventoryId)) {
       return;
@@ -406,7 +435,7 @@ export default function Inventory() {
 
                   {/* Count */}
                   <td className="main-page-table-data text-center">
-                    <Badge variant={stockVariant(inv)} pill label={String(inv.quantity)} />
+                    <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
                   </td>
                 </PageTableRow>
               ))}
