@@ -393,8 +393,8 @@ export default function Modal_Cart_Sales({
             />
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Continue shopping">
-              <XMarkIcon />
+            <button type="button" onClick={onClose} className="btn btn-outline-secondary" title="Close">
+              Close
             </button>
           </div>
           <div className="component-footer-right"></div>

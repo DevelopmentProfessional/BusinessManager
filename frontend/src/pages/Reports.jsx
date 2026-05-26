@@ -1146,15 +1146,14 @@ export default function Reports() {
               )}
 
               {canUseEventType && (
-                <div className="position-relative" ref={eventTypeRef}>
+                <div className="position-relative w-100" ref={eventTypeRef}>
                   <button
                     type="button"
                     onClick={() => setEventTypeMenuOpen((v) => !v)}
                     onKeyDown={handleEventTypeKeyDown}
                     aria-haspopup="listbox"
                     aria-expanded={eventTypeMenuOpen}
-                    className="btn btn-outline-secondary btn-sm 
-                    rounded-pill d-inline-flex align-items-center"
+                    className="btn btn-outline-secondary btn-sm rounded-pill d-flex align-items-center justify-content-between w-100"
                     style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
                   >
                     <ListBulletIcon className="h-4 w-4 flex-shrink-0 me-1" />
@@ -1163,7 +1162,7 @@ export default function Reports() {
                   {eventTypeMenuOpen && (
                     <div className="position-absolute bottom-100 start-0 
                     bg-white dark:bg-gray-900 border border-gray-200 
-                    dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "100%", minWidth: "10rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }} role="listbox">
+                    dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "100%", maxHeight: "16rem", margin: 0 }} role="listbox">
                       {FILTER_CONFIG.eventType.options.map((o) => {
                         const OptionIcon = o.icon;
                         return (

@@ -1597,8 +1597,6 @@ const Profile = () => {
 
       {(canAccessSettings || canAccessGeneralSettings) && (
         <>
-          {isMobile && <div className="app-footer-spacer" style={{ "--app-footer-h": `${row1Height}px` }} aria-hidden="true" />}
-
           {/* Footer Tabs */}
           <footer
             ref={row1Ref}
