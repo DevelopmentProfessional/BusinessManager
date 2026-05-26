@@ -73,6 +73,7 @@
   --app-footer-btn-gap: 0.25rem;
   --app-footer-padding-x: 0.25rem;
   --app-footer-padding-y: 0.25rem;
+  --app-standard-footer-height: calc(var(--app-btn-height) + (var(--app-footer-padding-y) * 2));
   /* Width + gap reserved for bottom-right nav (matches left inset) */
   --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
   --app-input-height: 2rem;
@@ -358,14 +359,20 @@ footer[aria-label="Actions"].app-footer-reserve {
   padding-right: var(--app-footer-padding-x) !important;
 }
 
-/* Standard component footer contract: keep footers in normal flow and non-sticky */
+/* Global footer contract: every app footer sticks to the bottom */
 .app-footer-shell,
-.app-standard-footer {
-  position: static !important;
-  bottom: auto !important;
-  inset: auto !important;
+.app-standard-footer,
+.app-form-footer,
+.app-modal-footer,
+.schedule-footer,
+.profile-footer-nav,
+footer[aria-label="Actions"] {
+  position: sticky !important;
+  bottom: 0 !important;
+  inset-inline: 0;
   width: 100%;
   flex: 0 0 auto;
+  z-index: 40;
 }
 
 /* Stacked footer rows — uniform vertical gap; toolbars share button height */
@@ -827,15 +834,11 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
   min-width: var(--app-btn-width, 4rem);
 }
 
-/* Footer floats above content on mobile using position:fixed so it is independent
-   of the containing-block chain (works on ALL pages regardless of vh-100 vs h-100
-   or overflow:hidden ancestors).  bottom tracks --keyboard-offset (set by
-   Manager_MobileAddressBar) so it lifts above the keyboard when the search input
-   is focused. */
+/* Keep table/search footer anchored to bottom across mobile layouts. */
 @media (max-width: 1024px) {
   .app-footer-search {
-    position: fixed;
-    bottom: var(--keyboard-offset, 0px);
+    position: sticky;
+    bottom: 0;
     left: 0;
     right: 0;
     z-index: 20;
@@ -1620,7 +1623,14 @@ textarea.form-control {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding-left: var(--app-footer-padding-x) !important;
+  padding-right: var(--app-footer-padding-x) !important;
+  padding-top: var(--app-footer-padding-y) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
+  min-height: var(--app-standard-footer-height);
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
   border-top: 1px solid var(--bs-border-color);
   background: var(--bs-body-bg);
 }
@@ -1642,6 +1652,16 @@ textarea.form-control {
 
 .component-footer-right {
   flex: 0 0 auto;
+}
+
+/* Modal/panel sticky footer contract: standard height + anchored bottom */
+.app-form-footer,
+.app-modal-footer,
+.component .app-standard-footer {
+  min-height: var(--app-standard-footer-height);
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
 }
 
 /* ── Circle buttons (settings + cancel) ──
