@@ -10,6 +10,7 @@ import Layout from "./components/Layout";
 import ItemCard from "./components/ItemCard";
 import BookingCalendar from "./components/BookingCalendar";
 import BookingConfirmation from "./components/BookingConfirmation";
+import PortalFooter from "./components/PortalFooter";
 import { catalogAPI, bookingsAPI, companiesAPI } from "../services/api";
 import useStore from "../store/useStore";
 
@@ -541,19 +542,7 @@ export default function Shop() {
         </div>
 
         {/* Footer text from branding */}
-        {branding?.portal_footer_text && (
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "0.72rem",
-              color: "#9ca3af",
-              padding: "16px",
-              marginTop: 8,
-            }}
-          >
-            {branding.portal_footer_text}
-          </p>
-        )}
+        {branding?.portal_footer_text && <PortalFooter className="portal-footer--compact">{branding.portal_footer_text}</PortalFooter>}
       </div>
 
       {/* Spin keyframe */}

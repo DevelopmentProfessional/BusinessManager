@@ -1300,7 +1300,7 @@ export default function Sales() {
       </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <div className="app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+      <footer className="app-footer-shell app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
         <div className="app-footer-padding app-standard-footer">
           <div className="app-footer-stack">
             {/* Client Selection Panel - shown when account icon is active */}
@@ -1504,7 +1504,7 @@ export default function Sales() {
             </div>
           </div>
         </div>
-      </div>
+      </footer>
 
       {/* Cart Modal */}
       <Modal_Cart_Sales
@@ -1630,7 +1630,8 @@ export default function Sales() {
         onClose={() => setShowPageControls(false)}
         title="Sales Page Controls"
         onOpen={() => {
-          templatesAPI.getAll("receipt")
+          templatesAPI
+            .getAll("receipt")
             .then((res) => {
               const all = Array.isArray(res?.data) ? res.data : [];
               setRcptTemplates(all.filter((t) => t.template_type === "receipt" || t.type === "receipt"));
@@ -1659,7 +1660,9 @@ export default function Sales() {
           >
             <option value="">— No template selected —</option>
             {rcptTemplates.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
             ))}
           </select>
           {rcptTemplates.length === 0 && <div className="small text-muted mt-1">No receipt templates found. Create one in Documents → Templates.</div>}

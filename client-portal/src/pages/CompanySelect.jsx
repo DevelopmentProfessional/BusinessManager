@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { BuildingOffice2Icon, MagnifyingGlassIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { companiesAPI } from "../services/api";
 import useStore from "../store/useStore";
+import PortalFooter from "./components/PortalFooter";
 
 const PERSISTENT_KEYS = new Set(["cp_client", "cp_token", "cp_company", "cp_nav_align"]);
 
@@ -387,7 +388,7 @@ export default function CompanySelect() {
       </div>
 
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer style={{ textAlign: "center", padding: "20px", fontSize: "0.72rem", color: "#c4c9d4" }}>Powered by BusinessManager</footer>
+      <PortalFooter className="portal-footer--landing">Powered by BusinessManager</PortalFooter>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
