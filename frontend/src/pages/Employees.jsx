@@ -43,6 +43,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for role/status filters
  *   2026-03-08 | Copilot | Moved lock/unlock column between Employee and Role
+ *   2026-05-26 | GitHub Copilot | Added left-column row delete action and removed delete button from employee edit form
  * ============================================================
  */
 
@@ -52,7 +53,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import useStore from "../services/useStore";
@@ -938,6 +939,7 @@ export default function Employees() {
           {filteredEmployees.length > 0 ? (
             <table className="table table-borderless table-hover mb-0">
               <colgroup>
+                <col style={{ width: "44px" }} />
                 <col />
                 {isAdmin && <col style={{ width: "54px" }} />}
                 <col style={{ width: "90px" }} />
@@ -954,6 +956,14 @@ export default function Employees() {
                       handleEdit(employee);
                     }}
                   >
+                    <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                      <Gate_Permission page="employees" permission="delete">
+                        <button className="btn btn-circle btn-outline-danger" title="Delete employee" onClick={() => handleDelete(employee.id)}>
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </Gate_Permission>
+                    </td>
+
                     {/* Name with color coding for active/inactive */}
                     <td className="main-page-table-data">
                       <div className={`fw-medium text-truncate ${employee.is_active ? "text-success" : "text-muted"}`} style={{ maxWidth: "100%" }}>
@@ -1023,7 +1033,7 @@ export default function Employees() {
           )}
         </div>
 
-        <PageTableHeader columns={[{ label: "Employee" }, ...(isAdmin ? [{ label: "", width: 54, className: "text-center p-0" }] : []), { label: "Role", width: 90 }, { label: "", width: 54, className: "text-center p-0" }]} />
+        <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Employee" }, ...(isAdmin ? [{ label: "", width: 54, className: "text-center p-0" }] : []), { label: "Role", width: 90 }, { label: "", width: 54, className: "text-center p-0" }]} />
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
@@ -1164,10 +1174,8 @@ export default function Employees() {
             employee={editingEmployee}
             onSubmit={handleSubmit}
             onCancel={closeModal}
-            onDelete={editingEmployee ? handleDelete : null}
             onManagePermissions={editingEmployee && hasPermission("employees", "admin") ? handleManagePermissions : null}
             employees={employees}
-            canDelete={editingEmployee && hasPermission("employees", "delete")}
           />
         )}
       </Modal>

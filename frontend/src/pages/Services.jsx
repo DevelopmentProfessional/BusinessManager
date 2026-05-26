@@ -23,6 +23,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for category filter options
+ *   2026-05-26 | GitHub Copilot | Standardized left-column delete button style to match Inventory row layout
  * ============================================================
  */
 
@@ -222,15 +223,15 @@ export default function Services() {
             <tbody>
               {filteredServices.map((service, index) => (
                 <PageTableRow key={service.id || index} onClick={() => handleEditService(service)}>
-                  <td className="main-page-table-data text-center" onClick={(e) => e.stopPropagation()}>
+                  <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
                     <Gate_Permission page="services" permission="delete">
                       <button
                         type="button"
-                        className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                        className="btn btn-circle btn-outline-danger"
                         title="Delete service"
                         onClick={(e) => handleDeleteService(service.id, e)}
                       >
-                        <TrashIcon className="h-5 w-5" />
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </Gate_Permission>
                   </td>

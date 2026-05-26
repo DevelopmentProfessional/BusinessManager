@@ -22,6 +22,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for tier filter options
+ *   2026-05-26 | GitHub Copilot | Moved delete action to left table column and removed modal delete button wiring
  * ============================================================
  */
 
@@ -31,6 +32,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useStore from "../services/useStore";
 import { tierVariant } from "../utils/colorMapping";
 import { S } from "../utils/strings";
+import { showConfirm } from "../services/showConfirm";
 import Badge from "./components/Badge";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import { clientsAPI, membershipsAPI, settingsAPI } from "../services/api";
@@ -176,6 +178,7 @@ export default function Clients() {
       setError("You do not have permission to delete clients");
       return;
     }
+    if (!(await showConfirm("Are you sure you want to delete this client?"))) return;
     try {
       await clientsAPI.delete(clientId);
       removeClient(clientId);
@@ -355,6 +358,7 @@ export default function Clients() {
         {filteredClients.length > 0 ? (
           <table className="table table-borderless table-hover mb-0 w-100">
             <colgroup>
+              <col style={{ width: "44px" }} />
               <col />
               <col style={{ width: "120px" }} />
               <col style={{ width: "56px" }} />
@@ -362,6 +366,14 @@ export default function Clients() {
             <tbody>
               {filteredClients.map((client, index) => (
                 <PageTableRow key={client.id || index} onClick={() => handleOpenClient(client)}>
+                  <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                    <Gate_Permission page="clients" permission="delete">
+                      <button className="btn btn-circle btn-outline-danger" title="Delete client" onClick={() => handleDeleteClient(client.id)}>
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </Gate_Permission>
+                  </td>
+
                   {/* Name + contact */}
                   <td className="main-page-table-data">
                     <div className="fw-medium text-truncate">{client.name}</div>
@@ -388,7 +400,7 @@ export default function Clients() {
         )}
       </div>
 
-      <PageTableHeader columns={[{ label: "Client" }, { label: "Subs", width: 120 }, { label: "Notify", width: 56 }]} />
+      <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Client" }, { label: "Subs", width: 120 }, { label: "Notify", width: 56 }]} />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter
@@ -413,7 +425,7 @@ export default function Clients() {
       </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}
-      <Modal_Detail_Client isOpen={isModalOpen && modalContent === "client-detail"} onClose={closeModal} client={editingClient} onUpdate={handleUpdateClient} onDelete={handleDeleteClient} canDelete={hasPermission("clients", "delete")} memberships={memberships} />
+      <Modal_Detail_Client isOpen={isModalOpen && modalContent === "client-detail"} onClose={closeModal} client={editingClient} onUpdate={handleUpdateClient} memberships={memberships} />
 
       {/* Create Client Modal (bottom-sheet form) */}
       <Modal isOpen={isModalOpen && modalContent === "client-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
