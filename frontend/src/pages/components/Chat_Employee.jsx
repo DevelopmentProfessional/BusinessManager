@@ -284,7 +284,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         )}
 
         {/* ── Input ── */}
-        <div className={`flex-shrink-0 border-top app-footer-padding app-form-footer ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
+        <div className={`flex-shrink-0 border-top app-footer-padding app-form-footer app-standard-footer ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
           <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
           <div className="d-flex align-items-center gap-1 mt-2">
             <div className="flex-grow-1 w-100">

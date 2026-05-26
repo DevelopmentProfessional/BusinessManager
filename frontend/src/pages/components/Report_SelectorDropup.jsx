@@ -9,7 +9,10 @@ const ITEM_STYLE = {
   lineHeight: 1.35,
   padding: "0.5rem 0.75rem",
   textAlign: "left",
-  display: "block",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  whiteSpace: "nowrap",
   width: "100%",
   cursor: "pointer",
 };
@@ -60,8 +63,8 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
   }, [reports, search]);
 
   return (
-    <div ref={rootRef} className="position-relative reports-selector-dropup" style={{ textAlign: "left" }}>
-      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center" style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox">
+    <div ref={rootRef} className="position-relative reports-selector-dropup w-100" style={{ textAlign: "left" }}>
+      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-between w-100" style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox">
         <ChevronUpDownIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
         <span>{selectedTitle || "Report"}</span>
       </button>
@@ -72,9 +75,9 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
           className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-lg bg-white dark:bg-gray-900"
           style={{
             zIndex: 1050,
-            width: "max-content",
-            maxWidth: "80vw",
-            minWidth: "12rem",
+            width: "100%",
+            minWidth: "100%",
+            maxWidth: "100%",
           }}
         >
           <div className="reports-selector-dropup__list overflow-y-auto flex-grow-1" style={{ maxHeight: "min(50vh, 22rem)" }}>
@@ -95,7 +98,7 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
               className="reports-selector-dropup__item text-body border-bottom"
               style={ITEM_STYLE}
             >
-              <CurrencyDollarIcon className="text-green-600 me-2" style={{ width: "1.125rem", height: "1.125rem" }} />
+              <CurrencyDollarIcon className="text-green-600 flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />
               <span>Financial</span>
             </div>
             {filteredReports.length === 0 ? (
@@ -117,7 +120,7 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
                     className={`reports-selector-dropup__item ${isActive ? "bg-primary text-white" : "text-body"}`}
                     style={ITEM_STYLE}
                   >
-                    {Icon && <Icon className="me-2" style={{ width: "1.125rem", height: "1.125rem" }} />}
+                    {Icon && <Icon className="flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />}
                     <span>{report.title}</span>
                   </div>
                 );

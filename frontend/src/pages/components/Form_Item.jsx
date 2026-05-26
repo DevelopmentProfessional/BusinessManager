@@ -1108,7 +1108,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
 
       {/* ─── 9 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={item ? "Save" : "Add"} type="submit" form="item-form" className="btn-outline-secondary" title={item ? "Save changes" : "Create item"} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { assetUnitsAPI } from "../../services/api";
+import { assetUnitsAPI, employeesAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import { TrashIcon } from "@heroicons/react/24/outline";
+import useViewMode from "../../services/useViewMode";
 
 const STATE_LABELS = {
   available: "Available",
@@ -56,20 +57,25 @@ function InlineText({ value, onSave, placeholder = "—" }) {
 
 export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [units, setUnits] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [addingUnit, setAddingUnit] = useState(false);
   const [newLabel, setNewLabel] = useState("");
+  const [newEmployeeId, setNewEmployeeId] = useState("shared");
   const [newState, setNewState] = useState("available");
   const [saving, setSaving] = useState(false);
+  const { isTrainingMode } = useViewMode();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await assetUnitsAPI.list(assetId);
+      const [res, employeesRes] = await Promise.all([assetUnitsAPI.list(assetId), employeesAPI.getAll()]);
       const list = res?.data ?? res ?? [];
+      const employeesList = employeesRes?.data ?? employeesRes ?? [];
       setUnits(list);
+      setEmployees(Array.isArray(employeesList) ? employeesList : []);
       onCountChange?.(list.length);
     } catch {
       setError("Failed to load asset units.");
@@ -87,10 +93,12 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
     try {
       await assetUnitsAPI.add(assetId, {
         label: newLabel.trim() || null,
+        employee_id: newEmployeeId === "shared" ? null : newEmployeeId,
         state: newState,
         notes: null,
       });
       setNewLabel("");
+      setNewEmployeeId("shared");
       setNewState("available");
       setAddingUnit(false);
       await load();
@@ -106,6 +114,17 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
     } catch {
       setError("Failed to update state.");
       load(); // revert on error
+    }
+  };
+
+  const handleEmployeeChange = async (unitId, employeeId) => {
+    const nextEmployeeId = employeeId === "shared" ? null : employeeId;
+    setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, employee_id: nextEmployeeId } : u)));
+    try {
+      await assetUnitsAPI.update(assetId, unitId, { employee_id: nextEmployeeId });
+    } catch {
+      setError("Failed to update assignment.");
+      load();
     }
   };
 
@@ -170,6 +189,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
               <tr>                
                 <th style={{ width: "2rem", borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}></th>
                 <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Label</th>
+                <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Assigned</th>
                 <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>State</th>
               </tr>
             </thead>
@@ -183,6 +203,16 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
                   </td>
                   <td style={{ border: "none" }}>
                     <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
+                  </td>
+                  <td style={{ border: "none" }}>
+                    <select className="form-select form-select-sm" value={unit.employee_id || "shared"} onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}>
+                      <option value="shared">Shared</option>
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {`${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username || "Employee"}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td style={{ border: "none" }}>
                     <select className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`} value={unit.state} onChange={(e) => handleStateChange(unit.id, e.target.value)}>
@@ -214,6 +244,14 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
               if (e.key === "Enter") handleAddUnit();
             }}
           />
+          <select className="form-select form-select-sm" style={{ maxWidth: "180px" }} value={newEmployeeId} onChange={(e) => setNewEmployeeId(e.target.value)}>
+            <option value="shared">Shared</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {`${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username || "Employee"}
+              </option>
+            ))}
+          </select>
           <select className="form-select form-select-sm" style={{ maxWidth: "140px" }} value={newState} onChange={(e) => setNewState(e.target.value)}>
             {Object.entries(STATE_LABELS).map(([s, l]) => (
               <option key={s} value={s}>
@@ -229,6 +267,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
             onClick={() => {
               setAddingUnit(false);
               setNewLabel("");
+              setNewEmployeeId("shared");
               setNewState("available");
             }}
           >
@@ -237,7 +276,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
         </div>
       ) : (
         <button className="btn btn-sm btn-outline-primary" onClick={() => setAddingUnit(true)}>
-          + Add Unit
+          {isTrainingMode ? "+ Add" : "+"}
         </button>
       )}
 

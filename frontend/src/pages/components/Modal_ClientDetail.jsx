@@ -181,7 +181,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900">
+      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Service History</h6>
@@ -225,7 +225,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
           <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
@@ -644,7 +644,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
           )}
         </div>
 
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
           <Footer_Actions
             start={
               <div className="d-flex align-items-center gap-1 flex-wrap">
@@ -919,7 +919,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
         {/* ─── 9 FIXED FOOTER ──────────────────────────────────────────────── */}
         {/* Fixed footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
           <Footer_Actions
             start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />}
             center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}

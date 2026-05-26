@@ -8,17 +8,15 @@
  * ============================================================
  */
 
-import React, { useState, useEffect } from "react";
-import { CurrencyDollarIcon, ExclamationTriangleIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, CalculatorIcon } from "@heroicons/react/24/outline";
+import React, { useEffect } from "react";
+import { CurrencyDollarIcon, ExclamationTriangleIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
-import Modal_ForecastCalculator from "./Modal_ForecastCalculator";
 
 const Dashboard_Financial = () => {
   const [arData, setArData] = useState(null);
   const [apData, setApData] = useState(null);
   const [inventoryCosts, setInventoryCosts] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showForecast, setShowForecast] = useState(false);
 
   useEffect(() => {
     loadFinancialData();
@@ -42,13 +40,6 @@ const Dashboard_Financial = () => {
 
   return (
     <div className="space-y-6">
-      {/* Forecast button */}
-      <div className="flex justify-end">
-        <button type="button" onClick={() => setShowForecast(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-          <CalculatorIcon className="w-4 h-4" />
-          Forecast
-        </button>
-      </div>
       {/* Top KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Cash Position */}
@@ -180,8 +171,6 @@ const Dashboard_Financial = () => {
           <button className="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Remind</button>
         </div>
       </div>
-
-      <Modal_ForecastCalculator isOpen={showForecast} onClose={() => setShowForecast(false)} />
     </div>
   );
 };
