@@ -400,7 +400,7 @@ export default function Clients() {
         )}
       </div>
 
-      <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Client" }, { label: "Subs", width: 120 }, { label: "Notify", width: 56 }]} />
+      <PageTableHeader columns={[{ label: "", width: 44, className: "p-0" }, { label: "Client", className: "text-start ps-0" }, { label: "Subs", width: 120, className: "text-start ps-0" }, { label: "Notify", width: 56, className: "text-start ps-0" }]} />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter

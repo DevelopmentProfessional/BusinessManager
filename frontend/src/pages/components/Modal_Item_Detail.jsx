@@ -1765,7 +1765,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         </div>
 
         {/* Fixed Footer with Action Buttons */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
           {!isSalesMode ? (
             <Footer_Actions
               start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}

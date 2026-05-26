@@ -431,6 +431,7 @@ class AssetUnit(BaseModel, table=True):
     __tablename__ = "asset_unit"
     inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
     label: Optional[str] = Field(default=None)          # e.g. "Unit #3", "SN-9921"
+    employee_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
     state: str = Field(default="available", index=True)  # available | in_use | maintenance | arriving_soon
     schedule_id: Optional[UUID] = Field(default=None)    # set when state=in_use and linked to appt
     notes: Optional[str] = Field(default=None)
@@ -2447,6 +2448,7 @@ class AssetUnitRead(SQLModel):
     id: UUID
     inventory_id: UUID
     label: Optional[str] = None
+    employee_id: Optional[UUID] = None
     state: str
     schedule_id: Optional[UUID] = None
     notes: Optional[str] = None
@@ -2457,12 +2459,14 @@ class AssetUnitRead(SQLModel):
 
 class AssetUnitCreate(SQLModel):
     label: Optional[str] = None
+    employee_id: Optional[UUID] = None
     state: str = "available"
     notes: Optional[str] = None
 
 
 class AssetUnitUpdate(SQLModel):
     label: Optional[str] = None
+    employee_id: Optional[UUID] = None
     state: Optional[str] = None
     schedule_id: Optional[UUID] = None
     notes: Optional[str] = None

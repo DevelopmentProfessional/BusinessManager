@@ -1033,7 +1033,7 @@ export default function Employees() {
           )}
         </div>
 
-        <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Employee" }, ...(isAdmin ? [{ label: "", width: 54, className: "text-center p-0" }] : []), { label: "Role", width: 90 }, { label: "", width: 54, className: "text-center p-0" }]} />
+        <PageTableHeader columns={[{ label: "", width: 44, className: "p-0" }, { label: "Employee", className: "text-start ps-0" }, ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []), { label: "Role", width: 90, className: "text-start ps-0" }, { label: "", width: 54, className: "p-0" }]} />
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter

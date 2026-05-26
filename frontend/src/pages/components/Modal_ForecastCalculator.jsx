@@ -1634,7 +1634,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
           <Footer_Actions
             start={
               <div className="btn-group btn-group-sm" role="group">

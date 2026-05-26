@@ -16,6 +16,7 @@
 #
 # CHANGE LOG:
 #   2026-03-17 | Claude | Initial implementation
+#   2026-05-26 | GitHub Copilot | Added optional employee assignment validation and persistence for asset units
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -63,6 +64,14 @@ def _sync_quantity(session: Session, inventory_id: UUID):
         session.commit()
 
 
+def _validate_employee_assignment(session: Session, employee_id: Optional[UUID], company_id: str):
+    if employee_id is None:
+        return
+    employee = session.get(User, employee_id)
+    if not employee or employee.company_id != company_id:
+        raise HTTPException(status_code=400, detail="Assigned employee is invalid for this company")
+
+
 # ─── LIST ────────────────────────────────────────────────────────────────────
 
 @router.get("/inventory/{inventory_id}/asset-units")
@@ -90,11 +99,13 @@ async def add_asset_unit(
     current_user: User = Depends(get_current_user),
 ):
     _get_asset(session, inventory_id, current_user.company_id)
+    _validate_employee_assignment(session, body.employee_id, current_user.company_id)
     if body.state not in ASSET_UNIT_STATES:
         raise HTTPException(status_code=400, detail=f"Invalid state. Must be one of: {sorted(ASSET_UNIT_STATES)}")
     unit = AssetUnit(
         inventory_id=inventory_id,
         label=body.label,
+        employee_id=body.employee_id,
         state=body.state,
         notes=body.notes,
         company_id=current_user.company_id,
@@ -122,6 +133,8 @@ async def update_asset_unit(
         raise HTTPException(status_code=404, detail="Unit not found")
     if body.state is not None and body.state not in ASSET_UNIT_STATES:
         raise HTTPException(status_code=400, detail=f"Invalid state. Must be one of: {sorted(ASSET_UNIT_STATES)}")
+    if "employee_id" in body.model_dump(exclude_unset=True):
+        _validate_employee_assignment(session, body.employee_id, current_user.company_id)
 
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():

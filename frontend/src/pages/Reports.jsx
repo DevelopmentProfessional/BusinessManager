@@ -27,6 +27,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-01 | Claude  | P10-A: KPI summary cards; P10-B: collapsible data table; P10-C: CSV export
  *   2026-05-15 | Copilot | Shortened standalone report action labels for compact training-mode layouts
+ *   2026-05-26 | GitHub Copilot | Updated Events dropup sizing/icon behavior and refined Financial Controls footer actions
  * ============================================================
  */
 
@@ -1156,7 +1157,7 @@ export default function Reports() {
                     className="btn btn-outline-secondary btn-sm rounded-pill d-flex align-items-center justify-content-between w-100"
                     style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
                   >
-                    <ListBulletIcon className="h-4 w-4 flex-shrink-0 me-1" />
+                    <CalendarIcon className="h-4 w-4 flex-shrink-0 me-1" />
                     {FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}
                   </button>
                   {eventTypeMenuOpen && (
@@ -1190,12 +1191,12 @@ export default function Reports() {
                             }
                           }}
                           tabIndex={0}
-                          className={`px-1 py-1 d-flex align-items-center${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                          className={`px-2 py-1 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
                           style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
                           role="option"
                           aria-selected={reportFilters.eventType === o.value}
                         >
-                          {OptionIcon && <OptionIcon className="h-4 w-4 me-2 flex-shrink-0" />}{o.label}
+                          {OptionIcon && <OptionIcon className="h-4 w-4 flex-shrink-0" />}<span className="text-nowrap">{o.label}</span>
                         </div>
                         );
                       })}
@@ -1260,7 +1261,6 @@ export default function Reports() {
         <div className="component">
           <div className="component-header">
             <div className="component-header-left">
-              <CurrencyDollarIcon className="h-5 w-5 me-2 flex-shrink-0" />
               Financial Controls
             </div>
             <div className="component-header-center" />
@@ -1276,9 +1276,7 @@ export default function Reports() {
               <Button_Toolbar icon={CalculatorIcon} label="Forecast" onClick={() => { setShowFinancialDashboard(false); setShowForecastCalculator(true); }} className="btn-outline-secondary" title="Open forecast calculator" />
             </div>
             <div className="component-footer-center">
-              <button className="btn btn-circle btn-outline-secondary" onClick={() => setShowFinancialDashboard(false)} title="Close">
-                <XMarkIcon className="h-5 w-5" />
-              </button>
+              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" title="Close" />
             </div>
             <div className="component-footer-right" />
           </div>

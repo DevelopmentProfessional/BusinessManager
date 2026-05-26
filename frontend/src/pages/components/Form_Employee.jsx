@@ -1630,7 +1630,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
       {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
         {/* Tab Navigation */}
         <ul className="nav nav-tabs mb-2">
           {tabs.map((tab) => (

@@ -37,6 +37,7 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-29 | GitHub Copilot | Removed stale SQLite migration paths and aligned runtime helpers with PostgreSQL-only deployment
+#   2026-05-26 | GitHub Copilot | Added asset_unit.employee_id migration/required artifact checks for assigned/shared asset ownership
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.05.21.1"
+CURRENT_SCHEMA_VERSION = "2026.05.26.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -98,6 +99,10 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='client' AND column_name='email_verified'"
             )).fetchone()
+            asset_unit_employee_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='employee_id'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -105,9 +110,26 @@ def _required_schema_artifacts_present() -> bool:
                 and registration_notes_column is not None
                 and cost_type_column is not None
                 and client_email_verified_column is not None
+                and asset_unit_employee_column is not None
             )
     except Exception:
         return False
+
+
+def _ensure_asset_unit_employee_column_if_needed():
+    """Ensure asset_unit table has employee_id for shared/assigned unit ownership."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='asset_unit' AND column_name='employee_id'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE asset_unit ADD COLUMN employee_id UUID"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_asset_unit_employee_id ON asset_unit(employee_id)"))
+                print("  + Added asset_unit.employee_id")
+    except Exception as e:
+        print(f"  Warning: Could not ensure asset_unit.employee_id column: {e}")
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -1171,6 +1193,7 @@ def create_db_and_tables():
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
+    _ensure_asset_unit_employee_column_if_needed()
     _ensure_user_db_environment_if_needed()
     _mark_schema_current()
     print("Migrations complete.")

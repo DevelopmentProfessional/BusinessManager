@@ -450,7 +450,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
               <p className="text-muted small">Could not load purchase order.</p>
             )}
           </div>
-          <div className="flex-shrink-0 border-top app-footer-padding">
+          <div className="flex-shrink-0 border-top app-footer-padding app-form-footer app-standard-footer">
             <Footer_Actions
               center={
                 <Button_Toolbar

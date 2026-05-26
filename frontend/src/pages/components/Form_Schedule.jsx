@@ -893,7 +893,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
       {/* ─── 7 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
