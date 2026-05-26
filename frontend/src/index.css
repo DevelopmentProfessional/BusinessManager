@@ -831,8 +831,7 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
    of the containing-block chain (works on ALL pages regardless of vh-100 vs h-100
    or overflow:hidden ancestors).  bottom tracks --keyboard-offset (set by
    Manager_MobileAddressBar) so it lifts above the keyboard when the search input
-   is focused.  The .app-footer-spacer sibling reserves the equivalent height in the
-   flex flow so content doesn't scroll behind the footer. */
+   is focused. */
 @media (max-width: 1024px) {
   .app-footer-search {
     position: fixed;
@@ -840,11 +839,6 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
     left: 0;
     right: 0;
     z-index: 20;
-  }
-
-  .app-footer-spacer {
-    flex-shrink: 0;
-    height: var(--app-footer-h, 140px);
   }
 
   /* Hide non-search rows when keyboard is open */
