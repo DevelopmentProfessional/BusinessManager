@@ -40,7 +40,7 @@ import React, { useState, useEffect } from "react";
 import useStore from "../../services/useStore";
 import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI } from "../../services/api";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, TrashIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Gate_Permission from "./Gate_Permission";
@@ -83,7 +83,7 @@ const APPOINTMENT_STATUS_OPTIONS = [
 ];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
   const { closeModal, hasPermission, user, openAddClientModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -888,6 +888,12 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               </div>
             </div>
           )}
+
+          {appointment?.id && onDelete && (
+            <div className="d-flex justify-content-center mt-2">
+              <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-secondary" title="Delete appointment" />
+            </div>
+          )}
         </form>
       </div>
 
@@ -897,14 +903,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
-          end={
-            <>
-              {appointment?.id && appointment?.client_id && (formData.appointment_type === "one_time" || formData.appointment_type === "series") && onSendReminder && (
-                <Button_Toolbar icon={EnvelopeIcon} label="Remind" onClick={onSendReminder} className="btn-outline-secondary" title="Send reminder" />
-              )}
-              {appointment?.id && onDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-secondary" title="Delete appointment" />}
-            </>
-          }
+          end={null}
         />
       </div>
     </div>
