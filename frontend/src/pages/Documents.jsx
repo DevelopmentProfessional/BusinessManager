@@ -31,6 +31,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for footer filter options
  *   2026-05-15 | Copilot | Shortened standalone document action button labels for compact training-mode layouts
+ *   2026-05-26 | GitHub Copilot | Added left-column delete action for documents list and removed delete action from viewer modal wiring
  * ============================================================
  */
 
@@ -471,14 +472,6 @@ export default function Documents() {
     handleOpenSign(doc);
   };
 
-  // Handle delete from viewer modal
-  const handleDeleteFromViewer = async (doc) => {
-    setIsViewerOpen(false);
-    if (doc?.id) {
-      await handleDeleteDocument(doc.id);
-    }
-  };
-
   // Save edited document
   const handleSaveEdit = (updatedDoc) => {
     setDocuments((prev) => prev.map((d) => (d.id === updatedDoc.id ? updatedDoc : d)));
@@ -806,12 +799,21 @@ export default function Documents() {
               /* List View */
               <table className="table table-borderless table-hover mb-0">
                 <colgroup>
+                  <col style={{ width: "56px" }} />
                   <col />
                   <col style={{ width: "60px" }} />
                 </colgroup>
                 <tbody>
                   {filteredDocuments.map((doc, index) => (
                     <tr key={doc.id || index} className="align-middle border-bottom">
+                      <td className="text-center px-1">
+                        <Gate_Permission page="documents" permission="delete">
+                          <button onClick={() => handleDeleteDocument(doc.id)} className="btn btn-circle btn-outline-danger" title="Delete document">
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </Gate_Permission>
+                      </td>
+
                       {/* File Name */}
                       <td className="px-3">
                         <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
@@ -843,7 +845,13 @@ export default function Documents() {
           )}
         </div>
 
-        <PageTableHeader columns={[{ label: showTemplates ? "Template" : "Document" }, { label: showTemplates ? "Actions" : "View", width: showTemplates ? 80 : 60, className: "text-center" }]} />
+        <PageTableHeader
+          columns={
+            showTemplates
+              ? [{ label: "", width: 56 }, { label: "Template" }, { label: "Actions", width: 56, className: "text-center" }]
+              : [{ label: "", width: 56 }, { label: "Document" }, { label: "View", width: 60, className: "text-center" }]
+          }
+        />
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
@@ -1012,7 +1020,6 @@ export default function Documents() {
         document={viewerDoc}
         onEdit={handleEditFromViewer}
         onSign={handleSignFromViewer}
-        onDelete={handleDeleteFromViewer}
         onWorkflow={(doc) => {
           setWorkflowDoc(doc);
           setShowWorkflowStatus(true);
