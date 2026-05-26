@@ -593,6 +593,7 @@ export default function Schedule() {
         recurrence_end_date: appointmentData.recurrence_end_date || null,
         recurrence_count: appointmentData.recurrence_count || null,
         is_recurring_master: appointmentData.is_recurring_master ?? false,
+        is_paid: appointmentData.is_paid ?? false,
       };
       if (primaryClientId) schedulePayload.client_id = primaryClientId;
       if (appointmentData.service_id) schedulePayload.service_id = appointmentData.service_id;
@@ -942,12 +943,12 @@ export default function Schedule() {
                                       onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
+                                      {appointment.is_paid && <span style={{ position: "absolute", top: 3, left: 3, display: "block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#fff", opacity: 0.9, flexShrink: 0 }} />}
                                       <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                         {primaryLabel}
                                       </div>
                                       {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                       <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
-                                        {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>$</span>}
                                         {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                       </div>
                                     </div>
@@ -1082,13 +1083,13 @@ export default function Schedule() {
                                     onDragEnd={handleDragEnd}
                                     onClick={(e) => handleAppointmentClick(e, appointment)}
                                   >
+                                    {appointment.is_paid && <span style={{ position: "absolute", top: 3, left: 3, display: "block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#fff", opacity: 0.9, flexShrink: 0 }} />}
                                     <div className="appointment-time">{timeString}</div>
                                     <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                       {primaryLabel}
                                     </div>
                                     {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                     <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
-                                      {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>$</span>}
                                       {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                     </div>
                                   </div>
@@ -1157,6 +1158,7 @@ export default function Schedule() {
                                       className="appointment-dot"
                                       title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                                       style={{
+                                        position: "relative",
                                         backgroundColor: employeeColor,
                                         opacity: isCancelled ? 0.65 : 1,
                                         borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
@@ -1166,11 +1168,11 @@ export default function Schedule() {
                                       onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
+                                      {appointment.is_paid && <span style={{ position: "absolute", top: 2, left: 2, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: "#fff", opacity: 0.9, flexShrink: 0 }} />}
                                       <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
                                         <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                                           {primaryLabel}
                                         </span>
-                                        {appointment.is_paid && <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#16a34a", lineHeight: 1, flexShrink: 0 }}>$</span>}
                                       </div>
                                       {secondaryLabel && (
                                         <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
