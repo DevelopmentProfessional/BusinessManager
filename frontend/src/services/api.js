@@ -321,6 +321,7 @@ export const inventoryAPI = {
 export const featuresAPI = {
   listAll: () => api.get("/features"),
   create: (data) => api.post("/features", data),
+  update: (id, data) => api.patch(`/features/${id}`, data),
   rename: (id, data) => api.patch(`/features/${id}`, data),
   delete: (id) => api.delete(`/features/${id}`),
   addOption: (fid, data) => api.post(`/features/${fid}/options`, data),

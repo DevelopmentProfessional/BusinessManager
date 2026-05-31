@@ -460,6 +460,7 @@ class DescriptiveFeature(BaseModel, table=True):
         UniqueConstraint("company_id", "name", name="uq_descriptive_feature_company_name"),
     )
     name: str  # No solo index — the composite unique constraint (company_id, name) covers lookups
+    description: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -1134,6 +1135,7 @@ class FeatureOptionRead(SQLModel):
 class DescriptiveFeatureRead(SQLModel):
     id: UUID
     name: str
+    description: Optional[str] = None
     options: List["FeatureOptionRead"] = []
     model_config = {"from_attributes": True}
 
@@ -1150,6 +1152,7 @@ class InventoryFeatureOptionDataRead(SQLModel):
 class InventoryFeatureRead(SQLModel):
     feature_id: UUID
     feature_name: str
+    feature_description: Optional[str] = None
     affects_price: bool
     options: List["InventoryFeatureOptionDataRead"] = []
     model_config = {"from_attributes": True}

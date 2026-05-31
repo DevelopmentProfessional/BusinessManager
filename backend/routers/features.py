@@ -70,6 +70,7 @@ router = APIRouter()
 
 class FeatureNameBody(PydanticModel):
     name: str
+    description: Optional[str] = None
 
 class AffectsPriceBody(PydanticModel):
     feature_id: Optional[UUID] = None
@@ -300,6 +301,7 @@ def _build_feature_read(session: Session, inventory_id: UUID) -> List[InventoryF
         result.append(InventoryFeatureRead(
             feature_id=feat.id,
             feature_name=feat.name,
+            feature_description=feat.description,
             affects_price=inv_feat.affects_price,
             options=option_reads,
         ))
@@ -321,6 +323,7 @@ async def list_features(session: Session = Depends(get_session), current_user: U
         result.append(DescriptiveFeatureRead(
             id=feat.id,
             name=feat.name,
+            description=feat.description,
             options=[FeatureOptionRead(id=o.id, feature_id=o.feature_id, name=o.name) for o in options],
         ))
     return result
@@ -336,11 +339,15 @@ async def create_feature(body: FeatureNameBody, session: Session = Depends(get_s
     existing = session.exec(stmt).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
-    feat = DescriptiveFeature(name=body.name.strip(), company_id=current_user.company_id)
+    feat = DescriptiveFeature(
+        name=body.name.strip(),
+        description=body.description if body.description is not None else None,
+        company_id=current_user.company_id,
+    )
     session.add(feat)
     session.commit()
     session.refresh(feat)
-    return DescriptiveFeatureRead(id=feat.id, name=feat.name, options=[])
+    return DescriptiveFeatureRead(id=feat.id, name=feat.name, description=feat.description, options=[])
 
 
 @router.patch("/features/{feature_id}", response_model=DescriptiveFeatureRead)
@@ -365,12 +372,14 @@ async def rename_feature(
     if conflict:
         raise HTTPException(status_code=409, detail=f"Feature '{body.name}' already exists.")
     feat.name = body.name.strip()
+    if body.description is not None:
+        feat.description = body.description
     session.add(feat)
     session.commit()
     session.refresh(feat)
     options = session.exec(select(FeatureOption).where(FeatureOption.feature_id == feat.id)).all()
     return DescriptiveFeatureRead(
-        id=feat.id, name=feat.name,
+        id=feat.id, name=feat.name, description=feat.description,
         options=[FeatureOptionRead(id=o.id, feature_id=o.feature_id, name=o.name) for o in options],
     )
 
