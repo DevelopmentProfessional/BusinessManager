@@ -21,9 +21,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { TrashIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { featuresAPI, inventoryFeaturesAPI } from "../../services/api";
-import { showConfirm } from "../../services/showConfirm";
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -64,6 +63,42 @@ function buildOptionLookup(features) {
   return lookup;
 }
 
+function InlineTextInput({ value, onSave, placeholder = "" }) {
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => {
+    setDraft(value ?? "");
+  }, [value]);
+
+  const commit = () => {
+    const nextValue = draft.trim();
+    if (nextValue !== (value ?? "")) {
+      onSave(nextValue);
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      value={draft}
+      placeholder={placeholder}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+        }
+        if (e.key === "Escape") {
+          setDraft(value ?? "");
+        }
+      }}
+      style={{ minWidth: 0 }}
+    />
+  );
+}
+
 // ─── 2 FEATURE TABLE — removed; options rendered inline in compact cards ──────
 
 // ─── 3 FEATURE SECTION ───────────────────────────────────────────────────────
@@ -72,9 +107,9 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [itemFeatures, setItemFeatures] = useState([]);
   const [combinationRows, setCombinationRows] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
-  const [newFeatureName, setNewFeatureName] = useState("");
+  const [featureSearchTerm, setFeatureSearchTerm] = useState("");
+  const [committedFeatureName, setCommittedFeatureName] = useState("");
+  const [isFeatureSearchOpen, setIsFeatureSearchOpen] = useState(false);
   const [newOptionInputs, setNewOptionInputs] = useState({}); // featureId → string
   const [combinationDraft, setCombinationDraft] = useState({ selections: {}, quantity: "" });
   const [dirty, setDirty] = useState({}); // featureId → bool
@@ -106,6 +141,23 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     onStockChange?.(itemFeatures.length > 0 ? calcTotalStock(itemFeatures, combinationRows) : null);
     onPriceRangeChange?.(calcPriceRange(itemFeatures));
   }, [itemFeatures, combinationRows]); // eslint-disable-line
+
+  const normalizeName = (value) => String(value || "").trim().toLowerCase();
+
+  const syncFeatureState = useCallback((featureId, nextFeature) => {
+    setGlobalFeatures((prev) => prev.map((feature) => (String(feature.id) === String(featureId) ? { ...feature, ...nextFeature } : feature)));
+    setItemFeatures((prev) =>
+      prev.map((feature) =>
+        String(feature.feature_id) === String(featureId)
+          ? {
+              ...feature,
+              feature_name: nextFeature.name ?? feature.feature_name,
+              feature_description: nextFeature.description ?? feature.feature_description,
+            }
+          : feature
+      )
+    );
+  }, []);
 
   // ── Local option edits ──
   const handleOptionChange = (featureId, optionId, field, value) => {
@@ -236,45 +288,81 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     return () => clearTimeout(timer);
   }, [combinationDirty, combinationRows, persistCombinations, saving]);
 
-  // ── Add existing global feature to item ──
-  const handleAddFeature = async (featureId) => {
-    setError(null);
-    try {
-      await inventoryFeaturesAPI.addFeature(inventoryId, featureId);
-      setIsAddExistingOpen(false);
-      await reload();
-    } catch (e) {
-      setError(e?.response?.data?.detail ?? "Could not add feature");
-    }
-  };
+  const linkExistingFeature = useCallback(
+    async (featureId, displayName) => {
+      setError(null);
+      try {
+        await inventoryFeaturesAPI.addFeature(inventoryId, featureId);
+        setFeatureSearchTerm(displayName || "");
+        setCommittedFeatureName(displayName || "");
+        setIsFeatureSearchOpen(false);
+        await reload();
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? "Could not add feature");
+      }
+    },
+    [inventoryId, reload]
+  );
 
-  const handleDeleteGlobalFeature = async (featureId, featureName) => {
-    if (!(await showConfirm(`Delete feature '${featureName}' from database?`))) return;
-    setError(null);
-    try {
-      await featuresAPI.delete(featureId);
-      await reload();
-    } catch (e) {
-      const detail = e?.response?.data?.detail;
-      setError(detail && typeof detail === "object" && detail.message ? detail.message : (detail ?? "Could not delete feature"));
-    }
-  };
+  const createFeatureWithName = useCallback(
+    async (name) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      setError(null);
+      try {
+        const res = await featuresAPI.create({ name: trimmed, description: "" });
+        const created = res?.data ?? res;
+        await inventoryFeaturesAPI.addFeature(inventoryId, created.id);
+        setFeatureSearchTerm(created.name || trimmed);
+        setCommittedFeatureName(created.name || trimmed);
+        setIsFeatureSearchOpen(false);
+        await reload();
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? "Could not create feature");
+      }
+    },
+    [inventoryId, reload]
+  );
 
-  // ── Create new global feature then add to item ──
-  const handleCreateFeature = async () => {
-    const name = newFeatureName.trim();
-    if (!name) return;
-    setError(null);
-    try {
-      const res = await featuresAPI.create({ name });
-      const created = res?.data ?? res;
-      setNewFeatureName("");
-      await inventoryFeaturesAPI.addFeature(inventoryId, created.id);
-      await reload();
-    } catch (e) {
-      setError(e?.response?.data?.detail ?? "Could not create feature");
-    }
-  };
+  const handleCopyFeature = useCallback(
+    async (feature) => {
+      const sourceName = String(feature.feature_name || "").trim();
+      if (!sourceName) return;
+      setError(null);
+      try {
+        const existingNames = new Set(globalFeatures.map((item) => normalizeName(item.name)));
+        let nextName = `${sourceName}1`;
+        while (existingNames.has(normalizeName(nextName))) {
+          nextName += "1";
+        }
+
+        const createdRes = await featuresAPI.create({ name: nextName, description: feature.feature_description ?? "" });
+        const created = createdRes?.data ?? createdRes;
+
+        await Promise.all((feature.options || []).map((option) => featuresAPI.addOption(created.id, { name: option.option_name })));
+        await inventoryFeaturesAPI.addFeature(inventoryId, created.id);
+        await reload();
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? "Could not copy feature");
+      }
+    },
+    [globalFeatures, inventoryId, reload]
+  );
+
+  const handleFeatureDescriptionSave = useCallback(
+    async (featureId, featureName, description) => {
+      setError(null);
+      try {
+        const res = await featuresAPI.update(featureId, { name: featureName, description });
+        const updated = res?.data ?? res;
+        syncFeatureState(featureId, updated);
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? "Could not save feature description");
+        await reload();
+      }
+    },
+    [reload, syncFeatureState]
+  );
 
   // ── Remove feature from item ──
   const handleRemoveFeature = async (featureId) => {
@@ -367,7 +455,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   // ── Derived ──
   const affectingFeatureId = itemFeatures.find((f) => f.affects_price)?.feature_id ?? null;
-  const addableFeatures = globalFeatures.filter((gf) => !itemFeatures.find((pf) => pf.feature_id === gf.id) && gf.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const trimmedSearch = featureSearchTerm.trim();
+  const globalMatchingFeatures = globalFeatures.filter((gf) => normalizeName(gf.name).includes(normalizeName(featureSearchTerm)));
+  const addableFeatures = globalMatchingFeatures.filter((gf) => !itemFeatures.find((pf) => pf.feature_id === gf.id));
+  const matchingFeatures = trimmedSearch ? addableFeatures : [];
+  const canCreateFeature = trimmedSearch.length > 0 && globalMatchingFeatures.length === 0 && normalizeName(trimmedSearch) !== normalizeName(committedFeatureName);
   const hasDirty = Object.keys(dirty).length > 0 || combinationDirty;
 
   const priceRange = calcPriceRange(itemFeatures);
@@ -375,6 +467,110 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   return (
     <div className="border-top mt-3 pt-3 px-1">
+      <div className="mt-2 mb-3 border rounded p-1">
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <h6 className="mb-0 fw-semibold">Feature</h6>
+          <span className="text-muted small">({itemFeatures.length} total)</span>
+        </div>
+
+        <div className="d-flex gap-2 align-items-start mb-2 position-relative">
+          <div className="position-relative flex-grow-1" style={{ minWidth: 0 }}>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="Search Feature"
+              value={featureSearchTerm}
+              onFocus={() => setIsFeatureSearchOpen(true)}
+              onChange={(e) => {
+                setFeatureSearchTerm(e.target.value);
+                setCommittedFeatureName("");
+                setIsFeatureSearchOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (matchingFeatures.length === 1) {
+                    const match = matchingFeatures[0];
+                    setFeatureSearchTerm(match.name || "");
+                    setCommittedFeatureName(match.name || "");
+                    void linkExistingFeature(match.id, match.name || "");
+                  } else if (canCreateFeature) {
+                    void createFeatureWithName(trimmedSearch);
+                  }
+                }
+              }}
+            />
+            {isFeatureSearchOpen && trimmedSearch && (
+              <div className="position-absolute bg-white border rounded shadow-sm w-100" style={{ bottom: "calc(100% + 4px)", zIndex: 20, maxHeight: 220, overflowY: "auto" }}>
+                {matchingFeatures.length === 0 ? (
+                  <div className="px-2 py-2 text-muted small">{globalMatchingFeatures.length > 0 ? "Feature already linked" : "No matching features"}</div>
+                ) : (
+                  matchingFeatures.map((feature) => (
+                    <button
+                      key={feature.id}
+                      type="button"
+                      className="btn btn-link text-start text-decoration-none text-body w-100 px-2 py-1 border-bottom"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setFeatureSearchTerm(feature.name || "");
+                        setCommittedFeatureName(feature.name || "");
+                        void linkExistingFeature(feature.id, feature.name || "");
+                      }}
+                    >
+                      <div className="fw-medium" style={{ fontSize: "0.82rem" }}>{feature.name}</div>
+                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>{feature.description?.trim() || "Blank description"}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          <button type="button" className={`btn btn-sm ${canCreateFeature ? "btn-primary" : "btn-outline-secondary"}`} disabled={!canCreateFeature} onClick={() => void createFeatureWithName(trimmedSearch)}>
+            Add
+          </button>
+        </div>
+
+        <div className="table-responsive mb-1">
+          <table className="table table-sm align-middle mb-0" style={{ borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={{ width: "2rem", borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}></th>
+                <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Name</th>
+                <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {itemFeatures.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="text-muted small" style={{ border: "none" }}>
+                    No descriptive features added yet.
+                  </td>
+                </tr>
+              ) : (
+                itemFeatures.map((feature) => (
+                  <tr key={feature.feature_id} style={{ borderBottom: "1px solid var(--bs-border-color)" }}>
+                    <td style={{ border: "none" }}>
+                      <button type="button" className="btn btn-circle btn-outline-danger" onClick={() => handleRemoveFeature(feature.feature_id)} title="Remove feature">
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </td>
+                    <td style={{ border: "none" }}>{feature.feature_name}</td>
+                    <td style={{ border: "none" }}>
+                      <div className="d-flex align-items-center gap-2">
+                        <InlineTextInput value={feature.feature_description ?? ""} placeholder="Blank description" onSave={(nextDescription) => handleFeatureDescriptionSave(feature.feature_id, feature.feature_name, nextDescription)} />
+                        <button type="button" className="btn btn-link btn-sm p-0 text-muted" title="Copy feature" onClick={() => void handleCopyFeature(feature)}>
+                          <DocumentDuplicateIcon style={{ width: 16, height: 16 }} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* ── Descriptive options accordion ── */}
       {itemFeatures.length > 0 && (
         <div className="border rounded mb-3 overflow-hidden">
@@ -604,66 +800,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           )}
         </div>
       )}
-
-      {/* ── Add feature controls ── */}
-      <div className="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">
-        {/* Search + add existing */}
-        <div className="d-flex gap-1">
-          <input
-            type="text"
-            className="form-control form-control-sm"
-            style={{ fontSize: "0.78rem", maxWidth: 130 }}
-            placeholder="Search features…"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              if (!isAddExistingOpen) setIsAddExistingOpen(true);
-            }}
-          />
-          <div className="position-relative" style={{ minWidth: 190 }}>
-            <button type="button" className="btn btn-outline-secondary btn-sm w-100 text-start d-flex justify-content-between align-items-center" style={{ fontSize: "0.78rem" }} onClick={() => setIsAddExistingOpen((prev) => !prev)}>
-              <span>+ Add…</span>
-              <span className="text-muted">▾</span>
-            </button>
-            {isAddExistingOpen && (
-              <div className="position-absolute bg-white border rounded shadow-sm mt-1 w-100" style={{ zIndex: 20, maxHeight: 220, overflowY: "auto" }}>
-                {addableFeatures.length === 0 ? (
-                  <div className="px-2 py-2 text-muted" style={{ fontSize: "0.75rem" }}>
-                    No matching features
-                  </div>
-                ) : (
-                  addableFeatures.map((gf) => (
-                    <div key={gf.id} className="d-flex align-items-center gap-1 px-1 py-1 border-bottom">
-                      <button
-                        type="button"
-                        className="btn btn-link p-0 text-danger d-flex align-items-center"
-                        title={`Delete ${gf.name}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteGlobalFeature(gf.id, gf.name);
-                        }}
-                      >
-                        <TrashIcon style={{ width: 13, height: 13 }} />
-                      </button>
-                      <button type="button" className="btn btn-link p-0 text-start text-decoration-none text-body flex-grow-1" style={{ fontSize: "0.78rem" }} onClick={() => handleAddFeature(gf.id)} title={`Add ${gf.name}`}>
-                        {gf.name}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Create new global feature */}
-        <div className="d-flex gap-1">
-          <input type="text" className="form-control form-control-sm" style={{ fontSize: "0.78rem", maxWidth: 150 }} placeholder="New feature name" value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreateFeature()} />
-          <button type="button" className="btn btn-outline-primary btn-sm" style={{ fontSize: "0.75rem" }} onClick={handleCreateFeature} disabled={!newFeatureName.trim()}>
-            Create & Add
-          </button>
-        </div>
-      </div>
 
       {hasDirty && (
         <div className="mt-3">

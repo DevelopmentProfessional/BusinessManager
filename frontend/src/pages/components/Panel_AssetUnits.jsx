@@ -60,10 +60,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [addingUnit, setAddingUnit] = useState(false);
-  const [newLabel, setNewLabel] = useState("");
-  const [newEmployeeId, setNewEmployeeId] = useState("shared");
-  const [newState, setNewState] = useState("available");
   const [saving, setSaving] = useState(false);
   const { isTrainingMode } = useViewMode();
 
@@ -92,19 +88,17 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
     setSaving(true);
     try {
       await assetUnitsAPI.add(assetId, {
-        label: newLabel.trim() || null,
-        employee_id: newEmployeeId === "shared" ? null : newEmployeeId,
-        state: newState,
+        label: `Unit ${units.length + 1}`,
+        employee_id: null,
+        state: "available",
         notes: null,
       });
-      setNewLabel("");
-      setNewEmployeeId("shared");
-      setNewState("available");
-      setAddingUnit(false);
       await load();
     } catch {
       setError("Failed to add unit.");
-    } finally {setSaving(false);}
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleStateChange = async (unitId, state) => {
@@ -230,55 +224,9 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
         </div>
       )}
 
-      {/* Add unit inline form */}
-      {addingUnit ? (
-        <div className="d-flex gap-2 align-items-center flex-wrap mb-1">
-          <input
-            type="text"
-            className="form-control form-control-sm"
-            placeholder="Label (optional)"
-            value={newLabel}
-            style={{ maxWidth: "150px" }}
-            onChange={(e) => setNewLabel(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddUnit();
-            }}
-          />
-          <select className="form-select form-select-sm" style={{ maxWidth: "180px" }} value={newEmployeeId} onChange={(e) => setNewEmployeeId(e.target.value)}>
-            <option value="shared">Shared</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {`${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username || "Employee"}
-              </option>
-            ))}
-          </select>
-          <select className="form-select form-select-sm" style={{ maxWidth: "140px" }} value={newState} onChange={(e) => setNewState(e.target.value)}>
-            {Object.entries(STATE_LABELS).map(([s, l]) => (
-              <option key={s} value={s}>
-                {l}
-              </option>
-            ))}
-          </select>
-          <button className="btn btn-sm btn-success" onClick={handleAddUnit} disabled={saving}>
-            {saving ? "…" : "Add"}
-          </button>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => {
-              setAddingUnit(false);
-              setNewLabel("");
-              setNewEmployeeId("shared");
-              setNewState("available");
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button className="btn btn-sm btn-outline-primary" onClick={() => setAddingUnit(true)}>
-          {isTrainingMode ? "+ Add" : "+"}
-        </button>
-      )}
+      <button className="btn btn-sm btn-outline-primary" onClick={handleAddUnit} disabled={saving}>
+        {isTrainingMode ? (saving ? "Adding..." : "+ Add") : saving ? "..." : "+"}
+      </button>
 
       {error && (
         <div className="text-danger small mt-2">
