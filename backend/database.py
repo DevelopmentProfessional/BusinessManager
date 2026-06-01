@@ -103,6 +103,10 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='employee_id'"
             )).fetchone()
+            descriptive_feature_description_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='descriptive_feature' AND column_name='description'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -111,6 +115,7 @@ def _required_schema_artifacts_present() -> bool:
                 and cost_type_column is not None
                 and client_email_verified_column is not None
                 and asset_unit_employee_column is not None
+                and descriptive_feature_description_column is not None
             )
     except Exception:
         return False
@@ -130,6 +135,21 @@ def _ensure_asset_unit_employee_column_if_needed():
                 print("  + Added asset_unit.employee_id")
     except Exception as e:
         print(f"  Warning: Could not ensure asset_unit.employee_id column: {e}")
+
+
+def _ensure_descriptive_feature_description_column_if_needed():
+    """Ensure descriptive_feature table has description column for feature metadata."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='descriptive_feature' AND column_name='description'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE descriptive_feature ADD COLUMN description TEXT"))
+                print("  + Added descriptive_feature.description")
+    except Exception as e:
+        print(f"  Warning: Could not ensure descriptive_feature.description column: {e}")
 
 def _schema_is_current() -> bool:
     """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
@@ -1194,6 +1214,7 @@ def create_db_and_tables():
     _ensure_service_image_url_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
     _ensure_asset_unit_employee_column_if_needed()
+    _ensure_descriptive_feature_description_column_if_needed()
     _ensure_user_db_environment_if_needed()
     _mark_schema_current()
     print("Migrations complete.")

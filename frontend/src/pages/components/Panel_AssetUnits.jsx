@@ -180,7 +180,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
         <div className="table-responsive mb-2">
           <table className="table table-sm align-middle mb-0" style={{ borderCollapse: "collapse" }}>
             <thead className="">
-              <tr>                
+              <tr>
                 <th style={{ width: "2rem", borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}></th>
                 <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Label</th>
                 <th style={{ borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>Assigned</th>

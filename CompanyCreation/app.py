@@ -23,6 +23,14 @@ from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 
+try:
+  from backend.company_scaffold import seed_company_scaffold
+except Exception:
+  _repo_root_for_scaffold = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  if _repo_root_for_scaffold not in sys.path:
+    sys.path.insert(0, _repo_root_for_scaffold)
+  from backend.company_scaffold import seed_company_scaffold
+
 # ── DB state (mutable at runtime via /set-db) ──────────────────────────────────
 _db_url  = ""
 _engine  = None
@@ -337,6 +345,8 @@ def create_company(req: CreateRequest):
                   "f": False, "t": True,
                  "cname": req.company_name.strip(), "cid": cid}
             )
+
+            seed_company_scaffold(conn, cid, user_uuid)
 
         return {"ok": True, "company_id": cid, "company_name": req.company_name.strip(), "admin_username": req.admin_username.strip()}
 
