@@ -21,6 +21,14 @@ import uuid
 import bcrypt
 from datetime import datetime
 
+try:
+    from backend.company_scaffold import seed_company_scaffold
+except Exception:
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from backend.company_scaffold import seed_company_scaffold
+
 # Try to load .env from parent directory
 try:
     from dotenv import load_dotenv
@@ -186,6 +194,8 @@ def create_company():
             "company_id": company_id,
         })
 
+        scaffold_summary = seed_company_scaffold(session.connection(), company_id, user_uuid)
+
         session.commit()
 
         print("\n" + "="*60)
@@ -194,6 +204,8 @@ def create_company():
         print(f"  Company Name: {company_name}")
         print(f"  Admin User:   {admin_username}")
         print(f"  Password:     [as entered]")
+        print("  Scaffold:     templates/roles/PTO/discounts/reports/categories seeded")
+        print(f"  Details:      {scaffold_summary}")
         print("\nThe admin can now log in at the application login page")
         print(f"using Company ID: {company_id}")
         print("="*60 + "\n")

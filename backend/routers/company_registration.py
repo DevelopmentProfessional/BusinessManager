@@ -40,9 +40,11 @@ except ModuleNotFoundError:
 try:
     from backend.database import get_session
     from backend.models import Company, User, UserRole
+    from backend.company_scaffold import seed_company_scaffold
 except ModuleNotFoundError:
     from database import get_session
     from models import Company, User, UserRole
+    from company_scaffold import seed_company_scaffold
 
 router = APIRouter(prefix="/company-registration", tags=["company-registration"])
 basic_auth = HTTPBasic()
@@ -301,6 +303,8 @@ def register_company(
             role=UserRole.ADMIN,
         )
         session.add(admin_user)
+        session.flush()
+        seed_company_scaffold(session.connection(), cid, str(admin_user.id))
         session.commit()
 
         recipients = []
@@ -398,6 +402,15 @@ def update_company_status(
     company.is_active = body.status == "approved"
     if body.notes is not None:
         company.registration_notes = body.notes
+
+    if body.status == "approved":
+        admin_user = session.exec(
+            select(User)
+            .where(User.company_id == company.company_id)
+            .where(User.role == UserRole.ADMIN)
+            .order_by(User.created_at)
+        ).first()
+        seed_company_scaffold(session.connection(), company.company_id, str(admin_user.id) if admin_user else None)
 
     session.add(company)
     session.commit()
