@@ -25,7 +25,7 @@
  *   [6] Render: Form Body  — event type selector, conditional client/service/
  *                            employee dropdowns, recurrence options, duration,
  *                            date+time pickers, attendee status panel, notes
- *   [7] Render: Footer     — Delete, Send Reminder, Cancel, and Book/Save buttons
+ *   [7] Render: Footer     — Cancel and Book/Save buttons
  *
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
@@ -890,8 +890,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           )}
 
           {appointment?.id && onDelete && (
-            <div className="d-flex justify-content-center mt-2">
-              <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-secondary" title="Delete appointment" />
+            <div className="row mt-3">
+              <div className="col-12 d-flex justify-content-center">
+                <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" />
+              </div>
             </div>
           )}
         </form>
