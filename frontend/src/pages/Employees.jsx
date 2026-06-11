@@ -53,7 +53,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import useStore from "../services/useStore";
@@ -77,6 +77,7 @@ import Chat_Employee from "./components/Chat_Employee";
 import Modal_Wages from "./components/Modal_Wages";
 import Modal_Pay_Employee from "./components/Modal_EmployeePay";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
+import Modal_MultiEdit from "./components/Modal_MultiEdit";
 
 export default function Employees() {
   // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
@@ -128,6 +129,12 @@ export default function Employees() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
   // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
   // All modal open/close flags and their associated target object grouped here.
   const [showPayModal, setShowPayModal] = useState(false);
@@ -351,6 +358,71 @@ export default function Employees() {
       return haystack.includes(term);
     });
   }, [employees, searchTerm, roleFilter, statusFilter]);
+
+  const toggleSelectEmp = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allVisibleSelectedEmp = filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedIds.has(e.id));
+  const handleSelectAllEmp = () => { if (allVisibleSelectedEmp) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredEmployees.map((e) => e.id))); } };
+  const clearSelectionEmp = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+
+  const empMultiEditFields = [
+    { key: "role", label: "Role", type: "select", options: [
+      { value: "admin", label: "Admin" },
+      { value: "manager", label: "Manager" },
+      { value: "employee", label: "Employee" },
+    ]},
+    { key: "is_active", label: "Status", type: "select", options: [
+      { value: "true", label: "Active" },
+      { value: "false", label: "Inactive" },
+    ]},
+  ];
+
+  const handleEmpMultiEditSave = async (updates) => {
+    setMultiSaving(true);
+    try {
+      const coerced = { ...updates };
+      if ("is_active" in coerced) coerced.is_active = coerced.is_active === "true";
+      await Promise.all([...selectedIds].map((id) => employeesAPI.update(id, coerced)));
+      await loadEmployees();
+      setShowMultiEdit(false);
+      clearSelectionEmp();
+    } catch {
+      setError("Failed to update some employees");
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+  };
+
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredEmployees];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "name") {
+          aVal = `${a.first_name || ""} ${a.last_name || ""}`.toLowerCase().trim();
+          bVal = `${b.first_name || ""} ${b.last_name || ""}`.toLowerCase().trim();
+        } else if (sortColumn === "email") {
+          aVal = (a.email || "").toLowerCase();
+          bVal = (b.email || "").toLowerCase();
+        } else if (sortColumn === "role") {
+          aVal = (a.role || "").toLowerCase();
+          bVal = (b.role || "").toLowerCase();
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredEmployees, sortColumn, sortAsc]);
 
   // handleEdit, handleDelete, and handleSubmit are the CRUD action handlers —
   // continued from the handleCreate stub above under section [14].
@@ -936,7 +1008,7 @@ export default function Employees() {
       <div className="flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
-          {filteredEmployees.length > 0 ? (
+          {sortedAndFiltered.length > 0 ? (
             <table className="table table-borderless table-hover mb-0">
               <colgroup>
                 <col style={{ width: "44px" }} />
@@ -946,10 +1018,11 @@ export default function Employees() {
                 <col style={{ width: "54px" }} />
               </colgroup>
               <tbody>
-                {filteredEmployees.map((employee, index) => (
+                {sortedAndFiltered.map((employee, index) => (
                   <PageTableRow
                     key={employee.id || index}
                     onClick={(e) => {
+                      if (selectionMode) return;
                       e.preventDefault();
                       e.stopPropagation();
                       console.log("Row clicked for employee:", employee);
@@ -957,11 +1030,15 @@ export default function Employees() {
                     }}
                   >
                     <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
-                      <Gate_Permission page="employees" permission="delete">
-                        <button className="btn btn-circle btn-outline-danger" title="Delete employee" onClick={() => handleDelete(employee.id)}>
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </Gate_Permission>
+                      {selectionMode ? (
+                        <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(employee.id)} onChange={() => toggleSelectEmp(employee.id)} />
+                      ) : (
+                        <Gate_Permission page="employees" permission="delete">
+                          <button className="btn btn-circle btn-outline-danger" title="Delete employee" onClick={() => handleDelete(employee.id)}>
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        </Gate_Permission>
+                      )}
                     </td>
 
                     {/* Name with color coding for active/inactive */}
@@ -1033,7 +1110,26 @@ export default function Employees() {
           )}
         </div>
 
-        <PageTableHeader columns={[{ label: "", width: 44, className: "p-0" }, { label: "Employee", className: "text-start ps-0" }, ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []), { label: "Role", width: 90, className: "text-start ps-0" }, { label: "", width: 54, className: "p-0" }]} />
+        {selectedIds.size > 0 && (
+          <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="d-flex align-items-center gap-2">
+              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+              <button type="button" className="btn btn-circle btn-primary" title="Edit selected employees" onClick={() => setShowMultiEdit(true)}>
+                <PencilSquareIcon style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+            <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionEmp}>
+              <XMarkIcon style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+        )}
+        <PageTableHeader columns={[
+          { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedEmp} onChange={handleSelectAllEmp} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+          { label: "Employee", className: "text-start ps-0", sortKey: "name" },
+          ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []),
+          { label: "Role", width: 90, className: "text-start ps-0", sortKey: "role" },
+          { label: "", width: 54, className: "p-0" },
+        ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
@@ -1319,6 +1415,16 @@ export default function Employees() {
         <div className="small text-muted">Use these controls to manage employee views and actions.</div>
         <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
       </PageControlsModal>
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Employee${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={empMultiEditFields}
+        selectedItems={employees.filter((e) => selectedIds.has(e.id))}
+        onSave={handleEmpMultiEditSave}
+        saving={multiSaving}
+      />
     </div>
   );
 }

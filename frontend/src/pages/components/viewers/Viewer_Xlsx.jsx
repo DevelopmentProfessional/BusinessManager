@@ -34,7 +34,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import * as XLSX from "xlsx";
-import { ArrowDownTrayIcon, PencilIcon, TableCellsIcon, PlusIcon, TrashIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, PencilIcon, TableCellsIcon, PlusIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../../services/api";
 
 // ─── 1 COMPONENT STATE & REFS ──────────────────────────────────────────────────
@@ -445,7 +445,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
                   {isEditing && (
                     <td className="px-1 py-1 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                       <button onClick={() => handleDeleteRow(rowIdx)} className="p-0.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete row">
-                        <TrashIcon className="h-3.5 w-3.5" />
+                        <XMarkIcon className="h-3.5 w-3.5" />
                       </button>
                     </td>
                   )}

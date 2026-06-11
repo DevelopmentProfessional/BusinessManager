@@ -34,7 +34,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { XMarkIcon, CheckIcon, TrashIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from "../../services/api";
@@ -581,7 +581,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
                       <tr key={r.id} className="align-middle">
                         <td>
                           <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"  onClick={() => handleRemoveResource(r.id)}>
-                            <TrashIcon style={{ width: 18, height: 18 }} />
+                            <XMarkIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
                         <td className="text-truncate" style={{ maxWidth: 140 }}>
@@ -647,7 +647,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
                       <tr key={a.id} className="align-middle">
                         <td>
                           <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"  onClick={() => handleRemoveAsset(a.id)}>
-                            <TrashIcon style={{ width: 18, height: 18 }} />
+                            <XMarkIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
                         <td className="text-truncate" style={{ maxWidth: 140 }}>
@@ -699,7 +699,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
                   {svcEmployees.map((se) => (
                     <li key={se.id} className="list-group-item d-flex align-items-center gap-2 px-0">
                       <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"  onClick={() => handleRemoveEmployee(se.id)}>
-                        <TrashIcon style={{ width: 18, height: 18 }} />
+                        <XMarkIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="rounded-circle flex-shrink-0" style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: "inline-block" }} />
                       <span className="text-truncate">{employeeName(se.user_id)}</span>
@@ -745,7 +745,7 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
                   {locations.map((loc) => (
                     <li key={loc.id} className="list-group-item d-flex align-items-center gap-2 px-0">
                       <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"  onClick={() => handleRemoveLocation(loc.id)}>
-                        <TrashIcon style={{ width: 18, height: 18 }} />
+                        <XMarkIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
                     </li>

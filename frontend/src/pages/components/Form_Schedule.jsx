@@ -40,7 +40,7 @@ import React, { useState, useEffect } from "react";
 import useStore from "../../services/useStore";
 import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI } from "../../services/api";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, TrashIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Gate_Permission from "./Gate_Permission";
@@ -892,7 +892,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {appointment?.id && onDelete && (
             <div className="row mt-3">
               <div className="col-12 d-flex justify-content-center">
-                <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" />
+                <Button_Toolbar icon={XMarkIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" />
               </div>
             </div>
           )}

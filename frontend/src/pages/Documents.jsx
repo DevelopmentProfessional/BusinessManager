@@ -43,7 +43,7 @@ import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import { PlusIcon, DocumentIcon, TrashIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, XMarkIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -62,6 +62,7 @@ import PageTableHeader from "./components/Page_TableHeader";
 import Modal_Generic from "./components/Modal";
 import { WorkflowModal, WorkflowStatusTracker } from "./components/Panel_Workflow";
 import Dropdown_Filter from "./components/Dropdown_Filter";
+import Modal_MultiEdit from "./components/Modal_MultiEdit";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -281,6 +282,12 @@ export default function Documents() {
   const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
   const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
   const { isTrainingMode } = useViewMode();
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
 
   // Tag data: {documentId: [tagName, ...]} — loaded once, refreshed after edit
   const [docTagMap, setDocTagMap] = useState({});
@@ -334,6 +341,63 @@ export default function Documents() {
       return haystack.includes(term);
     });
   }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById, docTagMap]);
+
+  const docMultiEditFields = useMemo(() => [
+    { key: "category_id", label: "Category", type: "select", options: [
+      { value: "", label: "— Leave unchanged —" },
+      ...categories.map((c) => ({ value: c.id, label: c.name })),
+    ]},
+  ], [categories]);
+
+  const toggleSelectDoc = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allVisibleSelectedDoc = filteredDocuments.length > 0 && filteredDocuments.every((d) => selectedIds.has(d.id));
+  const handleSelectAllDoc = () => { if (allVisibleSelectedDoc) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredDocuments.map((d) => d.id))); } };
+  const clearSelectionDoc = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+
+  const handleDocMultiEditSave = async (updates) => {
+    setMultiSaving(true);
+    try {
+      await Promise.all([...selectedIds].map((id) => documentsAPI.update(id, updates)));
+      await loadDocuments();
+      setShowMultiEdit(false);
+      clearSelectionDoc();
+    } catch {
+      setError("Failed to update some documents");
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+  };
+
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredDocuments];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "filename") {
+          aVal = (a.original_filename || "").toLowerCase();
+          bVal = (b.original_filename || "").toLowerCase();
+        } else if (sortColumn === "category") {
+          const aCatId = a.category_id ?? a.category?.id;
+          const bCatId = b.category_id ?? b.category?.id;
+          aVal = (categoryNameById.get(String(aCatId || "")) || "").toLowerCase();
+          bVal = (categoryNameById.get(String(bCatId || "")) || "").toLowerCase();
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredDocuments, sortColumn, sortAsc, categoryNameById]);
 
   // ─── 7  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
@@ -736,7 +800,7 @@ export default function Documents() {
                             title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
                             disabled={tpl.is_standard}
                           >
-                            <TrashIcon className="h-4 w-4" />
+                            <XMarkIcon className="h-4 w-4" />
                           </button>
                         </td>
                         <td className="px-2">
@@ -760,11 +824,11 @@ export default function Documents() {
               );
             })()
           ) : /* ── Documents: List or Grid View ── */
-          filteredDocuments.length > 0 ? (
+          sortedAndFiltered.length > 0 ? (
             viewMode === "grid" ? (
               /* Grid View */
               <div className="p-3" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "1.5rem", overflowY: "auto" }}>
-                {filteredDocuments.map((doc, index) => {
+                {sortedAndFiltered.map((doc, index) => {
                   const FileIcon = getFileTypeIcon(doc.original_filename, doc.content_type);
                   const isImage = doc.content_type?.startsWith("image/");
                   return (
@@ -804,14 +868,18 @@ export default function Documents() {
                   <col style={{ width: "60px" }} />
                 </colgroup>
                 <tbody>
-                  {filteredDocuments.map((doc, index) => (
-                    <tr key={doc.id || index} className="align-middle border-bottom">
-                      <td className="text-center px-1">
-                        <Gate_Permission page="documents" permission="delete">
-                          <button onClick={() => handleDeleteDocument(doc.id)} className="btn btn-circle btn-outline-danger" title="Delete document">
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </Gate_Permission>
+                  {sortedAndFiltered.map((doc, index) => (
+                    <tr key={doc.id || index} className="align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
+                      <td className="text-center px-1" onClick={(e) => e.stopPropagation()}>
+                        {selectionMode ? (
+                          <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(doc.id)} onChange={() => toggleSelectDoc(doc.id)} />
+                        ) : (
+                          <Gate_Permission page="documents" permission="delete">
+                            <button onClick={() => handleDeleteDocument(doc.id)} className="btn btn-circle btn-outline-danger" title="Delete document">
+                              <XMarkIcon className="h-4 w-4" />
+                            </button>
+                          </Gate_Permission>
+                        )}
                       </td>
 
                       {/* File Name */}
@@ -845,12 +913,32 @@ export default function Documents() {
           )}
         </div>
 
+        {selectedIds.size > 0 && !showTemplates && (
+          <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="d-flex align-items-center gap-2">
+              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+              <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
+                <PencilSquareIcon style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+            <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionDoc}>
+              <XMarkIcon style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+        )}
         <PageTableHeader
           columns={
             showTemplates
               ? [{ label: "", width: 56 }, { label: "Template" }, { label: "Actions", width: 56, className: "text-center" }]
-              : [{ label: "", width: 56 }, { label: "Document" }, { label: "View", width: 60, className: "text-center" }]
+              : [
+                  { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedDoc} onChange={handleSelectAllDoc} title="Select all visible" />, width: 56, className: "p-0 text-center" },
+                  { label: "Document", sortKey: "filename" },
+                  { label: "View", width: 60, className: "text-center" },
+                ]
           }
+          sortColumn={sortColumn}
+          sortAsc={sortAsc}
+          onSort={handleSort}
         />
 
         {/* Fixed bottom – headers + controls */}
@@ -1234,7 +1322,7 @@ export default function Documents() {
                             <PencilSquareIcon style={{ width: 14, height: 14 }} />
                           </button>
                           <button type="button" className="btn btn-sm btn-outline-danger" style={{ padding: "0.2rem 0.4rem" }} onClick={() => handleDeleteCategory(cat.id)} title="Delete">
-                            <TrashIcon style={{ width: 14, height: 14 }} />
+                            <XMarkIcon style={{ width: 14, height: 14 }} />
                           </button>
                         </>
                       )}
@@ -1302,6 +1390,16 @@ export default function Documents() {
           className="btn-outline-secondary"
         />
       </PageControlsModal>
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Document${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={docMultiEditFields}
+        selectedItems={documents.filter((d) => selectedIds.has(d.id))}
+        onSave={handleDocMultiEditSave}
+        saving={multiSaving}
+      />
     </div>
   );
 }

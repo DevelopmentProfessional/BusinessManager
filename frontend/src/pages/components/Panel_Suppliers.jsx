@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { PlusIcon, TrashIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import { suppliersAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
@@ -154,7 +154,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                     <div className="px-3 py-3 d-flex align-items-center gap-2">
                       <Gate_Permission page="suppliers" permission="delete">
                         <button type="button" onClick={() => handleDelete(supplier.id)} className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" title="Delete">
-                          <TrashIcon className="h-5 w-5" />
+                          <XMarkIcon className="h-5 w-5" />
                         </button>
                       </Gate_Permission>
                       <div className="min-w-0 flex-grow-1">

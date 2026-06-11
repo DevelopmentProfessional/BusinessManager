@@ -24,7 +24,7 @@
 import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Modal from "./Modal";
-import { XMarkIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   const [open, setOpen] = useState(false);
@@ -195,7 +195,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                       <td>
                         <div className="d-flex align-items-center gap-1">
                           <button onClick={() => onDeletePermission(permission.id)} className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" title="Delete Permission" type="button">
-                            <TrashIcon style={{ width: 16, height: 16 }} />
+                            <XMarkIcon style={{ width: 16, height: 16 }} />
                           </button>
                           <button
                             type="button"

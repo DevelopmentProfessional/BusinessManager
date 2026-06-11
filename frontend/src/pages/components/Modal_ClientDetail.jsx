@@ -31,7 +31,7 @@
  */
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, TrashIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -392,6 +392,8 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   }, [isOpen, client?.id]);
 
   const availablePeriods = useMemo(() => buildPurchasePeriods(transactions, portalOrders), [transactions, portalOrders]);
+  const posCount = transactions.length;
+  const portalCount = portalOrders.length;
 
   const filteredTransactions = useMemo(() => transactions.filter((tx) => matchesPurchasePeriod(tx.created_at, periodFilter)), [transactions, periodFilter]);
 
@@ -655,9 +657,14 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                     setTab("pos");
                     setExpandedId(null);
                   }}
-                  className={`btn btn-sm ${tab === "pos" ? "btn-primary" : "btn-outline-secondary"}`}
+                  className={`btn btn-sm position-relative ${tab === "pos" ? "btn-primary" : "btn-outline-secondary"}`}
                 >
                   POS
+                  {posCount > 0 && (
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
+                      {posCount > 99 ? "99+" : posCount}
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -665,9 +672,14 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                     setTab("portal");
                     setExpandedId(null);
                   }}
-                  className={`btn btn-sm ${tab === "portal" ? "btn-primary" : "btn-outline-secondary"}`}
+                  className={`btn btn-sm position-relative ${tab === "portal" ? "btn-primary" : "btn-outline-secondary"}`}
                 >
                   Portal
+                  {portalCount > 0 && (
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
+                      {portalCount > 99 ? "99+" : portalCount}
+                    </span>
+                  )}
                 </button>
               </div>
             }
@@ -705,6 +717,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cartItems, setCartItems] = useState([]);
+  const [purchaseHistoryCount, setPurchaseHistoryCount] = useState(0);
 
   useEffect(() => {
     if (isOpen && client) {
@@ -726,6 +739,16 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         .getItems(client.id)
         .then((res) => setCartItems(Array.isArray(res?.data) ? res.data : []))
         .catch(() => setCartItems([]));
+      
+      // Load purchase history counts
+      Promise.all([
+        clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })),
+        clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] })),
+      ]).then(([txRes, portalRes]) => {
+        const txns = Array.isArray(txRes?.data) ? txRes.data : [];
+        const orders = Array.isArray(portalRes?.data) ? portalRes.data : [];
+        setPurchaseHistoryCount(txns.length + orders.length);
+      });
     }
   }, [isOpen, client?.id]);
 
@@ -802,7 +825,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Client Details</h6>
           {canDelete && (
             <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
-              <TrashIcon style={{ width: 18, height: 18 }} />
+              <XMarkIcon style={{ width: 18, height: 18 }} />
             </button>
           )}
         </div>
@@ -828,10 +851,11 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <button
               type="button"
               onClick={() => setShowPurchaseHistory(true)}
-              className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+              className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all relative"
               title="Purchase History"
             >
               <ArrowTrendingUpIcon style={{ width: 24, height: 24 }} />
+              {purchaseHistoryCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{purchaseHistoryCount}</span>}
             </button>
             <button type="button" onClick={() => setShowCart(true)} className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary-600 hover:bg-secondary-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all" title="View Cart">
               <ShoppingCartIcon style={{ width: 24, height: 24 }} />

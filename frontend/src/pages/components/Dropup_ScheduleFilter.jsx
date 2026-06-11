@@ -24,7 +24,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { XMarkIcon, CheckIcon, TrashIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Modal from "./Modal";
@@ -237,7 +237,7 @@ export default function Dropup_ScheduleFilter({
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn-outline-secondary" title="Apply filters" />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-          end={<Button_Toolbar icon={TrashIcon} label="Clear" onClick={handleClear} className="btn-outline-secondary" title="Clear all filters" />}
+          end={<Button_Toolbar icon={XMarkIcon} label="Clear" onClick={handleClear} className="btn-outline-secondary" title="Clear all filters" />}
         />
       }
     >

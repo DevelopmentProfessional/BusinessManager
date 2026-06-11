@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../services/api";
 import { renderAsync } from "docx-preview";
 import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from "./editors/documentEditorUtils";
@@ -572,7 +572,7 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
 
             {onDelete && (
               <button type="button" onClick={() => onDelete(document)} className="btn btn-outline-danger d-flex align-items-center gap-1">
-                <TrashIcon className="h-4 w-4" />
+                <XMarkIcon className="h-4 w-4" />
                 Delete
               </button>
             )}

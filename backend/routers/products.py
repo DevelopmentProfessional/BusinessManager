@@ -5,16 +5,29 @@
 #   Product-focused endpoints, including bulk import for inventory products.
 # ============================================================
 
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, SQLModel, select
 
 from ..database import get_session
-from ..models import Inventory, User, UserRole
+from ..models import (
+    Inventory, User, UserRole,
+    AssetUnit, ASSET_UNIT_STATES,
+    DescriptiveFeature, FeatureOption, InventoryFeature, InventoryFeatureOptionData,
+)
 from .auth import get_current_user, get_user_permissions_list
 
 router = APIRouter()
+
+
+class BulkFeatureOptionIn(SQLModel):
+    name: str
+
+
+class BulkFeatureIn(SQLModel):
+    name: str
+    options: List[str] = []
 
 
 class BulkProductIn(SQLModel):
@@ -28,6 +41,10 @@ class BulkProductIn(SQLModel):
     description: Optional[str] = None
     location: Optional[str] = None
     cost: Optional[float] = None
+    # New: asset unit count — only used when type == "asset"
+    asset_unit_count: Optional[int] = None
+    # New: feature definitions — list of {name, options: [str]}
+    features: Optional[List[BulkFeatureIn]] = None
 
 
 class BulkImportRequest(SQLModel):
@@ -134,6 +151,99 @@ def bulk_import_products(
         )
 
         session.add(item)
+        session.flush()  # get item.id before creating child records
+
+        # ── Asset units ──────────────────────────────────────────────────────
+        if item_type == "asset":
+            unit_count = int(product.asset_unit_count or 1)
+            unit_count = max(1, min(unit_count, 500))  # clamp to [1, 500]
+            for u in range(unit_count):
+                session.add(AssetUnit(
+                    inventory_id=item.id,
+                    label=f"Unit {u + 1}",
+                    state="available",
+                    company_id=current_user.company_id,
+                ))
+            # Sync quantity to actual unit count
+            item.quantity = unit_count
+            session.add(item)
+
+        # ── Descriptive features ─────────────────────────────────────────────
+        raw_features: List[BulkFeatureIn] = product.features or []
+        for feat_in in raw_features:
+            feat_name = (feat_in.name or "").strip()
+            if not feat_name:
+                continue
+
+            # Get-or-create the DescriptiveFeature (company-scoped)
+            feature = session.exec(
+                select(DescriptiveFeature).where(
+                    DescriptiveFeature.company_id == current_user.company_id,
+                    DescriptiveFeature.name == feat_name,
+                )
+            ).first()
+            if feature is None:
+                feature = DescriptiveFeature(
+                    name=feat_name,
+                    company_id=current_user.company_id,
+                )
+                session.add(feature)
+                session.flush()
+
+            # Link the feature to this inventory item (skip if already linked)
+            existing_link = session.exec(
+                select(InventoryFeature).where(
+                    InventoryFeature.inventory_id == item.id,
+                    InventoryFeature.feature_id == feature.id,
+                )
+            ).first()
+            if existing_link is None:
+                session.add(InventoryFeature(
+                    inventory_id=item.id,
+                    feature_id=feature.id,
+                    affects_price=False,
+                    company_id=current_user.company_id,
+                ))
+
+            # Get-or-create each option and add per-item data rows
+            for opt_name in (feat_in.options or []):
+                opt_name = opt_name.strip()
+                if not opt_name:
+                    continue
+
+                option = session.exec(
+                    select(FeatureOption).where(
+                        FeatureOption.feature_id == feature.id,
+                        FeatureOption.name == opt_name,
+                    )
+                ).first()
+                if option is None:
+                    option = FeatureOption(
+                        feature_id=feature.id,
+                        name=opt_name,
+                        company_id=current_user.company_id,
+                    )
+                    session.add(option)
+                    session.flush()
+
+                # Create per-item option data (enabled by default)
+                existing_data = session.exec(
+                    select(InventoryFeatureOptionData).where(
+                        InventoryFeatureOptionData.inventory_id == item.id,
+                        InventoryFeatureOptionData.feature_id == feature.id,
+                        InventoryFeatureOptionData.option_id == option.id,
+                    )
+                ).first()
+                if existing_data is None:
+                    session.add(InventoryFeatureOptionData(
+                        inventory_id=item.id,
+                        feature_id=feature.id,
+                        option_id=option.id,
+                        is_enabled=True,
+                        quantity=0,
+                        company_id=current_user.company_id,
+                    ))
+
         imported_count += 1
 
     if imported_count > 0:

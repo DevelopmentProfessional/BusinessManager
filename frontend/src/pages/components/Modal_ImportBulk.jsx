@@ -24,7 +24,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { XMarkIcon, CheckIcon, PhotoIcon, TrashIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 
@@ -172,7 +172,7 @@ export default function Modal_BulkImport({
                     {allowPhotoUpload &&
                       (photos[i] ? (
                         <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={() => handleRemovePhoto(i)} disabled={saving} title="Remove photo">
-                          <TrashIcon style={{ width: 14, height: 14 }} />
+                          <XMarkIcon style={{ width: 14, height: 14 }} />
                         </button>
                       ) : (
                         <button type="button" className="btn btn-outline-secondary btn-bulk-circle flex-shrink-0" onClick={() => fileInputRefs.current[i]?.click()} disabled={saving} title="Add photo">

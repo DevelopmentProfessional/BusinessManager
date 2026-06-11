@@ -82,6 +82,48 @@ body {
          rounded-full bg-danger text-white text-xs font-bold;
 }
 
+/* Fixed circle controls for count/edit/remove icon actions. */
+.cp-circle-icon-btn {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  max-width: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  border-radius: 999px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cp-circle-icon-btn:hover:not(:disabled) {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.cp-circle-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cp-circle-icon-btn-danger {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.cp-circle-icon-btn-danger:hover:not(:disabled) {
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #ffe4e6;
+}
+
 /* ── Toast ──────────────────────────────────────────────────── */
 .toast-container {
   position: fixed;

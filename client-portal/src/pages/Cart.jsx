@@ -3,8 +3,9 @@
  */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrashIcon, ShoppingBagIcon, PlusIcon, MinusIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ShoppingBagIcon, PlusIcon, MinusIcon, ShoppingCartIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Layout from "./components/Layout";
+import BookingCalendar from "./components/BookingCalendar";
 import { ordersAPI, bookingsAPI } from "../services/api";
 import useStore from "../store/useStore";
 
@@ -45,6 +46,19 @@ export default function Cart() {
   const [currentOrderTotal, setCurrentOrderTotal] = useState(null);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState(null);
+  const [serviceSlotByKey, setServiceSlotByKey] = useState(() => {
+    const initial = {};
+    for (const item of cart) {
+      if (item.item_type === "service" && item.booking_slot) initial[item._key] = item.booking_slot;
+    }
+    return initial;
+  });
+  const [editingServiceItem, setEditingServiceItem] = useState(null);
+
+  const cartWithDetails = cart.map((item) => ({
+    ...item,
+    booking_slot: serviceSlotByKey[item._key] || item.booking_slot || null,
+  }));
 
   function getApiErrorMessage(err, fallback) {
     const detail = err?.response?.data?.detail;
@@ -64,12 +78,28 @@ export default function Cart() {
     return `Could not reserve '${itemName}'. Please refresh availability and try again.`;
   }
 
+  function formatLineTwo(item) {
+    if (item.item_type === "service") {
+      if (!item.booking_slot?.start) return "Appointment time not selected";
+      const d = new Date(item.booking_slot.start);
+      return d.toLocaleString();
+    }
+    return "Product details";
+  }
+
+  async function handleSelectServiceSlot(slot) {
+    if (!editingServiceItem) return false;
+    setServiceSlotByKey((prev) => ({ ...prev, [editingServiceItem._key]: { ...slot } }));
+    setEditingServiceItem(null);
+    return true;
+  }
+
   async function handleCheckout() {
-    if (cart.length === 0) return;
+    if (cartWithDetails.length === 0) return;
 
     // Services added to the cart without a booking slot (e.g. from an older session)
     // have no time reserved — block checkout and direct the user to book first.
-    const unscheduled = cart.filter((c) => c.item_type === "service" && !c.booking_slot);
+    const unscheduled = cartWithDetails.filter((c) => c.item_type === "service" && !c.booking_slot);
     if (unscheduled.length > 0) {
       setError(`Please book a time slot for: ${unscheduled.map((c) => c.name).join(", ")}. ` + "Visit the Shop, select the service, and choose an available time.");
       return;
@@ -79,7 +109,7 @@ export default function Cart() {
     setError(null);
     try {
       const items = [];
-      for (const c of cart) {
+      for (const c of cartWithDetails) {
         if (c.item_type === "service" && c.booking_slot) {
           let booking;
           try {
@@ -195,7 +225,7 @@ export default function Cart() {
 
         {/* ── Line items ─────────────────────────────────────── */}
         <div style={{ marginBottom: 16 }}>
-          {cart.map((item) => (
+          {cartWithDetails.map((item) => (
             <div
               key={item._key}
               style={{
@@ -203,9 +233,9 @@ export default function Cart() {
                 borderRadius: "0.9rem",
                 boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
                 marginBottom: 10,
-                padding: "12px 14px",
+                padding: "12px",
                 display: "flex",
-                alignItems: "center",
+                alignItems: "stretch",
                 gap: 12,
               }}
             >
@@ -228,44 +258,57 @@ export default function Cart() {
 
               {/* Details */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: 700, fontSize: "0.88rem", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</p>
-                <p style={{ fontSize: "0.72rem", color: "#9ca3af", margin: "1px 0 0", textTransform: "capitalize" }}>
-                  {item.item_type}
-                  {item.booking_slot && ` · ${new Date(item.booking_slot.start).toLocaleString()}`}
-                </p>
-              </div>
+                <p style={{ fontWeight: 700, fontSize: "0.9rem", margin: 0, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</p>
+                <p style={{ fontSize: "0.74rem", color: item.item_type === "service" && !item.booking_slot ? "#dc2626" : "#6b7280", margin: "2px 0 10px" }}>{formatLineTwo(item)}</p>
 
-              {/* Qty + price + remove */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                {item.item_type !== "service" && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      background: "#f3f4f6",
-                      borderRadius: "999px",
-                      padding: "3px 8px",
-                    }}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 30, borderRadius: 999, padding: "0 10px", background: "#eef2ff", color: "#3730a3", fontSize: "0.74rem", fontWeight: 700 }}>${(item.price * (item.quantity || 1)).toFixed(2)}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 30, borderRadius: 999, padding: "0 10px", background: "#f3f4f6", color: "#374151", fontSize: "0.72rem", fontWeight: 700, textTransform: "capitalize" }}>{item.item_type || "product"}</span>
+
+                  <button
+                    className="cp-circle-icon-btn"
+                    onClick={() => updateCartQty(item._key, item.quantity - 1)}
+                    disabled={item.item_type === "service"}
+                    title="Decrease"
                   >
-                    <button onClick={() => updateCartQty(item._key, item.quantity - 1)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "#6b7280", display: "flex", alignItems: "center" }}>
-                      <MinusIcon style={{ width: 12, height: 12 }} />
-                    </button>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#111827", minWidth: 16, textAlign: "center" }}>{item.quantity}</span>
-                    <button onClick={() => updateCartQty(item._key, item.quantity + 1)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "#6b7280", display: "flex", alignItems: "center" }}>
-                      <PlusIcon style={{ width: 12, height: 12 }} />
-                    </button>
-                  </div>
-                )}
-                <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "#111827", minWidth: 58, textAlign: "right" }}>${(item.price * (item.quantity || 1)).toFixed(2)}</span>
-                <button
-                  onClick={() => removeFromCart(item._key)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", padding: 4, display: "flex", alignItems: "center" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#d1d5db")}
-                >
-                  <TrashIcon style={{ width: 16, height: 16 }} />
-                </button>
+                    <MinusIcon style={{ width: 14, height: 14 }} />
+                  </button>
+
+                  <span style={{ minWidth: 22, textAlign: "center", fontSize: "0.84rem", fontWeight: 700, color: "#111827" }}>{item.quantity || 1}</span>
+
+                  <button
+                    className="cp-circle-icon-btn"
+                    onClick={() => updateCartQty(item._key, item.quantity + 1)}
+                    disabled={item.item_type === "service"}
+                    title="Increase"
+                  >
+                    <PlusIcon style={{ width: 14, height: 14 }} />
+                  </button>
+
+                  <button
+                    className="cp-circle-icon-btn"
+                    onClick={() => item.item_type === "service" && setEditingServiceItem(item)}
+                    disabled={item.item_type !== "service"}
+                    title={item.item_type === "service" ? "Edit appointment time" : "No appointment for products"}
+                  >
+                    <ChevronDownIcon style={{ width: 14, height: 14 }} />
+                  </button>
+
+                  <button
+                    className="cp-circle-icon-btn cp-circle-icon-btn-danger"
+                    onClick={() => {
+                      removeFromCart(item._key);
+                      setServiceSlotByKey((prev) => {
+                        const next = { ...prev };
+                        delete next[item._key];
+                        return next;
+                      });
+                    }}
+                    title="Remove"
+                  >
+                    <XMarkIcon style={{ width: 14, height: 14 }} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -393,6 +436,16 @@ export default function Cart() {
               View Order History
             </button>
           </div>
+        )}
+
+        {editingServiceItem && (
+          <BookingCalendar
+            service={editingServiceItem}
+            companyId={companyId}
+            onSelect={handleSelectServiceSlot}
+            onClose={() => setEditingServiceItem(null)}
+            submitting={false}
+          />
         )}
       </div>
     </Layout>

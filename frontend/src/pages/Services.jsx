@@ -37,7 +37,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -47,6 +47,7 @@ import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Service from "./components/Form_Service";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
+import Modal_MultiEdit from "./components/Modal_MultiEdit";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
@@ -64,6 +65,18 @@ export default function Services() {
   const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
+
+  const svcMultiEditFields = [
+    { key: "category", label: "Category", type: "text", placeholder: "e.g. Haircuts" },
+    { key: "duration_minutes", label: "Duration (minutes)", type: "number", placeholder: "e.g. 60", min: 1 },
+    { key: "price", label: "Price", type: "number", placeholder: "e.g. 25.00", min: 0, step: "0.01" },
+  ];
 
   // ─── 4  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => loadServices());
@@ -182,13 +195,75 @@ export default function Services() {
     });
   }, [services, searchTerm, categoryFilter]);
 
+  const toggleSelectSvc = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allVisibleSelectedSvc = filteredServices.length > 0 && filteredServices.every((s) => selectedIds.has(s.id));
+  const handleSelectAllSvc = () => { if (allVisibleSelectedSvc) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredServices.map((s) => s.id))); } };
+  const clearSelectionSvc = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+
+  const handleSvcMultiEditSave = async (updates) => {
+    setMultiSaving(true);
+    try {
+      const coerced = { ...updates };
+      if ("duration_minutes" in coerced) {
+        const parsedDuration = parseInt(coerced.duration_minutes, 10);
+        if (Number.isNaN(parsedDuration)) delete coerced.duration_minutes;
+        else coerced.duration_minutes = parsedDuration;
+      }
+      if ("price" in coerced) {
+        const parsedPrice = parseFloat(coerced.price);
+        if (!Number.isFinite(parsedPrice)) delete coerced.price;
+        else coerced.price = parsedPrice;
+      }
+      await Promise.all([...selectedIds].map((id) => servicesAPI.update(id, coerced)));
+      await loadServices();
+      setShowMultiEdit(false);
+      clearSelectionSvc();
+    } catch {
+      setError("Failed to update some services");
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+  };
+
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredServices];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "name") {
+          aVal = (a.name || "").toLowerCase();
+          bVal = (b.name || "").toLowerCase();
+        } else if (sortColumn === "category") {
+          aVal = (a.category || "").toLowerCase();
+          bVal = (b.category || "").toLowerCase();
+        } else if (sortColumn === "price") {
+          aVal = parseFloat(a.price || 0);
+          bVal = parseFloat(b.price || 0);
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredServices, sortColumn, sortAsc]);
+
   // ─── 8  SECONDARY LIFECYCLE ───────────────────────────────────────────────
   // Scroll to bottom when data loads
   useEffect(() => {
-    if (scrollRef.current && filteredServices.length > 0) {
+    if (scrollRef.current && sortedAndFiltered.length > 0) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [filteredServices.length]);
+  }, [sortedAndFiltered.length]);
 
   // ─── 9  RENDER / RETURN ───────────────────────────────────────────────────
   if (loading) {
@@ -208,11 +283,9 @@ export default function Services() {
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
-      <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Service" }, { label: "Price", width: 80 }, { label: "Duration", width: 70 }]} />
-
       {/* Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
-        {filteredServices.length > 0 ? (
+        {sortedAndFiltered.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
               <col style={{ width: "44px" }} />
@@ -221,19 +294,23 @@ export default function Services() {
               <col style={{ width: "70px" }} />
             </colgroup>
             <tbody>
-              {filteredServices.map((service, index) => (
-                <PageTableRow key={service.id || index} onClick={() => handleEditService(service)}>
+              {sortedAndFiltered.map((service, index) => (
+                <PageTableRow key={service.id || index} onClick={() => !selectionMode && handleEditService(service)}>
                   <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
-                    <Gate_Permission page="services" permission="delete">
-                      <button
-                        type="button"
-                        className="btn btn-circle btn-outline-danger"
-                        title="Delete service"
-                        onClick={(e) => handleDeleteService(service.id, e)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </Gate_Permission>
+                    {selectionMode ? (
+                      <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(service.id)} onChange={() => toggleSelectSvc(service.id)} />
+                    ) : (
+                      <Gate_Permission page="services" permission="delete">
+                        <button
+                          type="button"
+                          className="btn btn-circle btn-outline-danger"
+                          title="Delete service"
+                          onClick={(e) => handleDeleteService(service.id, e)}
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </Gate_Permission>
+                    )}
                   </td>
                   {/* Name + Category stacked */}
                   <td className="main-page-table-data">
@@ -264,6 +341,26 @@ export default function Services() {
           <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
         )}
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="d-flex align-items-center gap-2">
+            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+            <button type="button" className="btn btn-circle btn-primary" title="Edit selected services" onClick={() => setShowMultiEdit(true)}>
+              <PencilSquareIcon style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+          <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionSvc}>
+            <XMarkIcon style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+      )}
+      <PageTableHeader columns={[
+        { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedSvc} onChange={handleSelectAllSvc} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+        { label: "Service", sortKey: "name" },
+        { label: "Price", width: 80, sortKey: "price" },
+        { label: "Duration", width: 70 },
+      ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
 
       {/* Fixed footer – headers + controls */}
       <PageTableFooter
@@ -418,6 +515,16 @@ export default function Services() {
         <div className="small text-muted">Use these controls to manage the Services page view.</div>
         <div className="small">Search, category filter, and add actions are available in the footer.</div>
       </PageControlsModal>
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Service${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={svcMultiEditFields}
+        selectedItems={services.filter((s) => selectedIds.has(s.id))}
+        onSave={handleSvcMultiEditSave}
+        saving={multiSaving}
+      />
     </PageLayout>
   );
 }

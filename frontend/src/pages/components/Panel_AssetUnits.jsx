@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { assetUnitsAPI, employeesAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import useViewMode from "../../services/useViewMode";
 
 const STATE_LABELS = {
@@ -192,7 +192,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange }) {
                 <tr key={unit.id} style={{ borderBottom: "1px solid var(--bs-border-color)" }}>
                   <td style={{ border: "none" }}>
                     <button className="btn btn-circle btn-outline-danger" onClick={() => handleRemove(unit.id)} title="Remove unit">
-                      <TrashIcon className="h-4 w-4" />
+                      <XMarkIcon className="h-4 w-4" />
                     </button>
                   </td>
                   <td style={{ border: "none" }}>

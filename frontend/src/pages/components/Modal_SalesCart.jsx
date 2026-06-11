@@ -26,7 +26,7 @@ import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import { getDisplayImageUrl } from "./Utils_Image";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "@heroicons/react/24/outline";
 
 const CLIENT_DROPUP_Z_INDEX = 1200;
 
@@ -118,7 +118,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
           className="w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/50 flex items-center justify-center transition-colors"
           title="Remove item"
         >
-          <TrashIcon className="h-4 w-4 text-red-500 dark:text-red-400" />
+          <XMarkIcon className="h-4 w-4 text-red-500 dark:text-red-400" />
         </button>
       </div>
 
@@ -246,7 +246,7 @@ export default function Modal_Cart_Sales({
                 className="btn btn-sm btn-outline-danger btn-circle"
                 title="Clear cart"
               >
-                <TrashIcon className="h-4 w-4" />
+                <XMarkIcon className="h-4 w-4" />
               </button>
             )}
           </div>

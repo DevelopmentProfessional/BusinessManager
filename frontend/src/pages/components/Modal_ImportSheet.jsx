@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon, PlusIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
 const DEFAULT_ROW_COUNT = 100;
 const DEFAULT_ADD_ROW_COUNT = 100;
@@ -381,10 +381,17 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
             {hint && <span className="small text-muted ms-2">{hint}</span>}
           </div>
           <div className="component-header-center"></div>
-          <div className="component-header-right">
+          <div className="component-header-right d-flex align-items-center gap-2">
             <button type="button" className="btn btn-sm btn-outline-secondary" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
               <ArrowUpIcon style={{ width: 16, height: 16 }} />
             </button>
+            <div className="d-flex align-items-center gap-1">
+              <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+              <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-1" onClick={handleAddRows} disabled={isSaving}>
+                <PlusIcon className="h-4 w-4" />
+                <span>Add</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -418,7 +425,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
                   >
                     <div className="d-flex align-items-center gap-1">
                       <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
-                        <TrashIcon style={{ width: 12, height: 12 }} />
+                        <XMarkIcon style={{ width: 12, height: 12 }} />
                       </button>
 
                       <select className="form-select form-select-sm border-0 shadow-none" style={{ backgroundColor: "transparent" }} value={mappings[colIndex] || defaultFieldSequence[0]} onChange={(e) => setMapping(colIndex, e.target.value)}>
@@ -454,7 +461,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
                   <td className="text-muted small text-center align-middle">
                     <div className="d-flex align-items-center justify-content-center gap-1">
                       <button type="button" className="btn btn-sm btn-link text-danger p-0" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
-                        <TrashIcon style={{ width: 12, height: 12 }} />
+                        <XMarkIcon style={{ width: 12, height: 12 }} />
                       </button>
                       <span>{rowIndex + 1}</span>
                     </div>
@@ -485,28 +492,19 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
         <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
           {status.message && <div className={`px-3 pt-2 pb-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
-          <div className="d-flex align-items-center gap-1 p-2">
-            <div className="component-footer-left d-flex align-items-center gap-1 flex-wrap">
-              <div className="d-flex align-items-center gap-1">
-                <input type="number" className="form-control form-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-                <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-1" onClick={handleAddRows} disabled={isSaving}>
-                  <PlusIcon className="h-4 w-4" />
-                  <span>Add</span>
-                </button>
-              </div>
+          <div className="d-flex align-items-center justify-content-between gap-2 p-2">
+            <div className="component-footer-left d-flex align-items-center gap-1">
               <button type="button" className="btn btn-primary d-flex align-items-center gap-1" onClick={handleImport} disabled={isSaving}>
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 <span>{isSaving ? "…" : "Save"}</span>
               </button>
-            </div>
-            <div className="component-footer-center">
               <button type="button" className="btn btn-circle btn-outline-secondary" onClick={onClose} disabled={isSaving} title="Cancel">
                 <XMarkIcon />
               </button>
             </div>
             <div className="component-footer-right">
               <button type="button" className="btn btn-outline-secondary d-flex align-items-center gap-1" onClick={handleClearGrid} disabled={isSaving}>
-                <TrashIcon className="h-4 w-4" />
+                <XMarkIcon className="h-4 w-4" />
                 <span>Clear</span>
               </button>
             </div>

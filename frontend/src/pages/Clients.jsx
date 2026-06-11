@@ -44,10 +44,11 @@ import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Client from "./components/Form_Client";
 import Modal_Detail_Client from "./components/Modal_ClientDetail";
 import Gate_Permission from "./components/Gate_Permission";
-import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal_TemplateUse from "./components/Modal_TemplateUse";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
+import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
@@ -71,6 +72,32 @@ export default function Clients() {
   const [membershipForm, setMembershipForm] = useState({ name: "", description: "", price: 0, billing_frequency: "monthly", lock_term_count: 0, lock_term_unit: "months", is_active: true });
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
+  const [purchaseHistoryCounts, setPurchaseHistoryCounts] = useState({});
+
+  const multiEditFields = useMemo(() => {
+    const membershipOptions = memberships
+      .filter((membership) => membership.is_active !== false)
+      .map((membership) => ({
+        value: String(membership.id ?? membership.key),
+        label: membership.name || "Unnamed Membership",
+      }));
+
+    return [
+      {
+        key: "membership_tier",
+        label: "Membership Tier",
+        type: "select",
+        options: [{ value: "none", label: "None" }, ...membershipOptions],
+      },
+      { key: "notes", label: "Notes", type: "text", placeholder: "Add a note to all selected clients..." },
+    ];
+  }, [memberships]);
 
   const tierFilterOptions = useMemo(() => {
     const dynamic = memberships
@@ -122,6 +149,7 @@ export default function Clients() {
       const clientsData = response?.data ?? response;
       if (Array.isArray(clientsData)) {
         setClients(clientsData);
+        loadPurchaseHistoryCounts(clientsData);
         clearError();
       } else {
         console.error("Invalid clients data format:", clientsData);
@@ -145,6 +173,27 @@ export default function Clients() {
     } catch {
       setMemberships([]);
     }
+  };
+
+  const loadPurchaseHistoryCounts = async (clientsList) => {
+    const countResults = await Promise.all(
+      clientsList.map(async (client) => {
+        try {
+          const [txRes, portalRes] = await Promise.all([
+            clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })),
+            clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] })),
+          ]);
+          const txns = Array.isArray(txRes?.data) ? txRes.data : [];
+          const orders = Array.isArray(portalRes?.data) ? portalRes.data : [];
+          return [client.id, txns.length + orders.length];
+        } catch {
+          return [client.id, 0];
+        }
+      })
+    );
+
+    const counts = Object.fromEntries(countResults);
+    setPurchaseHistoryCounts(counts);
   };
 
   // ─── [5] CRUD HANDLERS ──────────────────────────────────────────────────────
@@ -324,6 +373,54 @@ export default function Clients() {
     });
   }, [clients, searchTerm, tierFilter]);
 
+  const toggleSelectCl = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allVisibleSelectedCl = filteredClients.length > 0 && filteredClients.every((c) => selectedIds.has(c.id));
+  const handleSelectAllCl = () => { if (allVisibleSelectedCl) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredClients.map((c) => c.id))); } };
+  const clearSelectionCl = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+
+  const handleMultiEditSave = async (updates) => {
+    setMultiSaving(true);
+    try {
+      await Promise.all([...selectedIds].map((id) => clientsAPI.update(id, updates)));
+      await loadClients();
+      setShowMultiEdit(false);
+      clearSelectionCl();
+    } catch {
+      setError("Failed to update some clients");
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+  };
+
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredClients];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "name") {
+          aVal = (a.name || "").toLowerCase();
+          bVal = (b.name || "").toLowerCase();
+        } else if (sortColumn === "email") {
+          aVal = (a.email || "").toLowerCase();
+          bVal = (b.email || "").toLowerCase();
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredClients, sortColumn, sortAsc]);
+
   // Scroll to bottom when data loads
   useEffect(() => {
     if (scrollRef.current && filteredClients.length > 0) {
@@ -355,7 +452,7 @@ export default function Clients() {
     >
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
       <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
-        {filteredClients.length > 0 ? (
+        {sortedAndFiltered.length > 0 ? (
           <table className="table table-borderless table-hover mb-0 w-100">
             <colgroup>
               <col style={{ width: "44px" }} />
@@ -364,19 +461,30 @@ export default function Clients() {
               <col style={{ width: "56px" }} />
             </colgroup>
             <tbody>
-              {filteredClients.map((client, index) => (
-                <PageTableRow key={client.id || index} onClick={() => handleOpenClient(client)}>
+              {sortedAndFiltered.map((client, index) => (
+                <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
                   <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
-                    <Gate_Permission page="clients" permission="delete">
-                      <button className="btn btn-circle btn-outline-danger" title="Delete client" onClick={() => handleDeleteClient(client.id)}>
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </Gate_Permission>
+                    {selectionMode ? (
+                      <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(client.id)} onChange={() => toggleSelectCl(client.id)} />
+                    ) : (
+                      <Gate_Permission page="clients" permission="delete">
+                        <button className="btn btn-circle btn-outline-danger" title="Delete client" onClick={() => handleDeleteClient(client.id)}>
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </Gate_Permission>
+                    )}
                   </td>
 
                   {/* Name + contact */}
                   <td className="main-page-table-data">
-                    <div className="fw-medium text-truncate">{client.name}</div>
+                    <div className="fw-medium text-truncate position-relative">
+                      {purchaseHistoryCounts[client.id] > 0 && (
+                        <span className="badge bg-primary rounded-circle" style={{ position: "absolute", left: "-12px", top: "50%", transform: "translateY(-50%)", minWidth: "20px", height: "20px", fontSize: "0.65rem", lineHeight: "20px", padding: 0 }}>
+                          {purchaseHistoryCounts[client.id]}
+                        </span>
+                      )}
+                      {client.name}
+                    </div>
                     <div className="small text-muted text-truncate">{client.email || client.phone || "No contact"}</div>
                   </td>
 
@@ -400,7 +508,25 @@ export default function Clients() {
         )}
       </div>
 
-      <PageTableHeader columns={[{ label: "", width: 44, className: "p-0" }, { label: "Client", className: "text-start ps-0" }, { label: "Subs", width: 120, className: "text-start ps-0" }, { label: "Notify", width: 56, className: "text-start ps-0" }]} />
+      {selectedIds.size > 0 && (
+        <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="d-flex align-items-center gap-2">
+            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+            <button type="button" className="btn btn-circle btn-primary" title="Edit selected clients" onClick={() => setShowMultiEdit(true)}>
+              <PencilSquareIcon style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+          <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionCl}>
+            <XMarkIcon style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+      )}
+      <PageTableHeader columns={[
+        { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedCl} onChange={handleSelectAllCl} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+        { label: "Client", className: "text-start ps-0", sortKey: "name" },
+        { label: "Subs", width: 120, className: "text-start ps-0", sortKey: "email" },
+        { label: "Notify", width: 56, className: "text-start ps-0" },
+      ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter
@@ -511,7 +637,7 @@ export default function Clients() {
                     <span>Edit</span>
                   </button>
                   <button type="button" className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2" onClick={() => handleDeleteMembership(membership.id)}>
-                    <TrashIcon className="h-4 w-4" />
+                    <XMarkIcon className="h-4 w-4" />
                     <span>Delete</span>
                   </button>
                 </div>
@@ -561,6 +687,16 @@ export default function Clients() {
 
       {/* Template Use Modal */}
       {isTemplateOpen && templateClient && <Modal_TemplateUse page="clients" entity={templateClient} currentUser={user} settings={appSettings} onClose={handleCloseTemplate} />}
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Client${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={multiEditFields}
+        selectedItems={clients.filter((c) => selectedIds.has(c.id))}
+        onSave={handleMultiEditSave}
+        saving={multiSaving}
+      />
     </PageLayout>
   );
 }
