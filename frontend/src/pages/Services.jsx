@@ -195,10 +195,26 @@ export default function Services() {
     });
   }, [services, searchTerm, categoryFilter]);
 
-  const toggleSelectSvc = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSelectSvc = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   const allVisibleSelectedSvc = filteredServices.length > 0 && filteredServices.every((s) => selectedIds.has(s.id));
-  const handleSelectAllSvc = () => { if (allVisibleSelectedSvc) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredServices.map((s) => s.id))); } };
-  const clearSelectionSvc = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+  const handleSelectAllSvc = () => {
+    if (allVisibleSelectedSvc) {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } else {
+      setSelectionMode(true);
+      setSelectedIds(new Set(filteredServices.map((s) => s.id)));
+    }
+  };
+  const clearSelectionSvc = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
 
   const handleSvcMultiEditSave = async (updates) => {
     setMultiSaving(true);
@@ -275,14 +291,7 @@ export default function Services() {
   }
 
   return (
-    <PageLayout
-      title="Services"
-      error={error}
-      contentGravity="bottom"
-      headerRight={
-        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
-      }
-    >
+    <PageLayout title="Services" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
       {/* Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
         {sortedAndFiltered.length > 0 ? (
@@ -301,12 +310,7 @@ export default function Services() {
                       <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(service.id)} onChange={() => toggleSelectSvc(service.id)} />
                     ) : (
                       <Gate_Permission page="services" permission="delete">
-                        <button
-                          type="button"
-                          className="btn btn-circle btn-outline-danger"
-                          title="Delete service"
-                          onClick={(e) => handleDeleteService(service.id, e)}
-                        >
+                        <button type="button" className="btn btn-circle btn-outline-danger" title="Delete service" onClick={(e) => handleDeleteService(service.id, e)}>
                           <XMarkIcon className="h-4 w-4" />
                         </button>
                       </Gate_Permission>
@@ -314,9 +318,7 @@ export default function Services() {
                   </td>
                   {/* Name + Category stacked */}
                   <td className="main-page-table-data">
-                    <div className="fw-medium text-wrap-word">
-                      {service.name}
-                    </div>
+                    <div className="fw-medium text-wrap-word">{service.name}</div>
                     {service.category && (
                       <span className="badge bg-secondary-subtle text-secondary rounded-pill text-xxs" style={{ width: "fit-content" }}>
                         {service.category}
@@ -345,7 +347,9 @@ export default function Services() {
       {selectedIds.size > 0 && (
         <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
           <div className="d-flex align-items-center gap-2">
-            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+              {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+            </span>
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected services" onClick={() => setShowMultiEdit(true)}>
               <PencilSquareIcon style={{ width: 14, height: 14 }} />
             </button>
@@ -355,12 +359,17 @@ export default function Services() {
           </button>
         </div>
       )}
-      <PageTableHeader columns={[
-        { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedSvc} onChange={handleSelectAllSvc} title="Select all visible" />, width: 44, className: "p-0 text-center" },
-        { label: "Service", sortKey: "name" },
-        { label: "Price", width: 80, sortKey: "price" },
-        { label: "Duration", width: 70 },
-      ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
+      <PageTableHeader
+        columns={[
+          { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedSvc} onChange={handleSelectAllSvc} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+          { label: "Service", sortKey: "name" },
+          { label: "Price", width: 80, sortKey: "price" },
+          { label: "Duration", width: 70 },
+        ]}
+        sortColumn={sortColumn}
+        sortAsc={sortAsc}
+        onSort={handleSort}
+      />
 
       {/* Fixed footer – headers + controls */}
       <PageTableFooter
@@ -423,7 +432,6 @@ export default function Services() {
                           type="button"
                           aria-label={`${label} help`}
                           className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
-                          
                           onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                           onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           onMouseDown={(e) => {
@@ -506,9 +514,7 @@ export default function Services() {
 
       {/* Service Form Modal */}
       <Modal isOpen={isModalOpen && modalContent === "service-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "service-form" && (
-          <Form_Service service={editingService} onSubmit={handleSubmitService} onCancel={closeModal} onBulkImport={!editingService ? handleBulkImportServices : null} />
-        )}
+        {isModalOpen && modalContent === "service-form" && <Form_Service service={editingService} onSubmit={handleSubmitService} onCancel={closeModal} onBulkImport={!editingService ? handleBulkImportServices : null} />}
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Service Page Controls">

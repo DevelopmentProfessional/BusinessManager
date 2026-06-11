@@ -35,13 +35,19 @@ function parseFeatureString(raw) {
   if (!raw || !raw.trim()) return [];
   const results = [];
   // Split on semicolon or pipe as feature separators
-  const parts = String(raw).split(/[;|]/).map((p) => p.trim()).filter(Boolean);
+  const parts = String(raw)
+    .split(/[;|]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   for (const part of parts) {
     // Try parentheses format: name(opt1, opt2, ...)
     const parenMatch = part.match(/^([^(]+)\(([^)]+)\)/);
     if (parenMatch) {
       const name = parenMatch[1].trim();
-      const options = parenMatch[2].split(",").map((o) => o.trim()).filter(Boolean);
+      const options = parenMatch[2]
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean);
       if (name) results.push({ name, options });
       continue;
     }
@@ -49,7 +55,10 @@ function parseFeatureString(raw) {
     const colonMatch = part.match(/^([^:]+):(.+)/);
     if (colonMatch) {
       const name = colonMatch[1].trim();
-      const options = colonMatch[2].split(",").map((o) => o.trim()).filter(Boolean);
+      const options = colonMatch[2]
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean);
       if (name) results.push({ name, options });
       continue;
     }
@@ -467,7 +476,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
         location: data.location ? String(data.location).trim() : null,
         cost: parsedCost.value,
         // New fields
-        asset_unit_count: data.asset_unit_count ? (parseInt(String(data.asset_unit_count).trim(), 10) || null) : null,
+        asset_unit_count: data.asset_unit_count ? parseInt(String(data.asset_unit_count).trim(), 10) || null : null,
         features: data.features ? parseFeatureString(data.features) : null,
       });
     });
@@ -566,10 +575,17 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                       </select>
 
                       {mappings[colIndex] === "features" && (
-                        <span title={'Enter features in this format:\nsize(small,medium,large); color(red,yellow,blue)\n\nOr colon style:\nsize: small,medium,large | color: red,yellow,blue'} style={{ cursor: "help", fontSize: "0.7rem", color: "var(--bs-info, #0dcaf0)", fontWeight: 600, lineHeight: 1 }}>?</span>
+                        <span
+                          title={"Enter features in this format:\nsize(small,medium,large); color(red,yellow,blue)\n\nOr colon style:\nsize: small,medium,large | color: red,yellow,blue"}
+                          style={{ cursor: "help", fontSize: "0.7rem", color: "var(--bs-info, #0dcaf0)", fontWeight: 600, lineHeight: 1 }}
+                        >
+                          ?
+                        </span>
                       )}
                       {mappings[colIndex] === "asset_unit_count" && (
-                        <span title={"Enter a number. If the row type is Asset, this many unit records will be created automatically."} style={{ cursor: "help", fontSize: "0.7rem", color: "var(--bs-info, #0dcaf0)", fontWeight: 600, lineHeight: 1 }}>?</span>
+                        <span title={"Enter a number. If the row type is Asset, this many unit records will be created automatically."} style={{ cursor: "help", fontSize: "0.7rem", color: "var(--bs-info, #0dcaf0)", fontWeight: 600, lineHeight: 1 }}>
+                          ?
+                        </span>
                       )}
 
                       <span draggable onDragStart={() => handleColDragStart(colIndex)} onDragEnd={handleColDragEnd} title="Drag to reorder this column" style={{ cursor: "grab", display: "flex", alignItems: "center", color: "var(--bs-secondary-color, #6c757d)" }}>

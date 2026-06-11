@@ -42,7 +42,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
       // Get all values for this field from selected items
       const values = selectedItems.map((item) => item[field.key]);
       const uniqueValues = [...new Set(values)];
-      
+
       // If all items have the same value and field has options, make it a dropdown
       const hasOptions = field.options && field.options.length > 0;
       const allSame = uniqueValues.length === 1;
@@ -61,7 +61,9 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
   useEffect(() => {
     if (isOpen) {
       const initial = {};
-      fields.forEach((f) => { initial[f.key] = ""; });
+      fields.forEach((f) => {
+        initial[f.key] = "";
+      });
       setFormData(initial);
       setSaveError("");
     }
@@ -112,9 +114,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
 
         <div className="component-body">
           <div className="component-body-inner">
-            <p className="small text-muted mb-3">
-              Leave a field blank to keep it unchanged for all selected items. Only filled-in fields will be applied.
-            </p>
+            <p className="small text-muted mb-3">Leave a field blank to keep it unchanged for all selected items. Only filled-in fields will be applied.</p>
 
             {saveError && <div className="alert alert-danger py-2 small">{saveError}</div>}
 
@@ -127,21 +127,17 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
 
                   {field.type === "select" && (
                     <div className="small text-muted mb-1">
-                      {config.commonValue !== null && config.commonValue !== undefined
-                        ? `Shared value: ${(field.options || []).find((opt) => String(opt.value) === String(config.commonValue))?.label || config.commonValue}`
-                        : "Mixed values across selected items"}
+                      {config.commonValue !== null && config.commonValue !== undefined ? `Shared value: ${(field.options || []).find((opt) => String(opt.value) === String(config.commonValue))?.label || config.commonValue}` : "Mixed values across selected items"}
                     </div>
                   )}
 
                   {field.type === "select" ? (
-                    <select
-                      className="form-select form-select-sm"
-                      value={formData[field.key] ?? ""}
-                      onChange={(e) => handleChange(field.key, e.target.value)}
-                    >
+                    <select className="form-select form-select-sm" value={formData[field.key] ?? ""} onChange={(e) => handleChange(field.key, e.target.value)}>
                       <option value="">— Leave unchanged —</option>
                       {(field.options || []).map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
                       ))}
                     </select>
                   ) : field.type === "number" ? (
@@ -150,12 +146,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                       className="form-control form-control-sm"
                       value={formData[field.key] ?? ""}
                       onChange={(e) => handleChange(field.key, e.target.value)}
-                      placeholder={
-                        field.placeholder ||
-                        (config.commonValue !== null && config.commonValue !== undefined
-                          ? `Shared value: ${config.commonValue}`
-                          : "Leave blank to keep unchanged")
-                      }
+                      placeholder={field.placeholder || (config.commonValue !== null && config.commonValue !== undefined ? `Shared value: ${config.commonValue}` : "Leave blank to keep unchanged")}
                       min={field.min}
                       max={field.max}
                       step={field.step}
@@ -166,12 +157,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                       className="form-control form-control-sm"
                       value={formData[field.key] ?? ""}
                       onChange={(e) => handleChange(field.key, e.target.value)}
-                      placeholder={
-                        field.placeholder ||
-                        (config.commonValue !== null && config.commonValue !== undefined
-                          ? `Shared value: ${config.commonValue}`
-                          : "Leave blank to keep unchanged")
-                      }
+                      placeholder={field.placeholder || (config.commonValue !== null && config.commonValue !== undefined ? `Shared value: ${config.commonValue}` : "Leave blank to keep unchanged")}
                     />
                   )}
                 </div>
@@ -182,21 +168,12 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
 
         <div className="component-footer" style={{ position: "relative" }}>
           <div className="component-footer-left">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || localSaving || !hasChanges}
-              className="btn btn-success d-flex align-items-center gap-1"
-              title="Apply changes to all selected items"
-            >
+            <button type="button" onClick={handleSave} disabled={saving || localSaving || !hasChanges} className="btn btn-success d-flex align-items-center gap-1" title="Apply changes to all selected items">
               <CheckIcon style={{ width: 16, height: 16 }} />
               {saving || localSaving ? "Saving…" : "Save"}
             </button>
           </div>
-          <div
-            className="component-footer-center"
-            style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}
-          >
+          <div className="component-footer-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
             <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
               <XMarkIcon />
             </button>

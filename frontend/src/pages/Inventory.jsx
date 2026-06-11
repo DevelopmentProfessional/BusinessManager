@@ -94,20 +94,30 @@ export default function Inventory() {
   const deleteInFlightRef = useRef(new Set());
 
   const multiEditFields = [
-    { key: "type", label: "Type", type: "select", options: [
-      { value: "PRODUCT", label: "Product" },
-      { value: "RESOURCE", label: "Resource" },
-      { value: "ASSET", label: "Asset" },
-      { value: "LOCATION", label: "Location" },
-      { value: "ITEM", label: "Item" },
-    ]},
+    {
+      key: "type",
+      label: "Type",
+      type: "select",
+      options: [
+        { value: "PRODUCT", label: "Product" },
+        { value: "RESOURCE", label: "Resource" },
+        { value: "ASSET", label: "Asset" },
+        { value: "LOCATION", label: "Location" },
+        { value: "ITEM", label: "Item" },
+      ],
+    },
     { key: "location", label: "Location", type: "text", placeholder: "e.g. Warehouse A" },
     { key: "min_stock_level", label: "Min Stock Level", type: "number", placeholder: "e.g. 10", min: 0 },
     { key: "category", label: "Category", type: "text", placeholder: "e.g. Electronics" },
-    { key: "cost_type", label: "Cost Type", type: "select", options: [
-      { value: "one_time", label: "One-time" },
-      { value: "recurring", label: "Recurring" },
-    ]},
+    {
+      key: "cost_type",
+      label: "Cost Type",
+      type: "select",
+      options: [
+        { value: "one_time", label: "One-time" },
+        { value: "recurring", label: "Recurring" },
+      ],
+    },
   ];
 
   const typeFilterOptions = [
@@ -398,10 +408,26 @@ export default function Inventory() {
     });
   }, [inventory, searchTerm, typeFilter, stockFilter]);
 
-  const toggleSelectInv = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSelectInv = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   const allVisibleSelectedInv = filteredInventory.length > 0 && filteredInventory.every((i) => selectedIds.has(i.id));
-  const handleSelectAllInv = () => { if (allVisibleSelectedInv) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredInventory.map((i) => i.id))); } };
-  const clearSelectionInv = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+  const handleSelectAllInv = () => {
+    if (allVisibleSelectedInv) {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } else {
+      setSelectionMode(true);
+      setSelectedIds(new Set(filteredInventory.map((i) => i.id)));
+    }
+  };
+  const clearSelectionInv = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
 
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -472,253 +498,251 @@ export default function Inventory() {
   }
 
   return (
-    <PageLayout
-      title="Inventory"
-      error={error}
-      contentGravity="bottom"
-      headerRight={
-        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
-      }
-    >
+    <PageLayout title="Inventory" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
       <div className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
-      {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-      <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
-        {sortedAndFiltered.length > 0 ? (
-          <table className="table table-borderless table-hover mb-0">
-            <colgroup>
-              <col style={{ width: "44px" }} />
-              <col />
-              <col style={{ width: "80px" }} />
-              <col style={{ width: "60px" }} />
-            </colgroup>
-            <tbody>
-              {sortedAndFiltered.map((inv, index) => (
-                <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
-                  <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
-                    {selectionMode ? (
-                      <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(inv.id)} onChange={() => toggleSelectInv(inv.id)} />
-                    ) : (
-                      <button className="btn btn-circle btn-outline-danger" title="Delete item" onClick={() => handleDeleteItem(inv.id)}>
-                        <XMarkIcon className="h-4 w-4" />
-                      </button>
-                    )}
-                  </td>
-                  <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
+        {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+        <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+          {sortedAndFiltered.length > 0 ? (
+            <table className="table table-borderless table-hover mb-0">
+              <colgroup>
+                <col style={{ width: "44px" }} />
+                <col />
+                <col style={{ width: "80px" }} />
+                <col style={{ width: "60px" }} />
+              </colgroup>
+              <tbody>
+                {sortedAndFiltered.map((inv, index) => (
+                  <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
+                    <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                      {selectionMode ? (
+                        <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(inv.id)} onChange={() => toggleSelectInv(inv.id)} />
+                      ) : (
+                        <button className="btn btn-circle btn-outline-danger" title="Delete item" onClick={() => handleDeleteItem(inv.id)}>
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                    <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
 
-                  {/* Type */}
-                  <td className="main-page-table-data">
-                    <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
-                  </td>
+                    {/* Type */}
+                    <td className="main-page-table-data">
+                      <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
+                    </td>
 
-                  {/* Count */}
-                  <td className="main-page-table-data text-center">
-                    <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
-                  </td>
-                </PageTableRow>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
-        )}
-      </div>
+                    {/* Count */}
+                    <td className="main-page-table-data text-center">
+                      <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
+                    </td>
+                  </PageTableRow>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
+          )}
+        </div>
 
-      {selectedIds.size > 0 && (
-        <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
-            <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
-              <PencilSquareIcon style={{ width: 14, height: 14 }} />
+        {selectedIds.size > 0 && (
+          <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="d-flex align-items-center gap-2">
+              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+                {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+              </span>
+              <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
+                <PencilSquareIcon style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+            <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionInv}>
+              <XMarkIcon style={{ width: 14, height: 14 }} />
             </button>
           </div>
-          <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionInv}>
-            <XMarkIcon style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      )}
-      <PageTableHeader columns={[
-        { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedInv} onChange={handleSelectAllInv} title="Select all visible" />, width: 44, className: "p-0 text-center" },
-        { label: "Item", sortKey: "name" },
-        { label: "Type", width: 80, sortKey: "type" },
-        { label: "Count", width: 60, sortKey: "count" },
-      ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
+        )}
+        <PageTableHeader
+          columns={[
+            { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedInv} onChange={handleSelectAllInv} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+            { label: "Item", sortKey: "name" },
+            { label: "Type", width: 80, sortKey: "type" },
+            { label: "Count", width: 60, sortKey: "count" },
+          ]}
+          sortColumn={sortColumn}
+          sortAsc={sortAsc}
+          onSort={handleSort}
+        />
 
-      {/* Fixed bottom – headers + controls */}
-      <PageTableFooter
-        searchTerm={searchTerm}
-        onSearch={setSearchTerm}
-        searchPlaceholder="Search by name or SKU..."
-        beforeSearch={
-          <div className="app-footer-toolbar d-flex align-items-center">
-            <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
-            <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
-          </div>
-        }
-        addButton={
+        {/* Fixed bottom – headers + controls */}
+        <PageTableFooter
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name or SKU..."
+          beforeSearch={
+            <div className="app-footer-toolbar d-flex align-items-center">
+              <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
+              <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
+            </div>
+          }
+          addButton={
+            <Gate_Permission page="inventory" permission="write">
+              <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
+            </Gate_Permission>
+          }
+        >
           <Gate_Permission page="inventory" permission="write">
-            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
+            <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
           </Gate_Permission>
-        }
-      >
-        <Gate_Permission page="inventory" permission="write">
-          <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
-        </Gate_Permission>
 
-        {/* Type Filter */}
-        <div className="position-relative">
-          <Button_Toolbar
-            icon={TagIcon}
-            label="Type"
-            onClick={() => {
-              const nextOpen = !isTypeFilterOpen;
-              setIsTypeFilterOpen(nextOpen);
-              if (!nextOpen) setTypeFilterHelpKey(null);
-            }}
-            className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
-            data-active={typeFilter !== "all"}
-          />
-          {isTypeFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
-              {typeFilterOptions.map((option, index) => {
-                const isLast = index === typeFilterOptions.length - 1;
-                const isSelected = typeFilter === option.value;
-                const isHelpOpen = typeFilterHelpKey === option.value;
+          {/* Type Filter */}
+          <div className="position-relative">
+            <Button_Toolbar
+              icon={TagIcon}
+              label="Type"
+              onClick={() => {
+                const nextOpen = !isTypeFilterOpen;
+                setIsTypeFilterOpen(nextOpen);
+                if (!nextOpen) setTypeFilterHelpKey(null);
+              }}
+              className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
+              data-active={typeFilter !== "all"}
+            />
+            {isTypeFilterOpen && (
+              <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
+                {typeFilterOptions.map((option, index) => {
+                  const isLast = index === typeFilterOptions.length - 1;
+                  const isSelected = typeFilter === option.value;
+                  const isHelpOpen = typeFilterHelpKey === option.value;
 
-                return (
-                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                    <button
-                      onClick={() => {
-                        setTypeFilter(option.value);
-                        setIsTypeFilterOpen(false);
-                        setTypeFilterHelpKey(null);
-                      }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                    >
-                      {option.label}
-                    </button>
+                  return (
+                    <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
+                      <button
+                        onClick={() => {
+                          setTypeFilter(option.value);
+                          setIsTypeFilterOpen(false);
+                          setTypeFilterHelpKey(null);
+                        }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                      >
+                        {option.label}
+                      </button>
 
-                    {isTrainingMode && (
-                      <div className="position-relative flex-shrink-0">
-                        <button
-                          type="button"
-                          aria-label={`${option.label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
-                          
-                          onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                          onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                          }}
-                        >
-                          ?
-                        </button>
-
-                        {isHelpOpen && (
-                          <div
-                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                      {isTrainingMode && (
+                        <div className="position-relative flex-shrink-0">
+                          <button
+                            type="button"
+                            aria-label={`${option.label} help`}
+                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
                             onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                             onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                            }}
                           >
-                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                            ?
+                          </button>
 
-        {/* Stock Filter */}
-        <div className="position-relative">
-          <Button_Toolbar
-            icon={CircleStackIcon}
-            label="Stock"
-            onClick={() => {
-              const nextOpen = !isStockFilterOpen;
-              setIsStockFilterOpen(nextOpen);
-              if (!nextOpen) setStockFilterHelpKey(null);
-            }}
-            className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
-            data-active={stockFilter !== "all"}
-          />
-          {isStockFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
-              {stockFilterOptions.map((option, index) => {
-                const isLast = index === stockFilterOptions.length - 1;
-                const isSelected = stockFilter === option.value;
-                const isHelpOpen = stockFilterHelpKey === option.value;
+                          {isHelpOpen && (
+                            <div
+                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                              onMouseEnter={() => setTypeFilterHelpKey(option.value)}
+                              onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                            >
+                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-                return (
-                  <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                    <button
-                      onClick={() => {
-                        setStockFilter(option.value);
-                        setIsStockFilterOpen(false);
-                        setStockFilterHelpKey(null);
-                      }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                    >
-                      {option.label}
-                    </button>
+          {/* Stock Filter */}
+          <div className="position-relative">
+            <Button_Toolbar
+              icon={CircleStackIcon}
+              label="Stock"
+              onClick={() => {
+                const nextOpen = !isStockFilterOpen;
+                setIsStockFilterOpen(nextOpen);
+                if (!nextOpen) setStockFilterHelpKey(null);
+              }}
+              className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
+              data-active={stockFilter !== "all"}
+            />
+            {isStockFilterOpen && (
+              <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
+                {stockFilterOptions.map((option, index) => {
+                  const isLast = index === stockFilterOptions.length - 1;
+                  const isSelected = stockFilter === option.value;
+                  const isHelpOpen = stockFilterHelpKey === option.value;
 
-                    {isTrainingMode && (
-                      <div className="position-relative flex-shrink-0">
-                        <button
-                          type="button"
-                          aria-label={`${option.label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
-                          
-                          onMouseEnter={() => setStockFilterHelpKey(option.value)}
-                          onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                          }}
-                        >
-                          ?
-                        </button>
+                  return (
+                    <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
+                      <button
+                        onClick={() => {
+                          setStockFilter(option.value);
+                          setIsStockFilterOpen(false);
+                          setStockFilterHelpKey(null);
+                        }}
+                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                      >
+                        {option.label}
+                      </button>
 
-                        {isHelpOpen && (
-                          <div
-                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
-                            style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                      {isTrainingMode && (
+                        <div className="position-relative flex-shrink-0">
+                          <button
+                            type="button"
+                            aria-label={`${option.label} help`}
+                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
                             onMouseEnter={() => setStockFilterHelpKey(option.value)}
                             onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
+                            }}
                           >
-                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                            <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                            ?
+                          </button>
 
-        {/* Clear Filters Button */}
-        {(typeFilter !== "all" || stockFilter !== "all") && (
-          <Button_Toolbar
-            icon={XMarkIcon}
-            label="Clear"
-            onClick={() => {
-              setTypeFilter("all");
-              setStockFilter("all");
-            }}
-            className="btn-app-danger"
-          />
-        )}
-      </PageTableFooter>
+                          {isHelpOpen && (
+                            <div
+                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                              onMouseEnter={() => setStockFilterHelpKey(option.value)}
+                              onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
+                            >
+                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
+                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Clear Filters Button */}
+          {(typeFilter !== "all" || stockFilter !== "all") && (
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Clear"
+              onClick={() => {
+                setTypeFilter("all");
+                setStockFilter("all");
+              }}
+              className="btn-app-danger"
+            />
+          )}
+        </PageTableFooter>
       </div>
 
       <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding contentGravity="top">

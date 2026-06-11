@@ -263,34 +263,21 @@ export default function Cart() {
 
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 30, borderRadius: 999, padding: "0 10px", background: "#eef2ff", color: "#3730a3", fontSize: "0.74rem", fontWeight: 700 }}>${(item.price * (item.quantity || 1)).toFixed(2)}</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 30, borderRadius: 999, padding: "0 10px", background: "#f3f4f6", color: "#374151", fontSize: "0.72rem", fontWeight: 700, textTransform: "capitalize" }}>{item.item_type || "product"}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 30, borderRadius: 999, padding: "0 10px", background: "#f3f4f6", color: "#374151", fontSize: "0.72rem", fontWeight: 700, textTransform: "capitalize" }}>
+                    {item.item_type || "product"}
+                  </span>
 
-                  <button
-                    className="cp-circle-icon-btn"
-                    onClick={() => updateCartQty(item._key, item.quantity - 1)}
-                    disabled={item.item_type === "service"}
-                    title="Decrease"
-                  >
+                  <button className="cp-circle-icon-btn" onClick={() => updateCartQty(item._key, item.quantity - 1)} disabled={item.item_type === "service"} title="Decrease">
                     <MinusIcon style={{ width: 14, height: 14 }} />
                   </button>
 
                   <span style={{ minWidth: 22, textAlign: "center", fontSize: "0.84rem", fontWeight: 700, color: "#111827" }}>{item.quantity || 1}</span>
 
-                  <button
-                    className="cp-circle-icon-btn"
-                    onClick={() => updateCartQty(item._key, item.quantity + 1)}
-                    disabled={item.item_type === "service"}
-                    title="Increase"
-                  >
+                  <button className="cp-circle-icon-btn" onClick={() => updateCartQty(item._key, item.quantity + 1)} disabled={item.item_type === "service"} title="Increase">
                     <PlusIcon style={{ width: 14, height: 14 }} />
                   </button>
 
-                  <button
-                    className="cp-circle-icon-btn"
-                    onClick={() => item.item_type === "service" && setEditingServiceItem(item)}
-                    disabled={item.item_type !== "service"}
-                    title={item.item_type === "service" ? "Edit appointment time" : "No appointment for products"}
-                  >
+                  <button className="cp-circle-icon-btn" onClick={() => item.item_type === "service" && setEditingServiceItem(item)} disabled={item.item_type !== "service"} title={item.item_type === "service" ? "Edit appointment time" : "No appointment for products"}>
                     <ChevronDownIcon style={{ width: 14, height: 14 }} />
                   </button>
 
@@ -438,15 +425,7 @@ export default function Cart() {
           </div>
         )}
 
-        {editingServiceItem && (
-          <BookingCalendar
-            service={editingServiceItem}
-            companyId={companyId}
-            onSelect={handleSelectServiceSlot}
-            onClose={() => setEditingServiceItem(null)}
-            submitting={false}
-          />
-        )}
+        {editingServiceItem && <BookingCalendar service={editingServiceItem} companyId={companyId} onSelect={handleSelectServiceSlot} onClose={() => setEditingServiceItem(null)} submitting={false} />}
       </div>
     </Layout>
   );

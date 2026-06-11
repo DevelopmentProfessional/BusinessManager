@@ -35,26 +35,12 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
               const isString = typeof col.label === "string";
 
               return (
-                <th
-                  key={i}
-                  className={["text-start", col.className, isSortable ? "user-select-none" : ""].filter(Boolean).join(" ")}
-                  style={isSortable ? { cursor: "pointer" } : undefined}
-                  onClick={() => handleHeaderClick(col.sortKey)}
-                  title={isSortable ? "Click to sort" : undefined}
-                >
+                <th key={i} className={["text-start", col.className, isSortable ? "user-select-none" : ""].filter(Boolean).join(" ")} style={isSortable ? { cursor: "pointer" } : undefined} onClick={() => handleHeaderClick(col.sortKey)} title={isSortable ? "Click to sort" : undefined}>
                   {isString && isSortable ? (
                     <span className="d-inline-flex align-items-center gap-2">
                       {col.label}
                       <span className="d-inline-flex" style={{ fontSize: "0.75rem", opacity: isActive ? 1 : 0.4, transition: "opacity 0.15s" }}>
-                        {isActive ? (
-                          sortAsc ? (
-                            <ArrowUpIcon style={{ width: 14, height: 14 }} />
-                          ) : (
-                            <ArrowDownIcon style={{ width: 14, height: 14 }} />
-                          )
-                        ) : (
-                          <ArrowUpIcon style={{ width: 14, height: 14 }} />
-                        )}
+                        {isActive ? sortAsc ? <ArrowUpIcon style={{ width: 14, height: 14 }} /> : <ArrowDownIcon style={{ width: 14, height: 14 }} /> : <ArrowUpIcon style={{ width: 14, height: 14 }} />}
                       </span>
                     </span>
                   ) : (

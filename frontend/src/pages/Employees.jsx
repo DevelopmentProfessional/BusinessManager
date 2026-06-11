@@ -359,21 +359,47 @@ export default function Employees() {
     });
   }, [employees, searchTerm, roleFilter, statusFilter]);
 
-  const toggleSelectEmp = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSelectEmp = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   const allVisibleSelectedEmp = filteredEmployees.length > 0 && filteredEmployees.every((e) => selectedIds.has(e.id));
-  const handleSelectAllEmp = () => { if (allVisibleSelectedEmp) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredEmployees.map((e) => e.id))); } };
-  const clearSelectionEmp = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+  const handleSelectAllEmp = () => {
+    if (allVisibleSelectedEmp) {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } else {
+      setSelectionMode(true);
+      setSelectedIds(new Set(filteredEmployees.map((e) => e.id)));
+    }
+  };
+  const clearSelectionEmp = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
 
   const empMultiEditFields = [
-    { key: "role", label: "Role", type: "select", options: [
-      { value: "admin", label: "Admin" },
-      { value: "manager", label: "Manager" },
-      { value: "employee", label: "Employee" },
-    ]},
-    { key: "is_active", label: "Status", type: "select", options: [
-      { value: "true", label: "Active" },
-      { value: "false", label: "Inactive" },
-    ]},
+    {
+      key: "role",
+      label: "Role",
+      type: "select",
+      options: [
+        { value: "admin", label: "Admin" },
+        { value: "manager", label: "Manager" },
+        { value: "employee", label: "Employee" },
+      ],
+    },
+    {
+      key: "is_active",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "true", label: "Active" },
+        { value: "false", label: "Inactive" },
+      ],
+    },
   ];
 
   const handleEmpMultiEditSave = async (updates) => {
@@ -1049,11 +1075,7 @@ export default function Employees() {
                       {employee.department_id &&
                         (() => {
                           const dept = departments.find((d) => d.id === employee.department_id);
-                          return dept ? (
-                            <span className="badge bg-info-subtle text-info rounded-pill text-xxs">
-                              {dept.name}
-                            </span>
-                          ) : null;
+                          return dept ? <span className="badge bg-info-subtle text-info rounded-pill text-xxs">{dept.name}</span> : null;
                         })()}
                     </td>
 
@@ -1079,7 +1101,6 @@ export default function Employees() {
                         <button
                           type="button"
                           className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? "btn-primary" : "btn-outline-secondary"}`}
-                          
                           title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ""}`}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1113,7 +1134,9 @@ export default function Employees() {
         {selectedIds.size > 0 && (
           <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
             <div className="d-flex align-items-center gap-2">
-              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+                {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+              </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected employees" onClick={() => setShowMultiEdit(true)}>
                 <PencilSquareIcon style={{ width: 14, height: 14 }} />
               </button>
@@ -1123,13 +1146,18 @@ export default function Employees() {
             </button>
           </div>
         )}
-        <PageTableHeader columns={[
-          { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedEmp} onChange={handleSelectAllEmp} title="Select all visible" />, width: 44, className: "p-0 text-center" },
-          { label: "Employee", className: "text-start ps-0", sortKey: "name" },
-          ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []),
-          { label: "Role", width: 90, className: "text-start ps-0", sortKey: "role" },
-          { label: "", width: 54, className: "p-0" },
-        ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
+        <PageTableHeader
+          columns={[
+            { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedEmp} onChange={handleSelectAllEmp} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+            { label: "Employee", className: "text-start ps-0", sortKey: "name" },
+            ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []),
+            { label: "Role", width: 90, className: "text-start ps-0", sortKey: "role" },
+            { label: "", width: 54, className: "p-0" },
+          ]}
+          sortColumn={sortColumn}
+          sortAsc={sortAsc}
+          onSort={handleSort}
+        />
 
         {/* Fixed bottom – headers + controls */}
         <PageTableFooter
@@ -1191,10 +1219,7 @@ export default function Employees() {
             isOpen={isRoleFilterOpen}
             setIsOpen={setIsRoleFilterOpen}
             dropdownStyle={{ maxHeight: "300px", overflowY: "auto" }}
-            options={[
-              { value: "all", label: "All Roles", description: "Shows employees from every role." },
-              ...roleOptions.map((r) => ({ value: r, label: r, description: `Shows only employees assigned the "${r}" role.` })),
-            ]}
+            options={[{ value: "all", label: "All Roles", description: "Shows employees from every role." }, ...roleOptions.map((r) => ({ value: r, label: r, description: `Shows only employees assigned the "${r}" role.` }))]}
           />
 
           {/* Status Filter */}
@@ -1208,9 +1233,9 @@ export default function Employees() {
             setIsOpen={setIsStatusFilterOpen}
             activeClass={statusFilter === "active" ? "bg-green-600 text-white" : "bg-red-600 text-white"}
             options={[
-              { value: "all",      label: "All Statuses", description: "Shows both active and inactive employees." },
-              { value: "active",   label: "Active",       description: "Shows only active employees." },
-              { value: "inactive", label: "Inactive",     description: "Shows only inactive employees." },
+              { value: "all", label: "All Statuses", description: "Shows both active and inactive employees." },
+              { value: "active", label: "Active", description: "Shows only active employees." },
+              { value: "inactive", label: "Inactive", description: "Shows only inactive employees." },
             ]}
           />
         </PageTableFooter>
@@ -1265,15 +1290,7 @@ export default function Employees() {
 
       {/* Employee Form Modal */}
       <Modal isOpen={isModalOpen && modalContent === "employee-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "employee-form" && (
-          <Form_Employee
-            employee={editingEmployee}
-            onSubmit={handleSubmit}
-            onCancel={closeModal}
-            onManagePermissions={editingEmployee && hasPermission("employees", "admin") ? handleManagePermissions : null}
-            employees={employees}
-          />
-        )}
+        {isModalOpen && modalContent === "employee-form" && <Form_Employee employee={editingEmployee} onSubmit={handleSubmit} onCancel={closeModal} onManagePermissions={editingEmployee && hasPermission("employees", "admin") ? handleManagePermissions : null} employees={employees} />}
       </Modal>
 
       {/* Create User Modal */}

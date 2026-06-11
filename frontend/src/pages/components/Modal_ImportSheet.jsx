@@ -397,98 +397,101 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
         <div className="component-body">
           <div className="component-body-inner component-body-inner--flush">
-          <div ref={scrollContainerRef} className="h-100 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
-          <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
-            <colgroup>
-              <col style={{ width: 56 }} />
-              {columns.map((col) => (
-                <col key={col.id} style={{ minWidth: 170 }} />
-              ))}
-            </colgroup>
-            <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 3 }}>
-              <tr>
-                <th style={{ width: 56 }}>
-                  <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Reset column mappings to defaults" onClick={handleResetMappings}>
-                    <ArrowPathIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                </th>
-                {columns.map((col, colIndex) => (
-                  <th
-                    key={col.id}
-                    style={{
-                      minWidth: 170,
-                      background: dragOverCol === colIndex ? "var(--bs-primary-bg-subtle, #cfe2ff)" : undefined,
-                      transition: "background 0.15s",
-                    }}
-                    onDragOver={(e) => handleColDragOver(e, colIndex)}
-                    onDrop={() => handleColDrop(colIndex)}
-                  >
-                    <div className="d-flex align-items-center gap-1">
-                      <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
-                        <XMarkIcon style={{ width: 12, height: 12 }} />
-                      </button>
-
-                      <select className="form-select form-select-sm border-0 shadow-none" style={{ backgroundColor: "transparent" }} value={mappings[colIndex] || defaultFieldSequence[0]} onChange={(e) => setMapping(colIndex, e.target.value)}>
-                        {fieldOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-
-                      <span
-                        draggable
-                        onDragStart={() => handleColDragStart(colIndex)}
-                        onDragEnd={handleColDragEnd}
-                        title="Drag to reorder this column"
-                        style={{
-                          cursor: "grab",
-                          display: "flex",
-                          alignItems: "center",
-                          color: "var(--bs-secondary-color, #6c757d)",
-                        }}
-                      >
-                        <Bars3Icon style={{ width: 14, height: 14 }} />
-                      </span>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, rowIndex) => (
-                <tr key={`r_${rowIndex}`}>
-                  <td className="text-muted small text-center align-middle">
-                    <div className="d-flex align-items-center justify-content-center gap-1">
-                      <button type="button" className="btn btn-sm btn-link text-danger p-0" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
-                        <XMarkIcon style={{ width: 12, height: 12 }} />
-                      </button>
-                      <span>{rowIndex + 1}</span>
-                    </div>
-                  </td>
-                  {columns.map((col, colIndex) => (
-                    <td key={`${col.id}_${rowIndex}`}>
-                      <input
-                        className="form-control form-control-sm border-0 shadow-none"
-                        style={{ backgroundColor: "transparent" }}
-                        value={row[colIndex] || ""}
-                        onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                        onPaste={(e) => {
-                          const text = e.clipboardData?.getData("text/plain");
-                          if (!text) return;
-                          e.preventDefault();
-                          applyPastedMatrix(parseClipboardTable(text), 0, 0);
-                        }}
-                      />
-                    </td>
+            <div ref={scrollContainerRef} className="h-100 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
+              <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
+                <colgroup>
+                  <col style={{ width: 56 }} />
+                  {columns.map((col) => (
+                    <col key={col.id} style={{ minWidth: 170 }} />
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>{/* /scroll container */}
-          </div>{/* /component-body-inner */}
-        </div>{/* /component-body */}
+                </colgroup>
+                <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 3 }}>
+                  <tr>
+                    <th style={{ width: 56 }}>
+                      <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Reset column mappings to defaults" onClick={handleResetMappings}>
+                        <ArrowPathIcon style={{ width: 14, height: 14 }} />
+                      </button>
+                    </th>
+                    {columns.map((col, colIndex) => (
+                      <th
+                        key={col.id}
+                        style={{
+                          minWidth: 170,
+                          background: dragOverCol === colIndex ? "var(--bs-primary-bg-subtle, #cfe2ff)" : undefined,
+                          transition: "background 0.15s",
+                        }}
+                        onDragOver={(e) => handleColDragOver(e, colIndex)}
+                        onDrop={() => handleColDrop(colIndex)}
+                      >
+                        <div className="d-flex align-items-center gap-1">
+                          <button type="button" className="btn btn-sm btn-outline-secondary p-1" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
+                            <XMarkIcon style={{ width: 12, height: 12 }} />
+                          </button>
+
+                          <select className="form-select form-select-sm border-0 shadow-none" style={{ backgroundColor: "transparent" }} value={mappings[colIndex] || defaultFieldSequence[0]} onChange={(e) => setMapping(colIndex, e.target.value)}>
+                            {fieldOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <span
+                            draggable
+                            onDragStart={() => handleColDragStart(colIndex)}
+                            onDragEnd={handleColDragEnd}
+                            title="Drag to reorder this column"
+                            style={{
+                              cursor: "grab",
+                              display: "flex",
+                              alignItems: "center",
+                              color: "var(--bs-secondary-color, #6c757d)",
+                            }}
+                          >
+                            <Bars3Icon style={{ width: 14, height: 14 }} />
+                          </span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={`r_${rowIndex}`}>
+                      <td className="text-muted small text-center align-middle">
+                        <div className="d-flex align-items-center justify-content-center gap-1">
+                          <button type="button" className="btn btn-sm btn-link text-danger p-0" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
+                            <XMarkIcon style={{ width: 12, height: 12 }} />
+                          </button>
+                          <span>{rowIndex + 1}</span>
+                        </div>
+                      </td>
+                      {columns.map((col, colIndex) => (
+                        <td key={`${col.id}_${rowIndex}`}>
+                          <input
+                            className="form-control form-control-sm border-0 shadow-none"
+                            style={{ backgroundColor: "transparent" }}
+                            value={row[colIndex] || ""}
+                            onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                            onPaste={(e) => {
+                              const text = e.clipboardData?.getData("text/plain");
+                              if (!text) return;
+                              e.preventDefault();
+                              applyPastedMatrix(parseClipboardTable(text), 0, 0);
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* /scroll container */}
+          </div>
+          {/* /component-body-inner */}
+        </div>
+        {/* /component-body */}
 
         <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
           {status.message && <div className={`px-3 pt-2 pb-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
