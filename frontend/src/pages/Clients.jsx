@@ -179,10 +179,7 @@ export default function Clients() {
     const countResults = await Promise.all(
       clientsList.map(async (client) => {
         try {
-          const [txRes, portalRes] = await Promise.all([
-            clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })),
-            clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] })),
-          ]);
+          const [txRes, portalRes] = await Promise.all([clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })), clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] }))]);
           const txns = Array.isArray(txRes?.data) ? txRes.data : [];
           const orders = Array.isArray(portalRes?.data) ? portalRes.data : [];
           return [client.id, txns.length + orders.length];
@@ -373,10 +370,26 @@ export default function Clients() {
     });
   }, [clients, searchTerm, tierFilter]);
 
-  const toggleSelectCl = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSelectCl = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   const allVisibleSelectedCl = filteredClients.length > 0 && filteredClients.every((c) => selectedIds.has(c.id));
-  const handleSelectAllCl = () => { if (allVisibleSelectedCl) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredClients.map((c) => c.id))); } };
-  const clearSelectionCl = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+  const handleSelectAllCl = () => {
+    if (allVisibleSelectedCl) {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } else {
+      setSelectionMode(true);
+      setSelectedIds(new Set(filteredClients.map((c) => c.id)));
+    }
+  };
+  const clearSelectionCl = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
 
   const handleMultiEditSave = async (updates) => {
     setMultiSaving(true);
@@ -511,7 +524,9 @@ export default function Clients() {
       {selectedIds.size > 0 && (
         <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
           <div className="d-flex align-items-center gap-2">
-            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+              {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+            </span>
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected clients" onClick={() => setShowMultiEdit(true)}>
               <PencilSquareIcon style={{ width: 14, height: 14 }} />
             </button>
@@ -521,12 +536,17 @@ export default function Clients() {
           </button>
         </div>
       )}
-      <PageTableHeader columns={[
-        { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedCl} onChange={handleSelectAllCl} title="Select all visible" />, width: 44, className: "p-0 text-center" },
-        { label: "Client", className: "text-start ps-0", sortKey: "name" },
-        { label: "Subs", width: 120, className: "text-start ps-0", sortKey: "email" },
-        { label: "Notify", width: 56, className: "text-start ps-0" },
-      ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
+      <PageTableHeader
+        columns={[
+          { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedCl} onChange={handleSelectAllCl} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+          { label: "Client", className: "text-start ps-0", sortKey: "name" },
+          { label: "Subs", width: 120, className: "text-start ps-0", sortKey: "email" },
+          { label: "Notify", width: 56, className: "text-start ps-0" },
+        ]}
+        sortColumn={sortColumn}
+        sortAsc={sortAsc}
+        onSort={handleSort}
+      />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter

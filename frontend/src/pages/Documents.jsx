@@ -140,23 +140,20 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
       <div className="flex-grow-1 overflow-auto p-3 min-h-0">
         <div className="small fw-semibold text-muted mb-2">Upload Document</div>
 
-        <div
-          className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
+        <div className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
           {formData.file ? (
             <>
-              {formData.file.type.startsWith("image/") ? (
-                <img src={previewUrl} alt="preview" className="mx-auto mb-2 rounded" style={{ maxHeight: "8rem" }} />
-              ) : (
-                <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />
-              )}
+              {formData.file.type.startsWith("image/") ? <img src={previewUrl} alt="preview" className="mx-auto mb-2 rounded" style={{ maxHeight: "8rem" }} /> : <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />}
               <p className="small fw-medium mb-1">{formData.file.name}</p>
               <p className="text-muted small mb-2">{formatFileSize(formData.file.size)}</p>
-              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setFormData((prev) => ({ ...prev, file: null })); }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => {
+                  if (previewUrl) URL.revokeObjectURL(previewUrl);
+                  setFormData((prev) => ({ ...prev, file: null }));
+                }}
+              >
                 Remove
               </button>
             </>
@@ -184,16 +181,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
 
       <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
         <Footer_Actions
-          start={
-            <Button_Toolbar
-              type="submit"
-              icon={ArrowDownTrayIcon}
-              label={uploading ? "Uploading…" : "Upload"}
-              className="btn-outline-secondary"
-              disabled={uploading || !formData.file}
-              title="Upload document"
-            />
-          }
+          start={<Button_Toolbar type="submit" icon={ArrowDownTrayIcon} label={uploading ? "Uploading…" : "Upload"} className="btn-outline-secondary" disabled={uploading || !formData.file} title="Upload document" />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" disabled={uploading} title="Cancel" />}
         />
       </div>
@@ -342,17 +330,28 @@ export default function Documents() {
     });
   }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById, docTagMap]);
 
-  const docMultiEditFields = useMemo(() => [
-    { key: "category_id", label: "Category", type: "select", options: [
-      { value: "", label: "— Leave unchanged —" },
-      ...categories.map((c) => ({ value: c.id, label: c.name })),
-    ]},
-  ], [categories]);
+  const docMultiEditFields = useMemo(() => [{ key: "category_id", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, ...categories.map((c) => ({ value: c.id, label: c.name }))] }], [categories]);
 
-  const toggleSelectDoc = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSelectDoc = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   const allVisibleSelectedDoc = filteredDocuments.length > 0 && filteredDocuments.every((d) => selectedIds.has(d.id));
-  const handleSelectAllDoc = () => { if (allVisibleSelectedDoc) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredDocuments.map((d) => d.id))); } };
-  const clearSelectionDoc = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+  const handleSelectAllDoc = () => {
+    if (allVisibleSelectedDoc) {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } else {
+      setSelectionMode(true);
+      setSelectedIds(new Set(filteredDocuments.map((d) => d.id)));
+    }
+  };
+  const clearSelectionDoc = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
 
   const handleDocMultiEditSave = async (updates) => {
     setMultiSaving(true);
@@ -794,12 +793,7 @@ export default function Documents() {
                     {filtered.map((tpl) => (
                       <tr key={tpl.id} className="align-middle border-bottom">
                         <td className="text-center px-1">
-                          <button
-                            onClick={() => handleDeleteTemplate(tpl)}
-                            className="btn btn-sm btn-outline-danger border-0 p-1 d-flex align-items-center justify-content-center"
-                            title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
-                            disabled={tpl.is_standard}
-                          >
+                          <button onClick={() => handleDeleteTemplate(tpl)} className="btn btn-sm btn-outline-danger border-0 p-1 d-flex align-items-center justify-content-center" title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"} disabled={tpl.is_standard}>
                             <XMarkIcon className="h-4 w-4" />
                           </button>
                         </td>
@@ -916,7 +910,9 @@ export default function Documents() {
         {selectedIds.size > 0 && !showTemplates && (
           <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
             <div className="d-flex align-items-center gap-2">
-              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+                {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+              </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
                 <PencilSquareIcon style={{ width: 14, height: 14 }} />
               </button>
@@ -967,7 +963,7 @@ export default function Documents() {
           {showTemplates ? (
             /* Templates mode controls */
             <>
-              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-pill btn-app-primary px-3"  title="New template">
+              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-pill btn-app-primary px-3" title="New template">
                 <PlusIcon className="h-5 w-5" />
               </button>
               {/* Type filter for templates */}
@@ -1013,7 +1009,6 @@ export default function Documents() {
           ) : (
             /* Documents mode controls */
             <>
-
               {/* View Toggle: List <-> Grid */}
               <Button_Toolbar
                 icon={viewMode === "grid" ? ListBulletIcon : Squares2X2Icon}

@@ -240,150 +240,147 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
 
         <div className="component-body">
           <div className="component-body-inner">
-          {loading ? (
-            <div className="d-flex justify-content-center py-5">
-              <div className="spinner-border spinner-border-sm text-primary" role="status" />
-            </div>
-          ) : orderCreated ? (
-            <div className="text-center py-5 px-3">
-              <CheckCircleIcon style={{ width: 48, height: 48, color: "#22c55e", margin: "0 auto 12px" }} />
-              <div className="fw-semibold mb-1">Order Created</div>
-              <div className="small text-muted mb-1">
-                Order #
-                {String(orderCreated.id || "")
-                  .split("-")[0]
-                  .toUpperCase()}{" "}
-                is now in the queue.
+            {loading ? (
+              <div className="d-flex justify-content-center py-5">
+                <div className="spinner-border spinner-border-sm text-primary" role="status" />
               </div>
-              <div className="small text-muted">
-                Status: <strong>{orderCreated.status || "payment_pending"}</strong>
+            ) : orderCreated ? (
+              <div className="text-center py-5 px-3">
+                <CheckCircleIcon style={{ width: 48, height: 48, color: "#22c55e", margin: "0 auto 12px" }} />
+                <div className="fw-semibold mb-1">Order Created</div>
+                <div className="small text-muted mb-1">
+                  Order #
+                  {String(orderCreated.id || "")
+                    .split("-")[0]
+                    .toUpperCase()}{" "}
+                  is now in the queue.
+                </div>
+                <div className="small text-muted">
+                  Status: <strong>{orderCreated.status || "payment_pending"}</strong>
+                </div>
               </div>
-            </div>
-          ) : cartItems.length === 0 ? (
-            <div className="text-center text-muted py-5">
-              <ShoppingCartIcon style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: 0.4 }} />
-              <div className="fw-medium mb-1">Cart is empty</div>
-              <div className="small text-muted">Tap "Sales" below to add items</div>
-            </div>
-          ) : (
-            <>
-              {cartItems.map((item) => {
-                const isExpanded = expandedCartKey === item.cartKey;
-                const isService = item.itemType === "service";
-                const features = featureData[item.cartKey] || [];
-                const loadingFeat = featureLoading[item.cartKey] || false;
+            ) : cartItems.length === 0 ? (
+              <div className="text-center text-muted py-5">
+                <ShoppingCartIcon style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: 0.4 }} />
+                <div className="fw-medium mb-1">Cart is empty</div>
+                <div className="small text-muted">Tap "Sales" below to add items</div>
+              </div>
+            ) : (
+              <>
+                {cartItems.map((item) => {
+                  const isExpanded = expandedCartKey === item.cartKey;
+                  const isService = item.itemType === "service";
+                  const features = featureData[item.cartKey] || [];
+                  const loadingFeat = featureLoading[item.cartKey] || false;
 
-                // Read already-selected values from options
-                const selectedFeatureMap = Object.fromEntries((item.selectedOptions || []).filter((o) => o.feature_id).map((o) => [o.feature_id, o.option_id]));
-                const scheduledDate = (item.selectedOptions || []).find((o) => o.type === "scheduled_date")?.value || "";
+                  // Read already-selected values from options
+                  const selectedFeatureMap = Object.fromEntries((item.selectedOptions || []).filter((o) => o.feature_id).map((o) => [o.feature_id, o.option_id]));
+                  const scheduledDate = (item.selectedOptions || []).find((o) => o.type === "scheduled_date")?.value || "";
 
-                return (
-                  <div key={item.cartKey} className="border-bottom border-gray-100 dark:border-gray-700">
-                    {/* ── Main row ── */}
-                    <div className="d-flex align-items-center gap-2 py-2 px-3">
-                      <div className="flex-grow-1 min-w-0">
-                        <div className="fw-medium text-truncate">{item.name}</div>
-                        <div className="small text-muted text-truncate">{getSecondLineText(item)}</div>
+                  return (
+                    <div key={item.cartKey} className="border-bottom border-gray-100 dark:border-gray-700">
+                      {/* ── Main row ── */}
+                      <div className="d-flex align-items-center gap-2 py-2 px-3">
+                        <div className="flex-grow-1 min-w-0">
+                          <div className="fw-medium text-truncate">{item.name}</div>
+                          <div className="small text-muted text-truncate">{getSecondLineText(item)}</div>
 
-                        <div className="d-flex align-items-center gap-1 flex-wrap mt-1">
-                          <span className="badge bg-primary-subtle text-primary">${(item.price || 0).toFixed(2)}</span>
-                          <span className={`badge ${isService ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary"} text-capitalize`}>{item.itemType}</span>
+                          <div className="d-flex align-items-center gap-1 flex-wrap mt-1">
+                            <span className="badge bg-primary-subtle text-primary">${(item.price || 0).toFixed(2)}</span>
+                            <span className={`badge ${isService ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary"} text-capitalize`}>{item.itemType}</span>
 
-                          {/* Qty controls */}
-                          <button type="button" onClick={() => updateQty(item.cartKey, -1)} className="btn btn-circle btn-outline-secondary" title="Decrease quantity">
-                            <MinusIcon style={{ width: 14, height: 14 }} />
-                          </button>
-                          <span className="fw-semibold" style={{ minWidth: 24, textAlign: "center" }}>
-                            {item.quantity}
-                          </span>
-                          <button type="button" onClick={() => updateQty(item.cartKey, 1)} className="btn btn-circle btn-outline-secondary" title="Increase quantity">
-                            <PlusIcon style={{ width: 14, height: 14 }} />
-                          </button>
+                            {/* Qty controls */}
+                            <button type="button" onClick={() => updateQty(item.cartKey, -1)} className="btn btn-circle btn-outline-secondary" title="Decrease quantity">
+                              <MinusIcon style={{ width: 14, height: 14 }} />
+                            </button>
+                            <span className="fw-semibold" style={{ minWidth: 24, textAlign: "center" }}>
+                              {item.quantity}
+                            </span>
+                            <button type="button" onClick={() => updateQty(item.cartKey, 1)} className="btn btn-circle btn-outline-secondary" title="Increase quantity">
+                              <PlusIcon style={{ width: 14, height: 14 }} />
+                            </button>
 
-                          {/* Expand details button */}
-                          <button
-                            type="button"
-                            onClick={() => handleExpandItem(item.cartKey, item)}
-                            className={`btn btn-circle ${isExpanded ? "btn-primary" : "btn-outline-secondary"}`}
-                            title={isService ? "Set appointment date" : "Select options"}
-                          >
-                            {isExpanded ? <ChevronUpIcon style={{ width: 14, height: 14 }} /> : <ChevronDownIcon style={{ width: 14, height: 14 }} />}
-                          </button>
+                            {/* Expand details button */}
+                            <button type="button" onClick={() => handleExpandItem(item.cartKey, item)} className={`btn btn-circle ${isExpanded ? "btn-primary" : "btn-outline-secondary"}`} title={isService ? "Set appointment date" : "Select options"}>
+                              {isExpanded ? <ChevronUpIcon style={{ width: 14, height: 14 }} /> : <ChevronDownIcon style={{ width: 14, height: 14 }} />}
+                            </button>
 
-                          {/* Remove */}
-                          <button type="button" onClick={() => removeItem(item.cartKey)} className="btn btn-circle btn-outline-danger" title="Remove item">
-                            <XMarkIcon style={{ width: 14, height: 14 }} />
-                          </button>
+                            {/* Remove */}
+                            <button type="button" onClick={() => removeItem(item.cartKey)} className="btn btn-circle btn-outline-danger" title="Remove item">
+                              <XMarkIcon style={{ width: 14, height: 14 }} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* ── Expanded panel ── */}
-                    {isExpanded && (
-                      <div className="px-3 pb-3 bg-gray-50 dark:bg-gray-800">
-                        {isService ? (
-                          /* ── Service: appointment date picker ── */
-                          <div>
-                            <div className="small fw-semibold text-muted mb-1">Appointment Date &amp; Time</div>
-                            <input type="datetime-local" className="form-control form-control-sm" value={scheduledDate ? scheduledDate.slice(0, 16) : ""} onChange={(e) => handleSetScheduledDate(item.cartKey, e.target.value || null)} />
-                            {scheduledDate && (
-                              <button type="button" className="btn btn-link btn-sm text-danger p-0 mt-1" style={{ fontSize: "0.75rem" }} onClick={() => handleSetScheduledDate(item.cartKey, null)}>
-                                Clear date
-                              </button>
-                            )}
-                          </div>
-                        ) : /* ── Product: feature option picker ── */
-                        loadingFeat ? (
-                          <div className="d-flex justify-content-center py-2">
-                            <div className="spinner-border spinner-border-sm text-secondary" role="status" />
-                          </div>
-                        ) : features.length === 0 ? (
-                          <div className="small text-muted py-1">No configurable options for this item.</div>
-                        ) : (
-                          <div className="d-flex flex-column gap-2 pt-1">
-                            {features.map((feature) => {
-                              const enabledOptions = feature.options.filter((o) => o.is_enabled);
-                              if (enabledOptions.length === 0) return null;
-                              return (
-                                <div key={feature.feature_id}>
-                                  <div className="small fw-semibold text-muted mb-1">{feature.feature_name}</div>
-                                  <div className="d-flex flex-wrap gap-1">
-                                    {enabledOptions.map((opt) => {
-                                      const isSelected = selectedFeatureMap[feature.feature_id] === opt.option_id;
-                                      return (
-                                        <button
-                                          key={opt.option_id}
-                                          type="button"
-                                          onClick={() => handleSelectFeatureOption(item.cartKey, feature.feature_id, feature.feature_name, opt.option_id, opt.option_name)}
-                                          className={`btn btn-sm ${isSelected ? "btn-primary" : "btn-outline-secondary"}`}
-                                          style={{ fontSize: "0.75rem", padding: "2px 10px" }}
-                                        >
-                                          {opt.option_name}
-                                          {opt.price != null && feature.affects_price && <span className="ms-1 opacity-75">+${opt.price.toFixed(2)}</span>}
-                                        </button>
-                                      );
-                                    })}
+                      {/* ── Expanded panel ── */}
+                      {isExpanded && (
+                        <div className="px-3 pb-3 bg-gray-50 dark:bg-gray-800">
+                          {isService ? (
+                            /* ── Service: appointment date picker ── */
+                            <div>
+                              <div className="small fw-semibold text-muted mb-1">Appointment Date &amp; Time</div>
+                              <input type="datetime-local" className="form-control form-control-sm" value={scheduledDate ? scheduledDate.slice(0, 16) : ""} onChange={(e) => handleSetScheduledDate(item.cartKey, e.target.value || null)} />
+                              {scheduledDate && (
+                                <button type="button" className="btn btn-link btn-sm text-danger p-0 mt-1" style={{ fontSize: "0.75rem" }} onClick={() => handleSetScheduledDate(item.cartKey, null)}>
+                                  Clear date
+                                </button>
+                              )}
+                            </div>
+                          ) : /* ── Product: feature option picker ── */
+                          loadingFeat ? (
+                            <div className="d-flex justify-content-center py-2">
+                              <div className="spinner-border spinner-border-sm text-secondary" role="status" />
+                            </div>
+                          ) : features.length === 0 ? (
+                            <div className="small text-muted py-1">No configurable options for this item.</div>
+                          ) : (
+                            <div className="d-flex flex-column gap-2 pt-1">
+                              {features.map((feature) => {
+                                const enabledOptions = feature.options.filter((o) => o.is_enabled);
+                                if (enabledOptions.length === 0) return null;
+                                return (
+                                  <div key={feature.feature_id}>
+                                    <div className="small fw-semibold text-muted mb-1">{feature.feature_name}</div>
+                                    <div className="d-flex flex-wrap gap-1">
+                                      {enabledOptions.map((opt) => {
+                                        const isSelected = selectedFeatureMap[feature.feature_id] === opt.option_id;
+                                        return (
+                                          <button
+                                            key={opt.option_id}
+                                            type="button"
+                                            onClick={() => handleSelectFeatureOption(item.cartKey, feature.feature_id, feature.feature_name, opt.option_id, opt.option_name)}
+                                            className={`btn btn-sm ${isSelected ? "btn-primary" : "btn-outline-secondary"}`}
+                                            style={{ fontSize: "0.75rem", padding: "2px 10px" }}
+                                          >
+                                            {opt.option_name}
+                                            {opt.price != null && feature.affects_price && <span className="ms-1 opacity-75">+${opt.price.toFixed(2)}</span>}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
-              {/* Total */}
-              <div className="d-flex justify-content-between fw-semibold py-3 px-3">
-                <span>{cartItems.reduce((s, i) => s + i.quantity, 0)} item(s)</span>
-                <span>${total.toFixed(2)}</span>
-              </div>
-            </>
-          )}
-          </div>{/* /component-body-inner */}
-        </div>{/* /component-body */}
+                {/* Total */}
+                <div className="d-flex justify-content-between fw-semibold py-3 px-3">
+                  <span>{cartItems.reduce((s, i) => s + i.quantity, 0)} item(s)</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+              </>
+            )}
+          </div>
+          {/* /component-body-inner */}
+        </div>
+        {/* /component-body */}
 
         <div className="component-footer" style={{ position: "relative" }}>
           <div className="component-footer-left">

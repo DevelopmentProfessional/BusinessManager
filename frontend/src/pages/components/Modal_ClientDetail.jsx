@@ -279,23 +279,12 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
 
   return (
     <div ref={rootRef} className="position-relative purchase-period-filter-dropup">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        title="Filter by month"
-      >
+      <button type="button" onClick={() => setOpen((v) => !v)} className={`btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`} aria-expanded={open} aria-haspopup="listbox" title="Filter by month">
         <FunnelIcon className="h-4 w-4 flex-shrink-0" />
         <span className="text-nowrap">{activeLabel}</span>
       </button>
       {open && (
-        <div
-          role="listbox"
-          className="position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto"
-          style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}
-        >
+        <div role="listbox" className="position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}>
           <div
             role="option"
             tabIndex={0}
@@ -739,12 +728,9 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         .getItems(client.id)
         .then((res) => setCartItems(Array.isArray(res?.data) ? res.data : []))
         .catch(() => setCartItems([]));
-      
+
       // Load purchase history counts
-      Promise.all([
-        clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })),
-        clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] })),
-      ]).then(([txRes, portalRes]) => {
+      Promise.all([clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })), clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] }))]).then(([txRes, portalRes]) => {
         const txns = Array.isArray(txRes?.data) ? txRes.data : [];
         const orders = Array.isArray(portalRes?.data) ? portalRes.data : [];
         setPurchaseHistoryCount(txns.length + orders.length);
@@ -802,9 +788,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
   const cartCount = cartItems.reduce((s, i) => s + (i.quantity || 1), 0);
   const selectedMembershipNames = memberships.filter((m) => formData.membership_ids.includes(m.id)).map((m) => m.name);
-  const badgeMembershipNames = selectedMembershipNames.length > 0
-    ? selectedMembershipNames
-    : (formData.membership_tier && String(formData.membership_tier).toLowerCase() !== "none" ? [String(formData.membership_tier)] : []);
+  const badgeMembershipNames = selectedMembershipNames.length > 0 ? selectedMembershipNames : formData.membership_tier && String(formData.membership_tier).toLowerCase() !== "none" ? [String(formData.membership_tier)] : [];
   const avatarColor = getTierAvatarColor(badgeMembershipNames.length);
   const initials = (formData.name || "?")
     .trim()
@@ -882,50 +866,50 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
           {/* Membership section — only shown when the client already has a subscription */}
           {formData.membership_ids.length > 0 && (
-          <>
-          <hr className="my-2" />
-          <div className="small fw-semibold text-muted mb-2">Subscriptions</div>
-          <div className="row g-2 mb-2">
-            <div className="col-12">
-              <div className="border rounded p-2">
-                <div className="small text-muted mb-2">Assign one or more subscriptions to this client.</div>
-                <div className="d-flex flex-column gap-2" style={{ maxHeight: "170px", overflowY: "auto" }}>
-                  {memberships.length === 0 ? (
-                    <div className="small text-muted">No subscriptions created yet.</div>
-                  ) : (
-                    memberships.map((membership) => (
-                      <label key={membership.id} className="d-flex align-items-start gap-2">
-                        <input type="checkbox" checked={formData.membership_ids.includes(membership.id)} onChange={() => toggleMembership(membership.id)} />
-                        <span className="small">
-                          <span className="fw-semibold">{membership.name}</span>
-                          <span className="text-muted"> {`- $${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</span>
-                        </span>
-                      </label>
-                    ))
-                  )}
+            <>
+              <hr className="my-2" />
+              <div className="small fw-semibold text-muted mb-2">Subscriptions</div>
+              <div className="row g-2 mb-2">
+                <div className="col-12">
+                  <div className="border rounded p-2">
+                    <div className="small text-muted mb-2">Assign one or more subscriptions to this client.</div>
+                    <div className="d-flex flex-column gap-2" style={{ maxHeight: "170px", overflowY: "auto" }}>
+                      {memberships.length === 0 ? (
+                        <div className="small text-muted">No subscriptions created yet.</div>
+                      ) : (
+                        memberships.map((membership) => (
+                          <label key={membership.id} className="d-flex align-items-start gap-2">
+                            <input type="checkbox" checked={formData.membership_ids.includes(membership.id)} onChange={() => toggleMembership(membership.id)} />
+                            <span className="small">
+                              <span className="fw-semibold">{membership.name}</span>
+                              <span className="text-muted"> {`- $${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</span>
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="number" id="dc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control form-control-sm" placeholder="0" />
+                    <label htmlFor="dc_points">Points</label>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="date" id="dc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control form-control-sm" placeholder="Member Since" />
+                    <label htmlFor="dc_since">Member Since</label>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="date" id="dc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control form-control-sm" placeholder="Expires" />
+                    <label htmlFor="dc_expires">Expires</label>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="col-6">
-              <div className="form-floating">
-                <input type="number" id="dc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control form-control-sm" placeholder="0" />
-                <label htmlFor="dc_points">Points</label>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="form-floating">
-                <input type="date" id="dc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control form-control-sm" placeholder="Member Since" />
-                <label htmlFor="dc_since">Member Since</label>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="form-floating">
-                <input type="date" id="dc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control form-control-sm" placeholder="Expires" />
-                <label htmlFor="dc_expires">Expires</label>
-              </div>
-            </div>
-          </div>
-          </>
+            </>
           )}
 
           {/* Address & Notes */}
@@ -944,10 +928,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         {/* ─── 9 FIXED FOOTER ──────────────────────────────────────────────── */}
         {/* Fixed footer */}
         <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
-          <Footer_Actions
-            start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />}
-            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-          />
+          <Footer_Actions start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />} center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />} />
         </div>
       </div>
 
