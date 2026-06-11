@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon, EyeIcon, EyeSlashIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon, EyeIcon, EyeSlashIcon, CheckIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 
@@ -175,7 +175,7 @@ export default function Manager_DatabaseConnection() {
                         {conn.visible_to_users ? <EyeIcon className="h-4 w-4" /> : <EyeSlashIcon className="h-4 w-4" />}
                       </button>
                       <button onClick={() => handleDelete(conn.id)} className="btn btn-sm btn-outline-danger" title="Delete connection">
-                        <TrashIcon className="h-4 w-4" />
+                        <XMarkIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </div>

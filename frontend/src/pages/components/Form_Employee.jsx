@@ -36,7 +36,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { TrashIcon, XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
@@ -1050,7 +1050,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               <td>
                                 <div className="d-flex gap-1">
                                   <button type="button" onClick={() => handleDeletePermission(perm.id)} className="btn btn-sm btn-outline-danger p-1" title="Delete">
-                                    <TrashIcon style={{ width: 12, height: 12 }} />
+                                    <XMarkIcon style={{ width: 12, height: 12 }} />
                                   </button>
                                   <button type="button" onClick={() => handleTogglePermission(perm.id, !perm.granted)} className={`btn btn-sm p-1 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`} title={perm.granted ? "Deny" : "Grant"}>
                                     <i className={`bi ${perm.granted ? "bi-x-circle" : "bi-check-circle"}`}></i>
@@ -1711,7 +1711,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           end={
             employee && canDelete ? (
               <Button_Toolbar
-                icon={TrashIcon}
+                icon={XMarkIcon}
                 label="Delete"
                 title="Delete employee"
                 onClick={async () => {

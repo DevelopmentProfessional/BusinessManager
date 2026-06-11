@@ -16,13 +16,13 @@
  *
  * CHANGE LOG:
  *   2026-03-05 | Claude | Initial implementation
- *   2026-03-11 | Claude | Accordion headers, trash icon, borderless table,
+ *   2026-03-11 | Claude | Accordion headers, remove icon, borderless table,
  *                         right-aligned add-option row, options preview in header
  * ============================================================
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { TrashIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { featuresAPI, inventoryFeaturesAPI } from "../../services/api";
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
@@ -686,7 +686,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                           void handleRemoveFeature(feature.feature_id);
                         }}
                       >
-                        <TrashIcon style={{ width: 15, height: 15 }} />
+                        <XMarkIcon style={{ width: 15, height: 15 }} />
                       </button>
                       <ChevronDownIcon style={{ width: 16, height: 16, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }} />
                     </div>

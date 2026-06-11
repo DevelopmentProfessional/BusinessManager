@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Modal from "./Modal";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, TrashIcon, PlusIcon, XMarkIcon, CheckCircleIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, CheckCircleIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
-import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
 
 const FIELD_OPTIONS = [
@@ -16,12 +15,50 @@ const FIELD_OPTIONS = [
   { value: "description", label: "Description" },
   { value: "location", label: "Location" },
   { value: "cost", label: "Cost" },
+  { value: "asset_unit_count", label: "Asset Unit Count" },
+  { value: "features", label: "Features" },
 ];
 
 const DEFAULT_COLUMN_COUNT = 8;
 const DEFAULT_ROW_COUNT = 100;
 const DEFAULT_ADD_ROW_COUNT = 100;
 const DEFAULT_FIELD_SEQUENCE = ["name", "sku", "price", "quantity", "type", "category", "description", "min_stock_level"];
+
+/**
+ * Parse a features string into a structured array.
+ * Accepted formats (case-insensitive, whitespace-tolerant):
+ *   size(small, medium, large); color(red, yellow, blue)
+ *   size: small, medium, large | color: red, yellow, blue
+ * Returns: [{name: "size", options: ["small","medium","large"]}, ...]
+ */
+function parseFeatureString(raw) {
+  if (!raw || !raw.trim()) return [];
+  const results = [];
+  // Split on semicolon or pipe as feature separators
+  const parts = String(raw).split(/[;|]/).map((p) => p.trim()).filter(Boolean);
+  for (const part of parts) {
+    // Try parentheses format: name(opt1, opt2, ...)
+    const parenMatch = part.match(/^([^(]+)\(([^)]+)\)/);
+    if (parenMatch) {
+      const name = parenMatch[1].trim();
+      const options = parenMatch[2].split(",").map((o) => o.trim()).filter(Boolean);
+      if (name) results.push({ name, options });
+      continue;
+    }
+    // Try colon format: name: opt1, opt2, ...
+    const colonMatch = part.match(/^([^:]+):(.+)/);
+    if (colonMatch) {
+      const name = colonMatch[1].trim();
+      const options = colonMatch[2].split(",").map((o) => o.trim()).filter(Boolean);
+      if (name) results.push({ name, options });
+      continue;
+    }
+    // Plain name with no options
+    const name = part.trim();
+    if (name) results.push({ name, options: [] });
+  }
+  return results;
+}
 
 function makeColumns(count) {
   return Array.from({ length: count }, (_, i) => ({
@@ -429,6 +466,9 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
         description: data.description ? String(data.description).trim() : null,
         location: data.location ? String(data.location).trim() : null,
         cost: parsedCost.value,
+        // New fields
+        asset_unit_count: data.asset_unit_count ? (parseInt(String(data.asset_unit_count).trim(), 10) || null) : null,
+        features: data.features ? parseFeatureString(data.features) : null,
       });
     });
 
@@ -472,6 +512,18 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
           <div>
             <div className="fw-semibold">Bulk Add Items</div>
           </div>
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
+              <ArrowUpIcon style={{ width: 16, height: 16 }} />
+            </button>
+            <div className="bulk-import-add-row-wrap">
+              <input type="number" className="form-control form-control-sm" min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+              <button type="button" className="btn btn-outline-secondary bulk-import-add-overlay d-inline-flex align-items-center justify-content-center gap-1" onClick={handleAddRows} disabled={isSaving}>
+                <PlusIcon style={{ width: 14, height: 14 }} />
+                <span>Add</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div ref={scrollContainerRef} className="flex-grow-1 min-h-0 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
@@ -502,7 +554,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                   >
                     <div className="d-flex align-items-center gap-1">
                       <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
-                        <TrashIcon style={{ width: 12, height: 12 }} />
+                        <XMarkIcon style={{ width: 12, height: 12 }} />
                       </button>
 
                       <select className="form-select form-select-sm border-0 shadow-none" style={{ backgroundColor: "transparent" }} value={mappings[colIndex] || "name"} onChange={(e) => setMapping(colIndex, e.target.value)}>
@@ -512,6 +564,13 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                           </option>
                         ))}
                       </select>
+
+                      {mappings[colIndex] === "features" && (
+                        <span title={'Enter features in this format:\nsize(small,medium,large); color(red,yellow,blue)\n\nOr colon style:\nsize: small,medium,large | color: red,yellow,blue'} style={{ cursor: "help", fontSize: "0.7rem", color: "var(--bs-info, #0dcaf0)", fontWeight: 600, lineHeight: 1 }}>?</span>
+                      )}
+                      {mappings[colIndex] === "asset_unit_count" && (
+                        <span title={"Enter a number. If the row type is Asset, this many unit records will be created automatically."} style={{ cursor: "help", fontSize: "0.7rem", color: "var(--bs-info, #0dcaf0)", fontWeight: 600, lineHeight: 1 }}>?</span>
+                      )}
 
                       <span draggable onDragStart={() => handleColDragStart(colIndex)} onDragEnd={handleColDragEnd} title="Drag to reorder this column" style={{ cursor: "grab", display: "flex", alignItems: "center", color: "var(--bs-secondary-color, #6c757d)" }}>
                         <Bars3Icon style={{ width: 14, height: 14 }} />
@@ -527,7 +586,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                   <td className="text-muted small text-center align-middle">
                     <div className="d-flex align-items-center justify-content-center gap-1">
                       <button type="button" className="btn btn-outline-danger btn-bulk-circle" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
-                        <TrashIcon style={{ width: 12, height: 12 }} />
+                        <XMarkIcon style={{ width: 12, height: 12 }} />
                       </button>
                       <span>{rowIndex + 1}</span>
                     </div>
@@ -557,28 +616,10 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
         <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           {status.message && <div className={`px-4 pt-2 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
 
-          <div className="row g-0 align-items-center">
-            <div className="col-auto px-3">
-              <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
-                <ArrowUpIcon style={{ width: 16, height: 16 }} />
-              </button>
-            </div>
-            <div className="col px-1 min-w-0">
-              <Footer_Actions
-                start={
-                  <>
-                    <div className="bulk-import-add-row-wrap">
-                      <input type="number" className="form-control form-control-sm" min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-                      <button type="button" className="btn btn-outline-secondary bulk-import-add-overlay d-inline-flex align-items-center justify-content-center gap-1" onClick={handleAddRows} disabled={isSaving}>
-                        <PlusIcon style={{ width: 14, height: 14 }} />
-                        <span>Add</span>
-                      </button>
-                    </div>
-                    <Button_Toolbar icon={ArrowDownTrayIcon} label={isSaving ? "Saving…" : "Save"} onClick={handleImport} className="btn-primary" disabled={isSaving} title="Import items" />
-                  </>
-                }
-                center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" disabled={isSaving} title="Close" />}
-              />
+          <div className="d-flex align-items-center justify-content-between px-3 py-2 gap-2">
+            <div className="d-flex align-items-center gap-2">
+              <Button_Toolbar icon={ArrowDownTrayIcon} label={isSaving ? "Saving…" : "Save"} onClick={handleImport} className="btn-primary" disabled={isSaving} title="Import items" />
+              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" disabled={isSaving} title="Close" />
             </div>
           </div>
         </div>

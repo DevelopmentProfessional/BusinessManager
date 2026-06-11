@@ -8,15 +8,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import Filter_CatalogCheckboxes from "./Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "./Filter_SourceToggle";
-import {
-  ClockIcon,
-  ChevronDownIcon,
-  XMarkIcon,
-  CheckIcon,
-  TrashIcon,
-  UserIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
+import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon, UserIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../services/api";
 
 const STATUS_LABELS = {
@@ -254,7 +246,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
           <div className="d-flex gap-1 align-items-center pt-1">
             <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />
             <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close sales history"><XMarkIcon /></button>
-            <Button_Toolbar icon={TrashIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
+            <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
           </div>
         </div>
       </div>

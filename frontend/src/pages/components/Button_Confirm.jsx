@@ -2,9 +2,9 @@
 // wraps destructive actions with a single confirm step; replaces showConfirm() calls
 import React, { useState } from "react";
 import Button_Toolbar from "./Button_Toolbar";
-import { TrashIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 
-export default function Button_Confirm({ icon: Icon = TrashIcon, label = "Delete", onConfirm, className = "btn-app-danger", disabled = false }) {
+export default function Button_Confirm({ icon: Icon = XMarkIcon, label = "Delete", onConfirm, className = "btn-app-danger", disabled = false }) {
   const [confirming, setConfirming] = useState(false);
 
   if (confirming) {

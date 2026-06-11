@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, XMarkIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Gate_Permission from "./Gate_Permission";
 import Button_Icon from "./Button_Icon";
 
@@ -84,7 +84,7 @@ export default function Table_Mobile({
                 {/* Delete button - leftmost (optional) */}
                 {onDelete && (
                   <Gate_Permission page={deletePermission?.page} permission={deletePermission?.permission} hide={!deletePermission}>
-                    <Button_Icon icon={TrashIcon} label="Delete" onClick={() => onDelete(item)} variant="danger" className="flex-shrink-0 !p-2" />
+                    <Button_Icon icon={XMarkIcon} label="Delete" onClick={() => onDelete(item)} variant="danger" className="flex-shrink-0 !p-2" />
                   </Gate_Permission>
                 )}
 

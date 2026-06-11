@@ -2,7 +2,7 @@
  * Procurement order management — embedded in supplier accordion (Inventory → Suppliers).
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "@heroicons/react/24/outline";
 import api, { inventoryAPI, documentsAPI } from "../../services/api";
 import { formatCurrency } from "../../utils/formatters";
 import Modal from "./Modal";
@@ -248,7 +248,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                   <td>
                     {formData.line_items.length > 1 && (
                       <button type="button" className="btn btn-sm btn-outline-danger btn-bulk-circle p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
-                        <TrashIcon style={{ width: 14, height: 14 }} />
+                        <XMarkIcon style={{ width: 14, height: 14 }} />
                       </button>
                     )}
                   </td>

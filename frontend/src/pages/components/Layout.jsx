@@ -8,7 +8,7 @@ import { chatAPI } from "../../services/api";
 import Badge_PendingOrder from "./Badge_PendingOrder";
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
-// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Sales, Services, Schedule, Settings
+// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Sales, Schedule, Settings
 const allNavigation = [
   { name: "Profile", href: "/profile", icon: UserCircleIcon },
   { name: "Reports", href: "/reports", icon: ChartBarIcon, permission: "reports:read" },
@@ -16,8 +16,8 @@ const allNavigation = [
   { name: "Clients", href: "/clients", icon: UserGroupIcon, permission: "clients:read" },
   { name: "Employees", href: "/employees", icon: UsersIcon, permission: "employees:read" },
   { name: "Documents", href: "/documents", icon: DocumentIcon, permission: "documents:read" },
-  { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "services:read" },
   { name: "Services", href: "/services", icon: SparklesIcon, permission: "services:read" },
+  { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "services:read" },
   { name: "Schedule", href: "/schedule", icon: CalendarDaysIcon, permission: "schedule:read" },
 ];
 
@@ -150,11 +150,7 @@ export default function Layout({ children }) {
                     key={item.name}
                     to={item.href}
                     onClick={() => setExpandedMenuOpen(false)}
-                    className={classNames(
-                      isActive ? "btn btn-primary" : "btn btn-outline-secondary",
-                      "d-flex align-items-center text-decoration-none position-relative",
-                      isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
-                    )}
+                    className={classNames(isActive ? "btn btn-primary" : "btn btn-outline-secondary", "d-flex align-items-center text-decoration-none position-relative", isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0")}
                     style={{
                       backgroundColor: isActive ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
                       color: isActive ? "var(--bs-white)" : "var(--bs-body-color)",
@@ -198,7 +194,7 @@ export default function Layout({ children }) {
         {!isTrainingMode && <EllipsisHorizontalIcon className="app-icon flex-shrink-0" />}
         {isTrainingMode && (
           <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, marginLeft: "-0.125rem" }}>
-            +Nav
+            Menu
           </span>
         )}
         <Badge_PendingOrder clientId={user?.client_id} />

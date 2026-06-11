@@ -15,7 +15,7 @@
 //     disabled={isDeletingId === item.id}
 //   />
 import React, { useState } from "react";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
 
 export default function DeleteButton({
@@ -59,7 +59,7 @@ export default function DeleteButton({
       disabled={disabled || busy}
       onClick={handleClick}
     >
-      <TrashIcon className="app-icon" />
+      <XMarkIcon className="app-icon" />
     </button>
   );
 }

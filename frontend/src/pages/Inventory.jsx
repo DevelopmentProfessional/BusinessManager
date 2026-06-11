@@ -43,8 +43,9 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
+import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { inventoryAPI, featuresAPI, assetUnitsAPI } from "../services/api";
@@ -82,9 +83,32 @@ export default function Inventory() {
   const [assetUnitCounts, setAssetUnitCounts] = useState({});
   const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
   const deleteInFlightRef = useRef(new Set());
+
+  const multiEditFields = [
+    { key: "type", label: "Type", type: "select", options: [
+      { value: "PRODUCT", label: "Product" },
+      { value: "RESOURCE", label: "Resource" },
+      { value: "ASSET", label: "Asset" },
+      { value: "LOCATION", label: "Location" },
+      { value: "ITEM", label: "Item" },
+    ]},
+    { key: "location", label: "Location", type: "text", placeholder: "e.g. Warehouse A" },
+    { key: "min_stock_level", label: "Min Stock Level", type: "number", placeholder: "e.g. 10", min: 0 },
+    { key: "category", label: "Category", type: "text", placeholder: "e.g. Electronics" },
+    { key: "cost_type", label: "Cost Type", type: "select", options: [
+      { value: "one_time", label: "One-time" },
+      { value: "recurring", label: "Recurring" },
+    ]},
+  ];
 
   const typeFilterOptions = [
     {
@@ -225,15 +249,7 @@ export default function Inventory() {
 
   const handleCreateInventory = async (createData) => {
     try {
-      const res = await inventoryAPI.create(createData);
-      const newItem = res?.data ?? res;
-      if ((createData.type || "").toUpperCase() === "ASSET" && newItem?.id) {
-        try {
-          await assetUnitsAPI.add(newItem.id, { label: "Unit 1", state: "available", notes: null });
-        } catch (e) {
-          console.warn("Failed to auto-create asset unit:", e);
-        }
-      }
+      await inventoryAPI.create(createData);
       await loadInventoryData();
       setShowAddItemModal(false);
       clearError();
@@ -382,12 +398,69 @@ export default function Inventory() {
     });
   }, [inventory, searchTerm, typeFilter, stockFilter]);
 
+  const toggleSelectInv = (id) => setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allVisibleSelectedInv = filteredInventory.length > 0 && filteredInventory.every((i) => selectedIds.has(i.id));
+  const handleSelectAllInv = () => { if (allVisibleSelectedInv) { setSelectedIds(new Set()); setSelectionMode(false); } else { setSelectionMode(true); setSelectedIds(new Set(filteredInventory.map((i) => i.id))); } };
+  const clearSelectionInv = () => { setSelectedIds(new Set()); setSelectionMode(false); };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+  };
+
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredInventory];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "name") {
+          aVal = (a.name || "").toLowerCase();
+          bVal = (b.name || "").toLowerCase();
+        } else if (sortColumn === "type") {
+          aVal = (a.type || "").toLowerCase();
+          bVal = (b.type || "").toLowerCase();
+        } else if (sortColumn === "count") {
+          aVal = getCountDisplay(a);
+          bVal = getCountDisplay(b);
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredInventory, sortColumn, sortAsc]);
+
+  const handleMultiEditSave = async (updates) => {
+    setMultiSaving(true);
+    try {
+      const coerced = { ...updates };
+      if ("min_stock_level" in coerced) {
+        const parsedMinStock = parseInt(coerced.min_stock_level, 10);
+        if (Number.isNaN(parsedMinStock)) delete coerced.min_stock_level;
+        else coerced.min_stock_level = parsedMinStock;
+      }
+      await Promise.all([...selectedIds].map((id) => inventoryAPI.update(id, coerced)));
+      await loadInventoryData();
+      setShowMultiEdit(false);
+      clearSelectionInv();
+    } catch {
+      setError("Failed to update some items");
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
   // Scroll to bottom when data loads (to show newest items near footer)
   useEffect(() => {
-    if (scrollRef.current && filteredInventory.length > 0) {
+    if (scrollRef.current && sortedAndFiltered.length > 0) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [filteredInventory.length]);
+  }, [sortedAndFiltered.length]);
 
   // ─── 9 RENDER ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -410,7 +483,7 @@ export default function Inventory() {
       <div className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
       <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
-        {filteredInventory.length > 0 ? (
+        {sortedAndFiltered.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
               <col style={{ width: "44px" }} />
@@ -419,12 +492,16 @@ export default function Inventory() {
               <col style={{ width: "60px" }} />
             </colgroup>
             <tbody>
-              {filteredInventory.map((inv, index) => (
-                <PageTableRow key={inv.id || index} onClick={() => handleUpdateInventory(inv)}>
-                  <td style={{ width: "44px" }} onClick={(e) => { e.stopPropagation(); handleDeleteItem(inv.id); }}>
-                    <button className="btn btn-circle btn-outline-danger" title="Delete item">
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+              {sortedAndFiltered.map((inv, index) => (
+                <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
+                  <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                    {selectionMode ? (
+                      <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(inv.id)} onChange={() => toggleSelectInv(inv.id)} />
+                    ) : (
+                      <button className="btn btn-circle btn-outline-danger" title="Delete item" onClick={() => handleDeleteItem(inv.id)}>
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    )}
                   </td>
                   <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
 
@@ -446,7 +523,25 @@ export default function Inventory() {
         )}
       </div>
 
-      <PageTableHeader columns={[{ label: "", width: 44 }, { label: "Item" }, { label: "Type", width: 80 }, { label: "Count", width: 60 }]} />
+      {selectedIds.size > 0 && (
+        <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="d-flex align-items-center gap-2">
+            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>{selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}</span>
+            <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
+              <PencilSquareIcon style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+          <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionInv}>
+            <XMarkIcon style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+      )}
+      <PageTableHeader columns={[
+        { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedInv} onChange={handleSelectAllInv} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+        { label: "Item", sortKey: "name" },
+        { label: "Type", width: 80, sortKey: "type" },
+        { label: "Count", width: 60, sortKey: "count" },
+      ]} sortColumn={sortColumn} sortAsc={sortAsc} onSort={handleSort} />
 
       {/* Fixed bottom – headers + controls */}
       <PageTableFooter
@@ -654,6 +749,16 @@ export default function Inventory() {
         <div className="small text-muted">Use these controls to manage inventory views and actions.</div>
         <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
       </PageControlsModal>
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Inventory Item${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={multiEditFields}
+        selectedItems={inventory.filter((i) => selectedIds.has(i.id))}
+        onSave={handleMultiEditSave}
+        saving={multiSaving}
+      />
     </PageLayout>
   );
 }

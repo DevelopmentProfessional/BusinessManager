@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, CheckIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon, LinkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PencilSquareIcon, DocumentTextIcon, LinkIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import { documentsAPI } from "../../services/api";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
@@ -105,7 +105,7 @@ export default function Modal_InsurancePlans({
               {insurancePlans.map((plan) => (
                 <div key={plan.id} className={`d-flex align-items-center gap-2 p-2 border rounded ${!plan.is_active ? "opacity-60" : ""}`}>
                   <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={() => onDelete(plan.id)} title="Delete plan">
-                    <TrashIcon style={{ width: 16, height: 16 }} />
+                    <XMarkIcon style={{ width: 16, height: 16 }} />
                   </button>
                   {plan.document_id && (
                     <Button_InsuranceDocument documentId={plan.document_id} insurancePlans={insurancePlans} title="View plan document" />

@@ -34,6 +34,7 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-17 | GitHub Copilot | Fixed inventory image upload compatibility with legacy check constraints
+#   2026-06-11 | GitHub Copilot | Auto-create default asset unit on ASSET inventory insert; honor provided asset_units when supplied
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -74,6 +75,80 @@ def _normalize_inventory_cost_fields(record_data: Dict[str, Any], apply_default_
 
     if apply_default_purchase_date and not record_data.get("date_of_purchase"):
         record_data["date_of_purchase"] = datetime.utcnow()
+
+
+def _normalize_asset_units_payload(asset_units: Any) -> list[Dict[str, Any]]:
+    """Normalize optional asset_units payload for inventory creation."""
+    if asset_units is None:
+        return []
+    if not isinstance(asset_units, list):
+        raise HTTPException(status_code=400, detail="asset_units must be an array")
+
+    normalized: list[Dict[str, Any]] = []
+    for i, unit in enumerate(asset_units):
+        if not isinstance(unit, dict):
+            raise HTTPException(status_code=400, detail=f"asset_units[{i}] must be an object")
+
+        state = str(unit.get("state") or "available").strip().lower()
+        if state not in ASSET_UNIT_STATES:
+            raise HTTPException(status_code=400, detail=f"asset_units[{i}].state must be one of: {sorted(ASSET_UNIT_STATES)}")
+
+        employee_id = unit.get("employee_id")
+        if isinstance(employee_id, str):
+            employee_id = employee_id.strip() or None
+            if employee_id:
+                try:
+                    employee_id = UUID(employee_id)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail=f"asset_units[{i}].employee_id must be a valid UUID")
+        elif employee_id is not None and not isinstance(employee_id, UUID):
+            raise HTTPException(status_code=400, detail=f"asset_units[{i}].employee_id must be a valid UUID")
+
+        normalized.append({
+            "label": unit.get("label") or None,
+            "employee_id": employee_id,
+            "state": state,
+            "notes": unit.get("notes") or None,
+        })
+
+    return normalized
+
+
+def _validate_asset_unit_employee_assignment(session: Session, employee_id: Optional[UUID], company_id: str) -> None:
+    if employee_id is None:
+        return
+    employee = session.get(User, employee_id)
+    if not employee or employee.company_id != company_id:
+        raise HTTPException(status_code=400, detail="Assigned employee is invalid for this company")
+
+
+def _create_initial_asset_units_for_inventory(
+    session: Session,
+    inventory_record: Inventory,
+    company_id: str,
+    provided_units: Any,
+) -> None:
+    """Create supplied units, or one default unit, for newly created ASSET items."""
+    units = _normalize_asset_units_payload(provided_units)
+    if not units:
+        units = [{"label": "Unit 1", "employee_id": None, "state": "available", "notes": None}]
+
+    for unit in units:
+        _validate_asset_unit_employee_assignment(session, unit["employee_id"], company_id)
+        session.add(
+            AssetUnit(
+                inventory_id=inventory_record.id,
+                label=unit["label"],
+                employee_id=unit["employee_id"],
+                state=unit["state"],
+                notes=unit["notes"],
+                company_id=company_id,
+            )
+        )
+
+    # Quantity for ASSET should reflect number of concrete units.
+    inventory_record.quantity = len(units)
+    session.add(inventory_record)
 
 
 def _resolve_permission_pages(table_name: str) -> set[str]:
@@ -567,6 +642,9 @@ async def insert_with_file(
             raise HTTPException(status_code=400, detail="Invalid request body")
         _file_bytes = None
 
+    is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
+    asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
+
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
         plain_password = record_data.pop('password')
@@ -584,7 +662,13 @@ async def insert_with_file(
 
     session.add(record)
     try:
+        session.flush()
+        if is_inventory_table and str(getattr(record, 'type', '') or '').upper() == 'ASSET':
+            _create_initial_asset_units_for_inventory(session, record, current_user.company_id or "", asset_units_payload)
         session.commit()
+    except HTTPException:
+        session.rollback()
+        raise
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
@@ -619,6 +703,9 @@ async def insert(
     if table_name.lower() in ('client', 'clients'):
         membership_ids = record_data.pop('membership_ids', None)
 
+    is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
+    asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
+
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
         plain_password = record_data.pop('password')
@@ -629,7 +716,7 @@ async def insert(
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         record_data['company_id'] = current_user.company_id or ""
 
-    if table_name.lower() in ('inventory', 'item', 'items'):
+    if is_inventory_table:
         _normalize_inventory_cost_fields(record_data, apply_default_purchase_date=True)
 
     try:
@@ -639,7 +726,13 @@ async def insert(
 
     session.add(record)
     try:
+        session.flush()
+        if is_inventory_table and str(getattr(record, 'type', '') or '').upper() == 'ASSET':
+            _create_initial_asset_units_for_inventory(session, record, current_user.company_id or "", asset_units_payload)
         session.commit()
+    except HTTPException:
+        session.rollback()
+        raise
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

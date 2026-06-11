@@ -30,7 +30,7 @@
  * ============================================================
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { XMarkIcon, ShoppingCartIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon, CogIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ShoppingCartIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon, CogIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -1770,7 +1770,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
             <Footer_Actions
               start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}
               center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-              end={canDelete ? <Button_Toolbar icon={TrashIcon} label={isDeleting ? "Deleting..." : "Delete"} onClick={handleDelete} className="btn-outline-secondary" disabled={isDeleting} title="Delete item" /> : null}
+              end={canDelete ? <Button_Toolbar icon={XMarkIcon} label={isDeleting ? "Deleting..." : "Delete"} onClick={handleDelete} className="btn-outline-secondary" disabled={isDeleting} title="Delete item" /> : null}
             />
           ) : (
             <Footer_Actions

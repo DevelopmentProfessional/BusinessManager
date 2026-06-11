@@ -190,6 +190,20 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
 
   const total = cartItems.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
+  const getScheduledDateValue = (item) => (item.selectedOptions || []).find((o) => o.type === "scheduled_date")?.value || "";
+
+  const getSecondLineText = (item) => {
+    if (item.itemType === "service") {
+      const scheduledDate = getScheduledDateValue(item);
+      if (!scheduledDate) return "Appointment time not selected";
+      return `Appointment: ${new Date(scheduledDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+    }
+
+    const selected = (item.selectedOptions || []).filter((o) => o.feature_name && o.option_name);
+    if (selected.length === 0) return "Product details";
+    return selected.map((o) => `${o.feature_name}: ${o.option_name}`).join(" • ");
+  };
+
   const handleGoToSales = () => {
     navigate("/sales", { state: { preSelectedClient: client, preloadCart: cartItems } });
     onClose();
@@ -269,51 +283,38 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
                     <div className="d-flex align-items-center gap-2 py-2 px-3">
                       <div className="flex-grow-1 min-w-0">
                         <div className="fw-medium text-truncate">{item.name}</div>
-                        <div className="small text-muted d-flex align-items-center gap-1 flex-wrap">
-                          ${(item.price || 0).toFixed(2)}
-                          <span className={`badge ms-1 ${isService ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary"} text-capitalize`}>{item.itemType}</span>
-                          {/* Show selected option pills */}
-                          {(item.selectedOptions || [])
-                            .filter((o) => o.feature_name && o.option_name)
-                            .map((o) => (
-                              <span key={o.feature_id} className="badge bg-info-subtle text-info" style={{ fontSize: "0.65rem" }}>
-                                {o.feature_name}: {o.option_name}
-                              </span>
-                            ))}
-                          {scheduledDate && (
-                            <span className="badge bg-success-subtle text-success" style={{ fontSize: "0.65rem" }}>
-                              {new Date(scheduledDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          )}
+                        <div className="small text-muted text-truncate">{getSecondLineText(item)}</div>
+
+                        <div className="d-flex align-items-center gap-1 flex-wrap mt-1">
+                          <span className="badge bg-primary-subtle text-primary">${(item.price || 0).toFixed(2)}</span>
+                          <span className={`badge ${isService ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary"} text-capitalize`}>{item.itemType}</span>
+
+                          {/* Qty controls */}
+                          <button type="button" onClick={() => updateQty(item.cartKey, -1)} className="btn btn-circle btn-outline-secondary" title="Decrease quantity">
+                            <MinusIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                          <span className="fw-semibold" style={{ minWidth: 24, textAlign: "center" }}>
+                            {item.quantity}
+                          </span>
+                          <button type="button" onClick={() => updateQty(item.cartKey, 1)} className="btn btn-circle btn-outline-secondary" title="Increase quantity">
+                            <PlusIcon style={{ width: 14, height: 14 }} />
+                          </button>
+
+                          {/* Expand details button */}
+                          <button
+                            type="button"
+                            onClick={() => handleExpandItem(item.cartKey, item)}
+                            className={`btn btn-circle ${isExpanded ? "btn-primary" : "btn-outline-secondary"}`}
+                            title={isService ? "Set appointment date" : "Select options"}
+                          >
+                            {isExpanded ? <ChevronUpIcon style={{ width: 14, height: 14 }} /> : <ChevronDownIcon style={{ width: 14, height: 14 }} />}
+                          </button>
+
+                          {/* Remove */}
+                          <button type="button" onClick={() => removeItem(item.cartKey)} className="btn btn-circle btn-outline-danger" title="Remove item">
+                            <XMarkIcon style={{ width: 14, height: 14 }} />
+                          </button>
                         </div>
-                      </div>
-
-                      <div className="d-flex align-items-center gap-1 flex-shrink-0">
-                        {/* Qty controls */}
-                        <button type="button" onClick={() => updateQty(item.cartKey, -1)} className="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center">
-                          <MinusIcon style={{ width: 14, height: 14 }} />
-                        </button>
-                        <span className="fw-semibold" style={{ minWidth: 24, textAlign: "center" }}>
-                          {item.quantity}
-                        </span>
-                        <button type="button" onClick={() => updateQty(item.cartKey, 1)} className="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center">
-                          <PlusIcon style={{ width: 14, height: 14 }} />
-                        </button>
-
-                        {/* Expand details button */}
-                        <button
-                          type="button"
-                          onClick={() => handleExpandItem(item.cartKey, item)}
-                          className={`btn btn-sm rounded-circle d-flex align-items-center justify-content-center ms-1 ${isExpanded ? "btn-primary" : "btn-outline-secondary"}`}
-                          title={isService ? "Set appointment date" : "Select options"}
-                        >
-                          {isExpanded ? <ChevronUpIcon style={{ width: 14, height: 14 }} /> : <ChevronDownIcon style={{ width: 14, height: 14 }} />}
-                        </button>
-
-                        {/* Remove */}
-                        <button type="button" onClick={() => removeItem(item.cartKey)} className="btn btn-link btn-sm text-danger p-0 ms-1 d-flex align-items-center" style={{ lineHeight: 1 }} title="Remove">
-                          <XMarkIcon style={{ width: 16, height: 16 }} />
-                        </button>
                       </div>
                     </div>
 
@@ -384,7 +385,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
+        <div className="component-footer" style={{ position: "relative" }}>
           <div className="component-footer-left">
             {!orderCreated && (
               <div className="d-flex align-items-center gap-1">
@@ -398,7 +399,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
               </div>
             )}
           </div>
-          <div className="component-footer-center">
+          <div className="component-footer-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
             <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
