@@ -103,6 +103,10 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='employee_id'"
             )).fetchone()
+            asset_unit_location_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='location'"
+            )).fetchone()
             descriptive_feature_description_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='descriptive_feature' AND column_name='description'"
@@ -115,6 +119,7 @@ def _required_schema_artifacts_present() -> bool:
                 and cost_type_column is not None
                 and client_email_verified_column is not None
                 and asset_unit_employee_column is not None
+                and asset_unit_location_column is not None
                 and descriptive_feature_description_column is not None
             )
     except Exception:
@@ -135,6 +140,21 @@ def _ensure_asset_unit_employee_column_if_needed():
                 print("  + Added asset_unit.employee_id")
     except Exception as e:
         print(f"  Warning: Could not ensure asset_unit.employee_id column: {e}")
+
+
+def _ensure_asset_unit_location_column_if_needed():
+    """Ensure asset_unit table has location for per-unit placement tracking."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='asset_unit' AND column_name='location'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE asset_unit ADD COLUMN location VARCHAR"))
+                print("  + Added asset_unit.location")
+    except Exception as e:
+        print(f"  Warning: Could not ensure asset_unit.location column: {e}")
 
 
 def _ensure_descriptive_feature_description_column_if_needed():
@@ -1214,6 +1234,7 @@ def create_db_and_tables():
     _ensure_service_image_url_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
     _ensure_asset_unit_employee_column_if_needed()
+    _ensure_asset_unit_location_column_if_needed()
     _ensure_descriptive_feature_description_column_if_needed()
     _ensure_user_db_environment_if_needed()
     _mark_schema_current()

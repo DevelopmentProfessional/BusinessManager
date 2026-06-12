@@ -78,6 +78,7 @@ import Modal_Wages from "./components/Modal_Wages";
 import Modal_Pay_Employee from "./components/Modal_EmployeePay";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
+import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 
 export default function Employees() {
   // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
@@ -1037,7 +1038,7 @@ export default function Employees() {
           {sortedAndFiltered.length > 0 ? (
             <table className="table table-borderless table-hover mb-0">
               <colgroup>
-                <col style={{ width: "44px" }} />
+                <col style={{ width: "56px" }} />
                 <col />
                 {isAdmin && <col style={{ width: "54px" }} />}
                 <col style={{ width: "90px" }} />
@@ -1055,9 +1056,9 @@ export default function Employees() {
                       handleEdit(employee);
                     }}
                   >
-                    <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                    <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                       {selectionMode ? (
-                        <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(employee.id)} onChange={() => toggleSelectEmp(employee.id)} />
+                        <Toggle_MultiSelectIcon selected={selectedIds.has(employee.id)} onToggle={() => toggleSelectEmp(employee.id)} title="Select employee" />
                       ) : (
                         <Gate_Permission page="employees" permission="delete">
                           <button className="btn btn-circle btn-outline-danger" title="Delete employee" onClick={() => handleDelete(employee.id)}>
@@ -1148,7 +1149,7 @@ export default function Employees() {
         )}
         <PageTableHeader
           columns={[
-            { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedEmp} onChange={handleSelectAllEmp} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedEmp} onToggle={handleSelectAllEmp} title="Select all visible employees" />, width: 56, className: "p-0 text-center" },
             { label: "Employee", className: "text-start ps-0", sortKey: "name" },
             ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []),
             { label: "Role", width: 90, className: "text-start ps-0", sortKey: "role" },

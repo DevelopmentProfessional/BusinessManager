@@ -105,6 +105,7 @@ async def add_asset_unit(
     unit = AssetUnit(
         inventory_id=inventory_id,
         label=body.label,
+        location=body.location,
         employee_id=body.employee_id,
         state=body.state,
         notes=body.notes,

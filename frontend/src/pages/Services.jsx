@@ -48,6 +48,7 @@ import Form_Service from "./components/Form_Service";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
+import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
@@ -297,7 +298,7 @@ export default function Services() {
         {sortedAndFiltered.length > 0 ? (
           <table className="table table-borderless table-hover mb-0">
             <colgroup>
-              <col style={{ width: "44px" }} />
+              <col style={{ width: "56px" }} />
               <col />
               <col style={{ width: "80px" }} />
               <col style={{ width: "70px" }} />
@@ -305,9 +306,9 @@ export default function Services() {
             <tbody>
               {sortedAndFiltered.map((service, index) => (
                 <PageTableRow key={service.id || index} onClick={() => !selectionMode && handleEditService(service)}>
-                  <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                     {selectionMode ? (
-                      <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(service.id)} onChange={() => toggleSelectSvc(service.id)} />
+                      <Toggle_MultiSelectIcon selected={selectedIds.has(service.id)} onToggle={() => toggleSelectSvc(service.id)} title="Select service" />
                     ) : (
                       <Gate_Permission page="services" permission="delete">
                         <button type="button" className="btn btn-circle btn-outline-danger" title="Delete service" onClick={(e) => handleDeleteService(service.id, e)}>
@@ -361,7 +362,7 @@ export default function Services() {
       )}
       <PageTableHeader
         columns={[
-          { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedSvc} onChange={handleSelectAllSvc} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+          { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedSvc} onToggle={handleSelectAllSvc} title="Select all visible services" />, width: 56, className: "p-0 text-center" },
           { label: "Service", sortKey: "name" },
           { label: "Price", width: 80, sortKey: "price" },
           { label: "Duration", width: 70 },

@@ -57,6 +57,11 @@ import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
+import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+
+const ASSET_UNITS_PAGE_SIZE_KEY = "inventory_asset_units_page_size";
+const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
   const navigate = useNavigate();
@@ -83,6 +88,10 @@ export default function Inventory() {
   const [assetUnitCounts, setAssetUnitCounts] = useState({});
   const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
+  const [assetUnitsPerPage, setAssetUnitsPerPage] = useState(() => {
+    const saved = parseInt(localStorage.getItem(ASSET_UNITS_PAGE_SIZE_KEY) || "", 10);
+    return ASSET_UNITS_PAGE_SIZE_OPTIONS.includes(saved) ? saved : 25;
+  });
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [showMultiEdit, setShowMultiEdit] = useState(false);
@@ -438,6 +447,13 @@ export default function Inventory() {
     }
   };
 
+  const handleAssetUnitsPerPageChange = (value) => {
+    const next = parseInt(value, 10);
+    if (!ASSET_UNITS_PAGE_SIZE_OPTIONS.includes(next)) return;
+    setAssetUnitsPerPage(next);
+    localStorage.setItem(ASSET_UNITS_PAGE_SIZE_KEY, String(next));
+  };
+
   const sortedAndFiltered = useMemo(() => {
     let sorted = [...filteredInventory];
     if (sortColumn) {
@@ -505,7 +521,7 @@ export default function Inventory() {
           {sortedAndFiltered.length > 0 ? (
             <table className="table table-borderless table-hover mb-0">
               <colgroup>
-                <col style={{ width: "44px" }} />
+                <col style={{ width: "56px" }} />
                 <col />
                 <col style={{ width: "80px" }} />
                 <col style={{ width: "60px" }} />
@@ -513,9 +529,9 @@ export default function Inventory() {
               <tbody>
                 {sortedAndFiltered.map((inv, index) => (
                   <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
-                    <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                    <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                       {selectionMode ? (
-                        <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(inv.id)} onChange={() => toggleSelectInv(inv.id)} />
+                        <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                       ) : (
                         <button className="btn btn-circle btn-outline-danger" title="Delete item" onClick={() => handleDeleteItem(inv.id)}>
                           <XMarkIcon className="h-4 w-4" />
@@ -559,7 +575,7 @@ export default function Inventory() {
         )}
         <PageTableHeader
           columns={[
-            { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedInv} onChange={handleSelectAllInv} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, width: 56, className: "p-0 text-center" },
             { label: "Item", sortKey: "name" },
             { label: "Type", width: 80, sortKey: "type" },
             { label: "Count", width: 60, sortKey: "count" },
@@ -761,6 +777,7 @@ export default function Inventory() {
         canDelete={hasPermission("inventory", "delete")}
         isDeleting={deletingInventoryId === editingInventory?.id}
         existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
+        assetUnitsPerPage={assetUnitsPerPage}
       />
 
       <Modal_Bulk_Import_Items isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onImport={handleBulkImportItems} existingSkus={inventory.map((i) => i.sku).filter(Boolean)} />
@@ -772,6 +789,18 @@ export default function Inventory() {
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls">
         <div className="small text-muted">Use these controls to manage inventory views and actions.</div>
         <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
+        <div className="d-flex flex-column gap-1">
+          <label htmlFor="inventory-asset-units-per-page" className="small fw-semibold mb-0">
+            Asset Units per page
+          </label>
+          <select id="inventory-asset-units-per-page" className="form-select form-select-sm" value={assetUnitsPerPage} onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}>
+            {ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
       </PageControlsModal>
 
       <Modal_MultiEdit
