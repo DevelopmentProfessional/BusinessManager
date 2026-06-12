@@ -53,6 +53,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
+import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 
 export default function Clients() {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
@@ -468,7 +469,7 @@ export default function Clients() {
         {sortedAndFiltered.length > 0 ? (
           <table className="table table-borderless table-hover mb-0 w-100">
             <colgroup>
-              <col style={{ width: "44px" }} />
+              <col style={{ width: "56px" }} />
               <col />
               <col style={{ width: "120px" }} />
               <col style={{ width: "56px" }} />
@@ -476,9 +477,9 @@ export default function Clients() {
             <tbody>
               {sortedAndFiltered.map((client, index) => (
                 <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
-                  <td style={{ width: "44px" }} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                     {selectionMode ? (
-                      <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(client.id)} onChange={() => toggleSelectCl(client.id)} />
+                      <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
                     ) : (
                       <Gate_Permission page="clients" permission="delete">
                         <button className="btn btn-circle btn-outline-danger" title="Delete client" onClick={() => handleDeleteClient(client.id)}>
@@ -538,7 +539,7 @@ export default function Clients() {
       )}
       <PageTableHeader
         columns={[
-          { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedCl} onChange={handleSelectAllCl} title="Select all visible" />, width: 44, className: "p-0 text-center" },
+          { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedCl} onToggle={handleSelectAllCl} title="Select all visible clients" />, width: 56, className: "p-0 text-center" },
           { label: "Client", className: "text-start ps-0", sortKey: "name" },
           { label: "Subs", width: 120, className: "text-start ps-0", sortKey: "email" },
           { label: "Notify", width: 56, className: "text-start ps-0" },

@@ -63,6 +63,7 @@ import Modal_Generic from "./components/Modal";
 import { WorkflowModal, WorkflowStatusTracker } from "./components/Panel_Workflow";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
+import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -866,7 +867,7 @@ export default function Documents() {
                     <tr key={doc.id || index} className="align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
                       <td className="text-center px-1" onClick={(e) => e.stopPropagation()}>
                         {selectionMode ? (
-                          <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={selectedIds.has(doc.id)} onChange={() => toggleSelectDoc(doc.id)} />
+                          <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
                         ) : (
                           <Gate_Permission page="documents" permission="delete">
                             <button onClick={() => handleDeleteDocument(doc.id)} className="btn btn-circle btn-outline-danger" title="Delete document">
@@ -927,7 +928,7 @@ export default function Documents() {
             showTemplates
               ? [{ label: "", width: 56 }, { label: "Template" }, { label: "Actions", width: 56, className: "text-center" }]
               : [
-                  { label: <input type="checkbox" className="form-check-input m-0" style={{ width: 18, height: 18, cursor: "pointer" }} checked={allVisibleSelectedDoc} onChange={handleSelectAllDoc} title="Select all visible" />, width: 56, className: "p-0 text-center" },
+                  { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedDoc} onToggle={handleSelectAllDoc} title="Select all visible documents" />, width: 56, className: "p-0 text-center" },
                   { label: "Document", sortKey: "filename" },
                   { label: "View", width: 60, className: "text-center" },
                 ]
