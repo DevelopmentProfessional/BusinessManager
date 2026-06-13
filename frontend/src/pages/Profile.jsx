@@ -48,7 +48,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
-import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI } from "../services/api";
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
 import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
@@ -182,15 +182,55 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission, refetchPermissions, refreshUserPermissions } = useStore();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, buttonTextSize, cycleButtonTextSize, footerAlign, setFooterAlign, uiScale, setUiScale, cycleUiScale } = useViewMode();
+  const { isTrainingMode, toggleViewMode, buttonTextSize, setButtonTextSize, footerAlign, setFooterAlign, uiScale, setUiScale } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
   const FooterAlignIcon = footerAlign === "center" ? AlignCenterIcon : footerAlign === "right" ? AlignRightIcon : AlignLeftIcon;
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
 
-  const cycleFooterAlign = useCallback(() => {
+  const persistCurrentUserProfile = useCallback(
+    async (patch) => {
+      if (!user?.id) return null;
+      const response = await profileAPI.updateMyProfile(patch);
+      const updatedUser = response?.data ?? response;
+      if (!updatedUser || typeof updatedUser !== "object") return null;
+      const mergedUser = { ...user, ...updatedUser };
+      setUser(mergedUser);
+      if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
+      if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
+      return mergedUser;
+    },
+    [user, setUser]
+  );
+
+  const cyclePersistedFooterAlign = useCallback(() => {
     const next = footerAlign === "left" ? "center" : footerAlign === "center" ? "right" : "left";
     setFooterAlign(next);
-  }, [footerAlign, setFooterAlign]);
+    void persistCurrentUserProfile({ footer_align: next }).catch(() => {});
+  }, [footerAlign, setFooterAlign, persistCurrentUserProfile]);
+
+  const cyclePersistedButtonTextSize = useCallback(() => {
+    const sizes = ["small", "medium", "large"];
+    const currentIndex = sizes.indexOf(buttonTextSize);
+    const nextSize = sizes[currentIndex >= 0 ? (currentIndex + 1) % sizes.length : 1];
+    setButtonTextSize(nextSize);
+    void persistCurrentUserProfile({ button_text_size: nextSize }).catch(() => {});
+  }, [buttonTextSize, setButtonTextSize, persistCurrentUserProfile]);
+
+  const setPersistedUiScale = useCallback(
+    (scale) => {
+      setUiScale(scale);
+      void persistCurrentUserProfile({ ui_scale: Number(scale) }).catch(() => {});
+    },
+    [setUiScale, persistCurrentUserProfile]
+  );
+
+  const cyclePersistedUiScale = useCallback(() => {
+    const zoomLevels = [90, 100, 110, 125, 150];
+    const currentIndex = zoomLevels.indexOf(uiScale);
+    const nextScale = zoomLevels[currentIndex >= 0 ? (currentIndex + 1) % zoomLevels.length : 1];
+    setUiScale(nextScale);
+    void persistCurrentUserProfile({ ui_scale: nextScale }).catch(() => {});
+  }, [uiScale, setUiScale, persistCurrentUserProfile]);
 
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
   // Admin-only: Check/Start Database button state
@@ -949,8 +989,7 @@ const Profile = () => {
     setDbMessage("");
     setDbError("");
     try {
-      await employeesAPI.updateUser(user.id, { db_environment: env });
-      setUser({ ...user, db_environment: env });
+      await persistCurrentUserProfile({ db_environment: env });
       setDbMessage(`Database preference updated to ${DB_ENVIRONMENTS[env]?.name || env}.`);
       setTimeout(() => setDbMessage(""), 3000);
     } catch (error) {
@@ -968,11 +1007,7 @@ const Profile = () => {
     setColorUpdating(true);
     setColorMessage("");
     try {
-      await employeesAPI.updateUser(user.id, { color: newColor });
-      const updatedUser = { ...user, color: newColor };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      await persistCurrentUserProfile({ color: newColor });
       setColorMessage("Theme color updated!");
       setTimeout(() => setColorMessage(""), 2000);
       return true;
@@ -1412,13 +1447,13 @@ const Profile = () => {
                         colorMessage={colorMessage}
                         handleColorSave={handleColorSave}
                         FooterAlignIcon={FooterAlignIcon}
-                        cycleFooterAlign={cycleFooterAlign}
+                        cycleFooterAlign={cyclePersistedFooterAlign}
                         user={user}
                         setSignatureModalOpen={setSignatureModalOpen}
                         isTrainingMode={isTrainingMode}
                         toggleViewMode={toggleViewMode}
                         buttonTextSize={buttonTextSize}
-                        cycleButtonTextSize={cycleButtonTextSize}
+                        cycleButtonTextSize={cyclePersistedButtonTextSize}
                         handleLogout={handleLogout}
                         currentDbEnvironment={currentDbEnvironment}
                         dbLoading={dbLoading}
@@ -1467,8 +1502,8 @@ const Profile = () => {
           openAccordions={openAccordions}
           toggleAccordion={toggleAccordion}
           uiScale={uiScale}
-          setUiScale={setUiScale}
-          cycleUiScale={cycleUiScale}
+          setUiScale={setPersistedUiScale}
+          cycleUiScale={cyclePersistedUiScale}
           syncLoading={syncLoading}
           handleManualSync={handleManualSync}
           user={user}

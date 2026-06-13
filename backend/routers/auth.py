@@ -1525,7 +1525,9 @@ def update_my_profile(
     """Update current user's own profile (limited fields)."""
     allowed_fields = {
         "first_name", "last_name", "email", "phone",
-        "profile_picture", "signature_data", "password"
+        "profile_picture", "signature_data", "password",
+        "color", "dark_mode", "training_mode", "training_mode_explicit",
+        "button_text_size", "footer_align", "ui_scale", "db_environment",
     }
     for field, value in user_data.items():
         if field not in allowed_fields:
@@ -1533,6 +1535,11 @@ def update_my_profile(
         if field == "password":
             if value:
                 current_user.password_hash = User.hash_password(value)
+        elif field == "ui_scale" and value is not None:
+            try:
+                current_user.ui_scale = max(90, min(150, int(value)))
+            except (TypeError, ValueError):
+                continue
         else:
             setattr(current_user, field, value)
 

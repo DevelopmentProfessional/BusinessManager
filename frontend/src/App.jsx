@@ -10,7 +10,6 @@ import useViewMode from "./services/useViewMode";
 import { applyButtonDimensions } from "./constants/buttonTextSize";
 import useBranding from "./services/useBranding";
 import { initializeActiveColorTheme } from "./services/activeColorTheme";
-import { getMobileEnvironment } from "./services/mobileEnvironment";
 import Modal_Client from "./pages/components/Modal_Client";
 import Manager_MobileAddressBar from "./pages/components/Manager_MobileAddressBar";
 import Prompt_InstallApp from "./pages/components/Prompt_InstallApp";
@@ -80,7 +79,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 function App() {
   const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
-  const { isTrainingMode, buttonTextSize, setTrainingMode } = useViewMode();
+  const { isTrainingMode, buttonTextSize, setTrainingMode, setButtonTextSize, setFooterAlign, setUiScale } = useViewMode();
   const { isInitialized: brandingInitialized } = useBranding();
 
   // Initialize user data from localStorage/sessionStorage on app startup
@@ -95,8 +94,6 @@ function App() {
         if (token) {
           let restoredUser = null;
           let permissions = [];
-          const mobileEnv = getMobileEnvironment();
-
           if (userData) {
             try {
               restoredUser = JSON.parse(userData);
@@ -115,31 +112,32 @@ function App() {
 
           setToken(token);
 
-          // Installed mobile sessions can keep stale user blobs across deploys, so
-          // force a fresh auth sync there instead of trusting persisted user state.
-          const shouldRefreshSessionFromApi = !restoredUser || mobileEnv.isStandalone;
-          if (shouldRefreshSessionFromApi) {
-            try {
-              const [meResponse, permissionsResponse] = await Promise.all([api.get("/auth/me"), api.get("/auth/me/permissions").catch(() => null)]);
-              restoredUser = meResponse?.data ?? null;
-              const fetchedPermissions = permissionsResponse?.data?.permissions;
-              if (Array.isArray(fetchedPermissions)) {
-                permissions = fetchedPermissions;
-              }
-
-              if (restoredUser) {
-                if (localStorage.getItem("token")) {
-                  localStorage.setItem("user", JSON.stringify(restoredUser));
-                  localStorage.setItem("permissions", JSON.stringify(permissions));
-                }
-                if (sessionStorage.getItem("token")) {
-                  sessionStorage.setItem("user", JSON.stringify(restoredUser));
-                  sessionStorage.setItem("permissions", JSON.stringify(permissions));
-                }
-              }
-            } catch (error) {
-              console.error("Error restoring session from API:", error);
+          // Always refresh the authenticated user from the API so server-backed
+          // profile preferences win over stale local cache entries.
+          try {
+            const [meResponse, permissionsResponse] = await Promise.all([api.get("/auth/me"), api.get("/auth/me/permissions").catch(() => null)]);
+            const apiUser = meResponse?.data ?? null;
+            const fetchedPermissions = permissionsResponse?.data?.permissions;
+            if (Array.isArray(fetchedPermissions)) {
+              permissions = fetchedPermissions;
             }
+
+            if (apiUser) {
+              restoredUser = restoredUser ? { ...restoredUser, ...apiUser } : apiUser;
+            }
+
+            if (restoredUser) {
+              if (localStorage.getItem("token")) {
+                localStorage.setItem("user", JSON.stringify(restoredUser));
+                localStorage.setItem("permissions", JSON.stringify(permissions));
+              }
+              if (sessionStorage.getItem("token")) {
+                sessionStorage.setItem("user", JSON.stringify(restoredUser));
+                sessionStorage.setItem("permissions", JSON.stringify(permissions));
+              }
+            }
+          } catch (error) {
+            console.error("Error restoring session from API:", error);
           }
 
           if (restoredUser) {
@@ -182,6 +180,13 @@ function App() {
     if (!user) return;
     setTrainingMode(user.training_mode_explicit ? user.training_mode !== false : true);
   }, [user, setTrainingMode]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.button_text_size) setButtonTextSize(user.button_text_size);
+    if (user.footer_align) setFooterAlign(user.footer_align);
+    if (Number.isFinite(Number(user.ui_scale))) setUiScale(user.ui_scale);
+  }, [user, setButtonTextSize, setFooterAlign, setUiScale]);
 
   useEffect(() => {
     if (user?.dark_mode !== undefined) {

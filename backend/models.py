@@ -188,6 +188,9 @@ class User(BaseModel, table=True):
     dark_mode: bool = Field(default=False)  # User's dark mode preference
     training_mode: bool = Field(default=True)  # User's training/compact mode preference
     training_mode_explicit: bool = Field(default=False)  # Whether the user chose the mode manually
+    button_text_size: str = Field(default="medium")
+    footer_align: str = Field(default="left")
+    ui_scale: int = Field(default=100)
     db_environment: str = Field(default="production")  # User's preferred database environment
 
     # Hierarchy - who this user reports to
@@ -1231,6 +1234,9 @@ class UserUpdate(SQLModel):
     dark_mode: Optional[bool] = None
     training_mode: Optional[bool] = None
     training_mode_explicit: Optional[bool] = None
+    button_text_size: Optional[str] = None
+    footer_align: Optional[str] = None
+    ui_scale: Optional[int] = Field(default=None, ge=90, le=150)
     db_environment: Optional[str] = None  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
@@ -1273,6 +1279,9 @@ class UserRead(SQLModel):
     dark_mode: bool = False
     training_mode: bool = True
     training_mode_explicit: bool = False
+    button_text_size: str = "medium"
+    footer_align: str = "left"
+    ui_scale: int = 100
     db_environment: str = "production"  # User's preferred database environment
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
