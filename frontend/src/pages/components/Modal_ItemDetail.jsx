@@ -256,8 +256,7 @@ function ProductionRelationsPanel({ productId }) {
                 </button>
               </div>
             ) : (
-              <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`}
-              style={{ marginTop: 6 }} onClick={() => setAddingResource(true)}>
+              <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`} style={{ marginTop: 6 }} onClick={() => setAddingResource(true)}>
                 <PlusIcon className="h-4 w-4" />
                 <span>Add</span>
               </button>
@@ -316,8 +315,7 @@ function ProductionRelationsPanel({ productId }) {
                 </button>
               </div>
             ) : (
-              <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`}
-              style={{ marginTop: 6 }} onClick={() => setAddingAsset(true)}>
+              <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`} style={{ marginTop: 6 }} onClick={() => setAddingAsset(true)}>
                 <PlusIcon className="h-4 w-4" />
                 <span>Add</span>
               </button>
@@ -686,8 +684,7 @@ function BundleComponentsPanel({ bundleId }) {
             </button>
           </div>
         ) : (
-          <button type="button" className={btnOutlineClass}
-              style={{ marginTop: 6 }} onClick={() => setAdding(true)}>
+          <button type="button" className={btnOutlineClass} style={{ marginTop: 6 }} onClick={() => setAdding(true)}>
             + Add Component
           </button>
         )}
@@ -1259,22 +1256,13 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   {inCart && <div className="small text-muted">{cartQuantity} already in cart</div>}
                 </div>
                 <div className="d-flex align-items-center gap-3">
-                  <button
-                    onClick={decrementQuantity}
-                    disabled={quantity <= 1}
-                    className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`}
-                    style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}
-                  >
+                  <button onClick={decrementQuantity} disabled={quantity <= 1} className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`} style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}>
                     <MinusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                   <span className="fs-4 fw-semibold" style={{ minWidth: "50px", textAlign: "center" }}>
                     {quantity}
                   </span>
-                  <button
-                    onClick={incrementQuantity}
-                    className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`}
-                    style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}
-                  >
+                  <button onClick={incrementQuantity} className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`} style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}>
                     <PlusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                 </div>
@@ -1283,11 +1271,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               {/* Total Display */}
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <small className="text-muted">Total</small>
-                <div className="fs-3 fw-bold text-primary">
-                  {salesPriceRange && salesPriceRange.min !== salesPriceRange.max
-                    ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}`
-                    : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}
-                </div>
+                <div className="fs-3 fw-bold text-primary">{salesPriceRange && salesPriceRange.min !== salesPriceRange.max ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}` : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}</div>
               </div>
             </div>
           ) : (
@@ -1367,91 +1351,53 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         )}
                       </div>
                     )}
-                </div>
+                  </div>
 
-                {/* Photo management strip */}
-                <div className="mb-2">
-                  <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: "44px" }}>
-                    {images.map((img, idx) => (
-                      <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
-                        <div
-                          onClick={() => setCurrentImageIndex(idx)}
-                        >
-                          <img
-                            src={getImageSrc(img)}
-                            alt=""
-                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                              const placeholder = e.currentTarget.nextElementSibling;
-                              if (placeholder) placeholder.style.display = "flex";
-                            }}
-                          />
-                          <div
-                            style={{
-                              display: "none",
-                              width: "100%",
-                              height: "100%",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "#9ca3af",
-                            }}
-                          >
-                            <CubeIcon style={{ width: 14, height: 14 }} />
+                  {/* Photo management strip */}
+                  <div className="mb-2">
+                    <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: "44px" }}>
+                      {images.map((img, idx) => (
+                        <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
+                          <div onClick={() => setCurrentImageIndex(idx)}>
+                            <img
+                              src={getImageSrc(img)}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const placeholder = e.currentTarget.nextElementSibling;
+                                if (placeholder) placeholder.style.display = "flex";
+                              }}
+                            />
+                            <div
+                              style={{
+                                display: "none",
+                                width: "100%",
+                                height: "100%",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#9ca3af",
+                              }}
+                            >
+                              <CubeIcon style={{ width: 14, height: 14 }} />
+                            </div>
                           </div>
-                        </div>
-                        {/* Delete button — top right */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteImage(img.id)}
-                          style={{
-                            position: "absolute",
-                            top: "-5px",
-                            right: "-5px",
-                            width: "16px",
-                            height: "16px",
-                            borderRadius: "50%",
-                            background: "#dc3545",
-                            color: "#fff",
-                            border: "none",
-                            padding: 0,
-                            fontSize: "10px",
-                            lineHeight: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                          }}
-                        >
-                          ×
-                        </button>
-                        {/* Edit URL button — bottom left (only for URL-based images) */}
-                        {img.image_url && (
+                          {/* Delete button — top right */}
                           <button
                             type="button"
-                            onClick={() => {
-                              setAddImageMode(null);
-                              if (editingImageId === img.id) {
-                                setEditingImageId(null);
-                                setEditingImageUrl("");
-                              } else {
-                                setEditingImageId(img.id);
-                                setEditingImageUrl(img.image_url);
-                              }
-                            }}
-                            title="Edit image URL"
+                            onClick={() => handleDeleteImage(img.id)}
                             style={{
                               position: "absolute",
-                              bottom: "-5px",
-                              left: "-5px",
+                              top: "-5px",
+                              right: "-5px",
                               width: "16px",
                               height: "16px",
                               borderRadius: "50%",
-                              background: editingImageId === img.id ? "#ffc107" : "#6c757d",
+                              background: "#dc3545",
                               color: "#fff",
                               border: "none",
                               padding: 0,
-                              fontSize: "9px",
+                              fontSize: "10px",
                               lineHeight: 1,
                               display: "flex",
                               alignItems: "center",
@@ -1459,175 +1405,211 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                               cursor: "pointer",
                             }}
                           >
-                            ✎
+                            ×
                           </button>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* Add photo button */}
-                    {addImageMode === null && (
-                      <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
-                          <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Edit existing image URL panel */}
-                  {editingImageId !== null && (
-                    <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Edit</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingImageId(null);
-                            setEditingImageUrl("");
-                            setImageError("");
-                          }}
-                          className="btn btn-link btn-sm p-0 ms-auto"
-                          style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="d-flex gap-1">
-                        <input type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} autoFocus />
-                        <button type="button" onClick={handleSaveEditImageUrl} className="btn btn-warning btn-sm flex-shrink-0">
-                          Save
-                        </button>
-                      </div>
-                      {imageError && (
-                        <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
-                          {imageError}
+                          {/* Edit URL button — bottom left (only for URL-based images) */}
+                          {img.image_url && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddImageMode(null);
+                                if (editingImageId === img.id) {
+                                  setEditingImageId(null);
+                                  setEditingImageUrl("");
+                                } else {
+                                  setEditingImageId(img.id);
+                                  setEditingImageUrl(img.image_url);
+                                }
+                              }}
+                              title="Edit image URL"
+                              style={{
+                                position: "absolute",
+                                bottom: "-5px",
+                                left: "-5px",
+                                width: "16px",
+                                height: "16px",
+                                borderRadius: "50%",
+                                background: editingImageId === img.id ? "#ffc107" : "#6c757d",
+                                color: "#fff",
+                                border: "none",
+                                padding: 0,
+                                fontSize: "9px",
+                                lineHeight: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ✎
+                            </button>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
+                      ))}
 
-                  {imageError && addImageMode === null && editingImageId === null && (
-                    <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
-                      {imageError}
-                    </div>
-                  )}
-                </div>
-
-                {/* Equal-width inventory field rows */}
-                {!isLocation && !isAsset ? (
-                  <div className="mb-2">
-                    <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
-                  </div>
-                ) : (
-                  <div className="d-flex flex-column gap-2 mb-2">
-                    <div className="d-flex align-items-center gap-2 text-success">
-                      <CheckCircleSolid className="h-5 w-5" />
-                      <div>
-                        <div className="fw-medium">Status: OK</div>
-                        <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className={inventoryRowClass}>
-                  {!isLocation && !isAsset && (
-                    <div className="form-floating position-relative" style={equalFieldStyle}>
-                      <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
-                      <label htmlFor="min_stock_level">Min Count</label>
-                    </div>
-                  )}
-                  {!isLocation && !isAsset && (
-                    <div className="form-floating" style={equalFieldStyle}>
-                      <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
-                      <label htmlFor="quantity">Current Count</label>
-                    </div>
-                  )}
-                  <div className="form-floating" style={equalFieldStyle}>
-                    <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
-                    <label htmlFor="detail_cost">Cost</label>
-                  </div>
-                  <div className="form-floating" style={equalFieldStyle}>
-                    <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
-                    <label htmlFor="detail_price">Price</label>
-                  </div>
-                </div>
-                {featuresPriceRange && (
-                  <div className="mt-1 mb-2 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
-                )}
-
-                <div className={inventoryRowClass}>
-                  <div className="form-floating" style={equalFieldStyle}>
-                    <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
-                      <option value="one_time">One-Time Purchase</option>
-                      <option value="recurring">Recurring Rental</option>
-                    </select>
-                    <label htmlFor="detail_cost_type">Cost Type</label>
-                  </div>
-                  <div className="form-floating" style={equalFieldStyle}>
-                    <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Name" required />
-                    <label htmlFor="detail_name">Name *</label>
-                  </div>
-                </div>
-
-                {!isLocation ? (
-                  <div className={inventoryRowClass}>
-                    <div className="d-flex align-items-center gap-2" style={equalFieldStyle}>
-                      <div className="form-floating flex-grow-1 mb-0">
-                        <select
-                          id="detail_location"
-                          name="location"
-                          value={showNewLocationInput ? "" : formData.location}
-                          onChange={(e) => {
-                            setShowNewLocationInput(false);
-                            handleChange(e);
-                          }}
-                          className="form-select form-select-sm"
-                        >
-                          <option value="">Select location</option>
-                          {availableLocations.map((location) => (
-                            <option key={location} value={location}>
-                              {location}
-                            </option>
-                          ))}
-                        </select>
-                        <label htmlFor="detail_location">Location</label>
-                      </div>
-                      <button
-                        type="button"
-                        title={showNewLocationInput ? "Close" : "Add location"}
-                        onClick={() => {
-                          setShowNewLocationInput((prev) => {
-                            const next = !prev;
-                            if (next) {
-                              setFormData((current) => ({ ...current, location: "" }));
-                            }
-                            return next;
-                          });
-                        }}
-                        className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                        style={{ fontSize: "1rem" }}
-                      >
-                        {showNewLocationInput ? "×" : "+"}
-                      </button>
-                    </div>
-
-                    <div className="form-floating" style={equalFieldStyle}>
-                      <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
-                      <label htmlFor="detail_sku">Serial Number</label>
-                      {!isSalesMode && (
-                        <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y" style={{ right: "0.5rem" }} title="Scan Barcode">
+                      {/* Add photo button */}
+                      {addImageMode === null && (
+                        <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
-                            <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
+                            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
+                            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
                           </svg>
                         </button>
                       )}
                     </div>
+
+                    {/* Edit existing image URL panel */}
+                    {editingImageId !== null && (
+                      <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Edit</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingImageId(null);
+                              setEditingImageUrl("");
+                              setImageError("");
+                            }}
+                            className="btn btn-link btn-sm p-0 ms-auto"
+                            style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="d-flex gap-1">
+                          <input type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} autoFocus />
+                          <button type="button" onClick={handleSaveEditImageUrl} className="btn btn-warning btn-sm flex-shrink-0">
+                            Save
+                          </button>
+                        </div>
+                        {imageError && (
+                          <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                            {imageError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {imageError && addImageMode === null && editingImageId === null && (
+                      <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                        {imageError}
+                      </div>
+                    )}
                   </div>
-                ) : null}
+
+                  {/* Equal-width inventory field rows */}
+                  {!isLocation && !isAsset ? (
+                    <div className="mb-2">
+                      <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
+                    </div>
+                  ) : (
+                    <div className="d-flex flex-column gap-2 mb-2">
+                      <div className="d-flex align-items-center gap-2 text-success">
+                        <CheckCircleSolid className="h-5 w-5" />
+                        <div>
+                          <div className="fw-medium">Status: OK</div>
+                          <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={inventoryRowClass}>
+                    {!isLocation && !isAsset && (
+                      <div className="form-floating position-relative" style={equalFieldStyle}>
+                        <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
+                        <label htmlFor="min_stock_level">Min Count</label>
+                      </div>
+                    )}
+                    {!isLocation && !isAsset && (
+                      <div className="form-floating" style={equalFieldStyle}>
+                        <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
+                        <label htmlFor="quantity">Current Count</label>
+                      </div>
+                    )}
+                    <div className="form-floating" style={equalFieldStyle}>
+                      <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                      <label htmlFor="detail_cost">Cost</label>
+                    </div>
+                    <div className="form-floating" style={equalFieldStyle}>
+                      <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                      <label htmlFor="detail_price">Price</label>
+                    </div>
+                  </div>
+                  {featuresPriceRange && (
+                    <div className="mt-1 mb-2 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
+                  )}
+
+                  <div className={inventoryRowClass}>
+                    <div className="form-floating" style={equalFieldStyle}>
+                      <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
+                        <option value="one_time">One-Time Purchase</option>
+                        <option value="recurring">Recurring Rental</option>
+                      </select>
+                      <label htmlFor="detail_cost_type">Cost Type</label>
+                    </div>
+                    <div className="form-floating" style={equalFieldStyle}>
+                      <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Name" required />
+                      <label htmlFor="detail_name">Name *</label>
+                    </div>
+                  </div>
+
+                  {!isLocation ? (
+                    <div className={inventoryRowClass}>
+                      <div className="d-flex align-items-center gap-2" style={equalFieldStyle}>
+                        <div className="form-floating flex-grow-1 mb-0">
+                          <select
+                            id="detail_location"
+                            name="location"
+                            value={showNewLocationInput ? "" : formData.location}
+                            onChange={(e) => {
+                              setShowNewLocationInput(false);
+                              handleChange(e);
+                            }}
+                            className="form-select form-select-sm"
+                          >
+                            <option value="">Select location</option>
+                            {availableLocations.map((location) => (
+                              <option key={location} value={location}>
+                                {location}
+                              </option>
+                            ))}
+                          </select>
+                          <label htmlFor="detail_location">Location</label>
+                        </div>
+                        <button
+                          type="button"
+                          title={showNewLocationInput ? "Close" : "Add location"}
+                          onClick={() => {
+                            setShowNewLocationInput((prev) => {
+                              const next = !prev;
+                              if (next) {
+                                setFormData((current) => ({ ...current, location: "" }));
+                              }
+                              return next;
+                            });
+                          }}
+                          className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                          style={{ fontSize: "1rem" }}
+                        >
+                          {showNewLocationInput ? "×" : "+"}
+                        </button>
+                      </div>
+
+                      <div className="form-floating" style={equalFieldStyle}>
+                        <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
+                        <label htmlFor="detail_sku">Serial Number</label>
+                        {!isSalesMode && (
+                          <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y" style={{ right: "0.5rem" }} title="Scan Barcode">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                              <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
+                              <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 {scanError && <div className="alert alert-danger py-1 small mt-0 mb-2">{scanError}</div>}
@@ -1753,10 +1735,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
             />
           ) : (
-            <Footer_Actions
-              start={<Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" />}
-              center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
-            />
+            <Footer_Actions start={<Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" />} center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
           )}
         </div>
       </div>
