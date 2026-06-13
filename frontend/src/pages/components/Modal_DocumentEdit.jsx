@@ -252,12 +252,21 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     setSaving(true);
     setError("");
     try {
+      // Convert review_date from "YYYY-MM-DD" string to ISO datetime for backend
+      let reviewDateTime = null;
+      if (reviewDate) {
+        const dt = new Date(reviewDate);
+        if (!isNaN(dt.getTime())) {
+          reviewDateTime = dt.toISOString();
+        }
+      }
+
       await Promise.all([
         documentsAPI.update(document.id, {
           description,
           owner_id: ownerId || null,
           category_id: categoryId || null,
-          review_date: reviewDate || null,
+          review_date: reviewDateTime,
         }),
         documentTagsAPI.setForDocument(
           document.id,
@@ -354,8 +363,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner</label>
-              <Dropdown_Custom
-                value={ownerId || ""}
+              <Dropdown_Custom                name="owner_id"                value={ownerId || ""}
                 onChange={(e) => setOwnerId(e.target.value)}
                 options={[
                   { value: "", label: "Unassigned" },
@@ -376,7 +384,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
           {/* ── Category ─────────────────────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <Dropdown_Custom value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...categories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
+            <Dropdown_Custom name="category_id" value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...categories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
           </div>
 
           {/* ── Tags ─────────────────────────────────────────────────────────── */}

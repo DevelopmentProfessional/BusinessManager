@@ -115,22 +115,10 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
               <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
                 <MagnifyingGlassIcon className="h-4 w-4" />
               </span>
-              <input
-                ref={inputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={placeholder}
-                className="form-control form-control-sm ps-5"
-              />
+              <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className="form-control form-control-sm ps-5" />
             </div>
             {selectedCount > 0 && (
-              <button
-                type="button"
-                onClick={onClear}
-                className="btn-unstyled p-0 text-muted mt-1"
-                style={{ fontSize: "0.75rem", textDecoration: "underline" }}
-              >
+              <button type="button" onClick={onClear} className="btn-unstyled p-0 text-muted mt-1" style={{ fontSize: "0.75rem", textDecoration: "underline" }}>
                 Clear all ({selectedCount})
               </button>
             )}
@@ -144,19 +132,8 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
               filteredOptions.map((option) => {
                 const isSelected = selectedIds.includes(option.id);
                 return (
-                  <label
-                    key={option.id}
-                    className={`d-flex align-items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                      isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""
-                    }`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onToggle(option.id)}
-                      className="form-check-input"
-                    />
+                  <label key={option.id} className={`d-flex align-items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
+                    <input type="checkbox" checked={isSelected} onChange={() => onToggle(option.id)} className="form-check-input" />
                     <span style={{ fontSize: "0.875rem" }}>{option.label}</span>
                   </label>
                 );
@@ -187,16 +164,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
 }
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
-export default function Dropup_ScheduleFilter({
-  isOpen,
-  onClose,
-  employees,
-  clients,
-  services,
-  filters,
-  onApply,
-  onClear,
-}) {
+export default function Dropup_ScheduleFilter({ isOpen, onClose, employees, clients, services, filters, onApply, onClear }) {
   const [localFilters, setLocalFilters] = useState({
     employeeIds: [],
     clientIds: [],
@@ -273,39 +241,16 @@ export default function Dropup_ScheduleFilter({
     >
       <div className="d-flex flex-column gap-3 p-2">
         {/* Employees Dropup */}
-        <FilterDropup
-          label="Employees"
-          options={employeeOptions}
-          selectedIds={localFilters.employeeIds}
-          onToggle={(id) => toggleId("employeeIds", id)}
-          onClear={() => clearSection("employeeIds")}
-          placeholder="Search employees..."
-        />
+        <FilterDropup label="Employees" options={employeeOptions} selectedIds={localFilters.employeeIds} onToggle={(id) => toggleId("employeeIds", id)} onClear={() => clearSection("employeeIds")} placeholder="Search employees..." />
 
         {/* Clients Dropup */}
-        <FilterDropup
-          label="Clients"
-          options={clientOptions}
-          selectedIds={localFilters.clientIds}
-          onToggle={(id) => toggleId("clientIds", id)}
-          onClear={() => clearSection("clientIds")}
-          placeholder="Search clients..."
-        />
+        <FilterDropup label="Clients" options={clientOptions} selectedIds={localFilters.clientIds} onToggle={(id) => toggleId("clientIds", id)} onClear={() => clearSection("clientIds")} placeholder="Search clients..." />
 
         {/* Services Dropup */}
-        <FilterDropup
-          label="Services"
-          options={serviceOptions}
-          selectedIds={localFilters.serviceIds}
-          onToggle={(id) => toggleId("serviceIds", id)}
-          onClear={() => clearSection("serviceIds")}
-          placeholder="Search services..."
-        />
+        <FilterDropup label="Services" options={serviceOptions} selectedIds={localFilters.serviceIds} onToggle={(id) => toggleId("serviceIds", id)} onClear={() => clearSection("serviceIds")} placeholder="Search services..." />
 
         {/* Info text */}
-        <div className="text-muted small mt-2">
-          Click a filter to open the selection panel. Use search to find specific items.
-        </div>
+        <div className="text-muted small mt-2">Click a filter to open the selection panel. Use search to find specific items.</div>
       </div>
     </Modal>
   );

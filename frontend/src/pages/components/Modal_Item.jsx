@@ -22,7 +22,7 @@
  */
 import React, { useState } from "react";
 import useStore from "../../services/useStore";
-import { inventoryAPI } from "../../services/api";
+import { inventoryAPI, bundleAPI, mixAPI } from "../../services/api";
 import Modal from "./Modal";
 import Form_Item from "./Form_Item";
 
@@ -53,6 +53,60 @@ export default function Modal_Item() {
     }
   };
 
+  const handleSubmitWithExtras = async (itemData, extras = {}) => {
+    try {
+      setFormError(null);
+      const response = await inventoryAPI.create(itemData);
+      let newItem = response?.data ?? response;
+
+      if (newItem?.id && extras.pendingPhoto) {
+        await inventoryAPI.uploadImageFile(newItem.id, extras.pendingPhoto, true);
+      }
+
+      if (newItem?.id && itemData.type === "BUNDLE" && Array.isArray(extras.bundleComponents) && extras.bundleComponents.length > 0) {
+        await Promise.all(
+          extras.bundleComponents.map((component) => bundleAPI.addComponent(newItem.id, component.id, parseFloat(component.quantity) || 1))
+        );
+      }
+
+      if (newItem?.id && itemData.type === "MIX") {
+        if (extras.mixConfig) {
+          await mixAPI.saveConfig({
+            inventory_id: newItem.id,
+            total_quantity: parseInt(extras.mixConfig.total_quantity, 10) || 10,
+            has_max_per_product: extras.mixConfig.max_per_product != null,
+            max_per_product: extras.mixConfig.max_per_product ?? null,
+          });
+        }
+
+        if (Array.isArray(extras.mixComponents) && extras.mixComponents.length > 0) {
+          await Promise.all(
+            extras.mixComponents.map((component) => mixAPI.addComponent(newItem.id, component.id, component.max_quantity ?? null))
+          );
+        }
+      }
+
+      try {
+        const refreshed = await inventoryAPI.getById(newItem.id);
+        newItem = refreshed?.data ?? newItem;
+      } catch {
+        // keep created snapshot if refresh fails
+      }
+
+      addInventory(newItem);
+
+      if (addInventoryCallback && typeof addInventoryCallback === "function") {
+        addInventoryCallback(newItem);
+      }
+
+      closeAddInventoryModal();
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to create item";
+      setFormError(String(detail));
+    }
+  };
+
   // ─── 3 CANCEL HANDLER ────────────────────────────────────────────────────
   const handleCancel = () => {
     setFormError(null);
@@ -64,7 +118,7 @@ export default function Modal_Item() {
 
   return (
     <Modal isOpen={isAddInventoryModalOpen} onClose={handleCancel} noPadding={true} fullScreen={true} contentGravity="top">
-      {isAddInventoryModalOpen && <Form_Item item={null} initialName={initialName} showScanner onCancel={handleCancel} onSubmit={handleSubmit} error={formError} />}
+      {isAddInventoryModalOpen && <Form_Item item={null} initialName={initialName} showScanner onCancel={handleCancel} onSubmit={handleSubmit} onSubmitWithExtras={handleSubmitWithExtras} error={formError} />}
     </Modal>
   );
 }

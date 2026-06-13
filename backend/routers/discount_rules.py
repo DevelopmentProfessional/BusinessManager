@@ -57,8 +57,6 @@ def create_discount_rule(
 ):
     """Create a new discount rule."""
     rule.company_id = current_user.company_id
-    rule.created_by = current_user.id
-    rule.created_at = datetime.utcnow()
     
     session.add(rule)
     try:
@@ -116,14 +114,20 @@ def update_discount_rule(
     
     # Update fields
     rule.name = updated_rule.name
-    rule.description = updated_rule.description
+    rule.applies_to = updated_rule.applies_to
+    rule.item_ids = updated_rule.item_ids
     rule.discount_type = updated_rule.discount_type
     rule.discount_value = updated_rule.discount_value
     rule.start_date = updated_rule.start_date
     rule.end_date = updated_rule.end_date
-    rule.item_ids = updated_rule.item_ids
+    rule.is_recurring = updated_rule.is_recurring
+    rule.recur_frequency = updated_rule.recur_frequency
+    rule.recur_days = updated_rule.recur_days
+    rule.recur_count = updated_rule.recur_count
+    rule.times_per_day = updated_rule.times_per_day
+    rule.day_start_time = updated_rule.day_start_time
+    rule.day_end_time = updated_rule.day_end_time
     rule.is_active = updated_rule.is_active
-    rule.updated_at = datetime.utcnow()
     
     session.add(rule)
     try:

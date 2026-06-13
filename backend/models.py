@@ -1204,7 +1204,9 @@ class UserCreate(SQLModel):
     supervisor: Optional[str] = None
     location: Optional[str] = None
     department_id: Optional[UUID] = None
+    employment_type: Optional[str] = None
     salary: Optional[float] = None
+    hourly_rate: Optional[float] = None
     pay_frequency: Optional[str] = None
     insurance_plan: Optional[str] = None
     vacation_days: Optional[int] = None
@@ -1247,7 +1249,9 @@ class UserUpdate(SQLModel):
     supervisor: Optional[str] = None
     location: Optional[str] = None
     department_id: Optional[UUID] = None
+    employment_type: Optional[str] = None
     salary: Optional[float] = None
+    hourly_rate: Optional[float] = None
     pay_frequency: Optional[str] = None
     insurance_plan: Optional[str] = None
     vacation_days: Optional[int] = None
@@ -1292,7 +1296,9 @@ class UserRead(SQLModel):
     supervisor: Optional[str] = None
     location: Optional[str] = None
     department_id: Optional[UUID] = None
+    employment_type: Optional[str] = None
     salary: Optional[float] = None
+    hourly_rate: Optional[float] = None
     pay_frequency: Optional[str] = None
     insurance_plan: Optional[str] = None
     vacation_days: Optional[int] = None
@@ -2033,6 +2039,7 @@ class SaleTransaction(BaseModel, table=True):
     client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
     employee_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     subtotal: float = Field(default=0)
+    discount_amount: float = Field(default=0)  # discount applied to transaction
     tax_amount: float = Field(default=0)
     total: float = Field(default=0)
     payment_method: str = Field(default="cash")  # "card" or "cash"
@@ -2059,6 +2066,7 @@ class SaleTransactionRead(SQLModel):
     client_id: Optional[UUID] = None
     employee_id: Optional[UUID] = None
     subtotal: float
+    discount_amount: float = 0
     tax_amount: float
     total: float
     payment_method: str
@@ -2104,6 +2112,7 @@ class SaleTransactionCreate(SQLModel):
     client_id: Optional[UUID] = None
     employee_id: Optional[UUID] = None
     subtotal: float = 0
+    discount_amount: float = 0
     tax_amount: float = 0
     total: float = 0
     payment_method: str = "cash"

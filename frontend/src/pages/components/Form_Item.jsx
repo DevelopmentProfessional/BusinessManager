@@ -342,6 +342,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     const description = (formData.description || "").trim();
     const image_url = addImageMode === "url" || !pendingPhotoUrl ? (formData.image_url || "").trim() : "";
     const location = (formData.location || "").trim();
+    const minStockLevel = parseInt(formData.min_stock_level) || 10;
     const payload = {
       name,
       sku,
@@ -355,7 +356,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       supplier_id: formData.supplier_id || undefined,
       category: formData.category || undefined,
       cost_type: formData.cost_type || "one_time",
-      min_stock_level: parseInt(formData.min_stock_level) || 10,
+      quantity: safeQty,
+      min_stock_level: minStockLevel,
       date_of_purchase: formData.date_of_purchase || undefined,
       date_of_sale: formData.date_of_sale || undefined,
     };
@@ -757,31 +759,31 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
             )}
           </div>
 
-            {/* Fixed-position tooltip — renders outside overflow container so it's never clipped */}
-            {typeHelpKey &&
-              (() => {
-                const opt = typeOptions.find((o) => o.value === typeHelpKey);
-                if (!opt) return null;
-                return (
-                  <div
-                    style={{
-                      position: "fixed",
-                      top: typeHelpPos.top,
-                      left: typeHelpPos.left,
-                      width: 240,
-                      maxWidth: "calc(100vw - 1rem)",
-                      zIndex: 9999,
-                      pointerEvents: "none",
-                    }}
-                    className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-                  >
-                    <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                      {opt.label}
-                    </div>
-                    <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+          {/* Fixed-position tooltip — renders outside overflow container so it's never clipped */}
+          {typeHelpKey &&
+            (() => {
+              const opt = typeOptions.find((o) => o.value === typeHelpKey);
+              if (!opt) return null;
+              return (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: typeHelpPos.top,
+                    left: typeHelpPos.left,
+                    width: 240,
+                    maxWidth: "calc(100vw - 1rem)",
+                    zIndex: 9999,
+                    pointerEvents: "none",
+                  }}
+                  className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
+                    {opt.label}
                   </div>
-                );
-              })()}
+                  <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                </div>
+              );
+            })()}
           {showCategoryManager && !isLocation && (
             <div className="mb-2">
               <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">

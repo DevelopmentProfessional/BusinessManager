@@ -34,7 +34,7 @@ import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ArrowLeftIco
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
+export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, discountAmount = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
   const [paymentMethod, setPaymentMethod] = useState("card_scan");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -58,8 +58,9 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
   const [emailSaveError, setEmailSaveError] = useState("");
 
   const subtotal = cartTotal;
-  const tax = subtotal * (taxRate / 100);
-  const total = subtotal + tax;
+  const effectiveSubtotal = Math.max(0, subtotal - (discountAmount || 0));
+  const tax = effectiveSubtotal * (taxRate / 100);
+  const total = effectiveSubtotal + tax;
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCardScan = paymentMethod === "card_scan";
   const isTapPay = paymentMethod === "tap_pay";
@@ -360,6 +361,12 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                   <span className="text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
                 </div>
+                {(discountAmount || 0) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Discount</span>
+                    <span className="text-red-600 dark:text-red-400">-${(discountAmount || 0).toFixed(2)}</span>
+                  </div>
+                )}
                 {taxRate > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>

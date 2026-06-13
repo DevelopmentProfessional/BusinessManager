@@ -222,9 +222,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
     return units.filter((unit) => {
       const assignedLabel = unit.employee_id ? employeeNameById.get(unit.employee_id) || "" : "shared";
       const stateLabel = STATE_LABELS[unit.state] || unit.state || "";
-      const haystack = [unit.label || "", unit.location || "", assignedLabel, stateLabel]
-        .join(" ")
-        .toLowerCase();
+      const haystack = [unit.label || "", unit.location || "", assignedLabel, stateLabel].join(" ").toLowerCase();
       return haystack.includes(needle);
     });
   }, [employeeNameById, unitSearchTerm, units]);
@@ -318,41 +316,67 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
       {selectedCount > 0 && (
         <div className="d-flex flex-wrap align-items-center gap-2 mb-2 p-2 border rounded bg-light-subtle">
           <span className="small fw-semibold">{selectedCount} selected</span>
-          <select className="form-select form-select-sm" style={{ width: 140 }} defaultValue="" disabled={saving} onChange={(e) => {
-            if (!e.target.value) return;
-            applyBulkUpdate({ state: e.target.value });
-            e.target.value = "";
-          }}>
+          <select
+            className="form-select form-select-sm"
+            style={{ width: 140 }}
+            defaultValue=""
+            disabled={saving}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              applyBulkUpdate({ state: e.target.value });
+              e.target.value = "";
+            }}
+          >
             <option value="">Set state...</option>
             {Object.entries(STATE_LABELS).map(([s, l]) => (
-              <option key={s} value={s}>{l}</option>
+              <option key={s} value={s}>
+                {l}
+              </option>
             ))}
           </select>
-          <select className="form-select form-select-sm" style={{ width: 180 }} defaultValue="" disabled={saving} onChange={(e) => {
-            if (!e.target.value) return;
-            const nextEmployeeId = e.target.value === "shared" ? null : e.target.value;
-            applyBulkUpdate({ employee_id: nextEmployeeId });
-            e.target.value = "";
-          }}>
+          <select
+            className="form-select form-select-sm"
+            style={{ width: 180 }}
+            defaultValue=""
+            disabled={saving}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const nextEmployeeId = e.target.value === "shared" ? null : e.target.value;
+              applyBulkUpdate({ employee_id: nextEmployeeId });
+              e.target.value = "";
+            }}
+          >
             <option value="">Assign...</option>
             <option value="shared">Shared</option>
             {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>{employeeLabel(employee)}</option>
+              <option key={employee.id} value={employee.id}>
+                {employeeLabel(employee)}
+              </option>
             ))}
           </select>
-          <select className="form-select form-select-sm" style={{ width: 180 }} defaultValue="" disabled={saving} onChange={(e) => {
-            if (!e.target.value) return;
-            const nextLocation = e.target.value === "__none__" ? null : e.target.value;
-            applyBulkUpdate({ location: nextLocation });
-            e.target.value = "";
-          }}>
+          <select
+            className="form-select form-select-sm"
+            style={{ width: 180 }}
+            defaultValue=""
+            disabled={saving}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const nextLocation = e.target.value === "__none__" ? null : e.target.value;
+              applyBulkUpdate({ location: nextLocation });
+              e.target.value = "";
+            }}
+          >
             <option value="">Set location...</option>
             <option value="__none__">No location</option>
             {availableLocations.map((location) => (
-              <option key={location} value={location}>{location}</option>
+              <option key={location} value={location}>
+                {location}
+              </option>
             ))}
           </select>
-          <button className="btn btn-sm btn-outline-danger" onClick={handleBulkRemove} disabled={saving}>Remove selected</button>
+          <button className="btn btn-sm btn-outline-danger" onClick={handleBulkRemove} disabled={saving}>
+            Remove selected
+          </button>
         </div>
       )}
 
@@ -397,7 +421,9 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
                       <select className="form-select form-select-sm" value={unit.location || "__none__"} onChange={(e) => handleLocationChange(unit.id, e.target.value)}>
                         <option value="__none__">No location</option>
                         {availableLocations.map((location) => (
-                          <option key={location} value={location}>{location}</option>
+                          <option key={location} value={location}>
+                            {location}
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -448,14 +474,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
         <button className="btn btn-sm btn-outline-primary" onClick={handleAddUnit} disabled={saving}>
           {isTrainingMode ? (saving ? "Adding..." : "+ Add") : saving ? "..." : "+"}
         </button>
-        <input
-          type="text"
-          className="form-control form-control-sm"
-          style={{ width: "320px", maxWidth: "100%" }}
-          placeholder="Search label, location, assigned, state..."
-          value={unitSearchTerm}
-          onChange={(e) => setUnitSearchTerm(e.target.value)}
-        />
+        <input type="text" className="form-control form-control-sm" style={{ width: "320px", maxWidth: "100%" }} placeholder="Search label, location, assigned, state..." value={unitSearchTerm} onChange={(e) => setUnitSearchTerm(e.target.value)} />
       </div>
 
       {error && (

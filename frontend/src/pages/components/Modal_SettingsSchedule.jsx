@@ -291,10 +291,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       {settings && (
         <div className={`rounded-lg p-2 border text-xs ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
           <p>
-            <strong>Last Updated:</strong>{" "}
-            {settings.updated_at && !isNaN(new Date(settings.updated_at).getTime())
-              ? new Date(settings.updated_at).toLocaleString()
-              : "N/A"}
+            <strong>Last Updated:</strong> {settings.updated_at && !isNaN(new Date(settings.updated_at).getTime()) ? new Date(settings.updated_at).toLocaleString() : "N/A"}
           </p>
         </div>
       )}

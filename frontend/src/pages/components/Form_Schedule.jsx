@@ -43,7 +43,7 @@
 
 import React, { useState, useEffect } from "react";
 import useStore from "../../services/useStore";
-import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI } from "../../services/api";
+import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI, scheduleAPI } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon, CheckIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
@@ -101,12 +101,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [employeeMultiMode, setEmployeeMultiMode] = useState(false);
   const [serviceResources, setServiceResources] = useState([]);
   const [inventoryMap, setInventoryMap] = useState({});
-  // Production task state
-  const [productItems, setProductItems] = useState([]);
-  const [productionInfo, setProductionInfo] = useState(null); // from GET /production/tasks/{id}/info
-  const [productionLoading, setProductionLoading] = useState(false);
-  const [productionError, setProductionError] = useState("");
-  const [completeResult, setCompleteResult] = useState(null);
+  // Linked task (parent task) state
+  const [linkedTasks, setLinkedTasks] = useState([]);
+  const [linkedTasksLoading, setLinkedTasksLoading] = useState(false);
+  const [linkedTasksLoaded, setLinkedTasksLoaded] = useState(false);
   const navigate = useNavigate();
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
@@ -232,25 +230,19 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     });
   };
 
-  const handleCreateProductFromSearch = (searchText) => {
-    const prefillName = String(searchText || "").trim();
-    openAddInventoryModal({
-      prefill: { name: prefillName },
-      onCreated: (newItem) => {
-        if (!newItem?.id) return;
-
-        setProductItems((prev) => {
-          const list = Array.isArray(prev) ? prev : [];
-          if (list.some((item) => item.id === newItem.id)) return list;
-          return [...list, newItem];
-        });
-
-        setFormData((prev) => ({
-          ...prev,
-          production_item_id: newItem.id,
-        }));
-      },
-    });
+  const handleLinkedTaskOpen = async () => {
+    if (linkedTasksLoaded || linkedTasksLoading) return;
+    setLinkedTasksLoading(true);
+    try {
+      const res = await scheduleAPI.getAll();
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setLinkedTasks(data.filter((s) => s.appointment_type === "task" && s.id !== appointment?.id));
+      setLinkedTasksLoaded(true);
+    } catch {
+      // silently degrade
+    } finally {
+      setLinkedTasksLoading(false);
+    }
   };
 
   // Extract local YYYY-MM-DD and HH:mm from a Date or ISO string reliably (no timezone shifts)
@@ -282,12 +274,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         duration_minutes: appointment.duration_minutes || "",
         status: appointment.status || "scheduled",
         is_paid: appointment.is_paid || false,
-        send_reminder: appointment.send_reminder ?? (scheduleSettings?.reminder_send_notification ?? true),
+        send_reminder: appointment.send_reminder ?? scheduleSettings?.reminder_send_notification ?? true,
         discount: appointment.discount || 0,
         sale_transaction_id: appointment.sale_transaction_id || null,
-        task_type: appointment.task_type || "service",
-        production_item_id: appointment.production_item_id || "",
-        production_quantity: appointment.production_quantity || 1,
+        parent_schedule_id: appointment.parent_schedule_id || null,
       };
     }
     return {
@@ -307,9 +297,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       send_reminder: scheduleSettings?.reminder_send_notification ?? true,
       discount: 0,
       sale_transaction_id: null,
-      task_type: "service",
-      production_item_id: "",
-      production_quantity: 1,
+      parent_schedule_id: null,
     };
   };
 
@@ -325,35 +313,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     setClientMultiMode(Boolean((appointment?.client_ids || []).length > 1));
     setEmployeeMultiMode(Boolean((appointment?.employee_ids || []).length > 1));
   }, [appointment?.id]);
-
-  // Load product inventory items once (for the production task selector)
-  useEffect(() => {
-    inventoryAPI
-      .getAll()
-      .then((res) => {
-        const all = Array.isArray(res?.data) ? res.data : [];
-        setProductItems(all.filter((i) => (i.type || "").toUpperCase() === "PRODUCT"));
-      })
-      .catch(() => {});
-  }, []);
-
-  // Load production info when viewing/editing an existing production task
-  useEffect(() => {
-    if (!appointment?.id || formData.task_type !== "production" || !formData.production_item_id) {
-      setProductionInfo(null);
-      return;
-    }
-    let cancelled = false;
-    productionAPI
-      .getInfo(appointment.id)
-      .then((res) => {
-        if (!cancelled) setProductionInfo(res?.data ?? res);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [appointment?.id, formData.task_type, formData.production_item_id]);
 
   // Load resource consumption info when service changes
   const loadServiceResources = async (serviceId) => {
@@ -532,9 +491,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       send_reminder: !!formData.send_reminder,
       discount: parseFloat(formData.discount) || 0,
       sale_transaction_id: formData.sale_transaction_id || null,
-      task_type: formData.task_type || "service",
-      production_item_id: formData.production_item_id || null,
-      production_quantity: parseInt(formData.production_quantity) || 1,
+      parent_schedule_id: formData.parent_schedule_id || null,
     };
 
     // Only include client_id and service_id if needed for this type
@@ -579,7 +536,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
         <div className="flex-grow-1" />
         <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 pt-3 pb-2">
-
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
             <>
               {/* [Event Type][Event Status] */}
@@ -669,7 +625,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
               </div>
 
-              {/* [Select Service][Select duration] */}
+              {/* [Select Service][Date/time] */}
               <div className="row g-2">
                 <div className="col-6">
                   {typeConfig.needsService && (
@@ -690,60 +646,91 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   )}
                 </div>
                 <div className="col-6">
-                  <div>
-                    <Dropdown_Custom
-                      name="duration_minutes"
-                      value={formData.duration_minutes}
-                      onChange={handleChange}
-                      options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
-                        value: mins.toString(),
-                        label: `${mins} min`,
-                      }))}
-                      placeholder="Select duration"
-                      required
-                      label="Duration"
-                      openUpward
-                      closeOnSelect
-                    />
-                    {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
+                  <div className="form-floating">
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                    <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
+                  {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+                </div>
+              </div>
+            </>
+          )}
+
+          {formData.appointment_type === "meeting" && (
+            <>
+              {/* [Event Type][Event Status] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  <Dropdown_Custom
+                    name="appointment_type"
+                    value={formData.appointment_type}
+                    onChange={handleChange}
+                    options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))}
+                    placeholder="Select event type"
+                    required
+                    label="Event Type"
+                    openUpward
+                    closeOnSelect
+                  />
+                </div>
+                <div className="col-6">
+                  <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
                 </div>
               </div>
 
-              {/* [Unpaid + Reminder][Date/time] */}
+              {/* [Meeting Title][Attendees] */}
               <div className="row g-2">
-                <div className="col-6 d-flex align-items-end">
-                  {typeConfig.needsService && (
-                    <div className="d-flex gap-2 align-items-end w-100">
-                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_paid: !prev.is_paid }))} className={`btn btn-sm fw-semibold px-3 ${formData.is_paid ? "btn-success" : "btn-outline-secondary"}`} style={{ minWidth: 90, whiteSpace: "nowrap" }}>
-                        {formData.is_paid ? "✓ Paid" : "Unpaid"}
-                      </button>
-
-                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, send_reminder: !prev.send_reminder }))} className="btn btn-sm fw-semibold px-3 btn-outline-secondary" style={reminderButtonStyle}>
-                        Reminder
-                      </button>
-
-                      {appointment?.id && formData.service_id && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const client = clients.find((c) => c.id === (formData.client_ids[0] || appointment?.client_id));
-                            navigate("/sales", {
-                              state: {
-                                scheduleId: appointment.id,
-                                preSelectedClient: client || null,
-                                preloadServiceId: formData.service_id,
-                              },
-                            });
-                          }}
-                          className="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center"
-                          title="Open Sales checkout for paid + discount rules"
-                        >
-                          <CreditCardIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
-                        </button>
-                      )}
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control form-control-sm" required />
+                    <label htmlFor="meeting_title">Meeting Title</label>
+                  </div>
+                </div>
+                <div className="col-6">
+                  {typeConfig.needsEmployee && (
+                    <div>
+                      <Dropdown_Custom
+                        name="employee_id"
+                        value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
+                        onChange={handleEmployeeChange}
+                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({ value: employee.id, label: `${employee.first_name} ${employee.last_name}`.trim() }))}
+                        placeholder="Select attendees"
+                        required
+                        searchable={true}
+                        disabled={isWriteOnly}
+                        multiSelect={employeeMultiMode}
+                        useCountLabelForMultiSelect={employeeMultiMode}
+                        showSelectionSummary={true}
+                        selectionSummaryEmptyLabel="0 selected"
+                        showActionFooter
+                        showClearButton
+                        allowMultiModeToggle
+                        isMultiModeActive={employeeMultiMode}
+                        onToggleMultiMode={toggleEmployeeMultiMode}
+                        openUpward
+                        closeOnSelect={!employeeMultiMode}
+                      />
+                      {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* [Duration][Date/Time] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  <Dropdown_Custom
+                    name="duration_minutes"
+                    value={formData.duration_minutes}
+                    onChange={handleChange}
+                    options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({ value: mins.toString(), label: `${mins} min` }))}
+                    placeholder="Select duration"
+                    required
+                    label="Duration"
+                    openUpward
+                    closeOnSelect
+                  />
+                  {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
@@ -756,190 +743,110 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </>
           )}
 
-          {(formData.appointment_type === "meeting" || formData.appointment_type === "task") && (
-            <>
-              {/* Appointment Type */}
-              <Dropdown_Custom
-                name="appointment_type"
-                value={formData.appointment_type}
-                onChange={handleChange}
-                options={APPOINTMENT_TYPES.map((type) => ({
-                  value: type.value,
-                  label: type.label,
-                }))}
-                placeholder="Select event type"
-                required
-                label="Event Type"
-                openUpward
-                closeOnSelect
-              />
-
-              {/* Status */}
-              <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
-            </>
-          )}
-
-          {/* Meeting Title */}
-          {formData.appointment_type === "meeting" && (
-            <div className="form-floating">
-              <input type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control form-control-sm" required />
-              <label htmlFor="meeting_title">Meeting Title</label>
-            </div>
-          )}
-
-          {/* Task Description */}
-          {formData.appointment_type === "task" && (
-            <div className="form-floating">
-              <input type="text" id="task_description" name="notes" value={formData.notes} onChange={handleChange} placeholder="Task Description" className="form-control form-control-sm" required />
-              <label htmlFor="task_description">Task Description</label>
-            </div>
-          )}
-
-          {/* ── Production Task fields (task type only) ── */}
           {formData.appointment_type === "task" && (
             <>
-              {/* Task sub-type toggle: generic vs production */}
-              <div className="d-flex gap-2">
-                <button type="button" onClick={() => setFormData((prev) => ({ ...prev, task_type: "service", production_item_id: "", production_quantity: 1 }))} className={`btn btn-sm flex-1 ${formData.task_type !== "production" ? "btn-primary" : "btn-outline-secondary"}`}>
-                  General Task
-                </button>
-                <button type="button" onClick={() => setFormData((prev) => ({ ...prev, task_type: "production" }))} className={`btn btn-sm flex-1 ${formData.task_type === "production" ? "btn-primary" : "btn-outline-secondary"}`}>
-                  <CogIcon style={{ width: 14, height: 14, marginRight: 4, verticalAlign: "middle" }} />
-                  Production Run
-                </button>
+              {/* [Event Type][Appointment Status] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  <Dropdown_Custom
+                    name="appointment_type"
+                    value={formData.appointment_type}
+                    onChange={handleChange}
+                    options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))}
+                    placeholder="Select event type"
+                    required
+                    label="Event Type"
+                    openUpward
+                    closeOnSelect
+                  />
+                </div>
+                <div className="col-6">
+                  <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
+                </div>
               </div>
 
-              {/* Product selector + batch count (production tasks only) */}
-              {formData.task_type === "production" && (
-                <>
-                  <Dropdown_Custom name="production_item_id" value={formData.production_item_id} onChange={handleChange} options={productItems.map((p) => ({ value: p.id, label: `${p.name}${p.sku ? ` (${p.sku})` : ""}` }))} placeholder="Select product to produce" searchable footerSearch onCreateFromSearch={handleCreateProductFromSearch} createButtonTitle="Add product" label="Product" />
-                  <div className="form-floating">
-                    <input type="number" id="production_quantity" name="production_quantity" min="1" value={formData.production_quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Batches" />
-                    <label htmlFor="production_quantity">Number of Batches</label>
-                  </div>
-                </>
-              )}
-
-              {/* Production info panel — shown when editing an existing production task */}
-              {formData.task_type === "production" && appointment?.id && productionInfo && (
-                <div className="border rounded p-2" style={{ fontSize: "0.78rem", background: "#f8faff" }}>
-                  <p className="mb-2 fw-semibold" style={{ color: "#4338ca", fontSize: "0.8rem" }}>
-                    <CogIcon style={{ width: 13, height: 13, marginRight: 4, verticalAlign: "middle" }} />
-                    Production Summary
-                  </p>
-
-                  {/* Product */}
-                  {productionInfo.product && (
-                    <div className="d-flex justify-content-between mb-1">
-                      <span className="text-muted">Product</span>
-                      <span className="fw-semibold">{productionInfo.product.name}</span>
-                    </div>
-                  )}
-
-                  {/* Batches */}
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Batches to run</span>
-                    <span className="fw-semibold">{formData.production_quantity}</span>
-                  </div>
-
-                  {/* Asset info */}
-                  {productionInfo.assets?.length > 0 &&
-                    productionInfo.assets.map((a) => (
-                      <div key={a.id} className="mb-2 p-1 rounded" style={{ background: "#eef2ff" }}>
-                        <div className="d-flex align-items-center gap-1 mb-1">
-                          <WrenchScrewdriverIcon style={{ width: 12, height: 12, color: "#4338ca" }} />
-                          <span className="fw-semibold">{a.name}</span>
-                        </div>
-                        <div className="d-flex gap-3" style={{ fontSize: "0.74rem", color: "#374151" }}>
-                          <span>
-                            Batch size: <strong>{a.batch_size} units</strong>
-                          </span>
-                          {a.duration_minutes && (
-                            <span>
-                              Duration: <strong>{a.duration_minutes} min / batch</strong>
-                            </span>
-                          )}
-                          {a.duration_minutes && formData.production_quantity > 1 && (
-                            <span>
-                              Total: <strong>{a.duration_minutes * formData.production_quantity} min</strong>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Resources consumed */}
-                  {productionInfo.resources?.length > 0 && (
-                    <>
-                      <p className="mb-1 fw-semibold text-muted" style={{ fontSize: "0.74rem" }}>
-                        Resources consumed:
-                      </p>
-                      {productionInfo.resources.map((r) => (
-                        <div key={r.id} className="d-flex justify-content-between align-items-center">
-                          <span className="d-flex align-items-center gap-1">
-                            <BeakerIcon style={{ width: 11, height: 11, color: "#6b7280" }} />
-                            {r.name}
-                          </span>
-                          <span className="badge bg-secondary">{r.quantity_per_batch * (formData.production_quantity || 1)} units</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
-
-                  {/* Locations */}
-                  {productionInfo.locations?.length > 0 && (
-                    <div className="mt-1 d-flex gap-1 flex-wrap">
-                      {productionInfo.locations.map((l) => (
-                        <span key={l.id} className="badge bg-light text-dark border" style={{ fontSize: "0.7rem" }}>
-                          📍 {l.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Complete button */}
-                  {appointment.status !== "completed" && (
-                    <>
-                      {completeResult ? (
-                        <div className="mt-2 p-2 rounded" style={{ background: "#d1fae5", fontSize: "0.76rem", color: "#065f46" }}>
-                          ✓ Completed! Produced <strong>{completeResult.units_produced}</strong> units of {completeResult.product_name}. Stock now: <strong>{completeResult.new_product_quantity}</strong>.
-                          {completeResult.low_stock_warnings?.length > 0 && <div className="mt-1 text-danger">⚠ Low stock: {completeResult.low_stock_warnings.map((w) => w.name).join(", ")}</div>}
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={productionLoading}
-                          className="btn btn-success btn-sm mt-2 w-100"
-                          onClick={async () => {
-                            setProductionLoading(true);
-                            setProductionError("");
-                            try {
-                              const res = await productionAPI.completeTask(appointment.id);
-                              setCompleteResult(res?.data ?? res);
-                            } catch (err) {
-                              setProductionError(err?.response?.data?.detail || "Failed to complete production task.");
-                            } finally {
-                              setProductionLoading(false);
-                            }
-                          }}
-                        >
-                          {productionLoading ? "…" : "Done"}
-                        </button>
-                      )}
-                      {productionError && (
-                        <div className="text-danger mt-1" style={{ fontSize: "0.74rem" }}>
-                          {productionError}
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {appointment.status === "completed" && (
-                    <div className="mt-2 text-success" style={{ fontSize: "0.76rem" }}>
-                      ✓ This production task is already completed.
+              {/* [Link Task][Assigned to] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  <Dropdown_Custom
+                    name="parent_schedule_id"
+                    value={formData.parent_schedule_id || ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, parent_schedule_id: e.target.value || null }))}
+                    options={[
+                      { value: "", label: "None" },
+                      ...linkedTasks.map((t) => ({
+                        value: t.id,
+                        label: t.notes ? `${t.notes.slice(0, 40)}${t.notes.length > 40 ? "…" : ""}` : `Task ${String(t.id).slice(0, 8)}`,
+                      })),
+                    ]}
+                    placeholder="Link to parent task"
+                    searchable={true}
+                    onOpen={handleLinkedTaskOpen}
+                    loading={linkedTasksLoading}
+                    openUpward
+                    closeOnSelect
+                  />
+                </div>
+                <div className="col-6">
+                  {typeConfig.needsEmployee && (
+                    <div>
+                      <Dropdown_Custom
+                        name="employee_id"
+                        value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
+                        onChange={handleEmployeeChange}
+                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({ value: employee.id, label: `${employee.first_name} ${employee.last_name}`.trim() }))}
+                        placeholder="Assign to"
+                        required
+                        searchable={true}
+                        disabled={isWriteOnly}
+                        multiSelect={employeeMultiMode}
+                        useCountLabelForMultiSelect={employeeMultiMode}
+                        showSelectionSummary={true}
+                        selectionSummaryEmptyLabel="0 selected"
+                        showActionFooter
+                        showClearButton
+                        allowMultiModeToggle
+                        isMultiModeActive={employeeMultiMode}
+                        onToggleMultiMode={toggleEmployeeMultiMode}
+                        openUpward
+                        closeOnSelect={!employeeMultiMode}
+                      />
+                      {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+
+              {/* [Duration][Date & Time] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  <Dropdown_Custom
+                    name="duration_minutes"
+                    value={formData.duration_minutes}
+                    onChange={handleChange}
+                    options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({ value: mins.toString(), label: `${mins} min` }))}
+                    placeholder="Select duration"
+                    required
+                    label="Duration"
+                    openUpward
+                    closeOnSelect
+                  />
+                  {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                    <label htmlFor="appointment_datetime">Date & Time</label>
+                  </div>
+                  {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+                </div>
+              </div>
+
+              {/* [Task Description — full width textarea] */}
+              <div className="form-floating">
+                <textarea id="task_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm" placeholder="Task details" style={{ minHeight: "4rem", resize: "vertical" }} />
+                <label htmlFor="task_notes">Task Description</label>
+              </div>
             </>
           )}
 
@@ -961,28 +868,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </div>
           )}
 
-          {/* Employee Selection (meeting/task layout) */}
-          {(formData.appointment_type === "meeting" || formData.appointment_type === "task") && typeConfig.needsEmployee && (
-            <div>
-              <Dropdown_Custom
-                name="employee_id"
-                value={typeConfig.employeeMultiple ? formData.employee_ids : formData.employee_ids[0] || ""}
-                onChange={handleEmployeeChange}
-                options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
-                  value: employee.id,
-                  label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ""}`,
-                }))}
-                placeholder={formData.appointment_type === "meeting" ? "Select attendees" : "Assign to"}
-                required
-                searchable={true}
-                disabled={isWriteOnly}
-                multiSelect={typeConfig.employeeMultiple}
-                openUpward
-                closeOnSelect
-              />
-              {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
-            </div>
-          )}
 
           {/* Recurrence */}
           {formData.appointment_type === "series" && (
@@ -1015,34 +900,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </>
           )}
 
-          {/* Duration + Date/Time (meeting/task layout) */}
-          {(formData.appointment_type === "meeting" || formData.appointment_type === "task") && (
-            <>
-              <div>
-                <Dropdown_Custom
-                  name="duration_minutes"
-                  value={formData.duration_minutes}
-                  onChange={handleChange}
-                  options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
-                    value: mins.toString(),
-                    label: `${mins} min`,
-                  }))}
-                  placeholder="Select duration"
-                  required
-                  label="Duration"
-                  openUpward
-                  closeOnSelect
-                />
-                {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
-              </div>
-
-              <div className="form-floating">
-                <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
-                <label htmlFor="appointment_datetime">Date & Time</label>
-              </div>
-              {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
-            </>
-          )}
 
           {/* Notes — shown for appointment/series types */}
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (

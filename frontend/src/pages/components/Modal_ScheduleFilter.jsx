@@ -195,94 +195,97 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
                     <input type="checkbox" checked={localFilters.employeeIds.includes(employee.id)} onChange={() => toggleId("employeeIds", employee.id)} />
                     <span className="rounded-circle flex-shrink-0" />
                     <span style={{ fontSize: "0.875rem" }}>
-                {employee.first_name} {employee.last_name}
-              </span>
-            </label>
-          ))}
-          {employees.length === 0 && <div className="text-muted small">No employees loaded.</div>}
-        </AccordionSection>
+                      {employee.first_name} {employee.last_name}
+                    </span>
+                  </label>
+                ))}
+                {employees.length === 0 && <div className="text-muted small">No employees loaded.</div>}
+              </AccordionSection>
 
-        {/* Clients accordion */}
-        <AccordionSection
-          label="Clients"
-          count={localFilters.clientIds.length}
-          isOpen={openSections.clients}
-          onToggle={() => toggleSection("clients")}
-          onClear={() => clearSection("clientIds")}
-          helpText="Show only appointments for selected clients. Useful for tracking specific client interactions and bookings."
-          helpKey="clients"
-          showHelp={showHelp}
-          setShowHelp={setShowHelp}
-          helpPos={helpPos}
-          setHelpPos={setHelpPos}
-        >
-          {clients.map((client) => (
-            <label key={client.id} className="d-flex align-items-center gap-2 mb-0">
-              <input type="checkbox" checked={localFilters.clientIds.includes(client.id)} onChange={() => toggleId("clientIds", client.id)} />
-              <span style={{ fontSize: "0.875rem" }}>{client.name}</span>
-            </label>
-          ))}
-          {clients.length === 0 && <div className="text-muted small">No clients loaded.</div>}
-        </AccordionSection>
+              {/* Clients accordion */}
+              <AccordionSection
+                label="Clients"
+                count={localFilters.clientIds.length}
+                isOpen={openSections.clients}
+                onToggle={() => toggleSection("clients")}
+                onClear={() => clearSection("clientIds")}
+                helpText="Show only appointments for selected clients. Useful for tracking specific client interactions and bookings."
+                helpKey="clients"
+                showHelp={showHelp}
+                setShowHelp={setShowHelp}
+                helpPos={helpPos}
+                setHelpPos={setHelpPos}
+              >
+                {clients.map((client) => (
+                  <label key={client.id} className="d-flex align-items-center gap-2 mb-0">
+                    <input type="checkbox" checked={localFilters.clientIds.includes(client.id)} onChange={() => toggleId("clientIds", client.id)} />
+                    <span style={{ fontSize: "0.875rem" }}>{client.name}</span>
+                  </label>
+                ))}
+                {clients.length === 0 && <div className="text-muted small">No clients loaded.</div>}
+              </AccordionSection>
 
-        {/* Services accordion */}
-        <AccordionSection
-          label="Services"
-          count={localFilters.serviceIds.length}
-          isOpen={openSections.services}
-          onToggle={() => toggleSection("services")}
-          onClear={() => clearSection("serviceIds")}
-          helpText="Show only appointments for selected services. Filter by service type to analyze booking patterns or capacity."
-          helpKey="services"
-          showHelp={showHelp}
-          setShowHelp={setShowHelp}
-          helpPos={helpPos}
-          setHelpPos={setHelpPos}
-        >
-          {services.map((service) => (
-            <label key={service.id} className="d-flex align-items-center gap-2 mb-0">
-              <input type="checkbox" checked={localFilters.serviceIds.includes(service.id)} onChange={() => toggleId("serviceIds", service.id)} />
-              <span style={{ fontSize: "0.875rem" }}>{service.name}</span>
-            </label>
-          ))}
-          {services.length === 0 && <div className="text-muted small">No services loaded.</div>}
-        </AccordionSection>
+              {/* Services accordion */}
+              <AccordionSection
+                label="Services"
+                count={localFilters.serviceIds.length}
+                isOpen={openSections.services}
+                onToggle={() => toggleSection("services")}
+                onClear={() => clearSection("serviceIds")}
+                helpText="Show only appointments for selected services. Filter by service type to analyze booking patterns or capacity."
+                helpKey="services"
+                showHelp={showHelp}
+                setShowHelp={setShowHelp}
+                helpPos={helpPos}
+                setHelpPos={setHelpPos}
+              >
+                {services.map((service) => (
+                  <label key={service.id} className="d-flex align-items-center gap-2 mb-0">
+                    <input type="checkbox" checked={localFilters.serviceIds.includes(service.id)} onChange={() => toggleId("serviceIds", service.id)} />
+                    <span style={{ fontSize: "0.875rem" }}>{service.name}</span>
+                  </label>
+                ))}
+                {services.length === 0 && <div className="text-muted small">No services loaded.</div>}
+              </AccordionSection>
 
-        {/* Date Range - bottom */}
-        <div className="px-1 pt-1">
-          <div className="fw-semibold mb-1" style={{ fontSize: "0.875rem" }}>
-            Date Range
+              {/* Date Range - bottom */}
+              <div className="px-1 pt-1">
+                <div className="fw-semibold mb-1" style={{ fontSize: "0.875rem" }}>
+                  Date Range
+                </div>
+                <div className="d-flex gap-2">
+                  <input type="date" className="form-control form-control-sm" value={localFilters.startDate || ""} onChange={(e) => handleDateChange("startDate", e.target.value)} />
+                  <input type="date" className="form-control form-control-sm" value={localFilters.endDate || ""} onChange={(e) => handleDateChange("endDate", e.target.value)} />
+                </div>
+              </div>
+
+              {/* Out of Office toggle - bottom */}
+              <div className="px-1 d-flex align-items-center justify-content-between py-1">
+                <span className="fw-semibold" style={{ fontSize: "0.875rem" }}>
+                  Out of Office
+                </span>
+                <div className="form-check form-switch mb-0">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="oooToggle"
+                    checked={localFilters.showOutOfOffice || false}
+                    onChange={(e) =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        showOutOfOffice: e.target.checked,
+                        oooEmployeeIds: [],
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+            {/* /d-flex flex-column gap-2 */}
           </div>
-          <div className="d-flex gap-2">
-            <input type="date" className="form-control form-control-sm" value={localFilters.startDate || ""} onChange={(e) => handleDateChange("startDate", e.target.value)} />
-            <input type="date" className="form-control form-control-sm" value={localFilters.endDate || ""} onChange={(e) => handleDateChange("endDate", e.target.value)} />
-          </div>
+          {/* /component-body-inner */}
         </div>
-
-        {/* Out of Office toggle - bottom */}
-        <div className="px-1 d-flex align-items-center justify-content-between py-1">
-          <span className="fw-semibold" style={{ fontSize: "0.875rem" }}>
-            Out of Office
-          </span>
-          <div className="form-check form-switch mb-0">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="oooToggle"
-              checked={localFilters.showOutOfOffice || false}
-              onChange={(e) =>
-                setLocalFilters((prev) => ({
-                  ...prev,
-                  showOutOfOffice: e.target.checked,
-                  oooEmployeeIds: [],
-                }))
-              }
-            />
-          </div>
-        </div>
-            </div>{/* /d-flex flex-column gap-2 */}
-          </div>{/* /component-body-inner */}
-        </div>{/* /component-body */}
+        {/* /component-body */}
 
         {/* Fixed-position help tooltip — escapes any overflow container */}
         {showHelp && (
@@ -317,7 +320,8 @@ export default function Modal_Filter_Schedule({ isOpen, onClose, employees, clie
           </div>
           <div className="component-footer-right"></div>
         </div>
-      </div>{/* /component */}
+      </div>
+      {/* /component */}
     </Modal>
   );
 }

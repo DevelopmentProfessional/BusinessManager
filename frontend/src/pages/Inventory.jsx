@@ -48,7 +48,7 @@ import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
-import { inventoryAPI, featuresAPI, assetUnitsAPI } from "../services/api";
+import { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI } from "../services/api";
 import Modal_Detail_Item from "./components/Modal_ItemDetail";
 import Gate_Permission from "./components/Gate_Permission";
 import Suppliers_Panel from "./components/Panel_Suppliers";
@@ -269,6 +269,47 @@ export default function Inventory() {
   const handleCreateInventory = async (createData) => {
     try {
       await inventoryAPI.create(createData);
+      await loadInventoryData();
+      setShowAddItemModal(false);
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to create inventory item";
+      setError(String(detail));
+    }
+  };
+
+  const handleCreateInventoryWithExtras = async (createData, extras = {}) => {
+    try {
+      const createResponse = await inventoryAPI.create(createData);
+      const createdItem = createResponse?.data ?? createResponse;
+
+      if (createdItem?.id && extras.pendingPhoto) {
+        await inventoryAPI.uploadImageFile(createdItem.id, extras.pendingPhoto, true);
+      }
+
+      if (createdItem?.id && createData.type === "BUNDLE" && Array.isArray(extras.bundleComponents) && extras.bundleComponents.length > 0) {
+        await Promise.all(
+          extras.bundleComponents.map((component) => bundleAPI.addComponent(createdItem.id, component.id, parseFloat(component.quantity) || 1))
+        );
+      }
+
+      if (createdItem?.id && createData.type === "MIX") {
+        if (extras.mixConfig) {
+          await mixAPI.saveConfig({
+            inventory_id: createdItem.id,
+            total_quantity: parseInt(extras.mixConfig.total_quantity, 10) || 10,
+            has_max_per_product: extras.mixConfig.max_per_product != null,
+            max_per_product: extras.mixConfig.max_per_product ?? null,
+          });
+        }
+
+        if (Array.isArray(extras.mixComponents) && extras.mixComponents.length > 0) {
+          await Promise.all(
+            extras.mixComponents.map((component) => mixAPI.addComponent(createdItem.id, component.id, component.max_quantity ?? null))
+          );
+        }
+      }
+
       await loadInventoryData();
       setShowAddItemModal(false);
       clearError();
@@ -762,7 +803,7 @@ export default function Inventory() {
       </div>
 
       <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding contentGravity="top">
-        <Form_Item item={null} showInitialQuantity showScanner existingSkus={inventory.map((i) => i.sku).filter(Boolean)} onCancel={() => setShowAddItemModal(false)} onSubmit={handleCreateInventory} />
+        <Form_Item item={null} showInitialQuantity showScanner existingSkus={inventory.map((i) => i.sku).filter(Boolean)} onCancel={() => setShowAddItemModal(false)} onSubmit={handleCreateInventory} onSubmitWithExtras={handleCreateInventoryWithExtras} />
       </Modal>
 
       {/* Modals remain unchanged */}
