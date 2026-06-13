@@ -1024,6 +1024,21 @@ const Profile = () => {
     }
   };
 
+  const handleDarkModeToggle = async () => {
+    if (!user?.id) {
+      toggleDarkMode();
+      return;
+    }
+
+    const nextDarkMode = !isDarkMode;
+    toggleDarkMode();
+    try {
+      await persistCurrentUserProfile({ dark_mode: nextDarkMode });
+    } catch {
+      // Local theme already toggled; profile refresh on the next launch will re-seed it.
+    }
+  };
+
   const handleColorSave = async () => {
     const ok = await handleColorChange(pendingColor);
     if (ok) setColorPickerOpen(false);
@@ -1437,7 +1452,7 @@ const Profile = () => {
                         isMobile={isMobile}
                         row1PanelBottom={row1PanelBottom}
                         isDarkMode={isDarkMode}
-                        toggleDarkMode={toggleDarkMode}
+                        toggleDarkMode={handleDarkModeToggle}
                         employeeColor={employeeColor}
                         pendingColor={pendingColor}
                         setPendingColor={setPendingColor}
