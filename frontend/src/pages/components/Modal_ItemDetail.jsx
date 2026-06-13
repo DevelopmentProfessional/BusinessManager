@@ -752,6 +752,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const displayImage = currentImage ? getImageSrc(currentImage) : null;
   const inCart = cartQuantity > 0;
   const isSalesMode = mode === "sales";
+  const equalFieldStyle = { flex: "1 1 0", minWidth: 0 };
+  const inventoryRowClass = "d-flex gap-2 mb-2 inventory-edit-row";
 
   const loadAvailableLocations = useCallback(async () => {
     try {
@@ -1291,11 +1293,11 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
           ) : (
             /* Inventory Mode - Image + Stock fields at top, form fields below */
             <>
-              <form onSubmit={handleUpdateInventory}>
-                {/* Top Section: Image (left) + Stock fields (right) */}
-                <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>
+              <form onSubmit={handleUpdateInventory} className="inventory-edit-form">
+                {/* Top Section: Image and add-photo controls */}
+                <div className="mb-3" style={{ minHeight: "200px" }}>
                   {/* Image */}
-                  <div className="flex-shrink-0" style={{ width: "45%" }}>
+                  <div style={{ width: "100%" }}>
                     {renderImage({ width: "100%", aspectRatio: "1" })}
                     {/* Add image panel */}
                     {addImageMode !== null && (
@@ -1365,52 +1367,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         )}
                       </div>
                     )}
-                  </div>
-
-                  {/* Stock fields stacked on the right */}
-                  <div className="flex-grow-1 d-flex flex-column  gap-1">
-                    {!isLocation && !isAsset ? (
-                      <>
-                        <div>
-                          <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
-                        </div>
-                        <div className="d-flex gap-2 mb-1">
-                          <div className="form-floating flex-grow-1">
-                            <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
-                            <label htmlFor="min_stock_level">Min Count</label>
-                          </div>
-                          <div className="form-floating flex-grow-1">
-                            <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
-                            <label htmlFor="quantity">Current Count</label>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="d-flex flex-column gap-2">
-                        <div className="d-flex align-items-center gap-2 text-success">
-                          <CheckCircleSolid className="h-5 w-5" />
-                          <div>
-                            <div className="fw-medium">Status: OK</div>
-                            <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="d-flex gap-2 mb-1">
-                      <div className="form-floating flex-grow-1">
-                        <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
-                        <label htmlFor="detail_cost">Cost</label>
-                      </div>
-                      <div className="form-floating flex-grow-1">
-                        <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
-                        <label htmlFor="detail_price">Price</label>
-                      </div>
-                    </div>
-                    {featuresPriceRange && (
-                      <div className="mt-1 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
-                    )}
-                  </div>
                 </div>
 
                 {/* Photo management strip */}
@@ -1559,15 +1515,106 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   )}
                 </div>
 
-                {/* Full-width form fields below */}
-                <div className="d-flex gap-2 mb-2">
-                  <div className="form-floating flex-grow-1 mb-0">
+                {/* Equal-width inventory field rows */}
+                {!isLocation && !isAsset ? (
+                  <div className="mb-2">
+                    <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
+                  </div>
+                ) : (
+                  <div className="d-flex flex-column gap-2 mb-2">
+                    <div className="d-flex align-items-center gap-2 text-success">
+                      <CheckCircleSolid className="h-5 w-5" />
+                      <div>
+                        <div className="fw-medium">Status: OK</div>
+                        <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className={inventoryRowClass}>
+                  {!isLocation && !isAsset && (
+                    <div className="form-floating position-relative" style={equalFieldStyle}>
+                      <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
+                      <label htmlFor="min_stock_level">Min Count</label>
+                    </div>
+                  )}
+                  {!isLocation && !isAsset && (
+                    <div className="form-floating" style={equalFieldStyle}>
+                      <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
+                      <label htmlFor="quantity">Current Count</label>
+                    </div>
+                  )}
+                  <div className="form-floating" style={equalFieldStyle}>
+                    <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                    <label htmlFor="detail_cost">Cost</label>
+                  </div>
+                  <div className="form-floating" style={equalFieldStyle}>
+                    <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                    <label htmlFor="detail_price">Price</label>
+                  </div>
+                </div>
+                {featuresPriceRange && (
+                  <div className="mt-1 mb-2 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
+                )}
+
+                <div className={inventoryRowClass}>
+                  <div className="form-floating" style={equalFieldStyle}>
+                    <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
+                      <option value="one_time">One-Time Purchase</option>
+                      <option value="recurring">Recurring Rental</option>
+                    </select>
+                    <label htmlFor="detail_cost_type">Cost Type</label>
+                  </div>
+                  <div className="form-floating" style={equalFieldStyle}>
                     <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Name" required />
                     <label htmlFor="detail_name">Name *</label>
                   </div>
+                </div>
 
-                  {!isLocation && (
-                    <div className="form-floating flex-grow-1 mb-0 position-relative">
+                {!isLocation ? (
+                  <div className={inventoryRowClass}>
+                    <div className="d-flex align-items-center gap-2" style={equalFieldStyle}>
+                      <div className="form-floating flex-grow-1 mb-0">
+                        <select
+                          id="detail_location"
+                          name="location"
+                          value={showNewLocationInput ? "" : formData.location}
+                          onChange={(e) => {
+                            setShowNewLocationInput(false);
+                            handleChange(e);
+                          }}
+                          className="form-select form-select-sm"
+                        >
+                          <option value="">Select location</option>
+                          {availableLocations.map((location) => (
+                            <option key={location} value={location}>
+                              {location}
+                            </option>
+                          ))}
+                        </select>
+                        <label htmlFor="detail_location">Location</label>
+                      </div>
+                      <button
+                        type="button"
+                        title={showNewLocationInput ? "Close" : "Add location"}
+                        onClick={() => {
+                          setShowNewLocationInput((prev) => {
+                            const next = !prev;
+                            if (next) {
+                              setFormData((current) => ({ ...current, location: "" }));
+                            }
+                            return next;
+                          });
+                        }}
+                        className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                        style={{ fontSize: "1rem" }}
+                      >
+                        {showNewLocationInput ? "×" : "+"}
+                      </button>
+                    </div>
+
+                    <div className="form-floating" style={equalFieldStyle}>
                       <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
                       <label htmlFor="detail_sku">Serial Number</label>
                       {!isSalesMode && (
@@ -1579,12 +1626,14 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         </button>
                       )}
                     </div>
-                  )}
+                  </div>
+                ) : null}
                 </div>
+
                 {scanError && <div className="alert alert-danger py-1 small mt-0 mb-2">{scanError}</div>}
 
-                <div className="d-flex gap-2 mb-2">
-                  <div className="form-floating flex-grow-1 mb-0">
+                <div className={inventoryRowClass}>
+                  <div className="form-floating" style={equalFieldStyle}>
                     <select id="detail_type" name="type" value={formData.type} onChange={handleChange} className="form-select form-select-sm">
                       <option value="PRODUCT">Product</option>
                       <option value="BUNDLE">Bundle</option>
@@ -1596,101 +1645,25 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     </select>
                     <label htmlFor="detail_type">Type</label>
                   </div>
-
-                  {!isLocation && (
-                    <div className="form-floating flex-grow-1 mb-0">
-                      <select id="detail_category" name="category" value={formData.category} onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))} className="form-select form-select-sm">
-                        <option value="">— None —</option>
-                        {itemCategories.map((cat) => (
-                          <option key={cat.id} value={cat.name}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                      <label htmlFor="detail_category">Category</label>
-                    </div>
-                  )}
-                </div>
-
-                {!isLocation && (
-                  <div className="d-flex justify-content-end mb-2">
-                    <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary" style={{ fontSize: "1rem" }}>
-                      {showCategoryManager ? "×" : "+"} Category
-                    </button>
-                  </div>
-                )}
-
-                {!isLocation && (
-                  <div className="d-flex align-items-start gap-2 mb-2">
-                    <div className="flex-grow-1">
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="form-floating flex-grow-1 mb-0">
-                          <select
-                            id="detail_location"
-                            name="location"
-                            value={showNewLocationInput ? "" : formData.location}
-                            onChange={(e) => {
-                              setShowNewLocationInput(false);
-                              handleChange(e);
-                            }}
-                            className="form-select form-select-sm"
-                          >
-                            <option value="">Select location</option>
-                            {availableLocations.map((location) => (
-                              <option key={location} value={location}>
-                                {location}
-                              </option>
-                            ))}
-                          </select>
-                          <label htmlFor="detail_location">Location</label>
-                        </div>
-                        <button
-                          type="button"
-                          title={showNewLocationInput ? "Close" : "Add location"}
-                          onClick={() => {
-                            setShowNewLocationInput((prev) => {
-                              const next = !prev;
-                              if (next) {
-                                setFormData((current) => ({ ...current, location: "" }));
-                              }
-                              return next;
-                            });
-                          }}
-                          className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                          style={{ fontSize: "1rem" }}
-                        >
-                          {showNewLocationInput ? "×" : "+"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="form-floating flex-grow-1 mb-0">
-                      <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
-                        <option value="">— None —</option>
-                        {availableSuppliers.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                      <label htmlFor="detail_supplier">Supplier</label>
-                    </div>
-                  </div>
-                )}
-
-                <div className="d-flex gap-2 mb-2">
-                  <div className="form-floating flex-grow-1">
-                    <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
-                      <option value="one_time">One-Time Purchase</option>
-                      <option value="recurring">Recurring Rental</option>
-                    </select>
-                    <label htmlFor="detail_cost_type">Cost Type</label>
-                  </div>
-                  <div className="form-floating flex-grow-1">
+                  <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Purchase" />
                     <label htmlFor="detail_date_of_purchase">Date of Purchase</label>
                   </div>
-                  <div className="form-floating flex-grow-1">
+                </div>
+
+                <div className={inventoryRowClass}>
+                  <div className="form-floating" style={equalFieldStyle}>
+                    <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
+                      <option value="">— None —</option>
+                      {availableSuppliers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="detail_supplier">Supplier</label>
+                  </div>
+                  <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Sale" />
                     <label htmlFor="detail_date_of_sale">Date of Sale</label>
                   </div>
@@ -1714,8 +1687,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   </div>
                 )}
 
-                {/* Category picker — type-specific, above features */}
-                {!isLocation && (
+                {/* Category picker disabled for now; re-enable later once the flow is ready. */}
+                {/* {!isLocation && (
                   <div className="mb-2 mt-2">
                     {showCategoryManager && (
                       <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
@@ -1745,7 +1718,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       </div>
                     )}
                   </div>
-                )}
+                )} */}
               </form>
 
               {/* Descriptive Features — most types, shown after item is saved */}
