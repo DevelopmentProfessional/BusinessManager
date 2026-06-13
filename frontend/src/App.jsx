@@ -11,6 +11,8 @@ import { applyButtonDimensions } from "./constants/buttonTextSize";
 import useBranding from "./services/useBranding";
 import { initializeActiveColorTheme } from "./services/activeColorTheme";
 import Modal_Client from "./pages/components/Modal_Client";
+import Modal_Service from "./pages/components/Modal_Service";
+import Modal_Item from "./pages/components/Modal_Item";
 import Manager_MobileAddressBar from "./pages/components/Manager_MobileAddressBar";
 import Prompt_InstallApp from "./pages/components/Prompt_InstallApp";
 import PageErrorBoundary from "./pages/components/ErrorBoundary";
@@ -208,6 +210,8 @@ function App() {
       <Manager_MobileAddressBar />
       <Prompt_InstallApp />
       <Dropup_SearchOverlay />
+      <Modal_Service />
+      <Modal_Item />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />

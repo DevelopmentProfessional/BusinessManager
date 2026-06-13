@@ -379,8 +379,74 @@ const useStore = create((set, get) => ({
   // Global Add Client Modal state (can be opened from anywhere in the app)
   isAddClientModalOpen: false,
   addClientCallback: null,
-  openAddClientModal: (callback = null) => set({ isAddClientModalOpen: true, addClientCallback: callback }),
-  closeAddClientModal: () => set({ isAddClientModalOpen: false, addClientCallback: null }),
+  addClientPrefill: null,
+  openAddClientModal: (callbackOrOptions = null, prefill = null) => {
+    let callback = null;
+    let resolvedPrefill = null;
+
+    if (typeof callbackOrOptions === "function") {
+      callback = callbackOrOptions;
+      resolvedPrefill = prefill ?? null;
+    } else if (callbackOrOptions && typeof callbackOrOptions === "object") {
+      callback = callbackOrOptions.onCreated || callbackOrOptions.callback || null;
+      resolvedPrefill = callbackOrOptions.prefill ?? null;
+    }
+
+    set({
+      isAddClientModalOpen: true,
+      addClientCallback: callback,
+      addClientPrefill: resolvedPrefill,
+    });
+  },
+  closeAddClientModal: () => set({ isAddClientModalOpen: false, addClientCallback: null, addClientPrefill: null }),
+
+  // Global Add Service Modal state (can be opened from anywhere in the app)
+  isAddServiceModalOpen: false,
+  addServiceCallback: null,
+  addServicePrefill: null,
+  openAddServiceModal: (callbackOrOptions = null, prefill = null) => {
+    let callback = null;
+    let resolvedPrefill = null;
+
+    if (typeof callbackOrOptions === "function") {
+      callback = callbackOrOptions;
+      resolvedPrefill = prefill ?? null;
+    } else if (callbackOrOptions && typeof callbackOrOptions === "object") {
+      callback = callbackOrOptions.onCreated || callbackOrOptions.callback || null;
+      resolvedPrefill = callbackOrOptions.prefill ?? null;
+    }
+
+    set({
+      isAddServiceModalOpen: true,
+      addServiceCallback: callback,
+      addServicePrefill: resolvedPrefill,
+    });
+  },
+  closeAddServiceModal: () => set({ isAddServiceModalOpen: false, addServiceCallback: null, addServicePrefill: null }),
+
+  // Global Add Inventory Modal state (used for quick-create flows like production items)
+  isAddInventoryModalOpen: false,
+  addInventoryCallback: null,
+  addInventoryPrefill: null,
+  openAddInventoryModal: (callbackOrOptions = null, prefill = null) => {
+    let callback = null;
+    let resolvedPrefill = null;
+
+    if (typeof callbackOrOptions === "function") {
+      callback = callbackOrOptions;
+      resolvedPrefill = prefill ?? null;
+    } else if (callbackOrOptions && typeof callbackOrOptions === "object") {
+      callback = callbackOrOptions.onCreated || callbackOrOptions.callback || null;
+      resolvedPrefill = callbackOrOptions.prefill ?? null;
+    }
+
+    set({
+      isAddInventoryModalOpen: true,
+      addInventoryCallback: callback,
+      addInventoryPrefill: resolvedPrefill,
+    });
+  },
+  closeAddInventoryModal: () => set({ isAddInventoryModalOpen: false, addInventoryCallback: null, addInventoryPrefill: null }),
 }));
 
 export default useStore;

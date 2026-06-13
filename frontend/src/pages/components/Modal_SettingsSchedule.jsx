@@ -31,6 +31,8 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
     saturday_enabled: true,
     sunday_enabled: true,
     attendance_check_in_required: false,
+    reminder_time_minutes: 30,
+    reminder_send_notification: true,
     auto_accept_client_bookings: false,
     auto_accept_pending_hours: null,
   });
@@ -56,6 +58,8 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
         saturday_enabled: data.saturday_enabled ?? true,
         sunday_enabled: data.sunday_enabled ?? true,
         attendance_check_in_required: data.attendance_check_in_required ?? false,
+        reminder_time_minutes: data.reminder_time_minutes ?? 30,
+        reminder_send_notification: data.reminder_send_notification ?? true,
         auto_accept_client_bookings: data.auto_accept_client_bookings || false,
         auto_accept_pending_hours: data.auto_accept_pending_hours || null,
       });
@@ -72,6 +76,8 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
           saturday_enabled: true,
           sunday_enabled: true,
           attendance_check_in_required: false,
+          reminder_time_minutes: 30,
+          reminder_send_notification: true,
           auto_accept_client_bookings: false,
           auto_accept_pending_hours: null,
         });
@@ -209,6 +215,39 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
               className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
             ></div>
           </label>
+        </div>
+      </div>
+
+      {/* Appointment Reminder Settings */}
+      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Appointment Reminder {HelpIcon && <HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" />}</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="form-floating">
+            <input
+              type="number"
+              id="reminder_time_minutes"
+              min="0"
+              max="10080"
+              step="5"
+              value={formData.reminder_time_minutes ?? 30}
+              onChange={(e) => handleInputChange("reminder_time_minutes", Number(e.target.value || 0))}
+              className={`form-control form-control-sm ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : ""}`}
+              placeholder="Reminder minutes"
+            />
+            <label htmlFor="reminder_time_minutes" className={isDarkMode ? "text-gray-300" : ""}>
+              Reminder Time (minutes before)
+            </label>
+          </div>
+
+          <div className={`flex items-center justify-between p-3 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
+            <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : ""}`}>Send Reminder Notification</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="sr-only peer" />
+              <div
+                className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
+              ></div>
+            </label>
+          </div>
         </div>
       </div>
 

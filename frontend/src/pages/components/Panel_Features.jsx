@@ -21,7 +21,7 @@
  * ============================================================
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { featuresAPI, inventoryFeaturesAPI } from "../../services/api";
 
@@ -118,9 +118,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
-  const [isPriceModeOpen, setIsPriceModeOpen] = useState(false);
   const [openFeatureIds, setOpenFeatureIds] = useState({});
   const [isCombinationsOpen, setIsCombinationsOpen] = useState(true);
+  const featureSearchRef = useRef(null);
+  const [editingFeatureId, setEditingFeatureId] = useState(null);
+  const [featureNameDrafts, setFeatureNameDrafts] = useState({});
 
   // ── Load ──
   const reload = useCallback(async () => {
@@ -158,6 +160,22 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
       return next;
     });
   }, [itemFeatures]);
+
+  // Close the feature search list when clicking outside the search area
+  useEffect(() => {
+    if (!isFeatureSearchOpen) return;
+
+    const handlePointerDownOutside = (event) => {
+      if (featureSearchRef.current && !featureSearchRef.current.contains(event.target)) {
+        setIsFeatureSearchOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDownOutside);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDownOutside);
+    };
+  }, [isFeatureSearchOpen]);
 
   // ── Notify parent ──
   useEffect(() => {
@@ -409,6 +427,30 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     [reload, syncFeatureState]
   );
 
+  const handleFeatureNameSave = useCallback(
+    async (featureId, nextName, fallbackDescription = "") => {
+      const trimmed = String(nextName || "").trim();
+      if (!trimmed) {
+        setEditingFeatureId(null);
+        return;
+      }
+
+      setError(null);
+      try {
+        const res = await featuresAPI.update(featureId, { name: trimmed, description: fallbackDescription });
+        const updated = res?.data ?? res;
+        syncFeatureState(featureId, updated);
+        setFeatureNameDrafts((prev) => ({ ...prev, [featureId]: updated?.name ?? trimmed }));
+      } catch (e) {
+        setError(e?.response?.data?.detail ?? "Could not rename feature");
+        await reload();
+      } finally {
+        setEditingFeatureId(null);
+      }
+    },
+    [reload, syncFeatureState]
+  );
+
   // ── Remove feature from item ──
   const handleRemoveFeature = async (featureId) => {
     setError(null);
@@ -502,7 +544,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const affectingFeatureId = itemFeatures.find((f) => f.affects_price)?.feature_id ?? null;
   const trimmedSearch = featureSearchTerm.trim();
   const globalMatchingFeatures = globalFeatures.filter((gf) => normalizeName(gf.name).includes(normalizeName(featureSearchTerm)));
-  const matchingFeatures = trimmedSearch ? globalMatchingFeatures : [];
+  const matchingFeatures = trimmedSearch ? globalMatchingFeatures : globalFeatures;
   const canCreateFeature = trimmedSearch.length > 0 && globalMatchingFeatures.length === 0 && normalizeName(trimmedSearch) !== normalizeName(committedFeatureName);
   const hasDirty = Object.keys(dirty).length > 0 || combinationDirty;
 
@@ -512,17 +554,68 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const priceModeLabel = priceModeFeature ? `Depends on ${priceModeFeature.feature_name}` : "Fixed price";
   const isFeatureLinked = (featureId) => itemFeatures.some((feature) => String(feature.feature_id) === String(featureId));
 
+  const getSingleFeatureOptionStock = useCallback(
+    (featureId, optionId) => {
+      if (itemFeatures.length !== 1) return "";
+      if (String(itemFeatures[0].feature_id) !== String(featureId)) return "";
+
+      const row = combinationRows.find((combination) => Array.isArray(combination.option_ids) && combination.option_ids.length === 1 && String(combination.option_ids[0]) === String(optionId));
+      return row ? String(parseInt(row.quantity, 10) || 0) : "";
+    },
+    [itemFeatures, combinationRows]
+  );
+
+  const setSingleFeatureOptionStock = useCallback(
+    (featureId, optionId, value) => {
+      if (itemFeatures.length !== 1) return;
+      if (String(itemFeatures[0].feature_id) !== String(featureId)) return;
+
+      const nextQty = Math.max(0, parseInt(value, 10) || 0);
+      setCombinationRows((prev) => {
+        const existingIndex = prev.findIndex((combination) => Array.isArray(combination.option_ids) && combination.option_ids.length === 1 && String(combination.option_ids[0]) === String(optionId));
+
+        if (existingIndex === -1) {
+          if (nextQty === 0) return prev;
+          return [
+            ...prev,
+            {
+              combination_key: `single-${optionId}`,
+              option_ids: [optionId],
+              quantity: nextQty,
+            },
+          ];
+        }
+
+        if (nextQty === 0) {
+          return prev.filter((_, idx) => idx !== existingIndex);
+        }
+
+        const next = [...prev];
+        next[existingIndex] = {
+          ...next[existingIndex],
+          quantity: nextQty,
+        };
+        return next;
+      });
+      setCombinationDirty(true);
+      setError(null);
+    },
+    [itemFeatures]
+  );
+
   return (
-    <div className="border-top mt-3 pt-3 px-1">
-      <div className="mt-2 mb-3 border rounded p-1">
+    <div className="mt-3 mb-2 border rounded p-1">
+      <div className="mb-2">
         <div className="d-flex align-items-center gap-2 mb-2">
           <h6 className="mb-0 fw-semibold">Feature</h6>
-          <span className="text-muted small">({itemFeatures.length} total)</span>
           {priceDisplay && <span className="badge text-bg-light border ms-auto">{priceDisplay}</span>}
         </div>
 
-        <div className="d-flex flex-column gap-2 mb-2 position-relative">
+        <div className="d-flex flex-column gap-2 mb-2 position-relative" ref={featureSearchRef}>
           <div className="d-flex gap-2 align-items-start position-relative">
+            <button type="button" className={`btn btn-sm ${canCreateFeature ? "btn-primary" : "btn-outline-secondary"}`} disabled={!canCreateFeature} onClick={() => void createFeatureWithName(trimmedSearch)}>
+              Add
+            </button>
             <div className="position-relative flex-grow-1" style={{ minWidth: 0 }}>
               <input
                 type="text"
@@ -536,6 +629,10 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                   setIsFeatureSearchOpen(true);
                 }}
                 onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setIsFeatureSearchOpen(false);
+                    return;
+                  }
                   if (e.key === "Enter") {
                     e.preventDefault();
                     if (matchingFeatures.length === 1) {
@@ -549,79 +646,77 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                   }
                 }}
               />
-              {isFeatureSearchOpen && trimmedSearch && matchingFeatures.length > 0 && (
+              {isFeatureSearchOpen && matchingFeatures.length > 0 && (
                 <div className="position-absolute bg-white border rounded shadow-sm w-100" style={{ top: "calc(100% + 4px)", zIndex: 20, maxHeight: 220, overflowY: "auto" }}>
-                  {matchingFeatures.map((feature) => (
-                    <button
-                      key={feature.id}
-                      type="button"
-                      className={`btn btn-link text-start text-decoration-none text-body w-100 px-2 py-1 border-bottom ${isFeatureLinked(feature.id) ? "opacity-75" : ""}`}
-                      disabled={isFeatureLinked(feature.id)}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        if (isFeatureLinked(feature.id)) return;
-                        setFeatureSearchTerm(feature.name || "");
-                        setCommittedFeatureName(feature.name || "");
-                        void linkExistingFeature(feature.id, feature.name || "");
-                      }}
-                    >
-                      <div className="d-flex align-items-center justify-content-between gap-2">
-                        <div className="fw-medium text-truncate" style={{ fontSize: "0.82rem" }}>
-                          {feature.name}
+                  {matchingFeatures.map((feature) => {
+                    const linked = isFeatureLinked(feature.id);
+                    return (
+                      <div
+                        key={feature.id}
+                        role="option"
+                        aria-selected={linked}
+                        tabIndex={linked ? -1 : 0}
+                        className={`w-100 px-2 py-1 border-bottom ${linked ? "opacity-75" : ""}`}
+                        style={{ cursor: linked ? "default" : "pointer", userSelect: "none" }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          if (linked) return;
+                          setFeatureSearchTerm(feature.name || "");
+                          setCommittedFeatureName(feature.name || "");
+                          void linkExistingFeature(feature.id, feature.name || "");
+                        }}
+                        onKeyDown={(e) => {
+                          if (linked) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setFeatureSearchTerm(feature.name || "");
+                            setCommittedFeatureName(feature.name || "");
+                            void linkExistingFeature(feature.id, feature.name || "");
+                          }
+                        }}
+                      >
+                        <div className="d-flex align-items-center justify-content-between gap-2">
+                          <div className="fw-medium text-truncate" style={{ fontSize: "0.82rem" }}>
+                            {feature.name}
+                          </div>
+                          {linked && (
+                            <span className="badge text-bg-light border" style={{ fontSize: "0.6rem" }}>
+                              Linked
+                            </span>
+                          )}
                         </div>
-                        {isFeatureLinked(feature.id) && (
-                          <span className="badge text-bg-light border" style={{ fontSize: "0.6rem" }}>
-                            Linked
-                          </span>
-                        )}
+                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                          {feature.description?.trim() || "Blank description"}
+                        </div>
                       </div>
-                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                        {feature.description?.trim() || "Blank description"}
-                      </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
-            <button type="button" className={`btn btn-sm ${canCreateFeature ? "btn-primary" : "btn-outline-secondary"}`} disabled={!canCreateFeature} onClick={() => void createFeatureWithName(trimmedSearch)}>
-              Add
-            </button>
           </div>
 
-          <div className="position-relative align-self-start" style={{ minWidth: 240 }}>
-            <button type="button" className="btn btn-sm btn-outline-secondary w-100 text-start d-flex align-items-center justify-content-between gap-2" onClick={() => setIsPriceModeOpen((prev) => !prev)}>
-              <span className="text-truncate">{priceModeLabel}</span>
-              <ChevronDownIcon style={{ width: 14, height: 14, transform: isPriceModeOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }} />
-            </button>
-            {isPriceModeOpen && (
-              <div className="position-absolute bg-white border rounded shadow-sm w-100 mt-1" style={{ zIndex: 20, maxHeight: 240, overflowY: "auto" }}>
-                <button
-                  type="button"
-                  className={`btn btn-link text-start text-decoration-none w-100 px-3 py-1 border-bottom ${affectingFeatureId === null ? "fw-semibold" : "text-body"}`}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    void handleClearAffectsPrice();
-                    setIsPriceModeOpen(false);
-                  }}
-                >
-                  Fixed price
-                </button>
-                {itemFeatures.map((feature) => (
-                  <button
-                    key={feature.feature_id}
-                    type="button"
-                    className={`btn btn-link text-start text-decoration-none w-100 px-3 py-1 border-bottom ${affectingFeatureId === feature.feature_id ? "fw-semibold" : "text-body"}`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      void handleAffectsPrice(feature.feature_id);
-                      setIsPriceModeOpen(false);
-                    }}
-                  >
-                    Depends on {feature.feature_name}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="w-100">
+            <select
+              className="form-select form-select-sm"
+              value={affectingFeatureId == null ? "fixed" : String(affectingFeatureId)}
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                if (selectedValue === "fixed") {
+                  void handleClearAffectsPrice();
+                  return;
+                }
+                void handleAffectsPrice(selectedValue);
+              }}
+            >
+              <option value="fixed">Fixed price</option>
+              {itemFeatures.map((feature) => (
+                <option key={feature.feature_id} value={String(feature.feature_id)}>
+                  Depends on {feature.feature_name}
+                </option>
+              ))}
+            </select>
+            <div className="small text-muted mt-1">{priceModeLabel}</div>
           </div>
         </div>
 
@@ -633,6 +728,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
               const isOpen = openFeatureIds[feature.feature_id] ?? true;
               const featureTotal = calcFeatureTotal(feature);
               const isMismatched = itemFeatures.length > 1 && itemFeatures.map(calcFeatureTotal).some((t) => t !== featureTotal);
+              const isEditingName = editingFeatureId === feature.feature_id;
+              const featureNameDraft = featureNameDrafts[feature.feature_id] ?? feature.feature_name;
 
               return (
                 <div key={feature.feature_id} className="border rounded overflow-hidden bg-white">
@@ -650,9 +747,43 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                     }}
                   >
                     <div className="d-flex align-items-center gap-2 flex-wrap min-w-0">
-                      <span className="fw-semibold text-truncate" style={{ fontSize: "0.86rem", color: isMismatched ? "#b45309" : undefined }}>
-                        {feature.feature_name}
-                      </span>
+                      {isEditingName ? (
+                        <input
+                          type="text"
+                          className="form-control form-control-sm"
+                          value={featureNameDraft}
+                          autoFocus
+                          onChange={(e) => setFeatureNameDrafts((prev) => ({ ...prev, [feature.feature_id]: e.target.value }))}
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={() => void handleFeatureNameSave(feature.feature_id, featureNameDraft, feature.feature_description ?? "")}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void handleFeatureNameSave(feature.feature_id, featureNameDraft, feature.feature_description ?? "");
+                            }
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              setFeatureNameDrafts((prev) => ({ ...prev, [feature.feature_id]: feature.feature_name }));
+                              setEditingFeatureId(null);
+                            }
+                          }}
+                          style={{ minWidth: 100, maxWidth: 220, fontSize: "0.82rem", paddingTop: 2, paddingBottom: 2 }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-link p-0 fw-semibold text-truncate text-start text-decoration-none"
+                          style={{ fontSize: "0.86rem", color: isMismatched ? "#b45309" : "inherit", maxWidth: 220 }}
+                          title="Click to rename feature"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFeatureNameDrafts((prev) => ({ ...prev, [feature.feature_id]: feature.feature_name }));
+                            setEditingFeatureId(feature.feature_id);
+                          }}
+                        >
+                          {feature.feature_name}
+                        </button>
+                      )}
                       {feature.affects_price && (
                         <span className="badge bg-primary" style={{ fontSize: "0.6rem" }}>
                           Price
@@ -699,7 +830,14 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         <InlineTextInput value={feature.feature_description ?? ""} placeholder="Blank description" onSave={(nextDescription) => handleFeatureDescriptionSave(feature.feature_id, feature.feature_name, nextDescription)} />
                       </div>
 
-                      <div className="small text-muted mb-1">Options</div>
+                      <div className="d-flex align-items-center justify-content-between gap-2 mb-1">
+                        <div className="small text-muted">Options</div>
+                        {itemFeatures.length === 1 && (
+                          <div className="small text-muted" style={{ width: 72, textAlign: "right" }}>
+                            Stock
+                          </div>
+                        )}
+                      </div>
                       <div className="d-flex flex-column gap-1">
                         {feature.options.map((opt) => (
                           <div key={opt.option_id} className="d-flex align-items-center gap-2" style={{ opacity: opt.is_enabled ? 1 : 0.45 }}>
@@ -721,6 +859,20 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                                 placeholder="$"
                                 disabled={!opt.is_enabled}
                                 onChange={(e) => handleOptionChange(feature.feature_id, opt.option_id, "price", e.target.value)}
+                              />
+                            )}
+
+                            {itemFeatures.length === 1 && (
+                              <input
+                                type="number"
+                                min={0}
+                                step="1"
+                                className="form-control form-control-sm"
+                                style={{ width: 72, fontSize: "0.75rem", padding: "0 4px", textAlign: "right" }}
+                                value={getSingleFeatureOptionStock(feature.feature_id, opt.option_id)}
+                                placeholder="0"
+                                disabled={!opt.is_enabled}
+                                onChange={(e) => setSingleFeatureOptionStock(feature.feature_id, opt.option_id, e.target.value)}
                               />
                             )}
                           </div>
@@ -761,7 +913,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         )}
       </div>
 
-      {itemFeatures.length > 0 && (
+      {itemFeatures.length > 1 && (
         <div className="mt-2 border rounded overflow-hidden">
           <button type="button" className="btn-unstyled btn-tab w-100 d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-0" style={{ background: "#f8f9fa" }} onClick={() => setIsCombinationsOpen((prev) => !prev)}>
             <span className="fw-semibold" style={{ fontSize: "0.86rem" }}>
@@ -821,14 +973,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                             </td>
                           </tr>
                         ))}
-                        {/* Total row */}
-                        <tr style={{ background: "#f8f9fa", fontWeight: 600 }}>
-                          <td colSpan={itemFeatures.reduce((acc, f) => acc + (f.affects_price ? 2 : 1), 0)} style={{ textAlign: "right", paddingRight: 12 }}>
-                            Total:
-                          </td>
-                          <td style={{ textAlign: "center" }}>{calcTotalStock(itemFeatures, combinationRows)}</td>
-                          <td />
-                        </tr>
                       </>
                     )}
                     {/* Add new row */}

@@ -249,6 +249,7 @@ def _ensure_schedule_payment_columns_if_needed():
     tables = {
         "schedule": {
             "is_paid": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "send_reminder": "BOOLEAN NOT NULL DEFAULT FALSE",
             "discount": "DOUBLE PRECISION NOT NULL DEFAULT 0.0",
             "sale_transaction_id": "UUID",
         },
@@ -900,6 +901,8 @@ def _ensure_app_settings_core_columns_if_needed():
         ("start_of_day",                 "VARCHAR",          "'06:00'"),
         ("end_of_day",                   "VARCHAR",          "'21:00'"),
         ("attendance_check_in_required", "BOOLEAN",          "FALSE"),
+        ("reminder_time_minutes",        "INTEGER",          "30"),
+        ("reminder_send_notification",   "BOOLEAN",          "TRUE"),
         ("monday_enabled",               "BOOLEAN",          "TRUE"),
         ("tuesday_enabled",              "BOOLEAN",          "TRUE"),
         ("wednesday_enabled",            "BOOLEAN",          "TRUE"),

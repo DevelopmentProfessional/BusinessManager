@@ -1,8 +1,8 @@
 ﻿// FILE: Report_SelectorDropup.jsx
 // Static report picker dropup for Reports page footer (not affected by profile align / view mode).
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronUpDownIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import React, { useEffect, useRef } from "react";
+import { ChartBarIcon, ChevronUpDownIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
 const ITEM_STYLE = {
   fontSize: "0.875rem",
@@ -18,7 +18,6 @@ const ITEM_STYLE = {
 };
 
 export default function Report_SelectorDropup({ open, onToggle, selectedTitle, reports, selectedReportId, onSelectReport, onOpenFinancial }) {
-  const [search, setSearch] = useState("");
   const rootRef = useRef(null);
 
   const handleOptionKeyDown = (e, onSelect) => {
@@ -38,10 +37,6 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
   };
 
   useEffect(() => {
-    if (!open) setSearch("");
-  }, [open]);
-
-  useEffect(() => {
     const onDocClick = (e) => {
       if (rootRef.current && !rootRef.current.contains(e.target)) onToggle(false);
     };
@@ -49,24 +44,11 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open, onToggle]);
 
-  const filteredReports = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return reports;
-    return reports.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        (r.description || "").toLowerCase().includes(q) ||
-        String(r.id ?? "")
-          .toLowerCase()
-          .includes(q)
-    );
-  }, [reports, search]);
-
   return (
     <div ref={rootRef} className="position-relative reports-selector-dropup w-100" style={{ textAlign: "left" }}>
-      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-between w-100" style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox">
+      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1 w-100" style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minHeight: "2rem" }} aria-expanded={open} aria-haspopup="listbox" title={selectedTitle || "Report"}>
+        <ChartBarIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
         <ChevronUpDownIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
-        <span>{selectedTitle || "Report"}</span>
       </button>
 
       {open && (
@@ -76,8 +58,8 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
           style={{
             zIndex: 1050,
             width: "100%",
-            minWidth: "100%",
-            maxWidth: "100%",
+            minWidth: "14rem",
+            maxWidth: "22rem",
           }}
         >
           <div className="reports-selector-dropup__list overflow-y-auto flex-grow-1" style={{ maxHeight: "min(50vh, 22rem)" }}>
@@ -101,34 +83,25 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
               <CurrencyDollarIcon className="text-green-600 flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />
               <span>Financial</span>
             </div>
-            {filteredReports.length === 0 ? (
-              <div className="px-3 py-2 text-muted" style={{ fontSize: "0.875rem" }}>
-                No reports match your search
-              </div>
-            ) : (
-              filteredReports.map((report) => {
-                const Icon = report.icon;
-                const isActive = selectedReportId === report.id;
-                return (
-                  <div
-                    key={report.id}
-                    role="option"
-                    tabIndex={0}
-                    aria-selected={isActive}
-                    onClick={() => onSelectReport(report.id)}
-                    onKeyDown={(e) => handleOptionKeyDown(e, () => onSelectReport(report.id))}
-                    className={`reports-selector-dropup__item ${isActive ? "bg-primary text-white" : "text-body"}`}
-                    style={ITEM_STYLE}
-                  >
-                    {Icon && <Icon className="flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />}
-                    <span>{report.title}</span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-          <div className="border-top p-2 flex-shrink-0">
-            <input type="search" className="form-control form-control-sm" placeholder="Search reports…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ fontSize: "0.875rem" }} aria-label="Search reports" />
+            {reports.map((report) => {
+              const Icon = report.icon;
+              const isActive = selectedReportId === report.id;
+              return (
+                <div
+                  key={report.id}
+                  role="option"
+                  tabIndex={0}
+                  aria-selected={isActive}
+                  onClick={() => onSelectReport(report.id)}
+                  onKeyDown={(e) => handleOptionKeyDown(e, () => onSelectReport(report.id))}
+                  className={`reports-selector-dropup__item ${isActive ? "bg-primary text-white" : "text-body"}`}
+                  style={ITEM_STYLE}
+                >
+                  {Icon && <Icon className="flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />}
+                  <span>{report.title}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

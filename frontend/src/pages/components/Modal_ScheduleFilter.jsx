@@ -1,11 +1,15 @@
 /*
  * ============================================================
- * FILE: Modal_Filter_Schedule.jsx
+ * FILE: Modal_Filter_Schedule.jsx [DEPRECATED]
  *
  * PURPOSE:
  *   Modal panel for filtering the Schedule page calendar view.
  *   Allows users to narrow displayed appointments by employee, client,
  *   service, date range, and out-of-office status using accordion sections.
+ *
+ * NOTE: This file is DEPRECATED. Use Dropup_ScheduleFilter instead.
+ *       Schedule.jsx currently uses the dropup-based filter, which provides
+ *       better UX with searchable dropups that open from the bottom.
  *
  * FUNCTIONAL PARTS:
  *   [1] Constants — EMPTY_FILTERS default shape
@@ -19,6 +23,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Added section-level help popovers for Employees/Clients/Services filters
+ *   2026-06-13 | GitHub Copilot | Marked as DEPRECATED — Schedule uses Dropup_ScheduleFilter instead
  * ============================================================
  */
 

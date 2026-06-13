@@ -30,6 +30,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-06-13 | GitHub Copilot | Added initialName support for global create-from-search service modal
  * ============================================================
  */
 
@@ -40,17 +41,22 @@ import Footer_Actions from "./Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from "../../services/api";
 import Widget_Camera from "./Widget_Camera";
 import Modal_BulkImport from "./Modal_ImportBulk";
+import Dropdown_Custom from "./Dropdown_Custom";
+import useStore from "../../services/useStore";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const TABS = ["details", "resources", "assets", "employees", "locations"];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Service({ service, onSubmit, onCancel, onBulkImport = null }) {
+export default function Form_Service({ service, initialName = "", onSubmit, onCancel, onBulkImport = null }) {
+  const { openAddInventoryModal, addInventory } = useStore();
+  const [createdFromSearchContext, setCreatedFromSearchContext] = useState(null); // "resource", "asset", or "location"
+  
   const [activeTab, setActiveTab] = useState("details");
 
   // ── Basic form fields ────────────────────────────────────────────
   const [formData, setFormData] = useState({
-    name: "",
+    name: initialName || "",
     description: "",
     category: "",
     price: "",
@@ -101,6 +107,12 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
       });
     }
   }, [service]);
+
+  useEffect(() => {
+    if (!service && initialName) {
+      setFormData((prev) => ({ ...prev, name: initialName }));
+    }
+  }, [service, initialName]);
 
   // Load lookups once
   useEffect(() => {
@@ -203,6 +215,26 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
     } catch (err) {
       setTabError(err?.response?.data?.detail || err?.message || "Operation failed");
     }
+  };
+
+  // ── Create-from-search handlers ──────────────────────────────────
+  const handleCreateInventoryFromSearch = (context) => (searchText) => {
+    setCreatedFromSearchContext(context);
+    openAddInventoryModal((newItem) => {
+      // Auto-select and add the created inventory to the appropriate context
+      if (context === "resource") {
+        setNewResource((prev) => ({ ...prev, inventory_id: newItem.id }));
+        // Re-fetch inventory to get fresh data
+        inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
+      } else if (context === "asset") {
+        setNewAsset((prev) => ({ ...prev, inventory_id: newItem.id }));
+        inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
+      } else if (context === "location") {
+        setNewLocation((prev) => ({ ...prev, inventory_id: newItem.id }));
+        inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
+      }
+      setCreatedFromSearchContext(null);
+    }, searchText);
   };
 
   const handleAddResource = () =>
@@ -602,16 +634,18 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
             {/* Sticky add row */}
             <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
               <div className="d-flex gap-2 align-items-center">
-                <select className="form-select form-select-sm flex-grow-1" value={newResource.inventory_id} onChange={(e) => setNewResource((prev) => ({ ...prev, inventory_id: e.target.value }))}>
-                  <option value="">— Select item —</option>
-                  {resourceItems
-                    .filter((i) => !linkedResourceIds.has(i.id))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  name="inventory_id"
+                  value={newResource.inventory_id}
+                  onChange={(e) => setNewResource((prev) => ({ ...prev, inventory_id: e.target.value }))}
+                  options={resourceItems.filter((i) => !linkedResourceIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
+                  placeholder="Select item"
+                  searchable
+                  footerSearch
+                  onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
+                  createButtonTitle="Add item"
+                  className="flex-grow-1"
+                />
                 <input type="number" min="0.01" step="0.01" className="form-control form-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
                 <input type="number" min="0" max="100" step="0.1" className="form-control form-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
                 <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddResource}>
@@ -665,16 +699,18 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
             {/* Sticky add row */}
             <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
               <div className="d-flex gap-2 align-items-center">
-                <select className="form-select form-select-sm flex-grow-1" value={newAsset.inventory_id} onChange={(e) => setNewAsset({ inventory_id: e.target.value })}>
-                  <option value="">— Select asset —</option>
-                  {assetItems
-                    .filter((i) => !linkedAssetIds.has(i.id))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  name="inventory_id"
+                  value={newAsset.inventory_id}
+                  onChange={(e) => setNewAsset({ inventory_id: e.target.value })}
+                  options={assetItems.filter((i) => !linkedAssetIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
+                  placeholder="Select asset"
+                  searchable
+                  footerSearch
+                  onCreateFromSearch={handleCreateInventoryFromSearch("asset")}
+                  createButtonTitle="Add asset"
+                  className="flex-grow-1"
+                />
                 <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddAsset}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
@@ -756,16 +792,18 @@ export default function Form_Service({ service, onSubmit, onCancel, onBulkImport
             {/* Sticky add row */}
             <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
               <div className="d-flex gap-2 align-items-center">
-                <select className="form-select form-select-sm flex-grow-1" value={newLocation.inventory_id} onChange={(e) => setNewLocation({ inventory_id: e.target.value })}>
-                  <option value="">— Select location —</option>
-                  {locationItems
-                    .filter((i) => !linkedLocationIds.has(i.id))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  name="inventory_id"
+                  value={newLocation.inventory_id}
+                  onChange={(e) => setNewLocation({ inventory_id: e.target.value })}
+                  options={locationItems.filter((i) => !linkedLocationIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
+                  placeholder="Select location"
+                  searchable
+                  footerSearch
+                  onCreateFromSearch={handleCreateInventoryFromSearch("location")}
+                  createButtonTitle="Add location"
+                  className="flex-grow-1"
+                />
                 <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddLocation}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>

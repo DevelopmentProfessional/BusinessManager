@@ -31,9 +31,9 @@ import Footer_Actions from "./Footer_Actions";
 import Modal_BulkImport from "./Modal_ImportBulk";
 
 // ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
-export default function Form_Client({ client, onSubmit, onCancel, error = null, onBulkImport = null, memberships = [] }) {
+export default function Form_Client({ client, initialName = "", onSubmit, onCancel, error = null, onBulkImport = null, memberships = [] }) {
   const [formData, setFormData] = useState({
-    name: "",
+    name: initialName || "",
     email: "",
     phone: "",
     address: "",
@@ -63,6 +63,12 @@ export default function Form_Client({ client, onSubmit, onCancel, error = null, 
       });
     }
   }, [client]);
+
+  useEffect(() => {
+    if (!client && initialName) {
+      setFormData((prev) => ({ ...prev, name: initialName }));
+    }
+  }, [client, initialName]);
 
   // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
   const formatPhone = (raw) => {
