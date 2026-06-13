@@ -68,7 +68,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.05.26.1"
+CURRENT_SCHEMA_VERSION = "2026.06.13.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -1199,6 +1199,7 @@ def create_db_and_tables():
     _ensure_app_settings_company_columns_if_needed()
     _ensure_app_settings_logo_columns_if_needed()
     _ensure_user_training_mode_if_needed()
+    _ensure_user_ui_preference_columns_if_needed()
     _ensure_schedule_payment_columns_if_needed()
     _ensure_service_recipe_if_needed()
     _ensure_production_tables_if_needed()
@@ -1565,6 +1566,9 @@ def _ensure_user_extra_columns_if_needed():
         "vacation_days_used": "INTEGER DEFAULT 0",
         "sick_days": "INTEGER",
         "sick_days_used": "INTEGER DEFAULT 0",
+        "button_text_size": "VARCHAR DEFAULT 'medium'",
+        "footer_align": "VARCHAR DEFAULT 'left'",
+        "ui_scale": "INTEGER DEFAULT 100",
     }
     with engine.begin() as conn:
         cols = conn.execute(text(
@@ -1962,6 +1966,33 @@ def _ensure_user_training_mode_if_needed():
         if "training_mode_explicit" not in col_names:
             conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode_explicit BOOLEAN DEFAULT FALSE'))
             print("  + Added column user.training_mode_explicit (BOOLEAN)")
+
+
+def _ensure_user_ui_preference_columns_if_needed():
+    """Ensure user table has persistent UI preference columns."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "button_text_size" not in col_names:
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN button_text_size VARCHAR DEFAULT 'medium'"))
+            print("  + Added column user.button_text_size (VARCHAR)")
+        else:
+            conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN button_text_size SET DEFAULT 'medium'"))
+
+        if "footer_align" not in col_names:
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN footer_align VARCHAR DEFAULT 'left'"))
+            print("  + Added column user.footer_align (VARCHAR)")
+        else:
+            conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN footer_align SET DEFAULT 'left'"))
+
+        if "ui_scale" not in col_names:
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN ui_scale INTEGER DEFAULT 100"))
+            print("  + Added column user.ui_scale (INTEGER)")
+        else:
+            conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN ui_scale SET DEFAULT 100"))
 
 
 # ─── 16 MIGRATION: SERVICE RECIPE TABLE + ASSET DURATION ───────────────────────
