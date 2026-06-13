@@ -11,8 +11,10 @@
     "install:all": "npm run install:backend && npm run install:frontend",
     "install:backend": "cd backend && ..\\.venv\\Scripts\\pip.exe install -r requirements.txt",
     "install:frontend": "npm install",
-    "build": "cd frontend && vite build",
-    "setup": "npm run install:all"
+    "build": "npm run audit:buttons:strict && cd frontend && vite build",
+    "setup": "npm run install:all",
+    "audit:buttons": "node scripts/audit-buttons-compact-training.mjs",
+    "audit:buttons:strict": "node scripts/audit-buttons-compact-training.mjs --strict"
   },
   "devDependencies": {
     "@vitejs/plugin-basic-ssl": "^2.1.4",

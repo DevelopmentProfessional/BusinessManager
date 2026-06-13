@@ -79,7 +79,8 @@ export default function Clients() {
   const [multiSaving, setMultiSaving] = useState(false);
   const [sortColumn, setSortColumn] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
-  const [purchaseHistoryCounts, setPurchaseHistoryCounts] = useState({});
+  const [internalActionCounts, setInternalActionCounts] = useState({});
+  const [portalActionCounts, setPortalActionCounts] = useState({});
 
   const multiEditFields = useMemo(() => {
     const membershipOptions = memberships
@@ -176,22 +177,34 @@ export default function Clients() {
     }
   };
 
+  // Statuses that require internal staff action (red badge)
+  const INTERNAL_ACTION_STATUSES = new Set(["ordered", "processing"]);
+  // Statuses that require client action on the portal (yellow badge)
+  const PORTAL_ACTION_STATUSES = new Set(["payment_pending", "ready_for_pickup"]);
+
   const loadPurchaseHistoryCounts = async (clientsList) => {
-    const countResults = await Promise.all(
+    const results = await Promise.all(
       clientsList.map(async (client) => {
         try {
-          const [txRes, portalRes] = await Promise.all([clientsAPI.getTransactions(client.id).catch(() => ({ data: [] })), clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] }))]);
-          const txns = Array.isArray(txRes?.data) ? txRes.data : [];
+          const portalRes = await clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] }));
           const orders = Array.isArray(portalRes?.data) ? portalRes.data : [];
-          return [client.id, txns.length + orders.length];
+          const internal = orders.filter((o) => INTERNAL_ACTION_STATUSES.has(o.status)).length;
+          const portal = orders.filter((o) => PORTAL_ACTION_STATUSES.has(o.status)).length;
+          return [client.id, internal, portal];
         } catch {
-          return [client.id, 0];
+          return [client.id, 0, 0];
         }
       })
     );
 
-    const counts = Object.fromEntries(countResults);
-    setPurchaseHistoryCounts(counts);
+    const internalCounts = {};
+    const portalCounts = {};
+    for (const [id, internal, portal] of results) {
+      internalCounts[id] = internal;
+      portalCounts[id] = portal;
+    }
+    setInternalActionCounts(internalCounts);
+    setPortalActionCounts(portalCounts);
   };
 
   // ─── [5] CRUD HANDLERS ──────────────────────────────────────────────────────
@@ -490,15 +503,28 @@ export default function Clients() {
                   </td>
 
                   {/* Name + contact */}
-                  <td className="main-page-table-data">
-                    <div className="fw-medium text-truncate position-relative">
-                      {purchaseHistoryCounts[client.id] > 0 && (
-                        <span className="badge bg-primary rounded-circle" style={{ position: "absolute", left: "-12px", top: "50%", transform: "translateY(-50%)", minWidth: "20px", height: "20px", fontSize: "0.65rem", lineHeight: "20px", padding: 0 }}>
-                          {purchaseHistoryCounts[client.id]}
-                        </span>
-                      )}
-                      {client.name}
-                    </div>
+                  <td className="main-page-table-data" style={{ position: "relative", overflow: "visible" }}>
+                    {/* Red badge — top-left, straddles left border, shown only when > 0 */}
+                    {internalActionCounts[client.id] > 0 && (
+                      <span
+                        className="badge bg-danger rounded-circle"
+                        style={{ position: "absolute", left: "-9px", top: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, zIndex: 2, textAlign: "center" }}
+                        title="Pending internal staff action"
+                      >
+                        {internalActionCounts[client.id]}
+                      </span>
+                    )}
+                    {/* Yellow badge — bottom-left, straddles left border, shown only when > 0 */}
+                    {portalActionCounts[client.id] > 0 && (
+                      <span
+                        className="badge rounded-circle"
+                        style={{ position: "absolute", left: "-9px", bottom: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, backgroundColor: "#f59e0b", zIndex: 2, textAlign: "center" }}
+                        title="Pending client portal action"
+                      >
+                        {portalActionCounts[client.id]}
+                      </span>
+                    )}
+                    <div className="fw-medium text-truncate">{client.name}</div>
                     <div className="small text-muted text-truncate">{client.email || client.phone || "No contact"}</div>
                   </td>
 

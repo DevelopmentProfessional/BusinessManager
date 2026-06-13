@@ -292,6 +292,21 @@ button,
   box-shadow: none !important;
 }
 
+/* Compact mode: any icon-bearing action button should render icon-only. */
+body:not(.training-mode) button:has(svg, img, i.bi, .app-icon),
+body:not(.training-mode) .btn:has(svg, img, i.bi, .app-icon),
+body:not(.training-mode) [role="button"]:has(svg, img, i.bi, .app-icon) {
+  font-size: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Hide common text wrappers while preserving direct icon nodes and badges. */
+body:not(.training-mode) button:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden),
+body:not(.training-mode) .btn:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden),
+body:not(.training-mode) [role="button"]:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden) {
+  display: none !important;
+}
+
 button:focus,
 button:focus-visible,
 button:active,
@@ -905,6 +920,27 @@ input[type="number"],
 .form-floating > .form-select ~ label {
   transform: scale(0.75) translateY(-0.75rem) !important;
   opacity: 0.8;
+}
+
+/* Inventory edit form: tighter field padding and non-truncated floating labels. */
+.inventory-edit-form .form-floating {
+  overflow: visible;
+}
+
+.inventory-edit-form .form-floating > .form-control:not(textarea),
+.inventory-edit-form .form-floating > .form-select {
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+}
+
+.inventory-edit-form .form-floating > label {
+  padding-left: 0;
+  padding-right: 0;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 textarea,
