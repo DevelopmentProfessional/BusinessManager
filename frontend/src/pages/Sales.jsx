@@ -844,7 +844,7 @@ export default function Sales() {
   })();
 
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-  
+
   // Calculate invoice totals with discount applied (used for display AND preview)
   const subtotalAfterDiscount = roundCurrency(cartTotal - cartDiscount);
   const invoiceTaxAmount = roundCurrency(subtotalAfterDiscount * (taxRatePercent / 100));
@@ -894,35 +894,35 @@ export default function Sales() {
 
     for (const item of soldSubscriptionItems) {
       const existing = currentClientRows.find((row) => String(row.membership_id) === String(item.id));
-      
+
       // FIX 1: Parse date string as UTC date (at midnight UTC), not local timezone
       let startDateValue;
       if (item.subscriptionStartDate) {
         // Parse YYYY-MM-DD as UTC date at midnight to avoid timezone offset issues
-        const [year, month, day] = item.subscriptionStartDate.split('-').map(Number);
+        const [year, month, day] = item.subscriptionStartDate.split("-").map(Number);
         startDateValue = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
       } else {
         startDateValue = new Date();
       }
-      
+
       // FIX 2: Calculate end_date based on lock_term_count and lock_term_unit from the membership
       let endDateValue = null;
       if (item.lock_term_count && item.lock_term_count > 0 && item.lock_term_unit) {
         endDateValue = new Date(startDateValue);
         const unit = String(item.lock_term_unit).toLowerCase();
         const count = Number(item.lock_term_count);
-        
-        if (unit === 'days') {
+
+        if (unit === "days") {
           endDateValue.setUTCDate(endDateValue.getUTCDate() + count);
-        } else if (unit === 'weeks') {
+        } else if (unit === "weeks") {
           endDateValue.setUTCDate(endDateValue.getUTCDate() + count * 7);
-        } else if (unit === 'months') {
+        } else if (unit === "months") {
           endDateValue.setUTCMonth(endDateValue.getUTCMonth() + count);
-        } else if (unit === 'years') {
+        } else if (unit === "years") {
           endDateValue.setUTCFullYear(endDateValue.getUTCFullYear() + count);
         }
       }
-      
+
       const payload = {
         client_id: clientId,
         membership_id: item.id,

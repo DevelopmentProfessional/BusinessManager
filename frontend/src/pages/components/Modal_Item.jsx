@@ -64,9 +64,7 @@ export default function Modal_Item() {
       }
 
       if (newItem?.id && itemData.type === "BUNDLE" && Array.isArray(extras.bundleComponents) && extras.bundleComponents.length > 0) {
-        await Promise.all(
-          extras.bundleComponents.map((component) => bundleAPI.addComponent(newItem.id, component.id, parseFloat(component.quantity) || 1))
-        );
+        await Promise.all(extras.bundleComponents.map((component) => bundleAPI.addComponent(newItem.id, component.id, parseFloat(component.quantity) || 1)));
       }
 
       if (newItem?.id && itemData.type === "MIX") {
@@ -80,9 +78,7 @@ export default function Modal_Item() {
         }
 
         if (Array.isArray(extras.mixComponents) && extras.mixComponents.length > 0) {
-          await Promise.all(
-            extras.mixComponents.map((component) => mixAPI.addComponent(newItem.id, component.id, component.max_quantity ?? null))
-          );
+          await Promise.all(extras.mixComponents.map((component) => mixAPI.addComponent(newItem.id, component.id, component.max_quantity ?? null)));
         }
       }
 

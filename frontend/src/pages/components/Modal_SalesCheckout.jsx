@@ -270,20 +270,15 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               <div className="mt-2 p-2 border rounded-xl bg-gray-50 dark:bg-gray-800 text-left">
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Client has no email on file. Enter email to send receipt:</p>
                 <div className="flex gap-1">
-                  <input
-                    type="email"
-                    value={promptEmail}
-                    onChange={(e) => setPromptEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className="form-control form-control-sm flex-1"
-                  />
+                  <input type="email" value={promptEmail} onChange={(e) => setPromptEmail(e.target.value)} placeholder="client@email.com" className="form-control form-control-sm flex-1" />
                   <button
                     type="button"
                     className="btn btn-sm btn-emerald"
                     onClick={() => {
                       if (!selectedClient || !promptEmail) return;
                       setEmailSaveError("");
-                      clientsAPI.update(selectedClient.id, { email: promptEmail })
+                      clientsAPI
+                        .update(selectedClient.id, { email: promptEmail })
                         .then(() => {
                           setShowEmailPrompt(false);
                           setTemplateFilterType("receipt");
@@ -296,7 +291,16 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   >
                     Send
                   </button>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setShowEmailPrompt(false); setEmailSaveError(""); }}>Cancel</button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => {
+                      setShowEmailPrompt(false);
+                      setEmailSaveError("");
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
                 {emailSaveError && <p className="text-danger small mt-1 mb-0">{emailSaveError}</p>}
               </div>
@@ -417,7 +421,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                 </button>
               </div>
 
-                  {isCardScan ? (
+              {isCardScan ? (
                 <div className="space-y-1">
                   {/* Card Number */}
                   <div className="input-group">
@@ -428,12 +432,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                       <input type="text" id="cardNumber" value={cardNumber} onChange={handleCardNumberChange} placeholder="Card Number" className="form-control form-control-sm" />
                       <label htmlFor="cardNumber">Card Number</label>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowCamera(true)}
-                      className="btn btn-sm btn-outline-secondary"
-                      title="Scan card with camera"
-                    >
+                    <button type="button" onClick={() => setShowCamera(true)} className="btn btn-sm btn-outline-secondary" title="Scan card with camera">
                       <CameraIcon className="h-5 w-5" />
                     </button>
                   </div>
@@ -442,7 +441,9 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   {showCamera && (
                     <div className="border rounded-xl overflow-hidden bg-black relative">
                       <div className="flex items-center justify-between px-2 py-1 bg-gray-900">
-                        <span className="text-white text-xs flex items-center gap-1"><VideoCameraIcon className="h-4 w-4" /> Point camera at card</span>
+                        <span className="text-white text-xs flex items-center gap-1">
+                          <VideoCameraIcon className="h-4 w-4" /> Point camera at card
+                        </span>
                         <button type="button" onClick={() => setShowCamera(false)} className="text-white hover:text-gray-300">
                           <XMarkIcon className="h-4 w-4" />
                         </button>
@@ -457,12 +458,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                             <div className="border-2 border-white/70 rounded-xl" style={{ width: "85%", height: "55%" }} />
                           </div>
                           <div className="flex gap-1 p-1 bg-gray-900">
-                            <button
-                              type="button"
-                              onClick={captureAndParseCard}
-                              className="flex-1 btn btn-sm text-white"
-                              style={{ background: "#059669", border: "none" }}
-                            >
+                            <button type="button" onClick={captureAndParseCard} className="flex-1 btn btn-sm text-white" style={{ background: "#059669", border: "none" }}>
                               <CameraIcon className="h-4 w-4 inline me-1" /> Capture
                             </button>
                             <button type="button" onClick={() => setShowCamera(false)} className="btn btn-sm btn-outline-secondary text-white border-gray-600">
@@ -500,8 +496,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   >
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        …
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />…
                       </>
                     ) : (
                       <>
@@ -522,8 +517,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-2 rounded-pill font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-1">
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        …
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />…
                       </>
                     ) : (
                       <>
@@ -543,8 +537,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-2 rounded-pill font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-1">
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        …
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />…
                       </>
                     ) : (
                       <>

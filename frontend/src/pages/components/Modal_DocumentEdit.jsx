@@ -288,12 +288,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
   if (!document) return null;
 
   return (
-    <Modal
-      isOpen={isOpen && !!document}
-      onClose={onClose}
-      centered
-      noPadding
-    >
+    <Modal isOpen={isOpen && !!document} onClose={onClose} centered noPadding>
       <form className="component h-100 min-h-0" id="doc-edit-form" onSubmit={handleSubmit}>
         <div className="component-header">
           <div className="component-header-left">
@@ -305,223 +300,227 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
         </div>
         <div className="component-body">
           <div className="component-body-inner">
-        <div className="space-y-4">
-          {error && <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm">{error}</div>}
+            <div className="space-y-4">
+              {error && <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded text-sm">{error}</div>}
 
-          {/* ── File info band (read-only) ────────────────────────────────────── */}
-          <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 text-sm">
-            <p className="font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-1">
-              <TagIcon className="w-4 h-4 opacity-60" /> File Information
-            </p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600 dark:text-gray-400">
-              <span className="font-medium">Filename</span>
-              <span className="truncate" title={document.original_filename}>
-                {document.original_filename}
-              </span>
+              {/* ── File info band (read-only) ────────────────────────────────────── */}
+              <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 text-sm">
+                <p className="font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-1">
+                  <TagIcon className="w-4 h-4 opacity-60" /> File Information
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Filename</span>
+                  <span className="truncate" title={document.original_filename}>
+                    {document.original_filename}
+                  </span>
 
-              <span className="font-medium">File type</span>
-              <span>{friendlyMime(document.content_type)}</span>
+                  <span className="font-medium">File type</span>
+                  <span>{friendlyMime(document.content_type)}</span>
 
-              <span className="font-medium">File size</span>
-              <span>{formatBytes(document.file_size)}</span>
+                  <span className="font-medium">File size</span>
+                  <span>{formatBytes(document.file_size)}</span>
 
-              <span className="font-medium">Uploaded</span>
-              <span>{formatDate(document.created_at)}</span>
+                  <span className="font-medium">Uploaded</span>
+                  <span>{formatDate(document.created_at)}</span>
 
-              {document.updated_at && document.updated_at !== document.created_at && (
-                <>
-                  <span className="font-medium">Last modified</span>
-                  <span>{formatDate(document.updated_at)}</span>
-                </>
-              )}
+                  {document.updated_at && document.updated_at !== document.created_at && (
+                    <>
+                      <span className="font-medium">Last modified</span>
+                      <span>{formatDate(document.updated_at)}</span>
+                    </>
+                  )}
 
-              {document.entity_type && (
-                <>
-                  <span className="font-medium">Linked to</span>
-                  <span className="capitalize">{document.entity_type}</span>
-                </>
-              )}
+                  {document.entity_type && (
+                    <>
+                      <span className="font-medium">Linked to</span>
+                      <span className="capitalize">{document.entity_type}</span>
+                    </>
+                  )}
 
-              {document.is_signed && (
-                <>
-                  <span className="font-medium">Signed by</span>
-                  <span>{document.signed_by || "—"}</span>
-                  <span className="font-medium">Signed at</span>
-                  <span>{formatDate(document.signed_at)}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* ── Description ──────────────────────────────────────────────────── */}
-          <div className="form-floating mb-3">
-            <textarea id="doc_description" className="form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-            <label htmlFor="doc_description">Description</label>
-          </div>
-
-          {/* ── Owner + Review Date ───────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner</label>
-              <Dropdown_Custom                name="owner_id"                value={ownerId || ""}
-                onChange={(e) => setOwnerId(e.target.value)}
-                options={[
-                  { value: "", label: "Unassigned" },
-                  ...employees.map((emp) => ({
-                    value: emp.id,
-                    label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
-                  })),
-                ]}
-                placeholder="Select owner"
-              />
-            </div>
-            <div className="form-floating">
-              <input type="date" id="doc_review_date" className="form-control form-control-sm" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} placeholder="Review Date" />
-              <label htmlFor="doc_review_date">Review Date</label>
-            </div>
-          </div>
-
-          {/* ── Category ─────────────────────────────────────────────────────── */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <Dropdown_Custom name="category_id" value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...categories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
-          </div>
-
-          {/* ── Tags ─────────────────────────────────────────────────────────── */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
-
-            {/* Attached tags */}
-            <div className="flex flex-wrap gap-1 mb-2 min-h-[1.75rem]">
-              {docTags.length === 0 && <span className="text-xs text-gray-400 dark:text-gray-500 italic">No tags yet</span>}
-              {docTags.map((tag) => (
-                <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
-                  {tag.name}
-                  <button type="button" onClick={() => handleRemoveTag(tag.id)} className="hover:text-blue-900 dark:hover:text-white focus:outline-none" aria-label={`Remove tag ${tag.name}`}>
-                    <XMarkIcon className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-
-            {/* Tag search + add */}
-            <div className="relative">
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <MagnifyingGlassIcon className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input
-                    ref={tagInputRef}
-                    type="text"
-                    value={tagSearch}
-                    onChange={(e) => handleTagSearchChange(e.target.value)}
-                    onFocus={() => {
-                      if (tagSuggestions.length > 0) setShowTagDropdown(true);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (tagSuggestions.length === 1) handleAddTag(tagSuggestions[0]);
-                        else if (tagSearch.trim()) handleAddTag(tagSearch.trim());
-                      }
-                      if (e.key === "Escape") setShowTagDropdown(false);
-                    }}
-                    placeholder="Search or create a tag…"
-                    className="form-control form-control-sm ps-7"
-                    style={{ fontSize: "0.82rem" }}
-                    autoComplete="off"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (tagSuggestions.length === 1) handleAddTag(tagSuggestions[0]);
-                    else if (tagSearch.trim()) handleAddTag(tagSearch.trim());
-                  }}
-                  className="btn btn-sm btn-outline-primary flex-shrink-0"
-                  style={{ fontSize: "0.8rem" }}
-                  disabled={!tagSearch.trim()}
-                >
-                  Add
-                </button>
-              </div>
-
-              {/* Dropdown suggestions */}
-              {showTagDropdown && tagSuggestions.length > 0 && (
-                <div ref={tagDropdownRef} className="absolute z-50 mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg max-h-40 overflow-y-auto">
-                  {tagSuggestions.map((tag) => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        handleAddTag(tag);
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-200"
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-                  {tagSearch.trim() && !tagSuggestions.some((t) => t.name.toLowerCase() === tagSearch.trim().toLowerCase()) && (
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        handleAddTag(tagSearch.trim());
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-t border-gray-100 dark:border-gray-700"
-                    >
-                      + Create "{tagSearch.trim()}"
-                    </button>
+                  {document.is_signed && (
+                    <>
+                      <span className="font-medium">Signed by</span>
+                      <span>{document.signed_by || "—"}</span>
+                      <span className="font-medium">Signed at</span>
+                      <span>{formatDate(document.signed_at)}</span>
+                    </>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* Show "create" option when search has text but no dropdown suggestions */}
-              {tagSearch.trim() && !showTagDropdown && tagSuggestions.length === 0 && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Press <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-xs">Enter</kbd> or click Add to create tag "{tagSearch.trim()}"
-                </p>
-              )}
-            </div>
-          </div>
+              {/* ── Description ──────────────────────────────────────────────────── */}
+              <div className="form-floating mb-3">
+                <textarea id="doc_description" className="form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+                <label htmlFor="doc_description">Description</label>
+              </div>
 
-          {/* ── Assignments ───────────────────────────────────────────────────── */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignments</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {assignments.length === 0 && <span className="text-sm text-gray-500 dark:text-gray-400">No assigned employees</span>}
-              {assignments.map((a) => {
-                const emp = employees.find((e) => e.id === a.employee_id);
-                const label = emp ? (emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || a.employee_id) : a.employee_id;
-                return (
-                  <span key={a.employee_id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
-                    {label}
-                    <button type="button" onClick={() => handleRemoveAssignment(a.employee_id)} className="hover:text-red-500 focus:outline-none" aria-label="Remove">
-                      <XMarkIcon className="w-3 h-3" />
+              {/* ── Owner + Review Date ───────────────────────────────────────────── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner</label>
+                  <Dropdown_Custom
+                    name="owner_id"
+                    value={ownerId || ""}
+                    onChange={(e) => setOwnerId(e.target.value)}
+                    options={[
+                      { value: "", label: "Unassigned" },
+                      ...employees.map((emp) => ({
+                        value: emp.id,
+                        label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
+                      })),
+                    ]}
+                    placeholder="Select owner"
+                  />
+                </div>
+                <div className="form-floating">
+                  <input type="date" id="doc_review_date" className="form-control form-control-sm" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} placeholder="Review Date" />
+                  <label htmlFor="doc_review_date">Review Date</label>
+                </div>
+              </div>
+
+              {/* ── Category ─────────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                <Dropdown_Custom name="category_id" value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...categories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
+              </div>
+
+              {/* ── Tags ─────────────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+
+                {/* Attached tags */}
+                <div className="flex flex-wrap gap-1 mb-2 min-h-[1.75rem]">
+                  {docTags.length === 0 && <span className="text-xs text-gray-400 dark:text-gray-500 italic">No tags yet</span>}
+                  {docTags.map((tag) => (
+                    <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
+                      {tag.name}
+                      <button type="button" onClick={() => handleRemoveTag(tag.id)} className="hover:text-blue-900 dark:hover:text-white focus:outline-none" aria-label={`Remove tag ${tag.name}`}>
+                        <XMarkIcon className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
+                {/* Tag search + add */}
+                <div className="relative">
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <MagnifyingGlassIcon className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input
+                        ref={tagInputRef}
+                        type="text"
+                        value={tagSearch}
+                        onChange={(e) => handleTagSearchChange(e.target.value)}
+                        onFocus={() => {
+                          if (tagSuggestions.length > 0) setShowTagDropdown(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (tagSuggestions.length === 1) handleAddTag(tagSuggestions[0]);
+                            else if (tagSearch.trim()) handleAddTag(tagSearch.trim());
+                          }
+                          if (e.key === "Escape") setShowTagDropdown(false);
+                        }}
+                        placeholder="Search or create a tag…"
+                        className="form-control form-control-sm ps-7"
+                        style={{ fontSize: "0.82rem" }}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tagSuggestions.length === 1) handleAddTag(tagSuggestions[0]);
+                        else if (tagSearch.trim()) handleAddTag(tagSearch.trim());
+                      }}
+                      className="btn btn-sm btn-outline-primary flex-shrink-0"
+                      style={{ fontSize: "0.8rem" }}
+                      disabled={!tagSearch.trim()}
+                    >
+                      Add
                     </button>
-                  </span>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              <Dropdown_Custom
-                value={assignEmployeeId}
-                onChange={(e) => setAssignEmployeeId(e.target.value)}
-                options={employees.map((emp) => ({
-                  value: emp.id,
-                  label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
-                }))}
-                placeholder="Select employee"
-                className="flex-1"
-              />
-              <button type="button" onClick={handleAddAssignment} className="btn btn-secondary">
-                Add
-              </button>
+                  </div>
+
+                  {/* Dropdown suggestions */}
+                  {showTagDropdown && tagSuggestions.length > 0 && (
+                    <div ref={tagDropdownRef} className="absolute z-50 mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg max-h-40 overflow-y-auto">
+                      {tagSuggestions.map((tag) => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddTag(tag);
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-200"
+                        >
+                          {tag.name}
+                        </button>
+                      ))}
+                      {tagSearch.trim() && !tagSuggestions.some((t) => t.name.toLowerCase() === tagSearch.trim().toLowerCase()) && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddTag(tagSearch.trim());
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-t border-gray-100 dark:border-gray-700"
+                        >
+                          + Create "{tagSearch.trim()}"
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Show "create" option when search has text but no dropdown suggestions */}
+                  {tagSearch.trim() && !showTagDropdown && tagSuggestions.length === 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Press <kbd className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-xs">Enter</kbd> or click Add to create tag "{tagSearch.trim()}"
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Assignments ───────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignments</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {assignments.length === 0 && <span className="text-sm text-gray-500 dark:text-gray-400">No assigned employees</span>}
+                  {assignments.map((a) => {
+                    const emp = employees.find((e) => e.id === a.employee_id);
+                    const label = emp ? (emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || a.employee_id) : a.employee_id;
+                    return (
+                      <span key={a.employee_id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+                        {label}
+                        <button type="button" onClick={() => handleRemoveAssignment(a.employee_id)} className="hover:text-red-500 focus:outline-none" aria-label="Remove">
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-2">
+                  <Dropdown_Custom
+                    value={assignEmployeeId}
+                    onChange={(e) => setAssignEmployeeId(e.target.value)}
+                    options={employees.map((emp) => ({
+                      value: emp.id,
+                      label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
+                    }))}
+                    placeholder="Select employee"
+                    className="flex-1"
+                  />
+                  <button type="button" onClick={handleAddAssignment} className="btn btn-secondary">
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+          {/* /component-body-inner */}
         </div>
-          </div>{/* /component-body-inner */}
-        </div>{/* /component-body */}
+        {/* /component-body */}
         <div className="component-footer">
           <div className="component-footer-left">
             <button type="submit" className="btn btn-primary d-inline-flex align-items-center gap-1" disabled={saving}>
