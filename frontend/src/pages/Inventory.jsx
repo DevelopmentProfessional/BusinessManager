@@ -288,9 +288,7 @@ export default function Inventory() {
       }
 
       if (createdItem?.id && createData.type === "BUNDLE" && Array.isArray(extras.bundleComponents) && extras.bundleComponents.length > 0) {
-        await Promise.all(
-          extras.bundleComponents.map((component) => bundleAPI.addComponent(createdItem.id, component.id, parseFloat(component.quantity) || 1))
-        );
+        await Promise.all(extras.bundleComponents.map((component) => bundleAPI.addComponent(createdItem.id, component.id, parseFloat(component.quantity) || 1)));
       }
 
       if (createdItem?.id && createData.type === "MIX") {
@@ -304,9 +302,7 @@ export default function Inventory() {
         }
 
         if (Array.isArray(extras.mixComponents) && extras.mixComponents.length > 0) {
-          await Promise.all(
-            extras.mixComponents.map((component) => mixAPI.addComponent(createdItem.id, component.id, component.max_quantity ?? null))
-          );
+          await Promise.all(extras.mixComponents.map((component) => mixAPI.addComponent(createdItem.id, component.id, component.max_quantity ?? null)));
         }
       }
 

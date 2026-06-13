@@ -824,34 +824,41 @@ export default function Schedule() {
             <span className="clock-time">{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</span>
             <span className="clock-date">{currentTime.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
           </div>
-            <div className="d-flex align-items-center gap-2 ms-auto">
-              {/* Unpaid past-due indicator */}
-              {(() => {
-                const now = new Date();
-                const count = appointments.filter((a) => a.service_id && !a.is_paid && new Date(a.appointment_date) < now && a.status !== "cancelled").length;
-                return count > 0 ? (
-                  <div className="position-relative d-inline-flex align-items-center justify-content-center" title={`${count} unpaid past appointment${count > 1 ? "s" : ""}`} style={{ cursor: "default" }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#6b7280" strokeWidth="1.8" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v2m0 8v2m-4.5-6h9M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
-                    </svg>
-                    <span className="position-absolute" style={{ top: -4, right: -6, background: "#6b7280", color: "#fff", fontSize: "0.6rem", borderRadius: "9999px", padding: "0 4px", minWidth: 14, textAlign: "center", lineHeight: "14px" }}>{count}</span>
-                  </div>
-                ) : null;
-              })()}
-              {/* Upcoming appointments indicator */}
-              {(() => {
-                const now = new Date();
-                const soon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                const count = appointments.filter((a) => { const d = new Date(a.appointment_date); return d >= now && d <= soon && a.status !== "cancelled"; }).length;
-                return count > 0 ? (
-                  <div className="position-relative d-inline-flex align-items-center justify-content-center" title={`${count} upcoming appointment${count > 1 ? "s" : ""} in the next 24h`} style={{ cursor: "default" }}>
-                    <BellIcon style={{ width: 20, height: 20, color: "#6b7280" }} />
-                    <span className="position-absolute" style={{ top: -4, right: -6, background: "#6b7280", color: "#fff", fontSize: "0.6rem", borderRadius: "9999px", padding: "0 4px", minWidth: 14, textAlign: "center", lineHeight: "14px" }}>{count}</span>
-                  </div>
-                ) : null;
-              })()}
-              <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
-            </div>
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {/* Unpaid past-due indicator */}
+            {(() => {
+              const now = new Date();
+              const count = appointments.filter((a) => a.service_id && !a.is_paid && new Date(a.appointment_date) < now && a.status !== "cancelled").length;
+              return count > 0 ? (
+                <div className="position-relative d-inline-flex align-items-center justify-content-center" title={`${count} unpaid past appointment${count > 1 ? "s" : ""}`} style={{ cursor: "default" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#6b7280" strokeWidth="1.8" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v2m0 8v2m-4.5-6h9M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
+                  </svg>
+                  <span className="position-absolute" style={{ top: -4, right: -6, background: "#6b7280", color: "#fff", fontSize: "0.6rem", borderRadius: "9999px", padding: "0 4px", minWidth: 14, textAlign: "center", lineHeight: "14px" }}>
+                    {count}
+                  </span>
+                </div>
+              ) : null;
+            })()}
+            {/* Upcoming appointments indicator */}
+            {(() => {
+              const now = new Date();
+              const soon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+              const count = appointments.filter((a) => {
+                const d = new Date(a.appointment_date);
+                return d >= now && d <= soon && a.status !== "cancelled";
+              }).length;
+              return count > 0 ? (
+                <div className="position-relative d-inline-flex align-items-center justify-content-center" title={`${count} upcoming appointment${count > 1 ? "s" : ""} in the next 24h`} style={{ cursor: "default" }}>
+                  <BellIcon style={{ width: 20, height: 20, color: "#6b7280" }} />
+                  <span className="position-absolute" style={{ top: -4, right: -6, background: "#6b7280", color: "#fff", fontSize: "0.6rem", borderRadius: "9999px", padding: "0 4px", minWidth: 14, textAlign: "center", lineHeight: "14px" }}>
+                    {count}
+                  </span>
+                </div>
+              ) : null;
+            })()}
+            <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+          </div>
         </div>
 
         <div className="schedule-body">
@@ -1135,9 +1142,7 @@ export default function Schedule() {
                                     onDragEnd={handleDragEnd}
                                     onClick={(e) => handleAppointmentClick(e, appointment)}
                                   >
-                                    {appointment.service_id && (
-                                      <span style={{ position: "absolute", top: 3, right: 3, fontSize: "0.55rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>
-                                    )}
+                                    {appointment.service_id && <span style={{ position: "absolute", top: 3, right: 3, fontSize: "0.55rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
                                     <div className="appointment-time">{timeString}</div>
                                     <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                       {primaryLabel}
@@ -1222,9 +1227,7 @@ export default function Schedule() {
                                       onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
-                                      {appointment.service_id && (
-                                        <span style={{ position: "absolute", top: 2, right: 2, fontSize: "0.5rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>
-                                      )}
+                                      {appointment.service_id && <span style={{ position: "absolute", top: 2, right: 2, fontSize: "0.5rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
                                       <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
                                         <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                                           {primaryLabel}

@@ -661,17 +661,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               {/* [Event Type][Event Status] */}
               <div className="row g-2">
                 <div className="col-6">
-                  <Dropdown_Custom
-                    name="appointment_type"
-                    value={formData.appointment_type}
-                    onChange={handleChange}
-                    options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))}
-                    placeholder="Select event type"
-                    required
-                    label="Event Type"
-                    openUpward
-                    closeOnSelect
-                  />
+                  <Dropdown_Custom name="appointment_type" value={formData.appointment_type} onChange={handleChange} options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))} placeholder="Select event type" required label="Event Type" openUpward closeOnSelect />
                 </div>
                 <div className="col-6">
                   <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
@@ -693,7 +683,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({ value: employee.id, label: `${employee.first_name} ${employee.last_name}`.trim() }))}
+                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                          value: employee.id,
+                          label: `${employee.first_name} ${employee.last_name}`.trim(),
+                        }))}
                         placeholder="Select attendees"
                         required
                         searchable={true}
@@ -748,17 +741,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               {/* [Event Type][Appointment Status] */}
               <div className="row g-2">
                 <div className="col-6">
-                  <Dropdown_Custom
-                    name="appointment_type"
-                    value={formData.appointment_type}
-                    onChange={handleChange}
-                    options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))}
-                    placeholder="Select event type"
-                    required
-                    label="Event Type"
-                    openUpward
-                    closeOnSelect
-                  />
+                  <Dropdown_Custom name="appointment_type" value={formData.appointment_type} onChange={handleChange} options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))} placeholder="Select event type" required label="Event Type" openUpward closeOnSelect />
                 </div>
                 <div className="col-6">
                   <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
@@ -794,7 +777,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({ value: employee.id, label: `${employee.first_name} ${employee.last_name}`.trim() }))}
+                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                          value: employee.id,
+                          label: `${employee.first_name} ${employee.last_name}`.trim(),
+                        }))}
                         placeholder="Assign to"
                         required
                         searchable={true}
@@ -868,7 +854,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </div>
           )}
 
-
           {/* Recurrence */}
           {formData.appointment_type === "series" && (
             <>
@@ -899,7 +884,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               )}
             </>
           )}
-
 
           {/* Notes — shown for appointment/series types */}
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
